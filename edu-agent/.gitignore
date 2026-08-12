@@ -1,0 +1,17 @@
+.env
+data/
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+*.egg-info/
+.venv/
+.vscode/
+.idea/
+# 包含 VM 登录凭据（root/redhat），严禁入库
+scripts/ssh_*.py
+# 本地临时文件
+*.tmp
+uv_tmp_*.log
+*.pid
