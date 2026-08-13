@@ -9,7 +9,8 @@ function globalOnError(error: unknown) {
   if (isServer) return;
   if (error instanceof ApiError) {
     if (error.status === 401 || error.status === 403) {
-      /* auth-client 已经处理了 logout + redirect，这里不重复 toast 登录过期消息 */
+      /* 早退前补日志（fe-task00 / D4）：auth-client 已处理登出/无权限提示，不重复 toast */
+      console.error("[query] 请求被拒绝", { status: error.status, message: error.message });
       return;
     }
     const msg = error.message || `请求失败（${error.status}）`;

@@ -4,9 +4,10 @@ P7 管理端控制台 - 题库管理 router。
 """
 from __future__ import annotations
 
+import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.auth import CurrentUser, UserRole, require_role
 from app.admin.question_admin import service
@@ -23,6 +24,7 @@ from app.admin.question_admin.schemas import (
     QuestionTag,
     QuestionTagCreate,
 )
+from app.common.exceptions import AppException as BizError
 
 router = APIRouter(
     prefix="/api/admin/questions",
@@ -110,11 +112,27 @@ async def admin_delete_question(question_id: int):
 # ============================================================
 # 3. 批量导入
 # ============================================================
+# 上限常量：条数 ≤500、原始 body ≤2MB（对抗问题 #7：无上限时超大 payload 直通 200）
+BATCH_IMPORT_MAX_ITEMS = 500
+BATCH_IMPORT_MAX_BYTES = 2 * 1024 * 1024
+
+
 @router.post("/batch-import", response_model=QuestionBatchImportResponse)
 async def admin_batch_import_questions(
-    items: list[dict],
+    request: Request,
     user: CurrentUser = Depends(require_role([UserRole.ADMIN])),
 ):
+    raw = await request.body()
+    if len(raw) > BATCH_IMPORT_MAX_BYTES:
+        raise BizError(40001, f"批量导入数据过大：请求体 {len(raw)} 字节，上限 {BATCH_IMPORT_MAX_BYTES} 字节（2MB）")
+    try:
+        items = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise BizError(40001, "批量导入数据必须是合法 JSON 数组")
+    if not isinstance(items, list):
+        raise BizError(40001, "批量导入数据必须是数组")
+    if len(items) > BATCH_IMPORT_MAX_ITEMS:
+        raise BizError(40001, f"批量导入条数超出上限：{len(items)} 条，单次最多 {BATCH_IMPORT_MAX_ITEMS} 条")
     return await service.batch_import_questions(items, operator_id=user.user_id)
 
 

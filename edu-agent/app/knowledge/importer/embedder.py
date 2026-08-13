@@ -9,7 +9,7 @@
 
 关键设计：
 - 资源懒加载：第一次调用时才加载 BGE 模型和 jieba 词典，避免启动时间长 / 模型缺失直接崩。
-- 模型缺失兜底：BGE 本地模型不存在 → 走 DashScope text-embedding-v3（1024 维，对齐 dim）。
+- 模型缺失兜底：BGE 本地模型不存在 → 走 OpenAI 兼容 Embedding API（硅基流动/DashScope，1024 维对齐 dim）。
 - jieba 资源路径从 settings.JIEBA_CUSTOM_DICT / STOPWORDS_FILE 取，路径不存在只告警不抛错。
 - sparse_vec 输出格式严格对齐 Milvus SPARSE_FLOAT_VECTOR：{"<term_id:int>": <weight:float>}
 """
@@ -142,24 +142,29 @@ def _get_bge_model():
             return None
 
 
-def _dashscope_embed_batch(texts: list[str]) -> list[list[float]]:
-    """DashScope 兼容模式 text-embedding-v3（输出 1024 维对齐 Milvus Schema）。
+def _api_embed_batch(texts: list[str]) -> list[list[float]]:
+    """OpenAI 兼容 embeddings（硅基流动 / DashScope / a6api 等，输出对齐 Milvus Schema）。
+
+    独立配置优先：
+      - url  取 settings.EMBEDDING_API_URL，为空回退 LLM_BASE_URL
+      - key  取 settings.EMBEDDING_API_KEY，为空回退 LLM_API_KEY
+      - model取 settings.EMBEDDING_MODEL（默认 BAAI/bge-m3，1024 维）
 
     关键修复（2026-08-10，根因#3 同步）：
       - httpx 与 requests 一样，默认会信任 env / Windows 系统代理（IE 注册表），
         若本机存在 127.0.0.1 本地代理劫持，就会出现 SSLEOF / ReadTimeout 或 503。
-        通过 trust_env=False + proxy=None 强制直连出口 LLM_BASE_URL。
+        通过 trust_env=False + proxy=None 强制直连出口 embedding 服务。
     """
     import httpx
 
-    api_key = settings.LLM_API_KEY
+    api_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
     if not api_key:
-        raise RuntimeError("BGE-M3 本地模型不可用且 LLM_API_KEY 未配置，无法生成稠密向量")
-    url = str(settings.LLM_BASE_URL).rstrip("/") + "/embeddings"
+        raise RuntimeError("BGE-M3 本地模型不可用且 Embedding/LLM API key 未配置，无法生成稠密向量")
+    base_url = settings.EMBEDDING_API_URL or settings.LLM_BASE_URL
+    url = str(base_url).rstrip("/") + "/embeddings"
     payload = {
-        "model": "text-embedding-v3",
+        "model": settings.EMBEDDING_MODEL,
         "input": texts,
-        "dimensions": 1024,
         "encoding_format": "float",
     }
     headers = {
@@ -195,7 +200,7 @@ def encode_dense_batch(texts: list[str]) -> list[list[float]]:
     策略：
       · texts 全为空 → 直接返回全零向量（避免 API 报错）
       · 本地 BGE-M3 可用 → 优先本地（快、不花钱）
-      · 本地不可用 → DashScope Embedding API（兜底）
+      · 本地不可用 → OpenAI 兼容 Embedding API（硅基流动/DashScope，按 EMBEDDING_* 配置）
       · 任何失败 → 退化为 sha256 伪向量（让导入流程不中断，后续可重建）
     """
     dim = settings.EMBEDDING_DIM
@@ -217,13 +222,13 @@ def encode_dense_batch(texts: list[str]) -> list[list[float]]:
                     for v in vecs
                 ]
         except Exception as exc:
-            logger.warning(f"BGE-M3 encode 失败，降级 DashScope Embedding：{exc}")
+            logger.warning(f"BGE-M3 encode 失败，降级 Embedding API：{exc}")
 
-    # 2) DashScope 兜底
+    # 2) OpenAI 兼容 Embedding API 兜底
     try:
-        return _dashscope_embed_batch(safe_texts)
+        return _api_embed_batch(safe_texts)
     except Exception as exc:
-        logger.warning(f"DashScope Embedding 也失败（{exc}）→ 退化为伪向量，仅保证导入不中断")
+        logger.warning(f"Embedding API 也失败（{exc}）→ 退化为伪向量，仅保证导入不中断")
 
     # 3) 最终兜底：确定性伪向量（可导入但检索质量极差，便于排查）
     return [_pseudo_dense(t, dim) for t in safe_texts]

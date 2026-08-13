@@ -8,7 +8,7 @@
  */
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -87,33 +87,36 @@ export function useChatSessions(opts: UseChatSessionsOptions = {}): UseChatSessi
 
   const sessionsError = error ?? null;
 
-  // ======== 选中状态管理 ========
-  const selectedIdRef = useRef<string | number | null>(readLastId());
-  // 如果调用方传了 initialSessionId（例如 URL sid），优先它
-  const initRef = useRef(false);
-  if (!initRef.current) {
-    initRef.current = true;
+  // ======== 选中状态管理（必须用 state，不能用 ref） ========
+  // G7 联调实证：selectedId 用 ref + 靠 invalidate 重渲染"顺带"刷新时，
+  // TanStack Query 结构共享会让相同数据的 refetch 不产生新状态 → 无重渲染 →
+  // 点击会话行历史永远不加载（删除等数据变化时才偶发触发）。选中态必须可观察。
+  const [selectedId, setSelectedId] = useState<string | number | null>(() => {
+    // 调用方传了 initialSessionId（例如 URL sid）优先，否则用上次会话
     if (opts.initialSessionId !== undefined && opts.initialSessionId !== null) {
-      selectedIdRef.current = opts.initialSessionId;
+      return opts.initialSessionId;
     }
-  }
+    return readLastId();
+  });
 
-  // 监听 sessions 变化：若选中值已不在列表中 → 清掉
+  // 渲染期派生：选中项已被移除（软删/他人操作）时回退到列表第一项。
+  // 用派生值而非 effect 内 setState（React Compiler 规则，避免 cascading render）。
+  const effectiveSelectedId = useMemo<string | number | null>(() => {
+    if (!data.length || selectedId == null) return selectedId;
+    return data.some((s) => String(s.id) === String(selectedId))
+      ? selectedId
+      : (data[0]?.id ?? null);
+  }, [data, selectedId]);
+
+  // 派生值与本地持久化同步（纯副作用，不 setState）
   useEffect(() => {
-    if (!data?.length) return;
-    const current = selectedIdRef.current;
-    if (current == null) return;
-    const exist = data.some((s) => String(s.id) === String(current));
-    if (!exist) {
-      selectedIdRef.current = data[0]?.id ?? null;
-      writeLastId(selectedIdRef.current);
-    }
-  }, [data]);
+    if (effectiveSelectedId !== selectedId) writeLastId(effectiveSelectedId);
+  }, [effectiveSelectedId, selectedId]);
 
   const selectSession = useCallback<UseChatSessionsHandle["selectSession"]>((id) => {
-    selectedIdRef.current = id ?? null;
+    setSelectedId(id ?? null);
     writeLastId(id ?? null);
-    // 轻量触发一次（避免闭包拿不到最新值，这里不走 state）
+    // 轻量触发一次（让列表与选中态保持一致）
     queryClient.invalidateQueries({ queryKey: qk, exact: true }).catch(() => { /* ignore */ });
   }, [qk, queryClient]);
 
@@ -141,7 +144,7 @@ export function useChatSessions(opts: UseChatSessionsOptions = {}): UseChatSessi
         const cur = Array.isArray(cached) ? cached : prev;
         return cur.map((s) => (s.id === ctx?.tempId ? resp : s));
       });
-      selectedIdRef.current = resp.id;
+      setSelectedId(resp.id);
       writeLastId(resp.id);
     },
     onError: (err, _args, ctx) => {
@@ -159,11 +162,16 @@ export function useChatSessions(opts: UseChatSessionsOptions = {}): UseChatSessi
       return { prev };
     },
     onSuccess: (_resp, id, ctx) => {
-      if (String(selectedIdRef.current) === String(id)) {
-        const remain = (ctx?.prev ?? []).filter((s) => String(s.id) !== String(id));
-        selectedIdRef.current = remain[0]?.id ?? null;
-        writeLastId(selectedIdRef.current);
-      }
+      // 函数式 setState：删除的是当前选中项才切到邻居，避免闭包陈旧值（L7 原则）
+      setSelectedId((prev) => {
+        if (String(prev) === String(id)) {
+          const remain = (ctx?.prev ?? []).filter((s) => String(s.id) !== String(id));
+          const next = remain[0]?.id ?? null;
+          writeLastId(next);
+          return next;
+        }
+        return prev;
+      });
     },
     onError: (err, id, ctx) => {
       queryClient.setQueryData<ChatSession[]>(qk, ctx?.prev ?? []);
@@ -179,14 +187,14 @@ export function useChatSessions(opts: UseChatSessionsOptions = {}): UseChatSessi
   const deleteSession = useCallback<UseChatSessionsHandle["deleteSession"]>(async (id, nextId) => {
     await deleteMut.mutateAsync(id);
     if (nextId != null) {
-      selectedIdRef.current = nextId;
+      setSelectedId(nextId);
       writeLastId(nextId);
     }
   }, [deleteMut]);
 
   const ensureSession = useCallback<UseChatSessionsHandle["ensureSession"]>(async (body) => {
     if (!enabled) return null;
-    const current = selectedIdRef.current;
+    const current = effectiveSelectedId;
     if (current != null) {
       // 保证当前 id 真实存在，否则重建
       const list = queryClient.getQueryData<ChatSession[]>(qk) ?? [];
@@ -194,13 +202,13 @@ export function useChatSessions(opts: UseChatSessionsOptions = {}): UseChatSessi
     }
     const created = await createMut.mutateAsync(body ?? {});
     return created.id;
-  }, [enabled, createMut, qk, queryClient]);
+  }, [enabled, createMut, qk, queryClient, effectiveSelectedId]);
 
   return {
     sessions: data ?? [],
     sessionsLoading,
     sessionsError,
-    selectedId: selectedIdRef.current,
+    selectedId: effectiveSelectedId,
     selectSession,
     createAndSelect,
     deleteSession,

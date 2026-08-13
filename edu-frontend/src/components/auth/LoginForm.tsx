@@ -20,6 +20,7 @@ import {
 import { Form as FormProvider } from "@/components/ui/form";
 import { useAuthStore } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api-client";
+import { isSafeRedirect } from "@/lib/redirect";
 import { LoginSchema, type LoginInput } from "@/lib/validators/auth-schemas";
 
 export function LoginForm() {
@@ -27,7 +28,7 @@ export function LoginForm() {
   const search = useSearchParams();
   const redirect = useMemo(() => {
     const r = search?.get("redirect")?.trim();
-    return r && /^\/[A-Za-z0-9?=&/%\-_@+.~#]*$/.test(r) ? r : "/dashboard";
+    return r && isSafeRedirect(r) ? r : "/dashboard";
   }, [search]);
 
   const form = useForm<LoginInput>({

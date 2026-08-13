@@ -1,6 +1,7 @@
 "use client";
 
 import { Award, Lock, Sparkle } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Badge as UIBadge } from "@/components/ui/badge";
@@ -115,6 +116,15 @@ export function BadgeWallGrid({
       </CardHeader>
       <Separator />
       <CardContent className="pt-5">
+        {badges.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/40 p-8 flex flex-col items-center justify-center gap-2 text-center">
+            <Award className="h-8 w-8 text-muted-foreground/60" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">解锁第一枚徽章，从今天的学习开始</p>
+            <Link href="/courses" className="text-sm font-medium text-primary hover:underline">
+              去课程中心看看
+            </Link>
+          </div>
+        ) : (
         <div className={cn("grid gap-4", gridCols)}>
           {badges.map((b, i) => {
             const cat = b.category || "achievement";
@@ -182,6 +192,7 @@ export function BadgeWallGrid({
             );
           })}
         </div>
+        )}
       </CardContent>
     </Card>
   );

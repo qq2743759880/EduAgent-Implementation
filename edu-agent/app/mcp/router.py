@@ -10,7 +10,7 @@ import os
 import sys
 import uuid
 from datetime import datetime
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -24,10 +24,16 @@ from .schemas import (
     DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE,
     MCPServerCreate, MCPServerDetail, MCPServerItem, MCPServerListResp,
     MCPServerUpdate, MCPImportResp, MCPImportUrlReq, MCPLogDetail, MCPLogItem, MCPLogListResp,
-    MCPToolListResp, MCPToolTestReq, MCPToolTestResp, ToolCallStatusEnum,
+    MCPToolListResp, MCPToolTestReq, MCPToolTestResp,
     MCPLiveDiscoverResp, MCPRawRpcReq, MCPRawRpcResp, MCPHealthScanResp,
     MCPSessionCreateReq, MCPSessionItem, MCPSessionListResp, MCPSessionResp,
 )
+
+# task04 #5：call-log status 过滤白名单。
+# 必须用模块级类型别名而非函数内联 Literal 字面量 —— 本文件启用了
+# `from __future__ import annotations`，内联 Literal 会被字符串化 ForwardRef，
+# FastAPI/Pydantic 无法解析其成员 → PydanticUserError not fully defined（500）。
+CallLogStatus = Literal["SUCCESS", "ERROR", "TIMEOUT", "SKIPPED"]
 
 
 router = APIRouter(
@@ -254,13 +260,15 @@ async def p8_tool_test(payload: MCPToolTestReq, me: CurrentUser = Depends(get_cu
 async def p8_list_call_log(
     server_id: Optional[int] = Query(default=None),
     tool_name: Optional[str] = Query(default=None, max_length=128),
-    status: Optional[str] = Query(default=None, max_length=16),
+    status: Optional[CallLogStatus] = Query(default=None, max_length=16),
     user_id: Optional[int] = Query(default=None),
     created_from: Optional[datetime] = Query(default=None),
     created_to: Optional[datetime] = Query(default=None),
     page: int = Query(default=DEFAULT_PAGE, ge=1),
     page_size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
 ):
+    # task04 #5：status 用 Literal 枚举约束——非法枚举由 FastAPI 校验层直接 422，
+    # 不再静默跳过过滤条件（此前 status=HACKED 返回全量日志，审计结果误导）。
     from app.database import fetch_all, fetch_one
     where = ["1=1"]
     args: list[Any] = []
@@ -268,7 +276,7 @@ async def p8_list_call_log(
         where.append("server_id=%s"); args.append(server_id)
     if tool_name:
         where.append("tool_name=%s"); args.append(tool_name)
-    if status and status in (s.value for s in ToolCallStatusEnum):
+    if status:
         where.append("status=%s"); args.append(status)
     if user_id:
         where.append("user_id=%s"); args.append(user_id)
@@ -678,7 +686,7 @@ function renderTools(list, fromDb){
     return `<tr>
       <td><b>${esc(t.tool_name)}</b><br><span class="mono">${esc(t.display_name||t.tool_name)}</span></td>
       <td>${esc((t.description||"").slice(0,120))||"—"}
-        ${props.length?`<div class="hint">args: ${props.join(", ")}</div>`:""}
+        ${props.length?`<div class="hint">args: ${esc(props.join(", "))}</div>`:""}
       </td>
       <td>
         <button class="btn sec" style="padding:4px 8px;font-size:12px"

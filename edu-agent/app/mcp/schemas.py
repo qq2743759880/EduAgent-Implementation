@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal, Optional
 
+from fastapi import HTTPException
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -67,10 +68,10 @@ class MCPServerBase(BaseModel):
         t = self.transport
         if t == TransportEnum.STDIO:
             if not self.run_command:
-                raise ValueError("stdio 传输必须提供 run_command（如 python / npx）")
+                raise HTTPException(status_code=422, detail="stdio 传输必须提供 run_command（如 python / npx）")
         elif t in (TransportEnum.SSE, TransportEnum.HTTP):
             if not self.base_url:
-                raise ValueError(f"{t.value} 传输必须提供 base_url")
+                raise HTTPException(status_code=422, detail=f"{t.value} 传输必须提供 base_url")
         return self
 
 
@@ -186,8 +187,10 @@ class MCPToolTestReq(BaseModel):
 
     @model_validator(mode="after")
     def _at_least_one_ref(self):
+        # 注意：不要抛 ValueError —— 其异常对象会进 422 handler 的 errors ctx 导致 json.dumps 崩溃（task04 #4）。
+        # 直接抛 HTTPException，走全局 http_exception_handler，稳定返回 {code, message, detail}。
         if self.tool_id is None and not (self.server_id and self.tool_name):
-            raise ValueError("必须提供 tool_id 或 (server_id, tool_name)")
+            raise HTTPException(status_code=422, detail="必须提供 tool_id 或 (server_id, tool_name)")
         return self
 
 

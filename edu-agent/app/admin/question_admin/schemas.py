@@ -14,11 +14,24 @@ from pydantic import BaseModel, Field
 # 枚举
 # ============================================================
 class QuestionType(str):
+    """题库题型枚举（管理端可写集合；读取模型仍用 str 兼容 DB 存量历史值）。"""
     SINGLE = "single_choice"
     MULTI = "multi_choice"
     JUDGE = "true_false"
     FILL = "fill_blank"
     SHORT = "short_answer"
+
+
+# 题型合法值（Create/Update 输入校验用）。对抗问题 #2：
+# 原先 question_type 是裸 str，任意字符串（如 "hacker_choice"）直穿后端入库；
+# 改为 Literal 后非法题型在 Pydantic 层 422 拒绝、批量导入计为 failed。
+QuestionTypeValues = Literal[
+    QuestionType.SINGLE,
+    QuestionType.MULTI,
+    QuestionType.JUDGE,
+    QuestionType.FILL,
+    QuestionType.SHORT,
+]
 
 
 # ============================================================
@@ -57,7 +70,7 @@ class QuestionOption(BaseModel):
 class QuestionAdminCreate(BaseModel):
     question_code: str = Field(..., max_length=64)
     subject_code: str = Field(..., max_length=32)
-    question_type: str = Field(..., max_length=32)
+    question_type: QuestionTypeValues = Field(...)
     difficulty_level: Literal["L1", "L2", "L3", "L4", "L5"] = "L2"
     stem_html: str = Field(..., min_length=1)
     analysis_html: Optional[str] = None
@@ -71,7 +84,7 @@ class QuestionAdminCreate(BaseModel):
 
 class QuestionAdminUpdate(BaseModel):
     subject_code: Optional[str] = None
-    question_type: Optional[str] = None
+    question_type: Optional[QuestionTypeValues] = None
     difficulty_level: Optional[Literal["L1", "L2", "L3", "L4", "L5"]] = None
     stem_html: Optional[str] = None
     analysis_html: Optional[str] = None

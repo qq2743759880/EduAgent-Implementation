@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 import anyio
+import asyncio
 from fastapi import APIRouter, Depends, UploadFile, File, BackgroundTasks, HTTPException, Header
 from loguru import logger
 
@@ -361,13 +362,23 @@ async def get_task_status(
 async def list_partitions(
     _admin: CurrentUser = Depends(require_role([UserRole.ADMIN, UserRole.MANAGER])),
 ):
-    """查询所有 Partition（管理员功能）。"""
+    """查询所有 Partition（管理员功能）。
+
+    task04 修正轮 2：list_all_partitions 是同步 Milvus I/O（不可达时连接超时最长
+    10s），async 路由直接调用会阻塞整个事件循环 → 移入线程池 + 5s 硬上限。
+    """
     try:
-        partitions = list_all_partitions()
+        partitions = await asyncio.wait_for(
+            anyio.to_thread.run_sync(list_all_partitions),
+            timeout=5.0,
+        )
         return {
             "total_partitions": len(partitions),
             "partitions": partitions
         }
+    except asyncio.TimeoutError:
+        logger.error("查询分区超时（Milvus 不可达），返回 503")
+        raise HTTPException(status_code=503, detail="Milvus 不可达，查询分区超时")
     except Exception as e:
         logger.error(f"查询分区失败: {e}")
         raise HTTPException(status_code=500, detail=f"查询失败: {e}")

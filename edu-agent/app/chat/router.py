@@ -3,13 +3,14 @@ P2 问答路由：
 - POST /api/chat/sessions             创建会话（登录即可，student 可用）
 - GET  /api/chat/sessions             会话列表（当前用户；admin 全局）
 - GET  /api/chat/sessions/{id}/history  会话消息历史（正序）
+- DELETE /api/chat/sessions/{id}      软删会话（UPDATE chat_session SET yn=0，禁止物理 DELETE）
 - POST /api/chat/search               仅检索（不生成，不落库）
 - POST /api/chat                      非流式问答
 - POST /api/chat/stream               流式问答（SSE：start → retrieval → token → done/error）
 
 权限：
 - 所有路由至少 Depends(get_current_user)，无 Token（DEBUG 虚拟管理员除外）直接 401
-- 会话访问：非 admin 必须是 session.user_id == current_user.user_id，否则 service 抛 ValidationError(code=CHAT_SESSION_FORBIDDEN) → 400
+- 会话访问：非 admin 必须是 session.user_id == current_user.user_id，否则 service 抛 ValidationError(detail=CHAT_SESSION_FORBIDDEN) → 403
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ from app.auth import CurrentUser, UserRole, get_current_user
 from app.chat.schemas import (
     ChatSession,
     ChatSessionCreate,
+    DeleteSessionResponse,
     RagAnswerResponse,
     RagQueryRequest,
     RagSearchOnlyRequest,
@@ -34,6 +36,7 @@ from app.chat.service import (
     chat_answer as service_chat_answer,
     chat_stream as service_chat_stream,
     create_session as service_create_session,
+    delete_session as service_delete_session,
     get_session_history,
     list_sessions,
     search_only,
@@ -106,6 +109,24 @@ async def sessions_history(
     """按时间正序返回该会话的全部消息（user+assistant 对）。"""
     try:
         return await get_session_history(session_id, user.user_id, user.role, limit=limit)
+    except Exception as e:
+        _translate_exception(e)
+
+
+@router.delete("/sessions/{session_id}", response_model=DeleteSessionResponse)
+async def sessions_delete(
+    session_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """
+    软删会话（R-2 补丁）：
+    - 200 {ok:true}：本人/管理员软删（UPDATE chat_session SET yn=0，禁止物理 DELETE）
+    - 403：跨用户删除（CHAT_SESSION_FORBIDDEN）
+    - 404：会话不存在 / 已删除
+    """
+    try:
+        await service_delete_session(user.user_id, session_id, user.role)
+        return DeleteSessionResponse(ok=True)
     except Exception as e:
         _translate_exception(e)
 

@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
+  AlertCircle,
   BookOpenCheck,
   Flame,
   GraduationCap,
   LayoutGrid,
+  RotateCw,
   Settings2,
   Sparkles,
   UserRoundCog,
@@ -15,309 +17,180 @@ import {
 } from "lucide-react";
 
 import AbilityRadarChart from "@/components/dashboard/AbilityRadarChart";
-import BadgeWallGrid, { type BadgeItem } from "@/components/dashboard/BadgeWallGrid";
-import KpiCard from "@/components/dashboard/KpiCard";
-import PointCard, { type PointGainItem } from "@/components/dashboard/PointCard";
-import ProgressTrendChart, {
-  type ProgressTrendPoint,
-} from "@/components/dashboard/ProgressTrendChart";
-import RankList, { type RankEntry, type RankRange } from "@/components/dashboard/RankList";
+import BadgeWallGrid from "@/components/dashboard/BadgeWallGrid";
+import KpiCard, { type KpiDelta } from "@/components/dashboard/KpiCard";
+import PointCard from "@/components/dashboard/PointCard";
+import ProgressTrendChart from "@/components/dashboard/ProgressTrendChart";
+import RankList, { type RankRange } from "@/components/dashboard/RankList";
 import StreakBadge from "@/components/dashboard/StreakBadge";
+import {
+  RANGE_SCOPE,
+  buildRankSlice,
+  deriveAbilityRadar,
+  deriveDashboardKpis,
+  deriveStreakLast7,
+  getMySubjectPreferences,
+  getProgressCourses,
+  getProgressDashboard,
+  mapBadgesToWall,
+  mapPointsToCard,
+  toProgressTrend,
+  type DashboardKpis,
+} from "@/lib/api/dashboard";
+import { getMyBadges, getMyPoints, getRankings } from "@/lib/api/community";
 import { useAuthStore } from "@/lib/auth-client";
 import { ProtectedRoute } from "@/lib/protected-route";
-import {
-  SUBJECT_LABELS,
-  SUBJECT_OPTIONS,
-  type SubjectKey,
-} from "@/lib/validators/profile-schemas";
+import { cn } from "@/lib/utils";
 
-/* ---------- Mock 数据（后端未返回时 placeholderData，UI 完整可见） ---------- */
+/* ---------- KPI delta 文案（页面级格式化，数值来自 deriveDashboardKpis 派生） ---------- */
 
-function daysAgoLabel(offset: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - (13 - offset));
-  return `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getDate().toString().padStart(2, "0")}`;
+function minutesDelta(k: DashboardKpis): KpiDelta {
+  // 卡 1：今日时长 vs 昨日
+  if (k.yesterdayMinutes == null) return { direction: "flat", value: "暂无昨日数据" };
+  if (k.minutesToday > k.yesterdayMinutes)
+    return { direction: "up", value: `较昨日 +${k.minutesToday - k.yesterdayMinutes} 分钟` };
+  if (k.minutesToday < k.yesterdayMinutes)
+    return { direction: "down", value: `较昨日 ${k.minutesToday - k.yesterdayMinutes} 分钟` };
+  return { direction: "flat", value: "较昨日持平" };
 }
 
-const MOCK_TREND: ProgressTrendPoint[] = Array.from({ length: 14 }).map((_, i) => ({
-  dateLabel: daysAgoLabel(i),
-  minutes: [25, 40, 60, 35, 55, 80, 45, 65, 50, 70, 90, 55, 75, 62][i] ?? 45,
-  practiceMinutes: [10, 15, 20, 12, 25, 40, 18, 30, 22, 28, 45, 20, 35, 30][i] ?? 18,
-}));
-
-const MOCK_RADAR_SELF = {
-  name: "我的能力",
-  values: [78, 66, 82, 70, 60] as number[],
-  color: "#6366f1",
-  opacity: 0.24,
-};
-
-const MOCK_RADAR_PEER = {
-  name: "全班平均",
-  values: [65, 55, 68, 62, 52] as number[],
-  color: "#10b981",
-  opacity: 0.16,
-};
-
-const MOCK_BADGES: BadgeItem[] = [
-  {
-    key: "streak-7",
-    name: "小试牛刀",
-    description: "连续 7 天登录学习，开启你的学习旅程。",
-    unlockCondition: "连续 7 天学习",
-    category: "streak",
-    earned: true,
-    earnedAt: "03-12",
-    icon: <Flame className="h-6 w-6" />,
-  },
-  {
-    key: "streak-30",
-    name: "坚持不懈",
-    description: "连续 30 天学习，养成每日学习习惯。",
-    unlockCondition: "连续 30 天学习（还需 17 天）",
-    category: "streak",
-    earned: false,
-    icon: <Sparkles className="h-6 w-6" />,
-  },
-  {
-    key: "english-star",
-    name: "英语新星",
-    description: "英语维度累计答对 100 道题。",
-    unlockCondition: "英语练习题正确率达到 80%",
-    category: "subject",
-    earned: true,
-    earnedAt: "03-15",
-  },
-  {
-    key: "coding-first",
-    name: "编程初体验",
-    description: "完成第一个编程项目并提交。",
-    unlockCondition: "完成 1 个编程实战任务",
-    category: "subject",
-    earned: true,
-    earnedAt: "03-10",
-  },
-  {
-    key: "math-master",
-    name: "数学能手",
-    description: "完成全部小学数学基础模块。",
-    unlockCondition: "完成 8 个数学章节",
-    category: "subject",
-    earned: false,
-  },
-  {
-    key: "chinese-reader",
-    name: "语文小读者",
-    description: "累计阅读 10 篇语文材料。",
-    unlockCondition: "完成 10 篇阅读理解",
-    category: "subject",
-    earned: false,
-  },
-  {
-    key: "physics-lab",
-    name: "物理探索者",
-    description: "完成 5 个物理实验或模拟任务。",
-    unlockCondition: "完成 5 个物理实验模块",
-    category: "subject",
-    earned: false,
-  },
-  {
-    key: "achiever-1000",
-    name: "积分破千",
-    description: "累计积分数突破 1000 点。",
-    unlockCondition: "积分达到 1000",
-    category: "achievement",
-    earned: true,
-    earnedAt: "03-18",
-  },
-  {
-    key: "share-first",
-    name: "乐于分享",
-    description: "第一次分享学习笔记给同学。",
-    unlockCondition: "分享 1 份学习笔记",
-    category: "social",
-    earned: true,
-    earnedAt: "03-16",
-  },
-  {
-    key: "explore-agent",
-    name: "AI 探索家",
-    description: "体验 5 个不同的 AI 学习工具。",
-    unlockCondition: "体验 5 个 MCP 工具",
-    category: "explore",
-    earned: false,
-  },
-];
-
-const MOCK_GAINS: PointGainItem[] = [
-  { key: "g1", title: "完成英语「时态 1」章节", points: 30, at: "09:10", kind: "study" },
-  { key: "g2", title: "解锁徽章「小试牛刀」", points: 50, at: "09:25", kind: "badge" },
-  { key: "g3", title: "编程实战：小试 AI 助手", points: 80, at: "11:02", kind: "study" },
-  { key: "g4", title: "分享笔记给同桌", points: 20, at: "12:40", kind: "share" },
-  { key: "g5", title: "首次体验 MCP 工具：解题顾问", points: 15, at: "19:55", kind: "explore" },
-];
-
-function buildRankList(): RankEntry[] {
-  const names = [
-    "星辰与你",
-    "Kira",
-    "小明同学",
-    "CodeHunter",
-    "学霸养成中",
-    "Echo",
-    "清风徐来",
-    "物理小王子",
-    "MathWhiz",
-    "墨言",
-    "Sunny",
-    "Lumos",
-  ];
-  return names.map((n, i) => ({
-    rank: i + 1,
-    nickname: n,
-    score: 3200 - i * 180,
-    tag: i === 2 ? "本周 +5" : i === 6 ? "本周 +2" : undefined,
-  }));
+function exercisesDelta(k: DashboardKpis): KpiDelta {
+  // 卡 2：累计正确率（attempted=0 → 「暂无数据」中性，除零保护在派生层完成）
+  if (k.accuracyPct == null) return { direction: "flat", value: "暂无数据" };
+  return { direction: "up", value: `正确率 ${k.accuracyPct}%` };
 }
 
-const ALL_RANGE_LIST = buildRankList();
+function streakDelta(k: DashboardKpis): KpiDelta {
+  // 卡 4：近 7 天活跃天数
+  return {
+    direction: k.last7ActiveDays >= 4 ? "up" : k.last7ActiveDays <= 1 ? "down" : "flat",
+    value: `近 7 天活跃 ${k.last7ActiveDays} 天`,
+  };
+}
+
+/* ---------- 卡片级错误态（页面统一注入，tokens 语义 class） ---------- */
+
+function DataErrorCard({
+  message,
+  onRetry,
+  className,
+}: {
+  message: string;
+  onRetry: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex flex-col items-center justify-center gap-2 p-6 text-center",
+        className,
+      )}
+    >
+      <AlertCircle className="h-6 w-6 opacity-80" aria-hidden="true" />
+      <p className="text-sm font-medium">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+      >
+        <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+        重试
+      </button>
+    </div>
+  );
+}
 
 /* ---------- Page 组件 ---------- */
 
 function DashboardPageInner() {
   const me = useAuthStore((s) => s.me);
-  const anyMe = me as (UserInfoExtended | null) | undefined;
-  const nickname = anyMe?.nickname || anyMe?.name || "同学";
+  const nickname = me?.nickname || "同学";
 
-  const subjects = useMemo<SubjectKey[]>(() => {
-    const raw = anyMe?.subjectPreferences;
-    if (!Array.isArray(raw)) return [...SUBJECT_OPTIONS] as SubjectKey[];
-    const filtered = raw.filter((x): x is SubjectKey => typeof x === "string");
-    return filtered.length ? filtered : ([...SUBJECT_OPTIONS] as SubjectKey[]);
-  }, [anyMe]);
+  const [range, setRange] = useState<RankRange>("day");
 
-  const { data: trend, isLoading: trendLoading } = useQuery({
+  // 1) 趋势（KPI / 打卡 / 趋势图共用原始 DashboardOut）
+  const trendQuery = useQuery({
     queryKey: ["dashboard", "trend"],
-    queryFn: async () => {
-      // TODO: 接入后端 /dashboard/progress-trend
-      await new Promise((r) => setTimeout(r, 400));
-      return MOCK_TREND;
-    },
-    placeholderData: MOCK_TREND,
+    queryFn: () => getProgressDashboard(14),
     staleTime: 60_000,
   });
 
-  const { data: radar, isLoading: radarLoading } = useQuery({
+  // 2) 课程进度（KPI 派生源 2：coursesInProgress）
+  const coursesQuery = useQuery({
+    queryKey: ["dashboard", "courses"],
+    queryFn: () => getProgressCourses(),
+    staleTime: 60_000,
+  });
+
+  // 3) 雷达（queryFn 内 Promise.all + 派生，单一消费方）
+  const radarQuery = useQuery({
     queryKey: ["dashboard", "ability-radar"],
     queryFn: async () => {
-      // TODO: 接入后端 /dashboard/ability-radar
-      await new Promise((r) => setTimeout(r, 400));
-      return [MOCK_RADAR_SELF, MOCK_RADAR_PEER];
+      const [dash, prefs] = await Promise.all([getProgressDashboard(14), getMySubjectPreferences()]);
+      // 派生自 GET /api/progress/dashboard.overall_correct_rate + GET /api/users/me/profile.subject_preferences
+      return deriveAbilityRadar(dash.overall_correct_rate, prefs);
     },
-    placeholderData: [MOCK_RADAR_SELF, MOCK_RADAR_PEER],
     staleTime: 60_000,
   });
 
-  const { data: badges, isLoading: badgesLoading } = useQuery({
+  // 4) 徽章墙
+  const badgesQuery = useQuery({
     queryKey: ["dashboard", "badges"],
     queryFn: async () => {
-      // TODO: 接入后端 /badges/my
-      await new Promise((r) => setTimeout(r, 400));
-      return MOCK_BADGES;
+      // 派生自 GET /api/gamification/me/badges
+      const resp = await getMyBadges();
+      return mapBadgesToWall(resp);
     },
-    placeholderData: MOCK_BADGES,
     staleTime: 60_000,
   });
 
-  const { data: points, isLoading: pointsLoading } = useQuery({
+  // 5) 积分卡
+  const pointsQuery = useQuery({
     queryKey: ["dashboard", "points"],
     queryFn: async () => {
-      // TODO: 接入后端 /points/summary
-      await new Promise((r) => setTimeout(r, 400));
-      const base = typeof anyMe?.points === "number" ? anyMe.points : 1480;
-      return {
-        total: base,
-        todayGain: 195,
-        recentGains: MOCK_GAINS,
-      };
+      // 派生自 GET /api/gamification/me/points
+      const resp = await getMyPoints(1, 20);
+      return mapPointsToCard(resp);
     },
-    placeholderData: {
-      total: typeof anyMe?.points === "number" ? anyMe.points : 1480,
-      todayGain: 195,
-      recentGains: MOCK_GAINS,
-    },
-    staleTime: 30_000,
-  });
-
-  const { data: rankData, isLoading: rankLoading } = useQuery({
-    queryKey: ["dashboard", "rank"],
-    queryFn: async () => {
-      // TODO: 接入后端 /dashboard/rank?range=
-      await new Promise((r) => setTimeout(r, 400));
-      const ranges: RankRange[] = ["day", "week", "month"];
-      const out: Parameters<typeof RankList>[0]["data"] = {};
-      for (const r of ranges) {
-        out[r] = ALL_RANGE_LIST.map((row) => ({ ...row, score: row.score + (r === "day" ? 0 : r === "week" ? 1200 : 5000) }));
-      }
-      out.myRank = {
-        day: {
-          rank: 12,
-          nickname: nickname as string,
-          avatar: (anyMe?.avatar as string | null) || null,
-          score: 2480,
-          mine: true,
-          totalPlayers: 128,
-        },
-        week: {
-          rank: 18,
-          nickname: nickname as string,
-          avatar: (anyMe?.avatar as string | null) || null,
-          score: 8600,
-          mine: true,
-          totalPlayers: 128,
-        },
-        month: {
-          rank: 24,
-          nickname: nickname as string,
-          avatar: (anyMe?.avatar as string | null) || null,
-          score: 32000,
-          mine: true,
-          totalPlayers: 128,
-        },
-      };
-      return out;
-    },
-    placeholderData: (() => {
-      const ranges: RankRange[] = ["day", "week", "month"];
-      const out: Parameters<typeof RankList>[0]["data"] = {};
-      for (const r of ranges) {
-        out[r] = ALL_RANGE_LIST.map((row) => ({
-          ...row,
-          score: row.score + (r === "day" ? 0 : r === "week" ? 1200 : 5000),
-        }));
-      }
-      out.myRank = {
-        day: { rank: 12, nickname: nickname as string, avatar: (anyMe?.avatar as string | null) || null, score: 2480, mine: true, totalPlayers: 128 },
-        week: { rank: 18, nickname: nickname as string, avatar: (anyMe?.avatar as string | null) || null, score: 8600, mine: true, totalPlayers: 128 },
-        month: { rank: 24, nickname: nickname as string, avatar: (anyMe?.avatar as string | null) || null, score: 32000, mine: true, totalPlayers: 128 },
-      };
-      return out;
-    })(),
     staleTime: 60_000,
   });
 
-  const kpis = useMemo(
-    () => ({
-      minutesToday: 62,
-      exercisesDone: 28,
-      coursesInProgress: 4,
-      streak: 13,
-      subjects,
-    }),
-    [subjects],
+  // 6) 排行榜（key 含 range，切 tab 触发 refetch）
+  const rankQuery = useQuery({
+    queryKey: ["dashboard", "rank", range],
+    queryFn: async () => {
+      // 派生自 GET /api/gamification/rankings
+      const resp = await getRankings(RANGE_SCOPE[range], "POINTS", 10);
+      const slice = buildRankSlice(resp, range);
+      const data: Parameters<typeof RankList>[0]["data"] = { [range]: slice.list };
+      if (slice.myRank) data.myRank = { [range]: slice.myRank };
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  // 派生：趋势点（翻转成时间正序，末位 = 今天）
+  const trendPoints = useMemo(
+    () => (trendQuery.data ? toProgressTrend(trendQuery.data) : []),
+    [trendQuery.data],
   );
 
-  const streakDays = typeof anyMe?.streak === "number" ? anyMe.streak : kpis.streak;
+  // 派生：KPI 4 卡（依赖 trend + courses 两 query）
+  const kpis = useMemo(() => {
+    if (!trendQuery.data || !coursesQuery.data) return null;
+    // 派生自 GET /api/progress/dashboard + GET /api/progress/courses
+    return deriveDashboardKpis(trendQuery.data, coursesQuery.data);
+  }, [trendQuery.data, coursesQuery.data]);
+
+  // 派生：连续打卡（随 trend 同源）
+  const streak = useMemo(
+    () => (trendQuery.data ? deriveStreakLast7(trendQuery.data) : null),
+    [trendQuery.data],
+  );
+
+  const kpiSourceLoading = trendQuery.isLoading || coursesQuery.isLoading;
+  const kpiSourceError =
+    (trendQuery.isError && !trendQuery.data) || (coursesQuery.isError && !coursesQuery.data);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
@@ -353,39 +226,56 @@ function DashboardPageInner() {
         </div>
       </section>
 
-      {/* KPI 4 卡 */}
+      {/* KPI 4 卡（任一派生源错误 → 整区错误卡，不显示 0 兜底） */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          accent="indigo"
-          title="今日学习时长"
-          value={`${kpis.minutesToday} 分钟`}
-          delta={{ direction: "up", value: "+12% 较昨日" }}
-          icon={<GraduationCap className="h-5 w-5" />}
-        />
-        <KpiCard
-          accent="emerald"
-          title="今日练习题"
-          value={`${kpis.exercisesDone} 道`}
-          delta={{ direction: "up", value: "正确率 82%" }}
-          icon={<BookOpenCheck className="h-5 w-5" />}
-        />
-        <KpiCard
-          accent="amber"
-          title="进行中课程"
-          value={`${kpis.coursesInProgress} 门`}
-          delta={{ direction: "flat", value: "建议一次 focus 2 门" }}
-          icon={<LayoutGrid className="h-5 w-5" />}
-        />
-        <KpiCard
-          accent="violet"
-          title="活跃学科"
-          value={`${kpis.subjects.length} / ${SUBJECT_OPTIONS.length}`}
-          delta={{ direction: "up", value: kpis.subjects.slice(0, 3).map((s) => SUBJECT_LABELS[s]).join("·") }}
-          icon={<Waypoints className="h-5 w-5" />}
-        />
+        {kpiSourceError ? (
+          <DataErrorCard
+            className="sm:col-span-2 lg:col-span-4 min-h-[128px]"
+            message="学习数据加载失败"
+            onRetry={() => {
+              trendQuery.refetch();
+              coursesQuery.refetch();
+            }}
+          />
+        ) : (
+          <>
+            <KpiCard
+              accent="indigo"
+              title="今日学习时长"
+              value={`${kpis?.minutesToday ?? 0} 分钟`}
+              delta={kpis ? minutesDelta(kpis) : undefined}
+              icon={<GraduationCap className="h-5 w-5" />}
+              loading={kpiSourceLoading || !kpis}
+            />
+            <KpiCard
+              accent="emerald"
+              title="今日练习题"
+              value={`${kpis?.exercisesToday ?? 0} 道`}
+              delta={kpis ? exercisesDelta(kpis) : undefined}
+              icon={<BookOpenCheck className="h-5 w-5" />}
+              loading={kpiSourceLoading || !kpis}
+            />
+            <KpiCard
+              accent="amber"
+              title="进行中课程"
+              value={`${kpis?.coursesInProgress ?? 0} 门`}
+              delta={{ direction: "flat", value: "建议一次 focus 2 门" }}
+              icon={<LayoutGrid className="h-5 w-5" />}
+              loading={kpiSourceLoading || !kpis}
+            />
+            <KpiCard
+              accent="violet"
+              title="连续打卡"
+              value={`${kpis?.streakDays ?? 0} 天`}
+              delta={kpis ? streakDelta(kpis) : undefined}
+              icon={<Flame className="h-5 w-5" />}
+              loading={kpiSourceLoading || !kpis}
+            />
+          </>
+        )}
       </section>
 
-      {/* 快捷入口 CTA：串联主要页面（修复 dashboard 只能点侧栏，没有显眼的跳转卡片的问题） */}
+      {/* 快捷入口 CTA：串联主要页面 */}
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Link
           href="/courses"
@@ -441,62 +331,95 @@ function DashboardPageInner() {
 
       {/* 第 2 行：连续打卡 + 积分卡 */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <StreakBadge
-          className="lg:col-span-1"
-          streakDays={streakDays}
-          last7Days={["done", "done", "partial", "done", "done", "partial", "today"]}
-        />
-        <PointCard
-          className="lg:col-span-2"
-          total={points?.total ?? 0}
-          todayGain={points?.todayGain ?? 0}
-          recentGains={points?.recentGains ?? []}
-          loading={pointsLoading}
-        />
+        {trendQuery.isError && !trendQuery.data ? (
+          <DataErrorCard
+            className="lg:col-span-1"
+            message="学习数据加载失败"
+            onRetry={() => trendQuery.refetch()}
+          />
+        ) : !streak ? (
+          <div className="lg:col-span-1 animate-pulse bg-muted rounded-xl h-48" aria-hidden="true" />
+        ) : (
+          <StreakBadge
+            className="lg:col-span-1"
+            streakDays={streak.streakDays}
+            last7Days={streak.last7Days}
+          />
+        )}
+        {pointsQuery.isError && !pointsQuery.data ? (
+          <DataErrorCard
+            className="lg:col-span-2"
+            message="积分数据加载失败"
+            onRetry={() => pointsQuery.refetch()}
+          />
+        ) : (
+          <PointCard
+            className="lg:col-span-2"
+            total={pointsQuery.data?.total ?? 0}
+            todayGain={pointsQuery.data?.todayGain ?? 0}
+            recentGains={pointsQuery.data?.recentGains ?? []}
+            loading={pointsQuery.isLoading}
+          />
+        )}
       </section>
 
       {/* 第 3 行：折线 + 雷达 */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <ProgressTrendChart
           className="lg:col-span-2"
-          data={trend ?? []}
-          loading={trendLoading}
+          data={trendPoints}
+          loading={trendQuery.isLoading}
+          empty={!!trendQuery.data && trendPoints.length === 0}
+          error={trendQuery.isError && !trendQuery.data}
+          onRetry={() => trendQuery.refetch()}
+          description="统计每天学习时长，单位分钟。"
         />
         <AbilityRadarChart
           className="lg:col-span-1"
-          series={radar ?? []}
-          loading={radarLoading}
-          description="对比「我的能力」与「全班平均」，一眼看到优势和待提升点。"
+          series={radarQuery.data ?? []}
+          loading={radarQuery.isLoading}
+          empty={!!radarQuery.data && radarQuery.data.length === 0}
+          error={radarQuery.isError && !radarQuery.data}
+          onRetry={() => radarQuery.refetch()}
         />
       </section>
 
       {/* 第 4 行：徽章墙 + 排行榜 */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <BadgeWallGrid
-          className="xl:col-span-2"
-          badges={badges ?? []}
-          minCols={5}
-          description={badgesLoading ? "加载中…" : undefined}
-        />
-        <RankList
-          className="xl:col-span-1"
-          data={rankData ?? {}}
-          loading={rankLoading}
-          topN={10}
-        />
+        {badgesQuery.isError && !badgesQuery.data ? (
+          <DataErrorCard
+            className="xl:col-span-2"
+            message="徽章数据加载失败"
+            onRetry={() => badgesQuery.refetch()}
+          />
+        ) : (
+          <BadgeWallGrid
+            className="xl:col-span-2"
+            badges={badgesQuery.data ?? []}
+            minCols={5}
+            description={badgesQuery.isLoading ? "加载中…" : undefined}
+          />
+        )}
+        {rankQuery.isError && !rankQuery.data ? (
+          <DataErrorCard
+            className="xl:col-span-1"
+            message="排行榜加载失败"
+            onRetry={() => rankQuery.refetch()}
+          />
+        ) : (
+          <RankList
+            className="xl:col-span-1"
+            data={rankQuery.data ?? {}}
+            loading={rankQuery.isLoading}
+            topN={10}
+            defaultRange={range}
+            onRangeChange={setRange}
+          />
+        )}
       </section>
     </div>
   );
 }
-
-type UserInfoExtended = {
-  nickname?: string | null;
-  name?: string | null;
-  avatar?: string | null;
-  points?: number | null;
-  subjectPreferences?: unknown;
-  streak?: number | null;
-};
 
 export default function DashboardPage() {
   return (

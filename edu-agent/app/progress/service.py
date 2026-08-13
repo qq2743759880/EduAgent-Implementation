@@ -189,7 +189,7 @@ async def _grade_answers(
 async def submit_homework(user_id: int, req: HomeworkSubmitIn) -> SubmitOut:
     """提交一次课次作业（一课次一次作业，homework_id = session_id）。"""
     sess = await fetch_one(
-        "SELECT id, session_title, module_id FROM curriculum_session WHERE id=%s",
+        "SELECT id, session_title, module_id FROM curriculum_session WHERE id=%s AND yn=1",
         (req.session_id,),
     )
     if not sess:
@@ -450,10 +450,10 @@ async def get_course_progress(user_id: int, series_id: int | None = None) -> lis
         return []
 
     sids = [int(s["id"]) for s in series_list]
-    # 取所有模块 + 课次 tree（真实列：module_name、stage_no）
+    # 取所有模块 + 课次 tree（真实列：module_name、stage_no）；过滤软删 yn=1
     modules = await fetch_all(
         f"SELECT id, series_id, module_name AS module_title, stage_no AS module_no FROM curriculum_module "
-        f"WHERE series_id IN ({','.join(['%s']*len(sids))}) ORDER BY series_id, stage_no",
+        f"WHERE series_id IN ({','.join(['%s']*len(sids))}) AND yn=1 ORDER BY series_id, stage_no",
         tuple(sids),
     )
     modules_by_series: dict[int, list[dict]] = {}
@@ -466,7 +466,7 @@ async def get_course_progress(user_id: int, series_id: int | None = None) -> lis
         sessions = await fetch_all(
             f"SELECT id, module_id, session_title, session_no, teaching_date, duration_minutes "
             f"FROM curriculum_session "
-            f"WHERE module_id IN ({','.join(['%s']*len(all_mids))}) ORDER BY module_id, session_no",
+            f"WHERE module_id IN ({','.join(['%s']*len(all_mids))}) AND yn=1 ORDER BY module_id, session_no",
             tuple(all_mids),
         )
         sessions_by_module = {}

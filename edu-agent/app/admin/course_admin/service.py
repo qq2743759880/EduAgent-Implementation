@@ -100,18 +100,14 @@ async def list_series_admin(
     keyword: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
-    yn: Optional[int] = None,
 ) -> SeriesListResponse:
-    """管理员版本：不限 sale_status，允许 yn 过滤。"""
+    """管理员版本：不限 sale_status（下架语义用 sale_status 表达；series 表无 yn 列，不做 yn 过滤）。"""
     page = max(1, page)
     page_size = max(1, min(page_size, 100))
     offset = (page - 1) * page_size
 
     where = ["1=1"]
     params: list = []
-    if yn is not None:
-        where.append("s.yn = %s")
-        params.append(yn)
     if subject_code:
         where.append("s.subject_code = %s")
         params.append(subject_code)
@@ -133,8 +129,8 @@ async def list_series_admin(
             s.*,
             (SELECT COUNT(*) FROM curriculum_cohort c WHERE c.series_id = s.id AND c.yn = 1) AS cohort_count,
             IFNULL((SELECT COUNT(*) FROM curriculum_module m
-                     JOIN curriculum_session ss ON ss.module_id = m.id
-                    WHERE m.series_id = s.id), 0) AS total_session_count
+                     JOIN curriculum_session ss ON ss.module_id = m.id AND ss.yn = 1
+                    WHERE m.series_id = s.id AND m.yn = 1), 0) AS total_session_count
         FROM curriculum_series s
         WHERE {where_sql}
         ORDER BY s.sort_no ASC, s.id DESC
@@ -159,11 +155,14 @@ async def get_series_admin(series_id: int) -> SeriesDetailResponse:
     if not series:
         raise BizError(40401, f"系列不存在 id={series_id}")
     cohorts = await fetch_all("SELECT * FROM curriculum_cohort WHERE series_id = %s ORDER BY id", (series_id,))
-    modules_rows = await fetch_all("SELECT * FROM curriculum_module WHERE series_id = %s ORDER BY stage_no, id", (series_id,))
+    modules_rows = await fetch_all(
+        "SELECT * FROM curriculum_module WHERE series_id = %s AND yn = 1 ORDER BY stage_no, id",
+        (series_id,),
+    )
     module_ids = [m["id"] for m in modules_rows]
     if module_ids:
         sessions_rows = await fetch_all(
-            f"SELECT * FROM curriculum_session WHERE module_id IN ({','.join(['%s']*len(module_ids))}) ORDER BY module_id, session_no",
+            f"SELECT * FROM curriculum_session WHERE module_id IN ({','.join(['%s']*len(module_ids))}) AND yn = 1 ORDER BY module_id, session_no",
             tuple(module_ids),
         )
     else:
@@ -217,14 +216,6 @@ async def update_series(series_id: int, payload: SeriesAdminUpdate) -> None:
     set_sql, params = _build_set_clause(d)
     params.append(series_id)
     await execute_write(f"UPDATE curriculum_series {set_sql}, updated_at = NOW() WHERE id = %s", tuple(params))
-
-
-async def toggle_series_yn(series_id: int, yn: int) -> None:
-    if yn not in (0, 1):
-        raise BizError(40001, "yn 只能是 0 或 1")
-    n = await execute_write("UPDATE curriculum_series SET yn = %s, updated_at = NOW() WHERE id = %s", (yn, series_id))
-    if n == 0:
-        raise BizError(40401, f"系列不存在 id={series_id}")
 
 
 # ============================================================
@@ -307,15 +298,30 @@ async def update_module(module_id: int, payload: ModuleAdminUpdate) -> None:
 
 
 async def delete_module(module_id: int) -> None:
-    # 删模块之前清空其下 session（软删无所谓）
-    await execute_write("DELETE FROM curriculum_session WHERE module_id = %s", (module_id,))
-    n = await execute_write("DELETE FROM curriculum_module WHERE id = %s", (module_id,))
+    """软删模块：级联软删其下全部课次（yn=0），并解除这些课次绑定的视频资产，避免孤儿资产（红线 2 / 对抗 #3）。"""
+    async with transaction() as (conn, cur):
+        # 1) 解除该模块下所有课次绑定的视频资产（session_id → NULL），消除「指向不存在课次」的幽灵数据
+        await cur.execute(
+            "UPDATE admin_course_video_asset SET session_id = NULL "
+            "WHERE session_id IN (SELECT id FROM curriculum_session WHERE module_id = %s)",
+            (module_id,),
+        )
+        # 2) 级联软删课次（禁止物理 DELETE）
+        await cur.execute(
+            "UPDATE curriculum_session SET yn = 0, updated_at = NOW() WHERE module_id = %s",
+            (module_id,),
+        )
+        # 3) 软删模块本身
+        n = await cur.execute(
+            "UPDATE curriculum_module SET yn = 0, updated_at = NOW() WHERE id = %s",
+            (module_id,),
+        )
     if n == 0:
         raise BizError(40401, f"模块不存在 id={module_id}")
 
 
 async def list_modules_admin(series_id: Optional[int] = None) -> list[Module]:
-    sql = "SELECT * FROM curriculum_module WHERE 1=1"
+    sql = "SELECT * FROM curriculum_module WHERE yn = 1"
     params: tuple = ()
     if series_id is not None:
         sql += " AND series_id = %s"
@@ -357,13 +363,22 @@ async def update_session(session_id: int, payload: SessionAdminUpdate) -> None:
 
 
 async def delete_session(session_id: int) -> None:
-    n = await execute_write("DELETE FROM curriculum_session WHERE id = %s", (session_id,))
+    """软删课次（yn=0）：先解除其绑定的视频资产（session_id → NULL），避免孤儿资产（红线 2 / 对抗 #3）。"""
+    async with transaction() as (conn, cur):
+        await cur.execute(
+            "UPDATE admin_course_video_asset SET session_id = NULL WHERE session_id = %s",
+            (session_id,),
+        )
+        n = await cur.execute(
+            "UPDATE curriculum_session SET yn = 0, updated_at = NOW() WHERE id = %s",
+            (session_id,),
+        )
     if n == 0:
         raise BizError(40401, f"课次不存在 id={session_id}")
 
 
 async def list_sessions_admin(module_id: Optional[int] = None) -> list[Session]:
-    sql = "SELECT * FROM curriculum_session WHERE 1=1"
+    sql = "SELECT * FROM curriculum_session WHERE yn = 1"
     params: tuple = ()
     if module_id is not None:
         sql += " AND module_id = %s"
@@ -466,7 +481,7 @@ async def bind_video_to_session(req: BindVideoToSessionRequest) -> VideoAsset:
     row = await fetch_one("SELECT * FROM admin_course_video_asset WHERE asset_id = %s", (req.asset_id,))
     if not row:
         raise BizError(40401, f"视频资产不存在 asset_id={req.asset_id}")
-    session = await fetch_one("SELECT id FROM curriculum_session WHERE id = %s LIMIT 1", (req.session_id,))
+    session = await fetch_one("SELECT id FROM curriculum_session WHERE id = %s AND yn = 1 LIMIT 1", (req.session_id,))
     if not session:
         raise BizError(40401, f"课次不存在 session_id={req.session_id}")
     await execute_write(

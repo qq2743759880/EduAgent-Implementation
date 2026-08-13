@@ -33,6 +33,19 @@ export function onApiUnauthorized(handler: UnauthorizedHandler) {
   _onUnauthorized = handler;
 }
 
+/**
+ * 是否为认证类接口（登录 / 注册）。
+ *
+ * 这类接口的 401/403 是「业务性失败」（密码错误 / 账号禁用 / 账号已存在），
+ * 应由 LoginForm / RegisterForm 原地渲染表单错误横幅（root.server / setError），
+ * 而非触发全局登出 + `location.href = "/login"` 重载 —— 否则页面重载会清空
+ * 刚设置好的错误横幅，用户看不到任何失败原因（task03 复测 #1）。
+ */
+export function isAuthEndpoint(url: string | undefined): boolean {
+  if (!url) return false;
+  return /\/api\/auth\/(?:login|register)(?:[?#]|$)/.test(url);
+}
+
 const API_BASE_URL =
   (typeof process !== "undefined" &&
     process.env &&
@@ -76,12 +89,22 @@ api.interceptors.response.use(
     const rawData = error.response?.data;
     let payload: ApiErrorPayload;
     /* 兼容响应体结构：
+       0) 网络错误 / 连接拒绝 / 超时：无响应体（error.response 为 undefined），
+          status 保留 0，输出明确文案，不伪装成 500（对抗 #5 修复）
        1) 标准：{ code, message, detail }  ← AppException / HTTPException handler / 422 handler 都会返回这种
        2) FastAPI 默认 HTTPException：{ detail: { code, message, detail? } }  ← 走不到我们 handler 的降级场景
        3) FastAPI 默认校验错误：{ detail: [{ loc, msg, type }] }
-       4) 网络错误 / 无响应体：用 error.message
+       4) 有响应体但结构未知：用 error.message
     */
-    if (rawData && typeof rawData === "object") {
+    if (!error.response) {
+      payload = {
+        code: 0,
+        message:
+          error.code === "ECONNABORTED"
+            ? "请求超时，请检查网络后重试"
+            : "网络错误，无法连接后端服务，请检查网络",
+      };
+    } else if (rawData && typeof rawData === "object") {
       const obj = rawData as ApiErrorPayload & {
         detail?: unknown;
       };
@@ -120,13 +143,18 @@ api.interceptors.response.use(
       payload = { message: error.message || "网络错误" };
     }
     if (status === 401 || status === 403) {
-      try {
-        await _onUnauthorized?.(status);
-      } catch {
-        /* ignore handler own errors, keep propagating ApiError */
+      // 登录/注册等认证接口失败：由表单页原地渲染错误横幅（root.server / setError），
+      // 不触发全局登出 + 页面重载（否则重载会清空错误提示，用户看不到失败原因）。
+      // 仅对非认证接口的 401/403 执行全局回调（清 token + 跳 /login）。
+      if (!isAuthEndpoint(error.config?.url)) {
+        try {
+          await _onUnauthorized?.(status);
+        } catch {
+          /* ignore handler own errors, keep propagating ApiError */
+        }
       }
     }
-    return Promise.reject(new ApiError(status || 500, payload));
+    return Promise.reject(new ApiError(status, payload));
   },
 );
 

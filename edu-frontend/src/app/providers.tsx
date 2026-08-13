@@ -1,6 +1,6 @@
 "use client";
 
-import { QueryClientProvider } from "@tanstack/react-query";
+import { HydrationBoundary, QueryClientProvider, type DehydratedState } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Toaster, toast } from "sonner";
@@ -9,7 +9,14 @@ import getQueryClient from "@/lib/query-client";
 import { useAuthStore } from "@/lib/auth-client";
 import { GlobalChatInjection } from "@/components/chat/GlobalChatInjection";
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({
+  children,
+  dehydratedState,
+}: {
+  children: ReactNode;
+  /** 可选：layout 级 prefetch 壳数据脱水状态；root layout 不传 → no-op（HydrationBoundary state=undefined 等效透传 children） */
+  dehydratedState?: DehydratedState;
+}) {
   const queryClient = getQueryClient();
   const hydratedRef = useRef(false);
 
@@ -35,7 +42,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <HydrationBoundary state={dehydratedState}>{children}</HydrationBoundary>
       <GlobalChatInjection />
       <Toaster
         position="top-center"

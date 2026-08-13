@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import typing
 from contextlib import asynccontextmanager
 
@@ -26,19 +27,77 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymilvus import MilvusClient
 from minio import Minio
 
+from app.common.exceptions import DatabaseError
 from app.common.logging import logger
 from app.config import settings
 
 
 # ============================================================
-# 1. MySQL 连接池（全局单例）
+# MySQL 连接池（全局单例）
 # ============================================================
 _mysql_pool: Pool | None = None
+# 并发闸：限制同时 acquire 的连接数 ≤ MYSQL_POOL_SIZE（asyncmy 的 Pool.acquire 不支持
+# timeout 参数，池满时 acquire 会无限排队 → 单点并发写即可占满连接挂死全后端）。
+# 先取信号量（带超时）再取连接，从根上消除无限排队（task04 #2）。
+_pool_semaphore: asyncio.Semaphore | None = None
+
+
+async def _pool_acquire(pool: Pool) -> Connection:
+    """
+    从连接池取连接：并发闸 + 超时 + 重试（task04 #2 并发写挂死修复）。
+
+    背景：pool maxsize 有限，并发写 + 行锁竞争时 acquire 无超时会无限排队，
+    单点并发写即可占满全部连接 → 全后端 MySQL 类 API 挂死。
+    方案：信号量把并发 acquire 数限制在 maxsize 内；取信号量与取连接均设
+    MYSQL_POOL_ACQUIRE_TIMEOUT 超时，超时短暂退避重试 MYSQL_POOL_ACQUIRE_RETRIES 次，
+    仍失败抛 DatabaseError（业务侧 5xx，绝不挂死）。
+    """
+    timeout = float(getattr(settings, "MYSQL_POOL_ACQUIRE_TIMEOUT", 10.0) or 10.0)
+    retries = max(1, int(getattr(settings, "MYSQL_POOL_ACQUIRE_RETRIES", 2) or 2))
+    sem = _pool_semaphore
+    if sem is None:
+        # 兜底：init_mysql 未执行（如单测直连）时退化为无闸直取
+        return await pool.acquire()
+    last_exc: Exception | None = None
+    for attempt in range(retries):
+        try:
+            await asyncio.wait_for(sem.acquire(), timeout=timeout)
+        except asyncio.TimeoutError as exc:
+            last_exc = exc
+            logger.warning(
+                f"[mysql.pool] 并发闸 acquire 超时（{timeout}s，第 {attempt + 1}/{retries} 次，"
+                f"maxsize={settings.MYSQL_POOL_SIZE}），退避后重试..."
+            )
+            await asyncio.sleep(0.2 * (attempt + 1))
+            continue
+        try:
+            return await asyncio.wait_for(pool.acquire(), timeout=timeout)
+        except asyncio.TimeoutError as exc:
+            last_exc = exc
+            sem.release()
+            logger.warning(
+                f"[mysql.pool] 连接 acquire 超时（{timeout}s，第 {attempt + 1}/{retries} 次），退避后重试..."
+            )
+            await asyncio.sleep(0.2 * (attempt + 1))
+        except Exception:
+            sem.release()
+            raise
+    raise DatabaseError(
+        "MySQL 连接池繁忙",
+        detail=f"pool acquire 超时（{timeout}s × {retries} 次），连接数可能已达 maxsize",
+    ) from last_exc
+
+
+def _pool_release(pool: Pool, conn: Connection) -> None:
+    """归还连接 + 释放并发闸（与 _pool_acquire 成对使用，缺一不可）。"""
+    pool.release(conn)
+    if _pool_semaphore is not None:
+        _pool_semaphore.release()
 
 
 async def init_mysql():
     """初始化 MySQL 连接池（asyncmy Cython 高性能版，参数与 aiomysql 兼容）。"""
-    global _mysql_pool
+    global _mysql_pool, _pool_semaphore
     logger.info(f"初始化 MySQL 连接池: {settings.MYSQL_HOST}:{settings.MYSQL_PORT} (asyncmy)")
     _mysql_pool = await asyncmy.create_pool(
         host=settings.MYSQL_HOST,
@@ -52,15 +111,17 @@ async def init_mysql():
         minsize=1,
         maxsize=settings.MYSQL_POOL_SIZE,
     )
+    _pool_semaphore = asyncio.Semaphore(int(settings.MYSQL_POOL_SIZE))
     logger.info("MySQL 连接池已创建")
 
 
 async def close_mysql():
-    global _mysql_pool
+    global _mysql_pool, _pool_semaphore
     if _mysql_pool is not None:
         _mysql_pool.close()
         await _mysql_pool.wait_closed()
         _mysql_pool = None
+        _pool_semaphore = None
         logger.info("MySQL 连接池已关闭")
 
 
@@ -290,14 +351,17 @@ async def transaction():
     """
     事务上下文管理器。保证多条 SQL 同时成功或同时回滚。
 
-    用法：
+    用法（⚠️ 重要）：
         async with transaction() as (conn, cur):
             await cur.execute("INSERT sys_user ...", args1)
-            user_id = cur.lastrowid
             await cur.execute("INSERT sys_user_auth ...", (user_id, ...))
+
+    注意：事务内**必须**用上下文提供的共享连接 cur 执行 SQL。
+    禁止在事务块内调用 execute_write()/fetch_one()/fetch_all() —— 它们会
+    从连接池 acquire **独立连接**并自动 commit，导致"事务形同虚设"（task04 #1 根因）。
     """
     pool = get_mysql_pool()
-    conn: Connection = await pool.acquire()
+    conn: Connection = await _pool_acquire(pool)
     try:
         async with conn.cursor() as cur:
             try:
@@ -307,7 +371,7 @@ async def transaction():
                 await conn.rollback()
                 raise
     finally:
-        pool.release(conn)
+        _pool_release(pool, conn)
 
 
 # ============================================================
@@ -316,7 +380,8 @@ async def transaction():
 async def fetch_one(sql: str, args: tuple | None = None) -> dict | None:
     """查询单行。返回 dict（列名→值），无数据返回 None。"""
     pool = get_mysql_pool()
-    async with pool.acquire() as conn:
+    conn = await _pool_acquire(pool)
+    try:
         async with conn.cursor() as cur:
             await cur.execute(sql, args or ())
             if cur.description is None:
@@ -326,12 +391,15 @@ async def fetch_one(sql: str, args: tuple | None = None) -> dict | None:
             if row is None:
                 return None
             return dict(zip(cols, row))
+    finally:
+        _pool_release(pool, conn)
 
 
 async def fetch_all(sql: str, args: tuple | None = None) -> list[dict]:
     """查询多行。返回 list[dict]，无数据返回 []。"""
     pool = get_mysql_pool()
-    async with pool.acquire() as conn:
+    conn = await _pool_acquire(pool)
+    try:
         async with conn.cursor() as cur:
             await cur.execute(sql, args or ())
             if cur.description is None:
@@ -339,6 +407,8 @@ async def fetch_all(sql: str, args: tuple | None = None) -> list[dict]:
             cols = [d[0] for d in cur.description]
             rows = await cur.fetchall()
             return [dict(zip(cols, r)) for r in rows]
+    finally:
+        _pool_release(pool, conn)
 
 
 async def execute_write(
@@ -348,12 +418,13 @@ async def execute_write(
     commit: bool = True,
 ) -> int:
     """
-    单条写操作。
+    单条写操作（独立连接 + 自动提交；只用于单语句场景）。
     INSERT 返回 lastrowid；UPDATE/DELETE 返回受影响行数。
-    多语句事务请用 transaction() CM。
+    多语句原子事务请用 transaction() CM（事务内用其共享 cur 执行，勿再嵌套本函数）。
     """
     pool = get_mysql_pool()
-    async with pool.acquire() as conn:
+    conn = await _pool_acquire(pool)
+    try:
         async with conn.cursor() as cur:
             await cur.execute(sql, args or ())
             if commit:
@@ -361,3 +432,5 @@ async def execute_write(
             if sql.strip().upper().startswith("INSERT"):
                 return typing.cast(int, cur.lastrowid)
             return typing.cast(int, cur.rowcount)
+    finally:
+        _pool_release(pool, conn)

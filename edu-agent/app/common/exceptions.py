@@ -24,13 +24,45 @@ class AppException(Exception):
         code: int,
         message: str,
         detail: str | None = None,
-        http_status: int = 400,
+        http_status: int | None = None,
     ):
         self.code = code              # 业务错误码
         self.message = message        # 用户可见的错误信息（中文）
         self.detail = detail          # 内部调试信息（可选）
+        if http_status is None:
+            http_status = _http_status_for_code(code)
         self.http_status = http_status
         super().__init__(message)
+
+
+def _http_status_for_code(code: int) -> int:
+    """
+    业务错误码 → HTTP 状态码（按码段前缀映射，REST 语义对齐）。
+
+    约定：业务码前 3 位即 HTTP 语义段——
+      400xx → 400（客户端参数/业务规则错误）
+      401xx → 401（未认证 / 凭证失效）
+      403xx → 403（无权限 / 资源保护）
+      404xx → 404（资源不存在）
+      409xx → 409（冲突：重复编码等）
+      5xxxx → 500（服务端错误，如 500001 反馈写入失败）
+    特殊类（NotFoundError/LLMError/DatabaseError/ValidationError 字符串子码）
+    会显式传入 http_status，不落入本映射。
+    """
+    s = str(code)
+    if s.startswith("409"):
+        return 409
+    if s.startswith("404"):
+        return 404
+    if s.startswith("403"):
+        return 403
+    if s.startswith("401"):
+        return 401
+    if s.startswith("400"):
+        return 400
+    if s.startswith("5"):
+        return 500
+    return 400
 
 
 class NotFoundError(AppException):

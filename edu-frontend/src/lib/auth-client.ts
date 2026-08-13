@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { AxiosResponse } from "axios";
-import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { api, onApiUnauthorized, ApiError } from "./api-client";
@@ -349,28 +348,32 @@ api.interceptors.request.use(
   (err) => Promise.reject(err),
 );
 
-/** 401/403：静默登出 + 跳登录 */
+/** 401/403 全局回调（fe-task00 / D4 语义修正）：
+ *  - 仅 401 登出跳登录（token 失效信号）；
+ *  - 403 是「该账号无权访问该资源」——保会话 + toast「无权限」+ console.error，不登出不跳转。
+ *    （student 偶发命中 admin 端点 403 不再被误杀会话，与 fx-task02 验收「student 拦截 + toast 无权限」一致） */
 onApiUnauthorized((status) => {
   const s = useAuthStore.getState();
   const wasLoggedIn = Boolean(s.token);
-  s.logout({ silent: true });
-  if (status === 401 && wasLoggedIn) {
-    toast.warning("登录已过期，请重新登录");
-  }
-  if (typeof window === "undefined") return;
-  const cur = window.location.pathname + window.location.search;
-  const loginUrl = new URL(window.location.origin + "/login");
-  if (cur && cur !== "/login" && !cur.startsWith("/login?")) {
-    loginUrl.searchParams.set("redirect", cur);
-  }
-  if (typeof useRouter === "function") {
-    try {
-      /* useRouter is a hook，不能在模块顶层直接调用；留 window 降级即可 */
-    } catch {
-      /* ignore */
+  if (status === 401) {
+    s.logout({ silent: true });
+    if (wasLoggedIn) toast.warning("登录已过期，请重新登录");
+    if (typeof window === "undefined") return;
+    const cur = window.location.pathname + window.location.search;
+    /* 兜底：当前已在认证页（/login /register）时不做整页重载 ——
+       api-client 拦截器已对 login/register 接口跳过本回调；此处防御
+       未来新增认证接口漏判，避免重载清空表单错误横幅 */
+    if (/^\/(?:login|register)(?:[?#]|$)/.test(cur)) return;
+    const loginUrl = new URL(window.location.origin + "/login");
+    if (cur && cur !== "/login" && !cur.startsWith("/login?")) {
+      loginUrl.searchParams.set("redirect", cur);
     }
+    window.location.href = loginUrl.pathname + loginUrl.search;
+  } else if (status === 403) {
+    console.error("[auth] 无权限访问资源（403）", { path: window.location.pathname });
+    toast.error("无权限", { description: "当前账号无权访问该资源" });
+    /* 不 logout、不整页跳转 —— 保会话 */
   }
-  window.location.href = loginUrl.pathname + loginUrl.search;
 });
 
 export default useAuthStore;

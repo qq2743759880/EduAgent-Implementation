@@ -76,8 +76,8 @@ async def list_series(
             IFNULL((
                 SELECT COUNT(*)
                   FROM curriculum_module m
-                  JOIN curriculum_session ss ON ss.module_id = m.id
-                 WHERE m.series_id = s.id
+                  JOIN curriculum_session ss ON ss.module_id = m.id AND ss.yn = 1
+                 WHERE m.series_id = s.id AND m.yn = 1
             ), 0) AS total_session_count
         FROM curriculum_series s
         WHERE {where_sql}
@@ -131,7 +131,7 @@ async def list_cohorts(series_id: int) -> list[Cohort]:
 # ============================================================
 async def list_modules(series_id: int, include_sessions: bool = False) -> list[Module]:
     rows = await fetch_all(
-        "SELECT * FROM curriculum_module WHERE series_id = %s ORDER BY stage_no ASC, id ASC",
+        "SELECT * FROM curriculum_module WHERE series_id = %s AND yn = 1 ORDER BY stage_no ASC, id ASC",
         (series_id,),
     ) or []
     modules = [_row_to_module(r) for r in rows]
@@ -177,7 +177,7 @@ async def _get_sessions_grouped(module_ids: Iterable[int]) -> dict[int, list[Ses
         return {}
     placeholders = ", ".join(["%s"] * len(ids))
     rows = await fetch_all(
-        f"SELECT * FROM curriculum_session WHERE module_id IN ({placeholders}) "
+        f"SELECT * FROM curriculum_session WHERE module_id IN ({placeholders}) AND yn = 1 "
         f"ORDER BY module_id ASC, session_no ASC",
         ids,
     ) or []

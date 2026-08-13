@@ -50,7 +50,6 @@ async def admin_list_series(
     subject_code: Optional[str] = None,
     level_code: Optional[str] = None,
     keyword: Optional[str] = None,
-    yn: Optional[int] = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ):
@@ -60,7 +59,6 @@ async def admin_list_series(
         keyword=keyword,
         page=page,
         page_size=page_size,
-        yn=yn,
     )
 
 
@@ -87,12 +85,6 @@ async def admin_create_series(
 async def admin_update_series(series_id: int, payload: SeriesAdminUpdate):
     await service.update_series(series_id, payload)
     return {"updated": True, "id": series_id}
-
-
-@router.post("/series/{series_id}/yn", response_model=dict)
-async def admin_toggle_series_yn(series_id: int, yn: int = Query(..., ge=0, le=1)):
-    await service.toggle_series_yn(series_id, yn)
-    return {"updated": True, "id": series_id, "yn": yn}
 
 
 # ============================================================

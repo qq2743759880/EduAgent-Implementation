@@ -236,6 +236,10 @@ async def _find_user_by_account(account: str) -> dict | None:
     """
     登录辅助：用「账号」三选一（account 登录账号 / 手机号 / 邮箱）
     JOIN 查用户 + 密码哈希 + 角色。
+
+    注意：不去 yn=1 过滤 —— 是否可用由 login 显式检查 status/yn 双字段，
+    否则仅 status=0 禁用时查询直接查不到用户，会误报「账号或密码错误」，
+    使 AUTH_USER_DISABLED 分支成为死代码。
     """
     sql = """
         SELECT
@@ -249,11 +253,12 @@ async def _find_user_by_account(account: str) -> dict | None:
             u.gender       AS gender,
             u.avatar_url   AS avatar_url,
             u.yn           AS yn,
+            u.status       AS status,
             a.password_hash AS password_hash,
             a.role_code    AS role_code
         FROM sys_user u
         INNER JOIN sys_user_auth a ON a.user_id = u.id
-        WHERE u.yn = 1 AND (u.account = %s OR u.mobile = %s OR u.email = %s)
+        WHERE (u.account = %s OR u.mobile = %s OR u.email = %s)
         LIMIT 1
     """
     return await fetch_one(sql, (account, account, account))
@@ -264,11 +269,14 @@ async def login_user(req: UserLogin) -> LoginResponse:
     用户登录。返回 LoginResponse（双 Token + 用户信息）。
 
     密码错和账号不存在统一返回「账号或密码错误」—— 防止攻击者枚举已注册账号。
+    禁用检查：yn=0（注销/删除）或 status=0（管理员禁用）任一命中 → AUTH_USER_DISABLED。
     """
     row = await _find_user_by_account(req.account)
     if row is None:
         raise ValidationError("账号或密码错误", code="AUTH_LOGIN_FAILED")
-    if int(row["yn"]) != 1:
+    # 注意：不能用 `row["status"] or 1` —— status=0 是 falsy，会被误替换成 1，禁用判定失效
+    status_val = row.get("status")
+    if int(row["yn"]) != 1 or (status_val is not None and int(status_val) != 1):
         raise ValidationError("该账号已被禁用，请联系管理员", code="AUTH_USER_DISABLED")
 
     pwd_hash: str = row["password_hash"] or ""

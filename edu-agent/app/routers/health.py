@@ -47,11 +47,9 @@ async def health_detail():
 
     # 检查 MySQL
     try:
-        from app.database import get_mysql_pool
-        pool = get_mysql_pool()
-        async with pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute("SELECT 1")
+        from app.database import fetch_one
+        # 走统一并发闸（_pool_acquire/_pool_release），避免直连绕过信号量计数
+        await fetch_one("SELECT 1")
         results["mysql"] = "ok"
     except Exception as e:
         logger.error(f"MySQL 健康检查失败: {e}")

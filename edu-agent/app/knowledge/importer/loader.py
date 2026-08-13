@@ -31,13 +31,28 @@ COLLECTION_NAME = settings.MILVUS_COLLECTION
 
 
 def get_milvus_client() -> MilvusClient:
-    """获取 MilvusClient 实例
+    """获取 MilvusClient 实例（优先全局单例，兜底新建带超时实例）。
 
-    注意: 实际项目应从 app.database 获取全局单例
-    这里为了独立使用，创建新实例（URI 统一走 settings.MILVUS_URI）
+    修复（task04 修正轮 2）：此前每次调用都新建 MilvusClient 实例且不传 timeout，
+    Milvus 不可达时 pymilvus 默认 10s 连接超时 → 调用方（async 路由）同步等待 10s，
+    阻塞 asyncio 事件循环等效 DoS。现在：
+    1) 优先复用 app.database 全局单例：连接复用 + DEBUG 下已配置 3s 超时；
+    2) 单例未初始化（启动时 Milvus 不可达被降级跳过，get_milvus_client 抛
+       RuntimeError）→ 新建兜底实例，显式传 timeout=3.0（pymilvus 默认 10s），
+       不可达时快速失败，不长时间阻塞调用方。
+
+    注意：本函数仍是同步阻塞调用，P1 导入管道在 anyio 线程池执行没问题；
+    async 路由中调用必须自行移出事件循环（anyio.to_thread.run_sync + wait_for）。
     """
-    client = MilvusClient(uri=settings.MILVUS_URI, token=settings.MILVUS_TOKEN or None)
-    return client
+    try:
+        from app.database import get_milvus_client as _db_get_client
+        return _db_get_client()
+    except Exception:
+        return MilvusClient(
+            uri=settings.MILVUS_URI,
+            token=settings.MILVUS_TOKEN or None,
+            timeout=3.0,
+        )
 
 
 def ensure_collection_exists() -> bool:

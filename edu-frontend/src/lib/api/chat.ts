@@ -2,7 +2,7 @@
  * AI 问答助手（能力 7 & 10）Chat API
  * 路由：
  *   - P9 Chat (能力7)        /api/chat/sessions          GET/POST/DELETE
- *                              /api/chat/sessions/{sid}/messages  GET
+ *                              /api/chat/sessions/{sid}/history  GET
  *                              /api/chat/chat              POST 非流式
  *                              /api/chat/stream            POST SSE 流式
  *                              /api/chat/search            POST 仅检索（用于 References）
@@ -163,11 +163,40 @@ function normalizeToolCall(t: unknown): MCPToolCall {
  * SESSIONS & HISTORY (axios 封装，走拦截器统一错误处理)
  * =======================================================*/
 
+/**
+ * 归一化后端 ChatSession（schemas.py）→ 前端 ChatSession。
+ * 关键：后端字段是 session_id / message_count，前端统一消费 id / messages_count；
+ * 不做归一化会导致列表行 id=undefined → 选择/删除/深链全部失效（G7 联调实证）。
+ */
+function normalizeSession(s: unknown): ChatSession {
+  const any = (s ?? {}) as Record<string, unknown>;
+  return {
+    id: ((any.id as string | number | undefined) ?? (any.session_id as string | number | undefined) ?? "") as string | number,
+    title: String(any.title ?? "未命名对话"),
+    preview:
+      typeof any.preview === "string" && any.preview
+        ? (any.preview as string)
+        : typeof any.last_message_at === "string"
+          ? (any.last_message_at as string)
+          : null,
+    messages_count:
+      typeof any.messages_count === "number"
+        ? (any.messages_count as number)
+        : typeof any.message_count === "number"
+          ? (any.message_count as number)
+          : null,
+    created_at: typeof any.created_at === "string" ? (any.created_at as string) : null,
+    updated_at: typeof any.updated_at === "string" ? (any.updated_at as string) : null,
+  };
+}
+
 export async function listChatSessions(): Promise<ChatSession[]> {
   try {
     const { data } = await api.get<ChatSession[]>("/api/chat/sessions");
-    return Array.isArray(data) ? data : [];
-  } catch {
+    return Array.isArray(data) ? data.map(normalizeSession) : [];
+  } catch (e) {
+    // 列表类兜底空数组但必须 console.error（R-7 不静默吞错）
+    console.error("[chat] 加载会话列表失败：", e);
     return [];
   }
 }
@@ -176,7 +205,7 @@ export async function createChatSession(
   body: { title?: string; subject_code?: string | null } = {},
 ): Promise<ChatSession> {
   const { data } = await api.post<ChatSession>("/api/chat/sessions", body);
-  return data as ChatSession;
+  return normalizeSession(data);
 }
 
 export async function deleteChatSession(id: string | number): Promise<void> {
@@ -185,9 +214,17 @@ export async function deleteChatSession(id: string | number): Promise<void> {
 
 export async function getChatHistory(sessionId: string | number): Promise<ChatMessage[]> {
   try {
-    const { data } = await api.get<ChatMessage[]>(`/api/chat/sessions/${sessionId}/messages`);
-    return Array.isArray(data) ? data : [];
-  } catch {
+    // R-1 修复：后端权威路径为 /history（/messages 不存在 → 404 被吞成静默空态，历史永远加载不出来）
+    const { data } = await api.get<ChatMessage[]>(`/api/chat/sessions/${sessionId}/history`);
+    if (!Array.isArray(data)) {
+      // 非数组 = 响应结构异常（契约外），兜底空数组但必须 console.error（R-7 不静默吞错）
+      console.error(`[chat] 会话历史响应结构异常 session=${sessionId}：`, data);
+      return [];
+    }
+    return data;
+  } catch (e) {
+    // 契约保留空态兜底（历史加载失败不阻断会话 UI），但必须 console.error（R-7 消除静默吞错）
+    console.error(`[chat] 加载会话历史失败 session=${sessionId}：`, e);
     return [];
   }
 }
@@ -202,9 +239,13 @@ export async function searchRagOnly(
       subject_code: opts.subject_code ?? null,
       limit: opts.limit ?? 5,
     });
+    // 注：后端 /api/chat/search 返回对象形态 {docs:[...]}（非数组），Array.isArray 兜底恒为 []；
+    // 前端无 searchRagOnly 调用位（纯工具方法，回归面为零），此处保持既有兼容行为，不补结构日志避免常态噪音。
     const arr = Array.isArray(data) ? data : [];
     return arr.map(normalizeDocPayload);
-  } catch {
+  } catch (e) {
+    // 读语义：检索失败兜底空数组，但必须 console.error（R-7 消除静默吞错；对齐 chat.ts:199/227 列表兜底契约）
+    console.error("[chat] 检索失败：", e);
     return [];
   }
 }

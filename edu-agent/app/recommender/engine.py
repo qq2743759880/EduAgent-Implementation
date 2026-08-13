@@ -93,8 +93,8 @@ async def _load_mastery_by_kp_code(user_id: int) -> dict[str, float]:
         FROM graph_node K
         JOIN graph_edge E      ON E.to_node_id = K.id AND E.rel_type = 'CONTAINS' AND E.yn = 1
         JOIN graph_node M      ON M.id = E.from_node_id AND M.label = 'CourseModule'
-        LEFT JOIN curriculum_module CM ON CM.module_code = M.code  -- 对齐真实 curriculum，没 curriculum 就按默认 45min
-        LEFT JOIN curriculum_session CS ON CS.module_id = CM.id
+        LEFT JOIN curriculum_module CM ON CM.module_code = M.code AND CM.yn = 1  -- 对齐真实 curriculum，没 curriculum 就按默认 45min；软删模块不计
+        LEFT JOIN curriculum_session CS ON CS.module_id = CM.id AND CS.yn = 1
         LEFT JOIN session_video_play_event V ON V.session_id = CS.id AND V.user_id = %s
         LEFT JOIN session_homework_submission H ON H.session_id = CS.id AND H.user_id = %s AND H.answers_json IS NOT NULL
         WHERE K.label = 'KnowledgePoint' AND K.yn = 1
@@ -248,8 +248,8 @@ async def collaborative_filter(user_id: int, profile: dict[str, Any] | None = No
         FROM graph_node K
         JOIN graph_edge E ON E.to_node_id = K.id AND E.rel_type = 'CONTAINS' AND E.yn = 1
         JOIN graph_node M ON M.id = E.from_node_id AND M.label = 'CourseModule'
-        LEFT JOIN curriculum_module CM ON CM.module_code = M.code
-        LEFT JOIN curriculum_session CS ON CS.module_id = CM.id
+        LEFT JOIN curriculum_module CM ON CM.module_code = M.code AND CM.yn = 1
+        LEFT JOIN curriculum_session CS ON CS.module_id = CM.id AND CS.yn = 1
         LEFT JOIN session_video_play_event V ON V.session_id = CS.id AND V.user_id IN ({placeholders})
         LEFT JOIN session_homework_submission H ON H.session_id = CS.id AND H.user_id IN ({placeholders})
         LEFT JOIN session_exam_submission X ON X.user_id IN ({placeholders}) AND JSON_LENGTH(X.answers_json) > 0

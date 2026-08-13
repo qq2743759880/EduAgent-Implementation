@@ -4,6 +4,7 @@ import { ComponentType, Suspense, type JSX, useEffect, type ReactNode } from "re
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "./auth-client";
+import { isSafeRedirect } from "./redirect";
 
 /* -------------------------------------------------------------------------- */
 /*                                ProtectedRoute                              */
@@ -127,7 +128,7 @@ function GuestOnlyRouteInner({
     if (!ready) return;
     if (!token) return;
     const redirect = search?.get("redirect")?.trim();
-    const dest = redirect && /^\/[A-Za-z0-9?=&/%\-_@+.~#]*$/.test(redirect) ? redirect : redirectAfterLogin;
+    const dest = redirect && isSafeRedirect(redirect) ? redirect : redirectAfterLogin;
     router.replace(dest);
   }, [ready, token, router, search, redirectAfterLogin]);
 

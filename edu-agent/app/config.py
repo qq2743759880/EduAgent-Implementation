@@ -45,9 +45,13 @@ class Settings(BaseSettings):
     MYSQL_CHARSET: str = "utf8mb4"
 
     # 连接池配置
-    MYSQL_POOL_SIZE: int = 5
+    # task04 #2：池 maxsize=5 + acquire 无超时 → 并发写锁竞争时占满连接导致全后端挂死。
+    # 提高池容量 + acquire 超时 + 重试，避免单点并发写 DoS。
+    MYSQL_POOL_SIZE: int = 10
     MYSQL_POOL_MAX_OVERFLOW: int = 10
     MYSQL_POOL_RECYCLE: int = 3600        # 1小时回收连接
+    MYSQL_POOL_ACQUIRE_TIMEOUT: float = 10.0   # 获取连接超时（秒），超时后重试，仍失败抛 DatabaseError
+    MYSQL_POOL_ACQUIRE_RETRIES: int = 2        # acquire 超时后的重试次数
 
     # 只读账号（P4 NL2SQL 安全兜底）
     MYSQL_RO_USER: str = "edu_ro"
@@ -119,13 +123,22 @@ class Settings(BaseSettings):
     RERANKER_DEVICE: Literal["cuda", "cpu"] = "cuda"
     RERANKER_BATCH_SIZE: int = 16
 
-    # LLM API（DashScope）
+    # LLM API（OpenAI 兼容：a6api 中转 / DeepSeek 官方 / DashScope 均可）
     LLM_API_KEY: str                      # 必填
     LLM_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     LLM_MODEL_FAST: str = "qwen-flash"    # 快速模型（意图识别、简单问答）
     LLM_MODEL_STRONG: str = "qwen-plus"   # 强力模型（NL2SQL、复杂推理）
     LLM_TEMPERATURE: float = 0.0          # 0=确定性输出
     LLM_MAX_TOKENS: int = 2000
+
+    # ============================================================
+    # Embedding API（独立配置，可与聊天 LLM 不同源）
+    #   留空时自动复用 LLM 的 base_url/key；若聊天走 DeepSeek/a6api
+    #   （无 embeddings 端点），必须显式配置硅基流动 SiliconFlow。
+    # ============================================================
+    EMBEDDING_API_URL: str = ""           # 空 → 复用 LLM_BASE_URL
+    EMBEDDING_API_KEY: str = ""           # 空 → 复用 LLM_API_KEY
+    EMBEDDING_MODEL: str = "BAAI/bge-m3"  # 硅基流动默认；DashScope 用 text-embedding-v3
 
     # ============================================================
     # P8 MCP 工具调用开关
@@ -171,6 +184,11 @@ class Settings(BaseSettings):
     CLIFF_MIN_KEEP: int = 3
     CLIFF_MAX_KEEP: int = 8
     CLIFF_RATIO: float = 0.4
+
+    # ============================================================
+    # P7 管理端 RAG：rebuild 状态机（task04 #3/#8）
+    # ============================================================
+    RAG_REBUILD_TIMEOUT_SECONDS: int = 120   # rebuilding 超过此时长（秒）未完成 → list_collections 自动回置 error
 
     # ============================================================
     # SQL 安全（P4）

@@ -12,6 +12,7 @@ import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
+from typing import Any
 
 # Windows 下 asyncio 子进程（P8 MCP stdio create_subprocess_exec）需要 ProactorEventLoop；
 # 否则 SelectorEventLoop 不支持 subprocess，导致 initialize/tool call 假死无响应。
@@ -151,9 +152,13 @@ app.add_middleware(AuthMiddleware)
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     """业务层 AppException → 标准 JSON 响应"""
+    # 5xx 服务端错误在生产环境脱敏：detail 可能携带 SQL/堆栈内部信息（如 DatabaseError），禁止外泄
+    detail_out = exc.detail
+    if not settings.DEBUG and exc.http_status >= 500:
+        detail_out = None
     return JSONResponse(
         status_code=exc.http_status,
-        content={"code": exc.code, "message": exc.message, "detail": exc.detail},
+        content={"code": exc.code, "message": exc.message, "detail": detail_out},
     )
 
 
@@ -176,6 +181,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         code_val = status_code * 100 if status_code else 50000
         message_val = str(detail) if detail is not None else f"HTTP {status_code}"
         detail_val = detail
+    # 5xx 服务端错误在生产环境脱敏（detail 可能含内部信息）
+    if status_code >= 500 and not settings.DEBUG:
+        detail_val = None
     # headers（401 需要 WWW-Authenticate）原样带回
     headers = exc.headers if exc.headers else None
     return JSONResponse(
@@ -185,13 +193,25 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+def _jsonable(v: Any) -> Any:
+    """递归把任意对象转为 JSON 可序列化形态（task04 #4：validator 里的 ValueError 等异常对象
+    进入 errors ctx 后 json.dumps 会崩成 500，这里 str 化兜底）。"""
+    if v is None or isinstance(v, (str, int, float, bool)):
+        return v
+    if isinstance(v, dict):
+        return {str(k): _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_jsonable(x) for x in v]
+    return str(v)
+
+
 @app.exception_handler(RequestValidationError)
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
     """
     Pydantic 请求体校验失败（422）→ 聚合第一条错误信息为用户可读 message。
 
     FastAPI 默认返回 {detail:[{loc:[...],msg:"...",type:"..."}]}，前端难展示；
-    这里把第一条 msg 提取出来，并保留原 detail 供调试。
+    这里把第一条 msg 提取出来，并保留原 detail 供调试（detail 经 _jsonable 兜底，杜绝 500）。
     """
     errors = exc.errors()
     first_msg = "参数校验失败"
@@ -211,7 +231,7 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
         content={
             "code": 42200,
             "message": first_msg,
-            "detail": errors if settings.DEBUG else None,
+            "detail": _jsonable(errors) if settings.DEBUG else None,
         },
     )
 

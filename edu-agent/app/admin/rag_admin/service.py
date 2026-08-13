@@ -15,11 +15,13 @@ P7 路径 B：管理端 RAG 控制台 service。
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import re
 import uuid
 from datetime import datetime
-from typing import Iterable
 
+import anyio
 from loguru import logger
 
 from app.admin.rag_admin.schemas import (
@@ -35,15 +37,87 @@ from app.admin.rag_admin.schemas import (
 )
 from app.auth import UserRole
 from app.chat.retriever import RetrievalBundle, retrieve_three_channel
-from app.chat.schemas import GraphEntity, RetrievedDoc
-from app.common.exceptions import NotFoundError, ValidationError
-from app.database import execute_write, fetch_all, fetch_one, get_neo4j_driver, get_mysql_pool, transaction
+from app.chat.schemas import RetrievedDoc
+from app.common.exceptions import AppException, NotFoundError, ValidationError
+from app.config import settings
+from app.database import execute_write, fetch_all, fetch_one, transaction
 
 try:
     # Milvus/P1 loader 都在，拿 list_all_partitions 做行计数补全（可选依赖）
     from app.knowledge.importer.loader import list_all_partitions as _milvus_list_all_partitions
 except Exception:  # pragma: no cover - 导入失败就只走 MySQL 占位
     _milvus_list_all_partitions = None
+
+
+# ============================================================
+# Milvus 调用限时执行（task04 修正轮 2 修复：async 路由禁止同步阻塞外部服务）
+# ============================================================
+# 背景：list_all_partitions() 是同步网络 I/O（MilvusClient gRPC），若直接在 async
+# 函数里调用，Milvus VM 不可达时 pymilvus 连接超时（默认 10s）会冻结整个 asyncio
+# 事件循环 → 单请求 DoS 全后端（实测 GET /collections 10.0s、rebuild 20.1s、期间
+# GET /presets 排队 8s）。修复：anyio.to_thread.run_sync 把同步调用移入 worker 线程
+# （事件循环永不被阻塞）+ asyncio.wait_for 5s 硬上限（最坏 5s 内返回，Milvus 不可达
+# 时 loader 侧 3s 超时更快失败）。超时后遗留线程由底层 socket 超时自行回收，不影响
+# 其他请求。
+_MILVUS_CALL_TIMEOUT_S = 5.0
+
+
+async def _list_all_partitions_limited() -> list[dict]:
+    """
+    list_all_partitions 的异步限时版本：线程池执行 + 5s 超时。
+    失败/超时/导入缺失 → 返回 []（调用方降级为 MySQL 快照/占位式，绝不抛 500）。
+    """
+    if _milvus_list_all_partitions is None:
+        return []
+    try:
+        return await asyncio.wait_for(
+            anyio.to_thread.run_sync(_milvus_list_all_partitions),
+            timeout=_MILVUS_CALL_TIMEOUT_S,
+        )
+    except Exception as exc:
+        logger.warning(
+            f"[rag_admin] Milvus 分区列表失败（限时 {_MILVUS_CALL_TIMEOUT_S}s，"
+            f"{type(exc).__name__}），降级为 MySQL 快照/占位式：{exc}"
+        )
+        return []
+
+
+# task04 #3/#8：rebuild 状态机
+# - rebuilding 超过该时长未完成（Milvus 不可用/异步任务缺失）→ list_collections 自动回置 error
+def _rebuild_timeout() -> int:
+    return int(getattr(settings, "RAG_REBUILD_TIMEOUT_SECONDS", 120) or 120)
+# partition 命名契约：_default（公共库）或 user_{id}（私有库）——非法格式直接 400（task04 #8 弱校验）
+_PARTITION_NAME_RE = re.compile(r"^(?:user_\d+|_default)$")
+
+
+def _validate_partition_name(partition_name: str) -> None:
+    """校验 partition 命名契约；非法格式 → 400（在 Milvus 存在性校验之前的弱校验）。"""
+    if not _PARTITION_NAME_RE.match(str(partition_name or "")):
+        raise ValidationError(
+            "分区名不合法：仅支持 _default（公共库）或 user_{数字ID}（私有库）",
+            detail="RAG_PARTITION_INVALID",
+        )
+
+
+async def _recover_stuck_collections() -> None:
+    """
+    rebuild 状态机回置（task04 #3）：status='rebuilding' 且超过 _REBUILD_TIMEOUT 未完成
+    → 回置 error 并注明原因。占位式实现无异步任务队列，Milvus 不可用时 rebuild 永远
+    停留在 rebuilding；本函数在 list_collections 入口调用，保证 stuck 集合可自愈，
+    不再永久锁死重建按钮。
+    """
+    timeout_s = _rebuild_timeout()
+    try:
+        await execute_write(
+            """UPDATE rag_collection_meta
+                  SET status = 'error',
+                      status_message = CONCAT('重建超时（>', %s, 's）未完成，已自动回置；请重试重建或检查 Milvus 连接：', IFNULL(status_message, ''))
+                WHERE yn = 1 AND status = 'rebuilding'
+                  AND last_rebuild_at < DATE_SUB(NOW(), INTERVAL %s SECOND)""",
+            (str(timeout_s), timeout_s),
+        )
+    except Exception as exc:  # noqa: BLE001 - 回置失败不能阻断列表
+        logger.warning(f"[rag_admin] stuck 集合回置失败（不阻断列表）：{exc}")
 
 
 def _new_job_id() -> str:
@@ -122,25 +196,26 @@ async def list_collections() -> list[CollectionMeta]:
     """
     列出所有知识库 Partition（元数据来自 rag_collection_meta）。
     若 Milvus 存活（list_all_partitions 导入且执行没抛错），则用 Milvus 实际行计数回写 last_snapshot_at。
+    入口先做 rebuild 状态机回置（task04 #3）：stuck rebuilding 超时 → error，避免集合被永久锁死。
     """
+    await _recover_stuck_collections()
     rows = await fetch_all("SELECT * FROM rag_collection_meta WHERE yn = 1 ORDER BY id ASC")
     items = [_row_to_collection_meta(r) for r in rows]
 
     # 若 Milvus 不可用：items 已经有 _default 种子，直接返回即可（打靶 UI 不空）
     if _milvus_list_all_partitions is None:
         return items
-    try:
-        part_rows: Iterable[dict] = _milvus_list_all_partitions()
-    except Exception as exc:
-        logger.warning(f"[rag_admin] Milvus 分区列表失败，保留 MySQL 快照降级：{exc}")
+    part_rows = await _list_all_partitions_limited()
+    if not part_rows:
+        # Milvus 不可达/超时：保留 MySQL 快照降级（helper 已记录告警日志）
         return items
 
     milvus_map: dict[str, int] = {str(p["name"]): int(p.get("row_count") or 0) for p in part_rows}
     now = datetime.now()
-    async with transaction():
+    async with transaction() as (_conn, cur):
         for item in items:
             new_count = milvus_map.get(item.partition_name, item.row_count)
-            await execute_write(
+            await cur.execute(
                 "UPDATE rag_collection_meta SET row_count = %s, last_snapshot_at = %s WHERE id = %s AND yn = 1",
                 (int(new_count), now, int(item.id)),
             )
@@ -157,16 +232,36 @@ async def list_collections() -> list[CollectionMeta]:
 async def rebuild_collection(req: CollectionRebuildRequest, *, operator_user_id: int) -> CollectionRebuildResponse:
     """
     重建指定 Partition 索引。
-    实现：先 UPDATE status=rebuilding → 返回 job_id（后台任务占位）→ 若 Milvus list_all_partitions 能调就用行计数回填并置 status=ready。
+
+    task04 #3/#8 修复：
+    - #8 校验 partition 存在性：命名契约弱校验（_default | user_{id}，非法 400）；
+      Milvus 可用时强校验真实分区（不存在 → 404，不插占位垃圾行）。
+    - #3 状态机：写入 status=rebuilding + last_rebuild_at=now（超时计时起点）；
+      占位行（Milvus 不可用降级）由 list_collections 的 _recover_stuck_collections
+      在超时后回置 error，不再永久 stuck。重复 rebuild（含 rebuilding 中重试）幂等。
     """
-    row = await fetch_one(
-        "SELECT * FROM rag_collection_meta WHERE collection_name = %s AND partition_name = %s AND yn = 1 LIMIT 1 FOR UPDATE",
-        (req.collection_name, req.partition_name),
-    )
+    _validate_partition_name(req.partition_name)
+
+    # Milvus 可用时：强校验 partition 真实存在（task04 #8）——不存在直接 404，避免垃圾占位行。
+    # （Milvus 不可达/超时 → helper 返回 [] → 跳过强校验，降级为占位式）
+    # 注意：只调用一次 _list_all_partitions_limited，存在性校验与下方快照补全共用同一份
+    # parts（Milvus 分区列表在毫秒~秒级内不会变化；两次串行调用在不可达环境会叠加
+    # 连接超时，突破 5s 验收线）。
+    milvus_parts: list[dict] | None = None
+    if _milvus_list_all_partitions is not None:
+        milvus_parts = await _list_all_partitions_limited()
+        if milvus_parts and str(req.partition_name) not in {str(p.get("name")) for p in milvus_parts}:
+            raise NotFoundError("知识库分区", req.partition_name)
+
     job_id = _new_job_id()
     now = datetime.now()
+    row = await fetch_one(
+        "SELECT * FROM rag_collection_meta WHERE collection_name = %s AND partition_name = %s AND yn = 1 LIMIT 1",
+        (req.collection_name, req.partition_name),
+    )
     if row is None:
         # 管理员尝试重建一个还没入 rag_collection_meta 的 Partition（比如 user_xxx 私有库首次）→ INSERT 一条占位，再置 rebuilding
+        # （Milvus 不可用降级环境无法验证存在性，占位行由超时回置兜底：#3）
         tenant_id = None if req.partition_name == "_default" else req.partition_name.replace("user_", "", 1)
         visibility = "public" if req.partition_name == "_default" else "private"
         display_name = (
@@ -174,8 +269,8 @@ async def rebuild_collection(req: CollectionRebuildRequest, *, operator_user_id:
             if req.partition_name == "_default"
             else f"用户 {tenant_id} 私有库 ({req.partition_name})"
         )
-        async with transaction():
-            await execute_write(
+        async with transaction() as (_conn, cur):
+            await cur.execute(
                 """INSERT INTO rag_collection_meta
                    (collection_name, partition_name, tenant_id, display_name, row_count, source_count,
                     last_rebuild_at, last_snapshot_at, status, visibility)
@@ -186,42 +281,49 @@ async def rebuild_collection(req: CollectionRebuildRequest, *, operator_user_id:
                 ),
             )
     else:
-        async with transaction():
-            await execute_write(
+        # 已存在（含 rebuilding 中的重试）：幂等更新，last_rebuild_at=now 重新计时（task04 #3）
+        async with transaction() as (_conn, cur):
+            await cur.execute(
                 "UPDATE rag_collection_meta SET status = 'rebuilding', status_message = %s, last_rebuild_at = %s WHERE id = %s",
                 (f"重建任务 {job_id}（mode={req.mode}），进行中...", now, int(row["id"])),
             )
 
-    # Milvus 能连上则尝试补快照（不可用时：保持 status=rebuilding，下一次 list_collections 会在 UI 看到进度；简化实现此处不做异步任务队列）
+    # Milvus 能连上则尝试补快照（不可用时：保持 status=rebuilding，超时由 list_collections 回置，#3）
     estimated_rows = 0
     new_message: str | None = None
-    if _milvus_list_all_partitions is not None:
-        try:
-            parts = list(_milvus_list_all_partitions())
-            for p in parts:
-                if str(p.get("name")) == req.partition_name:
-                    estimated_rows = int(p.get("row_count") or 0)
-                    break
-            async with transaction():
-                await execute_write(
-                    """UPDATE rag_collection_meta
-                          SET status = 'ready', status_message = %s, row_count = %s, last_snapshot_at = %s
-                        WHERE collection_name = %s AND partition_name = %s AND yn = 1""",
-                    (
-                        f"重建任务 {job_id}（mode={req.mode}）完成（milvus snapshot 同步）",
-                        estimated_rows,
-                        now,
-                        req.collection_name,
-                        req.partition_name,
-                    ),
-                )
-            new_message = f"已接受重建（mode={req.mode}），分区 '{req.partition_name}'，返回后已转为 ready（占位式实现：若需真重建请联调 P1 loader 重跑）"
-        except Exception as exc:
-            logger.warning(f"[rag_admin] rebuild Milvus 侧失败：{exc}，保持 status=rebuilding（前端稍后会看到 rebuilding）")
-            new_message = f"已接受重建（mode={req.mode}），但 Milvus 未连接 → 保留 rebuilding 状态（等 Milvus 恢复后再跑 list_collections 会同步快照）"
+    if milvus_parts:
+        for p in milvus_parts:
+            if str(p.get("name")) == req.partition_name:
+                estimated_rows = int(p.get("row_count") or 0)
+                break
+        async with transaction() as (_conn, cur):
+            await cur.execute(
+                """UPDATE rag_collection_meta
+                      SET status = 'ready', status_message = %s, row_count = %s, last_snapshot_at = %s
+                    WHERE collection_name = %s AND partition_name = %s AND yn = 1""",
+                (
+                    f"重建任务 {job_id}（mode={req.mode}）完成（milvus snapshot 同步）",
+                    estimated_rows,
+                    now,
+                    req.collection_name,
+                    req.partition_name,
+                ),
+            )
+        new_message = f"已接受重建（mode={req.mode}），分区 '{req.partition_name}'，返回后已转为 ready（占位式实现：若需真重建请联调 P1 loader 重跑）"
+    elif _milvus_list_all_partitions is not None:
+        logger.warning(
+            "[rag_admin] rebuild Milvus 侧失败/不可达（限时内未返回分区），保持 status=rebuilding（超时后自动回置）"
+        )
+        new_message = (
+            f"已接受重建（mode={req.mode}），但 Milvus 未连接 → 保留 rebuilding 状态；"
+            f"超过 {_rebuild_timeout()}s 未完成将自动回置 error，可再次发起重建"
+        )
 
     if new_message is None:
-        new_message = f"已接受重建（mode={req.mode}），Milvus 未连接（_milvus_list_all_partitions 不可用）→ 保留 rebuilding 状态"
+        new_message = (
+            f"已接受重建（mode={req.mode}），Milvus 未连接（_milvus_list_all_partitions 不可用）→ 保留 rebuilding 状态；"
+            f"超过 {_rebuild_timeout()}s 未完成将自动回置 error"
+        )
 
     return CollectionRebuildResponse(
         job_id=job_id,
@@ -245,25 +347,74 @@ async def get_preset_or_none(preset_id: int) -> ParamPreset | None:
 
 
 async def create_preset(body: ParamPresetCreate, *, operator_user_id: int) -> ParamPreset:
-    async with transaction():
-        # 如果新预设要做 default：先把旧 default 清 0
-        if body.is_default:
-            await execute_write("UPDATE rag_param_preset SET is_default = 0 WHERE is_default = 1 AND yn = 1")
-        await execute_write(
-            """INSERT INTO rag_param_preset
-               (preset_name, is_default, description, top_k, final_max_k, cutoff_drop_ratio, rrf_k, use_hyde, enable_graph, llm_model_pref, created_by)
-               VALUES (%s,%s,%s, %s,%s,%s,%s,%s,%s,%s, %s)""",
-            (
-                body.preset_name,
-                1 if body.is_default else 0,
-                body.description,
-                int(body.top_k), int(body.final_max_k), float(body.cutoff_drop_ratio), int(body.rrf_k),
-                1 if body.use_hyde else 0,
-                1 if body.enable_graph else 0,
-                body.llm_model_pref,
-                int(operator_user_id),
-            ),
-        )
+    """
+    新建参数预设。is_default=True 时把旧默认置 0，保证全局最多一条默认（task04 #1 并发修复）。
+
+    并发唯一性三层保证：
+    1) 事务内先快照读默认行 id，再 SELECT ... FOR UPDATE 锁行（无默认行时锁 gap）→
+       锁等待期间默认行身份发生变化（快照 id ≠ 锁后 id）说明有并发者先完成切换 → 409；
+       严格保证"并发 N 个 is_default=true 只放行 1 个 201，其余 409"。
+    2) DB 层生成列部分唯一索引 uk_rag_preset_default_flag 兜底（两个并发同时 INSERT is_default=1，
+       第二个撞唯一键 → 409 RAG_PRESET_DEFAULT_CONFLICT）；
+    3) 事务内全部 SQL 走共享连接 cur（不再嵌套 execute_write 的独立连接+自动提交）。
+    """
+    try:
+        async with transaction() as (_conn, cur):
+            if body.is_default:
+                # 快照读：本事务开始时刻的默认行 id（RR 隔离下不受并发提交影响）
+                await cur.execute(
+                    "SELECT id FROM rag_param_preset WHERE is_default = 1 AND yn = 1 LIMIT 1"
+                )
+                snap_rows = await cur.fetchall()
+                snap_id = int(snap_rows[0][0]) if snap_rows else None
+                # 当前读 + 行锁：等待期间若并发事务已切换默认，行身份必然变化 → 冲突 409
+                await cur.execute(
+                    "SELECT id FROM rag_param_preset WHERE is_default = 1 AND yn = 1 FOR UPDATE"
+                )
+                cur_rows = await cur.fetchall()
+                cur_id = int(cur_rows[0][0]) if cur_rows else None
+                if cur_id != snap_id:
+                    raise AppException(
+                        code=40900,
+                        message="默认预设冲突：并发创建已生效，请刷新后重试",
+                        detail="RAG_PRESET_DEFAULT_CONFLICT",
+                        http_status=409,
+                    )
+                await cur.execute(
+                    "UPDATE rag_param_preset SET is_default = 0 WHERE is_default = 1 AND yn = 1"
+                )
+            await cur.execute(
+                """INSERT INTO rag_param_preset
+                   (preset_name, is_default, description, top_k, final_max_k, cutoff_drop_ratio, rrf_k, use_hyde, enable_graph, llm_model_pref, created_by)
+                   VALUES (%s,%s,%s, %s,%s,%s,%s,%s,%s,%s, %s)""",
+                (
+                    body.preset_name,
+                    1 if body.is_default else 0,
+                    body.description,
+                    int(body.top_k), int(body.final_max_k), float(body.cutoff_drop_ratio), int(body.rrf_k),
+                    1 if body.use_hyde else 0,
+                    1 if body.enable_graph else 0,
+                    body.llm_model_pref,
+                    int(operator_user_id),
+                ),
+            )
+    except Exception as exc:
+        # 并发下 DB 唯一索引兜底：两个 is_default=1 同时插入，后到者撞 uk_rag_preset_default_flag → 409
+        try:
+            _a = exc.args
+            msg = str(_a[1]) if len(_a) > 1 else str(_a)
+        except Exception:  # noqa: BLE001 - 仅兜底
+            msg = str(exc)
+        if isinstance(exc, AppException):
+            raise
+        if "uk_rag_preset_default_flag" in msg or "Duplicate entry" in msg:
+            raise AppException(
+                code=40900,
+                message="默认预设冲突：已有其他默认预设（并发创建），请刷新后重试",
+                detail="RAG_PRESET_DEFAULT_CONFLICT",
+                http_status=409,
+            ) from exc
+        raise
     row = await fetch_one(
         "SELECT * FROM rag_param_preset WHERE preset_name = %s AND yn = 1 ORDER BY id DESC LIMIT 1",
         (body.preset_name,),

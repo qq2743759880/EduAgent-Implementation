@@ -18,7 +18,7 @@ import { RadarChart, type RadarSeriesOption } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target } from "lucide-react";
+import { RotateCw, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   SUBJECT_LABELS,
@@ -56,6 +56,16 @@ interface AbilityRadarChartProps {
   height?: number | string;
   className?: string;
   loading?: boolean;
+  /** 覆盖层空态（series=[] 且非 loading/error 时由页面传入 true） */
+  empty?: boolean;
+  /** 空态文案 */
+  emptyText?: string;
+  /** 覆盖层错误态（query isError 时由页面传入 true） */
+  error?: boolean;
+  /** 错误态文案 */
+  errorText?: string;
+  /** 错误覆盖层重试按钮回调 */
+  onRetry?: () => void;
 }
 
 type ECOption = ComposeOption<
@@ -73,6 +83,11 @@ export function AbilityRadarChart({
   height = 340,
   className,
   loading = false,
+  empty = false,
+  emptyText = "学习后即可生成学科能力评估",
+  error = false,
+  errorText = "能力评估加载失败",
+  onRetry,
 }: AbilityRadarChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -178,7 +193,30 @@ export function AbilityRadarChart({
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div ref={containerRef} style={{ width: "100%", height }} />
+        <div className="relative" style={{ height }}>
+          <div ref={containerRef} style={{ width: "100%", height }} />
+          {error ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive px-4 text-center">
+              <Target className="h-6 w-6 opacity-80" aria-hidden="true" />
+              <p className="text-sm font-medium">{errorText}</p>
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+                >
+                  <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+                  重试
+                </button>
+              ) : null}
+            </div>
+          ) : empty && !loading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-muted/40 text-muted-foreground px-4 text-center">
+              <Target className="h-6 w-6 text-muted-foreground/60" aria-hidden="true" />
+              <p className="text-sm">{emptyText}</p>
+            </div>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );

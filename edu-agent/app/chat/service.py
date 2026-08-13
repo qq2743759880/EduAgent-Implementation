@@ -62,8 +62,9 @@ async def create_session(user_id: int, req: ChatSessionCreate | None = None) -> 
         VALUES
         (%s, %s, %s, %s, %s, %s, %s, %s, 1)
     """
-    async with transaction():
-        await execute_write(
+    async with transaction() as (_conn, cur):
+        # 事务内必须用共享 cur 执行，禁止嵌套 execute_write()（独立连接+自动提交，task04 #1 根因）
+        await cur.execute(
             insert_sql,
             (
                 session_id,
@@ -141,6 +142,24 @@ async def list_sessions(user_id: int, role: UserRole, *, limit: int = 50) -> lis
     ]
 
 
+async def delete_session(user_id: int, session_id: str, role: UserRole) -> None:
+    """
+    软删会话（R-2 补丁，红线约束 12：禁止物理 DELETE）。
+
+    - 归属校验复用 _ensure_session_owner：非 admin 必须是本人（否则 ValidationError(CHAT_SESSION_FORBIDDEN) → 403）；
+      会话不存在或已软删（yn=0）→ NotFoundError → 404（重复删除天然 404，幂等语义）。
+    - 删除后 list_sessions / get_session_history 均已过滤 yn=1，会话即刻从列表与历史查询消失。
+    - 与流式落库竞态（task05 #4，已知接受）：删除与 LLM 回答落库并发时，落库的
+      update_session_sql 带 `AND yn = 1` 会空更新 → 已删会话残留孤儿消息行（chat_message 有行、
+      计数不 bump）；API 层均按 yn=1 过滤不可见，无数据泄漏，低概率、无用户可见后果，不修复。
+    """
+    await _ensure_session_owner(session_id, user_id, role)
+    await execute_write(
+        "UPDATE chat_session SET yn = 0, updated_at = %s WHERE session_id = %s AND yn = 1",
+        (datetime.now(), session_id),
+    )
+
+
 async def get_session_history(
     session_id: str,
     user_id: int,
@@ -206,9 +225,11 @@ async def _append_messages_and_bump_session(
     assistant_msg: ChatMessage | None,
 ) -> None:
     now = datetime.now()
-    # title 回填：如果当前会话 title 是默认的「新会话 xxx」，用第 1 条 question 前 30 字
+    # title 回填：如果当前会话 title 还是 create_session 的默认「新会话 xxx」（create_session 默认
+    # title = f"新会话 {session_id[-6:]}"，末尾是 uuid hex 字符，永远不含 "s_"，故用前缀「新会话 」匹配），
+    # 用第 1 条 question 前 30 字回填（task05 修正轮：原 startswith("新会话 s_") 恒 False，回填永不触发）
     new_title = session.title
-    if new_title.startswith("新会话 s_") and user_msg.role == "user":
+    if new_title.startswith("新会话 ") and user_msg.role == "user":
         new_title = (user_msg.content.strip() or new_title).replace("\n", " ")[:30].strip() or new_title
 
     inc = 1 if assistant_msg is None else 2
@@ -229,8 +250,12 @@ async def _append_messages_and_bump_session(
         SET title = %s, message_count = %s, last_message_at = %s, updated_at = %s
         WHERE session_id = %s AND yn = 1
     """
-    async with transaction():
-        await execute_write(
+    # 竞态说明（task05 #4，已知接受，不修复）：`AND yn = 1` 使「删除会话」与「流式回答落库」
+    # 并发时本 UPDATE 空更新（消息已写入 chat_message 但计数不 bump，孤儿消息行）。已删会话在
+    # 列表/历史 API 均按 yn=1 过滤不可见，无用户可见后果，仅留脏数据行；低概率，注释说明即可。
+    async with transaction() as (_conn, cur):
+        # 事务内必须用共享 cur 执行，禁止嵌套 execute_write()（独立连接+自动提交，task04 #1 根因）
+        await cur.execute(
             insert_user_sql,
             (
                 user_msg.message_id, user_msg.session_id, int(user_msg.user_id), user_msg.role, user_msg.content,
@@ -242,7 +267,7 @@ async def _append_messages_and_bump_session(
             ),
         )
         if assistant_msg is not None:
-            await execute_write(
+            await cur.execute(
                 insert_assistant_sql,
                 (
                     assistant_msg.message_id, assistant_msg.session_id, int(assistant_msg.user_id), assistant_msg.role, assistant_msg.content,
@@ -253,7 +278,7 @@ async def _append_messages_and_bump_session(
                     assistant_msg.created_at,
                 ),
             )
-        await execute_write(
+        await cur.execute(
             update_session_sql,
             (new_title, new_count, now, now, session.session_id),
         )

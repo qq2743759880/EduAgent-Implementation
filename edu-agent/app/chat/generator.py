@@ -202,6 +202,10 @@ class _ChatClient:
         ) as resp:
             if resp.status_code != 200:
                 raise RuntimeError(f"LLM stream HTTP {resp.status_code}: {resp.text[:400]}")
+            # 关键修复（2026-08-12 根因）：LLM 网关返回 content-type: application/json 无 charset，
+            # requests 对响应流推断 encoding=ISO-8859-1，iter_lines(decode_unicode=True) 会把 UTF-8 中文
+            # 误解码成 mojibake（如 "你好世界" → "ä½ å¥½"）。resp.json() 有特殊修正不受影响，但流式必须显式指定。
+            resp.encoding = "utf-8"
             for raw_line in resp.iter_lines(decode_unicode=True):
                 if not raw_line:
                     continue

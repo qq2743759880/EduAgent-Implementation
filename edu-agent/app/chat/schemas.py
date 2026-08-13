@@ -37,6 +37,11 @@ class ChatSessionCreate(BaseModel):
     visibility: Literal["private", "shared"] = "private"
 
 
+class DeleteSessionResponse(BaseModel):
+    """删除会话响应（软删：UPDATE chat_session SET yn=0，禁止物理 DELETE）。"""
+    ok: bool = True
+
+
 class ChatMessage(BaseModel):
     """单轮消息（user 提问 / assistant 回答 成对落库）。"""
     message_id: str = Field(..., description="消息唯一 ID（前端可用来做局部更新/重试幂等）")

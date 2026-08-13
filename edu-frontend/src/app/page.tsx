@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-client";
+import { isSafeRedirect } from "@/lib/redirect";
 
 /**
  * 根路由：根据登录态重定向
@@ -16,7 +17,7 @@ function RootHomePageInner() {
 
   const redirect = useMemo(() => {
     const raw = search?.get("redirect")?.trim();
-    if (raw && /^\/[A-Za-z0-9?=&/%\-_@+.~#]*$/.test(raw)) return raw;
+    if (raw && isSafeRedirect(raw)) return raw;
     return null;
   }, [search]);
 

@@ -5,12 +5,16 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.log
+*.log.err
 *.egg-info/
 .venv/
 .vscode/
 .idea/
 # 包含 VM 登录凭据（root/redhat），严禁入库
 scripts/ssh_*.py
+# 一次性手动打点测试脚本（hit/restart 模式），不入库
+scripts/*_hit.py
+scripts/restart_uvicorn*.py
 # 本地临时文件
 *.tmp
 uv_tmp_*.log

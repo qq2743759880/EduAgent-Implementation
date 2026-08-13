@@ -36,39 +36,20 @@ router = APIRouter(prefix="/api/auth", tags=["鉴权"])
 # 辅助：把业务层抛的 ValidationError/DatabaseError 转 HTTP 状态码
 # ============================================================
 def _translate_validation_error(e: ValidationError) -> HTTPException:
-    """业务层错误码 → 对应 HTTP 状态码。"""
-    # 账号相关错误 → 401 未认证
-    auth_unauthorized_codes = {
-        "AUTH_LOGIN_FAILED",
-        "AUTH_TOKEN_EXPIRED",
-        "AUTH_TOKEN_INVALID",
-        "AUTH_TOKEN_MALFORMED",
-        "AUTH_TOKEN_TYPE_MISMATCH",
-        "AUTH_USER_DISABLED",
-        "AUTH_USER_NOT_FOUND",
-    }
-    # 角色相关错误 → 403 无权限
-    auth_forbidden_codes = {"AUTH_ROLE_INVALID"}
-    # 注册冲突 → 409
-    auth_conflict_codes = {
-        "AUTH_MOBILE_EXISTS",
-        "AUTH_EMAIL_EXISTS",
-        "AUTH_ACCOUNT_EXISTS",
-    }
+    """
+    业务层错误码 → 对应 HTTP 状态码。
 
-    detail = {"code": e.code, "message": str(e)}
-    if e.code in auth_unauthorized_codes:
-        return HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=detail,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if e.code in auth_forbidden_codes:
-        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-    if e.code in auth_conflict_codes:
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
-    # 其他校验错误 → 400
-    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+    单一事实源：ValidationError 构造时已按 _AUTH_CODE_TO_HTTP 映射出 http_status
+    （AUTH_LOGIN_FAILED→401、AUTH_USER_DISABLED→403、AUTH_ACCOUNT_EXISTS→409、其余→400）。
+    旧实现把 e.code（数字业务码，如 40112）与字符串子码集合比较，永远不命中，
+    导致所有鉴权错误一律落到 HTTP 400 —— 禁用提示与前端 LoginForm 文档（403）不一致。
+    """
+    headers = {"WWW-Authenticate": "Bearer"} if e.http_status == status.HTTP_401_UNAUTHORIZED else None
+    return HTTPException(
+        status_code=e.http_status,
+        detail={"code": e.code, "message": str(e)},
+        headers=headers,
+    )
 
 
 # ============================================================
