@@ -70,7 +70,7 @@ export default function CoursesHomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white">
+    <div className="min-h-screen bg-background">
       <HeroSection stats={heroStats} />
 
       <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 md:px-6 lg:px-8">
@@ -82,7 +82,7 @@ export default function CoursesHomePage() {
               showSearch
               showPrice
             />
-            <div className="hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-primary/2 to-transparent p-5 lg:block">
+            <div className="hidden rounded-xl border border-border bg-muted/40 p-5 lg:block">
               <div className="text-xs font-semibold uppercase tracking-wider text-primary">
                 不知道学什么？
               </div>
@@ -143,7 +143,7 @@ function HeroSection({
   stats: ReadonlyArray<{ label: string; value: string; Icon: React.ComponentType<{ className?: string }> }>;
 }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-sky-600 text-white">
+    <section className="relative overflow-hidden bg-gradient-to-r from-primary-deep to-primary-strong text-primary-foreground">
       <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.6),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.5),transparent_60%)]" />
       <div className="mx-auto w-full max-w-7xl px-4 py-14 md:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
@@ -153,7 +153,7 @@ function HeroSection({
               AI 驱动 · 分级自适应 · 11 个系列 66+ 课次
             </div>
             <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-              找到最适合你的 <span className="underline decoration-amber-300 decoration-[6px] decoration-4 underline-offset-[1px]">分级课程</span>
+              找到最适合你的 <span className="underline decoration-4 underline-offset-[1px]">分级课程</span>
             </h1>
             <p className="mt-3 max-w-xl text-sm text-white/85 md:text-base">
               按学科 × 难度 L1–L5 分层，搭配学习路径图谱、互动习题和 AI 问答助手，
@@ -180,7 +180,7 @@ function HeroSection({
             {stats.map(({ label, value, Icon }) => (
               <div
                 key={label}
-                className="flex items-center gap-4 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+                className="flex items-center gap-4 rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
               >
                 <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/20">
                   <Icon className="h-5 w-5" />
@@ -224,7 +224,7 @@ function ResultHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-2">
       <div>
-        <h2 className="text-lg font-semibold md:text-xl">
+        <h2 className="text-lg font-semibold md:text-xl text-foreground">
           {loading ? "加载中…" : `共找到 ${pageMeta.total.toLocaleString()} 门课程`}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">筛选条件：{label}</p>
@@ -240,11 +240,11 @@ function CardGridLoading() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-72 animate-pulse rounded-2xl border bg-white p-3">
-          <div className="h-40 w-full rounded-xl bg-slate-100" />
-          <div className="mt-4 h-4 w-2/3 rounded bg-slate-100" />
-          <div className="mt-2 h-3 w-full rounded bg-slate-100" />
-          <div className="mt-2 h-3 w-1/2 rounded bg-slate-100" />
+        <div key={i} className="h-72 animate-pulse rounded-xl border border-border bg-muted/40 p-3">
+          <div className="h-40 w-full rounded-xl bg-muted" />
+          <div className="mt-4 h-4 w-2/3 rounded bg-muted" />
+          <div className="mt-2 h-3 w-full rounded bg-muted" />
+          <div className="mt-2 h-3 w-1/2 rounded bg-muted" />
         </div>
       ))}
     </div>
@@ -253,11 +253,11 @@ function CardGridLoading() {
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
-      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
+      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary">
         <SearchIcon className="h-6 w-6" />
       </div>
-      <div className="text-base font-semibold">没找到匹配的课程</div>
+      <div className="text-base font-semibold text-foreground">没找到匹配的课程</div>
       <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
         试试减少筛选条件、清空关键词，或降低难度区间看看～
       </p>
@@ -273,10 +273,10 @@ function ErrorState({ onRetry, error }: { onRetry: () => void; error: unknown })
         ? error
         : "加载失败，请稍后重试";
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6">
-      <div className="text-base font-semibold text-rose-700">加载失败</div>
-      <p className="mt-1 text-sm text-rose-600/90">{msg}</p>
-      <Button variant="outline" size="sm" className="mt-3 border-rose-300 text-rose-700 hover:bg-rose-100" onClick={onRetry}>
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+      <div className="text-base font-semibold text-destructive-foreground">加载失败</div>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
+      <Button variant="outline" size="sm" className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onRetry}>
         点击重试
       </Button>
     </div>

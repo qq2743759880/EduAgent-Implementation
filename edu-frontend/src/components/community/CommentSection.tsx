@@ -97,17 +97,17 @@ export function CommentSection({ postId, onCommentCountChange }: CommentSectionP
   return (
     <div className="space-y-4">
       {/* 回帖表单 */}
-      <div className="rounded-2xl border bg-white p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
           <MessageCircle className="h-4 w-4 text-primary" />
           参与讨论
           {replyTo && (
             <button
               type="button"
-              className="ml-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-600 hover:bg-slate-200"
+              className="ml-1 inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-normal text-secondary-foreground hover:bg-muted/80"
               onClick={() => setReplyTo(null)}
             >
-              回复 @{replyTo.author_name ?? "匿名"} <span className="text-slate-600">×</span>
+              回复 @{replyTo.author_name ?? "匿名"} <span className="text-secondary-foreground">×</span>
             </button>
           )}
         </div>
@@ -123,7 +123,8 @@ export function CommentSection({ postId, onCommentCountChange }: CommentSectionP
           maxLength={5000}
         />
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-amber-700">回帖奖励 +2 积分</span>
+          {/* fe-task07：回帖奖励 emerald 状态保留 → text-success-foreground（小字 4.5:1） */}
+          <span className="text-xs text-success-foreground">回帖奖励 +2 积分</span>
           <Button
             type="button"
             size="sm"
@@ -149,11 +150,11 @@ export function CommentSection({ postId, onCommentCountChange }: CommentSectionP
         {commentsQ.isLoading ? (
           <CommentSkeleton />
         ) : commentsQ.isError ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 text-sm text-rose-700">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-foreground">
             回帖加载失败，请稍后重试。
           </div>
         ) : comments.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             还没有回帖，来抢沙发吧～
           </div>
         ) : (
@@ -216,13 +217,13 @@ const CommentRow = memo(function CommentRow({
   };
 
   return (
-    <div className="rounded-xl border bg-white p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-        <span className="font-medium text-slate-700">
+        <span className="font-medium text-secondary-foreground">
           {comment.author_name ?? "匿名学员"}
         </span>
         {comment.parent_id != null && (
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px]">回复</span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-3xs">回复</span>
         )}
         <span>{formatRelativeTime(comment.created_at)}</span>
       </div>
@@ -236,7 +237,7 @@ const CommentRow = memo(function CommentRow({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-rose-600"
+          className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
           onClick={handleLikeClick}
           disabled={likeBusy}
           aria-pressed={liked}
@@ -244,7 +245,7 @@ const CommentRow = memo(function CommentRow({
           {likeBusy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <ThumbsUp className={cn("h-3.5 w-3.5", liked && "fill-current text-rose-500")} />
+            <ThumbsUp className={cn("h-3.5 w-3.5", liked && "fill-current text-destructive")} />
           )}
           <span className="tabular-nums">{likeCount}</span>
           {liked ? "已赞" : "点赞"}
@@ -267,7 +268,7 @@ function CommentSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-xl border bg-white" />
+        <div key={i} className="h-20 animate-pulse rounded-xl border border-border bg-muted/40" />
       ))}
     </div>
   );

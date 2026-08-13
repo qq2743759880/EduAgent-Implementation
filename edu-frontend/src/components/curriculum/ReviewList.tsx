@@ -82,7 +82,8 @@ export function ReviewList({
           <CardTitle className="text-lg">学员评价</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
             共 {stats.count} 条评价，平均分
-            <span className="ml-1 font-semibold text-amber-600">
+            {/* 星级豁免（design-options §2.3）：均分数字 warning-foreground（amber-700，a11y 修复） */}
+            <span className="ml-1 font-semibold text-warning-foreground">
               {stats.avg.toFixed(1)}
             </span>
             <span className="ml-2">/ 5.0</span>
@@ -95,10 +96,10 @@ export function ReviewList({
             return (
               <div key={stars} className="flex items-center gap-2 text-xs">
                 <span className="w-5 tabular-nums text-muted-foreground">{stars}</span>
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                <Star className="h-3.5 w-3.5 fill-warning-foreground text-warning-foreground" />
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-amber-400"
+                    className="h-full rounded-full bg-warning-foreground"
                     style={{ width: `${Math.round(ratio * 100)}%` }}
                   />
                 </div>
@@ -112,12 +113,12 @@ export function ReviewList({
       </CardHeader>
       <CardContent className="space-y-4">
         {reviews.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             {emptyText}
           </div>
         ) : (
           reviews.map((r, i) => (
-            <article key={r.id ?? `rv-${i}`} className="rounded-xl border p-4">
+            <article key={r.id ?? `rv-${i}`} className="rounded-xl border border-border bg-card p-4">
               <header className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
@@ -127,7 +128,7 @@ export function ReviewList({
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium">{r.user_name}</span>
+                      <span className="font-medium text-foreground">{r.user_name}</span>
                       {r.subject_tag && (
                         <Badge variant="secondary" className="text-xs">
                           {r.subject_tag}
@@ -164,9 +165,10 @@ function RatingStars({ rating }: { rating: number }) {
           key={i}
           className={
             "h-4 w-4 " +
+            // 星级豁免：填充 warning-foreground；未点亮 fill-muted
             (i <= full
-              ? "fill-amber-400 text-amber-400"
-              : "fill-slate-100 text-slate-200")
+              ? "fill-warning-foreground text-warning-foreground"
+              : "fill-muted text-muted")
           }
         />
       ))}

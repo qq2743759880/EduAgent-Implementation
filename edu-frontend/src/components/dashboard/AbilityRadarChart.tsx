@@ -18,6 +18,7 @@ import { RadarChart, type RadarSeriesOption } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS } from "@/lib/chart-palette";
 import { RotateCw, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -104,12 +105,28 @@ export function AbilityRadarChart({
     };
   }, []);
 
+  // a11y #5（1.1.1）：echarts canvas 无替代文本 → 容器 role="img" + aria-label 汇总数据摘要
+  const chartAriaLabel = loading
+    ? `${title}（加载中）`
+    : error
+      ? `${title}（加载失败）`
+      : empty
+        ? `${title}（暂无数据）`
+        : `${title}：${series
+            .map(
+              (s) =>
+                `${s.name} ${INDICATOR_ORDER.map((k, i) => `${SUBJECT_LABELS[k]} ${s.values?.[i] ?? 0}`).join(
+                  "、",
+                )}`,
+            )
+            .join("；")}`;
+
   const option: ECOption = useMemo(() => {
     const indicators: RadarComponentOption["indicator"] = INDICATOR_ORDER.map((k) => ({
       name: SUBJECT_LABELS[k],
       max,
     }));
-    const colors = series.map((s) => s.color || "#6366f1");
+    const colors = series.map((s) => s.color || CHART_COLORS.primary);
     return {
       animationDuration: 600,
       tooltip: {
@@ -121,7 +138,7 @@ export function AbilityRadarChart({
                 .join("，")
             : String(v),
       },
-      legend: series.length > 1 ? { bottom: 0, icon: "roundRect", textStyle: { color: "#64748b", fontSize: 12 } } : undefined,
+      legend: series.length > 1 ? { bottom: 0, icon: "roundRect", textStyle: { color: CHART_COLORS.mutedForeground, fontSize: 12 } } : undefined,
       radar: {
         indicator: indicators as NonNullable<RadarComponentOption["indicator"]>,
         center: ["50%", "52%"],
@@ -129,17 +146,19 @@ export function AbilityRadarChart({
         shape: "polygon",
         splitNumber: 4,
         axisName: {
-          color: "#475569",
+          color: CHART_COLORS.axisName,
           fontSize: 12,
           fontWeight: 500,
         },
         splitLine: {
-          lineStyle: { color: "#e2e8f0" },
+          lineStyle: { color: CHART_COLORS.border },
         },
         splitArea: {
-          areaStyle: { color: ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"] },
+          areaStyle: {
+            color: [CHART_COLORS.splitAreaBg, CHART_COLORS.white, CHART_COLORS.splitAreaBg, CHART_COLORS.white],
+          },
         },
-        axisLine: { lineStyle: { color: "#cbd5e1" } },
+        axisLine: { lineStyle: { color: CHART_COLORS.border } },
       },
       series: [
         {
@@ -148,7 +167,7 @@ export function AbilityRadarChart({
           data: series.map((s, idx) => {
             const value = (s.values ?? []).slice(0, INDICATOR_ORDER.length);
             while (value.length < INDICATOR_ORDER.length) value.push(0);
-            const color = colors[idx] || "#6366f1";
+            const color = colors[idx] || CHART_COLORS.primary;
             const opacity = typeof s.opacity === "number" ? s.opacity : 0.22;
             return {
               name: s.name,
@@ -156,7 +175,7 @@ export function AbilityRadarChart({
               symbol: "circle",
               symbolSize: 5,
               lineStyle: { width: 2, color },
-              itemStyle: { color, borderWidth: 1, borderColor: "#fff" },
+              itemStyle: { color, borderWidth: 1, borderColor: CHART_COLORS.white },
               areaStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
                   { offset: 0, color },
@@ -175,28 +194,36 @@ export function AbilityRadarChart({
     const c = chartRef.current;
     if (!c) return;
     c.setOption(option, true);
-    if (loading) c.showLoading("default", { text: "加载中", textColor: "#10b981", maskColor: "rgba(255,255,255,0.7)" });
+    if (loading) c.showLoading("default", { text: "加载中", textColor: CHART_COLORS.success, maskColor: "rgba(255,255,255,0.7)" });
     else c.hideLoading();
   }, [option, loading]);
 
   return (
-    <Card className={cn("border-slate-200/80 shadow-sm bg-white", className)}>
+    <Card className={cn("border-border shadow-card bg-card", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Target className="h-4 w-4 text-emerald-500" />
+              <Target className="h-4 w-4 text-primary" />
               {title}
             </CardTitle>
-            <CardDescription className="text-sm text-slate-500 pt-1">{description}</CardDescription>
+            <CardDescription className="text-sm text-muted-foreground pt-1">{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="relative" style={{ height }}>
-          <div ref={containerRef} style={{ width: "100%", height }} />
+          <div
+            ref={containerRef}
+            role="img"
+            aria-label={chartAriaLabel}
+            style={{ width: "100%", height }}
+          />
           {error ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive px-4 text-center">
+            <div
+              role="alert"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive-foreground px-4 text-center"
+            >
               <Target className="h-6 w-6 opacity-80" aria-hidden="true" />
               <p className="text-sm font-medium">{errorText}</p>
               {onRetry ? (

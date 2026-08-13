@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -36,6 +36,7 @@ import {
   mapPointsToCard,
   toProgressTrend,
   type DashboardKpis,
+  type DashboardOut,
 } from "@/lib/api/dashboard";
 import { getMyBadges, getMyPoints, getRankings } from "@/lib/api/community";
 import { useAuthStore } from "@/lib/auth-client";
@@ -81,8 +82,9 @@ function DataErrorCard({
 }) {
   return (
     <div
+      role="alert"
       className={cn(
-        "rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex flex-col items-center justify-center gap-2 p-6 text-center",
+        "rounded-xl border border-destructive/30 bg-destructive/10 text-destructive-foreground flex flex-col items-center justify-center gap-2 p-6 text-center",
         className,
       )}
     >
@@ -105,6 +107,7 @@ function DataErrorCard({
 function DashboardPageInner() {
   const me = useAuthStore((s) => s.me);
   const nickname = me?.nickname || "同学";
+  const queryClient = useQueryClient();
 
   const [range, setRange] = useState<RankRange>("day");
 
@@ -122,12 +125,19 @@ function DashboardPageInner() {
     staleTime: 60_000,
   });
 
-  // 3) 雷达（queryFn 内 Promise.all + 派生，单一消费方）
+  // 3) 雷达（queryFn 内派生，单一消费方）
   const radarQuery = useQuery({
     queryKey: ["dashboard", "ability-radar"],
     queryFn: async () => {
-      const [dash, prefs] = await Promise.all([getProgressDashboard(14), getMySubjectPreferences()]);
       // 派生自 GET /api/progress/dashboard.overall_correct_rate + GET /api/users/me/profile.subject_preferences
+      // perf P1-1：progress 复用 ["dashboard","trend"] 同 key fetchQuery —— 与 trend 并发时命中同一 fetch，
+      // 首屏不再重复请求 /api/progress/dashboard?days=14（60s staleTime 内命中缓存）
+      const dashPromise = queryClient.fetchQuery<DashboardOut>({
+        queryKey: ["dashboard", "trend"],
+        queryFn: () => getProgressDashboard(14),
+        staleTime: 60_000,
+      });
+      const [dash, prefs] = await Promise.all([dashPromise, getMySubjectPreferences()]);
       return deriveAbilityRadar(dash.overall_correct_rate, prefs);
     },
     staleTime: 60_000,
@@ -197,28 +207,28 @@ function DashboardPageInner() {
       {/* 顶部欢迎条 */}
       <section className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 border border-indigo-100">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary border border-primary-border">
             <Sparkles className="h-3.5 w-3.5" />
             今天也要和 EduAgent 一起进步呀 ✨
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             你好，{nickname}
           </h1>
-          <p className="text-sm text-slate-500 max-w-xl leading-6">
+          <p className="text-sm text-muted-foreground max-w-xl leading-6">
             这里是你的学习仪表盘：随时查看学习时长、学科能力、积分与排行榜，让每一次努力都能被看见。
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/me"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm text-slate-700 shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-border bg-card hover:bg-muted text-sm text-secondary-foreground shadow-card"
           >
             <UserRoundCog className="h-4 w-4" />
             个人中心
           </Link>
           <Link
             href="/me?tab=preferences"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-indigo-200 bg-indigo-600 hover:bg-indigo-700 text-sm text-white shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-primary-border bg-primary hover:bg-primary-strong text-sm text-primary-foreground shadow-card"
           >
             <Settings2 className="h-4 w-4" />
             调整偏好
@@ -275,57 +285,57 @@ function DashboardPageInner() {
         )}
       </section>
 
-      {/* 快捷入口 CTA：串联主要页面 */}
+      {/* 快捷入口 CTA：串联主要页面（fe-task07 收敛：图标底 5 色 → 单主色；卡片规范） */}
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Link
           href="/courses"
-          className="group rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm hover:shadow hover:border-indigo-200 p-4 flex flex-col gap-2 transition-all"
+          className="group rounded-xl border border-border bg-card hover:bg-muted/50 shadow-card hover:shadow-card hover:border-primary-border p-4 flex flex-col gap-2 transition-all"
         >
-          <span className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition">
+          <span className="h-9 w-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
             <BookOpenCheck className="h-5 w-5" />
           </span>
-          <span className="text-sm font-semibold text-slate-800">课程中心</span>
-          <span className="text-xs text-slate-500 line-clamp-1">全部课程 · 名师合集</span>
+          <span className="text-sm font-semibold text-foreground">课程中心</span>
+          <span className="text-xs text-muted-foreground line-clamp-1">全部课程 · 名师合集</span>
         </Link>
         <Link
           href="/my-courses"
-          className="group rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm hover:shadow hover:border-indigo-200 p-4 flex flex-col gap-2 transition-all"
+          className="group rounded-xl border border-border bg-card hover:bg-muted/50 shadow-card hover:shadow-card hover:border-primary-border p-4 flex flex-col gap-2 transition-all"
         >
-          <span className="h-9 w-9 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-105 transition">
+          <span className="h-9 w-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
             <GraduationCap className="h-5 w-5" />
           </span>
-          <span className="text-sm font-semibold text-slate-800">我的课程</span>
-          <span className="text-xs text-slate-500 line-clamp-1">继续上次学习</span>
+          <span className="text-sm font-semibold text-foreground">我的课程</span>
+          <span className="text-xs text-muted-foreground line-clamp-1">继续上次学习</span>
         </Link>
         <Link
           href="/practice/wrong-book"
-          className="group rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm hover:shadow hover:border-indigo-200 p-4 flex flex-col gap-2 transition-all"
+          className="group rounded-xl border border-border bg-card hover:bg-muted/50 shadow-card hover:shadow-card hover:border-primary-border p-4 flex flex-col gap-2 transition-all"
         >
-          <span className="h-9 w-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-105 transition">
+          <span className="h-9 w-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
             <Flame className="h-5 w-5" />
           </span>
-          <span className="text-sm font-semibold text-slate-800">错题本</span>
-          <span className="text-xs text-slate-500 line-clamp-1">消灭薄弱点</span>
+          <span className="text-sm font-semibold text-foreground">错题本</span>
+          <span className="text-xs text-muted-foreground line-clamp-1">消灭薄弱点</span>
         </Link>
         <Link
           href="/practice/vocab"
-          className="group rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm hover:shadow hover:border-indigo-200 p-4 flex flex-col gap-2 transition-all"
+          className="group rounded-xl border border-border bg-card hover:bg-muted/50 shadow-card hover:shadow-card hover:border-primary-border p-4 flex flex-col gap-2 transition-all"
         >
-          <span className="h-9 w-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-105 transition">
+          <span className="h-9 w-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
             <Waypoints className="h-5 w-5" />
           </span>
-          <span className="text-sm font-semibold text-slate-800">单词本</span>
-          <span className="text-xs text-slate-500 line-clamp-1">每日单词打卡</span>
+          <span className="text-sm font-semibold text-foreground">单词本</span>
+          <span className="text-xs text-muted-foreground line-clamp-1">每日单词打卡</span>
         </Link>
         <Link
           href="/chat"
-          className="group rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm hover:shadow hover:border-indigo-200 p-4 flex flex-col gap-2 transition-all sm:col-span-1 col-span-2"
+          className="group rounded-xl border border-border bg-card hover:bg-muted/50 shadow-card hover:shadow-card hover:border-primary-border p-4 flex flex-col gap-2 transition-all sm:col-span-1 col-span-2"
         >
-          <span className="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition">
+          <span className="h-9 w-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
             <Sparkles className="h-5 w-5" />
           </span>
-          <span className="text-sm font-semibold text-slate-800">AI 问答</span>
-          <span className="text-xs text-slate-500 line-clamp-1">随时问老师</span>
+          <span className="text-sm font-semibold text-foreground">AI 问答</span>
+          <span className="text-xs text-muted-foreground line-clamp-1">随时问老师</span>
         </Link>
       </section>
 
@@ -338,9 +348,9 @@ function DashboardPageInner() {
             onRetry={() => trendQuery.refetch()}
           />
         ) : !streak ? (
-          <div className="lg:col-span-1 animate-pulse bg-muted rounded-xl h-48" aria-hidden="true" />
-        ) : (
-          <StreakBadge
+          /* 打卡骨架：h-[168px] 与 StreakBadge 实测固有高度对齐（16+60+16+60+16，perf P1-2 CLS 预留） */
+          <div className="lg:col-span-1 animate-pulse bg-muted rounded-xl h-[168px]" aria-hidden="true" />
+        ) : (          <StreakBadge
             className="lg:col-span-1"
             streakDays={streak.streakDays}
             last7Days={streak.last7Days}
@@ -397,6 +407,7 @@ function DashboardPageInner() {
             className="xl:col-span-2"
             badges={badgesQuery.data ?? []}
             minCols={5}
+            loading={badgesQuery.isLoading}
             description={badgesQuery.isLoading ? "加载中…" : undefined}
           />
         )}

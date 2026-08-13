@@ -79,9 +79,9 @@ function PostDetailInner({ postId }: { postId: number }) {
   if (!detail) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-16">
+    <div className="min-h-screen bg-background pb-16">
       {/* 顶部工具条 */}
-      <div className="sticky top-16 z-10 border-b bg-white/80 backdrop-blur">
+      <div className="sticky top-16 z-10 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 py-2.5 md:px-6">
           <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground" onClick={() => router.back()}>
             <ArrowLeft className="mr-1 h-3.5 w-3.5" /> 返回
@@ -90,31 +90,35 @@ function PostDetailInner({ postId }: { postId: number }) {
             社区首页
           </Link>
           <span className="text-xs text-muted-foreground">/</span>
-          <span className="truncate text-xs text-slate-600">{detail.title}</span>
+          <span className="truncate text-xs text-secondary-foreground">{detail.title}</span>
         </div>
       </div>
 
       <article className="mx-auto w-full max-w-4xl px-4 pt-6 md:px-6">
         {/* 标题区 */}
-        <header className="rounded-2xl border bg-white p-5 md:p-6">
+        <header className="rounded-xl border border-border bg-card p-5 md:p-6">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className={board.colorClass}>
               {board.label}
             </Badge>
-            {detail.is_pinned && <Badge variant="secondary">置顶</Badge>}
+            {detail.is_pinned && (
+              <Badge variant="secondary" className="gap-1 bg-warning/10 text-warning-foreground border border-warning/40">
+                置顶
+              </Badge>
+            )}
             {detail.tags.map((t) => (
-              <span key={t} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
+              <span key={t} className="rounded-md bg-muted px-1.5 py-0.5 text-3xs text-muted-foreground">
                 #{t}
               </span>
             ))}
           </div>
 
-          <h1 className="mt-3 text-xl font-bold leading-snug text-slate-900 md:text-2xl">
+          <h1 className="mt-3 text-xl font-bold leading-snug text-foreground md:text-2xl">
             {detail.title}
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-            <span className="font-medium text-slate-700">{detail.author_name ?? "匿名学员"}</span>
+            <span className="font-medium text-secondary-foreground">{detail.author_name ?? "匿名学员"}</span>
             <span>{formatDateTime(detail.created_at)}</span>
             <span className="inline-flex items-center gap-1">
               <Eye className="h-3.5 w-3.5" /> {detail.view_count} 浏览
@@ -123,7 +127,7 @@ function PostDetailInner({ postId }: { postId: number }) {
             <span>回帖 {commentCount}</span>
           </div>
 
-          <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="mt-4 border-t border-border pt-4">
             <ReactButtons
               postId={postId}
               likeActive={likeActive}
@@ -143,7 +147,7 @@ function PostDetailInner({ postId }: { postId: number }) {
         </header>
 
         {/* Markdown 正文 */}
-        <section className="mt-4 rounded-2xl border bg-white p-5 md:p-7">
+        <section className="mt-4 rounded-xl border border-border bg-card p-5 md:p-7">
           <MarkdownView content={detail.content_md} />
         </section>
 
@@ -172,8 +176,8 @@ function postDetailErrorMessage(err: unknown): string {
 function DetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4 px-4 pt-6 md:px-6">
-      <div className="h-64 animate-pulse rounded-2xl border bg-white" />
-      <div className="h-64 animate-pulse rounded-2xl border bg-white" />
+      <div className="h-64 animate-pulse rounded-xl border border-border bg-muted/40" />
+      <div className="h-64 animate-pulse rounded-xl border border-border bg-muted/40" />
     </div>
   );
 }
@@ -181,10 +185,10 @@ function DetailSkeleton() {
 function NotFoundCard({ message, action }: { message: string; action?: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center gap-4 px-4 text-center">
-      <div className="grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-slate-500">
+      <div className="grid h-16 w-16 place-items-center rounded-xl bg-muted text-muted-foreground">
         <Loader2 className="h-7 w-7" />
       </div>
-      <div className="text-base font-semibold text-slate-800">{message}</div>
+      <div className="text-base font-semibold text-foreground">{message}</div>
       {action ?? (
         <Button variant="outline" size="sm" asChild>
           <Link href="/community">

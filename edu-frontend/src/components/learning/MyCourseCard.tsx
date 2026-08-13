@@ -63,25 +63,21 @@ export function MyCourseCard({
       : null;
 
   return (
-    <Card className="group h-full overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
-      <div
-        className={
-          "relative h-32 w-full overflow-hidden bg-gradient-to-br " +
-          subjectGradient(data.subject_code as SubjectCode)
-        }
-      >
+    <Card className="group h-full overflow-hidden transition-all hover:-translate-y-0.5 hover:border-primary-border hover:shadow-card">
+      {/* fe-task07：学科封面 5 色渐变 → 主色渐变 */}
+      <div className="relative h-32 w-full overflow-hidden bg-gradient-to-br from-primary-deep to-primary">
         <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.3),transparent_60%)]" />
         <div className="absolute left-3 top-3 flex items-center gap-1.5">
           {subject && (
-            <Badge className={"text-white " + subject.color}>{subject.name}</Badge>
+            <Badge className="bg-white/25 text-white shadow-sm backdrop-blur-sm">{subject.name}</Badge>
           )}
           {level && (
-            <Badge variant="secondary" className="bg-white/85 text-slate-700 backdrop-blur-sm">
+            <Badge variant="secondary" className="bg-white/85 text-secondary-foreground backdrop-blur-sm">
               {level.short}
             </Badge>
           )}
           {completed && (
-            <Badge className="bg-emerald-600 text-white">
+            <Badge className="bg-success-foreground text-white">
               <Trophy className="mr-1 h-3 w-3" /> 已完成
             </Badge>
           )}
@@ -94,9 +90,10 @@ export function MyCourseCard({
             setFav(next);
             onFavoritedChange?.(next);
           }}
-          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-amber-500 shadow-sm backdrop-blur transition-transform hover:scale-110"
+          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-warning-foreground shadow-sm backdrop-blur transition-transform hover:scale-110"
         >
-          <Star className={"h-4 w-4 " + (fav ? "fill-amber-400" : "")} />
+          {/* 收藏星豁免（design-options §2.8）：fill-warning-foreground（amber-700 档，a11y 修复） */}
+          <Star className={"h-4 w-4 " + (fav ? "fill-warning-foreground" : "")} />
         </button>
         <div className="absolute bottom-3 left-4 right-4 text-white drop-shadow-sm">
           <div className="truncate text-base font-semibold">{data.series_title}</div>
@@ -176,27 +173,26 @@ function ProgressStack({
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="relative h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+        {/* fe-task07：视频/作业/考试三段分类色 → 主色系透明度（文字「视频X%·作业X%·考试X%」补偿） */}
         <div
-          className="absolute inset-y-0 left-0 bg-sky-400"
+          className="absolute inset-y-0 left-0 bg-primary"
           style={{ width: `${video * 100}%` }}
         />
         <div
-          className="absolute inset-y-0 left-0 bg-emerald-500 mix-blend-multiply"
+          className="absolute inset-y-0 left-0 bg-primary/70 mix-blend-multiply"
           style={{ width: `${homework * 100}%`, opacity: 0.7 }}
         />
         <div
-          className="absolute inset-y-0 left-0 bg-violet-500 mix-blend-multiply"
+          className="absolute inset-y-0 left-0 bg-primary/40 mix-blend-multiply"
           style={{ width: `${exam * 100}%`, opacity: 0.55 }}
         />
       </div>
-      <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className={
             "absolute inset-y-0 left-0 rounded-full " +
-            (overall >= 0.9999
-              ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-              : "bg-gradient-to-r from-primary to-indigo-400")
+            (overall >= 0.9999 ? "bg-success" : "bg-primary")
           }
           style={{ width: `${Math.min(100, overall * 100)}%` }}
         />
@@ -232,24 +228,13 @@ function clamp1(v: number) {
 }
 
 function SeparatorSoft() {
-  return <div className="h-px w-full bg-slate-100" />;
+  return <div className="h-px w-full bg-border" />;
 }
 
 function subjectGradient(code?: SubjectCode | string | null): string {
-  switch (code) {
-    case "english":
-      return "from-sky-500 via-sky-400 to-cyan-400";
-    case "programming":
-      return "from-violet-500 via-indigo-500 to-purple-500";
-    case "math":
-      return "from-emerald-500 via-teal-500 to-green-500";
-    case "chinese":
-      return "from-amber-500 via-orange-400 to-yellow-400";
-    case "physics":
-      return "from-rose-500 via-pink-500 to-red-500";
-    default:
-      return "from-slate-500 via-slate-400 to-slate-600";
-  }
+  // fe-task07：统一主色渐变（函数保留以兼容调用签名；学科区分靠课程名 + 标签）
+  void code;
+  return "from-primary-deep to-primary";
 }
 
 function formatDate(iso: string): string {

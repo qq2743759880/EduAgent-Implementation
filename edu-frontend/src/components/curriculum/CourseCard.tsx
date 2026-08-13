@@ -23,12 +23,14 @@ export function CourseCard({ data }: { data: SeriesSummary }) {
 
   return (
     <Link href={`/courses/${data.id}`} className="group block">
-      <Card className="h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-        <div className={"relative h-40 w-full overflow-hidden bg-gradient-to-br " + subjectColorGradient(data.subject_code)}>
+      <Card className="h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-border hover:shadow-card">
+        {/* fe-task07：学科封面 5 色渐变 → 主色渐变（学科区分靠 name 标签 + 课程标题） */}
+        <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-primary-deep to-primary">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
           <div className="absolute left-3 top-3 flex gap-1.5">
             {subject && (
-              <Badge className={"text-white shadow-sm " + subject?.color}>{subject.name}</Badge>
+              // fe-task07：学科分类色 → 主色渐变封面内统一白色标签（学科靠 name 文字区分）
+              <Badge className="bg-white/25 text-white shadow-sm backdrop-blur-sm">{subject.name}</Badge>
             )}
             {level && (
               <Badge variant="secondary" className="bg-white/85 backdrop-blur-sm">
@@ -57,7 +59,8 @@ export function CourseCard({ data }: { data: SeriesSummary }) {
               <Users className="h-3.5 w-3.5" />
               {students.toLocaleString()} 人已报
             </span>
-            <span className="inline-flex items-center gap-1 text-amber-600">
+            {/* 星级豁免（design-options §2.3）：fill-warning-foreground（amber-700 档，a11y 修复） */}
+            <span className="inline-flex items-center gap-1 text-warning-foreground">
               <Star className="h-3.5 w-3.5 fill-current" />
               {rating.toFixed(1)}
             </span>
@@ -66,7 +69,8 @@ export function CourseCard({ data }: { data: SeriesSummary }) {
           <div className="mt-3 flex items-end justify-between">
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-rose-600">
+                {/* fe-task07：价格 amber/rose 双色 → foreground 字重；原价 line-through muted */}
+                <span className="text-xl font-bold text-foreground">
                   ¥{priceNow.toFixed(0)}
                 </span>
                 {priceOrigin > priceNow ? (
@@ -76,7 +80,7 @@ export function CourseCard({ data }: { data: SeriesSummary }) {
                 ) : null}
               </div>
             </div>
-            <span className="text-xs text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
               查看详情 →
             </span>
           </div>
@@ -87,18 +91,7 @@ export function CourseCard({ data }: { data: SeriesSummary }) {
 }
 
 function subjectColorGradient(code: string | null | undefined): string {
-  switch (code) {
-    case "english":
-      return "from-sky-500 via-sky-400 to-cyan-400";
-    case "programming":
-      return "from-violet-500 via-purple-500 to-indigo-500";
-    case "math":
-      return "from-emerald-500 via-teal-500 to-green-500";
-    case "chinese":
-      return "from-amber-500 via-orange-400 to-yellow-400";
-    case "physics":
-      return "from-rose-500 via-pink-500 to-red-500";
-    default:
-      return "from-slate-500 via-slate-400 to-slate-600";
-  }
+  // fe-task07：统一主色渐变（函数保留以兼容调用签名；学科区分靠课程名 + 标签）
+  void code;
+  return "from-primary-deep to-primary";
 }

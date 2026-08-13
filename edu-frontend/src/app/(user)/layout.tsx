@@ -158,7 +158,7 @@ export default function UserAreaLayout({ children }: { children: React.ReactNode
             <div className="px-4 py-3 border-b border-border" role="presentation">
               <p className="text-xs text-muted-foreground">当前账号</p>
               <p className="text-sm font-semibold text-foreground truncate">{nickname}</p>
-              <p className="text-3xs text-success mt-0.5">已登录</p>
+              <p className="text-3xs text-success-foreground mt-0.5">已登录</p>
             </div>
             <div className="p-1.5 flex flex-col gap-0.5">
               <Link

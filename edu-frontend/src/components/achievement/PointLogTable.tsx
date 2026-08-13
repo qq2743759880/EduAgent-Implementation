@@ -51,9 +51,9 @@ export function PointLogTable() {
   if (isError && !data) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-8 text-center">
-          <div className="text-base font-semibold text-rose-700">积分加载失败</div>
-          <p className="mt-1 text-sm text-rose-600/90">请稍后刷新重试。</p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-8 text-center">
+          <div className="text-base font-semibold text-destructive-foreground">积分加载失败</div>
+          <p className="mt-1 text-sm text-destructive-foreground/90">请稍后刷新重试。</p>
         </div>
       </div>
     );
@@ -68,27 +68,27 @@ export function PointLogTable() {
 
   return (
     <div className="space-y-4">
-      {/* 积分 & 等级总览 */}
-      <div className="rounded-2xl border bg-gradient-to-br from-indigo-700 via-indigo-600 to-sky-700 p-5 text-white">
+      {/* 积分 & 等级总览（fe-task07：深色渐变卡 → 中性卡 + 纯色进度） */}
+      <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs backdrop-blur">
-              <Coins className="h-3.5 w-3.5 text-amber-300" />
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs text-primary">
+              <Coins className="h-3.5 w-3.5" />
               Lv.{data.level_no} · {data.level_title}
             </div>
-            <div className="mt-3 text-4xl font-bold tabular-nums">
+            <div className="mt-3 text-4xl font-bold tabular-nums text-primary">
               {data.total_points.toLocaleString()}
             </div>
-            <div className="mt-1 text-sm text-white/90">当前积分</div>
+            <div className="mt-1 text-sm text-muted-foreground">当前积分</div>
           </div>
           <div className="min-w-[180px] flex-1 sm:max-w-xs">
-            <div className="flex justify-between text-xs text-white/90">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>
                 Lv.{data.level_no}（{data.level_min} 分）
               </span>
               {maxedLevel ? (
-                <span className="inline-flex items-center gap-1">
-                  <Trophy className="h-3.5 w-3.5 text-amber-300" />
+                <span className="inline-flex items-center gap-1 text-warning-foreground">
+                  <Trophy className="h-3.5 w-3.5" />
                   已达最高等级
                 </span>
               ) : (
@@ -97,13 +97,13 @@ export function PointLogTable() {
                 </span>
               )}
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/20">
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-200"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${Math.min(100, Math.max(0, maxedLevel ? 100 : data.level_progress_pct))}%` }}
               />
             </div>
-            <div className="mt-1 text-right text-[11px] text-white/85">
+            <div className="mt-1 text-right text-3xs text-muted-foreground">
               {maxedLevel ? "已达成全部等级" : `距下一级 ${Math.round(data.level_progress_pct)}%`}
             </div>
           </div>
@@ -111,13 +111,13 @@ export function PointLogTable() {
       </div>
 
       {/* 积分流水表 */}
-      <div className="overflow-hidden rounded-2xl border bg-white">
-        <div className="border-b px-4 py-3 text-sm font-semibold">积分流水</div>
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-b border-border px-4 py-3 text-sm font-semibold text-foreground">积分流水</div>
 
         {isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-lg bg-slate-100" />
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-muted" />
             ))}
           </div>
         ) : logs.length === 0 ? (
@@ -125,19 +125,19 @@ export function PointLogTable() {
             还没有积分记录，去社区发帖 / 回帖、完成学习任务赚取第一笔积分吧～
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {logs.map((log) => (
               <div key={log.log_id} className="flex items-center gap-3 px-4 py-3">
                 <span
                   className={cn(
                     "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                    log.delta >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600",
+                    log.delta >= 0 ? "bg-success/10 text-success-foreground" : "bg-destructive/10 text-destructive-foreground",
                   )}
                 >
                   {log.delta >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-800">
+                  <div className="truncate text-sm font-medium text-foreground">
                     {pointTypeLabel(log.point_type)}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
@@ -148,12 +148,12 @@ export function PointLogTable() {
                   <div
                     className={cn(
                       "text-sm font-semibold tabular-nums",
-                      log.delta >= 0 ? "text-emerald-700" : "text-rose-600",
+                      log.delta >= 0 ? "text-success-foreground" : "text-destructive-foreground",
                     )}
                   >
                     {log.delta >= 0 ? `+${log.delta}` : log.delta}
                   </div>
-                  <div className="text-[11px] text-muted-foreground tabular-nums">
+                  <div className="text-3xs text-muted-foreground tabular-nums">
                     余额 {log.balance_after}
                   </div>
                 </div>
@@ -163,7 +163,7 @@ export function PointLogTable() {
         )}
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 border-t border-slate-100 py-3">
+          <div className="flex items-center justify-center gap-3 border-t border-border py-3">
             <Button
               variant="outline"
               size="sm"
@@ -193,8 +193,8 @@ export function PointLogTable() {
 function PointLogSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-36 animate-pulse rounded-2xl bg-gradient-to-br from-indigo-200 to-sky-200" />
-      <div className="h-64 animate-pulse rounded-2xl border bg-white" />
+      <div className="h-36 animate-pulse rounded-xl bg-muted" />
+      <div className="h-64 animate-pulse rounded-xl border border-border bg-muted/40" />
     </div>
   );
 }

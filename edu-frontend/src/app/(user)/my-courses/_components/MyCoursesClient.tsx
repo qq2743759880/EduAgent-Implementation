@@ -149,21 +149,21 @@ export default function MyCoursesClient() {
             <TabsTrigger value="in_progress" className="gap-2">
               <GraduationCap className="h-4 w-4" />
               进行中
-              <Badge variant="secondary" className="h-5 py-0 text-[10px]">
+              <Badge variant="secondary" className="h-5 py-0 text-4xs">
                 {badges.in_progress}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="completed" className="gap-2">
               <Trophy className="h-4 w-4" />
               已完成
-              <Badge variant="secondary" className="h-5 py-0 text-[10px]">
+              <Badge variant="secondary" className="h-5 py-0 text-4xs">
                 {badges.completed}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="favorited" className="gap-2">
               <Heart className="h-4 w-4" />
               已收藏
-              <Badge variant="secondary" className="h-5 py-0 text-[10px]">
+              <Badge variant="secondary" className="h-5 py-0 text-4xs">
                 {badges.favorited}
               </Badge>
             </TabsTrigger>
@@ -257,14 +257,14 @@ function GridLoading({ rows }: { rows: number }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: n }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border bg-white/70 p-0">
-          <div className="h-32 w-full animate-pulse bg-gradient-to-br from-slate-200 via-slate-100 to-slate-200" />
+        <div key={i} className="overflow-hidden rounded-xl border border-border bg-muted/40 p-0">
+          <div className="h-32 w-full animate-pulse bg-muted" />
           <div className="space-y-2 p-4">
-            <div className="h-3 w-1/3 animate-pulse rounded bg-slate-200" />
-            <div className="h-3 w-4/5 animate-pulse rounded bg-slate-200" />
-            <div className="h-2 w-full animate-pulse rounded bg-slate-200" />
-            <div className="h-2 w-1/2 animate-pulse rounded bg-slate-200" />
-            <div className="h-8 w-full animate-pulse rounded-lg bg-slate-200" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-4/5 animate-pulse rounded bg-muted" />
+            <div className="h-2 w-full animate-pulse rounded bg-muted" />
+            <div className="h-2 w-1/2 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-lg bg-muted" />
           </div>
         </div>
       ))}
@@ -274,10 +274,10 @@ function GridLoading({ rows }: { rows: number }) {
 
 function ErrorPanel({ msg, onRetry }: { msg: string; onRetry: () => void }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6">
-      <div className="font-semibold text-rose-700">加载我的课程失败</div>
-      <p className="mt-1 text-sm text-rose-600">{msg}</p>
-      <Button size="sm" variant="outline" className="mt-3 border-rose-300 text-rose-700" onClick={onRetry}>
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+      <div className="font-semibold text-destructive-foreground">加载我的课程失败</div>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
+      <Button size="sm" variant="outline" className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onRetry}>
         <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> 重试
       </Button>
     </div>
@@ -286,9 +286,9 @@ function ErrorPanel({ msg, onRetry }: { msg: string; onRetry: () => void }) {
 
 function AuthRedirectSkeleton() {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
       <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
-      <div className="text-base font-semibold">正在跳转登录…</div>
+      <div className="text-base font-semibold text-foreground">正在跳转登录…</div>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         「我的课程」需要登录后才能看到你报名的所有课程。
       </p>

@@ -44,16 +44,14 @@ const RANGE_LABEL: Record<RankRange, string> = {
   month: "本月",
 };
 
+/**
+ * 名次奖牌图标（fe-task07 收敛）：名次多色 → 第一名 warning（奖牌豁免）、2/3 名 muted-foreground
+ * （orange 为禁色删除）；名次靠既有 rank 序号数字 badge 结构补偿。
+ */
 const MEDAL_ICON: Record<number, ReactNode> = {
-  1: <Crown className="h-4 w-4 text-amber-500" />,
-  2: <Medal className="h-4 w-4 text-slate-400" />,
-  3: <Trophy className="h-4 w-4 text-orange-500" />,
-};
-
-const ROW_STYLE: Record<number, string> = {
-  1: "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-100",
-  2: "bg-gradient-to-r from-slate-50 to-zinc-50 border-slate-200",
-  3: "bg-gradient-to-r from-orange-50 to-amber-50/60 border-orange-100",
+  1: <Crown className="h-4 w-4 text-warning-foreground" />,
+  2: <Medal className="h-4 w-4 text-muted-foreground" />,
+  3: <Trophy className="h-4 w-4 text-muted-foreground" />,
 };
 
 export function RankList({
@@ -68,19 +66,19 @@ export function RankList({
   const myAny = data.myRank ?? {};
 
   return (
-    <Card className={cn("border-slate-200/80 shadow-sm bg-white", className)}>
+    <Card className={cn("border-border shadow-card bg-card", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Award className="h-4 w-4 text-indigo-500" />
+              <Award className="h-4 w-4 text-primary" />
               学习排行榜
             </CardTitle>
-            <CardDescription className="text-sm text-slate-500 pt-1">
+            <CardDescription className="text-sm text-muted-foreground pt-1">
               和全站同学一起比拼：勤奋持续的同学将获得更多徽章与特权。
             </CardDescription>
           </div>
-          <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-medium text-[11px]">
+          <Badge variant="secondary" className="bg-primary-soft text-primary border-primary-border font-medium text-3xs">
             仅展示 TOP {topN}
           </Badge>
         </div>
@@ -91,7 +89,7 @@ export function RankList({
         onValueChange={(v) => onRangeChange?.(v as RankRange)}
       >
         <div className="px-6">
-          <TabsList className="grid grid-cols-3 max-w-xs mb-4 bg-white border border-slate-200 shadow-sm">
+          <TabsList className="grid grid-cols-3 max-w-xs mb-4 bg-card border border-border shadow-sm">
             {ranges.map((r) => (
               <TabsTrigger key={r} value={r} className="h-9 text-sm">
                 {RANGE_LABEL[r]}
@@ -129,17 +127,20 @@ function RankListBody({
 }) {
   if (loading) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-11 rounded-xl bg-slate-100/80 animate-pulse" />
+      <div className="space-y-1.5">
+        {/* 骨架行数与 topN 数据行对齐 + 行结构（px-3 py-2.5 + h-8）与 RankRow 同高，消除骨架→数据 CLS（perf P1-2） */}
+        {Array.from({ length: topN }).map((_, i) => (
+          <div key={i} className="px-3 py-2.5">
+            <div className="h-8 rounded-xl bg-slate-100/80 animate-pulse" />
+          </div>
         ))}
       </div>
     );
   }
   if (list.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-6 text-sm text-slate-400 flex flex-col items-center justify-center gap-1">
-        <Trophy className="h-5 w-5 text-slate-300" />
+      <div className="rounded-xl border border-dashed border-border bg-muted/40 p-6 text-sm text-muted-foreground flex flex-col items-center justify-center gap-1">
+        <Trophy className="h-5 w-5 text-muted-foreground/60" />
         暂无排行榜数据，去完成一个练习让自己登上 TOP {topN} 吧。
       </div>
     );
@@ -155,44 +156,43 @@ function RankListBody({
 
 function RankRow({ u }: { u: RankEntry }) {
   const medal = MEDAL_ICON[u.rank];
-  const rowStyle = ROW_STYLE[u.rank] || "bg-white hover:bg-slate-50 border-slate-200/70";
   return (
     <li
       className={cn(
         "rounded-xl border px-3 py-2.5 flex items-center gap-3 transition-all",
-        rowStyle,
-        u.mine && "ring-2 ring-indigo-200",
+        "bg-card border-border hover:bg-muted/60",
+        u.mine && "ring-2 ring-primary-border",
       )}
     >
       <div className="w-7 shrink-0 flex items-center justify-center">
-        {medal || <span className="text-sm font-semibold text-slate-500 tabular-nums">{u.rank}</span>}
+        {medal || <span className="text-sm font-semibold text-muted-foreground tabular-nums">{u.rank}</span>}
       </div>
-      <Avatar className="h-8 w-8 shrink-0 border border-white shadow-sm">
+      <Avatar className="h-8 w-8 shrink-0 border border-card shadow-sm">
         {u.avatar ? <AvatarImage src={u.avatar} alt={u.nickname} /> : null}
-        <AvatarFallback className="text-xs bg-gradient-to-br from-indigo-500 to-sky-500 text-white font-semibold">
+        <AvatarFallback className="text-xs bg-gradient-to-br from-primary-deep to-primary text-primary-foreground font-semibold">
           {u.nickname.slice(0, 1).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium text-slate-800 truncate">{u.nickname}</span>
+          <span className="text-sm font-medium text-foreground truncate">{u.nickname}</span>
           {u.mine ? (
-            <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-100 shrink-0">
+            <Badge variant="outline" className="text-4xs bg-primary-soft text-primary border-primary-border shrink-0">
               我
             </Badge>
           ) : null}
           {u.tag ? (
-            <span className="text-[10px] text-emerald-600 font-medium shrink-0">
+            <span className="text-4xs text-success-foreground font-medium shrink-0">
               {u.tag}
             </span>
           ) : null}
         </div>
       </div>
       <div className="shrink-0 text-right">
-        <div className="text-sm font-bold tabular-nums text-slate-900">
+        <div className="text-sm font-bold tabular-nums text-foreground">
           {u.score.toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-400 leading-none">积分</div>
+        <div className="text-4xs text-muted-foreground leading-none">积分</div>
       </div>
     </li>
   );
@@ -206,34 +206,34 @@ function MyRankRow({ me }: { me: RankEntry & { totalPlayers?: number } }) {
       <div
         className={cn(
           "rounded-xl px-3 py-3 flex items-center gap-3",
-          "bg-gradient-to-r from-indigo-50 via-indigo-50/60 to-white border border-indigo-100 ring-1 ring-indigo-100",
+          "bg-primary-soft text-primary ring-1 ring-primary-border",
         )}
       >
-        <div className="w-7 shrink-0 flex items-center justify-center text-sm font-semibold text-indigo-700 tabular-nums">
+        <div className="w-7 shrink-0 flex items-center justify-center text-sm font-semibold text-primary tabular-nums">
           {me.rank ?? "—"}
         </div>
-        <Avatar className="h-8 w-8 shrink-0 border-2 border-white shadow-sm">
+        <Avatar className="h-8 w-8 shrink-0 border-2 border-card shadow-sm">
           {me.avatar ? <AvatarImage src={me.avatar} alt={me.nickname} /> : null}
-          <AvatarFallback className="text-xs bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white font-semibold">
+          <AvatarFallback className="text-xs bg-gradient-to-br from-primary-deep to-primary text-primary-foreground font-semibold">
             {(me.nickname || "U").slice(0, 1).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <User className="h-3.5 w-3.5 text-indigo-500" />
-            <span className="text-sm font-semibold text-indigo-800 truncate">我的排名</span>
+            <User className="h-3.5 w-3.5 text-primary" />
+            <span className="text-sm font-semibold text-primary-soft-foreground truncate">我的排名</span>
           </div>
-          <p className="text-[11px] text-slate-500 leading-5 pt-0.5">
+          <p className="text-3xs text-muted-foreground leading-5 pt-0.5">
             {total
               ? `超过了总人数 ${Math.max(0, Math.round((1 - me.rank / total) * 100)).toFixed(0)}% 的同学`
               : "继续努力，每天学习 30 分钟就可以爬升一个台阶 📈"}
           </p>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-sm font-bold tabular-nums text-slate-900">
+          <div className="text-sm font-bold tabular-nums text-foreground">
             {me.score.toLocaleString()}
           </div>
-          <div className="text-[10px] text-slate-400 leading-none">我的积分</div>
+          <div className="text-4xs text-muted-foreground leading-none">我的积分</div>
         </div>
       </div>
     </>

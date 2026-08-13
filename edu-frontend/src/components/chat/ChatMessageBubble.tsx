@@ -114,19 +114,20 @@ function CodeBlock({
     <pre
       ref={textRef}
       className={cn(
-        "group/code relative overflow-x-auto rounded-xl border border-border bg-zinc-950 text-zinc-100 p-4 pr-12 text-[13px] leading-6 my-3",
+        // 代码块 zinc 深色保留（keepList 豁免）；字号定档 sm-table
+        "group/code relative overflow-x-auto rounded-xl border border-border bg-zinc-950 text-zinc-100 p-4 pr-12 text-sm-table leading-6 my-3",
       )}
     >
       <div className="absolute right-2 top-2 flex items-center gap-2">
         {lang && (
-          <span className="text-[11px] uppercase tracking-wide text-zinc-400 select-none">
+          <span className="text-3xs uppercase tracking-wide text-zinc-400 select-none">
             {lang}
           </span>
         )}
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-zinc-300 opacity-0 transition group-hover/code:opacity-100 hover:bg-white/10 hover:text-white"
+          className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-3xs text-zinc-300 opacity-0 transition group-hover/code:opacity-100 hover:bg-white/10 hover:text-white"
           aria-label={copied ? "已复制" : "复制代码"}
         >
           {copied ? (
@@ -180,7 +181,7 @@ function RoleAvatar({
   if (role === "system") {
     return (
       <span
-        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 ring-2 ring-background dark:bg-amber-500/20 dark:text-amber-300"
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ring-2 ring-background"
         aria-label="系统消息"
       >
         <AlertCircle className="size-4" aria-hidden />
@@ -188,14 +189,14 @@ function RoleAvatar({
     );
   }
 
-  // assistant
+  // assistant（fe-task07：头像渐变 → 主色渐变；在线点 → bg-success 保留）
   return (
     <span
-      className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white ring-2 ring-background shadow shadow-indigo-500/30"
+      className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-deep to-primary text-primary-foreground ring-2 ring-background shadow shadow-primary/30"
       aria-label="AI 助手"
     >
       <Bot className="size-4" aria-hidden />
-      <span className="absolute -right-0.5 -bottom-0.5 inline-flex size-3 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-background">
+      <span className="absolute -right-0.5 -bottom-0.5 inline-flex size-3 items-center justify-center rounded-full bg-success text-white ring-2 ring-background">
         <Sparkles className="size-2" aria-hidden />
       </span>
     </span>
@@ -249,13 +250,14 @@ export function ChatMessageBubble({
       >
         <div
           className={cn(
-            "relative rounded-2xl text-[14px] leading-6 whitespace-pre-wrap break-words",
+            // fe-task07：正文 14px → text-sm（sizeExceptions 例外②，同值无缩放回归）；系统消息 amber → muted（§2.7）
+            "relative rounded-xl text-sm leading-6 whitespace-pre-wrap break-words",
             isUser &&
               "rounded-tr-md bg-primary text-primary-foreground px-4 py-2.5 shadow-sm",
             isAssistant &&
               "rounded-tl-md border border-border bg-background text-foreground px-4 py-3 shadow-sm",
             isSystem &&
-              "rounded-tl-md border border-amber-200/70 bg-amber-50 text-amber-900 px-4 py-3 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/20",
+              "rounded-tl-md border border-border bg-muted text-secondary-foreground px-4 py-3",
             streaming && "min-h-[2.5rem]",
           )}
         >

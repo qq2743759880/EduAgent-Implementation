@@ -188,9 +188,9 @@ export function VideoPlayer({
   const subject = SUBJECT_OPTIONS.find((s) => s.code === subjectCode);
 
   return (
-    <div className="overflow-hidden rounded-2xl border bg-slate-900 shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-foreground/20 bg-foreground shadow-card">
       {/* 视频 / 占位 */}
-      <div className="relative aspect-video w-full bg-slate-950">
+      <div className="relative aspect-video w-full bg-foreground">
         {hasRealVideo ? (
           <video
             ref={videoRef}
@@ -230,7 +230,7 @@ export function VideoPlayer({
               <button
                 type="button"
                 onClick={handlePlayClick}
-                className="grid h-16 w-16 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition-transform hover:scale-105"
+                className="grid h-16 w-16 place-items-center rounded-full bg-white/95 text-foreground shadow-lg transition-transform hover:scale-105"
                 aria-label={isPlaying ? "暂停" : "播放"}
               >
                 {isPlaying ? (
@@ -244,8 +244,8 @@ export function VideoPlayer({
         )}
       </div>
 
-      {/* 控制条：播放按钮 + 进度条 + 时间 + 音视频说明 */}
-      <div className="flex flex-col gap-3 bg-slate-950 p-4 text-white">
+      {/* 控制条：播放按钮 + 进度条 + 时间 + 音视频说明（深色视频容器，foreground 系） */}
+      <div className="flex flex-col gap-3 bg-foreground p-4 text-white">
         <div className="flex items-center gap-3">
           <Button
             type="button"
@@ -271,10 +271,10 @@ export function VideoPlayer({
               className={"!py-3.5 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 " +
                 (hasRealVideo ? "opacity-40" : "")}
             />
-            {/* 已观看叠加条（与 Slider 轨道视觉分离时另放一条彩色） */}
+            {/* 已观看叠加条（fe-task07：进度条渐变 → 纯色 bg-primary） */}
             <div className="-mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full bg-gradient-to-r from-sky-400 via-indigo-400 to-violet-400 transition-all"
+                className="h-full bg-primary transition-all"
                 style={{ width: `${Math.min(100, displayRatio * 100)}%` }}
               />
             </div>
@@ -286,24 +286,25 @@ export function VideoPlayer({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/70">
+          {/* fe-task07：Legend 数据分类多色 → 主色系透明度 + 文字区分 */}
           <div className="flex flex-wrap items-center gap-3">
-            <LegendDot color="bg-sky-400" label="当前观看进度" />
+            <LegendDot color="bg-primary" label="当前观看进度" />
             {typeof syncedRatio === "number" && syncedRatio > 0 && (
-              <LegendDot color="bg-violet-400" label={`后端已同步 ${(syncedRatio * 100).toFixed(0)}%`} />
+              <LegendDot color="bg-primary/60" label={`后端已同步 ${(syncedRatio * 100).toFixed(0)}%`} />
             )}
             {hasRealVideo ? (
-              <LegendDot color="bg-emerald-400" label="HTML5 源视频" />
+              <LegendDot color="bg-success/80" label="HTML5 源视频" />
             ) : (
-              <LegendDot color="bg-amber-400" label="模拟进度（打点正常上报）" />
+              <LegendDot color="bg-warning/80" label="模拟进度（打点正常上报）" />
             )}
           </div>
           {ticks.hasBufferedTicks() ? (
-            <span className="inline-flex items-center gap-1 text-amber-300">
+            <span className="inline-flex items-center gap-1 text-warning-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               打点同步中…
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-emerald-300">
+            <span className="inline-flex items-center gap-1 text-success-foreground">
               <AlertCircle className="h-3 w-3" />
               本地进度已落盘
             </span>
@@ -335,18 +336,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 function placeholderGradient(code?: SubjectCode | string | null): string {
-  switch (code) {
-    case "english":
-      return "from-slate-900 via-sky-900 to-cyan-900";
-    case "programming":
-      return "from-slate-900 via-indigo-900 to-violet-900";
-    case "math":
-      return "from-slate-900 via-emerald-900 to-teal-900";
-    case "chinese":
-      return "from-slate-900 via-amber-900 to-orange-900";
-    case "physics":
-      return "from-slate-900 via-rose-900 to-pink-900";
-    default:
-      return "from-slate-900 via-slate-800 to-slate-900";
-  }
+  // fe-task07：学科 placeholder 渐变 → 主色渐变（学科靠课程名 + 标签补偿）
+  void code;
+  return "from-primary-deep to-primary";
 }

@@ -51,17 +51,17 @@ function ProfilePageInner() {
 
   return (
     <>
-      <div className="w-full max-w-6xl mx-auto mb-5 flex items-center justify-between text-sm text-slate-500">
+      <div className="w-full max-w-6xl mx-auto mb-5 flex items-center justify-between text-sm text-muted-foreground">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1 hover:text-slate-800 hover:underline underline-offset-4"
+          className="inline-flex items-center gap-1 hover:text-foreground hover:underline underline-offset-4"
         >
           <ChevronLeft className="h-4 w-4" />
           返回仪表盘
         </Link>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 hover:underline underline-offset-4"
+          className="inline-flex items-center gap-1.5 text-primary hover:text-primary-strong hover:underline underline-offset-4"
         >
           <LayoutDashboard className="h-3.5 w-3.5" />
           开始学习
@@ -69,7 +69,7 @@ function ProfilePageInner() {
       </div>
       <ProfileLayout points={points} subjectPreferences={subjectPreferences}>
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <TabsList className="grid grid-cols-2 max-w-xs mb-5 shadow-sm bg-white border border-slate-200">
+          <TabsList className="grid grid-cols-2 max-w-xs mb-5 shadow-card bg-card border border-border">
             <TabsTrigger value="basic" className="h-9">基本资料</TabsTrigger>
             <TabsTrigger value="preferences" className="h-9">偏好设置</TabsTrigger>
           </TabsList>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
       {/* Suspense 边界：ProfilePageInner 使用 useSearchParams（修复 Next.js 构建期 ESLint/SSR 告警）*/}
       <Suspense
         fallback={
-          <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">
+          <div className="min-h-[70vh] flex items-center justify-center text-sm text-muted-foreground">
             正在加载个人中心…
           </div>
         }

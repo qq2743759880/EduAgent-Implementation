@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { CHART_COLORS } from "@/lib/chart-palette";
 import {
   GraphChart,
   type GraphSeriesOption,
@@ -103,9 +104,9 @@ export function SessionSidebar({
           <ul className="space-y-2.5 text-sm">
             {points.map((t, i) => (
               <li key={i} className="flex items-start gap-2 leading-6">
-                <span className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+            <span className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-4xs font-bold text-primary">
+              {String(i + 1).padStart(2, "0")}
+            </span>
                 <span className="min-w-0">{t}</span>
               </li>
             ))}
@@ -121,7 +122,7 @@ export function SessionSidebar({
               <Map className="h-4 w-4 text-primary" />
               我的知识图谱
             </CardTitle>
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-4xs">
               P4 mindmap/me
             </Badge>
           </div>
@@ -153,25 +154,25 @@ export function SessionSidebar({
         </CardContent>
       </Card>
 
-      {/* 复习中心 CTA */}
+      {/* 复习中心 CTA（fe-task07：图标三色 → 主色；错题本=纠错语义保留 destructive 于图标） */}
       <div className="grid grid-cols-2 gap-2">
         <Button asChild variant="outline" className="h-auto flex-col !py-3 gap-1">
           <Link href="/practice/wrong-book">
-            <CircleHelp className="h-5 w-5 text-rose-500" />
+            <CircleHelp className="h-5 w-5 text-destructive" />
             <div className="text-sm font-semibold">错题本</div>
-            <div className="text-[10px] text-muted-foreground">重做你的薄弱题</div>
+            <div className="text-3xs text-muted-foreground">重做你的薄弱题</div>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-auto flex-col !py-3 gap-1">
           <Link href="/practice/vocab">
-            <BookMarked className="h-5 w-5 text-amber-500" />
+            <BookMarked className="h-5 w-5 text-primary" />
             <div className="text-sm font-semibold">单词本</div>
-            <div className="text-[10px] text-muted-foreground">今日单词计划</div>
+            <div className="text-3xs text-muted-foreground">今日单词计划</div>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-auto flex-col !py-3 gap-1 col-span-2">
           <Link href="/dashboard">
-            <Sparkles className="h-5 w-5 text-indigo-500" />
+            <Sparkles className="h-5 w-5 text-primary" />
             <span>去我的仪表盘查看总览</span>
           </Link>
         </Button>
@@ -255,16 +256,16 @@ function MiniMindmap({
               itemStyle: {
                 color:
                   n.status === "mastered"
-                    ? "#10b981"
+                    ? CHART_COLORS.success
                     : n.status === "learning"
-                      ? "#3b82f6"
-                      : "#cbd5e1",
+                      ? CHART_COLORS.primary
+                      : CHART_COLORS.chartNeutral[2],
               },
             })),
             links: d.links.slice(0, 120).map((l) => ({
               source: l.source,
               target: l.target,
-              lineStyle: l.lineStyle ?? { opacity: 0.7, color: "#94a3b8" },
+              lineStyle: l.lineStyle ?? { opacity: 0.7, color: CHART_COLORS.muted },
             })),
           } as GraphSeriesOption,
         ],
@@ -277,7 +278,7 @@ function MiniMindmap({
     <div className="relative">
       <div
         ref={ref}
-        className="w-full overflow-hidden rounded-xl border bg-gradient-to-b from-slate-50 to-white"
+        className="w-full overflow-hidden rounded-xl border border-border bg-gradient-to-b from-muted/40 to-card"
         style={{ height: 240 }}
       />
       {state.status === "loading" && (
@@ -294,8 +295,8 @@ function MiniMindmap({
       )}
       {state.status === "error" && (
         <Overlay>
-          <CircleHelp className="h-5 w-5 text-rose-500" />
-          <span className="text-xs text-rose-600">导图加载失败</span>
+          <CircleHelp className="h-5 w-5 text-destructive" />
+          <span className="text-xs text-destructive">导图加载失败</span>
         </Overlay>
       )}
     </div>
@@ -306,7 +307,7 @@ function Overlay({ children, className }: { children: React.ReactNode; className
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/70 backdrop-blur-[1px]",
+        "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-card/70 backdrop-blur-[1px]",
         className,
       )}
     >
@@ -332,7 +333,8 @@ function ProgressItem({
         <span className="text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2">
           {typeof sync === "number" && sync !== value ? (
-            <span className="text-[10px] text-indigo-500">已同步 {(sync * 100).toFixed(0)}%</span>
+            // fe-task07：同步状态 = 进行中/强调 → text-primary
+            <span className="text-4xs text-primary">已同步 {(sync * 100).toFixed(0)}%</span>
           ) : null}
           <span className="font-semibold tabular-nums text-foreground">
             {(value * 100).toFixed(0)}%

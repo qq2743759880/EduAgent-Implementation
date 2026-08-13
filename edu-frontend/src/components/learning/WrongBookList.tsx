@@ -81,7 +81,7 @@ export function WrongBookList({
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <XCircle className="h-5 w-5 text-rose-500" />
+            <XCircle className="h-5 w-5 text-destructive" />
             错题本
           </CardTitle>
           <CardDescription>
@@ -116,7 +116,7 @@ export function WrongBookList({
         ) : null}
 
         {q.data?.items.length ? (
-          <ul className="divide-y divide-slate-100 rounded-2xl border">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
             {q.data.items.map((item, i) => (
               <Row
                 key={item.id ?? `wb-${i}`}
@@ -204,9 +204,9 @@ function Row({ item, onRetake }: { item: WrongBookItem; onRetake: () => void }) 
             错 {item.mistake_count ?? 1} 次
           </Badge>
           {mastered ? (
-            <Badge className="bg-emerald-500 text-white text-xs">已掌握 · {item.mastered_at?.slice(0, 10)}</Badge>
+            <Badge className="bg-success-foreground text-white text-xs">已掌握 · {item.mastered_at?.slice(0, 10)}</Badge>
           ) : (
-            <Badge className="bg-rose-500 text-white text-xs">未掌握</Badge>
+            <Badge className="bg-destructive-foreground text-white text-xs">未掌握</Badge>
           )}
           {item.last_mistake_at && (
             <Badge variant="outline" className="text-xs">
@@ -219,7 +219,7 @@ function Row({ item, onRetake }: { item: WrongBookItem; onRetake: () => void }) 
         </div>
         {!mastered && (item.mistake_count ?? 0) >= 2 ? (
           <div className="max-w-sm">
-            <div className="mb-1 text-[11px] text-muted-foreground">
+            <div className="mb-1 text-3xs text-muted-foreground">
               错误频次越高，在复习中心会被越多召回
             </div>
             <Progress value={pct * 100} />
@@ -238,12 +238,12 @@ function Row({ item, onRetake }: { item: WrongBookItem; onRetake: () => void }) 
 
 function SkeletonList() {
   return (
-    <ul className="divide-y divide-slate-100 rounded-2xl border">
+    <ul className="divide-y divide-border rounded-xl border border-border bg-muted/40">
       {Array.from({ length: 3 }).map((_, i) => (
         <li key={i} className="space-y-2 p-4">
-          <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+          <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-full animate-pulse rounded bg-muted" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
         </li>
       ))}
     </ul>
@@ -252,13 +252,13 @@ function SkeletonList() {
 
 function ErrorState({ msg, onRetry }: { msg: string; onRetry: () => void }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5">
-      <div className="flex items-center gap-2 text-rose-700">
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-5">
+      <div className="flex items-center gap-2 text-destructive-foreground">
         <XCircle className="h-5 w-5" />
         <span className="font-semibold">加载失败</span>
       </div>
-      <p className="mt-1 text-sm text-rose-600">{msg}</p>
-      <Button variant="outline" size="sm" className="mt-3 border-rose-300 text-rose-700" onClick={onRetry}>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
+      <Button variant="outline" size="sm" className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onRetry}>
         <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> 重试
       </Button>
     </div>
@@ -267,9 +267,9 @@ function ErrorState({ msg, onRetry }: { msg: string; onRetry: () => void }) {
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed p-8 text-center">
+    <div className="rounded-xl border border-dashed border-border p-8 text-center">
       <CircleHelp className="mx-auto mb-2 h-7 w-7 text-muted-foreground/60" />
-      <div className="text-base font-semibold">错题本是空的 👍</div>
+      <div className="text-base font-semibold text-foreground">错题本是空的 👍</div>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         说明你最近题目正确率都很高！可以去课程播放页找随堂练习继续巩固。
       </p>

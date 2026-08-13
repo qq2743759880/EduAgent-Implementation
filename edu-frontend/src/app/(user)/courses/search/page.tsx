@@ -29,7 +29,7 @@ export default function CoursesSearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">
+        <div className="min-h-[70vh] flex items-center justify-center text-sm text-muted-foreground">
           正在加载搜索条件…
         </div>
       }
@@ -144,8 +144,8 @@ function CoursesSearchPageInner() {
   }, [localFilters]);
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
-      <header className="border-b bg-white/80 backdrop-blur-md">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card/80 backdrop-blur-md">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Link className="hover:text-foreground" href="/courses">
@@ -277,11 +277,11 @@ function CardGridLoading() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-72 animate-pulse rounded-2xl border bg-white p-3">
-          <div className="h-40 w-full rounded-xl bg-slate-100" />
-          <div className="mt-4 h-4 w-2/3 rounded bg-slate-100" />
-          <div className="mt-2 h-3 w-full rounded bg-slate-100" />
-          <div className="mt-2 h-3 w-1/2 rounded bg-slate-100" />
+        <div key={i} className="h-72 animate-pulse rounded-xl border border-border bg-muted/40 p-3">
+          <div className="h-40 w-full rounded-xl bg-muted" />
+          <div className="mt-4 h-4 w-2/3 rounded bg-muted" />
+          <div className="mt-2 h-3 w-full rounded bg-muted" />
+          <div className="mt-2 h-3 w-1/2 rounded bg-muted" />
         </div>
       ))}
     </div>
@@ -290,11 +290,11 @@ function CardGridLoading() {
 
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
-      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
+      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary">
         <SearchIcon className="h-6 w-6" />
       </div>
-      <div className="text-base font-semibold">没有匹配的课程</div>
+      <div className="text-base font-semibold text-foreground">没有匹配的课程</div>
       <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
         试试清空筛选条件，或返回课程首页浏览推荐。
       </p>
@@ -316,10 +316,10 @@ function ErrorState({ onRetry, error }: { onRetry: () => void; error: unknown })
         ? error
         : "加载失败，请稍后重试";
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6">
-      <div className="text-base font-semibold text-rose-700">加载失败</div>
-      <p className="mt-1 text-sm text-rose-600/90">{msg}</p>
-      <Button variant="outline" size="sm" className="mt-3 border-rose-300 text-rose-700 hover:bg-rose-100" onClick={onRetry}>
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+      <div className="text-base font-semibold text-destructive-foreground">加载失败</div>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
+      <Button variant="outline" size="sm" className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onRetry}>
         点击重试
       </Button>
     </div>

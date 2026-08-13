@@ -28,17 +28,17 @@ export function StreakBadge({ streakDays, last7Days, className }: StreakBadgePro
   if (days[6] === "rest") days[6] = "today";
 
   return (
-    <Card className={cn("border-slate-200/80 shadow-sm bg-gradient-to-br from-amber-50/70 via-white to-orange-50/70", className)}>
+    <Card className={cn("border-border shadow-card bg-card", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              <Sparkles className="h-4 w-4 text-warning-foreground" />
               连续打卡
             </CardTitle>
-            <CardDescription className="text-sm text-slate-500 pt-1">坚持学习，解锁更多徽章与积分奖励</CardDescription>
+            <CardDescription className="text-sm text-muted-foreground pt-1">坚持学习，解锁更多徽章与积分奖励</CardDescription>
           </div>
-          <div className="flex items-center gap-1 rounded-2xl px-3 py-1.5 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm ring-8 ring-amber-100">
+          <div className="flex items-center gap-1 rounded-xl px-3 py-1.5 bg-warning-foreground text-white shadow-sm">
             <Flame className="h-4 w-4" />
             <span className="font-bold tabular-nums text-lg leading-none">{streakDays}</span>
             <span className="text-xs ml-0.5 opacity-90">天</span>
@@ -52,7 +52,7 @@ export function StreakBadge({ streakDays, last7Days, className }: StreakBadgePro
             const styles = cellStyles(st);
             return (
               <div key={i} className="flex flex-col items-center gap-1.5">
-                <span className="text-[10px] font-medium text-slate-400">{DAY_LABELS[i]}</span>
+                <span className="text-4xs font-medium text-muted-foreground">{DAY_LABELS[i]}</span>
                 <div
                   aria-label={`day-${i + 1}-${st}`}
                   className={cn(
@@ -61,7 +61,7 @@ export function StreakBadge({ streakDays, last7Days, className }: StreakBadgePro
                   )}
                   style={styles.style}
                 >
-                  {isToday ? <span className="h-1.5 w-1.5 rounded-full bg-white/80" /> : cellIcon(st)}
+                  {isToday ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : cellIcon(st)}
                 </div>
               </div>
             );
@@ -72,26 +72,30 @@ export function StreakBadge({ streakDays, last7Days, className }: StreakBadgePro
   );
 }
 
+/**
+ * 打卡状态格（fe-task07 收敛）：状态机渐变 → 状态 token 纯色；
+ * done=success（已打卡）/ partial=warning（部分）/ today=主色描边（今天）/ rest=中性。
+ */
 function cellStyles(st: DayStatus): { className: string; style?: CSSProperties } {
   switch (st) {
     case "done":
       return {
         className:
-          "bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-400 shadow-sm text-white",
+          "bg-success border-success/40 text-white",
       };
     case "partial":
       return {
         className:
-          "bg-gradient-to-br from-amber-300 to-amber-500 border-amber-300 text-white",
+          "bg-warning-foreground border-warning/40 text-white",
       };
     case "today":
       return {
         className:
-          "bg-white border-indigo-300 border-2 ring-2 ring-indigo-100 text-indigo-600",
+          "bg-card border-primary-border border-2 ring-2 ring-primary/10 text-primary",
       };
     case "rest":
     default:
-      return { className: "bg-slate-100/70 border border-slate-200 text-slate-300" };
+      return { className: "bg-muted border-border text-muted-foreground/60" };
   }
 }
 
@@ -104,7 +108,7 @@ function cellIcon(st: DayStatus) {
     case "today":
       return null;
     default:
-      return <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />;
+      return <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />;
   }
 }
 

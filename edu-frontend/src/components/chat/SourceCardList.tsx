@@ -103,7 +103,7 @@ export function SourceCardList({
       role="list"
       aria-label={`引用来源（${list.length} 条）`}
     >
-      <div className="flex items-center justify-between px-1 pt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center justify-between px-1 pt-0.5 text-3xs uppercase tracking-wide text-muted-foreground">
         <span>引用来源</span>
         <span className="tabular-nums">{list.length}</span>
       </div>
@@ -119,18 +119,16 @@ export function SourceCardList({
               key={String(doc.id ?? `${doc.type}-${idx}`)}
               role="listitem"
               className={cn(
-                "group relative rounded-lg border border-border bg-background p-2.5 transition-all hover:border-primary/40 hover:shadow-sm",
+                "group relative rounded-lg border border-border bg-background p-2.5 transition-all hover:border-primary-border hover:shadow-card",
                 compact ? "p-2" : "p-3",
               )}
             >
               <div className="flex items-start gap-2.5">
+                {/* fe-task07：来源类型三色 → 主色（TypeBadge 文字补偿，§2.6） */}
                 <div
                   className={cn(
-                    "shrink-0 inline-flex items-center justify-center rounded-md",
+                    "shrink-0 inline-flex items-center justify-center rounded-md bg-primary/10 text-primary",
                     compact ? "size-7" : "size-8",
-                    doc.type === "section" && "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
-                    doc.type === "question" && "bg-rose-500/10 text-rose-600 dark:text-rose-300",
-                    doc.type === "doc" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
                   )}
                 >
                   <TypeIcon
@@ -143,7 +141,7 @@ export function SourceCardList({
                   <div className="flex flex-wrap items-center gap-1.5">
                     <TypeBadge type={doc.type} />
                     {showScore && (
-                      <span className="text-[11px] tabular-nums text-muted-foreground">
+                      <span className="text-3xs tabular-nums text-muted-foreground">
                         {Math.round(scorePct)}%
                       </span>
                     )}
@@ -156,8 +154,8 @@ export function SourceCardList({
                   </div>
                   <div
                     className={cn(
-                      "text-[13px] font-medium leading-5 text-foreground line-clamp-1 break-all",
-                      compact ? "text-[12.5px] leading-4" : "",
+                      "text-sm-table font-medium leading-5 text-foreground line-clamp-1 break-all",
+                      compact ? "text-2xs leading-4" : "",
                     )}
                     title={doc.title}
                   >
@@ -166,7 +164,7 @@ export function SourceCardList({
                   {doc.snippet && (
                     <div
                       className={cn(
-                        "text-[12px] leading-5 text-muted-foreground line-clamp-2 break-words",
+                        "text-2xs leading-5 text-muted-foreground line-clamp-2 break-words",
                         compact ? "line-clamp-2" : "line-clamp-3",
                       )}
                     >
@@ -176,12 +174,7 @@ export function SourceCardList({
                   {showScore && (
                     <Progress
                       value={scorePct}
-                      className={cn(
-                        "mt-1.5 h-1",
-                        doc.type === "section" && "[&_[data-slot=progress-indicator]]:bg-indigo-500",
-                        doc.type === "question" && "[&_[data-slot=progress-indicator]]:bg-rose-500",
-                        doc.type === "doc" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
-                      )}
+                      className="mt-1.5 h-1 [&_[data-slot=progress-indicator]]:bg-primary"
                       aria-label={`相关度 ${Math.round(scorePct)}%`}
                     />
                   )}

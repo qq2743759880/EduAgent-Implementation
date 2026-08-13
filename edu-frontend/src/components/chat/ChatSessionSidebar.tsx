@@ -204,10 +204,10 @@ export function ChatSessionSidebar({
             <ScrollText className="size-4" aria-hidden />
           </span>
           <div>
-            <div className="text-[13.5px] font-semibold leading-tight text-foreground">
+            <div className="text-sm font-semibold leading-tight text-foreground">
               历史对话
             </div>
-            <div className="text-[11px] text-muted-foreground tabular-nums">
+            <div className="text-3xs text-muted-foreground tabular-nums">
               共 {totalCount} 个会话
             </div>
           </div>
@@ -256,7 +256,7 @@ export function ChatSessionSidebar({
           </div>
         ) : sessionsError ? (
           <div className="flex flex-col items-center justify-center gap-2 px-4 py-10">
-            <div className="text-xs text-rose-500">加载失败</div>
+            <div className="text-xs text-destructive">加载失败</div>
             <Button
               type="button"
               variant="outline"
@@ -273,7 +273,7 @@ export function ChatSessionSidebar({
             {BUCKET_ORDER.map((bk) =>
               groups[bk].length === 0 ? null : (
                 <li key={bk}>
-                  <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+                  <div className="flex items-center gap-1.5 px-2 py-1 text-3xs uppercase tracking-wide text-muted-foreground/80">
                     <CalendarDays className="size-3 opacity-80" aria-hidden />
                     {BUCKET_LABEL[bk]}
                     <span className="ml-auto tabular-nums opacity-70">{groups[bk].length}</span>
@@ -320,6 +320,7 @@ export function ChatSessionSidebar({
               type="button"
               variant="destructive"
               size="sm"
+              className="text-destructive-foreground"
               onClick={handleDelete}
               disabled={deleting}
             >
@@ -376,7 +377,7 @@ function SessionRow({
         <div className="min-w-0 flex-1 space-y-0.5">
           <div
             className={cn(
-              "text-[13px] font-medium leading-5 text-foreground line-clamp-1 break-words",
+              "text-sm-table font-medium leading-5 text-foreground line-clamp-1 break-words",
               selected ? "text-primary-foreground/95 *:text-primary-foreground/95" : "",
             )}
             style={
@@ -389,7 +390,7 @@ function SessionRow({
           </div>
           <div
             className={cn(
-              "text-[11.5px] leading-4 text-muted-foreground line-clamp-1 break-words",
+              "text-3xs leading-4 text-muted-foreground line-clamp-1 break-words",
             )}
           >
             {displayPreview(session)}
@@ -400,7 +401,7 @@ function SessionRow({
             <Badge
               variant="outline"
               className={cn(
-                "hidden h-5 px-1.5 text-[10px] tabular-nums group-hover:inline-flex",
+                "hidden h-5 px-1.5 text-4xs tabular-nums group-hover:inline-flex",
                 selected ? "bg-background/60" : "",
               )}
             >
@@ -432,18 +433,19 @@ function SessionRow({
 
 function EmptyCTA({ onNew, creating }: { onNew: () => void; creating: boolean }) {
   return (
-    <div className="mx-2 mt-6 flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border/70 bg-muted/20 px-5 py-10 text-center">
+    <div className="mx-2 mt-6 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border/70 bg-muted/20 px-5 py-10 text-center">
       <div className="relative">
-        <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20">
+        {/* fe-task07：空态渐变 → 主色渐变；在线点 → bg-success */}
+        <span className="inline-flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-deep to-primary text-primary-foreground shadow-lg shadow-primary/20">
           <MessageSquare className="size-5" aria-hidden />
         </span>
-        <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-background">
+        <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-success text-white ring-2 ring-background">
           <Sparkles className="size-2.5" aria-hidden />
         </span>
       </div>
       <div className="space-y-1">
-        <div className="text-[14px] font-semibold text-foreground">开启第一个对话</div>
-        <div className="text-[12px] leading-5 text-muted-foreground">
+        <div className="text-sm font-semibold text-foreground">开启第一个对话</div>
+        <div className="text-2xs leading-5 text-muted-foreground">
           随时向 AI 提问：学科知识点、错题讲解、学习规划、或调用工具为你查询报告。
         </div>
       </div>

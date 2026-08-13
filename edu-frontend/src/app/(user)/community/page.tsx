@@ -49,9 +49,9 @@ function CommunityPageInner() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50/70">
-      {/* 页头 */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-sky-600 text-white">
+    <div className="min-h-screen bg-background">
+      {/* 页头（fe-task07：三色渐变 → 品牌渐变） */}
+      <header className="relative overflow-hidden bg-gradient-to-r from-primary-deep to-primary-strong text-primary-foreground">
         <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.6),transparent_55%)]" />
         <div className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
@@ -121,7 +121,7 @@ function PostListSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="h-32 animate-pulse rounded-2xl border bg-white" />
+        <div key={i} className="h-32 animate-pulse rounded-xl border border-border bg-muted/40" />
       ))}
     </div>
   );
@@ -135,9 +135,9 @@ function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void })
         ? error
         : "帖子加载失败，请稍后重试";
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-8 text-center">
-      <div className="text-base font-semibold text-rose-700">加载失败</div>
-      <p className="mt-1 text-sm text-rose-600/90">{msg}</p>
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-8 text-center">
+      <div className="text-base font-semibold text-destructive-foreground">加载失败</div>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
       <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
         <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> 点击重试
       </Button>
@@ -147,11 +147,11 @@ function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void })
 
 function EmptyState({ board }: { board: BoardCode | "" }) {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
-      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
+      <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary">
         <SearchX className="h-6 w-6" />
       </div>
-      <div className="text-base font-semibold">这个版块还没有帖子</div>
+      <div className="text-base font-semibold text-foreground">这个版块还没有帖子</div>
       <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
         {board === "" ? "当前没有帖子，来发布第一篇吧～" : "点击右上角「发布帖子」分享你的第一个话题吧～"}
       </p>

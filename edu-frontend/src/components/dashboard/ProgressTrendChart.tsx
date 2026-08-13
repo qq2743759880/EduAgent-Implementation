@@ -20,6 +20,7 @@ import { CanvasRenderer } from "echarts/renderers";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { CHART_COLORS, primaryGradient } from "@/lib/chart-palette";
 import { RotateCw, TrendingUp } from "lucide-react";
 
 echarts.use([
@@ -93,6 +94,15 @@ export function ProgressTrendChart({
     };
   }, []);
 
+  // a11y #5（1.1.1）：echarts canvas 无替代文本 → 容器 role="img" + aria-label 汇总数据摘要
+  const chartAriaLabel = loading
+    ? `${title}（加载中）`
+    : error
+      ? `${title}（加载失败）`
+      : empty
+        ? `${title}（暂无数据）`
+        : `${title}：每日学习时长（分钟）${data.map((p) => `${p.dateLabel} ${p.minutes}`).join("，")}`;
+
   const option: ECOption = useMemo(() => {
     const categories = data.map((p) => p.dateLabel);
     const mins = data.map((p) => p.minutes);
@@ -111,24 +121,24 @@ export function ProgressTrendChart({
             top: 0,
             right: 4,
             icon: "roundRect",
-            textStyle: { color: "#64748b", fontSize: 12 },
+            textStyle: { color: CHART_COLORS.mutedForeground, fontSize: 12 },
           }
         : undefined,
       xAxis: {
         type: "category",
         boundaryGap: false,
         data: categories,
-        axisLine: { lineStyle: { color: "#e2e8f0" } },
-        axisLabel: { color: "#94a3b8", fontSize: 11 },
+        axisLine: { lineStyle: { color: CHART_COLORS.border } },
+        axisLabel: { color: CHART_COLORS.muted, fontSize: 11 },
         axisTick: { show: false },
       },
       yAxis: {
         type: "value",
         axisLine: { show: false },
-        axisLabel: { color: "#94a3b8", fontSize: 11, formatter: "{value}" },
-        splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
+        axisLabel: { color: CHART_COLORS.muted, fontSize: 11, formatter: "{value}" },
+        splitLine: { lineStyle: { color: CHART_COLORS.grid, type: "dashed" } },
         name: "分钟",
-        nameTextStyle: { color: "#94a3b8", fontSize: 11, padding: [0, 0, 0, -20] },
+        nameTextStyle: { color: CHART_COLORS.muted, fontSize: 11, padding: [0, 0, 0, -20] },
       },
       series: [
         {
@@ -138,13 +148,10 @@ export function ProgressTrendChart({
           showSymbol: false,
           sampling: "lttb",
           lineStyle: { width: 3 },
-          itemStyle: { color: "#6366f1" },
+          itemStyle: { color: CHART_COLORS.primary },
           areaStyle: {
             opacity: 0.8,
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: "rgba(99, 102, 241, 0.32)" },
-              { offset: 1, color: "rgba(99, 102, 241, 0.02)" },
-            ]),
+            color: primaryGradient(),
           },
           emphasis: { focus: "series" },
           data: mins,
@@ -157,7 +164,7 @@ export function ProgressTrendChart({
                 smooth: true,
                 showSymbol: false,
                 lineStyle: { width: 2, type: "dashed" },
-                itemStyle: { color: "#0ea5e9" },
+                itemStyle: { color: CHART_COLORS.chartNeutral[1] },
                 data: practice,
               } as LineSeriesOption,
             ]
@@ -170,28 +177,36 @@ export function ProgressTrendChart({
     const c = chartRef.current;
     if (!c) return;
     c.setOption(option, true);
-    if (loading) c.showLoading("default", { text: "加载中", textColor: "#6366f1", maskColor: "rgba(255,255,255,0.7)" });
+    if (loading) c.showLoading("default", { text: "加载中", textColor: CHART_COLORS.primary, maskColor: "rgba(255,255,255,0.7)" });
     else c.hideLoading();
   }, [option, loading]);
 
   return (
-    <Card className={cn("border-slate-200/80 shadow-sm bg-white", className)}>
+    <Card className={cn("border-border shadow-card bg-card", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-500" />
+              <TrendingUp className="h-4 w-4 text-primary" />
               {title}
             </CardTitle>
-            <CardDescription className="text-sm text-slate-500 pt-1">{description}</CardDescription>
+            <CardDescription className="text-sm text-muted-foreground pt-1">{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="relative" style={{ height }}>
-          <div ref={containerRef} style={{ width: "100%", height }} />
+          <div
+            ref={containerRef}
+            role="img"
+            aria-label={chartAriaLabel}
+            style={{ width: "100%", height }}
+          />
           {error ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive px-4 text-center">
+            <div
+              role="alert"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive-foreground px-4 text-center"
+            >
               <TrendingUp className="h-6 w-6 opacity-80" aria-hidden="true" />
               <p className="text-sm font-medium">{errorText}</p>
               {onRetry ? (

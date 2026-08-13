@@ -26,8 +26,9 @@ function AchievementsPageInner() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50/70">
-      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white">
+    <div className="min-h-screen bg-background">
+      {/* 页头（fe-task07：琥珀三色 → 品牌渐变） */}
+      <header className="relative overflow-hidden bg-gradient-to-r from-primary-deep to-primary-strong text-primary-foreground">
         <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.5),transparent_55%)]" />
         <div className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
@@ -42,7 +43,7 @@ function AchievementsPageInner() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-6 md:px-6">
-        <section className="rounded-2xl border bg-white p-5 md:p-6">
+        <section className="rounded-xl border border-border bg-card p-5 md:p-6">
           <SectionTitle
             Icon={Award}
             title="徽章"
@@ -57,14 +58,14 @@ function AchievementsPageInner() {
           </div>
         </section>
 
-        <section className="rounded-2xl border bg-white p-5 md:p-6">
+        <section className="rounded-xl border border-border bg-card p-5 md:p-6">
           <SectionTitle Icon={Coins} title="积分" subtitle="等级成长与积分流水" />
           <div className="mt-4">
             <PointLogTable />
           </div>
         </section>
 
-        <section className="rounded-2xl border bg-white p-5 md:p-6">
+        <section className="rounded-xl border border-border bg-card p-5 md:p-6">
           <SectionTitle Icon={Trophy} title="排行榜" subtitle="日 / 周 / 月 / 总榜" />
           <div className="mt-4">
             <RankingTabs />
@@ -86,11 +87,11 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 text-white shadow-sm">
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary-deep to-primary text-primary-foreground shadow-sm">
         <Icon className="h-5 w-5" />
       </span>
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
       </div>
     </div>

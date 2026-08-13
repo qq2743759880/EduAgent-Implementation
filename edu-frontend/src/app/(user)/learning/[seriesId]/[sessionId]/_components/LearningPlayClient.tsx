@@ -210,9 +210,9 @@ export default function LearningPlayClient({
 
   if (!authed) {
     return (
-      <div className="rounded-2xl border border-dashed p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border p-10 text-center">
         <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
-        <div className="text-base font-semibold">请先登录再进入学习页</div>
+        <div className="text-base font-semibold text-foreground">请先登录再进入学习页</div>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           本页是登录态专用页面，正跳转到登录页并带上 redirect 回传。
         </p>
@@ -309,12 +309,12 @@ export default function LearningPlayClient({
               第 {current.index} / {flatten.length} 节
             </Badge>
             {current.video_watch_ratio != null ? (
-              <Badge className="text-xs bg-emerald-500 text-white">
+              <Badge className="text-xs bg-success-foreground text-white">
                 已观看 {(current.video_watch_ratio * 100).toFixed(0)}%
               </Badge>
             ) : null}
             {!progressQ.data?.some((c) => c.series_id === seriesId) ? (
-              <Badge className="bg-amber-500 text-white text-xs">
+              <Badge className="bg-warning-foreground text-white text-xs">
                 未报名（仅预览课程大纲）
               </Badge>
             ) : null}
@@ -369,7 +369,7 @@ export default function LearningPlayClient({
       </div>
 
       {/* 底部二次「上下课」条 */}
-      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white/70 p-4 backdrop-blur">
+      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
         <div className="text-sm text-muted-foreground">
           {prev ? (
             <>
@@ -446,11 +446,11 @@ function NotExistPanel({
   showBackToMyCourses?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
-      <div className="mx-auto mb-2 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
+      <div className="mx-auto mb-2 grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary">
         <GraduationCap className="h-7 w-7" />
       </div>
-      <div className="text-base font-semibold">找不到对应的课次或课程</div>
+      <div className="text-base font-semibold text-foreground">找不到对应的课次或课程</div>
       <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">{reason}</p>
       {showBackToMyCourses && (
         <div className="mt-4 flex items-center justify-center gap-2">
@@ -473,12 +473,12 @@ function LoadingGrid() {
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="space-y-5">
-        <div className="aspect-video w-full animate-pulse rounded-2xl border bg-slate-100" />
-        <div className="h-48 w-full animate-pulse rounded-2xl border bg-slate-100" />
+        <div className="aspect-video w-full animate-pulse rounded-xl border border-border bg-muted/40" />
+        <div className="h-48 w-full animate-pulse rounded-xl border border-border bg-muted/40" />
       </div>
       <div className="space-y-4">
-        <div className="h-44 w-full animate-pulse rounded-2xl border bg-slate-100" />
-        <div className="h-72 w-full animate-pulse rounded-2xl border bg-slate-100" />
+        <div className="h-44 w-full animate-pulse rounded-xl border border-border bg-muted/40" />
+        <div className="h-72 w-full animate-pulse rounded-xl border border-border bg-muted/40" />
       </div>
     </div>
   );

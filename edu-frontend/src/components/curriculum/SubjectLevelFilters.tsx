@@ -138,7 +138,7 @@ export function SubjectLevelFilters({
 
   return (
     <Form {...form}>
-      <form onSubmit={submit} className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
+      <form onSubmit={submit} className="space-y-5 rounded-xl border border-border bg-card p-5 shadow-card">
         {showSearch && (
           <FormField
             control={form.control}
@@ -171,7 +171,6 @@ export function SubjectLevelFilters({
             <SubjectTag
               active={subject === "all"}
               onClick={() => apply({ subject: "all" })}
-              colorClass="bg-slate-500"
               label="全部"
             />
             {SUBJECT_OPTIONS.map((s) => (
@@ -179,7 +178,6 @@ export function SubjectLevelFilters({
                 key={s.code}
                 active={subject === s.code}
                 onClick={() => apply({ subject: s.code })}
-                colorClass={s.color}
                 label={s.name}
               />
             ))}
@@ -277,12 +275,11 @@ export function SubjectLevelFilters({
 function SubjectTag({
   active,
   onClick,
-  colorClass,
   label,
 }: {
   active: boolean;
   onClick: () => void;
-  colorClass: string;
+  colorClass?: string;
   label: string;
 }) {
   return (
@@ -292,13 +289,13 @@ function SubjectTag({
       className={
         "group inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all " +
         (active
-          ? "border-transparent text-white shadow-sm " + colorClass
-          : "border-border bg-background text-foreground hover:border-foreground/30")
+          ? "border-primary-border bg-primary text-primary-foreground shadow-sm"
+          : "border-border bg-background text-foreground hover:border-primary-border")
       }
     >
       <span
         className={
-          "h-2 w-2 rounded-full " + (active ? "bg-white/80" : colorClass)
+          "h-2 w-2 rounded-full " + (active ? "bg-white/80" : "bg-muted-foreground/50")
         }
       />
       {label}

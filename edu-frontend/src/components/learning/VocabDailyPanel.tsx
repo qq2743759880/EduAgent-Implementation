@@ -220,14 +220,14 @@ export function VocabDailyPanel({
                     "flex-col gap-0.5 !py-2.5",
                     revealed &&
                       (meta.tone === "fail"
-                        ? "border-rose-300 text-rose-700 hover:bg-rose-50"
+                        ? "border-destructive/40 text-destructive hover:bg-destructive/10"
                         : meta.tone === "mild"
-                          ? "border-amber-300 text-amber-700 hover:bg-amber-50"
-                          : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"),
+                          ? "border-warning/40 text-warning-foreground hover:bg-warning/10"
+                          : "border-success/40 text-success-foreground hover:bg-success/10"),
                   )}
                 >
                   <span className="text-sm font-bold">{meta.label}</span>
-                  <span className="line-clamp-1 text-[10px] text-current/80">{meta.desc}</span>
+                  <span className="line-clamp-1 text-4xs text-current/80">{meta.desc}</span>
                 </Button>
               ))}
             </div>
@@ -264,8 +264,8 @@ function CardStack({
       <div
         onClick={revealed ? undefined : onReveal}
         className={cn(
-          "relative min-h-[260px] cursor-pointer select-none rounded-2xl border p-5 transition-all duration-300",
-          revealed ? "shadow-lg ring-2 ring-primary/20 bg-white" : "bg-slate-50 hover:bg-slate-100",
+          "relative min-h-[260px] cursor-pointer select-none rounded-xl border p-5 transition-all duration-300",
+          revealed ? "shadow-lg ring-2 ring-primary/20 bg-card border-primary-border" : "bg-muted/40 border-border hover:bg-muted/60",
         )}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -283,7 +283,7 @@ function CardStack({
             </Badge>
           )}
           {finishedCurrent ? (
-            <Badge className="ml-auto bg-emerald-500 text-white text-xs gap-1">
+            <Badge className="ml-auto bg-success-foreground text-white text-xs gap-1">
               <CheckCircle2 className="h-3 w-3" /> 已回忆
             </Badge>
           ) : (
@@ -330,7 +330,7 @@ function CardStack({
             revealed ? "max-h-[480px] opacity-100" : "max-h-0 opacity-0",
           )}
         >
-          <div className="space-y-3 rounded-xl border bg-white p-4">
+          <div className="space-y-3 rounded-xl border border-border bg-card p-4">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 中文释义
@@ -373,24 +373,24 @@ function CardStack({
 
 function CardSkeleton() {
   return (
-    <div className="space-y-3 rounded-2xl border bg-white p-5">
-      <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
-      <div className="h-9 w-1/2 animate-pulse rounded bg-slate-100" />
-      <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-      <div className="h-28 w-full animate-pulse rounded-xl bg-slate-100" />
+    <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-5">
+      <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+      <div className="h-9 w-1/2 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-full animate-pulse rounded bg-muted" />
+      <div className="h-28 w-full animate-pulse rounded-xl bg-muted" />
     </div>
   );
 }
 
 function ErrorState({ msg, onRetry }: { msg: string; onRetry: () => void }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5">
-      <div className="flex items-center gap-2 text-rose-700">
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-5">
+      <div className="flex items-center gap-2 text-destructive-foreground">
         <XCircle className="h-5 w-5" />
         <span className="font-semibold">加载失败</span>
       </div>
-      <p className="mt-1 text-sm text-rose-600">{msg}</p>
-      <Button size="sm" variant="outline" className="mt-3 border-rose-300 text-rose-700" onClick={onRetry}>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{msg}</p>
+      <Button size="sm" variant="outline" className="mt-3 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onRetry}>
         <Loader2 className="mr-1.5 h-4 w-4" /> 重试
       </Button>
     </div>
@@ -399,9 +399,9 @@ function ErrorState({ msg, onRetry }: { msg: string; onRetry: () => void }) {
 
 function EmptyToday() {
   return (
-    <div className="rounded-2xl border border-dashed p-8 text-center">
-      <Flame className="mx-auto mb-2 h-6 w-6 text-amber-500" />
-      <div className="text-base font-semibold">今天暂无复习任务</div>
+    <div className="rounded-xl border border-dashed border-border p-8 text-center">
+      <Flame className="mx-auto mb-2 h-6 w-6 text-warning-foreground" />
+      <div className="text-base font-semibold text-foreground">今天暂无复习任务</div>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         你已完成今日计划，或英语单词本还没有内容。点「重新出题」可让 P5 再抓一批。
       </p>

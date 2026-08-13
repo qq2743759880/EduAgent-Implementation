@@ -118,10 +118,10 @@ export function PostEditor({ defaultBoard = "general", onPosted, className }: Po
   };
 
   return (
-    <div className={cn("space-y-4 rounded-2xl border bg-white p-4 md:p-5", className)}>
+    <div className={cn("space-y-4 rounded-xl border border-border bg-card p-4 md:p-5", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">发布新帖</h2>
-        <p className="inline-flex items-center gap-1 text-xs text-amber-700">
+        <h2 className="text-base font-semibold text-foreground">发布新帖</h2>
+        <p className="inline-flex items-center gap-1 text-xs text-success-foreground">
           <Coins className="h-3.5 w-3.5" /> 发帖奖励 +5 积分
         </p>
       </div>
@@ -143,8 +143,8 @@ export function PostEditor({ defaultBoard = "general", onPosted, className }: Po
             className={cn(
               "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground",
               board === b.code
-                ? cn("border-transparent text-white shadow-sm", b.gradientClass)
-                : "border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                ? "border-transparent bg-primary text-white shadow-sm"
+                : "border-border text-secondary-foreground hover:border-border hover:bg-muted",
             )}
           >
             {b.label}
@@ -164,11 +164,11 @@ export function PostEditor({ defaultBoard = "general", onPosted, className }: Po
           aria-invalid={titleError || undefined}
           aria-describedby={titleError ? "post-title-error" : undefined}
           className={cn(
-            titleError && "border-rose-400",
+            titleError && "border-destructive",
           )}
         />
-        <div className="flex justify-between text-[11px] text-muted-foreground">
-          <span id="post-title-error" role="alert" className="text-rose-600">
+        <div className="flex justify-between text-3xs text-muted-foreground">
+          <span id="post-title-error" role="alert" className="text-destructive">
             {titleError ? "标题至少 2 个字" : ""}
           </span>
           <span className="tabular-nums">
@@ -202,8 +202,8 @@ export function PostEditor({ defaultBoard = "general", onPosted, className }: Po
             }}
           />
         </div>
-        <div className="flex justify-between text-[11px] text-muted-foreground">
-          <span id="post-content-error" role="alert" className="text-rose-600">
+        <div className="flex justify-between text-3xs text-muted-foreground">
+          <span id="post-content-error" role="alert" className="text-destructive">
             {contentError ? "正文至少 2 个字" : ""}
           </span>
           <span className="tabular-nums">{content.length}/{MAX_CONTENT_LEN}</span>
@@ -224,11 +224,11 @@ export function PostEditor({ defaultBoard = "general", onPosted, className }: Po
         />
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
+      <div className="flex items-center justify-end gap-3 border-t border-border pt-3">
         {tags.length > 0 && (
           <div className="mr-auto flex flex-wrap gap-1.5">
             {tags.map((t) => (
-              <span key={t} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
+              <span key={t} className="rounded-md bg-muted px-1.5 py-0.5 text-3xs text-muted-foreground">
                 #{t}
               </span>
             ))}

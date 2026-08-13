@@ -107,14 +107,14 @@ function SessionRow({ session, index }: { session: SessionOut; index: number }) 
         {String(index).padStart(2, "0")}
       </span>
       {isFree ? (
-        <PlayCircle className="h-4 w-4 text-emerald-500" />
+        <PlayCircle className="h-4 w-4 text-success" />
       ) : (
         <Lock className="h-4 w-4 text-muted-foreground/70" />
       )}
       <div className="min-w-0 flex-1 text-sm">
         <div className="truncate">{session.session_title || "未命名课次"}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {isFree && <Badge variant="outline" className="text-emerald-600">免费试看</Badge>}
+          {isFree && <Badge variant="outline" className="text-success-foreground">免费试看</Badge>}
           {dur != null && <ClockInline minutes={Number(dur)} />}
           {date && <span>{date}</span>}
         </div>

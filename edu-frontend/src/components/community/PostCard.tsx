@@ -24,26 +24,26 @@ export function PostCard({ post, isMine = false }: PostCardProps) {
   return (
     <article
       className={cn(
-        "group rounded-2xl border bg-white p-4 transition-all hover:border-primary/40 hover:shadow-sm md:p-5",
-        post.is_pinned && "border-amber-300/60 bg-amber-50/40",
+        "group rounded-xl border border-border bg-card p-4 transition-all hover:border-primary-border hover:shadow-card md:p-5",
+        post.is_pinned && "border-warning/40 bg-warning/10",
       )}
     >
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant="outline" className={cn("text-[11px] font-medium", board.colorClass)}>
+        <Badge variant="outline" className={cn("text-3xs font-medium", board.colorClass)}>
           {board.label}
         </Badge>
         {post.is_pinned && (
-          <Badge variant="secondary" className="gap-1 text-[11px]">
+          <Badge variant="secondary" className="gap-1 text-3xs bg-warning/10 text-warning-foreground border border-warning/40">
             <Pin className="h-3 w-3" /> 置顶
           </Badge>
         )}
         {isMine && (
-          <Badge variant="outline" className="text-[11px] text-primary">
+          <Badge variant="outline" className="text-3xs text-primary">
             我的帖子
           </Badge>
         )}
         {post.is_locked && (
-          <Badge variant="outline" className="text-[11px] text-muted-foreground">
+          <Badge variant="outline" className="text-3xs text-muted-foreground">
             已锁定
           </Badge>
         )}
@@ -51,7 +51,7 @@ export function PostCard({ post, isMine = false }: PostCardProps) {
 
       <Link
         href={`/community/${post.post_id}`}
-        className="mt-2 block text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-primary md:text-lg"
+        className="mt-2 block text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-primary md:text-lg"
       >
         {post.title}
       </Link>
@@ -67,7 +67,7 @@ export function PostCard({ post, isMine = false }: PostCardProps) {
           {post.tags.slice(0, 5).map((t) => (
             <span
               key={t}
-              className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600"
+              className="rounded-md bg-muted px-1.5 py-0.5 text-3xs text-muted-foreground"
             >
               #{t}
             </span>
@@ -76,7 +76,7 @@ export function PostCard({ post, isMine = false }: PostCardProps) {
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-        <span className="font-medium text-slate-600">{post.author_name ?? "匿名学员"}</span>
+        <span className="font-medium text-secondary-foreground">{post.author_name ?? "匿名学员"}</span>
         <span>{formatDateTime(post.created_at)}</span>
         <span className="ml-auto inline-flex items-center gap-3">
           <span className="inline-flex items-center gap-1 tabular-nums">

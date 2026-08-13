@@ -202,7 +202,8 @@ export const ChatPanel = React.forwardRef<HTMLDivElement, ChatPanelProps>(functi
     floating
       ? cn(
           "fixed z-40 right-6 bottom-24 w-[380px] max-w-[92vw]",
-          "h-[560px] max-h-[80vh] rounded-2xl border border-border ring-1 ring-black/5",
+          // fe-task07：ring-1 ring-black/5 → ring-border（D5）
+          "h-[560px] max-h-[80vh] rounded-2xl border border-border ring-1 ring-border",
           _open === false ? "hidden" : "",
         )
       : "h-full w-full border-0 rounded-none",
@@ -226,24 +227,26 @@ export const ChatPanel = React.forwardRef<HTMLDivElement, ChatPanelProps>(functi
           </Button>
         ) : null}
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow shadow-indigo-500/30">
+          {/* fe-task07：头像渐变 → 主色渐变；在线点 → bg-success 保留 */}
+          <span className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-deep to-primary text-primary-foreground shadow shadow-primary/30">
             <Bot className="size-4" aria-hidden />
-            <span className="absolute -right-0.5 -bottom-0.5 inline-flex size-3 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-background">
+            <span className="absolute -right-0.5 -bottom-0.5 inline-flex size-3 items-center justify-center rounded-full bg-success text-white ring-2 ring-background">
               <Sparkles className="size-2" aria-hidden />
             </span>
           </span>
           <div className="min-w-0 flex-1 space-y-0.5">
             <div className="flex items-center gap-1.5">
-              <span className={cn("truncate text-[13.5px] font-semibold leading-tight")}>
+              {/* sizeExceptions 例外③：13.5px → text-sm */}
+              <span className={cn("truncate text-sm font-semibold leading-tight")}>
                 EduAgent 助手
               </span>
               {isStreaming && (
-                <Badge variant="default" className="h-4 px-1.5 text-[10px] font-medium bg-primary text-primary-foreground">
+                <Badge variant="default" className="h-4 px-1.5 text-4xs font-medium bg-primary text-primary-foreground">
                   生成中
                 </Badge>
               )}
             </div>
-            <div className={cn("truncate text-[11px] text-muted-foreground")}>
+            <div className={cn("truncate text-3xs text-muted-foreground")}>
               {sessionTitle} · {sessionSubtitle}
             </div>
           </div>
@@ -348,11 +351,11 @@ export const ChatPanel = React.forwardRef<HTMLDivElement, ChatPanelProps>(functi
         )}
       >
         {draftErr && (
-          <div className="text-[11.5px] text-rose-600 dark:text-rose-300">{draftErr}</div>
+          <div className="text-3xs text-destructive">{draftErr}</div>
         )}
         <div
           className={cn(
-            "relative rounded-2xl border border-border/80 bg-muted/30 focus-within:border-primary/60 focus-within:bg-background transition-colors",
+            "relative rounded-xl border border-border/80 bg-muted/30 focus-within:border-primary/60 focus-within:bg-background transition-colors",
             "shadow-sm",
           )}
         >
@@ -377,12 +380,13 @@ export const ChatPanel = React.forwardRef<HTMLDivElement, ChatPanelProps>(functi
             }}
             onKeyDown={handleKeyDown}
             className={cn(
-              "resize-none border-0 bg-transparent px-3 pt-3 pb-9 pr-14 text-[13.5px] leading-6 shadow-none focus-visible:ring-0",
+              // sizeExceptions 例外③：输入框 13.5px → text-sm
+              "resize-none border-0 bg-transparent px-3 pt-3 pb-9 pr-14 text-sm leading-6 shadow-none focus-visible:ring-0",
               floating ? "min-h-[44px]" : "min-h-[52px]",
             )}
             spellCheck={false}
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between px-3 pb-2 text-[11px]">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between px-3 pb-2 text-3xs">
             <span className="inline-flex items-center gap-1 text-muted-foreground/80">
               <CornerDownLeft className="size-3" aria-hidden />
               Enter 发送 · Shift+Enter 换行
@@ -392,8 +396,8 @@ export const ChatPanel = React.forwardRef<HTMLDivElement, ChatPanelProps>(functi
                 "tabular-nums",
                 nearLimit
                   ? charsLeft < 0
-                    ? "text-rose-500 font-semibold"
-                    : "text-amber-600 dark:text-amber-400"
+                    ? "text-destructive font-semibold"
+                    : "text-warning-foreground"
                   : "text-muted-foreground/70",
               )}
             >
@@ -476,17 +480,19 @@ function WelcomeEmptyState({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-2 py-4 text-center">
       <div className="relative">
-        <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30">
+        {/* fe-task07：空态渐变 → 主色渐变；在线点 → bg-success */}
+        <span className="inline-flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-deep to-primary text-primary-foreground shadow-lg shadow-primary/30">
           <Bot className="size-5" aria-hidden />
         </span>
-        <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-background">
+        <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-success text-white ring-2 ring-background">
           <Sparkles className="size-2.5" aria-hidden />
         </span>
       </div>
       <div className="space-y-1">
-        <div className="text-[15px] font-semibold">你好，我是 EduAgent AI 学习助手</div>
+        {/* sizeExceptions 例外④：15px → text-base */}
+        <div className="text-base font-semibold">你好，我是 EduAgent AI 学习助手</div>
         <div className={cn(
-          "text-[12px] leading-5 text-muted-foreground",
+          "text-2xs leading-5 text-muted-foreground",
           compact ? "max-w-[300px]" : "max-w-[520px]",
         )}>
           可以解答学科问题、讲解错题、生成学习计划、还能调用课程与 MCP 工具为你检索资料和运行任务。试试下面这些：
@@ -502,7 +508,8 @@ function WelcomeEmptyState({
               type="button"
               onClick={() => onPickSample(s)}
               className={cn(
-                "flex w-full items-start gap-2 rounded-xl border border-border bg-background p-2.5 text-left text-[12.5px] leading-5 transition-all hover:border-primary/40 hover:shadow-sm hover:bg-muted/30",
+                // fe-task07：hover 漂移统一 hover:border-primary-border hover:shadow-card
+                "flex w-full items-start gap-2 rounded-xl border border-border bg-background p-2.5 text-left text-2xs leading-5 transition-all hover:border-primary-border hover:shadow-card hover:bg-muted/30",
               )}
             >
               <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">

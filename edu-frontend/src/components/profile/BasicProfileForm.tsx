@@ -108,23 +108,23 @@ export function BasicProfileForm() {
 
   return (
     <FormProvider {...form}>
-      <Card className="shadow-sm border-slate-200/80">
+      <Card className="shadow-card border-border">
         <CardHeader>
           <CardTitle className="text-lg">基本资料</CardTitle>
-          <CardDescription className="text-sm text-slate-500">
+          <CardDescription className="text-sm text-muted-foreground">
             修改昵称与头像，用于学习仪表盘、排行榜与徽章墙展示。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="flex flex-col items-center gap-2 shrink-0">
-              <Avatar className="h-20 w-20 border-2 border-slate-100 shadow-sm bg-slate-100">
+              <Avatar className="h-20 w-20 border-2 border-muted shadow-sm bg-muted">
                 {avatarPreview ? <AvatarImage src={avatarPreview} alt={me?.nickname || "avatar"} /> : null}
-                <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-sky-600 text-white text-xl font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-primary-deep to-primary text-primary-foreground text-xl font-semibold">
                   {initial || <UserRound className="h-6 w-6" />}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-[11px] text-slate-400 max-w-[9rem] text-center leading-4">
+              <p className="text-3xs text-muted-foreground max-w-[9rem] text-center leading-4">
                 暂未开放上传；粘贴图片 URL 即可预览
               </p>
             </div>
@@ -161,14 +161,14 @@ export function BasicProfileForm() {
                 )}
               />
               <div className="space-y-1">
-                <Label className="text-slate-500">登录邮箱</Label>
-                <Input value={me?.email || ""} disabled className="bg-slate-50/70" />
-                <p className="text-xs text-slate-400 pt-0.5">登录邮箱不可自行修改，如需变更请联系管理员。</p>
+                <Label className="text-muted-foreground">登录邮箱</Label>
+                <Input value={me?.email || ""} disabled className="bg-muted/40" />
+                <p className="text-xs text-muted-foreground pt-0.5">登录邮箱不可自行修改，如需变更请联系管理员。</p>
               </div>
             </form>
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-2 border-t bg-slate-50/60 rounded-b-xl px-6 py-4">
+        <CardFooter className="justify-end gap-2 border-t border-border bg-muted/40 rounded-b-xl px-6 py-4">
           <Button
             type="button"
             variant="ghost"
@@ -181,7 +181,7 @@ export function BasicProfileForm() {
             type="button"
             onClick={() => form.handleSubmit((v) => mutation.mutate(v))()}
             disabled={mutation.isPending || !form.formState.isDirty}
-            className="bg-gradient-to-br from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white"
+            className="bg-primary hover:bg-primary-strong text-primary-foreground"
           >
             {mutation.isPending ? (
               <>

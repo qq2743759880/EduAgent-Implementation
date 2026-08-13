@@ -35,9 +35,9 @@ export default function PracticeCenterClient({ mode, rawMode }: PracticeCenterCl
 
   if (!authed) {
     return (
-      <div className="rounded-2xl border border-dashed p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border p-10 text-center">
         <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
-        <div className="text-base font-semibold">请先登录再进入复习中心</div>
+        <div className="text-base font-semibold text-foreground">请先登录再进入复习中心</div>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           复习中心包含你的错题本与单词计划，需要登录后才能查看个人数据。
         </p>
@@ -128,7 +128,8 @@ export default function PracticeCenterClient({ mode, rawMode }: PracticeCenterCl
                   <Card>
                     <CardContent className="space-y-3 p-4">
                       <div className="flex items-center gap-2 text-sm font-semibold">
-                        <CircleHelp className="h-4 w-4 text-rose-500" /> 重做错题
+                        {/* fe-task07：重做错题 rose → destructive（保留语义，纠错=危险） */}
+                        <CircleHelp className="h-4 w-4 text-destructive" /> 重做错题
                       </div>
                       <p className="text-xs text-muted-foreground">
                         随堂练习答错的题会自动进入错题本，点这里一次性巩固。
@@ -156,15 +157,15 @@ export default function PracticeCenterClient({ mode, rawMode }: PracticeCenterCl
 
 function UnsupportedMode({ rawMode }: { rawMode: string }) {
   return (
-    <div className="rounded-2xl border border-dashed p-10 text-center">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center">
       <CircleHelp className="mx-auto mb-2 h-7 w-7 text-muted-foreground/70" />
-      <div className="text-base font-semibold">不存在的复习模式</div>
+      <div className="text-base font-semibold text-foreground">不存在的复习模式</div>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        当前路径 <code className="rounded bg-slate-100 px-1">/practice/{rawMode || ""}</code>{" "}
+        当前路径 <code className="rounded bg-muted px-1">/practice/{rawMode || ""}</code>{" "}
         不在支持的范围内。可选模式为：
-        <code className="mx-1 rounded bg-slate-100 px-1">wrong-book</code>
+        <code className="mx-1 rounded bg-muted px-1">wrong-book</code>
         与
-        <code className="mx-1 rounded bg-slate-100 px-1">vocab</code>
+        <code className="mx-1 rounded bg-muted px-1">vocab</code>
       </p>
       <div className="mt-4 flex items-center justify-center gap-2">
         <Button asChild size="sm" variant="outline">

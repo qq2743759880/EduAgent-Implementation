@@ -98,19 +98,19 @@ export function ChatFloatingButton({
             <MessageCircle className="size-6" aria-hidden />
           )}
 
-          {/* 徽标：关闭状态有未读才展示 */}
+          {/* 徽标：关闭状态有未读才展示（未读 = warning 状态保留） */}
           {!open && badgeValue && (
             <Badge
               variant="destructive"
               data-slot="floating-badge"
-              className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-[10px] font-bold shadow"
+              className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-4xs font-bold shadow bg-warning-foreground text-white"
             >
               {badgeValue}
             </Badge>
           )}
           {/* 关闭状态展示 sparkles 角标（产品化识别） */}
           {!open && !badgeValue && (
-            <span className="absolute -right-0.5 -top-0.5 inline-flex size-4 items-center justify-center rounded-full bg-amber-400 text-white shadow">
+            <span className="absolute -right-0.5 -top-0.5 inline-flex size-4 items-center justify-center rounded-full bg-warning-foreground text-white shadow">
               <Sparkles className="size-2.5" aria-hidden />
             </span>
           )}

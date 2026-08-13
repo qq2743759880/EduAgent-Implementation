@@ -60,18 +60,19 @@ export function SubjectMultiSelect({
               className={cn(
                 "h-10 px-3 rounded-lg text-sm font-medium transition-all border",
                 "flex items-center justify-center gap-1.5",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                // fe-task07：学科选择激活渐变 → 纯色主色；未选 hover 主色边框
                 on
-                  ? "bg-gradient-to-br from-indigo-600 to-sky-600 text-white border-transparent shadow-sm hover:brightness-[1.02]"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50",
-                disabled && "opacity-60 cursor-not-allowed hover:border-slate-200 hover:text-slate-700",
+                  ? "bg-primary text-primary-foreground border-primary-border shadow-sm hover:brightness-[1.02]"
+                  : "bg-card text-secondary-foreground border-border hover:border-primary-border hover:text-primary hover:bg-primary-soft",
+                disabled && "opacity-60 cursor-not-allowed hover:border-border hover:text-secondary-foreground",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  on ? "bg-white/90" : "bg-slate-300",
+                  on ? "bg-white/90" : "bg-muted-foreground/50",
                 )}
               />
               {SUBJECT_LABELS[key]}
@@ -79,15 +80,15 @@ export function SubjectMultiSelect({
           );
         })}
       </div>
-      <div className="flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          已选 <span className="font-semibold text-slate-700">{value.length}</span> 个 · 共 {SUBJECT_OPTIONS.length} 个可选
+          已选 <span className="font-semibold text-secondary-foreground">{value.length}</span> 个 · 共 {SUBJECT_OPTIONS.length} 个可选
         </span>
         <button
           type="button"
           onClick={clearAll}
           disabled={disabled || value.length === 0}
-          className="text-indigo-600 hover:text-indigo-700 hover:underline disabled:text-slate-300 disabled:hover:no-underline disabled:cursor-not-allowed"
+          className="text-primary hover:text-primary-strong hover:underline disabled:text-muted-foreground disabled:hover:no-underline disabled:cursor-not-allowed"
         >
           清空选择
         </button>

@@ -104,7 +104,7 @@ export function BoardTabs({ value, onChange, sort, onSortChange }: BoardTabsProp
       </div>
 
       {/* 排序切换 */}
-      <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
         {SORT_OPTIONS.map(({ value: v, label, Icon }) => (
           <button
             key={v}
@@ -112,10 +112,10 @@ export function BoardTabs({ value, onChange, sort, onSortChange }: BoardTabsProp
             onClick={() => onSortChange(v)}
             aria-pressed={sort === v}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground",
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
               sort === v
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-slate-100 hover:text-foreground",
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <Icon className="h-3.5 w-3.5" />

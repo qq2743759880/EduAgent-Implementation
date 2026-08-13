@@ -36,11 +36,14 @@ const DIMENSION_UNIT: Record<RankingDimension, string> = {
   BADGE_COUNT: "枚",
 };
 
-/** 前三名奖牌（深色系，保证 amber-50 底上对比 ≥3:1；排名由数字文本兜底） */
+/**
+ * 前三名奖牌（fe-task07：名次多色收敛——第一名保留 amber 单色豁免 text-warning-foreground（amber-700 档，a11y 修复），
+ * 2/3 名 muted-foreground，orange 删除；排名由数字文本兜底）
+ */
 const MEDAL_FOR: Record<number, { Icon: typeof Crown; color: string }> = {
-  1: { Icon: Crown, color: "text-amber-700" },
-  2: { Icon: Medal, color: "text-slate-600" },
-  3: { Icon: Medal, color: "text-orange-600" },
+  1: { Icon: Crown, color: "text-warning-foreground" },
+  2: { Icon: Medal, color: "text-muted-foreground" },
+  3: { Icon: Medal, color: "text-muted-foreground" },
 };
 
 /** 排行内容面板（两组 tablist 的 aria-controls 共同指向） */
@@ -127,7 +130,7 @@ export function RankingTabs() {
       </div>
 
       {/* 维度 Tab */}
-      <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5" role="tablist" aria-label="排行维度">
+      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="排行维度">
         {DIMENSION_TABS.map(({ value, label, Icon }, i) => (
           <button
             key={value}
@@ -143,10 +146,10 @@ export function RankingTabs() {
             onClick={() => setDimension(value)}
             onKeyDown={(e) => onDimensionKeyDown(e, i)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-foreground",
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
               dimension === value
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-slate-100 hover:text-foreground",
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -160,20 +163,20 @@ export function RankingTabs() {
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-xl border bg-white" />
+              <div key={i} className="h-12 animate-pulse rounded-xl border border-border bg-muted/40" />
             ))}
           </div>
         ) : isError ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 text-sm text-rose-700">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive-foreground">
             排行榜加载失败，请稍后刷新重试。
           </div>
         ) : top.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             该榜暂时还没有数据，快去学习抢榜首吧～
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border bg-white">
-            <ul className="divide-y divide-slate-100">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <ul className="divide-y divide-border">
               {top.map((row) => {
                 const medal = MEDAL_FOR[row.rank_no] ?? null;
                 return (
@@ -181,16 +184,16 @@ export function RankingTabs() {
                     key={`${row.rank_no}-${row.user_id}`}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3",
-                      row.is_myself && "bg-primary/5",
+                      row.is_myself && "bg-primary/10",
                     )}
                   >
                     <span
                       className={cn(
                         "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm font-bold tabular-nums",
                         medal
-                          ? "bg-amber-50"
+                          ? "bg-warning/10"
                           : row.rank_no <= 10
-                            ? "bg-slate-100 text-slate-700"
+                            ? "bg-muted text-muted-foreground"
                             : "text-muted-foreground",
                       )}
                     >
@@ -203,18 +206,18 @@ export function RankingTabs() {
                         row.rank_no
                       )}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {row.user_name ?? `学员 ${row.user_id}`}
                       {row.is_myself && (
-                        <span className="ml-2 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                        <span className="ml-2 rounded bg-primary px-1.5 py-0.5 text-4xs font-semibold text-primary-foreground">
                           我
                         </span>
                       )}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 tabular-nums">
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary tabular-nums">
                       <TrendingUp className="h-3.5 w-3.5" />
                       {row.metric_value.toLocaleString()}
-                      <span className="text-[11px] font-normal text-muted-foreground">
+                      <span className="text-3xs font-normal text-muted-foreground">
                         {DIMENSION_UNIT[dimension]}
                       </span>
                     </span>
@@ -224,9 +227,9 @@ export function RankingTabs() {
             </ul>
 
             {myRank && (
-              <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 text-sm">
+              <div className="border-t border-border bg-muted/40 px-4 py-3 text-sm">
                 <span className="text-muted-foreground">我的排名：</span>
-                <span className="font-semibold text-slate-800">第 {myRank.rank_no} 名</span>
+                <span className="font-semibold text-foreground">第 {myRank.rank_no} 名</span>
                 <span className="ml-3 text-muted-foreground">
                   {myRank.metric_value.toLocaleString()} {DIMENSION_UNIT[dimension]}
                 </span>

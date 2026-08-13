@@ -15,6 +15,7 @@
  * 不 catch 返回空数组/0 伪装成功。
  */
 import { api } from "@/lib/api-client";
+import { CHART_COLORS } from "@/lib/chart-palette";
 import { type ProgressTrendPoint } from "@/components/dashboard/ProgressTrendChart";
 import { type BadgeItem } from "@/components/dashboard/BadgeWallGrid";
 import { type PointGainItem } from "@/components/dashboard/PointCard";
@@ -317,7 +318,7 @@ export function buildRankSlice(
 }
 
 // ── 雷达（派生数据：后端无分学科正确率接口）──
-const RADAR_COLOR = "#6366f1"; // 既有图表主色（chartHex，非新增）
+const RADAR_COLOR = CHART_COLORS.primary;
 
 export function deriveAbilityRadar(overallRate: number | null, prefs: SubjectPreference[]): AbilityRadarSeries[] {
   // 派生自 GET /api/progress/dashboard.overall_correct_rate + GET /api/users/me/profile.subject_preferences

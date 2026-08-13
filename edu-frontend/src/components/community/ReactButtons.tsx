@@ -75,7 +75,8 @@ export function ReactButtons({
         aria-pressed={likeActive}
         className={cn(
           "gap-1.5",
-          likeActive && "bg-rose-600 text-white hover:bg-rose-700 border-rose-600",
+          // fe-task07：点赞/收藏激活双色 → 主色（区分靠 Heart vs Bookmark 图标 + fill-current + aria-pressed）
+          likeActive && "bg-primary text-primary-foreground hover:bg-primary-strong border-primary",
         )}
       >
         {likeMutation.isPending ? (
@@ -96,7 +97,7 @@ export function ReactButtons({
         aria-pressed={favoriteActive}
         className={cn(
           "gap-1.5",
-          favoriteActive && "bg-amber-700 text-white hover:bg-amber-800 border-amber-700",
+          favoriteActive && "bg-primary text-primary-foreground hover:bg-primary-strong border-primary",
         )}
       >
         {favMutation.isPending ? (

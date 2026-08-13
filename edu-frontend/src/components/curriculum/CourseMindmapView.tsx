@@ -21,6 +21,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { UniversalTransition } from "echarts/features";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS } from "@/lib/chart-palette";
 import { AlertCircle, Loader2 } from "lucide-react";
 import type { MindMapResponse } from "@/lib/api/curriculum";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,7 @@ export function CourseMindmapView({ state }: { state: MindmapLoadState }) {
         text: d.title ?? "课程知识图谱",
         left: "center",
         top: 8,
-        textStyle: { fontSize: 14, fontWeight: 600, color: "#0f172a" },
+        textStyle: { fontSize: 14, fontWeight: 600, color: CHART_COLORS.primaryStrong },
       },
       tooltip: {
         trigger: "item",
@@ -130,7 +131,8 @@ export function CourseMindmapView({ state }: { state: MindmapLoadState }) {
             target: l.target,
             relation: l.relation,
             lineStyle: l.lineStyle ?? {
-              color: l.relation === "PREREQUISITE" ? "#f59e0b" : "#94a3b8",
+              // PREREQUISITE 边保留 amber 语义（chartPalette.warning）；普通边 muted
+              color: l.relation === "PREREQUISITE" ? CHART_COLORS.warning : CHART_COLORS.muted,
               type: l.relation === "PREREQUISITE" ? "dashed" : "solid",
               curveness: 0.08,
             },
@@ -165,7 +167,7 @@ export function CourseMindmapView({ state }: { state: MindmapLoadState }) {
           可视化知识点 → 模块 → 先修链关系。拖拽可拖动节点，滚轮可缩放。
         </CardDescription>
       </CardHeader>
-      <CardContent className={cn("relative min-h-[420px] w-full", "rounded-xl border bg-slate-50/40 p-3")}>
+      <CardContent className={cn("relative min-h-[420px] w-full", "rounded-xl border border-border bg-muted/40 p-3")}>
         <div ref={ref} className="h-[440px] w-full" />
 
         {state.status === "loading" && (
@@ -182,8 +184,8 @@ export function CourseMindmapView({ state }: { state: MindmapLoadState }) {
         )}
         {state.status === "error" && (
           <Overlay>
-            <AlertCircle className="h-6 w-6 text-rose-500" />
-            <span className="max-w-[90%] truncate text-sm text-rose-600">
+            <AlertCircle className="h-6 w-6 text-destructive" />
+            <span className="max-w-[90%] truncate text-sm text-destructive">
               {state.message || "加载失败"}
             </span>
           </Overlay>
@@ -195,7 +197,7 @@ export function CourseMindmapView({ state }: { state: MindmapLoadState }) {
 
 function Overlay({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-white/60 backdrop-blur-[2px]">
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-card/60 backdrop-blur-[2px]">
       {children}
     </div>
   );
@@ -204,13 +206,13 @@ function Overlay({ children }: { children: React.ReactNode }) {
 function statusColor(s?: string): string {
   switch (s) {
     case "mastered":
-      return "#10b981";
+      return CHART_COLORS.success;
     case "learning":
-      return "#3b82f6";
+      return CHART_COLORS.primary;
     case "not_started":
-      return "#cbd5e1";
+      return CHART_COLORS.chartNeutral[2];
     default:
-      return "#6366f1";
+      return CHART_COLORS.primary;
   }
 }
 

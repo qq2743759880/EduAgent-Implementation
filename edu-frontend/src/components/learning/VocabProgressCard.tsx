@@ -63,12 +63,12 @@ export function VocabProgressCard({
         </div>
       </CardHeader>
       <CardContent className={cn("space-y-4", compact && "pt-0")}>
-        {/* 顶部数字 4 宫格 */}
+        {/* 顶部数字 4 宫格（fe-task07：统计分类 4 色 → 主色/状态；已掌握=success 状态保留） */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCell label="总词数" value={total.toLocaleString()} Icon={Users} tone="bg-sky-500" />
-          <StatCell label="已掌握" value={mastered.toLocaleString()} Icon={Target} tone="bg-emerald-500" />
-          <StatCell label="学习中" value={learning.toLocaleString()} Icon={BookOpenText} tone="bg-indigo-500" />
-          <StatCell label="今日待复习" value={due.toLocaleString()} Icon={Flame} tone="bg-amber-500" />
+          <StatCell label="总词数" value={total.toLocaleString()} Icon={Users} tone="bg-primary" />
+          <StatCell label="已掌握" value={mastered.toLocaleString()} Icon={Target} tone="bg-success" />
+          <StatCell label="学习中" value={learning.toLocaleString()} Icon={BookOpenText} tone="bg-primary" />
+          <StatCell label="今日待复习" value={due.toLocaleString()} Icon={Flame} tone="bg-warning-foreground" />
         </div>
 
         <SeparatorSoft />
@@ -82,7 +82,7 @@ export function VocabProgressCard({
             </span>
           </div>
           {q.isFetching && !q.data ? (
-            <div className="h-14 w-full animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-14 w-full animate-pulse rounded-xl bg-muted" />
           ) : series.length ? (
             <div className="flex h-16 items-end gap-[2px] overflow-x-auto pr-1">
               {series.map((row, i) => {
@@ -116,18 +116,18 @@ export function VocabProgressCard({
             <span className="text-muted-foreground">掌握比例</span>
             <span className="font-semibold text-foreground">
               {total > 0 ? ((mastered / total) * 100).toFixed(1) : 0}%
-              <Badge variant="secondary" className="ml-2 text-[10px]">
+              <Badge variant="secondary" className="ml-2 text-4xs">
                 {mastered.toLocaleString()} / {total.toLocaleString()}
               </Badge>
             </span>
           </div>
-          <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
+          <div className="relative h-3 overflow-hidden rounded-full bg-muted">
             <div
-              className="absolute inset-y-0 left-0 bg-emerald-500"
+              className="absolute inset-y-0 left-0 bg-success"
               style={{ width: `${total > 0 ? (mastered / total) * 100 : 0}%` }}
             />
             <div
-              className="absolute inset-y-0 bg-indigo-400"
+              className="absolute inset-y-0 bg-primary"
               style={{
                 left: `${total > 0 ? (mastered / total) * 100 : 0}%`,
                 width: `${total > 0 ? (learning / total) * 100 : 0}%`,
@@ -135,10 +135,10 @@ export function VocabProgressCard({
               }}
             />
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <Legend dot="bg-emerald-500" label="已掌握" />
-            <Legend dot="bg-indigo-400" label="学习中" />
-            <Legend dot="bg-slate-300" label="未开始" />
+          <div className="flex items-center gap-3 text-3xs text-muted-foreground">
+            <Legend dot="bg-success" label="已掌握" />
+            <Legend dot="bg-primary" label="学习中" />
+            <Legend dot="bg-muted-foreground/50" label="未开始" />
           </div>
         </div>
       </CardContent>
@@ -158,14 +158,14 @@ function StatCell({
   tone: string;
 }) {
   return (
-    <div className="rounded-2xl border bg-gradient-to-b from-white to-slate-50/70 p-3.5">
+    <div className="rounded-xl border border-border bg-gradient-to-b from-card to-muted/40 p-3.5">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className={cn("grid h-6 w-6 place-items-center rounded-md text-white", tone)}>
           <Icon className="h-3.5 w-3.5" />
         </span>
         {label}
       </div>
-      <div className="mt-1.5 text-xl font-bold tabular-nums leading-none">{value}</div>
+      <div className="mt-1.5 text-xl font-bold tabular-nums leading-none text-foreground">{value}</div>
     </div>
   );
 }
@@ -180,21 +180,22 @@ function Legend({ dot, label }: { dot: string; label: string }) {
 }
 
 function SeparatorSoft() {
-  return <div className="h-px w-full bg-slate-100" />;
+  return <div className="h-px w-full bg-border" />;
 }
 
 function colorForLevel(level: number): string {
+  // fe-task07：热力分级 → 主色系透明度（数据密度分级，文字/高度补偿）
   switch (level) {
     case 0:
-      return "bg-slate-100";
+      return "bg-muted";
     case 1:
-      return "bg-sky-200";
+      return "bg-primary/20";
     case 2:
-      return "bg-sky-400";
+      return "bg-primary/50";
     case 3:
-      return "bg-indigo-500";
+      return "bg-primary/80";
     default:
-      return "bg-violet-600";
+      return "bg-primary";
   }
 }
 

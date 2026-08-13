@@ -102,16 +102,16 @@ const STATUS_TONE: Record<MCPToolCallStatus, {
   success: {
     badge: "outline",
     label: "完成",
-    progress: "[&_[data-slot=progress-indicator]]:bg-emerald-500",
+    progress: "[&_[data-slot=progress-indicator]]:bg-success",
     icon: CheckCircle2,
-    iconColor: "text-emerald-500",
+    iconColor: "text-success",
   },
   error: {
     badge: "destructive",
     label: "失败",
-    progress: "[&_[data-slot=progress-indicator]]:bg-rose-500",
+    progress: "[&_[data-slot=progress-indicator]]:bg-destructive",
     icon: XCircle,
-    iconColor: "text-rose-500",
+    iconColor: "text-destructive",
   },
 };
 
@@ -177,7 +177,7 @@ export function ToolCallVisualizer({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                "min-w-0 truncate font-mono text-[12.5px] font-medium text-foreground",
+                "min-w-0 truncate font-mono text-2xs font-medium text-foreground",
                 compact ? "max-w-[140px]" : "max-w-[260px]",
               )}
               title={call.tool_name}
@@ -185,11 +185,14 @@ export function ToolCallVisualizer({
               <Terminal className="mr-1 inline size-3 -translate-y-px text-muted-foreground" aria-hidden />
               {call.tool_name}
             </span>
-            <Badge variant={tone.badge as "secondary" | "default" | "outline" | "destructive"} className="text-[10px]">
+            <Badge
+              variant={tone.badge as "secondary" | "default" | "outline" | "destructive"}
+              className={cn("text-4xs", tone.badge === "destructive" && "text-destructive-foreground")}
+            >
               {tone.label}
             </Badge>
             {call.status === "running" && (
-              <span className="ml-auto tabular-nums text-[11px] text-muted-foreground">
+              <span className="ml-auto tabular-nums text-3xs text-muted-foreground">
                 {Math.round(progress)}%
               </span>
             )}
@@ -209,7 +212,7 @@ export function ToolCallVisualizer({
           <button
             type="button"
             onClick={() => setArgsOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[12px] text-muted-foreground hover:bg-muted/50"
+            className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-2xs text-muted-foreground hover:bg-muted/50"
             aria-expanded={argsOpen}
           >
             <span className="inline-flex items-center gap-1">
@@ -221,7 +224,7 @@ export function ToolCallVisualizer({
               入参
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="max-w-[180px] truncate font-mono text-[11px] opacity-70">
+              <span className="max-w-[180px] truncate font-mono text-3xs opacity-70">
                 {argsStr === "—" ? "—" : (compact ? (argsStr.length > 28 ? argsStr.slice(0, 28) + "…" : argsStr) : (argsStr.length > 80 ? argsStr.slice(0, 80) + "…" : argsStr))}
               </span>
               {argsStr !== "—" && (
@@ -239,16 +242,16 @@ export function ToolCallVisualizer({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") e.preventDefault();
                   }}
-                  className="inline-flex items-center gap-0.5 rounded px-1 text-[11px] opacity-70 hover:opacity-100"
+                  className="inline-flex items-center gap-0.5 rounded px-1 text-3xs opacity-70 hover:opacity-100"
                   aria-label="复制入参"
                 >
-                  {copiedArgs ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                  {copiedArgs ? <Check className="size-2.5 text-success" /> : <Copy className="size-2.5" />}
                 </span>
               )}
             </span>
           </button>
           {argsOpen && argsStr !== "—" && (
-            <pre className="mt-1 max-h-56 overflow-auto rounded-lg border border-border/60 bg-zinc-950 p-2.5 font-mono text-[11.5px] leading-5 text-zinc-100">
+            <pre className="mt-1 max-h-56 overflow-auto rounded-lg border border-border/60 bg-zinc-950 p-2.5 font-mono text-3xs leading-5 text-zinc-100">
               {argsStr}
             </pre>
           )}
@@ -261,8 +264,8 @@ export function ToolCallVisualizer({
               type="button"
               onClick={() => setResultOpen((v) => !v)}
               className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[12px] hover:bg-muted/50",
-                call.status === "error" ? "text-rose-600 dark:text-rose-300" : "text-muted-foreground",
+                "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-2xs hover:bg-muted/50",
+                call.status === "error" ? "text-destructive" : "text-muted-foreground",
               )}
               aria-expanded={resultOpen}
             >
@@ -276,7 +279,7 @@ export function ToolCallVisualizer({
               </span>
               <span className="inline-flex items-center gap-1.5">
                 {call.error_message && !resultOpen && (
-                  <span className="max-w-[180px] truncate font-mono text-[11px] text-rose-600 dark:text-rose-300">
+                  <span className="max-w-[180px] truncate font-mono text-3xs text-destructive">
                     {call.error_message.length > 40
                       ? call.error_message.slice(0, 40) + "…"
                       : call.error_message}
@@ -297,26 +300,26 @@ export function ToolCallVisualizer({
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") e.preventDefault();
                     }}
-                    className="inline-flex items-center gap-0.5 rounded px-1 text-[11px] opacity-70 hover:opacity-100"
+                    className="inline-flex items-center gap-0.5 rounded px-1 text-3xs opacity-70 hover:opacity-100"
                     aria-label="复制结果"
                   >
-                    {copiedResult ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                    {copiedResult ? <Check className="size-2.5 text-success" /> : <Copy className="size-2.5" />}
                   </span>
                 )}
               </span>
             </button>
             {resultOpen && (
               call.error_message ? (
-                <pre className="mt-1 max-h-64 overflow-auto rounded-lg border border-rose-500/20 bg-rose-500/5 p-2.5 font-mono text-[11.5px] leading-5 text-rose-700 dark:text-rose-200">
+                <pre className="mt-1 max-h-64 overflow-auto rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 font-mono text-3xs leading-5 text-destructive-foreground">
                   {call.error_message}
                   {resultStr ? `\n\n---- 详细结果 ----\n${resultStr}` : ""}
                 </pre>
               ) : resultStr ? (
-                <pre className="mt-1 max-h-80 overflow-auto rounded-lg border border-border/60 bg-zinc-950 p-2.5 font-mono text-[11.5px] leading-5 text-zinc-100">
+                <pre className="mt-1 max-h-80 overflow-auto rounded-lg border border-border/60 bg-zinc-950 p-2.5 font-mono text-3xs leading-5 text-zinc-100">
                   {resultStr}
                 </pre>
               ) : (
-                <div className="mt-1 rounded-lg border border-dashed border-border/80 p-3 text-center text-[11px] text-muted-foreground">
+                <div className="mt-1 rounded-lg border border-dashed border-border/80 p-3 text-center text-3xs text-muted-foreground">
                   无输出结果
                 </div>
               )

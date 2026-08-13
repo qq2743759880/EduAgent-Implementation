@@ -16,11 +16,14 @@ import { Lock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMyBadges, type BadgeItem, type BadgeRarity } from "@/lib/api/community";
 
+/**
+ * 稀有度元数据（fe-task07 收敛）：稀有度四色 → 中性 + 文字 label 补偿（普通/稀有/史诗/传说）。
+ */
 const RARITY_META: Record<BadgeRarity, { label: string; color: string }> = {
-  COMMON: { label: "普通", color: "border-slate-300 text-slate-600" },
-  RARE: { label: "稀有", color: "border-sky-300 text-sky-600" },
-  EPIC: { label: "史诗", color: "border-violet-300 text-violet-600" },
-  LEGENDARY: { label: "传说", color: "border-amber-300 text-amber-600" },
+  COMMON: { label: "普通", color: "border-border text-muted-foreground" },
+  RARE: { label: "稀有", color: "border-border text-muted-foreground" },
+  EPIC: { label: "史诗", color: "border-border text-muted-foreground" },
+  LEGENDARY: { label: "传说", color: "border-border text-muted-foreground" },
 };
 
 export function BadgeWall() {
@@ -33,7 +36,7 @@ export function BadgeWall() {
   if (isLoading) return <BadgeWallSkeleton />;
   if (isError || !data) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 text-sm text-rose-700">
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive-foreground">
         徽章加载失败，请稍后刷新重试。
       </div>
     );
@@ -46,18 +49,18 @@ export function BadgeWall() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h3 className="text-lg font-semibold">我的徽章</h3>
+          <h3 className="text-lg font-semibold text-foreground">我的徽章</h3>
           <p className="mt-0.5 text-sm text-muted-foreground">
             已解锁 {data.unlocked_count} / {data.total} 枚
           </p>
         </div>
         {allUnlocked ? (
-          <p className="inline-flex items-center gap-1.5 text-xs text-amber-700">
+          <p className="inline-flex items-center gap-1.5 text-xs text-warning-foreground">
             <Sparkles className="h-3.5 w-3.5" />
             已满级：{data.total} 枚徽章全部解锁
           </p>
         ) : data.next_milestone ? (
-          <p className="inline-flex items-center gap-1.5 text-xs text-amber-700">
+          <p className="inline-flex items-center gap-1.5 text-xs text-warning-foreground">
             <Sparkles className="h-3.5 w-3.5" />
             下一枚：{data.next_milestone}
           </p>
@@ -80,37 +83,37 @@ function BadgeCard({ badge }: { badge: BadgeItem }) {
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-2xl border p-4 transition-all",
+        "relative flex flex-col rounded-xl border p-4 transition-all",
         badge.unlocked
-          ? "border-amber-200 bg-gradient-to-br from-amber-50/80 to-white shadow-sm"
-          : "border-slate-200 bg-slate-50/60",
+          ? "border-warning/40 bg-warning/10 shadow-card"
+          : "border-border bg-muted/40",
       )}
     >
       {/* 图标区：未解锁置灰 + 锁角标 */}
       <div className="relative mx-auto grid h-16 w-16 place-items-center">
         <div
           className={cn(
-            "grid h-14 w-14 place-items-center rounded-2xl border text-3xl",
+            "grid h-14 w-14 place-items-center rounded-xl border text-3xl",
             badge.unlocked
-              ? "border-amber-200 bg-white shadow-inner"
-              : "border-slate-200 bg-white grayscale opacity-50",
+              ? "border-warning/40 bg-card shadow-inner"
+              : "border-border bg-card grayscale opacity-50",
           )}
         >
           {badge.icon_emoji || "🎖️"}
         </div>
         {!badge.unlocked && (
-          <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-slate-600 text-white shadow">
+          <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-muted-foreground text-white shadow">
             <Lock className="h-3 w-3" />
           </span>
         )}
       </div>
 
       <div className="mt-3 text-center">
-        <div className="text-sm font-semibold text-slate-900">{badge.badge_name}</div>
-        <div className={cn("mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px]", rarity.color)}>
+        <div className="text-sm font-semibold text-foreground">{badge.badge_name}</div>
+        <div className={cn("mt-1 inline-block rounded-full border px-2 py-0.5 text-4xs", rarity.color)}>
           {rarity.label}
         </div>
-        <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 line-clamp-2 text-3xs leading-relaxed text-muted-foreground">
           {badge.badge_desc}
         </p>
       </div>
@@ -118,28 +121,28 @@ function BadgeCard({ badge }: { badge: BadgeItem }) {
       {/* 进度条（未解锁） */}
       {!badge.unlocked && (
         <div className="mt-3">
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="flex items-center justify-between text-4xs text-muted-foreground">
             <span>解锁进度</span>
             <span className="tabular-nums">
               {badge.progress_current}/{badge.progress_required}
             </span>
           </div>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
             <div
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={pct}
-              className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
+              className="h-full rounded-full bg-primary"
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* 已解锁：奖励积分 */}
+      {/* 已解锁：奖励积分（正向变动 → success） */}
       {badge.unlocked && (
-        <div className="mt-3 text-center text-[11px] text-amber-700">
+        <div className="mt-3 text-center text-3xs text-success-foreground">
           +{badge.reward_points} 积分 · 已解锁
         </div>
       )}
@@ -150,10 +153,10 @@ function BadgeCard({ badge }: { badge: BadgeItem }) {
 function BadgeWallSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-6 w-40 animate-pulse rounded bg-slate-100" />
+      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-44 animate-pulse rounded-2xl border bg-white" />
+          <div key={i} className="h-44 animate-pulse rounded-xl border border-border bg-muted/40" />
         ))}
       </div>
     </div>

@@ -22,36 +22,40 @@ interface KpiCardProps {
   loading?: boolean;
 }
 
+/**
+ * 指标卡配色（fe-task07 收敛）：分功能 6 色 → 单主色（指标区分靠标题文字）；
+ * ring 光环移除（ring 字段置空，消费方 cn 忽略）。
+ */
 const ACCENT_MAP: Record<NonNullable<KpiCardProps["accent"]>, { iconBg: string; ring: string; tintText: string }> = {
   indigo: {
-    iconBg: "from-indigo-500 to-indigo-600 text-white",
-    ring: "ring-indigo-100",
-    tintText: "text-indigo-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
   emerald: {
-    iconBg: "from-emerald-500 to-teal-600 text-white",
-    ring: "ring-emerald-100",
-    tintText: "text-emerald-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
   amber: {
-    iconBg: "from-amber-400 to-orange-500 text-white",
-    ring: "ring-amber-100",
-    tintText: "text-amber-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
   sky: {
-    iconBg: "from-sky-500 to-cyan-600 text-white",
-    ring: "ring-sky-100",
-    tintText: "text-sky-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
   rose: {
-    iconBg: "from-rose-500 to-pink-600 text-white",
-    ring: "ring-rose-100",
-    tintText: "text-rose-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
   violet: {
-    iconBg: "from-violet-500 to-fuchsia-600 text-white",
-    ring: "ring-violet-100",
-    tintText: "text-violet-600",
+    iconBg: "bg-primary-soft text-primary",
+    ring: "",
+    tintText: "text-primary",
   },
 };
 
@@ -71,17 +75,15 @@ export function KpiCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden border-slate-200/80 shadow-sm hover:shadow-md transition-shadow bg-white",
+        "overflow-hidden border-border shadow-card transition-shadow bg-card",
         className,
       )}
     >
       <CardContent className="p-5 flex items-start gap-4">
         <div
           className={cn(
-            "h-11 w-11 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ring-8",
-            "bg-gradient-to-br",
+            "h-11 w-11 rounded-xl shrink-0 flex items-center justify-center shadow-sm",
             theme.iconBg,
-            theme.ring,
           )}
         >
           {icon && typeof icon === "function" ? (
@@ -95,14 +97,14 @@ export function KpiCard({
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-slate-500 truncate">{title}</span>
+            <span className="text-sm font-medium text-muted-foreground truncate">{title}</span>
             {!loading && delta && delta.value ? (
               <span
                 className={cn(
                   "inline-flex items-center gap-0.5 text-xs font-semibold shrink-0",
-                  tone === "positive" && "text-emerald-600",
-                  tone === "negative" && "text-rose-600",
-                  tone === "neutral" && "text-slate-500",
+                  tone === "positive" && "text-success-foreground",
+                  tone === "negative" && "text-destructive",
+                  tone === "neutral" && "text-muted-foreground",
                 )}
               >
                 {delta.direction === "up" ? (
@@ -114,11 +116,11 @@ export function KpiCard({
               </span>
             ) : null}
           </div>
-          <div className={cn("text-3xl font-bold tracking-tight text-slate-900 tabular-nums", loading && "animate-pulse bg-slate-100 rounded-md h-9 w-28 inline-block")}>
+          <div className={cn("text-3xl font-bold tracking-tight text-foreground tabular-nums", loading && "animate-pulse bg-muted rounded-md h-9 w-28 inline-block")}>
             {loading ? <span className="sr-only">loading</span> : value}
           </div>
           {subtitle ? (
-            <p className={cn("text-xs text-slate-500 leading-5", loading && "opacity-60")}>{subtitle}</p>
+            <p className={cn("text-xs text-muted-foreground leading-5", loading && "opacity-60")}>{subtitle}</p>
           ) : null}
         </div>
       </CardContent>

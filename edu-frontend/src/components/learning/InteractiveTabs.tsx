@@ -27,7 +27,7 @@ export function InteractiveTabs({ subjectCode, seriesId, sessionId }: Interactiv
   return (
     <Card className="overflow-hidden">
       <Tabs defaultValue="quiz" className="w-full">
-        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 border-b bg-slate-50/40">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40">
           <div className="flex-1">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Layers className="h-5 w-5 text-primary" />
@@ -139,7 +139,7 @@ function PlaceholderPanel({
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
-      <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary md:mx-0">
+      <div className="mx-auto grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary md:mx-0">
         <Icon className="h-7 w-7" />
       </div>
       <div>

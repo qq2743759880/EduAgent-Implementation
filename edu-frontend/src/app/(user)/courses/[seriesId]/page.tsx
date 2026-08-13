@@ -99,9 +99,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ seriesI
     (series && typeof series.price_original === "number" ? series.price_original : Math.round(priceCurrent * 1.3));
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* 顶部面包屑 */}
-      <header className="border-b bg-white/80 backdrop-blur">
+      <header className="border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground hover:text-foreground" onClick={() => router.back()}>
@@ -221,9 +221,10 @@ function HeroSection({
   const subject = SUBJECT_OPTIONS.find((s) => s.code === series.subject_code);
   const level = LEVEL_OPTIONS.find((l) => l.code === series.level_code);
   return (
-    <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
+    <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-card">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className={"relative min-h-[240px] bg-gradient-to-br px-6 py-10 text-white " + subjectBgGradient(series.subject_code)}>
+        {/* fe-task07：学科封面 5 色渐变 → 主色渐变（学科靠 name 标签 + 标题补偿） */}
+        <div className="relative min-h-[240px] bg-gradient-to-br from-primary-deep to-primary px-6 py-10 text-primary-foreground">
           <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.4),transparent_60%),radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_55%)]" />
           <div className="relative flex flex-wrap items-center gap-2">
             {subject && (
@@ -252,7 +253,8 @@ function HeroSection({
           )}
           <div className="relative mt-6 flex flex-wrap items-center gap-5 text-sm text-white/90">
             <span className="inline-flex items-center gap-1.5">
-              <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+              {/* 星级豁免（design-options §2.3） */}
+              <Star className="h-4 w-4 fill-warning text-warning" />
               <b className="text-white">{(series.rating ?? 4.5).toFixed(1)}</b>
               <span className="text-white/80">平均评分</span>
             </span>
@@ -271,10 +273,11 @@ function HeroSection({
           </div>
         </div>
 
-        <div className="border-t border-white/10 bg-slate-900/95 px-6 py-8 text-white lg:border-l lg:border-t-0">
+        <div className="border-t border-white/10 bg-foreground/95 px-6 py-8 text-white lg:border-l lg:border-t-0">
           <div className="text-xs uppercase tracking-wider text-white/60">课程价格</div>
           <div className="mt-2 flex items-baseline gap-3">
-            <span className="text-4xl font-bold text-amber-300">¥{priceCurrent}</span>
+            {/* fe-task07：价格 → 深底白字加粗（中性 + 字重结构区分） */}
+            <span className="text-4xl font-bold text-white">¥{priceCurrent}</span>
             {priceOriginal > priceCurrent && (
               <span className="text-sm text-white/50 line-through">
                 ¥{priceOriginal}
@@ -282,16 +285,16 @@ function HeroSection({
             )}
           </div>
           <ul className="mt-5 space-y-2 text-sm text-white/85">
-            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" />分级课程 + 学习路径思维导图</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" />配套互动习题 + 错题本 + AI 单词本</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" />AI 问答助手 7×24 小时（知识库引用来源）</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" />学习进度 + 能力雷达持续追踪</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />分级课程 + 学习路径思维导图</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />配套互动习题 + 错题本 + AI 单词本</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />AI 问答助手 7×24 小时（知识库引用来源）</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />学习进度 + 能力雷达持续追踪</li>
           </ul>
           <div className="mt-6 space-y-2">
             <Button
               size="lg"
               className={cn(
-                "w-full bg-amber-400 font-semibold text-slate-900 hover:bg-amber-300",
+                "w-full bg-primary font-semibold text-primary-foreground hover:bg-primary-strong",
               )}
               onClick={onEnroll}
             >
@@ -309,15 +312,15 @@ function HeroSection({
 
 function HeroSkeleton() {
   return (
-    <div className="h-[360px] w-full animate-pulse rounded-3xl border bg-slate-100" />
+    <div className="h-[360px] w-full animate-pulse rounded-3xl border border-border bg-muted/40" />
   );
 }
 
 function ErrorBox({ title, message }: { title: string; message: string }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-6">
-      <div className="text-base font-semibold text-rose-700">{title}</div>
-      <p className="mt-1 text-sm text-rose-600">{message}</p>
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+      <div className="text-base font-semibold text-destructive-foreground">{title}</div>
+      <p className="mt-1 text-sm text-destructive-foreground/90">{message}</p>
     </div>
   );
 }
@@ -344,7 +347,8 @@ function EnrollCard({
           </Badge>
         </div>
         <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-rose-600">¥{priceCurrent}</span>
+          {/* fe-task07：价格 rose → foreground 字重；原价 line-through muted */}
+          <span className="text-2xl font-bold text-foreground">¥{priceCurrent}</span>
           {priceOriginal > priceCurrent && (
             <span className="text-xs text-muted-foreground line-through">¥{priceOriginal}</span>
           )}
@@ -371,11 +375,11 @@ function HighlightsCard({
     <Card>
       <CardContent className="grid grid-cols-2 gap-3 p-4">
         {items.map(({ label, value, Icon }) => (
-          <div key={label} className="rounded-xl border bg-slate-50/60 p-3">
+          <div key={label} className="rounded-xl border border-border bg-muted/40 p-3">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Icon className="h-3.5 w-3.5" /> {label}
             </div>
-            <div className="mt-1 text-lg font-semibold">{value}</div>
+            <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
           </div>
         ))}
       </CardContent>
@@ -413,12 +417,12 @@ function CohortsList({
                     onClick={() => onPick(c.id)}
                     className={cn(
                       "w-full rounded-xl border p-3 text-left transition-all",
-                      sel ? "border-primary bg-primary/5" : "hover:border-foreground/30",
+                      sel ? "border-primary-border bg-primary/10" : "border-border hover:border-primary-border",
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{c.cohort_title}</span>
-                      <span className="text-sm font-semibold text-rose-600">¥{price}</span>
+                      <span className="text-sm font-medium text-foreground">{c.cohort_title}</span>
+                      <span className="text-sm font-semibold text-foreground">¥{price}</span>
                     </div>
                     {c.start_date && (
                       <div className="mt-1 text-xs text-muted-foreground">
@@ -426,11 +430,12 @@ function CohortsList({
                       </div>
                     )}
                     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
                           className={cn(
                             "h-full rounded-full",
-                            pct > 85 ? "bg-rose-500" : pct > 50 ? "bg-amber-400" : "bg-emerald-500",
+                            // 完成率三色保留（keepList）：高负荷 destructive / 中 warning-foreground / 低 success
+                            pct > 85 ? "bg-destructive" : pct > 50 ? "bg-warning-foreground" : "bg-success",
                           )}
                           style={{ width: `${pct}%` }}
                         />
@@ -497,18 +502,7 @@ function handleEnroll(loggedIn: boolean, seriesId: number, router: ReturnType<ty
 }
 
 function subjectBgGradient(code: string | null | undefined): string {
-  switch (code) {
-    case "english":
-      return "from-sky-600 via-sky-500 to-cyan-500";
-    case "programming":
-      return "from-violet-600 via-indigo-500 to-purple-500";
-    case "math":
-      return "from-emerald-600 via-teal-500 to-green-500";
-    case "chinese":
-      return "from-amber-500 via-orange-400 to-rose-400";
-    case "physics":
-      return "from-rose-600 via-pink-500 to-red-500";
-    default:
-      return "from-slate-700 via-slate-600 to-slate-700";
-  }
+  // fe-task07：统一主色渐变（函数保留以兼容调用签名；学科区分靠课程名 + 标签）
+  void code;
+  return "from-primary-deep to-primary";
 }

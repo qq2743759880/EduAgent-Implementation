@@ -113,10 +113,10 @@ export function PreferencesForm() {
 
   return (
     <FormProvider {...form}>
-      <Card className="shadow-sm border-slate-200/80">
+      <Card className="shadow-card border-border">
         <CardHeader>
           <CardTitle className="text-lg">偏好设置</CardTitle>
-          <CardDescription className="text-sm text-slate-500">
+          <CardDescription className="text-sm text-muted-foreground">
             设置你的学习目标与感兴趣的学科，AI 将据此推荐更贴合的学习路径与练习。
           </CardDescription>
         </CardHeader>
@@ -127,8 +127,8 @@ export function PreferencesForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-indigo-500" />
-                  学科偏好 <span className="font-normal text-slate-500 text-xs ml-1">（可多选，至少 0 个）</span>
+                  <Target className="h-4 w-4 text-primary" />
+                  学科偏好 <span className="font-normal text-muted-foreground text-xs ml-1">（可多选，至少 0 个）</span>
                 </FormLabel>
                 <FormControl>
                   <SubjectMultiSelect
@@ -138,7 +138,7 @@ export function PreferencesForm() {
                     disabled={mutation.isPending}
                   />
                 </FormControl>
-                <p className="text-xs text-slate-400 -mt-1">
+                <p className="text-xs text-muted-foreground -mt-1">
                   已选 {subjectCount} 个。当前学科覆盖：英语 · 编程 · 数学 · 语文 · 物理
                 </p>
                 <FormMessage />
@@ -167,7 +167,7 @@ export function PreferencesForm() {
                   <span
                     className={
                       "text-xs tabular-nums " +
-                      (overLimit ? "text-rose-500 font-semibold" : "text-slate-400")
+                      (overLimit ? "text-destructive font-semibold" : "text-muted-foreground")
                     }
                   >
                     {goalLen} / {MAX_GOAL}
@@ -177,7 +177,7 @@ export function PreferencesForm() {
             )}
           />
         </CardContent>
-        <CardFooter className="justify-end gap-2 border-t bg-slate-50/60 rounded-b-xl px-6 py-4">
+        <CardFooter className="justify-end gap-2 border-t border-border bg-muted/40 rounded-b-xl px-6 py-4">
           <Button
             type="button"
             variant="ghost"
@@ -190,7 +190,7 @@ export function PreferencesForm() {
             type="button"
             onClick={() => form.handleSubmit((v) => mutation.mutate(v))()}
             disabled={mutation.isPending || !form.formState.isDirty || overLimit}
-            className="bg-gradient-to-br from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+            className="bg-primary hover:bg-primary-strong text-primary-foreground"
           >
             {mutation.isPending ? (
               <>

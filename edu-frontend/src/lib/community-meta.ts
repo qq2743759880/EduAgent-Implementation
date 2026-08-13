@@ -13,12 +13,16 @@ export interface BoardMeta {
   gradientClass: string;
 }
 
-/** 4 个学科分版（契约：english/math/programming/general，空=全部） */
+/**
+ * 4 个学科分版（契约：english/math/programming/general，空=全部）。
+ * fe-task07 收敛：分版四色 → 单主色（colorClass 统一主色 soft 底）；gradientClass 置空（禁自造渐变）；
+ * 分版区分靠 label 文字（英语/数学/编程/综合）。
+ */
 export const BOARDS: BoardMeta[] = [
-  { code: "english", label: "英语", colorClass: "text-sky-600 border-sky-200 bg-sky-50", gradientClass: "from-sky-500 to-cyan-400" },
-  { code: "math", label: "数学", colorClass: "text-emerald-600 border-emerald-200 bg-emerald-50", gradientClass: "from-emerald-500 to-teal-400" },
-  { code: "programming", label: "编程", colorClass: "text-violet-600 border-violet-200 bg-violet-50", gradientClass: "from-violet-500 to-purple-400" },
-  { code: "general", label: "综合", colorClass: "text-slate-600 border-slate-200 bg-slate-50", gradientClass: "from-slate-500 to-slate-400" },
+  { code: "english", label: "英语", colorClass: "bg-primary-soft text-primary", gradientClass: "" },
+  { code: "math", label: "数学", colorClass: "bg-primary-soft text-primary", gradientClass: "" },
+  { code: "programming", label: "编程", colorClass: "bg-primary-soft text-primary", gradientClass: "" },
+  { code: "general", label: "综合", colorClass: "bg-primary-soft text-primary", gradientClass: "" },
 ];
 
 /** code → meta 索引（未知 code 兜底 general） */

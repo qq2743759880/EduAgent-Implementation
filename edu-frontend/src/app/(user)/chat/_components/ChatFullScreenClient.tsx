@@ -103,7 +103,7 @@ function ExtraInfoPanel({
   if (!latestAssistant) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
-        <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-5 text-xs leading-5">
+        <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-5 text-xs leading-5">
           Ask a question on the left.<br />Knowledge references and MCP tool calls<br />
           will appear here for quick inspection.
         </div>
@@ -118,12 +118,12 @@ function ExtraInfoPanel({
     <div className="flex h-full w-full flex-col">
       <header className="flex items-center gap-2 border-b border-border/80 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300">
+          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <MessageSquarePlus className="size-4" aria-hidden />
           </span>
           <div>
-            <div className="text-[13.5px] font-semibold leading-tight">Context</div>
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-sm font-semibold leading-tight">Context</div>
+            <div className="text-3xs text-muted-foreground">
               Sources {sources.length} - Tools {tools.length}
             </div>
           </div>
@@ -142,7 +142,7 @@ function ExtraInfoPanel({
           <ToolCallList calls={tools} compact={false} className="max-w-full" />
         ) : null}
         {sources.length === 0 && tools.length === 0 ? (
-          <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-4 text-[12px] leading-5 text-muted-foreground">
+          <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-4 text-2xs leading-5 text-muted-foreground">
             This answer has no cited sources or tool calls.
           </div>
         ) : null}
@@ -303,7 +303,7 @@ export function ChatFullScreenClient() {
       <div className="min-h-screen w-full bg-background">
         <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-0 lg:gap-4 px-0 lg:px-4 py-0 lg:py-4">
           {/* Left: session sidebar (lg+ persistent) */}
-          <aside className="hidden lg:flex w-[280px] shrink-0 flex-col rounded-2xl border border-border/70 bg-background shadow-sm overflow-hidden">
+          <aside className="hidden lg:flex w-[280px] shrink-0 flex-col rounded-xl border border-border/70 bg-background shadow-sm overflow-hidden">
             <ChatSessionSidebar
               mode="side"
               onPicked={handlePickedSide}
@@ -313,7 +313,7 @@ export function ChatFullScreenClient() {
           </aside>
 
           {/* Center: chat main area */}
-          <main className="relative flex min-w-0 flex-1 flex-col rounded-none lg:rounded-2xl border-0 lg:border lg:border-border/70 bg-background shadow-none lg:shadow-sm overflow-hidden">
+          <main className="relative flex min-w-0 flex-1 flex-col rounded-none lg:rounded-xl border-0 lg:border lg:border-border/70 bg-background shadow-none lg:shadow-sm overflow-hidden">
             {/* Mobile header (visible <lg) */}
             <div className="lg:hidden flex items-center gap-2 border-b border-border/70 px-3 py-2.5">
               <Button
@@ -326,10 +326,10 @@ export function ChatFullScreenClient() {
                 <Menu className="size-4" />
               </Button>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13.5px] font-semibold leading-tight">
+                <div className="truncate text-sm font-semibold leading-tight">
                   AI Study Assistant
                 </div>
-                <div className="truncate text-[11px] text-muted-foreground">
+                <div className="truncate text-3xs text-muted-foreground">
                   {currentSession?.title?.trim() || "Start a new conversation"}
                 </div>
               </div>
@@ -364,7 +364,7 @@ export function ChatFullScreenClient() {
           </main>
 
           {/* Right: context inspector (xl+ visible) */}
-          <aside className="hidden xl:flex w-[340px] shrink-0 flex-col rounded-2xl border border-border/70 bg-background shadow-sm overflow-hidden">
+          <aside className="hidden xl:flex w-[340px] shrink-0 flex-col rounded-xl border border-border/70 bg-background shadow-sm overflow-hidden">
             <ExtraInfoPanel latestAssistant={lastAssistant} />
           </aside>
         </div>
