@@ -245,6 +245,20 @@ class Settings(BaseSettings):
     BIGKEY_THRESHOLD_BYTES: int = 1048576     # bigkey 扫描告警阈值（1MB = 1024*1024）
 
     # ============================================================
+    # token 级并发预算 + 用户分级队列（task-G1，production-upgrade-plan P5）
+    #   并发闸从「请求数」升级为「预估 token 速率预算」（第一道）+ 保留请求数并发闸（第二道）；
+    #   L1~L3 优先级队列（L3 大请求优先于 L1 闲聊）；智能重试退避按错误类型动态（见 app/core/retry.py）。
+    #   对齐 DeepSeek-V3 用户分级队列 / 通用云 LLM token 速率限制 + 配额 + 预估排队（P5 实证）。
+    # ============================================================
+    LLM_TOKEN_RATE_LIMIT_PER_MIN: int = 600000     # 全局 LLM 预估 token 速率上限（/分钟），超限进队列不拒绝
+    USER_TOKEN_QUOTA_PER_MIN: int = 30000          # 单用户单分钟 token 配额，超配额返回 user_token_quota_exceeded
+    ESTIMATE_DEFAULT_TOKENS: int = 2000            # request_meta 缺失时的兜底预估 token
+    QUEUE_POP_TIMEOUT_L3: float = 30.0             # L3 大请求排队超时（秒），容忍更长排队
+    QUEUE_PRIORITY_ORDER: list = ["L3", "L2", "L1"]  # 消费者轮询优先级顺序（L3 先出队）
+    TOKEN_RATE_KEY: str = "ai:llm:token_rate"      # 全局 token 速率计数 key（INCRBY + EXPIRE 60s 窗口）
+    USER_TOKEN_KEY_PREFIX: str = "chat:user_token"  # 单用户 token 配额计数 key 前缀（INCRBY + EXPIRE 60s）
+
+    # ============================================================
     # AI 助手三层记忆 + 遗忘机制（task25 R7）
     #   Working=LangGraph state｜Short-term=Redis session history+chat_message
     #   Long-term=MySQL user_memory + Milvus/in-memory 向量（用户分区）
