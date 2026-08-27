@@ -461,10 +461,13 @@ def _build_tool_services(*, user_id: int, thread_id: str | None) -> dict[str, An
         from app.mcp import executor as _mcp_executor
 
         args = args or {}
-        return await _mcp_executor.call_tool(
+        # task-T1：路由到工具调用闭环（换参→换工具→熔断→人工指南）
+        return await _mcp_executor.call_tool_with_retry(
             tool_name=args.get("tool_name", ""),
-            arguments=args.get("args", {}),
+            args=args.get("args", {}),
             operator_user_id=int(user_id),
+            session_id=thread_id or "",
+            trace_id=thread_id or "",
         )
 
     async def recall_memory(args: dict | None = None):

@@ -333,6 +333,27 @@ class Settings(BaseSettings):
     MCP_TOOL_MAX_TRIES: int = 1           # 单轮最多触发几次工具（避免反复调用）
 
     # ============================================================
+    # 【task-T1 新增段 · 工具调用闭环（换参→换工具→熔断→人工指南）】※ 本段为 task-T1 专属，
+    #   对齐 Codex orchestrator.rs / auto-review（3 连续拒绝熔断）/ retry telemetry（production-upgrade-plan P6）。
+    #   - TOOL_FALLBACK_MAP：原工具失败后尝试的备用工具（按列表顺序取第一个可用）；
+    #   - MAX_TOOL_ATTEMPTS：闭环总步数（1 正常→2 换参→3 换工具→4 人工指南）；
+    #   - TOOL_CONSECUTIVE_REJECTIONS：同一会话内连续被拒次数上限，达到即中断该回合工具循环；
+    #   - TOOL_REJECT_TTL_S：拒绝计数在 Redis 的存活窗口（跨请求持久，防反复打同一失败工具）。
+    # ============================================================
+    TOOL_FALLBACK_MAP: dict = {
+        "web_search": ["calculator", "search_knowledge"],
+        "code_runner": ["search_knowledge"],
+        "calculator": ["search_knowledge"],
+    }
+    MAX_TOOL_ATTEMPTS: int = 4                 # 闭环步数：第 4 步 = 结构化人工操作指南并停止
+    TOOL_CONSECUTIVE_REJECTIONS: int = 3       # 同会话连续被拒 3 次 → 第 4 次中断回合工具循环
+    TOOL_REJECT_TTL_S: int = 300               # 拒绝计数 Redis TTL（秒）
+    TOOL_RETRY_LLM_REWRITE: bool = True        # 第 2 步是否尝试 LLM 改写 args（关闭则走规则跳级兜底）
+    # ============================================================
+    # 【task-T1 新增段结束】
+    # ============================================================
+
+    # ============================================================
     # task30 RAG Contextual Retrieval（chunk 上下文前缀 + 降级）
     #   对齐 tech-source-audit §三：contextual embeddings 降 35% 失败率；
     #   仅知识型内容（题库/代码跳过），并发 ≤8 不击穿 LLM 预算。
