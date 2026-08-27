@@ -86,6 +86,7 @@ class AgentState(TypedDict):
     compaction: dict | None
     skill_context: str                       # task94：命中的 skill body 按需注入（不进前缀，动态注入当前轮）
     active_paths: list[str]                  # 当前工作文件路径（驱动 paths 条件触发）
+    context_edit: dict | None                # task97(task#25)：context_edit 决策链输出（编辑后 messages + 水位快照），供 plan 消费
 
 
 def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentState:
@@ -106,6 +107,7 @@ def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentSt
         compaction=None,
         skill_context="",
         active_paths=[],
+        context_edit=None,
     )
 
 
@@ -305,11 +307,26 @@ async def plan_node(state: AgentState) -> dict:
             query = str(m.content)
     # task94 GWT③：消费 skill_node 注入的 skill_context，使命中 skill 的 body 指引进入子代理任务
     skill_context = state.get("skill_context") or ""
+    # task97(task#25)：消费 context_edit_node 输出的已编辑上下文（闭合 task96 批判②——此前 compact 产出从未被下游使用）
+    ctx_block = ""
+    prefix_stable = None
+    edited = state.get("context_edit") or {}
+    if isinstance(edited, dict):
+        ctx_block = _edited_context_block(edited)
+        prefix_stable = edited.get("prefix_stable")
     plan_tasks = []
     for t in tasks:
         inp = t["input"] + f"（问题：{query}）"
         if skill_context:
             inp = inp + f"\n\n[相关 skill 指引，请遵循]\n{skill_context}"
+        if ctx_block:
+            if prefix_stable is True:
+                flag = "前缀稳定（prompt cache 可命中）"
+            elif prefix_stable is False:
+                flag = "前缀已变（prompt cache 将失效）"
+            else:
+                flag = "前缀未定"
+            inp = inp + f"\n\n[历史上下文（经 context_edit 编辑，{flag}）]\n{ctx_block}"
         plan_tasks.append({"subagent": t["subagent"], "objective": t["objective"], "input": inp})
     return {"tasks": plan_tasks, "effort": level} | _record(state, "plan")
 
@@ -352,6 +369,65 @@ async def compact_node(state: AgentState) -> dict:
     if result.get("applied") and result.get("kept_messages"):
         result["messages"] = result.get("kept_messages")
     return {"compaction": result} | _record(state, "compact")
+
+
+# ============================================================
+# Node 2c: context_edit_node —— 接入 context_edit 决策链（闭合 task96 批判②）
+# ============================================================
+def _edited_context_block(edited: "dict | None", limit: int = 2000) -> str:
+    """从 context_edit 结果取出编辑后消息的可读文本摘要（去 system 前缀、截断），供子代理输入装配。
+
+    只取非 system 消息正文，避免把已缓存的 system 前缀重复塞进子代理上下文；截断上限
+    `limit` 防止把长历史整段灌入每个子代理任务的 input（token 控制）。
+    """
+    if not isinstance(edited, dict):
+        return ""
+    msgs = edited.get("messages") or []
+    parts: list[str] = []
+    total = 0
+    for m in msgs:
+        role = m.get("role") if isinstance(m, dict) else getattr(m, "role", "msg")
+        if role == "system":
+            continue
+        text = str(m.get("content") if isinstance(m, dict) else getattr(m, "content", "")).strip()
+        if not text:
+            continue
+        if total + len(text) > limit:
+            parts.append(text[: max(0, limit - total)])
+            break
+        parts.append(text)
+        total += len(text)
+    return "\n".join(parts)
+
+
+async def context_edit_node(state: AgentState) -> dict:
+    """在 compact（重量压缩，第一道）之后、plan 之前接入 task96 的阈值策略链 apply_context_strategy
+    （context_edit 轻量删消息保前缀 → 仍超阈值才 compaction 重量）。
+
+    这是「context_edit 真正进入对话决策链路被调用」的落点（task96 批判②：此前仅观测未调用）：
+    - 以 compact_node 的精简流为基底（其产出此前未被下游消费，此处首次真正消费）；
+      若 compact 未产出 messages 则回退到 _flatten_state_context；
+    - 调 apply_context_strategy 得到编辑后 messages（前缀签名稳定）并写入 state.context_edit；
+    - 调 get_context_monitor().record 把上下文水位快照写入 task96 监控器，
+      供 task97 缓存监控 joint_dashboard 串联「上下文水位 + 缓存命中」联合看板（GWT④）。
+    """
+    comp = state.get("compaction") or {}
+    base = None
+    if comp.get("applied") and comp.get("messages"):
+        base = comp["messages"]
+    if not base:
+        base = _flatten_state_context(state)
+    if not base:
+        return {"context_edit": None} | _record(state, "context_edit")
+
+    from app.ai.context_edit import apply_context_strategy, get_context_monitor
+
+    result = apply_context_strategy(
+        base,
+        monitor=get_context_monitor(),
+        session_id=state.get("session_id"),
+    )
+    return {"context_edit": result} | _record(state, "context_edit")
 
 
 # ============================================================
@@ -558,6 +634,7 @@ def build_graph() -> StateGraph:
     workflow.add_node("route", route_node)
     workflow.add_node("skill", skill_node)
     workflow.add_node("compact", compact_node)
+    workflow.add_node("context_edit", context_edit_node)
     workflow.add_node("plan", plan_node)
     workflow.add_node("fan_out", fan_out_node)
     workflow.add_node("merge", merge_node)
@@ -565,10 +642,12 @@ def build_graph() -> StateGraph:
     workflow.add_node("answer", answer_node)
 
     workflow.add_edge(START, "route")
-    # 非 chitchat 意图 → 先 skill（registry 接入决策，按需注入 body）→ compact（plan_node 前压缩）→ plan
+    # 非 chitchat 意图 → 先 skill（registry 接入决策，按需注入 body）→ compact（重量压缩第一道）
+    # → context_edit（task96 阈值策略链：context_edit 轻量保前缀 → 仍超才 compaction；记录水位快照）→ plan
     workflow.add_conditional_edges("route", route_gate, {"answer": "answer", "plan": "skill"})
     workflow.add_edge("skill", "compact")
-    workflow.add_edge("compact", "plan")
+    workflow.add_edge("compact", "context_edit")
+    workflow.add_edge("context_edit", "plan")
     workflow.add_edge("plan", "fan_out")
     workflow.add_edge("fan_out", "merge")
     workflow.add_edge("merge", "reflect")
