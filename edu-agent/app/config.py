@@ -259,6 +259,17 @@ class Settings(BaseSettings):
     USER_TOKEN_KEY_PREFIX: str = "chat:user_token"  # 单用户 token 配额计数 key 前缀（INCRBY + EXPIRE 60s）
 
     # ============================================================
+    # 观测性基座（task-O1，production-upgrade-plan P8）
+    #   trace_id 贯穿 + 5 维指标 + OTel 导出（JSONL 落盘 / OTLP HTTP 双通道）。
+    #   对齐 Codex OTel log export / Claude 缓存命中率当 uptime（P8 实证）。
+    #   OTEL_EXPORT_ENDPOINT 空 → 结构化 JSONL 落盘 logs/otel/；配置后走 OTLP HTTP。
+    # ============================================================
+    OTEL_EXPORT_ENDPOINT: str = ""          # 空=本地 JSONL 落盘；配置后走 OTLP HTTP（可选依赖缺失自动降级 JSONL）
+    OTEL_JSONL_DIR: str = "logs/otel"      # JSONL 落盘目录（OTEL_EXPORT_ENDPOINT 空时生效）
+    OTEL_SAMPLE_RATE: float = 1.0          # 埋点采样率（0~1，1=全量）
+    TRACE_SESSION_LEVEL: bool = True       # 会话级 trace_id：同一会话多次请求复用同一 trace_id（span_id 各异）
+
+    # ============================================================
     # AI 助手三层记忆 + 遗忘机制（task25 R7）
     #   Working=LangGraph state｜Short-term=Redis session history+chat_message
     #   Long-term=MySQL user_memory + Milvus/in-memory 向量（用户分区）
