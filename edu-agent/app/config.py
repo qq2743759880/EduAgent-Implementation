@@ -204,6 +204,26 @@ class Settings(BaseSettings):
     # ============================================================
 
     # ============================================================
+    # 【task-C1 新增段 · 上下文动态压缩（token 预算分配器 + 锚定闸门）】※ 本段为 task-C1 专属，
+    #   对齐 Codex token 预算分配器 / Claude 锚定策略（production-upgrade-plan.md P4）。
+    #   - COMPACTION_BUDGET_RATIOS：压缩时按内容类型分配 token 预算（Σ=1.0）。
+    #   - ANCHOR_ROUND：锚定闸门轮数；闸门前（System + 核心决策轮 + 工具前缀）永不改，保护前缀缓存。
+    #   - COMPACTION_LLM_SELECT：LLM 动态选片段总开关；实际生效需调用方注入 llm 调用（窗口内），
+    #     未注入时自动回退规则选片段（向后兼容，零回归）。
+    # ============================================================
+    COMPACTION_BUDGET_RATIOS: dict = {
+        "system": 0.10,       # 系统/可缓存前缀
+        "user_query": 0.20,   # 用户问题
+        "tool_result": 0.30,  # 工具结果
+        "history": 0.40,      # 历史上下文
+    }
+    ANCHOR_ROUND: int = 3                    # 锚定闸门轮数（闸门前字节零改动）
+    COMPACTION_LLM_SELECT: bool = True       # LLM 动态选片段总开关（未注入 llm 时回退规则）
+    # ============================================================
+    # 【task-C1 新增段结束】
+    # ============================================================
+
+    # ============================================================
     # AI HITL 退款审批（task28：LangGraph interrupt + Command resume）
     #   对齐 tech-source-audit §二 HITL（LangGraph 原生 human checkpoint，无需自研审批状态机）
     # ============================================================
