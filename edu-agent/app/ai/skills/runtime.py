@@ -55,7 +55,7 @@ def _split_frontmatter(text: str) -> tuple[dict, str, str | None]:
     frontmatter 缺失/损坏均不抛异常——降级为 ({} , 全文, error)，由上层继续计入索引。
     """
     if not text.startswith("---"):
-        return {}, text.strip(), None
+        return {}, text.strip(), "missing-frontmatter"
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", text, re.S)
     if not m:
         return {}, text, "missing-closing-delimiter"
