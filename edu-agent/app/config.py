@@ -373,6 +373,24 @@ class Settings(BaseSettings):
     # ============================================================
 
     # ============================================================
+    # 【task-R1 新增段 · Rerank sidecar 独立服务 + 连续批处理】
+    #   P9：Rerank 同进程阻塞事件循环 → 拆 sidecar 进程 + 跨请求连续批处理。
+    #   默认 RERANK_SIDECAR_ENABLED=True：主链路经 HTTP 调 sidecar（GPU 计算在独立进程，
+    #   不阻塞主事件循环）；sidecar 不可达自动回退进程内直连（task31 现状），再失败走规则兜底。
+    RERANK_SERVICE_PORT: int = 8601           # sidecar 监听端口
+    RERANK_SERVICE_URL: str = "http://127.0.0.1:8601"   # 主链路调用地址
+    RERANK_BATCH_WINDOW_MS: int = 20          # 攒批窗口：窗口内到达的请求合并成一批
+    RERANK_MAX_BATCH_PAIRS: int = 64          # 单批最大 (query,content) 对数，超则拆下一批
+    RERANK_MAX_WAIT_MS: int = 50              # 单请求排队延迟上限（到时强制 flush）
+    RERANK_QUEUE_MAX: int = 200               # 内存队列上限，超则调用方走降级（返回 503/None）
+    RERANK_HTTP_TIMEOUT: float = 2.0          # 主链路调 sidecar 超时（秒）
+    RERANK_SIDECAR_ENABLED: bool = True       # False → 主链路直接进程内 rerank（平滑切换/降级调试）
+    RERANK_QUEUE_REDIS: bool = False          # 可选：Redis list 缓冲峰值（默认直连 batcher）
+    # ============================================================
+    # 【task-R1 新增段结束】
+    # ============================================================
+
+    # ============================================================
     # task30 RAG Contextual Retrieval（chunk 上下文前缀 + 降级）
     #   对齐 tech-source-audit §三：contextual embeddings 降 35% 失败率；
     #   仅知识型内容（题库/代码跳过），并发 ≤8 不击穿 LLM 预算。
