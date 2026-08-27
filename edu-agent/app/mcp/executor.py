@@ -44,6 +44,34 @@ _MCP_CACHE_TTL = 60
 # 明显写语义的工具名前缀：跳过缓存（避免缓存非幂等副作用操作）
 _WRITE_TOOL_PREFIXES = ("write_", "create_", "delete_", "update_", "send_", "broadcast_", "upload_")
 
+# ============================================================
+# task-S1 全流程 HITL 护栏：高风险动作分类（对齐 Claude 解释→提议→同意→行动）
+# ============================================================
+# 执行命令类工具前缀（命令注入风险，强制过 Gate）
+_HITL_EXEC_COMMAND_PREFIXES = ("run_", "exec_", "shell_", "bash_", "cmd_", "system_", "command_")
+# 网络访问类工具（数据外泄/ SSRF 风险）；用子串匹配，但严禁匹配 web_search 等只读查询工具
+_HITL_NETWORK_PREFIXES = ("fetch", "http", "download", "scrape", "crawl", "request", "webhook", "send_http", "url")
+# 退款/资金类工具关键字（资金风险）
+_HITL_REFUND_MARKERS = ("refund", "chargeback", "payback", "withdraw")
+
+
+def _classify_hitl_action(tool_name: str) -> str | None:
+    """将工具名分类为 HITL 动作类型（字符串，避免顶层依赖 hitl_gate 枚举）。
+
+    返回：write_file | exec_command | network_access | refund | None（非高风险，免护栏）。
+    仅命中写/执行/网络/退款语义前缀的工具才过 Gate；只读工具（如 web_search/get_*）放行。
+    """
+    n = (tool_name or "").lower()
+    if any(p in n for p in _HITL_NETWORK_PREFIXES):
+        return "network_access"
+    if any(p in n for p in _HITL_REFUND_MARKERS):
+        return "refund"
+    if any(n.startswith(p) for p in _HITL_EXEC_COMMAND_PREFIXES):
+        return "exec_command"
+    if any(n.startswith(p) for p in _WRITE_TOOL_PREFIXES):
+        return "write_file"
+    return None
+
 _breaker_by_server: dict[int, CircuitBreaker] = {}
 
 
@@ -339,6 +367,101 @@ async def _http_request_jsonrpc(base_url: str, body: dict, *, headers: dict[str,
 # ============================================================
 # 3. 对外统一入口：call_tool + health_check + discover
 # ============================================================
+
+# ============================================================
+# task-S1 全流程 HITL 护栏接入 seam
+# ============================================================
+async def _run_hitl_seam(*, action_type: str, target: str, params: dict,
+                         operator_user_id: int, tenant_id: str, trace_id: str,
+                         server_id: int | None, call_id: str,
+                         human_decision: bool | None, action_id: str,
+                         server: dict | None = None,
+                         store=None, reviewer_fn=None) -> "MCPToolTestResp | None":
+    """高风险写工具执行前必过 HITL Gate（explain→propose→approve→execute）。
+
+    调用方需先判定 settings.HITL_ENABLED。本函数假定应执行护栏。
+    返回 MCPToolTestResp（pending/escalated/rejected/executed 映射）；无需护栏返回 None。
+    hitl_gate 全惰性导入，避免 executor 顶层耦合 ai 子包。
+    """
+    from app.ai.hitl_gate import (
+        run_hitl_gate, HitlAction, HitlActionType, _default_hitl_store,
+    )
+    _AT_MAP = {
+        "write_file": HitlActionType.WRITE_FILE,
+        "exec_command": HitlActionType.EXEC_COMMAND,
+        "network_access": HitlActionType.NETWORK_ACCESS,
+        "refund": HitlActionType.REFUND,
+    }
+    at = _AT_MAP.get(action_type)
+    if at is None:
+        return None
+
+    srv = server
+    if srv is None and server_id is not None:
+        srv = await fetch_one("SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1", (int(server_id),))
+
+    def _make_exec():
+        async def _exec(action: HitlAction):
+            cid = f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
+            return await _execute_single_attempt(
+                server=srv, tool_name=target, args=dict(params), call_id=cid,
+                operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+            )
+        return _exec
+
+    store = store or _default_hitl_store()
+    action = HitlAction(
+        action_type=at, target=target, params=dict(params),
+        operator=str(operator_user_id), action_id=action_id or "",
+        server_id=int(server_id) if server_id is not None else None, trace_id=trace_id,
+    )
+    result = await run_hitl_gate(
+        action, store=store, reviewer_fn=reviewer_fn,
+        executor_fn=_make_exec(), human_decision=human_decision, trace_id=trace_id,
+    )
+    return _hitl_result_to_mcp(result, server_id=server_id, tool_name=target, call_id_prefix=call_id)
+
+
+def _hitl_result_to_mcp(result, *, server_id, tool_name, call_id_prefix) -> "MCPToolTestResp":
+    """HitlResult → MCPToolTestResp 映射（供调用方/UI 消费）。"""
+    _ST = {
+        "pending": ToolCallStatusEnum.SKIPPED,
+        "approved": ToolCallStatusEnum.SKIPPED,
+        "rejected": ToolCallStatusEnum.ERROR,
+        "executed": ToolCallStatusEnum.SUCCESS,
+        "escalated": ToolCallStatusEnum.ERROR,
+    }
+    _MSG = {
+        "pending": "【HITL 待审批】高风险动作已挂起，等待人工/AI 审批。",
+        "approved": "【HITL 已批准（待执行）】",
+        "rejected": "【HITL 已拒绝】高风险动作未执行。",
+        "escalated": "【HITL 升级】AI 审查拒绝，需管理员 force_approve 后方可执行。",
+    }
+    st = _ST.get(result.status, ToolCallStatusEnum.SKIPPED)
+    msg = _MSG.get(result.status)
+    rec = result.record or {}
+    return MCPToolTestResp(
+        status=st,
+        error_message=msg if result.status != "executed" else None,
+        latency_ms=0,
+        call_id=f"{call_id_prefix or 'hitl'}-{result.action_id}",
+        server_id=int(server_id) if server_id is not None else 0,
+        tool_name=tool_name,
+        content_text=msg,
+        attempt=1,
+        actions=[rec] if rec else [],
+        manual_guide={
+            "hitl_action_id": result.action_id,
+            "status": result.status,
+            "explain_text": result.explain_text,
+            "propose_text": result.propose_text,
+            "operator": rec.get("operator", ""),
+            "trace_id": rec.get("trace_id", ""),
+            "needs_admin": result.needs_admin,
+            "ai_verdict": result.ai_verdict,
+        },
+        rejection_limited=False,
+    )
 async def call_tool(*,
                     operator_user_id: int,
                     tenant_id: str = "",
@@ -348,6 +471,10 @@ async def call_tool(*,
                     tool_name: str | None = None,
                     args: dict[str, Any] | None = None,
                     call_id: str | None = None,
+                    hitl_action_id: str | None = None,
+                    hitl_decision: bool | None = None,
+                    _hitl_store=None,
+                    _hitl_reviewer=None,
                     ) -> MCPToolTestResp:
     args = args or {}
     tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
@@ -358,6 +485,20 @@ async def call_tool(*,
         raise _raise(404, "关联 server 已删除")
     if int(server.get("enabled") or 0) != 1:
         raise _raise(412, f"server_code={server.get('server_code')} 已禁用（enabled=0）")
+
+    # task-S1 全流程 HITL 护栏：高风险写工具执行前必过 Gate（HITL_ENABLED 默认 False，AC5 安全）
+    if settings.HITL_ENABLED:
+        _at = _classify_hitl_action(tool_name_eff)
+        if _at is not None:
+            _gated = await _run_hitl_seam(
+                action_type=_at, target=tool_name_eff, params=args,
+                operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+                server_id=server_id_eff, call_id=call_id,
+                human_decision=hitl_decision, action_id=hitl_action_id or "",
+                server=server, store=_hitl_store, reviewer_fn=_hitl_reviewer,
+            )
+            if _gated is not None:
+                return _gated
 
     call_id = call_id or f"mcp-{int(time.time()*1000)}-{uuid.uuid4().hex[:8]}"
     breaker = _server_breaker(server_id_eff)
@@ -651,7 +792,10 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
                                server_id: int | None = None, tool_name: str | None = None,
                                args: dict | None = None, call_id: str | None = None,
                                llm_rewrite_fn=None,
-                               _attempt_executor=None, _reject_store=None) -> MCPToolTestResp:
+                               hitl_action_id: str | None = None,
+                               hitl_decision: bool | None = None,
+                               _attempt_executor=None, _reject_store=None,
+                               _hitl_store=None, _hitl_reviewer=None) -> MCPToolTestResp:
     """task-T1 工具调用闭环：换参 → 换工具 → 熔断 → 人工指南（AC1~AC4）。
 
     - 第 1 步正常；第 2 步换参数（LLM 改写 args，或规则跳级兜底）；
@@ -692,6 +836,20 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
             latency_ms=0, call_id=call_id or "mcp-err", server_id=server_id_eff,
             tool_name=original_tool_name, content_text=None,
         )
+
+    # task-S1 全流程 HITL 护栏：原始工具为高风险写工具时，先过 Gate 再进闭环（HITL_ENABLED 默认 False）
+    if settings.HITL_ENABLED:
+        _at = _classify_hitl_action(original_tool_name)
+        if _at is not None:
+            _gated = await _run_hitl_seam(
+                action_type=_at, target=original_tool_name, params=args,
+                operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+                server_id=server_id_eff, call_id=call_id,
+                human_decision=hitl_decision, action_id=hitl_action_id or "",
+                server=server, store=_hitl_store, reviewer_fn=_hitl_reviewer,
+            )
+            if _gated is not None:
+                return _gated
 
     executor = _attempt_executor or _default_attempt_executor
     reject_store = _reject_store or _make_reject_store(ttl_s=reject_ttl)

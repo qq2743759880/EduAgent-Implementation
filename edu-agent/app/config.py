@@ -354,6 +354,25 @@ class Settings(BaseSettings):
     # ============================================================
 
     # ============================================================
+    # 【task-S1 新增段 · 全流程 HITL 护栏（非单点审批）】※ 本段为 task-S1 专属，
+    #   对齐 Claude 解释→提议→同意→行动 透明护栏 + Codex auto-review（3 连续拒绝熔断）。
+    #   - HITL_ENABLED：全局总开关；默认 False=关闭（零行为变化，保护 task28 退款 HITL 回归 AC5）。
+    #   - HITL_RISK_THRESHOLD：仅风险等级 >= 此值的动作过 Gate（L3 强制全过）。
+    #   - HITL_PENDING_TTL_S：pending 超时自动拒绝窗口（AC3）。
+    #   - HITL_AI_REVIEW：是否启用 AI 审查子代理（task92 fork）；True 时高风险动作先过 reviewer（AC4）。
+    #   - HITL_REJECT_BREAKER：同动作类型连续被拒上限，达到即熔断升级（AC4，对齐 Codex 3 连拒）。
+    # ============================================================
+    HITL_ENABLED: bool = False                 # 全局总开关；默认关闭，接入 executor 前由运维显式开启
+    HITL_RISK_THRESHOLD: str = "L2"            # 仅风险等级 >= 此值的动作过 Gate
+    HITL_PENDING_TTL_S: int = 600             # pending 超时自动拒绝窗口（秒）
+    HITL_AI_REVIEW: bool = False              # 是否启用 AI 审查子代理（仅测试窗口内开）
+    HITL_REJECT_BREAKER: int = 3              # 同动作类型连续被拒达此数 → 第 N+1 次熔断升级（需管理员）
+    HITL_OPERATOR: str = ""                   # 默认操作者标识（executor 接入时由 user_id 覆盖）
+    # ============================================================
+    # 【task-S1 新增段结束】
+    # ============================================================
+
+    # ============================================================
     # task30 RAG Contextual Retrieval（chunk 上下文前缀 + 降级）
     #   对齐 tech-source-audit §三：contextual embeddings 降 35% 失败率；
     #   仅知识型内容（题库/代码跳过），并发 ≤8 不击穿 LLM 预算。
