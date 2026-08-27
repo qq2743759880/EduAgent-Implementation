@@ -255,6 +255,16 @@ class Settings(BaseSettings):
     DREAM_MODEL: str = "fast"                 # Dream 巩固子代理模型（cost 友好；生产可切 opus）
 
     # ============================================================
+    # 缓存前缀达标（task-C2，对齐 production-upgrade-plan P7）
+    #   对齐 Claude prompt caching：最小可缓存前缀 1024 token；低于门槛静默不缓存（DEV 实证）；
+    #   工具延迟展开（defer_loading）保前缀稳定；命中率当 uptime 监控（Glean：低即 SEV）。
+    # ============================================================
+    PROMPT_CACHE_MIN_TOKENS: int = 1024        # 可缓存前缀最小 token（跨过 DeepSeek/Claude 缓存门槛）
+    CACHE_FILLER_VERSION: str = "v3"           # 静态填充注释版本号（逐字节稳定，随版本升级）
+    TOOL_DEFERRED_MODE: bool = True            # True=决策前缀只放 tool_name+summary，schema 被选中才展开
+    CACHE_HIT_RATE_SEV: float = 0.5            # 缓存命中率 < 此值记 SEV（对齐 Claude 把命中率当 uptime）
+
+    # ============================================================
     # Embedding API（独立配置，可与聊天 LLM 不同源）
     #   留空时自动复用 LLM 的 base_url/key；若聊天走 DeepSeek/a6api
     #   （无 embeddings 端点），必须显式配置硅基流动 SiliconFlow。
