@@ -663,6 +663,8 @@ def build_graph(harness: "Harness | None" = None) -> StateGraph:
         harness = _build_harness()
     workflow = StateGraph(AgentState)
 
+    if harness.has_preprocess:
+        workflow.add_node("preprocess", harness.preprocess)
     workflow.add_node("route", harness.route)
     workflow.add_node("skill", skill_node)
     workflow.add_node("compact", compact_node)
@@ -673,7 +675,12 @@ def build_graph(harness: "Harness | None" = None) -> StateGraph:
     workflow.add_node("reflect", harness.reflect)
     workflow.add_node("answer", harness.answer)
 
-    workflow.add_edge(START, "route")
+    # 可选预处理钩子（A1-①）：仅当 harness 真正覆盖 preprocess 才插入节点，默认拓扑零变化
+    if harness.has_preprocess:
+        workflow.add_edge(START, "preprocess")
+        workflow.add_edge("preprocess", "route")
+    else:
+        workflow.add_edge(START, "route")
     # 非 chitchat 意图 → 先 skill（registry 接入决策，按需注入 body）→ compact（重量压缩第一道）
     # → context_edit（task96 阈值策略链：context_edit 轻量保前缀 → 仍超才 compaction；记录水位快照）→ plan
     workflow.add_conditional_edges("route", route_gate, {"answer": "answer", "plan": "skill"})

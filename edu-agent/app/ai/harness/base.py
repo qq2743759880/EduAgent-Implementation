@@ -49,3 +49,21 @@ class Harness(ABC):
     @abstractmethod
     async def answer(self, state: AgentState) -> dict:
         """最终回答（strong 模型），写入 final_answer。"""
+
+    # ---- 可选钩子（A1-①）：预处理节点 ----
+    async def preprocess(self, state: AgentState) -> dict:
+        """可选预处理钩子：在 route 之前对输入做标准化/准备（如抽取查询、清洗、语言识别）。
+
+        默认空实现（不修改 state）→ 默认 harness 不插入 preprocess 节点，保证 6 节点行为零变化。
+        子类覆盖本方法后，build_graph 会自动在 START→route 之间插入 preprocess 节点
+        （实现「可选钩子」语义：默认无副作用、按需启用）。
+        """
+        return {}
+
+    @property
+    def has_preprocess(self) -> bool:
+        """是否提供了真实 preprocess 实现（而非基类空实现）。
+
+        build_graph 据此决定是否插入 preprocess 节点：默认 harness（未覆盖）→ False → 拓扑不变。
+        """
+        return type(self).preprocess is not Harness.preprocess
