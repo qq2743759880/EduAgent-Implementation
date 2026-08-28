@@ -18,3 +18,11 @@ ALTER TABLE `mcp_tool_call_log`
 
 -- 校验（可选）：确认枚举已包含新值
 -- SHOW COLUMNS FROM `mcp_tool_call_log` LIKE 'status';
+
+-- ============================================================
+-- 执行记录（P0 批判落实批次 · task-T1-critique-fix）
+-- 已对目标库 edu (127.0.0.1:3306) 执行本 ALTER：
+--   ENUM_AFTER = enum('SUCCESS','ERROR','TIMEOUT','SKIPPED','REJECTION_LIMIT','MANUAL_GUIDE')
+--   ROUNDTRIP  = INSERT(REJECTION_LIMIT/MANUAL_GUIDE) → SELECT → DELETE 成功，无 try/except 吞错
+-- 验收达成：mcp_tool_call_log.status 支持 MANUAL_GUIDE/REJECTION_LIMIT，落库无吞错。
+-- ============================================================
