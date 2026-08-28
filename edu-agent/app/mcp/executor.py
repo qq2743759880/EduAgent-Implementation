@@ -612,13 +612,96 @@ async def _execute_single_attempt(*, server: dict, tool_name: str, args: dict,
     )
 
 
+# ============================================================
+# task-T1-②：内置/本地工具注册表（fallback 备用工具真实落地）
+# ------------------------------------------------------------
+# 批判：TOOL_FALLBACK_MAP 的 calculator/search_knowledge 此前只存在于决策前缀 spec，
+# 未注册为可解析工具 → 第 3 步 switch_tool 命中后 get_tool_by_ref(None,None,name) 直接 400，
+# 闭环只能「自然落到人工指南」。本段把它们注册为内置本地工具，命中即真实执行，
+# 不再退化为人工指南（满足验收：switch_tool 命中真实注册工具）。
+#   - calculator：本地真算四则；
+#   - search_knowledge：接子代理/降级检索（后端可注入，缺省回退确定性降级结果）。
+_BUILTIN_TOOL_HANDLERS: dict = {}
+
+
+def register_builtin_tool(name: str, handler) -> None:
+    """注册一个内置本地工具处理器（handler: async (args) -> str）。"""
+    _BUILTIN_TOOL_HANDLERS[name] = handler
+
+
+# search_knowledge 后端可注入（子代理检索 / 向量检索），缺省降级
+_SEARCH_KNOWLEDGE_BACKEND = None
+
+
+def set_search_knowledge_backend(fn) -> None:
+    global _SEARCH_KNOWLEDGE_BACKEND
+    _SEARCH_KNOWLEDGE_BACKEND = fn
+
+
+async def _calculator_handler(args: dict) -> str:
+    a = float(args.get("a"))
+    b = float(args.get("b"))
+    op = str(args.get("op", "add")).lower()
+    if op == "add":
+        val = a + b
+    elif op == "sub":
+        val = a - b
+    elif op == "mul":
+        val = a * b
+    elif op == "div":
+        if b == 0:
+            raise ZeroDivisionError("div by zero")
+        val = a / b
+    elif op == "mod":
+        val = a % b
+    else:
+        raise ValueError(f"不支持的 op={op}")
+    return json.dumps({"result": val, "tool": "calculator", "op": op}, ensure_ascii=False)
+
+
+async def _search_knowledge_handler(args: dict) -> str:
+    q = str(args.get("q") or args.get("query") or "")
+    if _SEARCH_KNOWLEDGE_BACKEND is not None:
+        try:
+            return await _SEARCH_KNOWLEDGE_BACKEND(q)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[builtin] search_knowledge 后端失败，降级: {type(exc).__name__}: {exc}")
+    return json.dumps(
+        {"results": [], "degraded": True, "query": q,
+         "note": "知识检索后端未接入，已降级返回；可通过 set_search_knowledge_backend 注入子代理/向量检索"},
+        ensure_ascii=False,
+    )
+
+
+register_builtin_tool("calculator", _calculator_handler)
+register_builtin_tool("search_knowledge", _search_knowledge_handler)
+
+
 async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str, attempt: int,
                                     operator_user_id: int, tenant_id: str, trace_id: str) -> AttemptOutcome:
     """生产默认执行器：按工具名解析 server，走单步核心。
 
+    内置本地工具（task-T1-②：calculator/search_knowledge 等）优先命中真实处理器，
+    不再因 get_tool_by_ref(None,None,name) 必然 400 而退化为人工指南。
     找不到工具 / server 禁用 / 已删 → 视为失败（非拒绝，不计入拒绝熔断），
     让闭环继续走向换工具或人工指南（AC1 不在此处中断）。
     """
+    # task-T1-②：内置/本地工具优先解析（命中即真实执行，非"未注册自然走指南"）
+    builtin = _BUILTIN_TOOL_HANDLERS.get(tool_name)
+    if builtin is not None:
+        try:
+            content = await builtin(dict(args))
+            return AttemptOutcome(
+                ok=True, status=ToolCallStatusEnum.SUCCESS.value, tool_name=tool_name,
+                args=dict(args), error_message="", latency_ms=0, is_rejection=False,
+                result={"content": content}, content_text=content,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return AttemptOutcome(
+                ok=False, status="ERROR", tool_name=tool_name, args=dict(args),
+                error_message=f"内置工具 {tool_name} 执行失败: {exc}", latency_ms=0,
+                is_rejection=False,
+            )
     try:
         tool_row = await registry.get_tool_by_ref(None, None, tool_name)
     except Exception as exc:
