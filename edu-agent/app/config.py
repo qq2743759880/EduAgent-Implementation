@@ -391,6 +391,16 @@ class Settings(BaseSettings):
     # ============================================================
 
     # ============================================================
+    # 【task-A1 新增段 · 可插拔 Harness 抽象（替代硬编码 6 节点图）】
+    #   - HARNESS_IMPL：选择 harness 实现（节点级可替换，图结构不变）。
+    #   - 默认 sixnode = 现有 6 节点 DAG（route/plan/fan_out/merge/reflect/answer）
+    #     + skill/compact/context_edit 支持节点；对齐 task29 R8 keep_sixnode 裁定，
+    #     默认行为零变化（AC2 / AC4）。
+    #   - 注册自定义实现见 app/ai/harness/registry.register_harness。
+    # ============================================================
+    HARNESS_IMPL: str = "sixnode"            # 可插拔实现选择；"sixnode" 为默认（重构前行为零差异）
+
+    # ============================================================
     # task30 RAG Contextual Retrieval（chunk 上下文前缀 + 降级）
     #   对齐 tech-source-audit §三：contextual embeddings 降 35% 失败率；
     #   仅知识型内容（题库/代码跳过），并发 ≤8 不击穿 LLM 预算。

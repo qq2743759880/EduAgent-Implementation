@@ -631,18 +631,32 @@ async def answer_node(state: AgentState) -> dict:
 # ============================================================
 # 构建 & 编译图（挂 AsyncRedisSaver durable execution）
 # ============================================================
-def build_graph() -> StateGraph:
+def build_graph(harness: "Harness | None" = None) -> StateGraph:
+    """编译 6 节点 DAG（route→skill→compact→context_edit→plan→fan_out→merge→reflect→answer）。
+
+    harness：可插拔编排实现（task-A1）。默认按 HARNESS_IMPL 取 SixNodeHarness（=重构前行为零变化）。
+    图拓扑（节点名 + 边）固定，不随 harness 切换改变（keep_sixnode）。
+    六核心节点（route/plan/fan_out/merge/reflect/answer）走 harness 实现；
+    skill/compact/context_edit 为稳定支持节点（所有 harness 共享，向 harness 提供 state 上下文）。
+
+    注意：本模块不 import harness（避免与 app.ai.harness.base 的循环依赖），
+    默认 harness 延迟在 build_graph 内解析。
+    """
+    if harness is None:
+        from app.ai.harness.registry import build_harness as _build_harness
+
+        harness = _build_harness()
     workflow = StateGraph(AgentState)
 
-    workflow.add_node("route", route_node)
+    workflow.add_node("route", harness.route)
     workflow.add_node("skill", skill_node)
     workflow.add_node("compact", compact_node)
     workflow.add_node("context_edit", context_edit_node)
-    workflow.add_node("plan", plan_node)
-    workflow.add_node("fan_out", fan_out_node)
-    workflow.add_node("merge", merge_node)
-    workflow.add_node("reflect", reflect_node)
-    workflow.add_node("answer", answer_node)
+    workflow.add_node("plan", harness.plan)
+    workflow.add_node("fan_out", harness.fan_out)
+    workflow.add_node("merge", harness.merge)
+    workflow.add_node("reflect", harness.reflect)
+    workflow.add_node("answer", harness.answer)
 
     workflow.add_edge(START, "route")
     # 非 chitchat 意图 → 先 skill（registry 接入决策，按需注入 body）→ compact（重量压缩第一道）
