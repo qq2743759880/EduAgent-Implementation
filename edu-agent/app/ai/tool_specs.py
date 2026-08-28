@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Literal
@@ -36,6 +37,7 @@ except Exception:  # pragma: no cover
 
 __all__ = [
     "ToolSpec",
+    "SchemaRegistry",
     "DECISION_SYSTEM_PROMPT",
     "stable_sorted_specs",
     "specs_for_access",
@@ -224,14 +226,193 @@ def specs_for_access(specs: list[ToolSpec] | tuple[ToolSpec, ...], *, is_admin: 
 # 工具 schema 注册表（defer_loading 数据源）：name -> 完整 ToolSpec（含 input_schema）
 #   决策前缀只放 name+summary（桩），schema 被 LLM 选中才由执行器 expand_schema 展开，
 #   展开结果进「后续请求消息」而非前缀 → 前缀字节永不含 schema，稳定可缓存（AC2/AC3）。
+#
+#   C2-③：注册表 Redis 共享（跨实例一致，task-M2 协同）。
+#   设计：
+#     - 每个进程持有一份本地 TTL 缓存（避免每次请求都打 Redis）；
+#     - register_spec 写本地缓存 + 写 Redis（best-effort，失败静默降级）；
+#     - expand_schema 先查本地缓存，未命中查 Redis 并回填缓存；
+#     - Redis 不可用时自动降级为纯本地（模块仍可无 Redis 直接单测）。
 # ------------------------------------------------------------
-SCHEMA_REGISTRY: dict[str, ToolSpec] = {}
+class SchemaRegistry:
+    """Redis 支撑的 schema 注册表（带本地 TTL 缓存）。
+
+    多实例共享同一 Redis + 同一 namespace 时，任一实例 register_spec 写入的 schema，
+    其他实例 expand_schema 均可读到 → 跨实例一致（task-M2 协同基础）。
+    """
+
+    def __init__(
+        self,
+        redis_url: str | None = None,
+        *,
+        prefix: str = "edu:schema",
+        namespace: str = "default",
+        cache_ttl: float = 30.0,
+        redis_enabled: bool = True,
+    ) -> None:
+        self._redis_url = redis_url
+        self._prefix = prefix
+        self._namespace = namespace
+        self._cache_ttl = float(cache_ttl)
+        self._redis_enabled = bool(redis_enabled)
+        self._local: dict[str, tuple[float, ToolSpec]] = {}
+        self._lock = threading.RLock()
+        self._redis: Any = None
+        self._redis_ok: bool | None = None  # None=未探测, True/False
+
+    # ---- Redis 懒连接（best-effort，失败降级本地） ----
+    def _client(self) -> Any:
+        if not self._redis_enabled:
+            return None
+        if self._redis_ok is False:
+            return None
+        if self._redis is not None:
+            return self._redis
+        if not self._redis_url:
+            self._redis_ok = False
+            return None
+        try:
+            import redis
+
+            self._redis = redis.Redis.from_url(
+                self._redis_url,
+                socket_timeout=1.0,
+                socket_connect_timeout=1.0,
+                decode_responses=True,
+            )
+            self._redis.ping()
+            self._redis_ok = True
+            return self._redis
+        except Exception:
+            self._redis_ok = False
+            self._redis = None
+            return None
+
+    def _rkey(self, name: str) -> str:
+        return f"{self._prefix}:{self._namespace}:{name}"
+
+    @staticmethod
+    def _serialize(spec: ToolSpec) -> str:
+        return json.dumps(
+            {
+                "name": spec.name,
+                "description": spec.description,
+                "input_schema": spec.input_schema,
+                "risk": spec.risk,
+                "parallel_safe": spec.parallel_safe,
+                "timeout_s": spec.timeout_s,
+                "admin_only": spec.admin_only,
+                "summary": spec.summary,
+            },
+            ensure_ascii=False,
+        )
+
+    @staticmethod
+    def _deserialize(raw: str) -> ToolSpec | None:
+        try:
+            d = json.loads(raw)
+            return ToolSpec(
+                name=str(d.get("name", "")),
+                description=str(d.get("description", "")),
+                input_schema=d.get("input_schema") or {},
+                risk=str(d.get("risk", "read")),
+                parallel_safe=bool(d.get("parallel_safe", False)),
+                timeout_s=float(d.get("timeout_s", 30.0)),
+                admin_only=bool(d.get("admin_only", False)),
+                summary=str(d.get("summary", "")),
+            )
+        except Exception:
+            return None
+
+    def register_spec(self, spec: ToolSpec, *, overwrite: bool = True) -> ToolSpec:
+        """登记/更新 schema：写本地缓存 + 写 Redis（best-effort）。返回 spec 本身。"""
+        with self._lock:
+            self._local[spec.name] = (time.monotonic() + self._cache_ttl, spec)
+            r = self._client()
+            if r is not None:
+                try:
+                    payload = self._serialize(spec)
+                    if overwrite:
+                        r.set(self._rkey(spec.name), payload)
+                    else:
+                        r.set(self._rkey(spec.name), payload, nx=True)
+                except Exception:
+                    pass
+        return spec
+
+    def expand_schema(self, name: str) -> ToolSpec | None:
+        """按 name 取完整 schema（含 input_schema）。先本地缓存，未命中回落 Redis 并回填。"""
+        with self._lock:
+            ent = self._local.get(name)
+            if ent is not None:
+                exp, spec = ent
+                if time.monotonic() < exp:
+                    return spec
+                del self._local[name]
+            r = self._client()
+            if r is not None:
+                try:
+                    raw = r.get(self._rkey(name))
+                    if raw is not None:
+                        spec = self._deserialize(raw)
+                        if spec is not None:
+                            self._local[name] = (time.monotonic() + self._cache_ttl, spec)
+                            return spec
+                except Exception:
+                    pass
+            return None
+
+    def seed_builtins(self, specs: list[ToolSpec] | tuple[ToolSpec, ...]) -> None:
+        """启动时把内置规范登记进注册表（写本地缓存 + Redis，overwrite=True 保持代码为准）。"""
+        for s in specs:
+            self.register_spec(s, overwrite=True)
+
+    def clear_namespace(self) -> int:
+        """清理本 namespace 下所有 schema key（测试/运维用）。返回删除条数。"""
+        r = self._client()
+        if r is None:
+            return 0
+        try:
+            keys = r.keys(f"{self._prefix}:{self._namespace}:*")
+            if keys:
+                return int(r.delete(*keys))
+        except Exception:
+            pass
+        return 0
+
+
+def _make_default_registry() -> SchemaRegistry:
+    """构造模块默认注册表（从 settings 读取 Redis 配置；缺失则纯本地）。"""
+    redis_url = None
+    enabled = True
+    ttl = 30.0
+    ns = "default"
+    prefix = "edu:schema"
+    try:
+        from app.config import settings as _cfg
+
+        redis_url = getattr(_cfg, "REDIS_URL", None)
+        enabled = bool(getattr(_cfg, "SCHEMA_REGISTRY_REDIS_ENABLED", True))
+        ttl = float(getattr(_cfg, "SCHEMA_REGISTRY_CACHE_TTL", 30.0))
+        ns = str(getattr(_cfg, "SCHEMA_REGISTRY_NAMESPACE", "default"))
+        prefix = str(getattr(_cfg, "SCHEMA_REGISTRY_KEY_PREFIX", "edu:schema"))
+    except Exception:
+        enabled = False
+    return SchemaRegistry(
+        redis_url,
+        prefix=prefix,
+        namespace=ns,
+        cache_ttl=ttl,
+        redis_enabled=enabled,
+    )
+
+
+SCHEMA_REGISTRY: SchemaRegistry = _make_default_registry()
 
 
 def register_spec(spec: ToolSpec) -> ToolSpec:
     """把完整 ToolSpec 登记进 schema 注册表（供 expand_schema 按需展开）。返回 spec 本身。"""
-    SCHEMA_REGISTRY[spec.name] = spec
-    return spec
+    return SCHEMA_REGISTRY.register_spec(spec)
 
 
 def expand_schema(name: str) -> ToolSpec | None:
@@ -239,8 +420,9 @@ def expand_schema(name: str) -> ToolSpec | None:
 
     LLM 决策选中工具 X 后，执行器调用本函数拿到完整 schema 注入后续请求消息，
     而非写进决策前缀 → 前缀字节稳定（对齐 Claude defer_loading）。
+    优先本地缓存，未命中回落 Redis（跨实例共享），再未命中返回 None。
     """
-    return SCHEMA_REGISTRY.get(name)
+    return SCHEMA_REGISTRY.expand_schema(name)
 
 
 def build_tool_expansion_message(name: str) -> dict | None:
@@ -260,9 +442,8 @@ def build_tool_expansion_message(name: str) -> dict | None:
     return {"role": "system", "content": "工具调用 schema（按需展开）：\n" + json.dumps(payload, ensure_ascii=False)}
 
 
-# 内置规范登记进注册表（默认 deferred 桩的数据源）
-for _s in BUILTIN_TOOL_SPECS:
-    register_spec(_s)
+# 内置规范登记进注册表（默认 deferred 桩的数据源；跨实例通过 Redis 共享）
+SCHEMA_REGISTRY.seed_builtins(BUILTIN_TOOL_SPECS)
 
 
 # ------------------------------------------------------------

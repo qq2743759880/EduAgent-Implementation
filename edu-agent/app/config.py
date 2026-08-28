@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     REDIS_SOCKET_CONNECT_TIMEOUT: float = 3.0 # 建连超时（秒）
     REDIS_RETRY_ON_TIMEOUT: bool = True      # 超时自动重试一次
 
+    # Schema 注册表（C2-③：跨实例 Redis 共享，task-M2 协同）
+    SCHEMA_REGISTRY_REDIS_ENABLED: bool = True        # False → 纯本地（向后兼容/无 Redis 环境）
+    SCHEMA_REGISTRY_CACHE_TTL: float = 30.0          # 本地缓存 TTL（秒），吸收 Redis 读延迟
+    SCHEMA_REGISTRY_NAMESPACE: str = "default"       # 同 namespace 多实例共享同一 schema 集合
+    SCHEMA_REGISTRY_KEY_PREFIX: str = "edu:schema"   # Redis key 前缀
+
     # ============================================================
     # Milvus 配置（向量数据库，部署在虚拟机 Docker 上）
     # ============================================================
