@@ -364,7 +364,22 @@ async def compact_node(state: AgentState) -> dict:
     flat = _flatten_state_context(state)
     if not flat:
         return {"compaction": None} | _record(state, "compact")
-    result = ai_compaction.compact_messages(flat)
+    # task-C1-②（P0 批判落实）：装配增强压缩 feature flag
+    #   anchor_round=ANCHOR_ROUND → 锚定闸门（闸门前字节零改动，保护前缀缓存）
+    #   llm=make_fast_llm()        → 窗口内注入 FAST 动态选片段（未注入/失败自动回退规则选片段）
+    # 仅窗口内/LLM 可用时注入 llm；不可用时 None，走规则选片段（向后兼容，零回归）。
+    llm = None
+    if getattr(settings, "COMPACTION_LLM_SELECT", True):
+        try:
+            llm = ai_compaction.make_fast_llm()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"[graph] make_fast_llm 不可用，回退规则选片段: {exc}")
+            llm = None
+    result = ai_compaction.compact_messages(
+        flat,
+        anchor_round=settings.ANCHOR_ROUND,
+        llm=llm,
+    )
     # 压缩生效 → 暴露精简流供下游消费；仅观测时不改下游输入
     if result.get("applied") and result.get("kept_messages"):
         result["messages"] = result.get("kept_messages")
