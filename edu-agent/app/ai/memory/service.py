@@ -74,7 +74,7 @@ def memory_store_sync() -> MemoryStore:
 # ---------------------------------------------------------------------------
 async def start_memory_worker() -> None:
     """后台消费者（配合阻塞 BRPOP + 内存兜底）。由 Tests/主应用 lifespan 调用一次。"""
-    global _worker_started, _dream_scheduler_task
+    global _worker_started, _dream_scheduler_task, _hitl_sweep_task
     if _worker_started:
         return
     queue = await get_memory_queue()
@@ -85,11 +85,17 @@ async def start_memory_worker() -> None:
         _dream_scheduler_task = asyncio.create_task(_dream_scheduler_loop())
     except Exception as exc:
         logger.warning(f"[Memory] Dream 调度启动失败（忽略）: {exc}")
+    # task-S1-③：启动 HITL 过期 pending 后台扫描（pending 超 TTL → 自动拒绝，AC3 后台路径）
+    try:
+        if getattr(settings, "HITL_ESCALATION_AUTO", True):
+            _hitl_sweep_task = asyncio.create_task(_hitl_sweep_loop())
+    except Exception as exc:
+        logger.warning(f"[Memory] HITL sweep 调度启动失败（忽略）: {exc}")
     logger.info("[Memory] 记忆写队列消费者已启动")
 
 
 async def stop_memory_worker() -> None:
-    global _worker_started, _dream_scheduler_task
+    global _worker_started, _dream_scheduler_task, _hitl_sweep_task
     if not _worker_started:
         return
     queue = await get_memory_queue()
@@ -97,6 +103,9 @@ async def stop_memory_worker() -> None:
     if _dream_scheduler_task is not None:
         _dream_scheduler_task.cancel()
         _dream_scheduler_task = None
+    if _hitl_sweep_task is not None:
+        _hitl_sweep_task.cancel()
+        _hitl_sweep_task = None
     _worker_started = False
     logger.info("[Memory] 记忆写队列消费者已停止")
 
@@ -141,6 +150,31 @@ async def run_forget(user_id: int) -> dict[str, int]:
 # task-M1：事件溯源 / Dream 巩固 包装（供 API / 管理接口 / 图工具调用）
 # ===========================================================================
 _dream_scheduler_task: asyncio.Task | None = None
+_hitl_sweep_task: asyncio.Task | None = None
+
+
+async def _hitl_sweep_loop() -> None:
+    """后台轻量调度：周期扫描 HITL 过期 pending → 自动拒绝（task-S1-③，AC3 后台路径）。
+
+    对齐 task-M1 `_dream_scheduler_loop` 模式：非阻塞 SCAN/SQL，失败不影响主链路。
+    间隔复用 settings.HITL_ESCALATION_INTERVAL；TTL 复用 settings.HITL_PENDING_TTL_S。
+    store 惰性取默认（生产 = MysqlHitlStore），避免顶层耦合 hitl_gate。
+    """
+    from app.ai.hitl_gate import sweep_expired_pending, _default_hitl_store
+
+    interval = max(60, int(getattr(settings, "HITL_ESCALATION_INTERVAL", 1800)))
+    ttl_s = int(getattr(settings, "HITL_PENDING_TTL_S", 600))
+    store = _default_hitl_store()
+    logger.info(f"[HITL] sweep 后台扫描已启动（interval={interval}s, ttl={ttl_s}s）")
+    while True:
+        try:
+            await asyncio.sleep(interval)
+            res = await sweep_expired_pending(store=store, ttl_s=ttl_s)
+            rejected = int(res.get("rejected") or 0)
+            if rejected:
+                logger.info(f"[HITL] sweep 自动拒绝过期 pending {res}")
+        except Exception as exc:
+            logger.warning(f"[HITL] sweep 循环异常（下次重试）: {exc}")
 
 
 async def rewind_entity(*, user_id: int, entity_id: int, target_event_id: int) -> dict:
