@@ -25,7 +25,47 @@ from loguru import logger
 
 from app.config import settings
 
-# Lua：原子 INCR 带上限，超限则回滚返回 -1（避免多 worker 竞态超卖）
+
+class TokenBucket:
+    """令牌桶（G1-②）：以恒定速率 refill，替代固定 60s 窗口，消除窗口边界 2× 突发。
+
+    与 ``TokenBudgetGuard`` 的「已用 token」抽象对接：``used = capacity - tokens``，
+    因此接入后既有的 ``acquire`` / ``_admit_token_waiters`` 速率比较逻辑无需改动。
+    """
+
+    def __init__(self, refill_per_min: float, capacity: float | None = None,
+                 *, refill_window_sec: float = 60.0, now: float | None = None) -> None:
+        self.refill_per_min = float(refill_per_min)
+        self.refill_window_sec = float(refill_window_sec)
+        self.capacity = float(capacity if capacity is not None else refill_per_min)
+        self.tokens = self.capacity
+        self._t = float(now if now is not None else time.monotonic())
+
+    def _refill(self, now: float) -> None:
+        if now > self._t:
+            per_sec = self.refill_per_min / max(1e-6, self.refill_window_sec)
+            self.tokens = min(self.capacity, self.tokens + (now - self._t) * per_sec)
+            self._t = now
+
+    def consume(self, amount: float, *, now: float | None = None) -> bool:
+        now = float(now if now is not None else time.monotonic())
+        self._refill(now)
+        if self.tokens >= amount:
+            self.tokens = max(0.0, self.tokens - amount)
+            return True
+        return False
+
+    def refund(self, amount: float, *, now: float | None = None) -> None:
+        now = float(now if now is not None else time.monotonic())
+        self._refill(now)
+        self.tokens = min(self.capacity, self.tokens + amount)
+
+    @property
+    def used(self) -> float:
+        return self.capacity - self.tokens
+
+
+# Lua：原子 INCR 带上限，超限则回滚返回 -1（避免多 worker 竞态超超卖）
 _ACQUIRE_LUA = """
 local v = redis.call('INCR', KEYS[1])
 if v > tonumber(ARGV[1]) then
@@ -395,6 +435,16 @@ class TokenBudgetGuard(ConcurrencyGuard):
         self.default_tokens = int(default_tokens if default_tokens is not None else settings.ESTIMATE_DEFAULT_TOKENS)
         self.l3_timeout = float(l3_timeout if l3_timeout is not None else settings.QUEUE_POP_TIMEOUT_L3)
         self.priority_order = list(priority_order or settings.QUEUE_PRIORITY_ORDER)
+        # 令牌桶平滑（G1-②，默认关闭）：开启后全局速率走令牌桶，消除固定 60s 窗口边界 2× 突发
+        self._bucket_enabled = bool(settings.TOKEN_BUCKET_ENABLED) and self.rate_limit > 0
+        self._global_bucket: "TokenBucket | None" = None
+        if self._bucket_enabled:
+            cap = self.rate_limit * float(settings.TOKEN_BUCKET_BURST_RATIO)
+            self._global_bucket = TokenBucket(
+                refill_per_min=self.rate_limit,
+                capacity=cap,
+                refill_window_sec=settings.TOKEN_BUCKET_REFILL_WINDOW_SEC,
+            )
         # token 计数内存后端（窗口 60s）
         self._global_tokens = 0
         self._global_reset_at = 0.0
@@ -437,6 +487,9 @@ class TokenBudgetGuard(ConcurrencyGuard):
     # token 计数（Redis INCRBY+EXPIRE；内存后端 60s 窗口）
     # ──────────────────────────────────────────────
     async def _global_used(self) -> int:
+        if self._bucket_enabled and self._global_bucket is not None:
+            self._global_bucket._refill(time.monotonic())
+            return int(self._global_bucket.used)
         if self._redis is not None:
             try:
                 return int(await self._redis.get(settings.TOKEN_RATE_KEY) or 0)
@@ -449,6 +502,14 @@ class TokenBudgetGuard(ConcurrencyGuard):
         return self._global_tokens
 
     async def _add_global(self, delta: int) -> int:
+        if self._bucket_enabled and self._global_bucket is not None:
+            now = time.monotonic()
+            self._global_bucket._refill(now)
+            if delta >= 0:
+                self._global_bucket.tokens = max(0.0, self._global_bucket.tokens - delta)
+            else:
+                self._global_bucket.refund(-delta, now=now)
+            return int(self._global_bucket.used)
         if self._redis is not None:
             try:
                 v = await self._redis.incrby(settings.TOKEN_RATE_KEY, delta)

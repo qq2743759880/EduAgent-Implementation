@@ -257,6 +257,11 @@ class Settings(BaseSettings):
     QUEUE_PRIORITY_ORDER: list = ["L3", "L2", "L1"]  # 消费者轮询优先级顺序（L3 先出队）
     TOKEN_RATE_KEY: str = "ai:llm:token_rate"      # 全局 token 速率计数 key（INCRBY + EXPIRE 60s 窗口）
     USER_TOKEN_KEY_PREFIX: str = "chat:user_token"  # 单用户 token 配额计数 key 前缀（INCRBY + EXPIRE 60s）
+    # token 窗口治理升级：固定 60s 窗口 → 令牌桶平滑（G1-②）。
+    # 默认关闭以保持既有生产窗口行为不变；开启后全局速率改用令牌桶，消除窗口边界 2× 突发。
+    TOKEN_BUCKET_ENABLED: bool = False              # True=全局速率走令牌桶平滑；False=保持固定 60s 窗口
+    TOKEN_BUCKET_BURST_RATIO: float = 1.0          # 令牌桶容量 / 速率（=1.0 表示突发上限 = 1 分钟速率）
+    TOKEN_BUCKET_REFILL_WINDOW_SEC: float = 60.0   # 令牌桶重填窗口（秒），与速率/分钟对齐
 
     # ============================================================
     # 观测性基座（task-O1，production-upgrade-plan P8）
