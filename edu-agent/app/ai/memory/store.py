@@ -30,16 +30,22 @@ class MemoryStore:
         vector_store: MemoryVectorStore | None = None,
         *,
         capacity: int | None = None,
+        capacity_tier: str | None = None,
         soft_delete_score: float | None = None,
         decay_lambda: float | None = None,
         recency_weight: float | None = None,
         recency_slope: float | None = None,
     ) -> None:
-        from app.config import settings
+        from app.config import settings, memory_capacity_for
 
         self._persistence = persistence
         self._vector = vector_store or MemoryVectorStore()
-        self._capacity = int(capacity if capacity is not None else settings.MEMORY_CAPACITY_PER_USER)
+        self._capacity_tier = capacity_tier or settings.MEMORY_CAPACITY_DEFAULT_TIER
+        # 容量按档/配置解析（非硬编码 500）：显式 capacity > 档位默认
+        self._capacity = int(
+            capacity if capacity is not None
+            else memory_capacity_for(0, tier=self._capacity_tier)
+        )
         self._soft_delete_score = float(soft_delete_score if soft_delete_score is not None else settings.MEMORY_SOFT_DELETE_SCORE)
         self._lambda = float(decay_lambda if decay_lambda is not None else settings.MEMORY_DECAY_LAMBDA)
         self._recency_weight = float(recency_weight if recency_weight is not None else settings.MEMORY_RECENCY_WEIGHT)

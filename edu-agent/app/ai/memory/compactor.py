@@ -36,7 +36,15 @@ async def compact_user(
         {"compacted":int, "batches":int, "remaining":int, "kept":int, "consolidated_ids":list[int]}
     """
     summarizer = summarizer or _rule_summarize
-    cap = int(capacity if capacity is not None else getattr(store, "_capacity", 500))
+    # 容量按用户活跃度分档解析（配置化，非硬编码 500）：
+    # 显式 capacity > store._capacity（档位默认）> memory_capacity_for(user_id) 解析值
+    from app.config import memory_capacity_for
+    if capacity is not None:
+        cap = int(capacity)
+    elif getattr(store, "_capacity", None) is not None:
+        cap = int(store._capacity)
+    else:
+        cap = int(memory_capacity_for(int(user_id)))
     effective = await store._persistence.list_effective(int(user_id))
     count = len(effective)
     if count <= cap:

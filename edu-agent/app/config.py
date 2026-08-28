@@ -275,7 +275,17 @@ class Settings(BaseSettings):
     #   Long-term=MySQL user_memory + Milvus/in-memory 向量（用户分区）
     #   遗忘：score = importance×exp(-0.01·Δt) + recency_bonus（Ebbinghaus 指数衰减）
     # ============================================================
-    MEMORY_CAPACITY_PER_USER: int = 500            # 每用户记忆容量上限，超限触发遗忘淘汰
+    MEMORY_CAPACITY_PER_USER: int = 500            # 默认档（normal）每用户记忆容量上限，超限触发遗忘淘汰
+    # 按用户活跃度分档的容量上限（配置化，取代单值硬编码）：部署时可按活跃度/高价值精调
+    MEMORY_CAPACITY_TIERS: dict = {
+        "inactive": 200,   # 长期不活跃：收紧容量，省存储
+        "normal": 500,     # 普通活跃（默认档）
+        "active": 1000,    # 高频活跃：放宽
+        "power": 2000,     # 重度用户/高价值：最大档
+    }
+    MEMORY_CAPACITY_DEFAULT_TIER: str = "normal"   # 未指定档时的默认档
+    # 指定用户的容量覆盖（user_id -> 容量），用于高价值/灰度用户按活跃度精调
+    MEMORY_CAPACITY_USER_OVERRIDE: dict = {}
     MEMORY_SOFT_DELETE_SCORE: float = 0.1          # 综合分 < 此值 → 软删遗忘（时间衰减非误删）
     MEMORY_DECAY_LAMBDA: float = 0.01              # 遗忘曲线衰减系数（Δt 单位天）：exp(-λ·Δt)
     MEMORY_RECENCY_WEIGHT: float = 2.0             # recency_bonus = W/(1+0.1·days_since_access)
@@ -550,3 +560,17 @@ class Settings(BaseSettings):
 
 # 全局单例
 settings = Settings()
+
+
+def memory_capacity_for(user_id: int, *, tier: str | None = None) -> int:
+    """按用户活跃度分档解析记忆容量上限（配置化，非硬编码）。
+
+    - user_id 命中 MEMORY_CAPACITY_USER_OVERRIDE → 直接用覆盖值（按活跃度/高价值精调）；
+    - 否则按 tier（默认 MEMORY_CAPACITY_DEFAULT_TIER）从 MEMORY_CAPACITY_TIERS 取值；
+    - 兜底回退到 MEMORY_CAPACITY_PER_USER（normal 档）。
+    """
+    override = settings.MEMORY_CAPACITY_USER_OVERRIDE.get(int(user_id))
+    if override is not None:
+        return int(override)
+    t = tier or settings.MEMORY_CAPACITY_DEFAULT_TIER
+    return int(settings.MEMORY_CAPACITY_TIERS.get(t, settings.MEMORY_CAPACITY_PER_USER))
