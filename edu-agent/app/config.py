@@ -145,6 +145,9 @@ class Settings(BaseSettings):
     RERANKER_PATH: str = "C:/ai-models/bge-reranker-v2-m3"
     RERANKER_DEVICE: Literal["cuda", "cpu"] = "cuda"
     RERANKER_BATCH_SIZE: int = 16
+    # R1-① fp32 批处理：默认 fp16（省显存，历史行为零回归）；置 "fp32" 启用高精度路径
+    # （跳过 .half()，分数噪声 < 1e-4，跨请求批处理排序更稳定，对排序敏感场景更稳）。
+    RERANKER_PRECISION: Literal["fp16", "fp32"] = "fp16"
 
     # LLM API（OpenAI 兼容：a6api 中转 / DeepSeek 官方 / DashScope 均可）
     LLM_API_KEY: str                      # 必填
