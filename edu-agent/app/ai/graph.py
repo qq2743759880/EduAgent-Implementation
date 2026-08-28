@@ -763,7 +763,13 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
     guard_entry: dict | None = None
     try:
         from app.ai.guard import default_guard
-        guard_entry = await default_guard().acquire(int(user_id))
+        from app.config import settings as _gcfg
+        # 传入 request_meta 提升 token 预估精度（避免静默回退默认 ESTIMATE_DEFAULT_TOKENS）
+        _request_meta = {
+            "query": (query or "")[:4000],
+            "max_tokens": int(_gcfg.LLM_MAX_TOKENS),
+        }
+        guard_entry = await default_guard().acquire(int(user_id), request_meta=_request_meta)
     except Exception as exc:
         logger.warning(f"[graph.guard] 防过载闸异常，fail-open: {type(exc).__name__}: {exc}")
         guard_entry = None

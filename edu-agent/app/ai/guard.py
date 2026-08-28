@@ -470,6 +470,10 @@ class TokenBudgetGuard(ConcurrencyGuard):
         全部为 0 或缺失 → 兜底 ESTIMATE_DEFAULT_TOKENS。
         """
         if not request_meta:
+            logger.warning(
+                f"[guard] estimate_request_tokens 无 request_meta，回退默认粗估 "
+                f"ESTIMATE_DEFAULT_TOKENS={self.default_tokens}（建议调用方传入 request_meta 以提升精度）"
+            )
             return self.default_tokens
         system = int(request_meta.get("system_tokens", 0) or 0)
         history = int(request_meta.get("history_tokens", 0) or 0)
