@@ -179,6 +179,81 @@ class _ChatClient:
     def _model_name(self, model: str) -> str:
         return settings.LLM_MODEL_STRONG if model == "strong" else settings.LLM_MODEL_FAST
 
+    def call_chat_with_retry(self, *, messages: list[dict], model: str, temperature: float,
+                             max_tokens: int, timeout: float = 60.0) -> str:
+        """task-G1-①：智能重试退避（按错误类型动态，对齐 core/retry.py）。
+
+        - 限流(429/RateLimit) → 指数退避 2^n 秒（封顶 30s）；
+        - 超时(Timeout) → 线性退避 1s/次；
+        - 模型错误(invalid_request/model_error) → 立即切 FAST↔STRONG 重试一次（同模型不重试）。
+        超过该类型上限仍失败 → 抛出异常，由调用方落规则兜底（不破坏既有降级链）。
+        """
+        from app.core import retry as _retry
+
+        current = model
+        attempt = 1
+        while True:
+            try:
+                return self.call_chat(
+                    messages=messages, model=current, temperature=temperature,
+                    max_tokens=max_tokens, timeout=timeout,
+                )
+            except Exception as exc:  # noqa: BLE001
+                cat = _retry.classify_error(exc)
+                # 模型错误：立即切换备用模型源（FAST↔STRONG）并重试一次
+                if _retry.should_switch_model(cat):
+                    other = _retry.switch_model_source(current)
+                    logger.warning(
+                        f"[LLM] 模型错误({type(exc).__name__}) → 切换模型源 {current}→{other} 重试",
+                        trace_id=get_trace_id(),
+                    )
+                    current = other
+                    try:
+                        return self.call_chat(
+                            messages=messages, model=current, temperature=temperature,
+                            max_tokens=max_tokens, timeout=timeout,
+                        )
+                    except Exception as exc2:  # noqa: BLE001
+                        logger.warning(f"[LLM] 切换模型源后仍失败：{type(exc2).__name__}: {exc2}")
+                        raise
+                if not _retry.should_retry(cat, attempt):
+                    raise
+                wait = _retry.next_backoff(cat, attempt)
+                if wait > 0:
+                    time.sleep(wait)
+                attempt += 1
+
+    def call_chat_stream_with_retry(self, *, messages: list[dict], model: str, temperature: float,
+                                    max_tokens: int, timeout: float = 180.0):
+        """task-G1-①：流式版智能重试（仅在尚未吐出任何 token 时重试，避免重复输出）。"""
+        from app.core import retry as _retry
+
+        current = model
+        attempt = 1
+        while True:
+            yielded = False
+            try:
+                for tok in self.call_chat_stream(
+                    messages=messages, model=current, temperature=temperature,
+                    max_tokens=max_tokens, timeout=timeout,
+                ):
+                    yielded = True
+                    yield tok
+                return
+            except Exception as exc:  # noqa: BLE001
+                if yielded:
+                    raise  # 已吐出 token，不再重试（防重复）
+                cat = _retry.classify_error(exc)
+                if _retry.should_switch_model(cat):
+                    current = _retry.switch_model_source(current)
+                    continue
+                if not _retry.should_retry(cat, attempt):
+                    raise
+                wait = _retry.next_backoff(cat, attempt)
+                if wait > 0:
+                    time.sleep(wait)
+                attempt += 1
+
     def call_chat(self, *, messages: list[dict], model: str, temperature: float, max_tokens: int, timeout: float = 60.0):
         body = {
             "model": self._model_name(model),
@@ -416,7 +491,7 @@ async def generate_answer(
         loop = asyncio.get_running_loop()
         answer = await loop.run_in_executor(
             None,
-            lambda: client.call_chat(
+            lambda: client.call_chat_with_retry(
                 messages=messages,
                 model=model,
                 temperature=settings.LLM_TEMPERATURE,
@@ -465,7 +540,7 @@ async def generate_stream(
 
         def _worker():
             try:
-                for token in client.call_chat_stream(
+                for token in client.call_chat_stream_with_retry(
                     messages=messages,
                     model=model,
                     temperature=settings.LLM_TEMPERATURE,

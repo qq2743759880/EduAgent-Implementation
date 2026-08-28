@@ -95,7 +95,7 @@ async def decide_agent_plan(
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None,
-            lambda: client.call_chat(
+            lambda: client.call_chat_with_retry(
                 messages=[
                     {"role": "system", "content": system_prefix},
                     {"role": "user", "content": q},
