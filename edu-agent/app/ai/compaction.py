@@ -734,6 +734,14 @@ def compact_messages(
     edit_msgs = edit["messages"]
     after_edit_tokens = sum(_msg_tokens(m) for m in edit_msgs)
     if after_edit_tokens <= threshold:
+        try:
+            from app.otel.exporter import get_otel_exporter
+            get_otel_exporter().record_compaction_event(
+                before_tokens=before_tokens, after_tokens=after_edit_tokens,
+                dropped_rounds=edit["removed_tokens"], policy="context_edit",
+            )
+        except Exception:
+            pass
         return {
             "applied": False,          # context_edit 已解决，无需重量 compaction
             "trigger": "context_edit",
@@ -750,15 +758,27 @@ def compact_messages(
     # 增强路径（锚定/LLM）与默认路径分流：默认路径与原版逐字节一致（AC5 回归）。
     use_enhanced = (anchor_round is not None) or (llm is not None)
     if use_enhanced:
-        return _compact_with_budget(
+        result = _compact_with_budget(
             edit_msgs, threshold, keep_rounds, summarizer,
             edit={"before_tokens": before_tokens, "removed_tokens": edit["removed_tokens"]},
             llm=llm, llm_select=llm_select, anchor_round=anchor_round,
         )
-    return _compact_legacy(
-        edit_msgs, threshold, keep_rounds, summarizer,
-        before_tokens=before_tokens, edit_removed_tokens=edit["removed_tokens"],
-    )
+        pol = "compact_budget"
+    else:
+        result = _compact_legacy(
+            edit_msgs, threshold, keep_rounds, summarizer,
+            before_tokens=before_tokens, edit_removed_tokens=edit["removed_tokens"],
+        )
+        pol = "compaction"
+    try:
+        from app.otel.exporter import get_otel_exporter
+        get_otel_exporter().record_compaction_event(
+            before_tokens=result["before_tokens"], after_tokens=result["after_tokens"],
+            dropped_rounds=result.get("dropped_rounds", 0), policy=pol,
+        )
+    except Exception:
+        pass
+    return result
 
 
 # ============================================================

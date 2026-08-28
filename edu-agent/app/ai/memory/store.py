@@ -83,6 +83,11 @@ class MemoryStore:
         except Exception as exc:
             logger.warning(f"[Memory] 向量 upsert 失败（仍已落库）: {exc}")
         logger.info(f"[Memory] 写入记忆 user={user_id} id={memory_id} type={memory_type} imp={importance}")
+        try:
+            from app.otel.exporter import get_otel_exporter
+            get_otel_exporter().record_memory_event("write", user_id=user_id)
+        except Exception:
+            pass
         return int(memory_id)
 
     # ------------------------------------------------------------------
@@ -127,6 +132,11 @@ class MemoryStore:
             m.score = new_score
             out.append({**(m.to_recall_dict()), "vector_score": float(h.get("score", 0.0))})
         out.sort(key=lambda r: r.get("vector_score", 0.0), reverse=True)
+        try:
+            from app.otel.exporter import get_otel_exporter
+            get_otel_exporter().record_memory_event("recall", user_id=user_id, adopted=bool(out))
+        except Exception:
+            pass
         return out[:k]
 
     # ------------------------------------------------------------------

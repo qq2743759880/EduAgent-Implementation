@@ -154,6 +154,11 @@ async def execute_tool_plan(
         logger.warning(f"[Agent] MCP executor 导入失败：{type(exc).__name__}: {exc}")
         return [], ""
 
+    try:
+        from app.otel.exporter import get_otel_exporter as _get_otel
+    except Exception:
+        _get_otel = None
+
     summaries: list[dict] = []
     parts: list[str] = []
     for item in tool_plan:
@@ -175,10 +180,20 @@ async def execute_tool_plan(
                 text = str(result.get("result") or result.get("error_message") or "")
             summaries.append({"tool_name": tool_name, "status": status, "result_summary": text[:500], "latency_ms": latency_ms})
             parts.append(f"- 工具 {tool_name} 结果（{status}）：{text[:300]}")
+            if _get_otel is not None:
+                try:
+                    _get_otel().record_tool_result(status, tool=tool_name, user_id=str(operator_user_id), latency_ms=latency_ms)
+                except Exception:
+                    pass
         except Exception as exc:
             logger.warning(f"[Agent] 工具 {tool_name} 调用失败：{type(exc).__name__}: {exc}")
             summaries.append({"tool_name": tool_name, "status": "ERROR", "result_summary": str(exc)[:200], "latency_ms": 0})
             parts.append(f"- 工具 {tool_name} 调用失败：{str(exc)[:200]}")
+            if _get_otel is not None:
+                try:
+                    _get_otel().record_tool_result("ERROR", tool=tool_name, user_id=str(operator_user_id))
+                except Exception:
+                    pass
     fragment = "\n".join(parts)
     return summaries, fragment
 
