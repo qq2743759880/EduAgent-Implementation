@@ -787,6 +787,135 @@ async def _final_rejection_limit(*, original_tool_name: str, server_id: int, arg
     )
 
 
+# ============================================================
+# task-T1-③：工具参数改写（第 2 步 ACTION_REWRITE）
+#   - TOOL_REWRITE_RULES：确定性规则改写映射表（≥5 组），LLM 改写不可用时的兜底，零外部依赖；
+#   - _fast_rewrite_args：窗口内走 FAST（火山 ark deepseek-v4-flash）真实改写；
+#   - _default_rewrite_fn：优先 FAST 真实改写，失败回退规则表（保证 rewrite 闭环始终有产出）。
+# 验收：真实 FAST 改写成功 ≥1 例；或增强规则改写映射表 ≥5 组。
+# ============================================================
+TOOL_REWRITE_RULES: list[dict] = [
+    # 1) 缺失必填分页/数量参数 → 仅补实际缺失的键，避免覆盖已提供的参数
+    {"id": "fill_missing_limit",
+     "when_missing_any": ["limit", "top_k", "count", "page_size", "size"],
+     "defaults": {"limit": 10, "top_k": 10, "count": 10, "page_size": 10, "size": 10},
+     "desc": "缺失分页/数量必填参数 → 补对应默认（limit/top_k/...=10）"},
+    # 2) 数值类参数强制转 int（防字符串/浮点类型错误）
+    {"id": "coerce_int",
+     "coerce_int": ["limit", "offset", "top_k", "count", "page", "page_size", "size", "n"],
+     "desc": "数值分页参数强制转 int"},
+    # 3) 布尔类参数强制转 bool（防 'true'/'false' 字符串误判）
+    {"id": "coerce_bool",
+     "coerce_bool": ["recursive", "enable", "enabled", "force", "strict", "overwrite", "async_"],
+     "desc": "布尔参数强制转 bool"},
+    # 4) 日期参数归一为 YYYY-MM-DD（去空格、中文/英文斜杠统一）
+    {"id": "normalize_date",
+     "normalize_date": ["date", "start_date", "end_date", "from", "to", "begin", "begin_date"],
+     "desc": "日期参数归一为 YYYY-MM-DD"},
+    # 5) 报错含超时 → 增大 timeout（秒），缓解瞬时限流/慢响应
+    {"id": "timeout_on_error",
+     "when_error_contains": ["timeout", "timed out", "504", "读写超时"],
+     "set": {"timeout": 60},
+     "desc": "超时类报错 → timeout=60"},
+    # 6) 报错含限流 → 标记退避 + 降低批量，配合控制环退避
+    {"id": "ratelimit_on_error",
+     "when_error_contains": ["429", "rate limit", "too many requests", "限流", "请求过于频繁"],
+     "set": {"_backoff_s": 2, "batch_size": 1},
+     "desc": "限流类报错 → 退避 2s + 批量降为 1"},
+]
+
+
+def _extract_json_obj(text: str) -> dict | None:
+    """从模型输出中尽量解析出首个 JSON 对象。"""
+    if not text:
+        return None
+    s = text.strip()
+    import re
+    m = re.search(r"\{.*\}", s, re.S)
+    if m:
+        s = m.group(0)
+    try:
+        obj = json.loads(s)
+    except Exception:
+        return None
+    return obj if isinstance(obj, dict) else None
+
+
+def _apply_rewrite_rules(args: dict, error: str | None) -> dict:
+    """确定性规则改写（TOOL_REWRITE_RULES）。返回新的 args dict，原 dict 不变。"""
+    out = dict(args)
+    err = (error or "").lower()
+    for rule in TOOL_REWRITE_RULES:
+        # 缺失参数补默认（仅补实际缺失的键，保留已提供参数）
+        miss = rule.get("when_missing_any")
+        if miss:
+            defaults = rule.get("defaults", rule.get("set", {}))
+            for k in miss:
+                if k not in out and k in defaults:
+                    out[k] = defaults[k]
+        # 报错关键词触发 set
+        keys = rule.get("when_error_contains")
+        if keys and any(k.lower() in err for k in keys):
+            out.update(rule.get("set", {}))
+        # 类型强制（不论报错，防类型错误）
+        for k in rule.get("coerce_int", []):
+            if k in out and out[k] is not None:
+                try:
+                    out[k] = int(float(out[k]))
+                except (TypeError, ValueError):
+                    pass
+        for k in rule.get("coerce_bool", []):
+            if k in out and out[k] is not None:
+                v = out[k]
+                out[k] = v if isinstance(v, bool) else str(v).strip().lower() in ("1", "true", "yes", "y", "t")
+        for k in rule.get("normalize_date", []):
+            if k in out and out[k]:
+                try:
+                    import datetime as _dt
+                    out[k] = _dt.date.fromisoformat(str(out[k]).strip().replace("/", "-").replace("：", ":")).isoformat()
+                except Exception:
+                    pass
+    return out
+
+
+async def _fast_rewrite_args(args: dict, error: str | None, tool_name: str) -> dict | None:
+    """窗口内真实 FAST 改写：火山 ark plan/v3 deepseek-v4-flash 修正工具参数。失败返回 None。"""
+    from app.chat.generator import _ChatClient
+    messages = [
+        {"role": "system", "content": (
+            "你是 MCP 工具参数修正器。给定工具名、上一次调用报错、当前参数，"
+            "返回修正后的参数 JSON 对象（只改有问题的字段，保持其他字段不变）。"
+            "只输出 JSON，不要解释。")},
+        {"role": "user", "content": json.dumps(
+            {"tool": tool_name, "error": error or "", "args": args},
+            ensure_ascii=False)},
+    ]
+    try:
+        client = _ChatClient.get()
+        loop = asyncio.get_event_loop()
+        text = await loop.run_in_executor(
+            None,
+            lambda: client.call_chat(
+                messages=messages, model="fast", temperature=0.0, max_tokens=500, timeout=30.0,
+            ),
+        )
+        obj = _extract_json_obj(text)
+        if isinstance(obj, dict):
+            # 仅保留原args中存在的键（不擅自新增未知参数）
+            return {k: obj[k] for k in obj if k in args}
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(f"[T1-③] FAST 改写失败（回退规则表）: {type(exc).__name__}: {exc}")
+    return None
+
+
+async def _default_rewrite_fn(args: dict, error: str | None, tool_name: str) -> dict:
+    """第 2 步改写默认实现：优先 FAST 真实改写，失败回退确定性规则表。"""
+    fast = await _fast_rewrite_args(args, error, tool_name)
+    if isinstance(fast, dict) and fast:
+        return fast
+    return _apply_rewrite_rules(args, error)
+
+
 async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", trace_id: str = "",
                                session_id: str = "", tool_id: int | None = None,
                                server_id: int | None = None, tool_name: str | None = None,
@@ -810,6 +939,9 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
     consecutive_rej = settings.TOOL_CONSECUTIVE_REJECTIONS
     reject_ttl = settings.TOOL_REJECT_TTL_S
     use_llm_rewrite = settings.TOOL_RETRY_LLM_REWRITE
+    # task-T1-③：调用方未显式传 llm_rewrite_fn 时，默认启用「FAST 真实改写 → 规则表兜底」
+    if llm_rewrite_fn is None and use_llm_rewrite:
+        llm_rewrite_fn = _default_rewrite_fn
 
     # 解析原始工具引用
     try:
