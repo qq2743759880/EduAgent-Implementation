@@ -226,30 +226,18 @@ ROUTE_SYSTEM_PROMPT = """你是 EduAgent 的意图路由器。把用户的一条
 严格只输出 JSON，不要多余文字。"""
 
 
+# ============================================================
+# 六核心节点：A1-② 真搬迁后的「薄壳」
+# 真实编排逻辑已迁入 app.ai.harness.sixnode.SixNodeHarness；此处仅保留模块级函数名，
+# 委托当前默认 harness 实例，以兼容：
+#   - test_contract_task24：monkeypatch graph.answer_node 等后再 build_graph（红线）；
+#   - test_contract_task94 / test_contract_task97：直接调用 graph.plan_node / answer_node 等。
+# 自定义 harness（build_graph(harness=...)）由 build_graph 用闭包捕获，不写入 _CURRENT_HARNESS，
+# 以免对其它测试的 graph.<node> 直接调用造成状态串扰。
+# ============================================================
 async def route_node(state: AgentState) -> dict:
-    query = ""
-    for m in state.get("messages", []):
-        if isinstance(m, HumanMessage):
-            query = str(m.content)
-    intent = "knowledge"  # 兜底默认
-    messages = [
-        {"role": "system", "content": ROUTE_SYSTEM_PROMPT},
-        {"role": "user", "content": query},
-    ]
-    # 鲁棒性：fast 模型偶发返回空串/不可解析，重试避免空输出被错误兜底 knowledge
-    for _ in range(3):
-        try:
-            raw = await _llm_call(messages, model="fast", max_tokens=30)
-            obj = _extract_json(raw) or {}
-            cand = str(obj.get("intent") or "").strip().lower()
-            if cand in _FAST_INTENTS:
-                intent = cand
-                break
-        except Exception as exc:
-            logger.warning(f"[graph.route] 意图路由重试，当前默认 knowledge: {type(exc).__name__}: {exc}")
-    # 诚实 effort：chitchat 走 route→answer 直连，定档 L0；其余由 plan_node 按意图定档 L1/L2
-    effort = "L0" if intent == "chitchat" else "L1"
-    return {"intent": intent, "effort": effort} | _record(state, "route")
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.route。"""
+    return await _default_harness().route(state)
 
 
 def route_gate(state: AgentState) -> Literal["answer", "plan"]:
@@ -299,36 +287,8 @@ def _effort_for_intent(intent: str) -> tuple[str, list[dict]]:
 
 
 async def plan_node(state: AgentState) -> dict:
-    intent = state.get("intent", "knowledge")
-    level, tasks = _effort_for_intent(intent)
-    query = ""
-    for m in state.get("messages", []):
-        if isinstance(m, HumanMessage):
-            query = str(m.content)
-    # task94 GWT③：消费 skill_node 注入的 skill_context，使命中 skill 的 body 指引进入子代理任务
-    skill_context = state.get("skill_context") or ""
-    # task97(task#25)：消费 context_edit_node 输出的已编辑上下文（闭合 task96 批判②——此前 compact 产出从未被下游使用）
-    ctx_block = ""
-    prefix_stable = None
-    edited = state.get("context_edit") or {}
-    if isinstance(edited, dict):
-        ctx_block = _edited_context_block(edited)
-        prefix_stable = edited.get("prefix_stable")
-    plan_tasks = []
-    for t in tasks:
-        inp = t["input"] + f"（问题：{query}）"
-        if skill_context:
-            inp = inp + f"\n\n[相关 skill 指引，请遵循]\n{skill_context}"
-        if ctx_block:
-            if prefix_stable is True:
-                flag = "前缀稳定（prompt cache 可命中）"
-            elif prefix_stable is False:
-                flag = "前缀已变（prompt cache 将失效）"
-            else:
-                flag = "前缀未定"
-            inp = inp + f"\n\n[历史上下文（经 context_edit 编辑，{flag}）]\n{ctx_block}"
-        plan_tasks.append({"subagent": t["subagent"], "objective": t["objective"], "input": inp})
-    return {"tasks": plan_tasks, "effort": level} | _record(state, "plan")
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.plan。"""
+    return await _default_harness().plan(state)
 
 
 # ============================================================
@@ -519,53 +479,16 @@ def _build_tool_services(*, user_id: int, thread_id: str | None) -> dict[str, An
 
 
 async def fan_out_node(state: AgentState) -> dict:
-    tasks = state.get("tasks", [])
-    # user_id 由 service 注入（_empty_state），禁止兜底默认 1（R4 安全红线：缺失即报错而非降级越权）
-    user_id = int(state["user_id"])
-    thread_id = state.get("session_id") or None
-
-    services = _build_tool_services(user_id=user_id, thread_id=thread_id)
-    sub_tasks: list[SubagentTask] = []
-    for t in tasks:
-        sub_tasks.append(
-            SubagentTask(
-                subagent=t.get("subagent", "search"),
-                objective=t.get("objective", ""),
-                input=t.get("input", ""),
-                tool_services=services,
-                user_id=user_id,
-                thread_id=thread_id,
-            )
-        )
-
-    # fan-out：task92 runner 内 asyncio.gather 并行，独立上下文；主 state 只收蒸馏摘要
-    t0 = time.perf_counter()
-    results: list[SubagentResult] = await run_subagents(sub_tasks)
-    elapsed_ms = int((time.perf_counter() - t0) * 1000)
-    logger.info(f"[graph.fanout] 并行 {len(sub_tasks)} 个子代理完成，耗时 {elapsed_ms}ms")
-
-    distilled = [r.as_distilled() for r in results]
-    return {"subagent_results": distilled, "degraded_reason": None} | _record(state, "fan_out")
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.fan_out。"""
+    return await _default_harness().fan_out(state)
 
 
 # ============================================================
 # Node 4: merge_node —— 汇总 / 去重 / 冲突标注
 # ============================================================
-def merge_node(state: AgentState) -> dict:
-    distilled = state.get("subagent_results", [])
-    merged = []
-    seen: set[str] = set()
-    for r in distilled:
-        summary = (r.get("summary") or "").strip()
-        if not summary:
-            continue
-        key = summary[:40]
-        if key in seen:            # 去重
-            continue
-        seen.add(key)
-        merged.append(f"- [{r.get('subagent')}] {summary}")
-    context = "\n".join(merged) or "（子代理未产出有效摘要）"
-    return {"merged_context": context} | _record(state, "merge")
+async def merge_node(state: AgentState) -> dict:
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.merge。"""
+    return await _default_harness().merge(state)
 
 
 # ============================================================
@@ -576,25 +499,8 @@ REFLECT_SYSTEM_PROMPT = """你是研究质检员。判断子代理产出的综�
 
 
 async def reflect_node(state: AgentState) -> dict:
-    reflect_count = int(state.get("reflect_count", 0))
-    context = state.get("merged_context", "")
-    # 达到迭代上限 → 强制放行（answer 时标 degraded_reason="reflect_max_iter"），不无限循环
-    if reflect_count >= MAX_REFLECT_ITERATIONS:
-        return {"reflect_count": reflect_count + 1, "sufficient": True,
-                "degraded_reason": "reflect_max_iter"} | _record(state, "reflect")
-    sufficient = True
-    try:
-        messages = [
-            {"role": "system", "content": REFLECT_SYSTEM_PROMPT},
-            {"role": "user", "content": f"综合上下文：\n{context}\n\n判断是否足够。若关键信息缺失需再检索，输出 sufficient=false。"},
-        ]
-        raw = await _llm_call(messages, model="fast", max_tokens=20)
-        obj = _extract_json(raw) or {}
-        sufficient = bool(obj.get("sufficient", True))
-    except Exception:
-        sufficient = True  # judge 失败保守放行
-    return {"reflect_count": reflect_count + 1, "sufficient": sufficient,
-            "degraded_reason": None} | _record(state, "reflect")
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.reflect。"""
+    return await _default_harness().reflect(state)
 
 
 def reflect_gate(state: AgentState) -> Literal["answer", "plan"]:
@@ -615,68 +521,106 @@ ANSWER_SYSTEM_PROMPT = """你是 EduAgent 智能学习助手。基于以下综�
 
 
 async def answer_node(state: AgentState) -> dict:
-    query = ""
-    for m in state.get("messages", []):
-        if isinstance(m, HumanMessage):
-            query = str(m.content)
-    context = state.get("merged_context", "")
-    skill_context = state.get("skill_context") or ""
+    """A1-② 薄壳：真实逻辑见 SixNodeHarness.answer。"""
+    return await _default_harness().answer(state)
 
-    system_content = ANSWER_SYSTEM_PROMPT + "\n\n## 综合上下文\n" + (context or "（无）")
-    # task94 GWT③：skill_context 进入最终回答上下文（命中 skill 的 body 指引被决策链消费）
-    if skill_context:
-        system_content += "\n\n## 相关 skill 指引\n" + skill_context
 
-    messages = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content": query},
-    ]
-    try:
-        answer = await _llm_call(messages, model="strong", temperature=settings.LLM_TEMPERATURE, max_tokens=settings.LLM_MAX_TOKENS)
-    except Exception as exc:
-        logger.warning(f"[graph.answer] strong 生成失败，降级 fast: {type(exc).__name__}: {exc}")
-        try:
-            answer = await _llm_call(messages, model="fast", temperature=settings.LLM_TEMPERATURE, max_tokens=settings.LLM_MAX_TOKENS)
-        except Exception as exc2:
-            answer = f"抱歉，AI 服务暂时不可用（{type(exc2).__name__}），请稍后重试。"
-            return {"final_answer": answer, "degraded_reason": "llm_failed"} | _record(state, "answer")
-    return {"final_answer": answer, "degraded_reason": None} | _record(state, "answer")
+# ============================================================
+# 默认 harness 解析（供六核心薄壳委托；自定义 harness 走 build_graph 闭包，不污染此全局）
+# ============================================================
+_CURRENT_HARNESS: "Harness | None" = None
+
+
+def _default_harness() -> "Harness":
+    """返回默认 harness 单例（按 HARNESS_IMPL 取 SixNodeHarness）。
+
+    被六核心薄壳 route_node/plan_node/.../answer_node 调用，既服务「默认 build_graph」也服务
+    「graph.<node> 直接调用」场景。自定义 harness 由 build_graph 用闭包捕获，不写入此全局，
+    以避免对其它测试 / 调用路径造成状态串扰。
+    """
+    global _CURRENT_HARNESS
+    if _CURRENT_HARNESS is None:
+        from app.ai.harness.registry import build_harness
+
+        _CURRENT_HARNESS = build_harness()
+    return _CURRENT_HARNESS
 
 
 # ============================================================
 # 构建 & 编译图（挂 AsyncRedisSaver durable execution）
 # ============================================================
 def build_graph(harness: "Harness | None" = None) -> StateGraph:
-    """编译 6 节点 DAG（route→skill→compact→context_edit→plan→fan_out→merge→reflect→answer）。
+    """编译 9 节点 DAG（route→skill→compact→context_edit→plan→fan_out→merge→reflect→answer）。
 
     harness：可插拔编排实现（task-A1）。默认按 HARNESS_IMPL 取 SixNodeHarness（=重构前行为零变化）。
     图拓扑（节点名 + 边）固定，不随 harness 切换改变（keep_sixnode）。
-    六核心节点（route/plan/fan_out/merge/reflect/answer）走 harness 实现；
-    skill/compact/context_edit 为稳定支持节点（所有 harness 共享，向 harness 提供 state 上下文）。
+
+    A1-② 接线规则：
+    - 默认 harness：六核心节点接线「模块级薄壳」route_node/plan_node/.../answer_node，使
+      test_contract_task24 对 graph.answer_node 等的 monkeypatch 与 graph.<node> 直接调用契约继续生效。
+    - 自定义 harness（harness=...）：用闭包捕获该实例接线，避免污染模块级 _CURRENT_HARNESS，
+      保证其它测试的 graph.<node> 直接调用仍走默认 harness（无状态串扰）。
+    skill/compact/context_edit 为稳定支持节点（所有 harness 共享），始终接线模块级真实实现。
 
     注意：本模块不 import harness（避免与 app.ai.harness.base 的循环依赖），
-    默认 harness 延迟在 build_graph 内解析。
+    默认 harness 延迟在 _default_harness 内解析。
     """
     if harness is None:
-        from app.ai.harness.registry import build_harness as _build_harness
+        h = _default_harness()
+        core = {
+            "route": route_node,
+            "plan": plan_node,
+            "fan_out": fan_out_node,
+            "merge": merge_node,
+            "reflect": reflect_node,
+            "answer": answer_node,
+        }
+    else:
+        h = harness
 
-        harness = _build_harness()
+        async def _route(state, _h=h):
+            return await _h.route(state)
+
+        async def _plan(state, _h=h):
+            return await _h.plan(state)
+
+        async def _fan_out(state, _h=h):
+            return await _h.fan_out(state)
+
+        async def _merge(state, _h=h):
+            return await _h.merge(state)
+
+        async def _reflect(state, _h=h):
+            return await _h.reflect(state)
+
+        async def _answer(state, _h=h):
+            return await _h.answer(state)
+
+        core = {
+            "route": _route,
+            "plan": _plan,
+            "fan_out": _fan_out,
+            "merge": _merge,
+            "reflect": _reflect,
+            "answer": _answer,
+        }
+
     workflow = StateGraph(AgentState)
 
-    if harness.has_preprocess:
-        workflow.add_node("preprocess", harness.preprocess)
-    workflow.add_node("route", harness.route)
+    if h.has_preprocess:
+        workflow.add_node("preprocess", h.preprocess)
+    workflow.add_node("route", core["route"])
     workflow.add_node("skill", skill_node)
     workflow.add_node("compact", compact_node)
     workflow.add_node("context_edit", context_edit_node)
-    workflow.add_node("plan", harness.plan)
-    workflow.add_node("fan_out", harness.fan_out)
-    workflow.add_node("merge", harness.merge)
-    workflow.add_node("reflect", harness.reflect)
-    workflow.add_node("answer", harness.answer)
+    workflow.add_node("plan", core["plan"])
+    workflow.add_node("fan_out", core["fan_out"])
+    workflow.add_node("merge", core["merge"])
+    workflow.add_node("reflect", core["reflect"])
+    workflow.add_node("answer", core["answer"])
 
     # 可选预处理钩子（A1-①）：仅当 harness 真正覆盖 preprocess 才插入节点，默认拓扑零变化
-    if harness.has_preprocess:
+    if h.has_preprocess:
         workflow.add_edge(START, "preprocess")
         workflow.add_edge("preprocess", "route")
     else:
