@@ -478,6 +478,18 @@ class Settings(BaseSettings):
     SQL_MAX_REPAIR: int = 2
 
     # ============================================================
+    # task-E1 评估体系：影子模式 / 金丝雀 / 4 维 Judge
+    #   - SHADOW_MODE_ENABLED：开启后主链路答案不变，影子对比 fire-and-forget 落库不阻塞
+    #   - CANARY_RATIO：金丝雀分流比例（默认 1%）；CANARY_DAYS：观察窗口天数
+    #   - JUDGE_DIMENSIONS：4 维 Judge 维度（替代单一 0-1）
+    # ============================================================
+    SHADOW_MODE_ENABLED: bool = False
+    SHADOW_MODE_RATIO: float = 1.0
+    CANARY_RATIO: float = 0.01
+    CANARY_DAYS: int = 3
+    JUDGE_DIMENSIONS: list[str] = ["fact_correctness", "completeness", "harmlessness", "coherence"]
+
+    # ============================================================
     # 路径配置
     # ============================================================
     DATA_DIR: str = "./data"

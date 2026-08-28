@@ -1,0 +1,271 @@
+{
+  "dirty_count": 22,
+  "adversarial_count": 22,
+  "total": 44,
+  "samples": [
+    {
+      "id": "AD-D01",
+      "query": "python怎么装",
+      "category": "dirty",
+      "ground_truth": "给出官方下载或 pip 安装步骤"
+    },
+    {
+      "id": "AD-D02",
+      "query": "djang和flask哪个好",
+      "category": "dirty",
+      "ground_truth": "对比两者定位与选型建议"
+    },
+    {
+      "id": "AD-D03",
+      "query": "咋用git上传代码",
+      "category": "dirty",
+      "ground_truth": "git add/commit/push 流程"
+    },
+    {
+      "id": "AD-D04",
+      "query": "sql注入和xss啥区别",
+      "category": "dirty",
+      "ground_truth": "注入点与安全目标不同"
+    },
+    {
+      "id": "AD-D05",
+      "query": "c语言里指针是啥",
+      "category": "dirty",
+      "ground_truth": "指针即内存地址变量"
+    },
+    {
+      "id": "AD-D06",
+      "query": "英语时态有哪几种",
+      "category": "dirty",
+      "ground_truth": "一般现在/过去/将来/进行/完成等"
+    },
+    {
+      "id": "AD-D07",
+      "query": "高数是啥",
+      "category": "dirty",
+      "ground_truth": "高等数学范围：微积分/线代/概率"
+    },
+    {
+      "id": "AD-D08",
+      "query": "怎么读写文件python",
+      "category": "dirty",
+      "ground_truth": "open/read/write/with 用法"
+    },
+    {
+      "id": "AD-D09",
+      "query": "js里var let const区别",
+      "category": "dirty",
+      "ground_truth": "作用域与可变性差异"
+    },
+    {
+      "id": "AD-D10",
+      "query": "递归和迭代哪个好",
+      "category": "dirty",
+      "ground_truth": "对比优劣与适用场景"
+    },
+    {
+      "id": "AD-D11",
+      "query": "mysql怎么建表",
+      "category": "dirty",
+      "ground_truth": "CREATE TABLE 语法"
+    },
+    {
+      "id": "AD-D12",
+      "query": "什么是api",
+      "category": "dirty",
+      "ground_truth": "应用程序编程接口概念"
+    },
+    {
+      "id": "AD-D13",
+      "query": "http和https差在哪",
+      "category": "dirty",
+      "ground_truth": "HTTPS 加密更安全"
+    },
+    {
+      "id": "AD-D14",
+      "query": "数组和链表区别",
+      "category": "dirty",
+      "ground_truth": "内存连续 vs 离散"
+    },
+    {
+      "id": "AD-D15",
+      "query": "虚函数和纯虚函数",
+      "category": "dirty",
+      "ground_truth": "是否含实现/能否实例化"
+    },
+    {
+      "id": "AD-D16",
+      "query": "线程和进程区别",
+      "category": "dirty",
+      "ground_truth": "资源拥有与调度单位"
+    },
+    {
+      "id": "AD-D17",
+      "query": "深拷贝浅拷贝",
+      "category": "dirty",
+      "ground_truth": "引用共享 vs 完全独立"
+    },
+    {
+      "id": "AD-D18",
+      "query": "怎么排序一个列表",
+      "category": "dirty",
+      "ground_truth": "sort/sorted 用法"
+    },
+    {
+      "id": "AD-D19",
+      "query": "闭包是啥意思",
+      "category": "dirty",
+      "ground_truth": "函数捕获外部变量"
+    },
+    {
+      "id": "AD-D20",
+      "query": "同步和异步区别",
+      "category": "dirty",
+      "ground_truth": "阻塞等待 vs 非阻塞回调"
+    },
+    {
+      "id": "AD-D21",
+      "query": "tcp和udp区别",
+      "category": "dirty",
+      "ground_truth": "可靠连接 vs 无连接"
+    },
+    {
+      "id": "AD-D22",
+      "query": "栈和队列区别",
+      "category": "dirty",
+      "ground_truth": "LIFO vs FIFO"
+    },
+    {
+      "id": "AD-A01",
+      "query": "Java 和 JavaScript 是一个东西吗",
+      "category": "adversarial",
+      "ground_truth": "否，两者无关仅名字相似"
+    },
+    {
+      "id": "AD-A02",
+      "query": "SQL 注入和 XSS 有什么区别",
+      "category": "adversarial",
+      "ground_truth": "注入位置与攻击目标不同"
+    },
+    {
+      "id": "AD-A03",
+      "query": "零基础学 Python 还是 Java 好",
+      "category": "adversarial",
+      "ground_truth": "给其一并说明理由"
+    },
+    {
+      "id": "AD-A04",
+      "query": "机器学习和深度学习什么关系",
+      "category": "adversarial",
+      "ground_truth": "深度学习是机器学习的子集"
+    },
+    {
+      "id": "AD-A05",
+      "query": "编译型和解释型语言区别",
+      "category": "adversarial",
+      "ground_truth": "执行方式差异"
+    },
+    {
+      "id": "AD-A06",
+      "query": "乐观锁和悲观锁区别",
+      "category": "adversarial",
+      "ground_truth": "冲突处理时机不同"
+    },
+    {
+      "id": "AD-A07",
+      "query": "Cookie 和 Session 区别",
+      "category": "adversarial",
+      "ground_truth": "客户端 vs 服务端存储"
+    },
+    {
+      "id": "AD-A08",
+      "query": "GET 和 POST 区别",
+      "category": "adversarial",
+      "ground_truth": "语义与安全/长度差异"
+    },
+    {
+      "id": "AD-A09",
+      "query": "进程和程序区别",
+      "category": "adversarial",
+      "ground_truth": "动态执行 vs 静态文件"
+    },
+    {
+      "id": "AD-A10",
+      "query": "堆和栈区别（内存）",
+      "category": "adversarial",
+      "ground_truth": "分配与管理方式不同"
+    },
+    {
+      "id": "AD-A11",
+      "query": "列表推导式和 for 循环哪个快",
+      "category": "adversarial",
+      "ground_truth": "推导式通常更快且更简洁"
+    },
+    {
+      "id": "AD-A12",
+      "query": "什么是闭包又什么是装饰器",
+      "category": "adversarial",
+      "ground_truth": "两者关系：装饰器基于闭包"
+    },
+    {
+      "id": "AD-A13",
+      "query": "怎么学最快",
+      "category": "adversarial",
+      "ground_truth": "缺主语，需澄清学科再给路径"
+    },
+    {
+      "id": "AD-A14",
+      "query": "Rust 的 lifetime 标注怎么理解",
+      "category": "adversarial",
+      "ground_truth": "生命周期保证引用有效"
+    },
+    {
+      "id": "AD-A15",
+      "query": "transformer 和 rnn 区别",
+      "category": "adversarial",
+      "ground_truth": "并行注意力 vs 序列递归"
+    },
+    {
+      "id": "AD-A16",
+      "query": "softmax 和 sigmoid 区别",
+      "category": "adversarial",
+      "ground_truth": "多类 vs 二分类归一化"
+    },
+    {
+      "id": "AD-A17",
+      "query": "梯度消失和梯度爆炸",
+      "category": "adversarial",
+      "ground_truth": "反向传播数值不稳定两端"
+    },
+    {
+      "id": "AD-A18",
+      "query": "C++ 的 STL 是啥",
+      "category": "adversarial",
+      "ground_truth": "标准模板库容器/算法"
+    },
+    {
+      "id": "AD-A19",
+      "query": "面向对象和面向过程",
+      "category": "adversarial",
+      "ground_truth": "封装抽象 vs 步骤化"
+    },
+    {
+      "id": "AD-A20",
+      "query": "索引为什么快",
+      "category": "adversarial",
+      "ground_truth": "B+树有序定位减少 IO"
+    },
+    {
+      "id": "AD-A21",
+      "query": "正则的贪婪和非贪婪",
+      "category": "adversarial",
+      "ground_truth": "量词匹配长度策略"
+    },
+    {
+      "id": "AD-A22",
+      "query": "并发和并行区别",
+      "category": "adversarial",
+      "ground_truth": "交替执行 vs 同时执行"
+    }
+  ]
+}

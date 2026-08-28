@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import time
 import httpx
 from dataclasses import dataclass
 
@@ -30,6 +31,92 @@ from app.knowledge.reranker import Reranker
 
 # Milvus loader 的 hybrid_search 在连不上时会抛异常 → 需要 try/except 包一层
 from app.knowledge.importer.loader import hybrid_search as _milvus_hybrid_search
+
+
+# ============================================================
+# task-E1 影子模式（AC1）
+#   主链路返回完全不变；影子对比仅 fire-and-forget，绝不阻塞/改结果。
+#   落库出口可注入（set_shadow_sink）；影子变体可注入（set_shadow_variant，
+#   默认用规则重排对主结果重排序，零额外 IO，对比 sidecar 重排 vs 规则重排顺序差异）。
+# ============================================================
+_SHADOW_SINK = None            # callable(diff:dict) | None
+_SHADOW_VARIANT_FN = None      # async fn(query, primary) -> RetrievalBundle | None
+
+
+def set_shadow_sink(fn) -> None:
+    global _SHADOW_SINK
+    _SHADOW_SINK = fn
+
+
+def set_shadow_variant(fn) -> None:
+    global _SHADOW_VARIANT_FN
+    _SHADOW_VARIANT_FN = fn
+
+
+def _shadow_sampled(query: str, *, ratio: float) -> bool:
+    """按流量比例确定性采样：ratio>=1 全采样；ratio<=0 不采样。"""
+    if ratio >= 1.0:
+        return True
+    if ratio <= 0.0:
+        return False
+    return (hash(query) % 100) < int(ratio * 100 + 1e-9)
+
+
+async def _default_shadow_variant(query: str, primary: "RetrievalBundle") -> "RetrievalBundle":
+    """默认变体：用规则重排对主链路结果重新排序（零额外 IO），暴露两套重排策略的顺序差异。"""
+    variant_docs = _rule_rerank(query, list(primary.docs))
+    return RetrievalBundle(
+        docs=variant_docs,
+        raw_retrieved_count=primary.raw_retrieved_count,
+        graph_entities=primary.graph_entities,
+        rewrite_query=primary.rewrite_query,
+        degraded_reason="shadow_variant_rule_rerank",
+    )
+
+
+async def _run_shadow(query: str, user_id: int, role, primary: "RetrievalBundle") -> None:
+    """影子对比执行体：算主/变体 doc 集合差异 + 延迟，落 _SHADOW_SINK。任何异常全吞，不影响主链路。"""
+    try:
+        fn = _SHADOW_VARIANT_FN or _default_shadow_variant
+        t0 = time.perf_counter()
+        variant = await fn(query, primary)
+        lat_ms = round((time.perf_counter() - t0) * 1000, 2)
+        if variant is None:
+            return
+        p_ids = [d.doc_id for d in primary.docs]
+        v_ids = [d.doc_id for d in variant.docs]
+        union = len(set(p_ids) | set(v_ids)) or 1
+        jac = len(set(p_ids) & set(v_ids)) / union
+        top1_same = (p_ids[:1] == v_ids[:1]) if (p_ids or v_ids) else True
+        diff = {
+            "query": query,
+            "user_id": int(user_id),
+            "primary_topk": len(p_ids),
+            "variant_topk": len(v_ids),
+            "jaccard": round(jac, 4),
+            "top1_consistent": top1_same,
+            "variant_latency_ms": lat_ms,
+            "variant": "rule_rerank",
+        }
+        if _SHADOW_SINK is not None:
+            _SHADOW_SINK(diff)
+    except Exception as exc:  # noqa: BLE001 - 影子失败绝不影响主链路
+        logger.warning(f"[shadow] 影子对比失败（已吞，不影响主链路）：{exc}")
+
+
+def _maybe_shadow(query, user_id, role, primary) -> None:
+    """在主链路 return 前调用：开启且命中采样比例时，fire-and-forget 影子对比。"""
+    if not getattr(settings, "SHADOW_MODE_ENABLED", False):
+        return
+    ratio = float(getattr(settings, "SHADOW_MODE_RATIO", 1.0))
+    if not _shadow_sampled(query, ratio=ratio):
+        return
+    try:
+        asyncio.create_task(_run_shadow(query, user_id, role, primary))
+    except RuntimeError:
+        # 无运行中的事件循环（极端情况）→ 同步跳过，绝不阻塞
+        pass
+
 
 
 # ============================================================
@@ -420,10 +507,13 @@ async def retrieve_three_channel(
             degrade_parts.append(p)
     degraded_reason = "；".join(degrade_parts) if degrade_parts else None
 
-    return RetrievalBundle(
+    _bundle = RetrievalBundle(
         docs=final_docs,
         raw_retrieved_count=raw_retrieved_count,
         graph_entities=graph_entities,
         rewrite_query=rewrite_query if hyde_done else None,
         degraded_reason=degraded_reason,
     )
+    # task-E1 影子模式（AC1）：主路径返回完全不变；影子对比仅 fire-and-forget，绝不阻塞/改结果
+    _maybe_shadow(query, user_id, role, _bundle)
+    return _bundle
