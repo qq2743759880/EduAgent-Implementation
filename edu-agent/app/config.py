@@ -401,6 +401,18 @@ class Settings(BaseSettings):
     HARNESS_IMPL: str = "sixnode"            # 可插拔实现选择；"sixnode" 为默认（重构前行为零差异）
 
     # ============================================================
+    # task-M2：Redis 共享向量降级链（多实例一致性）
+    #   降级链 milvus → redis → memory；任一不可达自动落下一档，不 500。
+    #   Redis 结构：HSET memory:vec:{user_id} -> {memory_id: json(vector)}
+    #               ZSET memory:vec:idx:{user_id} -> {memory_id: score}（枚举/排序索引）
+    #               HSET memory:vec:owner -> {memory_id: user_id}（删除反向映射）
+    #   跨实例一致：写入/读取走同一 Redis key，多实例召回结果一致（AC1/AC4）。
+    # ============================================================
+    MEMORY_VECTOR_BACKEND_ORDER: list[str] = ["milvus", "redis", "memory"]
+    MEMORY_REDIS_VEC_KEY_PREFIX: str = "memory:vec"
+    MEMORY_REDIS_SCAN_LIMIT: int = 2000      # 单用户向量枚举上限，防大 key
+
+    # ============================================================
     # task30 RAG Contextual Retrieval（chunk 上下文前缀 + 降级）
     #   对齐 tech-source-audit §三：contextual embeddings 降 35% 失败率；
     #   仅知识型内容（题库/代码跳过），并发 ≤8 不击穿 LLM 预算。

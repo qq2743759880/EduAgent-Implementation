@@ -240,6 +240,13 @@ class MemoryStore:
             operator=operator, trace_id=trace_id, supports=[int(i) for i in source_entity_ids],
         )
         await self._sync_vector(int(new_eid), summary_content)
+        # task-M2 AC3：源实体已盖章废弃（valid_to 已置），同步移除其向量索引，
+        # 使 search 永不返回已被 Dream 合并掉的旧记忆（无论后端是 milvus/redis/memory）。
+        for sid in source_entity_ids:
+            try:
+                await self._vector.invalidate(int(sid))
+            except Exception as exc:
+                logger.warning(f"[Memory] 巩固源向量失效失败（忽略）: {exc}")
         return int(new_eid)
 
     async def history(self, *, entity_id: int, limit: int = 50, offset: int = 0) -> list[dict]:
