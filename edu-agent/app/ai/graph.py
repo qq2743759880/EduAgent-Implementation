@@ -547,6 +547,48 @@ def _default_harness() -> "Harness":
 
 
 # ============================================================
+# task-A1 批判④：拓扑锁定常量化 + 启动 fail-fast 自检
+# （取代仅依赖测试硬断言；改边/改节点漏改时启动时立即暴露，而非运行时才失败）
+# ============================================================
+EXPECTED_SIXNODE_NODES = (
+    "answer", "compact", "context_edit", "fan_out",
+    "merge", "plan", "reflect", "route", "skill",
+)
+EXPECTED_SIXNODE_EDGES = (
+    ("__start__", "route"),
+    ("answer", "__end__"),
+    ("compact", "context_edit"),
+    ("context_edit", "plan"),
+    ("fan_out", "merge"),
+    ("merge", "reflect"),
+    ("plan", "fan_out"),
+    ("skill", "compact"),
+)
+EXPECTED_SIXNODE_BRANCHES = ("route", "reflect")
+
+
+def _selfcheck_sixnode_topology() -> None:
+    """启动 fail-fast：编译默认图并校验拓扑 == EXPECTED_SIXNODE_* 常量；不一致立即抛错。"""
+    g = build_graph()  # 默认 harness（未编译），仅取 nodes/edges/branches
+    nodes = tuple(sorted(g.nodes.keys()))
+    edges: list[tuple[str, str]] = []
+    for e in g.edges:
+        if isinstance(e, tuple) and len(e) >= 2:
+            edges.append((e[0], e[1]))
+        else:
+            edges.append((getattr(e, "source"), getattr(e, "target")))
+    edges = tuple(sorted(edges))
+    if nodes != EXPECTED_SIXNODE_NODES:
+        raise RuntimeError(f"[graph] 拓扑节点集与 EXPECTED_SIXNODE_NODES 不符：{nodes}")
+    if edges != EXPECTED_SIXNODE_EDGES:
+        raise RuntimeError(f"[graph] 拓扑边集与 EXPECTED_SIXNODE_EDGES 不符：{edges}")
+    if set(g.branches.keys()) != set(EXPECTED_SIXNODE_BRANCHES):
+        raise RuntimeError(
+            f"[graph] 条件分支应与 {EXPECTED_SIXNODE_BRANCHES} 一致：{set(g.branches.keys())}"
+        )
+
+
+# ============================================================
 # 构建 & 编译图（挂 AsyncRedisSaver durable execution）
 # ============================================================
 def build_graph(harness: "Harness | None" = None) -> StateGraph:
@@ -660,6 +702,7 @@ def _make_checkpointer():
 
 _checkpointer_lock: asyncio.Lock | None = None
 _agent_graph: Any = None
+_topo_checked: bool = False
 
 
 async def _ensure_agent_graph() -> "Any":
@@ -668,8 +711,9 @@ async def _ensure_agent_graph() -> "Any":
     - 持久化可用：编译时挂 AsyncRedisSaver，node 结果随 checkpoint 写入 Redis（durable execution）。
     - Redis 不可用：降级为不带 checkpointer 的图（本地开发/打靶不阻塞）。
     - 首次调用后缓存编译结果；并发调用由 Lock 串行化。
+    - 启动 fail-fast（task-A1 批判③④）：拓扑自检 + HARNESS_IMPL 配置校验。
     """
-    global _agent_graph, _checkpointer_lock
+    global _agent_graph, _checkpointer_lock, _topo_checked
     if _agent_graph is not None:
         return _agent_graph
     if _checkpointer_lock is None:
@@ -677,6 +721,18 @@ async def _ensure_agent_graph() -> "Any":
     async with _checkpointer_lock:
         if _agent_graph is not None:
             return _agent_graph
+        # 启动 fail-fast：拓扑自检（批判④）+ harness 配置校验（批判③），仅首次执行
+        if not _topo_checked:
+            _selfcheck_sixnode_topology()
+            _topo_checked = True
+        try:
+            from app.ai.harness.registry import validate_harness_config
+
+            cfg_err = validate_harness_config()
+            if cfg_err:
+                logger.warning(f"[graph] {cfg_err}（build_harness 已回退 sixnode）")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"[graph] harness 配置校验跳过：{type(exc).__name__}: {exc}")
         saver = _make_checkpointer()
         try:
             if saver is not None:
