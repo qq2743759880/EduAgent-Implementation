@@ -33,8 +33,8 @@ class SixNodeHarness(Harness):
     """默认实现：原 6 节点 DAG 的真实编排逻辑（A1-② 由 graph.py 迁入，行为逐字节一致）。"""
 
     # task-P1L 优化C：route / reflect judge 的 system prompt 均为纯静态常量 → ensure_min_prefix
-    # 撑到 ≥1024 token（跨请求/跨用户字节一致），火山 ark prompt cache 命中，降低主链路调用延迟。
-    # 结果确定性（CACHE_FILLER_BLOCK 逐字节稳定），模块级缓存避免每请求重复填充。
+    # 撑到 ≥2048 token（跨请求/跨用户字节一致），火山 ark prompt cache 命中（实测 2048 分块），
+    # 降低主链路调用延迟。结果确定性（CACHE_FILLER_BLOCK 逐字节稳定），模块级缓存避免每请求重复填充。
     _route_system_prefix: str | None = None
     _reflect_system_prefix: str | None = None
 

@@ -22,14 +22,17 @@ from typing import Any
 from app.ai.compaction import estimate_tokens
 
 # task-C2：缓存前缀达标配置（对齐 P7）。优先读 settings，导入失败回退默认。
+# 2026-08-29 实测修正：火山 ark deepseek-v4-flash 的 prompt cache 按 2048-token 分块
+# （usage.prompt_tokens_details.cached_tokens：2812 token 前缀第 2 次命中 2048；6012 命中 4096）。
+# 旧门槛 1024 < 2048 → cached_tokens 恒为 0，前缀填充形同虚设。故默认值提至 2048。
 try:  # pragma: no cover - 配置模块始终可用
     from app.config import settings as _settings
 
-    _PROMPT_CACHE_MIN_TOKENS: int = int(getattr(_settings, "PROMPT_CACHE_MIN_TOKENS", 1024))
+    _PROMPT_CACHE_MIN_TOKENS: int = int(getattr(_settings, "PROMPT_CACHE_MIN_TOKENS", 2048))
     _CACHE_FILLER_VERSION: str = str(getattr(_settings, "CACHE_FILLER_VERSION", "v3"))
     _CACHE_HIT_RATE_SEV: float = float(getattr(_settings, "CACHE_HIT_RATE_SEV", 0.5))
 except Exception:  # pragma: no cover
-    _PROMPT_CACHE_MIN_TOKENS = 1024
+    _PROMPT_CACHE_MIN_TOKENS = 2048
     _CACHE_FILLER_VERSION = "v3"
     _CACHE_HIT_RATE_SEV = 0.5
 
@@ -44,11 +47,11 @@ __all__ = [
 CACHE_LAYERS = ("system", "project", "conversation")
 
 # 静态填充注释块（task-C2 ①）：逐字节稳定（无时间/环境相关变量），放 system 层末尾、工具清单后，
-# 把短前缀撑到 ≥1024 token 跨过 DeepSeek/Claude 缓存门槛（对齐 DEV 1024 门槛实证）；
+# 把短前缀撑到 ≥2048 token 跨过火山 ark 缓存门槛（2026-08-29 实测：2048-token 分块缓存）；
 # 改版本号（CACHE_FILLER_VERSION）才变字节，否则两次构建完全一致。
 CACHE_FILLER_BLOCK = (
     "\n# cache-filler {ver} —— 静态前缀填充，请勿修改（保 prompt-cache 前缀稳定）"
-    "本段为固定注释，用于撑起可缓存前缀长度以满足 provider 最小缓存门槛（>=1024 tokens）。"
+    "本段为固定注释，用于撑起可缓存前缀长度以满足 provider 最小缓存门槛（>=2048 tokens）。"
     "系统规则与工具清单见上方，本段内容不参与任何决策逻辑，仅作前缀占位以最大化缓存命中率。"
     "EduAgent 教育场景：知识点/学习目标/用户偏好均按 topic 分区存储，检索时按需读取。"
     "安全边界：不泄露用户隐私；不执行未授权写操作；降级时返回友好提示而非异常。"
@@ -62,7 +65,7 @@ def ensure_min_prefix(
     min_tokens: int | None = None,
     filler_version: str | None = None,
 ) -> str:
-    """把前缀撑到 ≥ min_tokens（默认 PROMPT_CACHE_MIN_TOKENS=1024），跨过缓存门槛。
+    """把前缀撑到 ≥ min_tokens（默认 PROMPT_CACHE_MIN_TOKENS=2048），跨过缓存门槛。
 
     - 仅当 estimate_tokens(prefix) < min_tokens 时追加静态填充注释块（逐字节稳定）。
     - 填充块整块追加直到达标，两次相同输入返回字节完全一致（AC1）。

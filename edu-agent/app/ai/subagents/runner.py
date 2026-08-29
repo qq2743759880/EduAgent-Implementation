@@ -271,7 +271,7 @@ async def run_subagent(
     thread_ctx = (f"[thread_id={thread_id}] " if thread_id else "")
 
     # —— 独立会话消息数组（绝不来自共享 state）——
-    # task-P1L 优化E：子代理 system prompt 为静态定义 → ensure_min_prefix 撑到 ≥1024 token，
+    # task-P1L 优化E：子代理 system prompt 为静态定义 → ensure_min_prefix 撑到 ≥2048 token，
     # 跨请求/跨用户字节一致，火山 ark prompt cache 命中 → turn0 决策调用的 prefill 大幅下降
     # （fan_out 块是主链路最重阶段，子代理内首轮决策直接受益）。不改变会话循环语义（maxTurns/工具决策不变）。
     if spec.system_prompt.strip():

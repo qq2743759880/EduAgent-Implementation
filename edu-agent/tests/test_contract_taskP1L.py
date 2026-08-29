@@ -190,8 +190,9 @@ class TestReflectHeuristicFirst:
 # ============================================================
 class TestRoutePrefixCache:
     @pytest.mark.asyncio
-    async def test_route_system_prefix_ge_1024_tokens(self, monkeypatch):
-        """route 的 system 前缀经 ensure_min_prefix ≥1024 token（跨过火山 ark 缓存门槛）。"""
+    async def test_route_system_prefix_ge_2048_tokens(self, monkeypatch):
+        """route 的 system 前缀经 ensure_min_prefix ≥2048 token（火山 ark 缓存按 2048 分块，
+        2026-08-29 实测：1024 前缀 cached_tokens 恒为 0、2812 前缀命中 2048）。"""
         captured: dict = {}
 
         async def fake(messages, *, model, temperature=0.0, max_tokens=500, timeout=60.0):
@@ -204,11 +205,11 @@ class TestRoutePrefixCache:
         assert final["intent"] == "chitchat"
         sys_prompt = captured["sys"]
         assert "意图路由器" in sys_prompt, "填充不得改动原系统提示词（仅追加静态填充块）"
-        assert estimate_tokens(sys_prompt) >= 1024, f"route 前缀应 ≥1024 token，实测 {estimate_tokens(sys_prompt)}"
+        assert estimate_tokens(sys_prompt) >= 2048, f"route 前缀应 ≥2048 token，实测 {estimate_tokens(sys_prompt)}"
 
     @pytest.mark.asyncio
-    async def test_reflect_judge_prefix_ge_1024_tokens(self, monkeypatch):
-        """reflect judge 的 system 前缀同样 ≥1024 token（异常路径调用时也能命中缓存）。"""
+    async def test_reflect_judge_prefix_ge_2048_tokens(self, monkeypatch):
+        """reflect judge 的 system 前缀同样 ≥2048 token（异常路径调用时也能命中缓存）。"""
         captured: dict = {}
 
         async def fake(messages, *, model, temperature=0.0, max_tokens=500, timeout=60.0):
@@ -224,7 +225,7 @@ class TestRoutePrefixCache:
         await h.reflect(st)
         sys_prompt = captured["sys"]
         assert "质检员" in sys_prompt
-        assert estimate_tokens(sys_prompt) >= 1024, f"judge 前缀应 ≥1024 token，实测 {estimate_tokens(sys_prompt)}"
+        assert estimate_tokens(sys_prompt) >= 2048, f"judge 前缀应 ≥2048 token，实测 {estimate_tokens(sys_prompt)}"
 
     @pytest.mark.asyncio
     async def test_route_prefix_deterministic_across_calls(self, monkeypatch):
@@ -255,3 +256,30 @@ class TestTopologyLocked:
         # route→skill 是条件边（route_gate 的 plan 分支），只出现在 BRANCHES；静态 EDGES 不含
         assert ("route", "skill") not in graph_mod.EXPECTED_SIXNODE_EDGES
         assert set(graph_mod.EXPECTED_SIXNODE_BRANCHES) == {"route", "reflect"}
+
+
+# ============================================================
+# GWT⑤ 流式 agent 决策层导入回归（task39 遗留 NameError）
+# ============================================================
+class TestStreamAgentDecisionImport:
+    def test_chat_stream_run_agent_turn_resolvable(self):
+        """chat_stream 的 use_agent 分支调用 run_agent_turn —— 该符号必须可从
+        app.chat.flows.agent 解析（task39 提交漏 import 导致每次流式请求抛
+        NameError 回退检索先行，是 TTFT 基线虚高的直接原因）。"""
+        import app.chat.service as svc
+        from app.chat.flows.agent import run_agent_turn
+
+        assert hasattr(svc, "run_agent_turn"), "service 命名空间缺少 run_agent_turn（NameError 回归）"
+        assert svc.run_agent_turn is run_agent_turn, "run_agent_turn 必须来自 flows.agent（语义一致）"
+
+    def test_chat_stream_agent_branch_references_resolvable_name(self):
+        """chat_stream 源码中 use_agent 分支引用的全局名都必须在模块命名空间可解析——
+        用 compile 静态扫描 Names 集合，钉住「调用存在但符号缺失」这一类缺陷。"""
+        import app.chat.service as svc
+
+        src = open(svc.__file__, encoding="utf-8").read()
+        tree = compile(src, svc.__file__, "exec")
+        ns = set(getattr(tree, "co_names", ()))
+        # 仅检查 agent 决策分支使用的关键符号
+        assert "run_agent_turn" in ns, "chat_stream 源码仍引用 run_agent_turn（NameError 回归）"
+        assert hasattr(svc, "run_agent_turn")

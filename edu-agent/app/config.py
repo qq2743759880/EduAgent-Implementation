@@ -330,10 +330,10 @@ class Settings(BaseSettings):
 
     # ============================================================
     # 缓存前缀达标（task-C2，对齐 production-upgrade-plan P7）
-    #   对齐 Claude prompt caching：最小可缓存前缀 1024 token；低于门槛静默不缓存（DEV 实证）；
+    #   对齐 Claude prompt caching：最小可缓存前缀 2048 token（火山 ark 实测 2048 分块）；
     #   工具延迟展开（defer_loading）保前缀稳定；命中率当 uptime 监控（Glean：低即 SEV）。
     # ============================================================
-    PROMPT_CACHE_MIN_TOKENS: int = 1024        # 可缓存前缀最小 token（跨过 DeepSeek/Claude 缓存门槛）
+    PROMPT_CACHE_MIN_TOKENS: int = 2048        # 可缓存前缀最小 token（火山 ark 实测缓存按 2048-token 分块，1024 永远命中 0 块）
     CACHE_FILLER_VERSION: str = "v3"           # 静态填充注释版本号（逐字节稳定，随版本升级）
     TOOL_DEFERRED_MODE: bool = True            # True=决策前缀只放 tool_name+summary，schema 被选中才展开
     CACHE_HIT_RATE_SEV: float = 0.5            # 缓存命中率 < 此值记 SEV（对齐 Claude 把命中率当 uptime）

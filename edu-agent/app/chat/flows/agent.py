@@ -85,7 +85,7 @@ async def decide_agent_plan(
 
     specs = specs_from_metas(tool_metas or [])
     # task-C2：决策前缀默认 deferred 模式（桩只含 name+summary，schema 被选中才展开）→ 前缀字节稳定；
-    # ensure_min_prefix 用静态填充注释把前缀撑到 ≥1024 token，跨过 DeepSeek/Claude 缓存门槛（成本降 50-120x）。
+    # ensure_min_prefix 用静态填充注释把前缀撑到 ≥2048 token，跨过火山 ark 缓存门槛（2048 分块实测）。
     # 二者均不改变既有契约结构（tools 仍由 specs_from_metas 注入，执行期走真实 MCP 兜底）。
     base_prefix = build_decision_prefix(specs, is_admin=is_admin, deferred=settings.TOOL_DEFERRED_MODE)
     system_prefix = ensure_min_prefix(base_prefix)

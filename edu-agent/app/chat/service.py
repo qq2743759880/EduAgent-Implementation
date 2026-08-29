@@ -32,6 +32,7 @@ from app.chat.schemas import (
     RetrievedDoc,
 )
 from app.chat.tool_calling import run_chat_tool_calls
+from app.chat.flows.agent import run_agent_turn
 from app.common.exceptions import NotFoundError, ValidationError
 from app.common.logging import logger
 from app.config import settings

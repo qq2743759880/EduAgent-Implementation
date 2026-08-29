@@ -30,10 +30,10 @@ try:  # pragma: no cover - 配置模块始终可用
     from app.config import settings as _settings
 
     TOOL_DEFERRED_MODE: bool = bool(getattr(_settings, "TOOL_DEFERRED_MODE", True))
-    _PROMPT_CACHE_MIN_TOKENS: int = int(getattr(_settings, "PROMPT_CACHE_MIN_TOKENS", 1024))
+    _PROMPT_CACHE_MIN_TOKENS: int = int(getattr(_settings, "PROMPT_CACHE_MIN_TOKENS", 2048))
 except Exception:  # pragma: no cover
     TOOL_DEFERRED_MODE = True
-    _PROMPT_CACHE_MIN_TOKENS = 1024
+    _PROMPT_CACHE_MIN_TOKENS = 2048
 
 __all__ = [
     "ToolSpec",
