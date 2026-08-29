@@ -258,7 +258,7 @@ TASK39_CLASSES=chat,stream ./.venv/Scripts/python.exe -m locust -f tests/perform
 
 | 优先级 | 问题 | 证据 | 建议 |
 |--------|------|------|------|
-| **P1** | **推理模型 TTFT 是硬约束** | deepseek-v4-flash 每次调用产生 reasoning_tokens（69/30 max_tokens），TTFT 大头是推理而非 prefill；周末低负载正式轮 TTFT P95 仍 26~37s、P50 6.9~7.3s（§3.1） | 决策类调用（route/子代理 turn0）评估改用**非推理轻量模型**（如 v3 系列），或接受 TTFT 下限 = 单次推理时间 |
+| **P1** | **推理模型 TTFT 是硬约束** | deepseek-v4-flash 每次调用产生 reasoning_tokens（69/30 max_tokens），TTFT 大头是推理而非 prefill；周末低负载正式轮 TTFT P95 仍 26~37s、P50 6.9~7.3s（§3.1）；非流式 P95（L1 35s/L2-learning 44s）中位数即 11s/29s = TTFT + **完整生成时间**（sixnode.py:305 answer 固定 strong 模型 + LLM_MAX_TOKENS=2000，L2 生成 ~22s ≈ 2000 token × ~90 token/s） | **用户裁定（2026-08-29）：验收以流式为准**（产品实际交互即流式，TTFT=首屏体验）——流式 L1 端到端 P95 6.4s 达标、TTFT P50 6.9s/7.3s 为当前模型上限；非流式标注「全量生成语义，受推理模型完整生成速度硬约束」。后续可选优化（未实施）：answer 改 fast 模型 / LLM_MAX_TOKENS 2000→1000 |
 | **P1** | **sidecar 超时雪崩链**（wknd1-3 失真根因，已缓解） | 完整根因链：首个 memory 检索触发 `vector.py` BGE-M3 本地冷加载（EMBED_BACKEND=cloud 仍硬加载 ~2.2GB CUDA）→ GPU 竞争 → sidecar 首波超时 → 主进程回退进程内 reranker 冷加载（~47s 同步阻塞事件循环）→ 阻塞期新 sidecar 调用连 connect 都超时（RERANK_HTTP_TIMEOUT=2.0s 过紧）→ 雪崩（HTTP 0 + 60s 截断 + DEGRADED） | **已缓解**：RERANK_HTTP_TIMEOUT 2.0→10.0s（config.py），侧 car 失败 44→3 次，wknd4 0 失败/0 降级/0 限流；压测前置固化 BGE-M3 预热步骤。**架构级根治见下 P2「BGE-M3 硬加载」** |
 | **P1** | **缓存命中不稳定** | 周末低负载轮同 query 二次请求仍未体现稳定加速（P50 流式 2.5-2.8s 无 cached_tokens 显著收益） | 评估 ark 缓存 TTL/配额，或降级为「前缀尽量长 + 接受 miss」；正式验收数值不依赖缓存命中 |
 | **P2** | **BGE-M3 硬加载不尊重 EMBED_BACKEND**（雪崩链起点） | `vector.py:111-113`：`embed_batch` 调用前 `_emb._get_bge_model()` 主动探测，即使 `EMBED_BACKEND=cloud` 也触发本地 BGE-M3 2.2GB CUDA 冷加载；首个 memory 检索即阻塞 GPU | 云模式跳过本地模型探测（仅当 `EMBED_BACKEND=local` 才 `_get_bge_model()`），或改为惰性加载 + 异步预热；另将「回退进程内 reranker 冷加载」改为异步/带超时，避免阻塞事件循环 |
@@ -266,4 +266,4 @@ TASK39_CLASSES=chat,stream ./.venv/Scripts/python.exe -m locust -f tests/perform
 | **P2** | 压测轮次数据失真（wknd1-3，sidecar 雪崩链） | wknd1：6/34 失败（全 HTTP 0）+ 4 降级 + 75s 截断；wknd2：6/17 失败 + 108s TTFT；wknd3：1/27 失败 + sidecar 失败 44 次（热 reranker 兜住无雪崩） | 已排除：超时修复 + BGE 预热后 wknd4（56 请求 0 失败/0 降级/0 限流）为正式轮；wknd1-3 仅作过程记录不采信 |
 | **P2** | git 嵌套 ref 竞争（并行任务） | 9492a02 提交后 ref 被并行 task-P1C 提交覆盖 | 已按流程修复（HEAD==loose==packed）；并行开发环境下建议增加提交后自动校验 |
 
-> **状态：优化 H 周末正式复测完成（wknd4，18:06-18:10，56 请求 0 失败/0 降级/0 限流），报告定稿，停下等验收。流式 L1 端到端 P95 6.4s 达标 ≤8s；非流式/TTFT P95 未达标为推理模型 TTFT 硬约束（§8-P1），如实披露。**
+> **状态：优化 H 周末正式复测完成（wknd4，18:06-18:10，56 请求 0 失败/0 降级/0 限流），报告定稿。验收口径：以流式为准（用户裁定 2026-08-29）——流式 L1 端到端 P95 6.4s 达标 ≤8s ✅、TTFT P50 6.9s/7.3s（-64%/-68% vs 白天）；非流式 P95（35-44s）为推理模型完整生成硬约束，如实披露。task-P1C（Neo4j/Redis 断连熔断）独立核验通过（7/7 + 22/22 无回归）。停下等验收。**
