@@ -350,6 +350,7 @@ S2 原断言 `step == n_concurrent` 是**错的**：真并发下没有"定义好
 | `scripts/verify_task39_checkpoint_concurrency.py` | GWT④ checkpointer 并发 S1–S4 |
 | `scripts/verify_task39_token_bucket_boundary.py` | GWT⑤ 令牌桶边界量化复测 |
 | `tests/performance/locustfile_task39.py` | GWT① Locust 三类 User + TTFT 上报 |
+| `tests/test_contract_task39.py` | **22 条契约回归**（补交付短板，见 §10.2） |
 
 ### 7.2 生产代码修改
 
@@ -452,11 +453,14 @@ return ok(data=cohorts.model_dump(mode="json"))
 
 ## 10. 回归与测试基线
 
-全量 pytest（`edu-agent/.venv`，`tests/`）：
+全量 pytest（`edu-agent/.venv`，`tests/`）——**含 §10.2 新增的 22 条契约测试后**：
 
 ```
-3 failed, 580 passed, 145 skipped, 7 errors in 166s
+3 failed, 602 passed, 145 skipped, 7 errors in 181s
 ```
+
+（加入新测试前为 `3 failed / 580 passed / 145 skipped / 7 errors`，**+22 passed，failed/errors 零变化**
+→ 新增契约测试未引入任何 fixture 串扰。）
 
 **3 failed 明细与归因**：
 
@@ -475,6 +479,37 @@ return ok(data=cohorts.model_dump(mode="json"))
 > **⚠️ 顺带发现（建议单开小任务）**：`test_contract_task94` 硬编码 `total == 124` 断言磁盘上
 > 的 skill 数量，而实际为 178。这是一条**会持续失败**的测试，只要有人往 `.claude/skills`
 > 增删文件就会红。建议改为「≥ 某个下限」或改为校验注册表自洽性，而不是绝对数量。
+
+### 10.2 补交付短板：新增 22 条契约回归测试（第二次提交）
+
+**为何事后补**：task39 首版提交改了 6 处生产代码，却**只做了实时压测取证、没写任何契约测试**。
+共享环境掉线后实时验证无法复跑，这成了交付的真实短板。故补一批**纯单元测试**
+（不依赖 MySQL / Redis / Milvus / Neo4j / MinIO 任何实时服务，任何环境都能跑）。
+
+`tests/test_contract_task39.py`（22 passed）：
+
+| 测试类 | 条数 | 钉住的修复 |
+|--------|------|-----------|
+| `TestLoopbackNormalization` | 10 | `config._normalize_loopback`：localhost→127.0.0.1；**userinfo/port/db 必须完整保留**；`[::1]`/域名/IP/unix socket **不许动**；空值与非法串不抛异常 |
+| `TestDegradedMetrics` | 4 | Counter +1 且 Gauge=1；`clear_degraded` 只清 Gauge、**Counter 单调不回滚**；组件名归一化到小写；任意非法输入**永不抛** |
+| `TestWarmupBackendPolicy` | 4 | cloud 模式**跳过**本地 BGE-M3；sidecar 可用**跳过**本地 reranker；sidecar 挂了**必须回落**本地；重复调用幂等 |
+| `TestCohortsPagedShell` | 4 | 压测发现的 P0 500 回归 |
+
+**两条防"空断言"的设计**（断言没跑过 ≠ 断言有效）：
+
+1. `test_cuda_backend_does_load_local_bge` —— 反向对照：若 fixture 把 `bge_m3` 永久打桩掉了，
+   「cloud 模式不加载 bge_m3」的断言就是**空转**。这条证明两条分支真能区分开。
+2. `test_root_cause_pinned_iterating_model_yields_tuples` —— 把根因本身钉死：
+   迭代 pydantic 模型得到的是 `(字段名, 值)` 元组，元组没有 `.model_dump()`。
+   这样即使有人"修好"了 endpoints，也能看懂当初为什么 500。
+
+**变异检验（mutation test，确认测试不是空转）**：把 `_normalize_loopback` 的判定条件
+`== "localhost"` 改成 `== "__mutation_test__"` 后重跑 → **5 条立刻失败**
+（4 条参数化用例 + 1 条 settings 单例检查），还原后恢复 22 passed。**测试确实抓得住回归。**
+
+> 顺带确认：变异检验暴露出 `.env` 里配的确实是 `redis://localhost:6379/0`，
+> 归一化是在 `Settings` 构造时生效的 —— 也就是说**只改 .env 不够，必须在配置层兜底**
+> （他人环境/新机器复现时同样会踩）。
 
 ---
 
