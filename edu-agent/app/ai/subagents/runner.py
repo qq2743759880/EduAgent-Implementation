@@ -191,13 +191,17 @@ async def _default_llm(messages: list[dict], model: str) -> str:
     from app.chat.generator import _ChatClient
     client = _ChatClient.get()
     loop = asyncio.get_running_loop()
+    # task-P1L 优化F：子代理输出收紧到 ≤800 token（决策 JSON ~50 token、蒸馏摘要 ≤2000 预算但
+    # 实际 200~800 token 已足够）。原用 LLM_MAX_TOKENS=2000 全量预算 → 总结轮生成上千 token
+    # （~50-100 token/s → 15-30s），是 fan_out 块 17s 实测的根因；收紧后生成时间大幅下降。
+    max_tokens = min(int(getattr(settings, "SUBAGENT_MAX_TOKENS", 800)), int(settings.LLM_MAX_TOKENS))
     return await loop.run_in_executor(
         None,
         lambda: client.call_chat(
             messages=messages,
             model=model,
             temperature=settings.LLM_TEMPERATURE,
-            max_tokens=settings.LLM_MAX_TOKENS,
+            max_tokens=max_tokens,
             timeout=60.0,
         ),
     )
