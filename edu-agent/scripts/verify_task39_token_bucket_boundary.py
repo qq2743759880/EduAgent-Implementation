@@ -10,16 +10,33 @@
 
 用法：
     .venv\\Scripts\\python scripts/verify_task39_token_bucket_boundary.py
+
+纯本地模拟（不依赖任何在线服务），跑完自动归档到
+test-reports/task39-token-bucket-boundary.{txt,json}。
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_HERE = Path(__file__).resolve().parent
+_ROOT = _HERE.parent
+for _p in (str(_ROOT), str(_HERE)):  # _HERE 供 `import task39_report`
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from task39_report import archive  # noqa: E402
 
 from app.ai.guard import TokenBucket  # noqa: E402
 from app.config import settings  # noqa: E402
+
+REPORT: list[str] = []
+
+
+def _log(msg: str) -> None:
+    print(msg, flush=True)
+    REPORT.append(msg)
 
 RATE = 600.0          # tokens/min（与契约测试同量级）
 WINDOW = 60.0         # 窗口秒
@@ -99,13 +116,17 @@ def _simulate(limiter, label: str) -> tuple[float, float]:
 
 
 def main() -> int:
-    print(f"task39 GWT⑤ 令牌桶窗口边界复测 — rate={RATE}/min window={WINDOW}s sim={SIM_SECONDS}s")
-    print(f"配置现状：TOKEN_BUCKET_ENABLED={settings.TOKEN_BUCKET_ENABLED} "
-          f"BURST_RATIO={getattr(settings, 'TOKEN_BUCKET_BURST_RATIO', '?')} "
-          f"REFILL_WINDOW_SEC={getattr(settings, 'TOKEN_BUCKET_REFILL_WINDOW_SEC', '?')}")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default="", help="结果文件名（默认 task39-token-bucket-boundary）")
+    args = ap.parse_args()
+
+    _log(f"task39 GWT⑤ 令牌桶窗口边界复测 — rate={RATE}/min window={WINDOW}s sim={SIM_SECONDS}s")
+    _log(f"配置现状：TOKEN_BUCKET_ENABLED={settings.TOKEN_BUCKET_ENABLED} "
+         f"BURST_RATIO={getattr(settings, 'TOKEN_BUCKET_BURST_RATIO', '?')} "
+         f"REFILL_WINDOW_SEC={getattr(settings, 'TOKEN_BUCKET_REFILL_WINDOW_SEC', '?')}")
 
     fw_peak, fw_ratio = _simulate(FixedWindow(RATE), "fixed")
-    print(f"\n[固定窗口] 任意 60s 滑窗峰值放行 = {fw_peak:.0f} tokens  突发倍率 = {fw_ratio:.2f}×")
+    _log(f"\n[固定窗口] 任意 60s 滑窗峰值放行 = {fw_peak:.0f} tokens  突发倍率 = {fw_ratio:.2f}×")
 
     results = []
     for ratio in (1.0, 1.5, 2.0):
@@ -117,36 +138,49 @@ def main() -> int:
         )
         peak, r = _simulate(tb, f"tb{ratio}")
         results.append((ratio, peak, r))
-        print(f"[令牌桶 capacity={ratio:.1f}×rate] 60s 滑窗峰值 = {peak:.0f} tokens  突发倍率 = {r:.2f}×")
+        _log(f"[令牌桶 capacity={ratio:.1f}×rate] 60s 滑窗峰值 = {peak:.0f} tokens  突发倍率 = {r:.2f}×")
 
-    print("\n=== 判定（GWT⑤：边界不超） ===")
+    _log("\n=== 判定（GWT⑤：边界不超） ===")
     ok = True
     if fw_ratio < 1.8:
-        print(f"  [FAIL] 固定窗口未复现 ~2× 突发（{fw_ratio:.2f}×），对照失效")
+        _log(f"  [FAIL] 固定窗口未复现 ~2× 突发（{fw_ratio:.2f}×），对照失效")
         ok = False
     else:
-        print(f"  [PASS] 固定窗口复现窗口边界 {fw_ratio:.2f}× 突发（对照组有效）")
+        _log(f"  [PASS] 固定窗口复现窗口边界 {fw_ratio:.2f}× 突发（对照组有效）")
 
     base_ratio_val, base_peak, base_ratio = results[0]
     if base_ratio > 1.1:
-        print(f"  [FAIL] 令牌桶(BURST_RATIO=1.0) 突发倍率 {base_ratio:.2f}× 超过 1.1×")
+        _log(f"  [FAIL] 令牌桶(BURST_RATIO=1.0) 突发倍率 {base_ratio:.2f}× 超过 1.1×")
         ok = False
     else:
-        print(f"  [PASS] 令牌桶(BURST_RATIO=1.0) 突发倍率 {base_ratio:.2f}× ≤1.1×（边界不超）")
+        _log(f"  [PASS] 令牌桶(BURST_RATIO=1.0) 突发倍率 {base_ratio:.2f}× ≤1.1×（边界不超）")
 
     if base_peak >= fw_peak:
-        print(f"  [FAIL] 令牌桶峰值 {base_peak:.0f} 未低于固定窗口 {fw_peak:.0f}")
+        _log(f"  [FAIL] 令牌桶峰值 {base_peak:.0f} 未低于固定窗口 {fw_peak:.0f}")
         ok = False
     else:
-        print(f"  [PASS] 令牌桶峰值 {base_peak:.0f} 显著低于固定窗口 {fw_peak:.0f}"
-              f"（削减 {100*(1-base_peak/fw_peak):.0f}%）")
+        _log(f"  [PASS] 令牌桶峰值 {base_peak:.0f} 显著低于固定窗口 {fw_peak:.0f}"
+             f"（削减 {100*(1-base_peak/fw_peak):.0f}%）")
 
-    print("\n=== BURST_RATIO 调参建议 ===")
+    _log("\n=== BURST_RATIO 调参建议 ===")
     for ratio, peak, r in results:
-        print(f"  BURST_RATIO={ratio:.1f} → 峰值 {peak:.0f} tokens（{r:.2f}×）；"
-              f"允许首波突发 {peak:.0f} 后按 {RATE/WINDOW:.1f} tokens/s 匀速放行")
+        _log(f"  BURST_RATIO={ratio:.1f} → 峰值 {peak:.0f} tokens（{r:.2f}×）；"
+             f"允许首波突发 {peak:.0f} 后按 {RATE/WINDOW:.1f} tokens/s 匀速放行")
 
-    print("\n" + ("✅ GWT⑤ 复测通过" if ok else "❌ GWT⑤ 复测失败"))
+    archive(
+        args.out or "task39-token-bucket-boundary",
+        REPORT,
+        payload={
+            "rate_per_min": RATE, "window_sec": WINDOW, "sim_seconds": SIM_SECONDS,
+            "fixed_window": {"peak": fw_peak, "burst_ratio": fw_ratio},
+            "token_bucket": [
+                {"burst_ratio": ratio, "peak": peak, "burst_ratio_x": r} for ratio, peak, r in results
+            ],
+            "ok": ok,
+        },
+        log=_log,
+    )
+    _log("\n" + ("✅ GWT⑤ 复测通过" if ok else "❌ GWT⑤ 复测失败"))
     return 0 if ok else 1
 
 

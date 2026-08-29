@@ -1,0 +1,73 @@
+{
+  "task": "task39",
+  "stem": "task39-escalation-idempotent",
+  "generated_at": "2026-08-29T09:11:38",
+  "report": [
+    "========================================================================",
+    "task39 GWT② 72h escalation 幂等 + 并发安全复测",
+    "========================================================================",
+    "=== 依赖预检 ===",
+    "  [OK] mysql    localhost:3306  (20ms)",
+    "  全部依赖在线。",
+    "\n造单: refund_request.id=22570（applied_at = now-100h，hours=72 → 天然超时）",
+    "\n■ T1 顺序连跑 3 次 escalate_refunds_older_than(refund_id)",
+    "  第 1 次: {'scanned': 1, 'escalated': 1, 'skipped': 0}  → 工单=1 告警=1",
+    "  第 2 次: {'scanned': 1, 'escalated': 0, 'skipped': 1}  → 工单=1 告警=1",
+    "  第 3 次: {'scanned': 1, 'escalated': 0, 'skipped': 1}  → 工单=1 告警=1",
+    "  [PASS] T1 顺序 3 次只建 1 工单 + 1 告警 — 工单=1 告警=1",
+    "  [PASS] T1 首次 escalated=1、后续 escalated=0（幂等） — escalated=[1, 0, 0]",
+    "\n■ T2 20 并发跑同一单（验证 FOR UPDATE 串行化）",
+    "  并发前基线: 工单=0 告警=0",
+    "  20 并发完成: escalated 合计=1  工单=1 告警=1",
+    "  [PASS] T2 20 并发仍只建 1 工单 + 1 告警 — 工单=1 告警=1",
+    "\n■ T3 全局扫描（不带 refund_id）重复触发",
+    "  全局扫描: {'scanned': 2688, 'escalated': 0, 'skipped': 2688}  → 工单=1 告警=1",
+    "  [PASS] T3 全局扫描不重复建单 — 工单=1 告警=1",
+    "\n■ T4 建单字段正确性（§6.4 / task28 GWT③）",
+    "  工单: {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39579EF748'}",
+    "  告警: {'alert_type': 'refund_anomaly', 'alert_source': 'scheduled_job', 'alert_status': 'pending', 'risk_level': 'high'}",
+    "  [PASS] T4 工单 priority=high / status=open / source=system_auto — {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39579EF748'}",
+    "  [PASS] T4 告警 refund_anomaly / scheduled_job / pending — {'alert_type': 'refund_anomaly', 'alert_source': 'scheduled_job', 'alert_status': 'pending', 'risk_level': 'high'}",
+    "  [PASS] T4 工单标题含超时阈值 72h — 退款审批超时(72) — T39579EF748",
+    "\n清理完成：refund_request.id=22570 及其工单/告警已软删（yn=0）"
+  ],
+  "refund_id": 22570,
+  "stats": {
+    "T1": {
+      "tickets": 1,
+      "alerts": 1,
+      "escalated_seq": [
+        1,
+        0,
+        0
+      ]
+    },
+    "T2": {
+      "tickets": 1,
+      "alerts": 1,
+      "escalated_sum": 1,
+      "n_concurrent": 20
+    },
+    "T3": {
+      "tickets": 1,
+      "alerts": 1,
+      "escalated": 0
+    },
+    "T4": {
+      "ticket": {
+        "priority_level": "high",
+        "ticket_status": "open",
+        "ticket_source": "system_auto",
+        "ticket_type": "refund",
+        "title": "退款审批超时(72) — T39579EF748"
+      },
+      "alert": {
+        "alert_type": "refund_anomaly",
+        "alert_source": "scheduled_job",
+        "alert_status": "pending",
+        "risk_level": "high"
+      }
+    }
+  },
+  "failed": []
+}

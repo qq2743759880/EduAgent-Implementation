@@ -16,6 +16,9 @@
 用法：
     .venv\\Scripts\\python scripts/verify_task39_checkpoint_concurrency.py
     .venv\\Scripts\\python scripts/verify_task39_checkpoint_concurrency.py --threads 200 --steps 5
+
+跑之前会做 Redis 探活（共享 VM/WSL Redis 掉线时直接报「环境未就绪」，避免产出
+误导性的超时数据）；跑完自动归档到 test-reports/task39-checkpoint-concurrency.{txt,json}。
 """
 from __future__ import annotations
 
@@ -28,7 +31,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_HERE = Path(__file__).resolve().parent
+_ROOT = _HERE.parent
+for _p in (str(_ROOT), str(_HERE)):  # _HERE 供 `import task39_report`（python -m 方式运行时也需要）
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from task39_report import archive, preflight, target_from_settings  # noqa: E402
 
 from app.ai.checkpoint_redis import PlainRedisSaver  # noqa: E402
 from app.config import settings  # noqa: E402
@@ -242,10 +251,17 @@ async def main() -> int:
     ap.add_argument("--threads", type=int, default=100)
     ap.add_argument("--steps", type=int, default=3)
     ap.add_argument("--same-thread", type=int, default=100)
+    ap.add_argument("--out", default="", help="结果文件名（默认 task39-checkpoint-concurrency）")
     args = ap.parse_args()
 
+    _log("=" * 72)
+    _log("task39 GWT④ checkpointer 并发压测")
+    _log("=" * 72)
+    # 预检：Redis 掉线时脚本会以「一堆锁超时」的形式失败，看起来像产品缺陷实际是环境没起
+    preflight([target_from_settings("redis")], log=_log)
+
     prefix = f"task39-{uuid.uuid4().hex[:8]}"
-    _log(f"task39 GWT④ checkpointer 并发压测 — REDIS={settings.REDIS_URL} prefix={prefix}")
+    _log(f"\nREDIS={settings.REDIS_URL} prefix={prefix}")
 
     s1 = await scenario_cross_thread(args.threads, args.steps, prefix)
     s2 = await scenario_same_thread(args.same_thread, prefix)
@@ -255,6 +271,19 @@ async def main() -> int:
     _log(f"  S1/S3 跨线程：resume {args.threads}/{args.threads}，P95={s1['p95_ms']}ms")
     _log(f"  S2 同线程并发：{args.same_thread} 并发，wall={s2['wall_ms']}ms")
     _log(f"  S4 连接泄漏：clients={s4['connected_clients']}")
+
+    archive(
+        args.out or "task39-checkpoint-concurrency",
+        REPORT,
+        payload={
+            "threads": args.threads,
+            "steps": args.steps,
+            "same_thread": args.same_thread,
+            "scenarios": {"S1_S3": s1, "S2": s2, "S4": s4},
+            "failed": FAILED,
+        },
+        log=_log,
+    )
     if FAILED:
         _log(f"\n❌ 失败项 {len(FAILED)}: {FAILED}")
         return 1

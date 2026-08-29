@@ -205,7 +205,7 @@ task29 批判② 曾把 87s 降到 43.7s，本次实测非流式 25s 左右—�
 当前实现是**静默延迟失败**，不符合契约。建议后续：后台任务失败后应有可查询的失败状态 +
 `edu_degraded_total{component="minio"}` 计数。
 
-### 3.5 72h escalation 幂等（✅ 达标，环境掉线前实测）
+### 3.5 72h escalation 幂等（✅ 达标，环境掉线前实测 + 08-29 复跑归档）
 
 脚本：`scripts/verify_task39_escalation_idempotent.py`
 机制：`SELECT ... FOR UPDATE` 行锁串行化 check-then-insert，事务内双写 `service_ticket` + `risk_alert_event`。
@@ -219,6 +219,10 @@ task29 批判② 曾把 87s 降到 43.7s，本次实测非流式 25s 左右—�
 
 造单用**隔离单**：复用真实行的 `payment_id`（否则违反 `fk_refund_request_payment` 外键），
 `applied_at = now-100h`、`hours=72` 天然超时；结束软删 `yn=0`，不污染生产数据。
+
+**复现产物（08-29 09:11 复跑，MySQL 本机恢复）**：
+`test-reports/task39-escalation-idempotent.txt` / `.json` —— T1 escalated=[1,0,0]、T2 并发 escalated 合计=1、
+T3 skipped=2688、T4 字段全对，与首轮数据一致，**幂等结论可复现**。
 
 ---
 
@@ -446,6 +450,7 @@ return ok(data=cohorts.model_dump(mode="json"))
 | **P1** | **MinIO 上传静默延迟失败** | 断连时同步返回 200 + `status: pending`，失败推迟到后台任务 | 后台任务失败需可查询状态 + `edu_degraded_total{component="minio"}` 计数，以对齐 §6.4「明确报错」 |
 | **P1** | **mongo / minio 降级指标 = 0** | 探针未命中读/写路径 | 补强制读 mongo 的探针；mongo 断连验证需覆盖 memory/dream 等真实读路径 |
 | **P1** | **基线对照未建立** | 环境事故导致基线报出与注入同款的降级 | 环境恢复后重跑 `--only baseline`；建议把 baseline 固化为每次演练的第一步 |
+| ~~P1~~ | ~~escalation 幂等无落盘产物~~ | 首轮数据仅在终端回显 | ✅ **08-29 已复跑归档**：`test-reports/task39-escalation-idempotent.{txt,json}`（与首轮数据一致） |
 | **P2** | LLM 压测样本量不足 | L2-learning n=2、L2-tool n=3，P95 无统计意义 | 需连续跑 ≥1.5h（仍在 LLM 窗口内）取数百样本 |
 | **P2** | `TOKEN_BUCKET_ENABLED=False` | 令牌桶未在生产启用 | 复测已证明收益（2.00×→1.00×），建议择机灰度开启；**注意 BURST_RATIO 切勿设 2.0** |
 
@@ -556,7 +561,13 @@ TASK39_CLASSES=chat,stream ./.venv/Scripts/locust -f tests/performance/locustfil
 | `test-reports/task39-locust-llm_stats.csv` / `.html` | GWT① LLM 档位压测（含 TTFT） |
 | `test-reports/task39-disaster-drill.json` / `.txt` | GWT② 六依赖演练明细 |
 | `test-reports/task39-drill-baseline-mongo-minio.json` / `.txt` | GWT② 基线 + mongo + minio 补跑 |
-| `test-reports/task39-token-bucket-boundary.txt` | GWT⑤ 令牌桶复测 |
+| `test-reports/task39-token-bucket-boundary.txt` / `.json` | GWT⑤ 令牌桶复测（08-29 归档） |
+| `test-reports/task39-escalation-idempotent.txt` / `.json` | GWT② escalation 幂等（08-29 复跑归档） |
 | `test-reports/task39-pytest-baseline.txt` | 全量回归基线 |
+
+**可复现性补强（08-29 第二轮提交）**：新增 `scripts/task39_report.py`（共享工具），
+全部四个验证脚本统一「先探活依赖、后归档结果」——依赖掉线时明确报「环境未就绪」退出（不再产出
+误导性超时数据），跑完自动写 `test-reports/<stem>.{txt,json}`（此前 checkpoint / escalation 数据
+只在终端回显，无法被验收者核对）。checkpoint 并发因 Redis（WSL）仍未恢复而**暂不能复跑归档**。
 
 > **状态：已停下，等待验收。**

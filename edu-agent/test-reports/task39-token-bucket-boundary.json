@@ -1,0 +1,46 @@
+{
+  "task": "task39",
+  "stem": "task39-token-bucket-boundary",
+  "generated_at": "2026-08-29T09:10:39",
+  "report": [
+    "task39 GWT⑤ 令牌桶窗口边界复测 — rate=600.0/min window=60.0s sim=300.0s",
+    "配置现状：TOKEN_BUCKET_ENABLED=False BURST_RATIO=1.0 REFILL_WINDOW_SEC=60.0",
+    "\n[固定窗口] 任意 60s 滑窗峰值放行 = 1200 tokens  突发倍率 = 2.00×",
+    "[令牌桶 capacity=1.0×rate] 60s 滑窗峰值 = 600 tokens  突发倍率 = 1.00×",
+    "[令牌桶 capacity=1.5×rate] 60s 滑窗峰值 = 900 tokens  突发倍率 = 1.50×",
+    "[令牌桶 capacity=2.0×rate] 60s 滑窗峰值 = 1200 tokens  突发倍率 = 2.00×",
+    "\n=== 判定（GWT⑤：边界不超） ===",
+    "  [PASS] 固定窗口复现窗口边界 2.00× 突发（对照组有效）",
+    "  [PASS] 令牌桶(BURST_RATIO=1.0) 突发倍率 1.00× ≤1.1×（边界不超）",
+    "  [PASS] 令牌桶峰值 600 显著低于固定窗口 1200（削减 50%）",
+    "\n=== BURST_RATIO 调参建议 ===",
+    "  BURST_RATIO=1.0 → 峰值 600 tokens（1.00×）；允许首波突发 600 后按 10.0 tokens/s 匀速放行",
+    "  BURST_RATIO=1.5 → 峰值 900 tokens（1.50×）；允许首波突发 900 后按 10.0 tokens/s 匀速放行",
+    "  BURST_RATIO=2.0 → 峰值 1200 tokens（2.00×）；允许首波突发 1200 后按 10.0 tokens/s 匀速放行"
+  ],
+  "rate_per_min": 600.0,
+  "window_sec": 60.0,
+  "sim_seconds": 300.0,
+  "fixed_window": {
+    "peak": 1200.0,
+    "burst_ratio": 2.0
+  },
+  "token_bucket": [
+    {
+      "burst_ratio": 1.0,
+      "peak": 600.0,
+      "burst_ratio_x": 1.0
+    },
+    {
+      "burst_ratio": 1.5,
+      "peak": 900.0,
+      "burst_ratio_x": 1.5
+    },
+    {
+      "burst_ratio": 2.0,
+      "peak": 1200.0,
+      "burst_ratio_x": 2.0
+    }
+  ],
+  "ok": true
+}
