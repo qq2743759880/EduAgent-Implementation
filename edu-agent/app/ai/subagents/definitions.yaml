@@ -1,0 +1,55 @@
+# 子代理定义清单（task92 R1：独立上下文）
+#
+# 对齐 Claude Code sub-agents frontmatter 子集；每次修订须对照竞品文档逐项验收。
+# 字段：name / description / tools(工具白名单) / model(fast|strong) / maxTurns / memory_scope
+# 设计要点（self-critique 维度3 修复）：
+#   - 每个子代理由 runner 以「独立 messages 数组 + 独立 system prompt + 独立工具白名单」
+#     运行一个独立 LLM 会话循环（≤maxTurns 轮），绝不写入主共享 state。
+#   - 结果只返回 蒸馏摘要（≤ SUBAGENT_SUMMARY_BUDGET token）+ artifact 引用，
+#     完整输出（检索原文/工具结果/子代理全消息）写 artifact（Redis TTL 1h）。
+subagents:
+  - name: search
+    description: "检索知识库/图谱，返回蒸馏摘要与 artifact 引用"
+    tools: [search_knowledge]
+    model: fast
+    maxTurns: 4
+    memory_scope: none
+    system_prompt: |
+      你是「检索型」子代理。使用 search_knowledge 工具对目标问题进行向量+图谱检索。
+      检索返回 0~N 篇文档（可多达数百篇）时：原文只写入 artifact（勿直接返给主上下文），
+      你只需产出 ≤2000 token 的蒸馏摘要：关键结论、引用的 doc 编号、是否有强相关命中。
+      完成后输出 JSON：{"tool": null, "final": "<摘要>"}
+
+  - name: tool
+    description: "调用 MCP 工具执行计算/代码/实时查询，返回结果摘要"
+    tools: [call_tool]
+    model: fast
+    maxTurns: 5
+    memory_scope: none
+    system_prompt: |
+      你是「工具型」子代理。用 call_tool 调用 MCP 工具完成目标。工具返回体可能较大，
+      原文进 artifact；你只返回 ≤2000 token 的结论摘要（结果要点/异常）。完成后输出：
+      {"tool": null, "final": "<摘要>"}
+
+  - name: learning
+    description: "分析学习者画像与学习路径规划"
+    tools: [recall_profile]
+    model: strong
+    maxTurns: 4
+    memory_scope: user
+    system_prompt: |
+      你是「学习规划型」子代理。先用 recall_profile 召回用户画像与学习诉求。
+      之后基于画像直接产出 ≤2000 token 的学习建议摘要（画像要点/建议/理由/缺口）。
+      不要调用 recall_profile 之外的工具。完成后输出：
+      {"tool": null, "final": "<摘要>"}
+
+  - name: memory
+    description: "召回用户记忆/偏好，供主代理决策"
+    tools: [recall_memory]
+    model: fast
+    maxTurns: 3
+    memory_scope: user
+    system_prompt: |
+      你是「记忆型」子代理。用 recall_memory 召回与目标相关的用户记忆/偏好/历史。
+      返回 ≤2000 token 的记忆摘要（命中的记忆条目/时间/相关度）。完成后输出：
+      {"tool": null, "final": "<摘要>"}

@@ -32,6 +32,28 @@ from app.ai.harness.base import Harness
 class SixNodeHarness(Harness):
     """默认实现：原 6 节点 DAG 的真实编排逻辑（A1-② 由 graph.py 迁入，行为逐字节一致）。"""
 
+    # task-P1L 优化C：route / reflect judge 的 system prompt 均为纯静态常量 → ensure_min_prefix
+    # 撑到 ≥1024 token（跨请求/跨用户字节一致），火山 ark prompt cache 命中，降低主链路调用延迟。
+    # 结果确定性（CACHE_FILLER_BLOCK 逐字节稳定），模块级缓存避免每请求重复填充。
+    _route_system_prefix: str | None = None
+    _reflect_system_prefix: str | None = None
+
+    @classmethod
+    def _route_prefix(cls) -> str:
+        if cls._route_system_prefix is None:
+            from app.ai.prompt_cache import ensure_min_prefix
+
+            cls._route_system_prefix = ensure_min_prefix(_graph.ROUTE_SYSTEM_PROMPT)
+        return cls._route_system_prefix
+
+    @classmethod
+    def _reflect_prefix(cls) -> str:
+        if cls._reflect_system_prefix is None:
+            from app.ai.prompt_cache import ensure_min_prefix
+
+            cls._reflect_system_prefix = ensure_min_prefix(_graph.REFLECT_SYSTEM_PROMPT)
+        return cls._reflect_system_prefix
+
     async def route(self, state: AgentState) -> dict:
         query = ""
         for m in state.get("messages", []):
@@ -39,11 +61,14 @@ class SixNodeHarness(Harness):
                 query = str(m.content)
         intent = "knowledge"  # 兜底默认
         messages = [
-            {"role": "system", "content": _graph.ROUTE_SYSTEM_PROMPT},
+            {"role": "system", "content": self._route_prefix()},
             {"role": "user", "content": query},
         ]
-        # 鲁棒性：fast 模型偶发返回空串/不可解析，重试避免空输出被错误兜底 knowledge
-        for _ in range(3):
+        # 鲁棒性（task-P1L 优化A）：fast 模型偶发返回空串/不可解析 → 重试 1 次（共 2 次）；
+        # LLM 异常 → **立即降级 knowledge 不再重试**。原 for _ in range(3) 在 LLM 抖动/宕机时
+        # 3 连败 = 3 倍串行延迟，route 是主链路第 1 次调用，直接拖爆 P95（task39 实测 25~32s 根因之一）。
+        attempts = 2
+        for i in range(attempts):
             try:
                 raw = await _graph._llm_call(messages, model="fast", max_tokens=30)
                 obj = _graph._extract_json(raw) or {}
@@ -52,7 +77,11 @@ class SixNodeHarness(Harness):
                     intent = cand
                     break
             except Exception as exc:
-                logger.warning(f"[sixnode.route] 意图路由重试，当前默认 knowledge: {type(exc).__name__}: {exc}")
+                logger.warning(
+                    f"[sixnode.route] 意图路由 LLM 异常（第 {i + 1}/{attempts} 次）→ 立即降级 knowledge: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+                break
         # 诚实 effort：chitchat 走 route→answer 直连，定档 L0；其余由 plan 按意图定档 L1/L2
         effort = "L0" if intent == "chitchat" else "L1"
         return {"intent": intent, "effort": effort} | _graph._record(state, "route")
@@ -141,10 +170,20 @@ class SixNodeHarness(Harness):
         if reflect_count >= _graph.MAX_REFLECT_ITERATIONS:
             return {"reflect_count": reflect_count + 1, "sufficient": True,
                     "degraded_reason": "reflect_max_iter"} | _graph._record(state, "reflect")
+        # task-P1L 优化B：启发式先行 —— 所有子代理均产出非空摘要且综合上下文非空 →
+        # 直接 sufficient=true，**跳过 judge LLM 调用**（主链路省 1 次串行调用，task39 实测
+        # 单次调用 1.4~5.0s，P95 直接受益）。仅当上下文明显不足（有子代理空摘要/兜底占位）时
+        # 才走 LLM judge 二次确认（judge 返回 false 仍可回 plan 补检索，保留质量兜底）。
+        distilled = state.get("subagent_results", [])
+        all_have_summary = bool(distilled) and all((r.get("summary") or "").strip() for r in distilled)
+        context_ready = bool((context or "").strip()) and context.strip() != "（子代理未产出有效摘要）"
+        if all_have_summary and context_ready:
+            return {"reflect_count": reflect_count + 1, "sufficient": True,
+                    "degraded_reason": None} | _graph._record(state, "reflect")
         sufficient = True
         try:
             messages = [
-                {"role": "system", "content": _graph.REFLECT_SYSTEM_PROMPT},
+                {"role": "system", "content": self._reflect_prefix()},
                 {"role": "user", "content": f"综合上下文：\n{context}\n\n判断是否足够。若关键信息缺失需再检索，输出 sufficient=false。"},
             ]
             raw = await _graph._llm_call(messages, model="fast", max_tokens=20)
