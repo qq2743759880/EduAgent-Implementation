@@ -15,15 +15,20 @@
 """
 from __future__ import annotations
 
+import asyncio
+import json
+
 import pytest
 
 from app.ai import graph as graph_mod
 from app.ai.compaction import estimate_tokens
 from app.ai.harness.sixnode import SixNodeHarness
+from app.config import settings
 
 
 def _empty_state(**overrides) -> dict:
-    st = graph_mod._empty_state("现在完成时和过去时区别", user_id=42, session_id=None)
+    q = overrides.pop("query", "现在完成时和过去时区别")
+    st = graph_mod._empty_state(q, user_id=42, session_id=None)
     st.update(overrides)
     return st
 
@@ -79,11 +84,14 @@ def _fake_run_subagents(monkeypatch, *, summaries: list[str] | None = None):
 
 # ============================================================
 # GWT① route 重试剪枝
+#   ⚠️ 规则路由（优化H1）开启后 route 0-LLM 定档，不再触发 LLM —— 这些测试钉住的
+#   「LLM 路由的鲁棒行为」现在只在 RULE_ROUTING_ENABLED=False 时生效，故显式关开关。
 # ============================================================
 class TestRouteRetryPruning:
     @pytest.mark.asyncio
     async def test_route_llm_exception_calls_once_then_degrade(self, monkeypatch):
         """LLM 异常 → 只调 1 次立即降级 knowledge（原实现 3 连败）。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)  # 钉 LLM 路由兜底路径
         llm = _CountingLLM(monkeypatch)
         llm.fail_route = True
         h = SixNodeHarness()
@@ -95,6 +103,7 @@ class TestRouteRetryPruning:
     @pytest.mark.asyncio
     async def test_route_unparseable_retries_at_most_once(self, monkeypatch):
         """输出不可解析 → 最多 2 次（重试 1 次）；解析成功即停。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)  # 钉 LLM 路由兜底路径
         llm = _CountingLLM(monkeypatch)
         orig = graph_mod._extract_json
 
@@ -111,6 +120,7 @@ class TestRouteRetryPruning:
     @pytest.mark.asyncio
     async def test_route_success_single_call(self, monkeypatch):
         """正常解析 → 恰好 1 次调用（无多余重试）。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)  # 钉 LLM 路由兜底路径
         llm = _CountingLLM(monkeypatch)
         h = SixNodeHarness()
         final = await h.route(_empty_state())
@@ -192,7 +202,9 @@ class TestRoutePrefixCache:
     @pytest.mark.asyncio
     async def test_route_system_prefix_ge_2048_tokens(self, monkeypatch):
         """route 的 system 前缀经 ensure_min_prefix ≥2048 token（火山 ark 缓存按 2048 分块，
-        2026-08-29 实测：1024 前缀 cached_tokens 恒为 0、2812 前缀命中 2048）。"""
+        2026-08-29 实测：1024 前缀 cached_tokens 恒为 0、2812 前缀命中 2048）。
+        注：规则路由开启时 route 0-LLM 不触 LLM，此处钉「LLM 兜底路径」的前缀行为。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)  # 钉 LLM 路由兜底路径
         captured: dict = {}
 
         async def fake(messages, *, model, temperature=0.0, max_tokens=500, timeout=60.0):
@@ -230,6 +242,7 @@ class TestRoutePrefixCache:
     @pytest.mark.asyncio
     async def test_route_prefix_deterministic_across_calls(self, monkeypatch):
         """前缀字节确定性：两次调用返回相同前缀（同缓存 key 才能命中）。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)  # 钉 LLM 路由兜底路径
         seen: list[str] = []
 
         async def fake(messages, *, model, temperature=0.0, max_tokens=500, timeout=60.0):
@@ -283,3 +296,297 @@ class TestStreamAgentDecisionImport:
         # 仅检查 agent 决策分支使用的关键符号
         assert "run_agent_turn" in ns, "chat_stream 源码仍引用 run_agent_turn（NameError 回归）"
         assert hasattr(svc, "run_agent_turn")
+
+
+# ============================================================
+# GWT⑥ 优化H1：规则路由先行（0-LLM 决策）
+# ============================================================
+class TestRuleRoutingZeroLLM:
+    """规则路由命中即 0 次 LLM 调用定档；未覆盖 → knowledge 0-LLM 兜底；
+    RULE_ROUTING_ENABLED=False 才回退 LLM 路由（契约测试/异常回退开关）。"""
+
+    @pytest.mark.asyncio
+    async def test_rule_learning_zero_llm(self, monkeypatch):
+        llm = _CountingLLM(monkeypatch)
+        h = SixNodeHarness()
+        final = await h.route(_empty_state(query="帮我制定一个 Python 学习计划"))
+        assert final["intent"] == "learning"
+        assert llm.calls == [], f"learning 规则命中应 0 LLM 调用，实际 {len(llm.calls)}"
+
+    @pytest.mark.asyncio
+    async def test_rule_tool_zero_llm(self, monkeypatch):
+        llm = _CountingLLM(monkeypatch)
+        h = SixNodeHarness()
+        final = await h.route(_empty_state(query="帮我算一下 2+2"))
+        assert final["intent"] == "tool"
+        assert llm.calls == [], f"tool 规则命中应 0 LLM 调用，实际 {len(llm.calls)}"
+
+    @pytest.mark.asyncio
+    async def test_rule_chitchat_zero_llm_and_l0(self, monkeypatch):
+        llm = _CountingLLM(monkeypatch)
+        h = SixNodeHarness()
+        final = await h.route(_empty_state(query="谢谢你"))
+        assert final["intent"] == "chitchat"
+        assert final["effort"] == "L0", "chitchat 规则命中应定档 L0（直连 answer）"
+        assert llm.calls == [], f"chitchat 规则命中应 0 LLM 调用，实际 {len(llm.calls)}"
+
+    @pytest.mark.asyncio
+    async def test_rule_uncovered_defaults_knowledge_zero_llm(self, monkeypatch):
+        """规则未覆盖样本（普通学科提问）→ knowledge 0-LLM 兜底（不做 LLM 路由）。"""
+        llm = _CountingLLM(monkeypatch)
+        h = SixNodeHarness()
+        final = await h.route(_empty_state(query="什么是机器学习"))
+        assert final["intent"] == "knowledge"
+        assert final["effort"] == "L1"
+        assert llm.calls == [], f"未覆盖样本应 knowledge 0-LLM 兜底，实际 {len(llm.calls)}"
+
+    @pytest.mark.asyncio
+    async def test_rule_disabled_falls_back_to_llm_routing(self, monkeypatch):
+        """RULE_ROUTING_ENABLED=False → 回退 LLM 路由（覆盖缺失时的质量兜底）。"""
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)
+        llm = _CountingLLM(monkeypatch)
+        llm.intent = "tool"
+        h = SixNodeHarness()
+        final = await h.route(_empty_state(query="任意问题"))
+        assert final["intent"] == "tool", "开关关闭后应走 LLM 路由"
+        assert len(llm.calls) == 1
+
+    def test_rule_router_four_intent_samples(self):
+        """规则分类器四意图确定性（纯函数，无副作用）。"""
+        from app.ai.rule_router import classify_intent
+
+        assert classify_intent("怎么学好英语") == "learning"
+        assert classify_intent("帮我算一下 1+1") == "tool"
+        assert classify_intent("你好，你是谁") == "chitchat"
+        # 未覆盖 → None（route 层兜底 knowledge），不误判为 chitchat
+        assert classify_intent("你好，什么是机器学习？") is None
+        assert classify_intent("什么是机器学习") is None
+
+
+# ============================================================
+# GWT⑦ 优化H2：knowledge 直连检索快路径（fan_out 0 子代理 LLM）
+# ============================================================
+class TestKnowledgeDirectRetrieval:
+    """intent=knowledge + 开关开 → fan_out 直接三通道检索 + 记忆召回，构造 2 条蒸馏摘要，
+    不构建 SubagentTask/不调 run_subagents；失败回退原子代理路径。"""
+
+    @pytest.mark.asyncio
+    async def test_fanout_direct_retrieval_builds_two_results(self, monkeypatch):
+        from app.chat.retriever import RetrievalBundle, RetrievedDoc
+
+        async def fake_retrieve(query, *, user_id, role, use_hyde, enable_graph, top_k, final_max_k, cutoff_drop_ratio):
+            assert user_id == 42, "直连检索必须使用真实 user_id（R4 红线）"
+            return RetrievalBundle(
+                docs=[
+                    RetrievedDoc(doc_id="d1", score=0.9, content="现在完成时结构 have+过去分词", source_file="grammar.md"),
+                    RetrievedDoc(doc_id="d2", score=0.8, content="过去时标志词 yesterday", source_file="grammar.md"),
+                ],
+                raw_retrieved_count=2, graph_entities=[], rewrite_query=None,
+            )
+
+        async def fake_recall(user_id, query, top_k=3, **kw):
+            assert user_id == 42
+            return [{"content": "用户正在学 Python 基础"}]
+
+        called: list = []
+
+        async def fake_run_subagents(tasks, *, llm=None, summary_budget=None):
+            called.append(len(tasks))  # 不应被调用
+            return []
+
+        monkeypatch.setattr("app.chat.retriever.retrieve_three_channel", fake_retrieve)
+        monkeypatch.setattr(graph_mod, "run_subagents", fake_run_subagents)
+        monkeypatch.setattr("app.ai.memory.service.recall_topk", fake_recall)
+        h = SixNodeHarness()
+        st = _empty_state(intent="knowledge")
+        final = await h.fan_out(st)
+        assert called == [], "直连快路径不应调 run_subagents"
+        results = final["subagent_results"]
+        assert len(results) == 2, f"直连应产出 search+memory 2 条结果，实际 {len(results)}"
+        assert {r["subagent"] for r in results} == {"search", "memory"}
+        search_summary = next(r["summary"] for r in results if r["subagent"] == "search")
+        memory_summary = next(r["summary"] for r in results if r["subagent"] == "memory")
+        assert "have+过去分词" in search_summary, "search 摘要应含检索内容"
+        assert "Python 基础" in memory_summary, "memory 摘要应含召回记忆"
+        assert final["degraded_reason"] is None
+
+    @pytest.mark.asyncio
+    async def test_fanout_falls_back_when_retrieve_fails(self, monkeypatch):
+        async def boom(query, **kw):
+            raise RuntimeError("Milvus 不可用（sim）")
+
+        captured: list = []
+
+        async def fake_run_subagents(tasks, *, llm=None, summary_budget=None):
+            captured.append(len(tasks))
+            from app.ai.subagents import SubagentResult
+
+            return [SubagentResult(subagent="search", summary="回退摘要", artifact_ref="", ok=True)]
+
+        monkeypatch.setattr("app.chat.retriever.retrieve_three_channel", boom)
+        monkeypatch.setattr(graph_mod, "run_subagents", fake_run_subagents)
+        h = SixNodeHarness()
+        st = _empty_state(intent="knowledge")
+        final = await h.fan_out(st)
+        assert captured, "直连检索异常必须回退原子代理路径"
+        assert final["subagent_results"][0]["summary"] == "回退摘要"
+
+    @pytest.mark.asyncio
+    async def test_fanout_uses_subagents_when_disabled(self, monkeypatch):
+        monkeypatch.setattr(settings, "KNOWLEDGE_DIRECT_RETRIEVAL_ENABLED", False)
+        captured: list = []
+
+        async def fake_run_subagents(tasks, *, llm=None, summary_budget=None):
+            captured.append(len(tasks))
+            from app.ai.subagents import SubagentResult
+
+            return [SubagentResult(subagent="search", summary="s", artifact_ref="", ok=True) for _ in tasks]
+
+        monkeypatch.setattr(graph_mod, "run_subagents", fake_run_subagents)
+        h = SixNodeHarness()
+        st = _empty_state(intent="knowledge")
+        final = await h.fan_out(st)
+        assert captured, "开关关闭后应走原子代理路径"
+
+
+# ============================================================
+# GWT⑧ 优化H3：单工具确定性子代理 turn-1 预执行（runner 0 决策 LLM）
+# ============================================================
+class TestSubagentDirectPrefetch:
+    """search/memory/learning 单工具子代理：turn-1 预执行唯一工具并把结果注入首轮 prompt，
+    LLM 只做总结轮（2 次 → 1 次）；tool 子代理（call_tool 入参开放）不预执行。"""
+
+    def test_search_subagent_prefetch_single_llm_turn(self):
+        from app.ai.subagents.runner import run_subagent, get_subagent_spec
+
+        spec = get_subagent_spec("search")
+        seen_llm: list = []
+        handler_calls: list = []
+
+        async def handler(args=None):
+            handler_calls.append(args)
+            return {"docs": [{"id": 1, "content": "PREFETCHED_DOC"}]}
+
+        async def llm(messages, model):
+            seen_llm.append([dict(m) for m in messages])
+            return json.dumps({"tool": None, "final": "预执行摘要"})
+
+        async def go():
+            return await run_subagent(
+                spec, objective="检索目标", input_text="基于问题给出检索要点（问题：什么是机器学习）",
+                tool_services={"search_knowledge": handler}, llm=llm,
+            )
+
+        r = asyncio.run(go())
+        assert r.summary == "预执行摘要"
+        assert len(seen_llm) == 1, f"预执行后 LLM 应只 1 次总结轮，实际 {len(seen_llm)}"
+        assert len(handler_calls) == 1, f"工具应预执行 1 次，实际 {len(handler_calls)}"
+        assert handler_calls[0] == {"q": "什么是机器学习"}, f"预执行入参应为查询词，实际 {handler_calls[0]}"
+        # 首轮 prompt 含工具结果 → LLM 不必再决策
+        first_user = "".join(m["content"] for m in seen_llm[0] if m["role"] == "user")
+        assert "已确定性预执行" in first_user and "PREFETCHED_DOC" in first_user
+
+    def test_tool_subagent_not_prefetched(self):
+        """tool 子代理（call_tool）不预执行：LLM 决策轮正常（2 次：决策+总结）。"""
+        from app.ai.subagents.runner import run_subagent, get_subagent_spec
+
+        spec = get_subagent_spec("tool")
+        n = {"v": 0}
+        seen_llm: list = []
+
+        async def handler(args=None):
+            return {"status": "SUCCESS", "result": "42"}
+
+        async def llm(messages, model):
+            n["v"] += 1
+            seen_llm.append([dict(m) for m in messages])
+            if n["v"] == 1:
+                return json.dumps({"tool": "call_tool", "args": {"tool_name": "calc", "args": {"expr": "1+1"}}})
+            return json.dumps({"tool": None, "final": "计算结果 2"})
+
+        async def go():
+            return await run_subagent(
+                spec, objective="计算", input_text="计算 1+1（问题：计算 1+1）",
+                tool_services={"call_tool": handler}, llm=llm,
+            )
+
+        r = asyncio.run(go())
+        assert r.summary == "计算结果 2"
+        assert n["v"] == 2, f"tool 子代理应保留 2 次 LLM（决策+总结），实际 {n['v']}"
+
+    def test_prefetch_disabled_keeps_llm_decision(self, monkeypatch):
+        from app.ai.subagents.runner import run_subagent, get_subagent_spec
+
+        monkeypatch.setattr(settings, "SUBAGENT_DIRECT_TOOL_ENABLED", False)
+        spec = get_subagent_spec("search")
+        n = {"v": 0}
+
+        async def handler(args=None):
+            return {"docs": [{"id": 1, "content": "x"}]}
+
+        async def llm(messages, model):
+            n["v"] += 1
+            if n["v"] == 1:
+                return json.dumps({"tool": "search_knowledge", "args": {"q": "q"}})
+            return json.dumps({"tool": None, "final": "决策摘要"})
+
+        async def go():
+            return await run_subagent(
+                spec, objective="目标", input_text="查询（问题：查询）",
+                tool_services={"search_knowledge": handler}, llm=llm,
+            )
+
+        r = asyncio.run(go())
+        assert r.summary == "决策摘要"
+        assert n["v"] == 2, f"开关关闭后应保留 LLM 决策轮（2 次），实际 {n['v']}"
+
+
+# ============================================================
+# GWT⑨ 优化H4：流式链路 decide_agent_plan 规则优先（0-LLM 决策）
+# ============================================================
+class TestAgentPlanRuleFirst:
+    """decide_agent_plan：规则命中即 0 LLM 决策（chitchat → need_search=False；其余 → True），
+    不触 specs_from_metas / LLM 决策；RULE_ROUTING_ENABLED=False 才回退 LLM。"""
+
+    @pytest.mark.asyncio
+    async def test_chitchat_no_search_no_llm(self, monkeypatch):
+        import app.chat.flows.agent as agent_mod
+
+        def boom(*a, **k):
+            raise AssertionError("规则路径不应触 specs_from_metas")
+
+        monkeypatch.setattr(agent_mod, "specs_from_metas", boom)
+        plan = await agent_mod.decide_agent_plan("谢谢你")
+        assert plan.need_search is False, "chitchat 应无需检索"
+        assert plan.query_rewrite == "谢谢你"
+
+    @pytest.mark.asyncio
+    async def test_knowledge_need_search_rule_default(self, monkeypatch):
+        import app.chat.flows.agent as agent_mod
+
+        monkeypatch.setattr(agent_mod, "specs_from_metas", lambda m: [])
+        plan = await agent_mod.decide_agent_plan("什么是机器学习")
+        assert plan.need_search is True, "knowledge 应需检索"
+        assert plan.query_rewrite == "什么是机器学习"
+
+    @pytest.mark.asyncio
+    async def test_disabled_falls_back_to_llm_decision(self, monkeypatch):
+        import app.chat.flows.agent as agent_mod
+
+        monkeypatch.setattr(settings, "RULE_ROUTING_ENABLED", False)
+        called = {"specs": False}
+
+        def fake_specs(metas):
+            called["specs"] = True
+            return []
+
+        async def fake_decide(query, llm, max_attempts=2):
+            from app.chat.flows.agent import AgentPlan
+
+            return AgentPlan(need_search=True, query_rewrite=query), {"fell_back": False, "retried": False}
+
+        monkeypatch.setattr(agent_mod, "specs_from_metas", fake_specs)
+        monkeypatch.setattr(agent_mod, "decide_plan_with_retry", fake_decide)
+        plan = await agent_mod.decide_agent_plan("任意问题")
+        assert called["specs"], "开关关闭后应走 LLM 决策路径（含 specs 构建）"
+        assert plan.need_search is True

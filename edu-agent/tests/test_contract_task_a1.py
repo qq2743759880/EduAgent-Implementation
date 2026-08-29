@@ -23,6 +23,7 @@ from app.ai.harness.registry import (
     build_harness,
     register_harness,
 )
+from app.config import settings
 
 
 # ============================================================
@@ -163,6 +164,10 @@ class TestAC2DefaultEquivalent:
 
     @pytest.mark.asyncio
     async def test_real_user_id_in_subagents(self, monkeypatch):
+        """state.user_id 为真实值；fan-out SubagentTask user_id 为真实值（非 user_id=1）。
+        ⚠️ 优化H2 后 knowledge 默认走直连快路径（不构建 SubagentTask）——显式关开关钉原子代理路径
+        （直连路径的 user_id 传递契约见 test_contract_taskP1L::TestKnowledgeDirectRetrieval）。"""
+        monkeypatch.setattr(settings, "KNOWLEDGE_DIRECT_RETRIEVAL_ENABLED", False)
         _install_fake_llm(monkeypatch, intent="knowledge")
         captured: list = []
         _install_fake_run_subagents(monkeypatch, captured=captured)
