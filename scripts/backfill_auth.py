@@ -170,9 +170,18 @@ def main() -> int:
     print(f"\n[覆盖率] 仍缺 auth 的用户: {missing_after} / {total_user}")
 
     print(f"\n总耗时 {time.perf_counter() - t_start:.2f}s")
+    # 真实账号区间（按本批处理到的首尾 id 回查，避免用总行数臆造 account）
+    edge_ids = [missing_ids[0]] if len(missing_ids) == 1 else [missing_ids[0], missing_ids[-1]]
+    cur.execute(
+        "SELECT id, account FROM sys_user WHERE id IN ({})".format(",".join(["%s"] * len(edge_ids))),
+        edge_ids,
+    )
+    acct_map = {r[0]: r[1] for r in cur.fetchall()}
+    acct_first = acct_map.get(missing_ids[0], "?")
+    acct_last = acct_map.get(missing_ids[-1], acct_first)
     print("=" * 62)
     print("账号可用于 E2E / 压测：")
-    print(f"  用户名（account）: user000001 ~ user{total_user:06d} 等（sys_user.account）")
+    print(f"  用户名（account）: {acct_first} ~ {acct_last}（本批补生成区间，取 sys_user.account）")
     print(f"  统一默认密码    : {args.password}")
     print("  （密码仅以 bcrypt 哈希存储，登录走 app.auth.service.verify_password）")
     print("=" * 62)
