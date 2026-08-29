@@ -142,7 +142,12 @@ def _search_tenant_ids(user_id: int, role: UserRole) -> list[str] | None:
     - admin: None（搜索所有分区）
     - 其他：["_default", course_public, f"user_{user_id}"]
       —— course_public 为 task31 课程公共知识分区（隔离用户上传，GWT③）
+    - None（子代理链路 role=None，task-P1L 优化H2 直连检索同路径）：按默认学员角色
+      限定租户 —— 不扩大搜索范围（R4 安全红线），修复既有 search_knowledge 工具
+      role=None 直达 _milvus_hybrid_search_safe 后 `.value` AttributeError 静默空结果的隐患。
     """
+    if role is None:
+        role = UserRole.STUDENT
     if role is UserRole.ADMIN or role.value == UserRole.ADMIN.value:
         return None
     from app.knowledge.importer.loader import COURSE_PUBLIC

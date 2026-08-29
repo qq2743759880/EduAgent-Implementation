@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +25,27 @@ import yaml
 from loguru import logger
 
 from app.config import settings
+
+# task-P1L 优化H3：可确定性预执行的单工具子代理（工具入参可由 input_text 推导，无需 LLM 决策轮）。
+# search/memory/learning 各只有 1 个工具且入参为查询词；tool 子代理的 call_tool 入参开放
+# （tool_name/args 依赖 LLM 决策），不在其列——对齐 Anthropic Building Effective Agents 取舍。
+_DIRECT_PREFETCH_TOOLS: frozenset[str] = frozenset({"search_knowledge", "recall_memory", "recall_profile"})
+
+
+def _direct_tool_args(subagent: str, input_text: str) -> dict:
+    """推导单工具子代理的确定性入参（对齐 _build_tool_services 的工具签名）。
+
+    plan 节点注入的 input 形如 ``<模板>（问题：<query>）``，此处取 ``（问题：…）`` 尾部为查询词；
+    提取失败（query 含异常括号等）→ 整段 input_text 作查询词兜底（检索对输入不敏感，可容忍）。
+    """
+    q = input_text or ""
+    m = re.search(r"（问题：(.*)）\s*$", q, re.S)
+    if m and m.group(1).strip():
+        q = m.group(1).strip()
+    if subagent == "learning":
+        return {"profile_query": q}
+    return {"q": q}
+
 
 # 内置 4 子代理定义文件
 _DEFINITIONS_PATH = Path(__file__).resolve().parent / "definitions.yaml"
@@ -289,6 +311,45 @@ async def run_subagent(
     final_text = ""
     ok = False
     full_tool_outputs: list[dict] = []   # 完整工具输出——整体落 artifact（不截断），主上下文只见摘要
+
+    # —— task-P1L 优化H3：单工具确定性子代理 turn-1 预执行（0 决策轮 LLM）——
+    # search/memory/learning 的工具调用是确定性的（入参由 input_text 推导）：turn-0 直接执行
+    # 唯一工具并把结果注入首轮 prompt，LLM 只做总结轮 → 子代理从「决策+工具+总结 2 次 LLM」
+    # 降为「总结 1 次 LLM」（task39 实测决策轮 1.4~5.0s，fan_out 块串行累计直接受益）。
+    # 失败/开关关闭 → 保持原 LLM 决策循环（行为不降级）。tool 子代理不在其列（call_tool 入参开放）。
+    if (
+        getattr(settings, "SUBAGENT_DIRECT_TOOL_ENABLED", True)
+        and len(spec.tools) == 1
+        and spec.tools[0] in _DIRECT_PREFETCH_TOOLS
+        and tool_services
+    ):
+        prefetch_tool = spec.tools[0]
+        handler = tool_services.get(prefetch_tool)
+        if handler is not None:
+            prefetch_args = _direct_tool_args(spec.name, input_text)
+            try:
+                prefetch_result = await handler(prefetch_args)
+            except Exception as exc:
+                prefetch_result = {"error": f"{type(exc).__name__}: {exc}"}
+            tool_calls = 1
+            full_tool_outputs.append({"tool": prefetch_tool, "args": prefetch_args, "result": prefetch_result})
+            flow_txt = json.dumps(prefetch_result, ensure_ascii=False, default=str)[:4000]
+            try:
+                from app.ai.artifact import distill_tool_output as _distill
+
+                distilled = await _distill(prefetch_tool, prefetch_result, ttl=ttl)
+                if distilled.get("distilled"):
+                    flow_txt = f"{distilled['conclusion']}（artifact:{distilled.get('artifact_ref')}）"
+            except Exception:
+                pass  # 蒸馏失败 → 保持原截断，不影响主链路
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"[工具 {prefetch_tool} 已确定性预执行，结果如下]\n{flow_txt}\n\n"
+                    f"请直接基于以上结果输出 final JSON（{{\"tool\": null, \"final\": \"<摘要>\"}}），不要再调用任何工具。",
+                }
+            )
+            logger.info(f"[Subagent:{spec.name}] 单工具确定性预执行完成（0 决策 LLM），LLM 仅总结轮")
 
     for turn in range(spec.maxTurns):
         raw = await _call_llm_with_retry(llm, messages, spec.model)

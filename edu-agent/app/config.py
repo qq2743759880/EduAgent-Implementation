@@ -176,6 +176,15 @@ class Settings(BaseSettings):
     AGENT_DECISION_ENABLED: bool = True  # 决策层开关；False 则直接检索
 
     # ============================================================
+    # task-P1L LLM 延迟治理：规则路由 / 直连快路径（0-LLM 决策）
+    #   对齐 Anthropic Building Effective Agents：高频确定性意图用 workflow（规则）分流，
+    #   LLM 仅兜底开放场景。三开关默认开启，压测/异常时可整体或分级关闭回退旧链路。
+    # ============================================================
+    RULE_ROUTING_ENABLED: bool = True                # route/decide_agent_plan 规则分类先行（命中 0 LLM；未命中默认 knowledge）
+    KNOWLEDGE_DIRECT_RETRIEVAL_ENABLED: bool = True  # L1 knowledge：fan_out 直连检索，跳过子代理 LLM 循环
+    SUBAGENT_DIRECT_TOOL_ENABLED: bool = True        # 单工具子代理：turn-1 预执行唯一工具，LLM 仅总结轮
+
+    # ============================================================
     # 子代理（task92 R1 独立上下文）
     # ============================================================
     SUBAGENT_ARTIFACT_TTL: int = 3600    # 子代理 artifact 完整输出 TTL（秒，对齐 Claude Code 1h）

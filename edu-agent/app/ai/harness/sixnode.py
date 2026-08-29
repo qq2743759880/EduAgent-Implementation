@@ -59,6 +59,23 @@ class SixNodeHarness(Harness):
         for m in state.get("messages", []):
             if isinstance(m, HumanMessage):
                 query = str(m.content)
+        # task-P1L 优化H1：规则路由先行（0-LLM 决策，对齐 Anthropic Building Effective Agents——
+        # 高频确定性意图用 workflow（正则）分流，LLM 仅兜底开放场景）。
+        # 命中（learning/tool/chitchat/knowledge 覆盖语料）→ 0 次 LLM 定档，主链路第 1 次串行
+        # 调用直接省掉（task39 实测单次 1.4~5.0s，白天 7~13s）；未覆盖样本 → 默认 knowledge 0-LLM 兜底。
+        # 仅当 RULE_ROUTING_ENABLED=False 才回退 LLM 路由（契约测试/异常回退开关）。
+        if getattr(settings, "RULE_ROUTING_ENABLED", True):
+            from app.ai.rule_router import classify_intent
+
+            rule_intent = classify_intent(query)
+            intent = rule_intent if rule_intent is not None else "knowledge"
+            effort = "L0" if intent == "chitchat" else "L1"
+            logger.info(
+                f"[sixnode.route] 规则路由命中（0-LLM）: intent={intent}, effort={effort}"
+                f"{'（未覆盖→knowledge 兜底）' if rule_intent is None else ''}"
+            )
+            return {"intent": intent, "effort": effort} | _graph._record(state, "route")
+
         intent = "knowledge"  # 兜底默认
         messages = [
             {"role": "system", "content": self._route_prefix()},
@@ -123,6 +140,79 @@ class SixNodeHarness(Harness):
         # user_id 由 service 注入（_empty_state），禁止兜底默认 1（R4 安全红线：缺失即报错而非降级越权）
         user_id = int(state["user_id"])
         thread_id = state.get("session_id") or None
+
+        # task-P1L 优化H2：knowledge 直连检索快路径（0 子代理 LLM）。
+        # knowledge 意图的 2 个子代理（search/memory）都只依赖确定性工具 → 在 fan_out 层直接执行：
+        #   search = 三通道检索（同 search_knowledge 工具参数，role=None 对齐 _build_tool_services），
+        #   memory = recall_topk 确定性召回；
+        # 主链路 L1 从「route(1)+子代理(4)+judge(1)+answer(1)」降为「answer(1)」单次 LLM。
+        # 任何异常 → 回退原 run_subagents 路径（行为不降级）。
+        intent = state.get("intent", "")
+        if getattr(settings, "KNOWLEDGE_DIRECT_RETRIEVAL_ENABLED", True) and intent == "knowledge":
+            try:
+                from app.ai.subagents import runner as _runner
+                from app.chat.retriever import retrieve_three_channel
+
+                query = ""
+                for m in state.get("messages", []):
+                    if isinstance(m, HumanMessage):
+                        query = str(m.content)
+                t0 = time.perf_counter()
+                bundle = await retrieve_three_channel(
+                    query, user_id=user_id, role=None,
+                    use_hyde=False, enable_graph=True,
+                    top_k=8, final_max_k=5, cutoff_drop_ratio=0.2,
+                )
+                # search 摘要：每文档一行（来源 + 内容片段），token 预算与子代理一致
+                parts = []
+                for i, d in enumerate(bundle.docs, 1):
+                    snippet = (d.content or "").replace("\n", " ").strip()[:120]
+                    src = (d.source_file or "") or d.doc_id or "未知来源"
+                    parts.append(f"[{i}]（来源 {src}）{snippet}")
+                search_summary = _runner._clamp_summary(
+                    "\n".join(parts) or "（未检索到相关文档）",
+                    budget=settings.SUBAGENT_SUMMARY_BUDGET,
+                )
+                # memory 直连：无 LLM 的确定性召回
+                memory_summary = "（无历史记忆）"
+                memory_calls = 0
+                try:
+                    from app.ai.memory.service import recall_topk
+
+                    top = await recall_topk(int(user_id), query, top_k=3)
+                    mem_texts = []
+                    for m in (top or []):
+                        if isinstance(m, dict):
+                            val = m.get("content") or m.get("text") or m.get("memory")
+                            if val is None:
+                                val = str(m)
+                        else:
+                            val = str(m)
+                        if val:
+                            mem_texts.append(str(val).replace("\n", " ").strip()[:100])
+                    if mem_texts:
+                        memory_summary = "用户记忆：" + "；".join(mem_texts)
+                        memory_calls = 1
+                except Exception as exc:
+                    logger.warning(f"[sixnode.fanout] memory 直连召回失败（降级占位）: {type(exc).__name__}: {exc}")
+                results = [
+                    _runner.SubagentResult(
+                        subagent="search", summary=search_summary, artifact_ref="",
+                        ok=True, turns=0, tool_calls=1,
+                        summary_tokens=_runner._token_approx(search_summary),
+                    ),
+                    _runner.SubagentResult(
+                        subagent="memory", summary=memory_summary, artifact_ref="",
+                        ok=True, turns=0, tool_calls=memory_calls,
+                        summary_tokens=_runner._token_approx(memory_summary),
+                    ),
+                ]
+                elapsed_ms = int((time.perf_counter() - t0) * 1000)
+                logger.info(f"[sixnode.fanout] knowledge 直连检索快路径（0 子代理 LLM）完成，耗时 {elapsed_ms}ms，docs={len(bundle.docs)}")
+                distilled = [r.as_distilled() for r in results]
+                return {"subagent_results": distilled, "degraded_reason": None} | _graph._record(state, "fan_out")
+            except Exception as exc:
+                logger.warning(f"[sixnode.fanout] knowledge 直连检索失败 → 回退子代理路径: {type(exc).__name__}: {exc}")
 
         services = _graph._build_tool_services(user_id=user_id, thread_id=thread_id)
         sub_tasks: list[SubagentTask] = []

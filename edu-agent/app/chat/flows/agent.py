@@ -83,6 +83,19 @@ async def decide_agent_plan(
     if not getattr(settings, "AGENT_DECISION_ENABLED", True):
         return AgentPlan(need_search=True, query_rewrite=query)
 
+    # task-P1L 优化H4：规则决策优先（0-LLM，对齐 H1 workflow/agent 取舍）。
+    # 意图分类的确定性信号（学习/计算/问候）由规则直接覆盖 → 跳过 LLM 决策，省流式链路第 1 次
+    # LLM 调用（task39 实测单次 1.4~5.0s，TTFT 直接受益）。chitchat → 无需检索直接回答；
+    # 其余 → need_search=True + rewrite=query（tool_plan 留空，MCP 执行仍由下游按需触发）。
+    # 仅 RULE_ROUTING_ENABLED=False 才回退 LLM 决策（契约测试/异常回退开关）。
+    if getattr(settings, "RULE_ROUTING_ENABLED", True):
+        from app.ai.rule_router import classify_intent_or_default
+
+        rule_intent = classify_intent_or_default(query)
+        need_search = rule_intent != "chitchat"
+        logger.info(f"[Agent] 规则决策命中（0-LLM）: intent={rule_intent}, need_search={need_search}")
+        return AgentPlan(need_search=need_search, query_rewrite=query)
+
     specs = specs_from_metas(tool_metas or [])
     # task-C2：决策前缀默认 deferred 模式（桩只含 name+summary，schema 被选中才展开）→ 前缀字节稳定；
     # ensure_min_prefix 用静态填充注释把前缀撑到 ≥2048 token，跨过火山 ark 缓存门槛（2048 分块实测）。
