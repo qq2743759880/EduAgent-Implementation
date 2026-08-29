@@ -46,10 +46,16 @@ from app.monitoring.router import router as monitoring_router
 
 
 def _warmup_local_models() -> None:
-    """后台预热本地模型（jieba + BGE-M3），避免首个请求冷启动等待（P1-4）。"""
-    from app.knowledge.importer import embedder
-    embedder.ensure_jieba_ready()
-    embedder._get_bge_model()  # noqa: SLF001 —— 主动预热，失败内部已降级 API
+    """后台预热（兼容旧调用点）：统一转交 app.core.warmup.run_warmup。
+
+    task39 GWT③：改走后端感知预热（云端优先不预加载本地 BGE、reranker 由 sidecar 预热、
+    sidecar 不可达才落本地），避免 §7 薄弱点 3 的多 worker 显存重复占用。
+    """
+    import asyncio as _asyncio
+
+    from app.core import warmup as _warmup_mod
+
+    _asyncio.run(_warmup_mod.run_warmup())
 
 
 # ============================================================
@@ -131,14 +137,15 @@ async def lifespan(app: FastAPI):
 
     logger.info(f"=== 存储初始化完成: {store_status} ===")
 
-    # ── 预热阶段：后台加载 BGE 模型 + jieba（不阻塞启动，避免首个用户 60s 冷启动） ──
-    # 模型懒加载设计：首次检索才加载。生产首个请求会等 BGE 加载（44s+），
-    # 这里提前后台预热，让请求到来时模型已就绪（P1-4 性能优化）。
+    # ── 预热阶段：后端感知预热（不阻塞启动，避免首个用户 10~44s 冷启动） ──
+    # task39 GWT③：jieba + embedding（云端连接池 / 本地 BGE 二选一）+ reranker
+    # （sidecar 优先，不可达才落本地进程内模型），逐组件记录耗时供 /health/warmup 观测。
     async def _warmup() -> None:
         try:
-            await asyncio.to_thread(_warmup_local_models)
+            from app.core import warmup as warmup_mod
+            await warmup_mod.run_warmup()
         except Exception as exc:
-            logger.warning(f"[预热] 本地模型预热失败（不影响服务，请求时懒加载兜底）：{type(exc).__name__}: {exc}")
+            logger.warning(f"[预热] 预热失败（不影响服务，请求时懒加载兜底）：{type(exc).__name__}: {exc}")
 
     warmup_task = asyncio.create_task(_warmup())
 

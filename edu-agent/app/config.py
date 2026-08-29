@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     # ============================================================
     # 本地开发：Windows 用 Memurai（https://www.memurai.com/）或 WSL Redis
     # 生产：Redis Cluster / Sentinel
+    # task39 GWT① 实证：Windows 上 `localhost` 经 getaddrinfo 优先解析为 IPv6 `::1`，
+    # 而本机 Redis（Windows 构建）只监听 IPv4 → 每次新建连接都要先撞一次 IPv6 建连超时
+    # 再回落 IPv4。实测 20 并发首次连接：localhost 6058ms vs 127.0.0.1 4ms（1500×）。
+    # 该延迟落在 chat 热路径（checkpoint/限流/缓存每次冷连接都要付），是 P95 吹高的隐形项。
+    # 这里在配置层把 `localhost` 归一为 `127.0.0.1`（语义等价，见 _normalize_loopback）。
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_MAX_CONNECTIONS: int = 20          # 连接池上限
     REDIS_SOCKET_TIMEOUT: float = 5.0        # 单次操作超时（秒）
@@ -534,6 +539,35 @@ class Settings(BaseSettings):
     # ============================================================
     # pydantic-settings 配置
     # ============================================================
+    @model_validator(mode="after")
+    def _normalize_loopback(self):
+        """把 REDIS_URL 里的 `localhost` 归一为 `127.0.0.1`（task39 GWT① 实证修复）。
+
+        为什么必须在配置层做：
+          仅改 .env 不解决他人/其它环境复现；而 Redis 客户端每次新建连接都会重新解析主机名，
+          只要 URL 里还是 localhost，冷连接就要再付一次 IPv6 超时。归一后 IPv4/IPv6 双栈
+          与纯 IPv4 部署均等价可用（127.0.0.1 在两种环境下都能连上）。
+        只改写 host 恰为 `localhost` 的情形，显式 `::1` / 域名 / IP 一律不动。
+        """
+        from urllib.parse import urlsplit, urlunsplit
+
+        url = (self.REDIS_URL or "").strip()
+        if not url:
+            return self
+        try:
+            parts = urlsplit(url)
+            if parts.hostname and parts.hostname.lower() == "localhost":
+                netloc = parts.netloc
+                # 保留 userinfo/port，只替换 host 段
+                host_start = netloc.rfind("@") + 1
+                host_end = netloc.find(":", host_start)
+                host_end = len(netloc) if host_end == -1 else host_end
+                netloc = netloc[:host_start] + "127.0.0.1" + netloc[host_end:]
+                self.REDIS_URL = urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+        except Exception:  # noqa: BLE001 — 解析失败保持原值，不改行为
+            return self
+        return self
+
     @model_validator(mode="after")
     def _security_guard(self):
         """生产环境安全护栏（fail-fast）：防公开默认值/裸奔配置上线。

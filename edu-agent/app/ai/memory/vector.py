@@ -23,6 +23,8 @@ import json
 import math
 from typing import Any
 
+from app.monitoring.metrics import record_degraded as _record_degraded
+
 from loguru import logger
 
 from app.config import settings
@@ -210,6 +212,7 @@ class MemoryVectorStore:
             self.backend = "memory"
             self.degraded_reason = "redis_unreachable"
             logger.warning("[Memory:vector] 无 Redis 客户端，降级 in-memory 向量（degraded_reason=redis_unreachable）")
+            _record_degraded("redis", "memory_vector_no_client")
 
     async def _redis_ok(self) -> bool:
         """运行时可达性探测：不可达则降级 memory 并标注（ponytail: 真实 ping 在 async 路径）。"""
@@ -223,6 +226,8 @@ class MemoryVectorStore:
             self._redis = None
             self.backend = "memory"
             self.degraded_reason = "redis_unreachable"
+            # task39 GWT②：Redis 断连 → 记忆向量落 in-process（§6.4 Redis 行）
+            _record_degraded("redis", f"memory_vector_ping_failed:{type(exc).__name__}")
             return False
 
     def _vec_key(self, user_id: int) -> str:

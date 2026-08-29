@@ -1,0 +1,21 @@
+[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线
+[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线
+task39 GWT⑤ 令牌桶窗口边界复测 — rate=600.0/min window=60.0s sim=300.0s
+配置现状：TOKEN_BUCKET_ENABLED=False BURST_RATIO=1.0 REFILL_WINDOW_SEC=60.0
+
+[固定窗口] 任意 60s 滑窗峰值放行 = 1200 tokens  突发倍率 = 2.00×
+[令牌桶 capacity=1.0×rate] 60s 滑窗峰值 = 600 tokens  突发倍率 = 1.00×
+[令牌桶 capacity=1.5×rate] 60s 滑窗峰值 = 900 tokens  突发倍率 = 1.50×
+[令牌桶 capacity=2.0×rate] 60s 滑窗峰值 = 1200 tokens  突发倍率 = 2.00×
+
+=== 判定（GWT⑤：边界不超） ===
+  [PASS] 固定窗口复现窗口边界 2.00× 突发（对照组有效）
+  [PASS] 令牌桶(BURST_RATIO=1.0) 突发倍率 1.00× ≤1.1×（边界不超）
+  [PASS] 令牌桶峰值 600 显著低于固定窗口 1200（削减 50%）
+
+=== BURST_RATIO 调参建议 ===
+  BURST_RATIO=1.0 → 峰值 600 tokens（1.00×）；允许首波突发 600 后按 10.0 tokens/s 匀速放行
+  BURST_RATIO=1.5 → 峰值 900 tokens（1.50×）；允许首波突发 900 后按 10.0 tokens/s 匀速放行
+  BURST_RATIO=2.0 → 峰值 1200 tokens（2.00×）；允许首波突发 1200 后按 10.0 tokens/s 匀速放行
+
+✅ GWT⑤ 复测通过

@@ -1,0 +1,94 @@
+========================================================================
+task39 GWT② 容灾演练（连接层故障注入，不 kill 共享服务）
+场景: milvus, redis, neo4j, mongo, minio, llm
+========================================================================
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 milvus：Milvus 向量库断连
+  注入: {'MILVUS_URI': 'http://127.0.0.1:65530'}
+  期望: 空 docs + 降级答案，不 500
+    健康检查             HTTP 200        61ms  degraded=—
+    详细健康             HTTP 200       132ms  degraded=—
+    课程列表（MySQL）      HTTP 200       158ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200      2795ms  degraded=有 | Milvus 检索跳过（MilvusException）
+    AI 问答（agent 全链路） HTTP 200     30020ms  degraded=—
+  判定 无5xx: ✅   edu_degraded_total{component="milvus"} = 1.0
+  降级原因样本: ['RAG 检索（Milvus+图谱）: Milvus 检索跳过（MilvusException）']
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 redis：Redis 断连（缓存/限流/幂等/checkpoint）
+  注入: {'REDIS_URL': 'redis://127.0.0.1:65531/0'}
+  期望: 缓存直通 + 限流放行 + 幂等跳过，不 500
+    健康检查             HTTP 200         7ms  degraded=—
+    详细健康             HTTP 200      2411ms  degraded=—
+    课程列表（MySQL）      HTTP 200      2121ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200     30820ms  degraded=有 | rerank_sidecar_unavailable
+    AI 问答（agent 全链路） HTTP 200     48207ms  degraded=—
+  判定 无5xx: ✅   edu_degraded_total{component="redis"} = 4.0
+  降级原因样本: ['RAG 检索（Milvus+图谱）: rerank_sidecar_unavailable']
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 neo4j：Neo4j 图谱断连
+  注入: {'NEO4J_URI': 'bolt://127.0.0.1:65532'}
+  期望: 跳图谱扩展，不 500
+    健康检查             HTTP 200        37ms  degraded=—
+    详细健康             HTTP 200       295ms  degraded=—
+    课程列表（MySQL）      HTTP 200       230ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200     29784ms  degraded=有 | Neo4j 未连接（跳过图谱扩展）；rerank_sidecar_unavailable
+    AI 问答（agent 全链路） HTTP 200     19265ms  degraded=—
+  判定 无5xx: ✅   edu_degraded_total{component="neo4j"} = 1.0
+  降级原因样本: ['RAG 检索（Milvus+图谱）: Neo4j 未连接（跳过图谱扩展）；rerank_sidecar_unavailable']
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 mongo：MongoDB 对话状态断连
+  注入: {'MONGO_URI': 'mongodb://127.0.0.1:65533'}
+  期望: chat_message(MySQL) 权威历史兜底，不 500
+    健康检查             HTTP 200        41ms  degraded=—
+    详细健康             HTTP 200      3498ms  degraded=—
+    课程列表（MySQL）      HTTP 200       100ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200     28518ms  degraded=有 | rerank_sidecar_unavailable
+    AI 问答（agent 全链路） HTTP 200     17371ms  degraded=—
+  判定 无5xx: ✅   edu_degraded_total{component="mongo"} = 0.0
+  ⚠️ mongo: edu_degraded_total 未增长（该场景可能无读路径探针命中）
+  降级原因样本: ['RAG 检索（Milvus+图谱）: rerank_sidecar_unavailable']
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 minio：MinIO 对象存储断连
+  注入: {'MINIO_ENDPOINT': '127.0.0.1:65534'}
+  期望: 上传/视频明确报错（4xx/5xx 明确，非静默），课程文字部分可用
+    健康检查             HTTP 200        34ms  degraded=—
+    详细健康             HTTP 200      4161ms  degraded=—
+    课程列表（MySQL）      HTTP 200       152ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200     24548ms  degraded=有 | rerank_sidecar_unavailable
+    AI 问答（agent 全链路） HTTP 200     20722ms  degraded=—
+    知识库上传（MinIO）     HTTP 422            {"code":"42200","message":"Field required","data":[{"type":"missing","loc":["bod
+  判定 无5xx: ✅   edu_degraded_total{component="minio"} = 0.0
+  ⚠️ minio: edu_degraded_total 未增长（该场景可能无读路径探针命中）
+  降级原因样本: ['RAG 检索（Milvus+图谱）: rerank_sidecar_unavailable']
+
+────────────────────────────────────────────────────────────────────────
+■ 场景 llm：LLM 供应商断连
+  注入: {'LLM_FAST_BASE_URL': 'http://127.0.0.1:65535', 'LLM_STRONG_BASE_URL': 'http://127.0.0.1:65535', 'LLM_BASE_URL': 'http://127.0.0.1:65535'}
+  期望: 规则兜底答案（_local_rule_answer），不 500
+    健康检查             HTTP 200        46ms  degraded=—
+    详细健康             HTTP 200       155ms  degraded=—
+    课程列表（MySQL）      HTTP 200       137ms  degraded=—
+    RAG 检索（Milvus+图谱） HTTP 200     28569ms  degraded=有 | rerank_sidecar_unavailable
+    AI 问答（agent 全链路） HTTP 200     17298ms  degraded=有 | llm_failed
+  判定 无5xx: ✅   edu_degraded_total{component="llm"} = 6.0
+  降级原因样本: ['RAG 检索（Milvus+图谱）: rerank_sidecar_unavailable', 'AI 问答（agent 全链路）: llm_failed']
+
+========================================================================
+容灾演练汇总（对照 doc-architect-tech-arch §6.4 优雅降级矩阵）
+========================================================================
+依赖         启动     无5xx   降级指标       期望行为
+milvus     ok     ✅      1.0        空 docs + 降级答案，不 500
+redis      ok     ✅      4.0        缓存直通 + 限流放行 + 幂等跳过，不 500
+neo4j      ok     ✅      1.0        跳图谱扩展，不 500
+mongo      ok     ✅      0.0        chat_message(MySQL) 权威历史兜底，不 500
+minio      ok     ✅      0.0        上传/视频明确报错（4xx/5xx 明确，非静默），课程文字部分可用
+llm        ok     ✅      6.0        规则兜底答案（_local_rule_answer），不 500
+
+明细已写入: E:\stu\project\stu\EduAgent实施手册\edu-agent\test-reports\task39-disaster-drill.json
+
+✅ GWT② 容灾演练通过：六依赖逐一断连均无 5xx

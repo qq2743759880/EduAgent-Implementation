@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "scenario": "minio",
+      "port": 59885,
+      "probes": [
+        {
+          "name": "健康检查",
+          "status": 200,
+          "ms": 39,
+          "degraded_reason": ""
+        },
+        {
+          "name": "详细健康",
+          "status": 200,
+          "ms": 4172,
+          "degraded_reason": ""
+        },
+        {
+          "name": "课程列表（MySQL）",
+          "status": 200,
+          "ms": 113,
+          "degraded_reason": ""
+        },
+        {
+          "name": "RAG 检索（Milvus+图谱）",
+          "status": 200,
+          "ms": 28942,
+          "degraded_reason": "rerank_sidecar_unavailable"
+        },
+        {
+          "name": "AI 问答（agent 全链路）",
+          "status": 200,
+          "ms": 15642,
+          "degraded_reason": ""
+        },
+        {
+          "name": "知识库上传（MinIO 写入）",
+          "status": 200,
+          "ms": 0,
+          "degraded_reason": "{\"task_id\":\"task_1787944918_05abc1\",\"status\":\"pending\",\"message\":\"文件已接收，正在后台执行 parse→chunk→embed→load→graph_build 全流程\",\"tenant_id\":\"user_100013\",\"visibility\":\"private\"}"
+        }
+      ],
+      "degraded_count": 0.0,
+      "startup": "ok",
+      "token": true
+    }
+  ],
+  "failed": []
+}

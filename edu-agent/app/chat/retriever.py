@@ -28,6 +28,7 @@ from app.knowledge.importer.embedder import (
     ensure_jieba_ready,
 )
 from app.knowledge.reranker import Reranker
+from app.monitoring import metrics as _metrics
 
 # Milvus loader 的 hybrid_search 在连不上时会抛异常 → 需要 try/except 包一层
 from app.knowledge.importer.loader import hybrid_search as _milvus_hybrid_search
@@ -500,11 +501,22 @@ async def retrieve_three_channel(
     # 6) 断崖 + final_max_k 上限
     final_docs = _cliff_cutoff(merged, final_max_k=final_max_k, drop_ratio=cutoff_drop_ratio)
 
-    # 7) 汇总降级原因
+    # 7) 汇总降级原因 + task39 GWT② 逐组件指标埋点
+    #    组件归属按「变量出处」判定（非字符串匹配）：
+    #      hyde  → llm（HyDE 改写走 LLM）  milvus → milvus
+    #      graph → neo4j                  rerank → reranker
     degrade_parts: list[str] = []
-    for p in (hyde_degrade, milvus_degrade, graph_degrade, rerank_degrade):
-        if p:
-            degrade_parts.append(p)
+    for _comp, _p in (
+        ("llm", hyde_degrade),
+        ("milvus", milvus_degrade),
+        ("neo4j", graph_degrade),
+        ("reranker", rerank_degrade),
+    ):
+        if _p:
+            degrade_parts.append(_p)
+            _metrics.record_degraded(_comp, _p)
+        else:
+            _metrics.clear_degraded(_comp)
     degraded_reason = "；".join(degrade_parts) if degrade_parts else None
 
     _bundle = RetrievalBundle(

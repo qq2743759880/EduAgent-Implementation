@@ -126,16 +126,28 @@ async def _llm_call(
 
     client = _ChatClient.get()
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(
-        None,
-        lambda: client.call_chat(
-            messages=messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            timeout=timeout,
-        ),
-    )
+    try:
+        return await loop.run_in_executor(
+            None,
+            lambda: client.call_chat(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=timeout,
+            ),
+        )
+    except Exception as exc:
+        # task39 GWT②：agent 链路（route / 子代理 / reflect / answer）**全部**经本函数调 LLM，
+        # 这是唯一的统一收口。此前 LLM 宕机时各节点 try/except 各自兜底，
+        # 既不写 degraded_reason 也不计数 → §6.4「LLM 行：规则兜底答案 + 用户感知降级」
+        # 在 agent 链路上实际是静默的。这里统一埋点，异常继续上抛交给各节点降级。
+        try:
+            from app.monitoring.metrics import record_degraded
+            record_degraded("llm", f"agent_llm_call:{type(exc).__name__}")
+        except Exception:  # noqa: BLE001 — 埋点永不改变控制流
+            pass
+        raise
 
 
 def _extract_json(raw: str) -> dict | None:
@@ -697,6 +709,12 @@ def _make_checkpointer():
         return PlainRedisSaver(redis_url=settings.REDIS_URL, ttl=getattr(settings, "CHECKPOINT_TTL", 3600))
     except Exception as exc:
         logger.warning(f"[graph] Redis checkpointer 不可用（降级无 checkpoint）: {type(exc).__name__}: {exc}")
+        # task39 GWT②/④：checkpoint 落本地内存（有损），§6.4 Redis 行降级，指标可见
+        try:
+            from app.monitoring.metrics import record_degraded
+            record_degraded("redis", f"checkpoint_unavailable:{type(exc).__name__}")
+        except Exception:  # noqa: BLE001 — 指标埋点不影响业务
+            pass
         return None
 
 
