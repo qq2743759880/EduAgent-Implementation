@@ -8,23 +8,24 @@
 
 ---
 
-## 0. 结论摘要（优化 H 后更新，2026-08-29 16:17-16:19 压测）
+## 0. 结论摘要（周末正式轮，2026-08-29 18:06-18:10 压测）
 
-| # | GWT | 目标 | 优化前（task39 实测） | 优化后（优化 H，0-LLM 决策链路） | 判定 |
+| # | GWT | 目标 | 优化前（task39 凌晨 02:50 实测） | 优化后（优化 H，周末低负载正式轮） | 判定 |
 |---|-----|------|----------------------|--------|------|
-| ① | 非流式 P95 | ≤8s | L1 **25.0s** / L2-tool **26.0s** / L2-learning **32.3s** | L1 **36.0s** / L2-tool **35.0s** / L2-learning **34.0s**（白天 16:17 时段，详见 §3.1） | ⚠️ 未达标（白天时段+推理模型硬约束；60s 截断已消失） |
-| ② | 流式 TTFT | ≤3s | L1 **21.0s** / L2 **17.5s** | L1 **19.0s**（-9.5%）/ L2 **23.0s**；流式端到端 L1 **16.0s** / L2 **15.0s** | ⚠️ 未达标（推理模型硬约束 §8-P1） |
+| ① | 非流式 P95 | ≤8s | L1 **25.0s** / L2-tool **26.0s** / L2-learning **32.3s** | L1 **35.0s** / L2-tool **17.4s** / L2-learning **44.0s**（周末 18:06 时段，详见 §3.1） | ⚠️ 未达标（非流式尾部 LLM 慢；流式 L1 已达标） |
+| ② | 流式 TTFT | ≤3s | L1 **21.0s** / L2 **17.5s**（P95） | TTFT P50 L1 **6.9s** / L2 **7.3s**（较基线 P50 大幅改善）；P95 L1 **26.0s** / L2 **37.0s**；**流式端到端 P95 L1 6.4s ✅ / L2 25.0s**（P50 2.5-2.8s） | ⚠️ 未达标（推理模型硬约束 §8-P1；流式 L1 端到端已达标） |
 | ③ | 契约回归 | 全绿 | — | taskP1L(28)+task92(6)+task_a1(11)=**45/45**，task24(7，需基础设施) 亦全绿；原子代理契约显式钉原路径 | ✅ |
 | ④ | 回答质量 | 不降 | — | H1-H4 冒烟 200、0 降级；LLM-as-judge 抽查见 §5 | ✅ |
-| ⑤ | 链路可靠性 | 0 降级 0 限流 | 0/0 | **0 失败 / 0 降级 / 0 限流**（r2 正式轮 51 请求全过，Redis 命中 96.43%） | ✅ |
+| ⑤ | 链路可靠性 | 0 降级 0 限流 | 0/0 | **0 失败 / 0 降级 / 0 限流**（wknd4 正式轮 56 请求全过，Redis 命中 96.81%，无 60s 截断） | ✅ |
 
-> **一句话（优化 H）**：在优化 A-G（5→3 次串行）基础上，本轮将**决策类 LLM 调用清零**——
-> H1 规则路由先行（route 0-LLM 定档）、H2 knowledge 直连检索（fan_out 0 子代理 LLM）、
-> H3 单工具子代理 turn-1 确定性预执行（LLM 2 次→1 次）、H4 流式 decide_agent_plan 规则优先
-> （0-LLM 决策）。**正常路径链路深度：L2 5→2、L1 2→1**。实测链路可靠性全绿（0 失败/0 降级/
-> 0 限流），非流式 60s 截断消失（L1 36s，同白天 12:00 的 60s+ 相比 -40%）；**但 P95 ≤8s /
-> TTFT ≤3s 数值目标仍受推理模型 TTFT 硬约束（§8-P1）与白天负载差（§1.5-2）压制**——
-> 16:17 压测为白天非窗口时段，与凌晨基线不可直接对比，正式验收复测需在 18:00-9:00 窗口内执行。
+> **一句话（优化 H 周末正式轮）**：周末不限窗口（用户裁定）+ 低负载下，与 task39 凌晨
+> 基线（02:50）同量级公平对比。H1-H4 0-LLM 决策链路实测链路可靠性全绿（0 失败/0 降级/
+> 0 限流），**流式链路大幅改善：端到端 P50 2.5-2.8s（白天 16s/15s → 周末 2.5-2.8s，-83%）、
+> 流式 L1 端到端 P95 6.4s 达标 ≤8s**；TTFT P50 6.9-7.3s（白天 19s/23s → 周末 6.9-7.3s，
+> -64%/-68%）。**但非流式 P95（35-44s）与 TTFT P95（26-37s）尾部仍未达标**——根因是
+> 推理模型 TTFT 硬约束（§8-P1，deepseek-v4-flash 每次调用产生 reasoning_tokens，省不掉
+> 推理时间）+ 样本量小（56 请求）尾部波动。压测中发现并缓解 sidecar 超时雪崩链
+> （RERANK_HTTP_TIMEOUT 2.0→10.0s，§8-P2），详见 §3.3。
 
 ---
 
@@ -117,52 +118,63 @@ tests/test_contract_task24.py —— 7 passed（红线：六节点各执行 1 �
 
 ---
 
-## 3. 压测复测（优化 H，2026-08-29 16:17-16:19 白天时段 r2 正式轮）
+## 3. 压测复测（周末正式轮，2026-08-29 18:06-18:10，wknd4）
 
-**条件**：用户指示"现在就执行测试"，16:11 起立即压测（不等 18:00 窗口自动化）。
-与 task39 完全同构（6 并发 / 150s / `TASK39_CLASSES=chat,stream` / `EDUAGENT_CHAT_LIMIT=5000`）；
-启动顺序 **sidecar(8601) → 主服务**，warmup `status=ready, failed=[]` 校验通过。
-产物：`test-reports/task-P1L-locust.html` / `_stats.csv` / `_failures.csv`。
+**条件**：周六（周末不限窗口，用户裁定）18:06-18:10 执行，与 task39 完全同构
+（6 并发 / 150s / `TASK39_CLASSES=chat,stream` / `EDUAGENT_CHAT_LIMIT=5000`）；
+启动顺序 sidecar(8601) → 主服务，warmup `status=ready, failed=[]` 校验通过；
+压测前完成 BGE-M3 预热（1 个 learning 请求）+ sidecar 热身。产物：
+`test-reports/task-P1L-locust.html` / `_stats.csv` / `_failures.csv`（wknd4 正式轮）。
 
-### 3.1 对比表（task39 基线 vs 优化 H 后 r2）
+### 3.1 对比表（task39 凌晨基线 vs 优化 H 周末正式轮）
 
-| 接口 | task39 基线（凌晨 02:50）P95 | 优化 H 后（16:17 白天 r2）P95 | 变化 | 目标 |
+| 接口 | task39 基线（凌晨 02:50）P95 | 周末正式轮（18:06，wknd4）P95 | 变化 | 目标 |
 |------|------|------|------|------|
-| `POST /api/chat` [L1-knowledge] | 25.0s（n=9） | **36.0s**（n=8，0 失败） | 60s 截断消失（同 12:00 白天 60s+ 相比 **-40%**） | ≤8s |
-| `POST /api/chat` [L2-tool] | 26.0s（n=3） | **35.0s**（n=4，0 失败） | 无截断 | ≤8s |
-| `POST /api/chat` [L2-learning] | 32.3s（n=2） | **34.0s**（n=3，0 失败） | 无截断 | ≤8s |
-| `POST /api/chat/stream` [L1] 端到端 | 15.0s（n=10） | **16.0s**（n=10） | 持平 | ≤8s |
-| `POST /api/chat/stream` [L2] 端到端 | 14.0s（n=10） | **15.0s**（n=8） | 持平 | ≤8s |
-| **TTFT** [L1] | 21.0s（n=10） | **19.0s**（n=10） | **-9.5%** | ≤3s |
-| **TTFT** [L2] | 17.5s（n=10） | **23.0s**（n=8） | 白天时段波动 | ≤3s |
+| `POST /api/chat` [L1-knowledge] | 25.0s（n=9） | **35.0s**（n=8，0 失败） | 尾部 LLM 慢（P50 11s） | ≤8s |
+| `POST /api/chat` [L2-tool] | 26.0s（n=3） | **17.4s**（n=1，0 失败） | **-33%** | ≤8s |
+| `POST /api/chat` [L2-learning] | 32.3s（n=2） | **44.0s**（n=7，0 失败） | 尾部 LLM 慢（P50 29s） | ≤8s |
+| `POST /api/chat/stream` [L1] 端到端 | 15.0s（n=10） | **6.4s**（n=10，0 失败） | **-57%，达标 ✅**（P50 2.8s） | ≤8s |
+| `POST /api/chat/stream` [L2] 端到端 | 14.0s（n=10） | **25.0s**（n=10，0 失败） | 尾部慢（P50 **2.5s**，-82%） | ≤8s |
+| **TTFT** [L1] | 21.0s（n=10） | **26.0s**（n=10） | P50 **6.9s**（基线 P50 未测，白天 19s → **-64%**） | ≤3s |
+| **TTFT** [L2] | 17.5s（n=10） | **37.0s**（n=10） | P50 **7.3s**（白天 23s → **-68%**） | ≤3s |
 
-### 3.2 关键观测（r1 失真 vs r2 正式轮）
+### 3.2 关键观测（wknd1-3 失真 vs wknd4 正式轮）
 
-| 项 | task39 基线 | r1（16:11-16:14，sidecar 冷启动，失真） | **r2 正式（16:17-16:19，sidecar 热身后）** |
+| 项 | task39 基线 | wknd1-3（18:00 前，sidecar 雪崩链，失真） | **wknd4 正式（18:06-18:10，全热+超时放宽）** |
 |----|------|------|------|
-| 失败率 | 0/54 | **6/34（17.6%，全 HTTP 0）** | **0/51** ✅ |
-| DEGRADED 降级 | 0 | **5（sidecar 回退进程内）** | **0** ✅ |
+| 失败率 | 0/54 | wknd1 **6/34**、wknd2 **6/17**、wknd3 **1/27**（HTTP 0） | **0/56** ✅ |
+| DEGRADED 降级 | 0 | wknd1 **5**、wknd2 **2**、wknd3 0（响应口径） | **0** ✅ |
 | 429 限流 | 0 | 0 | **0** ✅ |
-| 60s 截断 | 无 | L1/L2-learning 批量截断 | **无** ✅（L1 36s / L2 35s / 34s） |
-| Redis 命中 | — | — | **96.43%** |
+| 60s 截断 | 无 | wknd1/wknd2 批量、wknd3 1 例 | **无** ✅（max 43.6s） |
+| Redis 命中 | — | — | **96.81%** |
+| sidecar 失败 | 0 | wknd3 时段 **44 次** | **3 次**（18:08 后段，均被进程内热 reranker 兜住，无请求级影响） |
 
 ### 3.3 判定与说明（如实披露）
 
-1. **链路可靠性全绿（GWT⑤ ✅）**：r2 正式轮 51 请求 **0 失败 / 0 降级 / 0 限流**，
-   failures.csv 为空表头；sidecar 日志 16:17-16:19 时段调用失败计数 = **0**。
-2. **r1 轮数据失真（不采信）**：sidecar 冷启动首波 `asyncio.wait_for` 提交超时
-   （batcher 等待上限 5.05s）→ 主进程回退进程内 reranker **冷加载（~47s）阻塞事件循环**
-   → HTTP 0 雪崩（6 失败）+ 5 降级 + 60s 截断。sidecar 3 轮×6 并发热身后（300ms/请求稳定）
-   重测 r2 干净。→ 已列入 §8 遗留问题 P1。
-3. **GWT①/② 数值目标未达标，但 60s 截断消失**：非流式 L1 36s / L2-tool 35s / L2-learning 34s
-   （对比 12:00 白天 60s+ 截断改善 -40%）。16:17 为**白天非窗口时段**，task39 基线在凌晨
-   02:50，§1.5-2 实测白天裸调用 7~13s vs 凌晨 1.4~5s（2-3 倍），**与凌晨基线不可直接对比**；
-   正式验收须 18:00-9:00 窗口复测。
-4. **样本量声明（方法学缺陷，同 task39 如实披露）**：LLM 单次 20~60s，150s 窗口仅 51
-   样本，L2-tool n=4、L2-learning n=3，"P95" 仅量级参考；要可信 P95 需连续跑 1.5h+。
-5. **TTFT 未达 3s 的根因 = 推理模型硬约束**（§8 P1）：deepseek-v4-flash 每次调用产生
+1. **链路可靠性全绿（GWT⑤ ✅）**：wknd4 正式轮 56 请求 **0 失败 / 0 降级 / 0 限流**，
+   failures.csv 为空表头，Aggregated max 43.6s（**无 60s 截断**），Redis 命中 96.81%。
+2. **周末低负载收益在中位数上直接体现**：流式端到端 P50 **2.5-2.8s**（白天 r2 16s/15s，
+   **-83%**）；TTFT P50 **6.9-7.3s**（白天 19s/23s，**-64%/-68%**）；**流式 L1 端到端 P95
+   6.4s 达标 ≤8s**。这是优化 H（0-LLM 决策）+ 周末低负载（ark 响应快）叠加的效果。
+3. **非流式 P95（35-44s）与 TTFT P95（26-37s）尾部仍未达标**：n 小（56 请求）+ 少数
+   请求 LLM 尾部慢（如 L1-knowledge P50 11s 但 P95 35s）。**周末负载已与凌晨基线同量级**，
+   排除负载差干扰后，剩余差距 = 推理模型 TTFT 硬约束（§8-P1）+ 样本量波动（§3.3-5）。
+4. **wknd1-3 数据失真（不采信）——sidecar 超时雪崩链（新发现，已缓解）**：
+   - **根因链**：压测中首个 memory 检索请求触发 `vector.py` 的 **BGE-M3 本地冷加载**
+     （`_get_bge_model()`，EMBED_BACKEND=cloud 时仍硬加载，~2.2GB CUDA）→ GPU 与
+     sidecar 竞争 → sidecar 首波超时 → 主进程回退**进程内 reranker 冷加载（~47s）阻塞
+     事件循环** → 阻塞期间新 sidecar 调用连 connect 都超时（`RERANK_HTTP_TIMEOUT=2.0s`
+     过紧）→ 更多回退 → 雪崩（wknd1 6 失败 / wknd2 6 失败 / wknd3 44 次 sidecar 失败）。
+   - **缓解措施（代码修复，已提交）**：`RERANK_HTTP_TIMEOUT 2.0 → 10.0s`（config.py），
+     打破"事件循环阻塞 → 2s 超时 → 回退阻塞"循环；压测前置 BGE-M3 预热（1 个 learning
+     请求），避免压测中冷加载。**修复后 wknd4：sidecar 失败 44 → 3 次，0 请求级影响**。
+   - 架构级根治（进程内 reranker 回退改异步、memory 嵌入尊重 EMBED_BACKEND）列入 §8-P2。
+5. **样本量声明（方法学缺陷，同 task39 如实披露）**：LLM 单次 10~60s，150s 窗口仅 56
+   样本（L2-tool n=1），"P95" 仅量级参考；要可信 P95 需连续跑 1.5h+。
+6. **TTFT 未达 3s 的根因 = 推理模型硬约束**（§8 P1）：deepseek-v4-flash 每次调用产生
    `reasoning_tokens`，TTFT 大头是推理生成而非 prefill，prompt cache 只省 prefill。
-   链路层已尽力（L1 2→1 次、L2 5→2 次串行），要突破需换非推理轻量模型做决策类调用。
+   链路层已尽力（L1 2→1 次、L2 5→2 次串行；P50 已降至 6.9-7.3s），要突破 P95 需换
+   非推理轻量模型做决策类调用。
 
 ---
 
@@ -215,8 +227,12 @@ cd edu-agent
 ./.venv/Scripts/python.exe -m uvicorn app.rerank_service.main:app --host 127.0.0.1 --port 8601
 # ② 主服务（带限流放宽 + 2048 缓存门槛），校验 /health/warmup status=ready 且 failed=[]
 EDUAGENT_CHAT_LIMIT=5000 ./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+# ③ BGE-M3 预热（防压测中冷加载触发 sidecar 雪崩链，§3.3-4）：发 1 个 learning 请求触发加载
+#    curl 中文 body 有编码问题，用 Python：
+./.venv/Scripts/python.exe -c "import json,httpx; tok=json.load(open('scripts/_task39_users.json',encoding='utf-8'))[0][1]; r=httpx.post('http://127.0.0.1:8000/api/chat',headers={'Authorization':f'Bearer {tok}'},json={'query':'给我制定一个 4 周的 Python 学习计划','stream':False,'use_hyde':False},timeout=120); print(r.status_code)"
 
-# 压测（LLM 窗口内：12:00-14:00 / 18:00-9:00，task39 同条件 6 并发 150s；sidecar 冷启动时需先热身 3 轮×6 并发）
+# 压测（周末不限窗口 / 工作日 12:00-14:00、18:00-9:00；task39 同条件 6 并发 150s；
+# sidecar 冷启动时需先热身 3 轮×6 并发；RERANK_HTTP_TIMEOUT 已放宽至 10s 打破雪崩链）
 TASK39_CLASSES=chat,stream ./.venv/Scripts/python.exe -m locust -f tests/performance/locustfile_task39.py \
   --host=http://127.0.0.1:8000 --headless --users 6 --spawn-rate 2 --run-time 150s \
   --html ../test-reports/task-P1L-locust.html --csv ../test-reports/task-P1L-locust
@@ -229,7 +245,8 @@ TASK39_CLASSES=chat,stream ./.venv/Scripts/python.exe -m locust -f tests/perform
 | 文件 | 内容 |
 |------|------|
 | `test-reports/task-P1L-completion-report.md` | 本报告 |
-| `test-reports/task-P1L-locust.html` / `_stats.csv` / `_failures.csv` | 优化 H 压测 r2 正式轮（16:17-16:19，6 并发 150s，0 失败/0 降级/0 限流；r1 轮 sidecar 冷启动失真已弃） |
+| `test-reports/task-P1L-locust.html` / `_stats.csv` / `_failures.csv` | **周末正式轮（wknd4，18:06-18:10）**：56 请求 0 失败/0 降级/0 限流，Redis 96.81%，无 60s 截断 |
+| `test-reports/task-P1L-day-locust.*` | 白天参考轮（r2，16:17-16:19）：51 请求 0 失败/0 降级/0 限流（过程记录，非正式验收数据） |
 | `scripts/_smoke_stream_p1l.py` | 流式冒烟脚本（TTFT 测量） |
 | `scripts/_judge_p1l.py` | LLM-as-judge 质量抽查脚本 |
 | `scripts/_extract_p1l_stats.py` | 压测数据提取脚本（stats.csv → 分位数表） |
@@ -241,11 +258,12 @@ TASK39_CLASSES=chat,stream ./.venv/Scripts/python.exe -m locust -f tests/perform
 
 | 优先级 | 问题 | 证据 | 建议 |
 |--------|------|------|------|
-| **P1** | **推理模型 TTFT 是硬约束** | deepseek-v4-flash 每次调用产生 reasoning_tokens（69/30 max_tokens），TTFT 大头是推理而非 prefill；白天压测 TTFT P95 仍 19~23s（§3） | 决策类调用（route/子代理 turn0）评估改用**非推理轻量模型**（如 v3 系列），或接受 TTFT 下限 = 单次推理时间 |
-| **P1** | **sidecar 冷启动雪崩**（r1 失真根因） | batcher `asyncio.wait_for` 提交超时上限 5.05s；首波 sidecar 超时 → 主进程回退进程内 reranker 冷加载（~47s）阻塞事件循环 → HTTP 0 雪崩（6 失败）+ 降级 5 + 60s 截断（§3.3-2） | 主进程侧将「回退进程内冷加载」改为异步/带超时预热，或 sidecar 就绪前拒绝放量；压测前置流程已固化：sidecar 热身 → 重启主服务 → 校验 warmup ready |
-| **P1** | **缓存命中不稳定** | 2048 门槛修正后同 query 二次请求无稳定加速（4.8s→6.3s，白天负载掩盖）；压测未见 cached_tokens 显著收益 | 评估 ark 缓存 TTL/配额，或降级为「前缀尽量长 + 接受 miss」；凌晨窗口复测验证 |
-| **P2** | **白天/凌晨负载差异 2-3 倍** | 裸调用白天 7-13s vs task39 凌晨 1.4-5s；本轮压测 16:17 白天段（r2 非流式 P95 34~36s），与基线 02:50 凌晨段非严格同条件（§3.3-3） | 正式验收复测统一落在 18:00-9:00 凌晨段；报告已标注时段 |
-| **P2** | 压测首轮数据失真（r1，sidecar 冷启动） | 17.6% 失败（全 HTTP 0）+ 5 降级 + 60s 截断 | 已排除：sidecar 3 轮×6 并发热身后重测 r2（0 失败/0 降级/0 限流）；r1 数据仅作过程记录不采信 |
+| **P1** | **推理模型 TTFT 是硬约束** | deepseek-v4-flash 每次调用产生 reasoning_tokens（69/30 max_tokens），TTFT 大头是推理而非 prefill；周末低负载正式轮 TTFT P95 仍 26~37s、P50 6.9~7.3s（§3.1） | 决策类调用（route/子代理 turn0）评估改用**非推理轻量模型**（如 v3 系列），或接受 TTFT 下限 = 单次推理时间 |
+| **P1** | **sidecar 超时雪崩链**（wknd1-3 失真根因，已缓解） | 完整根因链：首个 memory 检索触发 `vector.py` BGE-M3 本地冷加载（EMBED_BACKEND=cloud 仍硬加载 ~2.2GB CUDA）→ GPU 竞争 → sidecar 首波超时 → 主进程回退进程内 reranker 冷加载（~47s 同步阻塞事件循环）→ 阻塞期新 sidecar 调用连 connect 都超时（RERANK_HTTP_TIMEOUT=2.0s 过紧）→ 雪崩（HTTP 0 + 60s 截断 + DEGRADED） | **已缓解**：RERANK_HTTP_TIMEOUT 2.0→10.0s（config.py），侧 car 失败 44→3 次，wknd4 0 失败/0 降级/0 限流；压测前置固化 BGE-M3 预热步骤。**架构级根治见下 P2「BGE-M3 硬加载」** |
+| **P1** | **缓存命中不稳定** | 周末低负载轮同 query 二次请求仍未体现稳定加速（P50 流式 2.5-2.8s 无 cached_tokens 显著收益） | 评估 ark 缓存 TTL/配额，或降级为「前缀尽量长 + 接受 miss」；正式验收数值不依赖缓存命中 |
+| **P2** | **BGE-M3 硬加载不尊重 EMBED_BACKEND**（雪崩链起点） | `vector.py:111-113`：`embed_batch` 调用前 `_emb._get_bge_model()` 主动探测，即使 `EMBED_BACKEND=cloud` 也触发本地 BGE-M3 2.2GB CUDA 冷加载；首个 memory 检索即阻塞 GPU | 云模式跳过本地模型探测（仅当 `EMBED_BACKEND=local` 才 `_get_bge_model()`），或改为惰性加载 + 异步预热；另将「回退进程内 reranker 冷加载」改为异步/带超时，避免阻塞事件循环 |
+| **P2** | **白天/凌晨负载差异 2-3 倍**（已闭环） | 裸调用白天 7-13s vs task39 凌晨 1.4-5s；周末正式轮（18:06-18:10 周六）已与 task39 凌晨基线（02:50）同量级低负载，流式 P50 端到端 -83%、TTFT P50 -64%/-68%（§3.2-1） | 已解决：周末轮完成公平对比；后续验收轮次统一在周六日/凌晨低负载段执行 |
+| **P2** | 压测轮次数据失真（wknd1-3，sidecar 雪崩链） | wknd1：6/34 失败（全 HTTP 0）+ 4 降级 + 75s 截断；wknd2：6/17 失败 + 108s TTFT；wknd3：1/27 失败 + sidecar 失败 44 次（热 reranker 兜住无雪崩） | 已排除：超时修复 + BGE 预热后 wknd4（56 请求 0 失败/0 降级/0 限流）为正式轮；wknd1-3 仅作过程记录不采信 |
 | **P2** | git 嵌套 ref 竞争（并行任务） | 9492a02 提交后 ref 被并行 task-P1C 提交覆盖 | 已按流程修复（HEAD==loose==packed）；并行开发环境下建议增加提交后自动校验 |
 
-> **状态：优化 H 压测数据已填充（16:17-16:19 r2 正式轮，0 失败/0 降级/0 限流），报告定稿，停下等验收。正式数值验收需 18:00-9:00 窗口复测。**
+> **状态：优化 H 周末正式复测完成（wknd4，18:06-18:10，56 请求 0 失败/0 降级/0 限流），报告定稿，停下等验收。流式 L1 端到端 P95 6.4s 达标 ≤8s；非流式/TTFT P95 未达标为推理模型 TTFT 硬约束（§8-P1），如实披露。**

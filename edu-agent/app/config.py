@@ -421,7 +421,7 @@ class Settings(BaseSettings):
     RERANK_MAX_BATCH_PAIRS: int = 64          # 单批最大 (query,content) 对数，超则拆下一批
     RERANK_MAX_WAIT_MS: int = 50              # 单请求排队延迟上限（到时强制 flush）
     RERANK_QUEUE_MAX: int = 200               # 内存队列上限，超则调用方走降级（返回 503/None）
-    RERANK_HTTP_TIMEOUT: float = 2.0          # 主链路调 sidecar 超时（秒）
+    RERANK_HTTP_TIMEOUT: float = 10.0         # 主链路调 sidecar 超时（秒）：2.0 在 6 并发×20docs 批处理+GPU 竞争下过紧，易误触发进程内回退→事件循环阻塞→雪崩链（2026-08-29 周末复测实测 44 次 ConnectTimeout/ReadTimeout）
     RERANK_SIDECAR_ENABLED: bool = True       # False → 主链路直接进程内 rerank（平滑切换/降级调试）
     RERANK_QUEUE_REDIS: bool = False          # 可选：Redis list 缓冲峰值（默认直连 batcher）
     # ============================================================
