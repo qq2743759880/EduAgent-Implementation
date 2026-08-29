@@ -24,6 +24,7 @@ import math
 from typing import Any
 
 from app.monitoring.metrics import record_degraded as _record_degraded
+from app.core.db_resilience import DependencyUnavailableError, redis_run  # task-P1C Redis 断连熔断
 
 from loguru import logger
 
@@ -215,12 +216,23 @@ class MemoryVectorStore:
             _record_degraded("redis", "memory_vector_no_client")
 
     async def _redis_ok(self) -> bool:
-        """运行时可达性探测：不可达则降级 memory 并标注（ponytail: 真实 ping 在 async 路径）。"""
+        """运行时可达性探测：不可达则降级 memory 并标注（ponytail: 真实 ping 在 async 路径）。
+
+        task-P1C：ping 经 redis_run 熔断保护——Redis 断连连续失败 → OPEN 后毫秒级返回 False，
+        不再傻等 socket 超时（task39 实测 AI 问答 22s→52.4s 的部分根因）。
+        """
         if self._redis is None:
             return False
         try:
-            await self._redis.ping()
+            await redis_run("memory_vector_ping", lambda: self._redis.ping())
             return True
+        except DependencyUnavailableError:
+            # 熔断中：快速判定不可达，走降级（不触达 Redis）
+            self._redis = None
+            self.backend = "memory"
+            self.degraded_reason = "redis_unreachable"
+            _record_degraded("redis", "memory_vector_breaker_open")
+            return False
         except Exception as exc:
             logger.warning(f"[Memory:vector] Redis 心跳失败，降级 in-memory 向量：{type(exc).__name__}: {exc}")
             self._redis = None
@@ -243,39 +255,47 @@ class MemoryVectorStore:
     async def _redis_upsert(
         self, *, memory_id: int, user_id: int, vector: list[float], importance: float = 1.0
     ) -> None:
-        r = self._redis
-        await r.hset(self._vec_key(user_id), str(int(memory_id)), json.dumps(vector))
-        await r.zadd(self._idx_key(user_id), {str(int(memory_id)): float(importance)})
-        await r.hset(self._owner_key(), str(int(memory_id)), str(int(user_id)))
+        async def _do():
+            r = self._redis
+            await r.hset(self._vec_key(user_id), str(int(memory_id)), json.dumps(vector))
+            await r.zadd(self._idx_key(user_id), {str(int(memory_id)): float(importance)})
+            await r.hset(self._owner_key(), str(int(memory_id)), str(int(user_id)))
+        # task-P1C：熔断中快速失败，由上层 upsert 的 except 接管降级 in-memory
+        await redis_run("memory_vector_upsert", _do)
 
     async def _redis_delete(self, memory_id: int) -> None:
-        r = self._redis
-        mid = str(int(memory_id))
-        owner = await r.hget(self._owner_key(), mid)
-        if owner is not None:
-            uid = int(owner)
-            await r.hdel(self._vec_key(uid), mid)
-            await r.zrem(self._idx_key(uid), mid)
-        await r.hdel(self._owner_key(), mid)
+        async def _do():
+            r = self._redis
+            mid = str(int(memory_id))
+            owner = await r.hget(self._owner_key(), mid)
+            if owner is not None:
+                uid = int(owner)
+                await r.hdel(self._vec_key(uid), mid)
+                await r.zrem(self._idx_key(uid), mid)
+            await r.hdel(self._owner_key(), mid)
+        await redis_run("memory_vector_delete", _do)
 
     async def _redis_search(
         self, *, user_id: int, query_vec: list[float], top_k: int
     ) -> list[dict[str, Any]]:
-        r = self._redis
-        members = await r.zrange(self._idx_key(user_id), 0, -1)
-        members = members[: self.scan_limit]  # 防大 key（MEMORY_REDIS_SCAN_LIMIT）
-        if not members:
-            return []
-        vals = await r.hmget(self._vec_key(user_id), members)
-        result: list[dict[str, Any]] = []
-        for mb, vb in zip(members, vals):
-            if vb is None:
-                continue
-            vec = json.loads(vb)
-            dot = float(sum(a * b for a, b in zip(vec, query_vec, strict=False)))
-            result.append({"memory_id": int(mb), "content": "", "score": round(dot, 4)})
-        result.sort(key=lambda x: x["score"], reverse=True)
-        return result[: int(top_k)] if top_k > 0 else result
+        async def _do() -> list[dict[str, Any]]:
+            r = self._redis
+            members = await r.zrange(self._idx_key(user_id), 0, -1)
+            members = members[: self.scan_limit]  # 防大 key（MEMORY_REDIS_SCAN_LIMIT）
+            if not members:
+                return []
+            vals = await r.hmget(self._vec_key(user_id), members)
+            result: list[dict[str, Any]] = []
+            for mb, vb in zip(members, vals):
+                if vb is None:
+                    continue
+                vec = json.loads(vb)
+                dot = float(sum(a * b for a, b in zip(vec, query_vec, strict=False)))
+                result.append({"memory_id": int(mb), "content": "", "score": round(dot, 4)})
+            result.sort(key=lambda x: x["score"], reverse=True)
+            return result[: int(top_k)] if top_k > 0 else result
+        # task-P1C：熔断中快速失败，由上层 search 的 except 接管降级 in-memory
+        return await redis_run("memory_vector_search", _do)
 
     # --- 统一接口 ---
     async def upsert(

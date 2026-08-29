@@ -22,6 +22,7 @@ from app.auth import UserRole
 from app.chat.schemas import GraphEntity, RetrievedDoc
 from app.config import settings
 from app.database import get_neo4j_driver
+from app.core.db_resilience import DependencyUnavailableError, neo4j_run  # task-P1C Neo4j 断连熔断
 from app.knowledge.importer.embedder import (
     build_sparse_vector,
     encode_dense_batch,
@@ -258,13 +259,17 @@ def _milvus_hybrid_search_safe(
 # ============================================================
 # 5. 通道 3：Neo4j 图谱扩展（连不上返回空）
 # ============================================================
-def _graph_expand(
+async def _graph_expand(
     query: str,
     *,
     enable_graph: bool,
     top_k_keywords: int = 5,
 ) -> tuple[list[GraphEntity], str | None]:
-    """图谱通道：从 query 抽关键词 → 在 Neo4j 里找实体 → 1 跳扩展关系。"""
+    """图谱通道：从 query 抽关键词 → 在 Neo4j 里找实体 → 1 跳扩展关系。
+
+    task-P1C：Neo4j 断连经 neo4j_run 熔断保护——连续失败→OPEN→毫秒级快速失败降级，
+    不再傻等连接超时（task39 实测 RAG 检索 2.8s→29.4s）。
+    """
     if not enable_graph:
         return [], None
     driver = get_neo4j_driver()
@@ -292,23 +297,32 @@ def _graph_expand(
             "Series": "Series", "Module": "Module", "Keyword": "Keyword",
             "Prerequisite": "Prerequisite", "Course": "Series", "Chunk": "Keyword",
         }
-        entities: dict[str, GraphEntity] = {}
-        with driver.session(database=settings.NEO4J_DATABASE) as session:
-            result = session.run(cypher, keywords=keywords)
-            for rec in result:
-                t1 = type_map.get(rec.get("type1") or "Keyword", "Keyword")
-                t2 = type_map.get(rec.get("type2") or "Keyword", "Keyword")
-                n1 = rec.get("name1")
-                n2 = rec.get("name2")
-                if not n1 or not n2:
-                    continue
-                e1 = entities.setdefault(n1, GraphEntity(entity_type=t1, entity_name=n1, related=[], hop=1))
-                if n2 not in e1.related:
-                    e1.related.append(str(n2))
-                e2 = entities.setdefault(n2, GraphEntity(entity_type=t2, entity_name=n2, related=[], hop=1))
-                if n1 not in e2.related:
-                    e2.related.append(str(n1))
-        return list(entities.values())[:12], None
+
+        def _do() -> list[GraphEntity]:
+            entities: dict[str, GraphEntity] = {}
+            with driver.session(database=settings.NEO4J_DATABASE) as session:
+                result = session.run(cypher, keywords=keywords)
+                for rec in result:
+                    t1 = type_map.get(rec.get("type1") or "Keyword", "Keyword")
+                    t2 = type_map.get(rec.get("type2") or "Keyword", "Keyword")
+                    n1 = rec.get("name1")
+                    n2 = rec.get("name2")
+                    if not n1 or not n2:
+                        continue
+                    e1 = entities.setdefault(n1, GraphEntity(entity_type=t1, entity_name=n1, related=[], hop=1))
+                    if n2 not in e1.related:
+                        e1.related.append(str(n2))
+                    e2 = entities.setdefault(n2, GraphEntity(entity_type=t2, entity_name=n2, related=[], hop=1))
+                    if n1 not in e2.related:
+                        e2.related.append(str(n1))
+            return list(entities.values())[:12]
+
+        try:
+            entities = await neo4j_run("graph_expand", _do)
+        except DependencyUnavailableError:
+            # 熔断中：毫秒级返回降级（不触达 Neo4j），避免 task39 的 29.4s 阻塞
+            return [], "Neo4j 熔断（快速失败降级）"
+        return entities, None
     except Exception as e:
         reason = f"Neo4j 扩展跳过（{type(e).__name__}）"
         logger.warning(f"{reason}：{e}")
@@ -481,7 +495,7 @@ async def retrieve_three_channel(
         logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
         milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
     # 3) 图谱扩展
-    graph_entities, graph_degrade = _graph_expand(rewrite_query, enable_graph=enable_graph)
+    graph_entities, graph_degrade = await _graph_expand(rewrite_query, enable_graph=enable_graph)
 
     # 4) 融合去重（Milvus 去重即可，BM25 后续接入 MySQL 倒排再合并）
     seen: set[str] = set()

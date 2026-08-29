@@ -24,6 +24,7 @@ from typing import Any, Awaitable, Callable
 from loguru import logger
 
 from app.config import settings
+from app.core.db_resilience import DependencyUnavailableError, redis_run  # task-P1C Redis 断连熔断
 from app.monitoring.metrics import record_degraded as _record_degraded
 
 
@@ -68,8 +69,16 @@ async def get_or_load(
         return await loader()
 
     # 运行期 Redis 故障（连接中断/超时） → 直通 DB，避免缓存故障引发 500（R3 加固）
+    # task-P1C：经 redis_run 熔断保护——连续 N 次失败 → OPEN → 后续毫秒级快速失败直通 DB，
+    # 不再傻等 socket 超时（task39 实测 Redis 断连让课程/班次详情等长尾阻塞）。
     try:
-        return await _read_or_rebuild(r, key, loader, ttl, actual_ttl, null_ttl, mutex_timeout)
+        return await redis_run(
+            f"cache:{key.split(':')[0]}",
+            lambda: _read_or_rebuild(r, key, loader, ttl, actual_ttl, null_ttl, mutex_timeout),
+        )
+    except DependencyUnavailableError:
+        # 熔断中：毫秒级直通 DB（不触达 Redis），避免长尾阻塞
+        return await loader()
     except Exception:
         logger.warning(f"[Cache] Redis 读写异常，直通 DB（缓存降级）: {key}")
         # task39 GWT②：Redis 断连的**主要**可观测面就在这里（课程详情/班次详情均走本函数）
