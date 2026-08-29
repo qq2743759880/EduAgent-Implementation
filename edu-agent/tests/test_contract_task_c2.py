@@ -32,16 +32,19 @@ from app.ai.tool_specs import (
 
 
 # ============================================================
-# AC① 填充达标：≥1024 token 且逐字节稳定
+# AC① 填充达标：≥门槛 token（1024→2048，task-P1L 优化G）且逐字节稳定
 # ============================================================
 class TestEnsureMinPrefix:
-    def test_pads_to_at_least_1024(self):
+    def test_pads_to_at_least_threshold(self):
+        from app.config import settings
+
+        threshold = int(settings.PROMPT_CACHE_MIN_TOKENS)
         prefix = build_decision_prefix(ts.BUILTIN_TOOL_SPECS, is_admin=False)  # ~300 token
         before = ts.measure_prefix_tokens(prefix)
         padded = ensure_min_prefix(prefix)
         after = ts.measure_prefix_tokens(padded)
-        assert before < 1024, f"前置断言：原始决策前缀应 <1024（实测 {before}）"
-        assert after >= 1024, f"填充后前缀应 ≥1024 token，实测 {after}"
+        assert before < threshold, f"前置断言：原始决策前缀应 <{threshold}（实测 {before}）"
+        assert after >= threshold, f"填充后前缀应 ≥{threshold} token，实测 {after}"
         # 填充只追加在末尾，原前缀内容不变
         assert padded.startswith(prefix)
 
@@ -52,9 +55,14 @@ class TestEnsureMinPrefix:
         assert a == b, "ensure_min_prefix 两次相同输入应逐字节一致（填充注释必须稳定）"
 
     def test_noop_when_already_above(self):
-        big = "# " + "x" * 8000
+        # 门槛动态取 settings（task-P1L 优化G：1024→2048，实测 ark 按 2048-token 分块）；
+        # 用英文 x 保守估计 4 字符/token，保证前缀确实超过门槛（避免测试与门槛值耦合）
+        from app.config import settings
+
+        threshold = int(settings.PROMPT_CACHE_MIN_TOKENS)
+        big = "# " + "x" * (threshold * 4)
         out = ensure_min_prefix(big)
-        assert out == big, "已 ≥1024 的前缀不应被改动"
+        assert out == big, f"已 ≥{threshold} token 的前缀不应被改动"
 
 
 # ============================================================
