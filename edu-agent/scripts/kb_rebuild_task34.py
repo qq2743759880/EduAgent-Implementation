@@ -421,6 +421,11 @@ def cmd_embed_load(resume: bool) -> None:
 
 def cmd_verify() -> None:
     client = loader.get_milvus_client()
+    # 先 flush，避免 stats 未落盘返回 0（Milvus 统计延迟）
+    try:
+        client.flush(settings.MILVUS_COLLECTION)
+    except Exception:
+        pass
     ok = True
 
     def chk(cond: bool, msg: str):
@@ -442,7 +447,7 @@ def cmd_verify() -> None:
         f"dense 索引 IVF_FLAT+COSINE，实际 {idxs.get('dense_vec')}")
     chk(idxs.get("sparse_vec", {}).get("type") == "SPARSE_INVERTED_INDEX" and idxs.get("sparse_vec", {}).get("metric") == "IP",
         f"sparse 索引 SPARSE_INVERTED_INDEX+IP，实际 {idxs.get('sparse_vec')}")
-    chk(client.get_load_state(settings.MILVUS_COLLECTION).get("state") == "Loaded", "collection Loaded")
+    chk(str(client.get_load_state(settings.MILVUS_COLLECTION).get("state")) == "Loaded", "collection Loaded")
 
     for col, expect in [("pf_bagu_kb", 5724), ("user_memory", 9)]:
         try:
