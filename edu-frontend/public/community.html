@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task51 v2 效果图 · /community 社区列表
+  > 帖子列表（标题/摘要/作者/时间/浏览/评论/点赞/标签/置顶锁定）+ 版块筛选 + 排序 + 关键词搜索
+    + 分页(C2) + 发布入口 + 四态(success/loading/empty/error) + 桌面/移动响应式
+  > 数据形状对齐契约⑬：GET /api/community/posts?board_code&keyword&sort&page&page_size
+    → 壳解包 data{total,page,page_size,items:[PostListItem],mine_total_posts}
+    PostListItem: post_id/board_code/author_name/title/summary/tags/is_pinned/is_locked/
+                  view_count/like_count/comment_count/favorite_count/created_at
+  > 点击帖子 → /community/[postId]（J 表内联动）；发布 → 发布表单入口
+  FR 编号: 前端页面清单 /community（task51）
+  AUDIT LOG:
+    [2026-08-21 v1 R1] 初稿提交（四态 + 筛选/排序/搜索/分页/发布 + @container 响应式）→ SUBMITTED
+    [2026-08-21 v2 R2] fe-* 完整走 SOP：清除 Trae 浏览器 inspect 注入污染（约 2500 行 <head> 调试样式/脚本 +
+      内联 transform:matrix/width/height + <span class="undefined"> 垃圾节点 + 空 style 属性）；修复 💬/👍
+      数据字段映射反（like_count↔comment_count 显示对调，对齐契约⑬ mock）；补 a11y（全局 :focus-visible
+      焦点环 + .visually-hidden 仅读文本 + label/aria）；帖子列表重排为可读缩进；保留四态/筛选/排序/搜索/
+      分页/FAB + @container 响应式 → 独立审查 REJECT → 修复 2×P2（chips 残缺 ARIA tab 模式改 role=group+
+      aria-pressed 单选筛选；错误态去内部调试枚举改用户导向文案）+ 4×P3（锁定帖只读弱化可点+aria-disabled/
+      tabpanel无关、state 加 role=status/alert、loading 加 visually-hidden 读屏文本、搜索去冗余重复标注）→ 复审通过 → 状态: SUBMITTED 待 fe-implementer 移交
+-->
+<html lang="zh-CN" data-theme="light" class=""><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社区互助 · 效果图 v2（task51 community 列表 · 契约⑬ 壳化 糖果色 candy-playful STYLE FROZEN R2）</title>
+<style>
+/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
+:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-022: rgba(255,255,255,0.22); --htc-255-255-255-060: rgba(255,255,255,0.6); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
+  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
+  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
+  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
+  --candy-pink-soft:#ffe3f4; --candy-bg:#fff9f0;
+  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
+  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
+  --candy-purple-deep:#5b21b6; --candy-yellow-deep:#c9a000; --candy-red-deep:#d63e3e;
+  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
+  --gray-300:#cfcfcf; --white:#fff;
+  --border-chip:rgba(31,31,31,.15);
+  --tint-purple-01:rgba(124,58,237,.1);
+  --tint-purple-25:rgba(124,58,237,.25);
+  --tint-purple-35:rgba(124,58,237,.35);
+  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
+  --shadow-s:0 3px 0 var(--htc-31-31-31-014);
+  --focus-ring:var(--candy-blue);
+  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-255-255-255-006: rgba(255, 255, 255, 0.006); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:auto;min-height:100dvh}
+/* App 壳：body flex column + container-type:inline-size（演示切视口与真实拖窗口同源生效，对齐 chat.html） */
+body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+/* a11y：统一键盘焦点环 + 屏幕阅读器仅读文本 */
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
+.visually-hidden{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.page{width:100%;max-width:1080px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
+
+/* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与文档流→绝不与页面重叠（chat.html 同款）===== */
+.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
+.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
+.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
+.respbar button:hover{background:var(--tint-purple-01)}
+.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
+.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
+
+/* ===== Hero 横幅（糖果渐变底 + 白字 + emoji 装饰）===== */
+.hero{position:relative;overflow:hidden;border-radius:var(--radius-xl);border:3px solid var(--ink);box-shadow:var(--shadow-3d);background:linear-gradient(120deg,var(--candy-purple) 0%,var(--candy-blue) 55%,var(--candy-pink) 100%);color:var(--ht-fff);padding:26px 24px}
+.hero .h-emoji{position:absolute;right:18px;top:8px;font-size:64px;opacity:.9;transform:rotate(8deg)}
+.hero .h-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--htc-255-255-255-022);border:2px solid var(--htc-255-255-255-006);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;letter-spacing:.02em}
+.hero h1{font-size:28px;font-weight:900;letter-spacing:-.01em;margin-top:10px;line-height:1.15;text-shadow:0 2px 0 var(--htc-31-31-31-018)}
+.hero p{font-size:14px;opacity:.95;margin-top:6px;max-width:60%}
+
+/* ===== 筛选行（FilterBar C9：版块按钮 + 排序 Select + 关键词搜索）===== */
+.filter{display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:var(--white);border:3px solid var(--ink);box-shadow:var(--shadow-3d);border-radius:var(--radius-lg);padding:12px 14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--ink);background:var(--white);color:var(--ink);font-weight:700;font-size:0.8125rem;border-radius:999px;padding:6px 14px;box-shadow:var(--shadow-s);transition:transform .08s,box-shadow .08s;cursor:pointer}
+.chip:hover{transform:translateY(-1px)}
+.chip:active{transform:translateY(1px);box-shadow:none}
+.chip.on{background:var(--candy-green);color:var(--ht-fff);border-color:var(--ink)}
+.chip.on[data-color="orange"]{background:var(--candy-orange);color:var(--ht-fff)}
+.chip.on[data-color="purple"]{background:var(--candy-purple);color:var(--ht-fff)}
+.chip.on[data-color="blue"]{background:var(--candy-blue);color:var(--ht-fff)}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:currentColor;vertical-align:middle}
+.filter-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sort-select{appearance:none;-webkit-appearance:none;border:2px solid var(--ink);background:var(--white);border-radius:999px;padding:6px 34px 6px 14px;font-size:0.8125rem;font-weight:700;color:var(--ink);box-shadow:var(--shadow-s);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%231f1f1f'/></svg>");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer}
+.search{display:flex;align-items:center;gap:0;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--white);box-shadow:var(--shadow-s)}
+.search input{border:none;outline:none;background:transparent;padding:6px 12px;font-size:0.8125rem;color:var(--ink);min-width:120px}
+.search .go{display:grid;place-items:center;width:30px;align-self:stretch;border:none;background:var(--candy-yellow);border-left:2px solid var(--ink);font-size:14px}
+.search .go:active{background:var(--candy-yellow-deep)}
+
+/* ===== 列表工具行：我的帖子计数 + 发新帖 CTA ===== */
+.toolbar{display:flex;align-items:center;gap:10px}
+.mine{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--ink-strong);background:var(--candy-purple-soft);border:2px solid var(--tint-purple-35);border-radius:999px;padding:5px 12px}
+.mine b{color:var(--candy-purple-deep)}
+.post-new{display:inline-flex;align-items:center;gap:7px;margin-left:auto;border:3px solid var(--ink);background:var(--candy-orange);color:var(--ht-fff);font-weight:800;font-size:14px;border-radius:14px;padding:8px 16px;box-shadow:0 4px 0 var(--candy-orange-deep);transition:transform .1s,box-shadow .1s}
+.post-new:hover{background:var(--candy-orange-hover);transform:translateY(-1px)}
+.post-new:active{transform:translateY(2px);box-shadow:none}
+
+/* ===== 帖子列表 ===== */
+.boards{display:flex;flex-direction:column;gap:12px}
+.board-sec{display:flex;flex-direction:column;gap:10px}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:var(--ink)}
+.sec-title .pill{font-size:11px;font-weight:800;color:var(--ink-strong);background:var(--candy-yellow);border:2px solid var(--ink);border-radius:999px;padding:2px 9px}
+/* 帖子卡（C24 PostCard） */
+.post{display:flex;flex-direction:column;gap:10px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:14px 16px;cursor:pointer;transition:transform .1s,box-shadow .1s,border-color .1s;text-align:left;color:var(--ink)}
+.post:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--htc-31-31-31-014);border-color:var(--candy-purple)}
+.post:active{transform:translateY(1px);box-shadow:none}
+.post .p-top{display:flex;align-items:center;gap:8px}
+.pin{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--ink);background:var(--candy-yellow);border:2px solid var(--ink);border-radius:8px;padding:2px 8px}
+.lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--ink-muted);border:2px solid var(--border-chip);border-radius:8px;padding:2px 8px}
+.board-tag{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:2px solid var(--ink);color:var(--ht-fff)}
+.board-tag.en{background:var(--candy-blue)} .board-tag.math{background:var(--candy-purple)}
+.board-tag.prog{background:var(--candy-green)} .board-tag.gen{background:var(--candy-orange)}
+.post h3{font-size:17px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:var(--ink)}
+.post h3:hover{color:var(--candy-purple-deep)}
+.post .p-sum{font-size:14px;line-height:1.55;color:var(--ink-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post .p-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:11px;font-weight:700;color:var(--candy-purple-deep);background:var(--candy-purple-soft);border:1px solid var(--tint-purple-25);border-radius:999px;padding:2px 9px}
+.post .p-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--ink-faint)}
+.post .p-meta .who{font-weight:800;color:var(--ink-strong)}
+.post .p-meta .sep-dot{color:var(--gray-300)}
+.post .p-meta .cmt i{font-style:normal;margin-right:2px}
+/* 锁定帖：只读，弱化可点暗示（同普通帖纯信息展示） */
+.post.locked{cursor:default}
+.post.locked:hover{transform:none;box-shadow:var(--shadow-3d);border-color:var(--ink)}
+.post.locked h3:hover{color:var(--ink)}
+
+/* ===== 分页（C2 Pagination）===== */
+.pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px}
+.pager-btn{min-width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);background:var(--white);border-radius:12px;font-size:0.8125rem;font-weight:800;color:var(--ink);box-shadow:var(--shadow-s);padding:0 10px;transition:transform .08s,box-shadow .08s}
+.pager-btn:hover{transform:translateY(-1px)}
+.pager-btn:active{transform:translateY(1px);box-shadow:none}
+.pager-btn.on{background:var(--candy-green);color:var(--ht-fff)}
+.pager-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.pager .total{font-size:12px;color:var(--ink-faint);font-weight:700;margin-left:6px}
+
+/* ===== 状态：loading 骨架 ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{border:3px solid var(--gray-300);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ht-eee) 25%,var(--ht-f7f1e6) 50%,var(--ht-eee) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w60{width:60%}.sk-line.w40{width:40%}.sk-line.w90{width:90%}.sk-line.w25{width:25%}.sk-line.w70{width:70%}
+.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,var(--ht-e6e6e6) 25%,var(--ht-f4f4f4) 50%,var(--ht-e6e6e6) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:45%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* ===== 状态：empty / error ===== */
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d)}
+.state .st-emoji{font-size:46px}
+.state h3{font-size:1.125rem;font-weight:800;color:var(--ink)}
+.state p{font-size:14px;color:var(--ink-muted);line-height:1.6;max-width:340px}
+.retry{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-red);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-red-deep)}
+.retry:active{transform:translateY(1px);box-shadow:none}
+.state-cta{display:inline-flex;align-items:center;gap:7px;margin-top:4px;border:3px solid var(--ink);background:var(--candy-green);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-green-deep)}
+.state-cta:active{transform:translateY(1px);box-shadow:none}
+
+/* ===== 移动 FAB（发布，<@container 820 显示 / 桌面隐藏）===== */
+.fab{position:fixed;right:16px;bottom:18px;z-index:40;display:none;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-orange);color:var(--ht-fff);font-weight:900;font-size:0.9375rem;border-radius:999px;padding:13px 20px;box-shadow:0 5px 0 var(--candy-orange-deep);transition:transform .1s,box-shadow .1s}
+.fab:active{transform:translateY(2px);box-shadow:none}
+
+/* ===== 响应式断点（对齐 P21 §6.1；@container 以 body 宽度驱动 → 演示切视口与真实拖窗口同源生效）===== */
+@container app (max-width:820px){
+  .post-new{display:none}              /* 桌面 CTA 隐藏 → 移动 FAB 接管 */
+  .fab{display:inline-flex}
+  .hero h1{font-size:1.5rem}
+  .hero .h-emoji{font-size:52px}
+  .filter{flex-direction:column;align-items:stretch}
+  .filter-right{margin-left:0;justify-content:space-between}
+  .search input{flex:1}
+}
+@container app (max-width:520px){
+  .hero h1{font-size:22px}
+  .hero p{max-width:90%}
+  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .post h3{font-size:1rem}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-user{margin-left:8px!important;display:inline-flex!important;align-items:center!important;gap:6px!important;flex-shrink:0!important}
+  .gnav-user-link{display:inline-flex!important;align-items:center!important;gap:5px!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:2px solid var(--ink,var(--foreground))!important;border-radius:999px!important;padding:5px 12px!important;box-shadow:0 2px 0 var(--htc-31-31-31-014,color-mix(in oklch,var(--ink),transparent 86%))!important;text-decoration:none!important;transition:transform .1s,box-shadow .1s!important}
+  .gnav-user-link:hover{background:var(--candy-purple-soft,var(--candy-purple));transform:translateY(-1px)}
+  .gnav-user-link:active{transform:translateY(1px);box-shadow:none}
+  .gnav-user-link.ava{padding:3px 8px!important;font-size:1.05rem!important;line-height:1!important}
+  @media(max-width:767px){.gnav-user{padding-top:8px!important}.gnav-user-link{justify-content:center!important}}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body>
+
+<!-- 审核工具条（不进入 React）：视口切换 + 四态演示 -->
+<div class="respbar" aria-label="效果图审核工具条">
+  <span class="rr">视口:</span>
+  <button type="button" data-vw="1440" class="on">1440</button>
+  <button type="button" data-vw="1280">1280</button>
+  <button type="button" data-vw="1024">1024</button>
+  <button type="button" data-vw="768">768</button>
+  <button type="button" data-vw="520">520</button>
+  <button type="button" data-vw="375">375</button>
+  <span class="sep" aria-hidden="true"></span>
+  <span class="rr">状态:</span>
+  <button type="button" data-st="ok" class="on">成功</button>
+  <button type="button" data-st="loading">加载</button>
+  <button type="button" data-st="empty">空态</button>
+  <button type="button" data-st="error">错误</button>
+</div>
+
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">EduAgent</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="practice.html"><span>错题/单词本</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item active" href="community.html" aria-current="page"><span>社区</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub</div>
+  <div class="gnav-user" aria-label="顶栏右侧快捷入口">
+    <a class="gnav-user-link" href="chat.html" aria-label="问 AI">✨ 问 AI</a>
+    <a class="gnav-user-link ava" href="me.html" aria-label="个人中心">🐣</a>
+  </div>
+</header>
+<div class="page" id="page">
+
+  <!-- ===== Hero 横幅 ===== -->
+  <div class="hero">
+    <span class="h-emoji" aria-hidden="true">🐣</span>
+    <span class="h-eyebrow">🧩 学中玩社区</span>
+    <h1>一起讨论一起进步，找到同路人</h1>
+    <p>发帖提问 / 分享笔记 / 组队学习。每个真诚回复都值得被点赞。</p>
+  </div>
+
+  <!-- ===== 筛选行：版块 chips + 排序 + 搜索 ===== -->
+  <div class="filter" id="filter">
+    <div class="chips" id="chips" role="group" aria-label="按版块筛选">
+      <button type="button" class="chip" data-b="all" aria-pressed="false">全部</button>
+      <button type="button" class="chip" data-b="en" data-color="blue" aria-pressed="false">英语</button>
+      <button type="button" class="chip" data-b="math" data-color="purple" aria-pressed="false">数学</button>
+      <button type="button" class="chip" data-b="prog" data-color="green" aria-pressed="false">编程</button>
+      <button type="button" class="chip on" data-b="gen" data-color="orange" aria-pressed="true">综合</button>
+    </div>
+    <div class="filter-right">
+      <select class="sort-select" id="sort" aria-label="排序方式">
+        <option value="HOT">🔥 热门</option>
+        <option value="NEW">🕒 最新</option>
+        <option value="LIKE">👍 点赞多</option>
+      </select>
+      <div class="search">
+        <input id="kw" type="search" placeholder="搜帖子…" aria-label="搜索帖子关键词">
+        <button type="button" class="go" id="go" aria-label="搜索">🔍</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 列表工具行：我的帖子 + 发新帖 CTA ===== -->
+  <div class="toolbar">
+    <span class="mine" style="width: 724.531px; height: 43.9792px; transform: matrix(1, 0, 0, 1, 0, 2.34376);">🎒 我的帖子 <b style="width: 27.3334px; height: 22px; transform: matrix(1, 0, 0, 1, -7.32287, 3.00001); font-size: 13px;">&nbsp; 3</b></span>
+    <button type="button" class="post-new" id="postNewDesktop" style="width: 92.1563px; height: 45.3333px; transform: matrix(1, 0, 0, 1, -9.35414, 0); font-size: 11px;">＋ 发新帖</button>
+  </div>
+
+  <!-- ===== 帖子列表（默认：success 态，mock 数据，契约⑬字段）===== -->
+  <!-- 字段映射：👁=view_count · 💬=comment_count · 👍=like_count（与契约⑬ mock 一致，R2 修正反序） -->
+  <div class="boards" id="boards" aria-live="polite"><article class="post" tabindex="0" aria-label="打开帖子：【置顶】高数第三章「分部积分」易错题集锦"><div class="p-top"><span class="pin">📌 置顶</span><span class="board-tag math">数学</span></div><h3>【置顶】高数第三章「分部积分」易错题集锦</h3><p class="p-sum">整理了分部积分的 5 个典型易错点，每个都配了注释和反例，评论区欢迎补充你的踩坑经历。</p><div class="p-tags"><span class="tag">高数</span><span class="tag">分部积分</span><span class="tag">易错</span></div><div class="p-meta"><span class="who">小豆芽</span><span class="sep-dot">·</span><span>2026-08-20 09:12</span><span class="sep-dot">·</span><span>👁 1283</span><span class="sep-dot">·</span><span class="cmt">💬 <i>18</i></span><span class="sep-dot">·</span><span>👍 342</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：后端扣分点：Python 异步里别随意开协程池"><div class="p-top"><span class="board-tag prog">编程</span></div><h3>后端扣分点：Python 异步里别随意开协程池</h3><p class="p-sum">在 AI 助手模块联调时踩的坑，分享 App.tsx 与 SSE 流解析的配合方式，附最小复现 Demo。</p><div class="p-tags"><span class="tag">Python</span><span class="tag">异步</span><span class="tag">踩坑</span></div><div class="p-meta"><span class="who">奈奈酱</span><span class="sep-dot">·</span><span>2026-08-20 08:40</span><span class="sep-dot">·</span><span>👁 864</span><span class="sep-dot">·</span><span class="cmt">💬 <i>9</i></span><span class="sep-dot">·</span><span>👍 211</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：备考英语四级：10 天背完高频词的记忆法"><div class="p-top"><span class="board-tag en">英语</span></div><h3>备考英语四级：10 天背完高频词的记忆法</h3><p class="p-sum">用联想 + 词根拆分的方式整理的记忆卡片，每天 20 分钟，配合艾宾浩斯复习，亲测有效。</p><div class="p-tags"><span class="tag">四级</span><span class="tag">背单词</span><span class="tag">记忆法</span></div><div class="p-meta"><span class="who">单词小恐龙</span><span class="sep-dot">·</span><span>2026-08-19 21:05</span><span class="sep-dot">·</span><span>👁 542</span><span class="sep-dot">·</span><span class="cmt">💬 <i>11</i></span><span class="sep-dot">·</span><span>👍 156</span></div></article><article class="post locked" aria-disabled="true" aria-label="锁定帖（只读）：本贴已锁定：关于组织架构调整的官方说明"><div class="p-top"><span class="lock">🔒 锁定</span><span class="board-tag gen">综合</span></div><h3>本贴已锁定：关于组织架构调整的官方说明</h3><p class="p-sum">涉及团队分组的调整通知，本贴锁定仅管理员可回复，请勿在评论区展开无关讨论。</p><div class="p-tags"><span class="tag">公告</span><span class="tag">官方</span></div><div class="p-meta"><span class="who">小栗子</span><span class="sep-dot">·</span><span>2026-08-19 16:20</span><span class="sep-dot">·</span><span>👁 2104</span><span class="sep-dot">·</span><span class="cmt">💬 <i>0</i></span><span class="sep-dot">·</span><span>👍 89</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：求助：Tailwind v4 自定义糖果色 token 的正确姿势"><div class="p-top"><span class="board-tag prog">编程</span></div><h3>求助：Tailwind v4 自定义糖果色 token 的正确姿势</h3><p class="p-sum">项目里想统一糖果色板，但 @theme 注册后编译报错，请指教 globals.css 与 design-tokens 双写的最佳实践。</p><div class="p-tags"><span class="tag">Tailwind</span><span class="tag">前端</span><span class="tag">求助</span></div><div class="p-meta"><span class="who">米团</span><span class="sep-dot">·</span><span>2026-08-19 14:30</span><span class="sep-dot">·</span><span>👁 396</span><span class="sep-dot">·</span><span class="cmt">💬 <i>13</i></span><span class="sep-dot">·</span><span>👍 64</span></div></article></div>
+
+  <!-- ===== 分页（C2）===== -->
+  <div class="pager" id="pager">
+    <button type="button" class="pager-btn" data-pg="prev" disabled="">‹</button>
+    <button type="button" class="pager-btn on" data-pg="1">1</button>
+    <button type="button" class="pager-btn" data-pg="2">2</button>
+    <button type="button" class="pager-btn" data-pg="3">3</button>
+    <button type="button" class="pager-btn" data-pg="next">›</button>
+    <span class="total" id="total">共 42 条</span>
+  </div>
+
+  <!-- ===== 移动 FAB（发布，<820 显示，CSS 断点控制）===== -->
+  <button type="button" class="fab" id="fab" aria-label="发新帖">＋ 发新帖</button>
+
+  <footer class="demo-note" role="note">
+    数据契约⑬：<code>GET /api/community/posts?board_code&amp;keyword&amp;sort&amp;page&amp;page_size</code> →
+    壳解包 <code>data{total,page,page_size,items,mine_total_posts}</code>；点击帖子 → <code>/community/[postId]</code>；
+    锁定帖 🔒 只读；置顶帖排前。HTML 效果图仅静态示意 + 局部交互，非真实接口数据。
+  </footer>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ===== HTML 效果图专属演示脚本（不进入 React）：视口切换 + 四态切换 ===== */
+(function(){
+  var bar = document.querySelector('.respbar');
+
+  /* 视口切换：以 html 宽度驱动 @container 断点 */
+  bar.querySelectorAll('[data-vw]').forEach(function(b){
+    b.addEventListener('click', function(){
+      bar.querySelectorAll('[data-vw]').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      document.documentElement.style.width = b.dataset.vw + 'px';
+      document.documentElement.style.margin = '0 auto';
+    });
+  });
+
+  var boards = document.getElementById('boards');
+  var pager  = document.getElementById('pager');
+
+  /* 契约⑬ PostListItem 精简元组：[tag,author,title,summary,tags,pin,lock,date,view,like,cmt] */
+  function BoardsHtml(data){
+    var boardName = {math:'数学', prog:'编程', en:'英语', gen:'综合'};
+    var tagCls    = {math:'board-tag math', prog:'board-tag prog', en:'board-tag en', gen:'board-tag gen'};
+    boards.innerHTML = data.map(function(p){
+      var pinBtn  = p[5] === 1 ? '<span class="pin">📌 置顶</span>' : '';
+      var lockBtn = p[6] === 1 ? '<span class="lock">🔒 锁定</span>' : '';
+      var locked  = p[6] === 1 ? ' locked' : '';
+      var tIdx    = p[6] === 1 ? 'aria-disabled="true"' : 'tabindex="0"';
+      var label   = (p[6] === 1 ? '锁定帖（只读）：' : '打开帖子：') + p[2];
+      var tags = p[4].map(function(t){ return '<span class="tag">' + t + '</span>'; }).join('');
+      return '<article class="post' + locked + '" ' + tIdx + ' aria-label="' + label + '">'
+        + '<div class="p-top">' + pinBtn + lockBtn + '<span class="' + tagCls[p[0]] + '">' + boardName[p[0]] + '</span></div>'
+        + '<h3>' + p[2] + '</h3>'
+        + '<p class="p-sum">' + p[3] + '</p>'
+        + '<div class="p-tags">' + tags + '</div>'
+        + '<div class="p-meta">'
+        + '<span class="who">' + p[1] + '</span><span class="sep-dot">·</span><span>' + p[7] + '</span>'
+        + '<span class="sep-dot">·</span><span>👁 ' + p[8] + '</span>'
+        + '<span class="sep-dot">·</span><span class="cmt">💬 <i>' + p[10] + '</i></span>'
+        + '<span class="sep-dot">·</span><span>👍 ' + p[9] + '</span>'
+        + '</div></article>';
+    }).join('');
+  }
+
+  function buildOk(){
+    BoardsHtml([
+      ['math','小豆芽','【置顶】高数第三章「分部积分」易错题集锦','整理了分部积分的 5 个典型易错点，每个都配了注释和反例，评论区欢迎补充你的踩坑经历。',['高数','分部积分','易错'],1,0,'2026-08-20 09:12',1283,342,18],
+      ['prog','奈奈酱','后端扣分点：Python 异步里别随意开协程池','在 AI 助手模块联调时踩的坑，分享 App.tsx 与 SSE 流解析的配合方式，附最小复现 Demo。',['Python','异步','踩坑'],0,0,'2026-08-20 08:40',864,211,9],
+      ['en','单词小恐龙','备考英语四级：10 天背完高频词的记忆法','用联想 + 词根拆分的方式整理的记忆卡片，每天 20 分钟，配合艾宾浩斯复习，亲测有效。',['四级','背单词','记忆法'],0,0,'2026-08-19 21:05',542,156,11],
+      ['gen','小栗子','本贴已锁定：关于组织架构调整的官方说明','涉及团队分组的调整通知，本贴锁定仅管理员可回复，请勿在评论区展开无关讨论。',['公告','官方'],0,1,'2026-08-19 16:20',2104,89,0],
+      ['prog','米团','求助：Tailwind v4 自定义糖果色 token 的正确姿势','项目里想统一糖果色板，但 @theme 注册后编译报错，请指教 globals.css 与 design-tokens 双写的最佳实践。',['Tailwind','前端','求助'],0,0,'2026-08-19 14:30',396,64,13]
+    ]);
+  }
+  function buildLoading(){
+    var s = '';
+    for (var i = 0; i < 4; i++){
+      s += '<div class="sk-card"><div class="sk-h"></div><div class="sk-line w90"></div><div class="sk-line w70"></div><div class="sk-line w40"></div></div>';
+    }
+    boards.innerHTML = '<div class="sk" role="status"><span class="visually-hidden">正在加载帖子…</span>' + s + '</div>';
+  }
+  function buildEmpty(){
+    boards.innerHTML = '<div class="state" role="status"><span class="st-emoji">🏝️</span><h3>暂无帖子</h3>'
+      + '<p>这个版块还没有人发过帖，来当第一个分享的人吧～</p><button type="button" class="state-cta">＋ 发第一篇</button></div>';
+  }
+  function buildError(){
+    boards.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>帖子加载失败</h3>'
+      + '<p>网络开小差了，请稍后重试。若仍无法加载，可点击下方按钮刷新。</p><button type="button" class="retry">🔄 重试</button>';
+  }
+
+  /* 四态切换 */
+  var views = {ok:buildOk, loading:buildLoading, empty:buildEmpty, error:buildError};
+  bar.querySelectorAll('[data-st]').forEach(function(b){
+    b.addEventListener('click', function(){
+      bar.querySelectorAll('[data-st]').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      views[b.dataset.st]();
+      pager.style.visibility = (b.dataset.st === 'ok') ? 'visible' : 'hidden';
+    });
+  });
+
+  /* 版块筛选高亮（单选，切 aria-pressed） */
+  document.getElementById('chips').querySelectorAll('.chip').forEach(function(c){
+    c.addEventListener('click', function(){
+      document.getElementById('chips').querySelectorAll('.chip').forEach(function(x){ x.classList.remove('on'); x.setAttribute('aria-pressed','false'); });
+      c.classList.add('on'); c.setAttribute('aria-pressed','true');
+    });
+  });
+
+  /* 初始默认态：success 列表 */
+  buildOk();
+})();
+</script>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</body></html>

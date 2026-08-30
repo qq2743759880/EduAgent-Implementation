@@ -1,0 +1,741 @@
+﻿<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task53 v1 效果图 · /achievements 成就中心
+  > Hero 成就横幅 + 徽章墙（已解锁高亮 / 未解锁置灰+解锁进度+稀有度 + 满级判定）
+    + 积分总览（等级徽标 / 总积分 / 等级进度 → 下一级 / 已达最高等级）
+    + 积分流水分页（C2，delta±色 + 余额 + point_type 文案映射 + 空态）
+    + 排行榜（双 tablist：时间范围 日/周/月/总 × 维度 积分/时长/徽章数，APG Tabs；前三奖牌 + is_myself 高亮 + 我的排名 + source 实时）
+    + 五态(success/loading/empty/error) + 桌面/移动响应式
+  > 数据形状对齐契约⑬：
+    GET /api/gamification/me/badges           → 壳 data: {total, unlocked_count, next_milestone, items:[BadgeItem]}
+    GET /api/gamification/me/points?page&page_size → 壳 data: {total_points, level_no, level_title, level_progress_pct, logs_total, recent_logs:[PointLogItem]}
+    GET /api/gamification/rankings?scope&dimension&top_n → 壳 data: {scope, dimension, snapshot_date, top:[RankingRow], my_rank, source}
+  > 徽章墙/积分/排行均真实 API（无 MOCK）；排行数据来自 ZSET（task15 已验证 4 周期 key + 积分实时累计）
+  FR 编号: 前端页面清单 /achievements（task53）
+  AUDIT LOG:
+    [2026-08-22 v1 R1] 初稿提交（徽章墙已解锁/未解锁+进度 + 积分总览/流水/分页 + 排行双 tab + 空/载/错态 + @container 响应式）→ SUBMITTED
+-->
+<html lang="zh-CN" data-theme="light" class=""><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成就中心 · 效果图 v1（task53 achievements · 契约⑬ 壳化 gamification 糖果色 candy-playful STYLE FROZEN）</title>
+<style>
+/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
+:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-010: rgba(124,58,237,0.1); --htc-124-58-237-035: rgba(124,58,237,0.35); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-035: rgba(255,255,255,0.35); --htc-255-255-255-090: rgba(255,255,255,0.9); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3); --htc-88-204-2-035: rgba(88,204,2,0.35); --htc-88-204-2-040: rgba(88,204,2,0.4);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
+  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
+  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
+  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
+  --candy-pink-soft:#ffe3f4; --candy-bg:#fff9f0;
+  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
+  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
+  --candy-purple-deep:#5b21b6; --candy-yellow-deep:#c9a000; --candy-red-deep:#d63e3e;
+  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
+  --gray-300:#cfcfcf; --white:#fff;
+  --border-chip:rgba(31,31,31,.15);
+  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
+  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-124-58-237-001: rgba(124, 58, 237, 0.001); --htc-255-255-255-009: rgba(255, 255, 255, 0.009); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:auto;min-height:100dvh}
+body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:16px}
+
+/* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与者流→绝不与页面重叠 ===== */
+.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
+.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
+.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
+.respbar button:hover{background:var(--htc-124-58-237-001)}
+.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
+.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
+
+/* ===== Hero 成就横幅 ===== */
+.hero{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--candy-purple) 0%,var(--candy-blue) 55%,var(--candy-green) 100%);color:var(--ht-fff);box-shadow:var(--shadow-3d);padding:26px 24px}
+.hero .hero-badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--ht-fff);background:var(--htc-255-255-255-018);border:2px solid var(--htc-255-255-255-035);border-radius:999px;padding:4px 12px}
+.hero h1{margin-top:14px;font-size:28px;font-weight:900;letter-spacing:-.01em;line-height:1.2}
+.hero p{margin-top:6px;max-width:560px;font-size:14px;line-height:1.6;color:var(--htc-255-255-255-009)}
+
+/* ===== 区块卡片 ===== */
+.section{display:flex;flex-direction:column;gap:12px}
+.s-title{display:flex;align-items:center;gap:10px}
+.s-title .ico{display:grid;place-items:center;width:40px;height:40px;border:3px solid var(--ink);border-radius:14px;background:var(--candy-yellow);box-shadow:0 3px 0 var(--htc-31-31-31-018)}
+.s-title .ico.blue{background:var(--candy-blue)} .s-title .ico.green{background:var(--candy-green)}
+.s-title .ttl{font-size:17px;font-weight:900;color:var(--ink)}
+.s-title .sub{font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:1px}
+
+/* ===== 徽章墙 ===== */
+.badge-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.badge-count{display:inline-flex;align-items:center;gap:6px;font-size:0.8125rem;font-weight:800;color:var(--ink);background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-004);border-radius:999px;padding:5px 12px}
+.badge-next{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--candy-purple-deep);background:var(--candy-purple-soft);border:2px solid var(--htc-124-58-237-035);border-radius:999px;padding:5px 12px}
+.badge-full{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--candy-green-deep);background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-004);border-radius:999px;padding:5px 12px}
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.badge-card{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:16px 12px;text-align:center;position:relative;transition:transform .1s}
+.badge-card:hover{transform:translateY(-3px)}
+.badge-card .b-emoji{display:grid;place-items:center;width:58px;height:58px;border:2px solid var(--ink);border-radius:16px;font-size:30px;color:var(--ink)}
+.badge-card.locked .b-emoji{filter:grayscale(1);opacity:.4;background:var(--candy-bg)}
+.badge-card.unlocked .b-emoji{background:var(--candy-green-soft);box-shadow:inset 0 -3px 0 var(--htc-88-204-2-035)}
+.badge-card .b-lock{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink-muted);color:var(--ht-fff);font-size:12px}
+.badge-card .b-name{font-size:14px;font-weight:800;color:var(--ink)}
+.badge-card .b-rarity{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px;border:2px solid var(--ink)}
+.badge-card .b-rarity.common{background:var(--ink-faint);color:var(--ht-fff)}
+.badge-card .b-rarity.rare{background:var(--candy-blue);color:var(--ht-fff)}
+.badge-card .b-rarity.epic{background:var(--candy-purple);color:var(--ht-fff)}
+.badge-card .b-rarity.legendary{background:var(--candy-yellow);color:var(--ink)}
+.badge-card .b-desc{font-size:12px;color:var(--ink-muted);line-height:1.5;min-height:34px}
+.badge-card .b-prog{width:100%;display:flex;flex-direction:column;gap:4px}
+.badge-card .b-prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-weight:700}
+.badge-card .b-bar{height:8px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:1px solid var(--border-chip)}
+.badge-card .b-bar i{display:block;height:100%;border-radius:999px;background:var(--candy-green)}
+.badge-card .b-reward{font-size:12px;font-weight:800;color:var(--candy-green-deep)}
+
+/* ===== 积分总览 ===== */
+.points-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:20px 22px}
+.points-left{display:flex;flex-direction:column;gap:10px}
+.lv-pill{display:inline-flex;align-items:center;gap:6px;width:fit-content;font-size:12px;font-weight:800;color:var(--candy-purple-deep);background:var(--candy-purple-soft);border:2px solid var(--htc-124-58-237-035);border-radius:999px;padding:4px 11px}
+.total-pts{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.01em}
+.total-label{font-size:0.8125rem;color:var(--ink-faint);font-weight:600}
+.points-right{min-width:200px;flex:1;max-width:300px;display:flex;flex-direction:column;gap:8px}
+.lv-range{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-muted);font-weight:600}
+.lv-range b{color:var(--ink);font-weight:800}
+.lv-prog{height:12px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:2px solid var(--ink)}
+.lv-prog i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--candy-green),var(--candy-blue))}
+.lv-note{text-align:right;font-size:11px;color:var(--ink-faint);font-weight:700}
+.lv-max{display:inline-flex;align-items:center;gap:5px;color:var(--candy-orange-deep);font-weight:800}
+
+/* ===== 积分流水 ===== */
+.log-card{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);overflow:hidden}
+.log-head{font-size:14px;font-weight:900;color:var(--ink);border-bottom:2px dashed var(--border-chip);padding:12px 16px}
+.log-list{display:flex;flex-direction:column}
+.log-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px dashed var(--border-chip)}
+.log-item:last-child{border-bottom:none}
+.log-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:0.9375rem;flex-shrink:0;border:2px solid var(--ink)}
+.log-ico.up{background:var(--candy-green-soft)}
+.log-ico.down{background:var(--candy-orange-soft)}
+.log-mid{min-width:0;flex:1}
+.log-mid .lg-title{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-mid .lg-meta{font-size:12px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-amt{text-align:right;flex-shrink:0}
+.log-amt .lg-delta{font-size:0.9375rem;font-weight:800;font-variant-numeric:tabular-nums}
+.log-amt .lg-delta.up{color:var(--candy-green-deep)}
+.log-amt .lg-delta.down{color:var(--candy-red-deep)}
+.log-amt .lg-bal{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ===== 排行榜 ===== */
+.rank-card{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);overflow:hidden}
+.rank-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:2px dashed var(--border-chip);padding:12px 16px}
+.rank-head .rh-ttl{font-size:14px;font-weight:900;color:var(--ink)}
+.rank-head .rh-meta{font-size:12px;color:var(--ink-faint);font-weight:600}
+.rank-span{display:flex;flex-wrap:wrap;gap:10px;padding:12px 16px 4px}
+.rank-dim{padding:2px 16px 12px}
+.tabgroup{display:inline-flex;align-items:center;gap:2px;background:var(--candy-bg);border:2px solid var(--ink);border-radius:12px;padding:3px}
+.tabgroup .tab{display:inline-flex;align-items:center;gap:5px;font-size:0.8125rem;font-weight:700;color:var(--ink-muted);border:none;background:transparent;border-radius:9px;padding:5px 12px;transition:background .12s,color .12s}
+.tabgroup .tab:hover{color:var(--ink)}
+.tabgroup .tab.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-purple-deep)}
+.rank-body{padding:2px 0}
+.rank-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px dashed var(--border-chip)}
+.rank-row:last-child{border-bottom:none}
+.rank-row.mine{background:var(--candy-purple-soft)}
+.rank-no{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;border:2px solid var(--ink)}
+.rank-no.gold{background:var(--candy-yellow)} .rank-no.silver{background:var(--gray-300)} .rank-no.bronze{background:var(--candy-orange-soft)}
+.rank-lg-nm{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;flex-shrink:0;background:var(--candy-purple)}
+.rank-row .r-name{min-width:0;flex:1;font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-row .r-me{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:var(--ht-fff);background:var(--candy-purple-deep);border-radius:6px;padding:1px 7px;margin-left:6px}
+.rank-row .r-val{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--candy-purple-deep);flex-shrink:0}
+.rank-row .r-unit{font-size:11px;color:var(--ink-faint);font-weight:600;margin-left:2px}
+.rank-row .r-live{font-size:11px;font-weight:800;color:var(--candy-green-deep);background:var(--candy-green-soft);border-radius:999px;padding:2px 8px;flex-shrink:0}
+.myrank{display:flex;align-items:center;gap:8px;border-top:2px solid var(--ink);background:var(--candy-bg);padding:12px 16px;font-size:0.8125rem}
+.myrank .mr-lbl{color:var(--ink-muted);font-weight:600}
+.myrank .mr-val{font-weight:900;color:var(--ink)}
+
+/* ===== 分页（C2）===== */
+.pager{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px}
+.pager-btn{min-width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);background:var(--white);border-radius:12px;font-size:0.8125rem;font-weight:800;color:var(--ink);box-shadow:0 3px 0 var(--htc-31-31-31-014);padding:0 10px;transition:transform .08s,box-shadow .08s}
+.pager-btn:hover{transform:translateY(-1px)}
+.pager-btn:active{transform:translateY(1px);box-shadow:none}
+.pager-btn.on{background:var(--candy-green);color:var(--ht-fff)}
+.pager-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.pager .total{font-size:12px;color:var(--ink-faint);font-weight:700;margin-left:6px}
+
+/* ===== 状态：loading 骨架 ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{border:3px solid var(--gray-300);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ht-eee) 25%,var(--ht-f7f1e6) 50%,var(--ht-eee) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w60{width:60%}.sk-line.w40{width:40%}.sk-line.w90{width:90%}.sk-line.w25{width:25%}.sk-line.w70{width:70%}.sk-line.w30{width:30%}
+.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,var(--ht-e6e6e6) 25%,var(--ht-f4f4f4) 50%,var(--ht-e6e6e6) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:55%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* ===== 状态：empty / error ===== */
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d)}
+.state .st-emoji{font-size:46px}
+.state h3{font-size:1.125rem;font-weight:800;color:var(--ink)}
+.state p{font-size:14px;color:var(--ink-muted);line-height:1.6;max-width:340px}
+.retry{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-red);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-red-deep)}
+.retry:active{transform:translateY(1px);box-shadow:none}
+
+/* ===== 演示态控制（HTML 专属）===== */
+[data-st="loading"] .show-ok{display:none}
+[data-st="loading"] .show-load{display:flex}
+[data-st="empty"] .show-ok{display:none}
+[data-st="empty"] .show-empty{display:flex}
+[data-st="error"] .show-ok{display:none}
+[data-st="error"] .show-err{display:flex}
+.show-load,.show-empty,.show-err{display:none}
+[data-st="privacy"] .rank-body{display:none}
+body[data-show="empty-log"] .log-ok{display:none}
+body[data-show="empty-log"] .log-empty{display:flex}
+
+/* ===== 响应式断点（@container 以 body 宽度驱动）===== */
+@container app (max-width:820px){
+  .badge-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+  .hero h1{font-size:23px}
+  .hero{padding:20px 18px}
+  .total-pts{font-size:32px}
+  .rank-span{flex-direction:column;align-items:flex-start}
+}
+@container app (max-width:560px){
+  .badge-grid{grid-template-columns:repeat(2,1fr)}
+  .points-card{flex-direction:column;align-items:flex-start}
+  .points-right{max-width:100%;width:100%}
+}
+</style>
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body data-st="ok" data-show="" class="on">
+  <!-- 审核工具条（不进入 React）：视口切换 + 演示态 -->
+  <div class="respbar" role="toolbar" aria-label="效果图演示控制">
+    <span class="rr">视口:</span>
+    <button data-vw="1440" class="on">1440</button>
+    <button data-vw="1024">1024</button>
+    <button data-vw="820">820</button>
+    <button data-vw="768">768</button>
+    <button data-vw="520">520</button>
+    <button data-vw="375">375</button>
+    <span class="sep"></span>
+    <span class="rr">状态:</span>
+    <button data-st="ok" class="">成功</button>
+    <button data-st="loading">加载</button>
+    <button data-st="empty">空态</button>
+    <button data-st="error">错误</button>
+    <button data-st="privacy">隐私排行</button>
+    <span class="sep"></span>
+    <button data-toggle="empty-log">积分流水空</button>
+  </div>
+
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">EduAgent</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>错题/单词本</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item active" href="achievements.html" aria-current="page"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub</div>
+</header>
+  <div class="page">
+    <!-- Hero 成就横幅 -->
+    <section class="hero" aria-label="成就中心横幅">
+      <span class="hero-badge">🏆 成就中心 · 让努力被看见</span>
+      <h1>成就与成长</h1>
+      <p>徽章记录你的每一步成长，积分见证每一次坚持，排行榜上看看你超越了谁。</p>
+    </section>
+
+    <!-- ========== 排行榜（ZSET） ========== -->
+    <section class="section" aria-labelledby="rank-sec" style="">
+      <div class="s-title" style="">
+        <span class="ico green" aria-hidden="true">🏅</span>
+        <div>
+          <div class="ttl" id="rank-sec">排行榜</div>
+          <div class="sub show-ok">日 / 周 / 月 / 总榜 · 学习时长 · 徽章数 · 实时数据</div>
+        </div>
+      </div>
+
+      <!-- 排行成功态 -->
+      <div class="rank-card show-ok">
+        <div class="rank-head" style="">
+          <span class="rh-ttl">学习排行榜</span>
+          <span class="rh-meta">快照日期：2026-08-22 · 每日更新</span>
+        </div>
+        <!-- 时间范围 tab -->
+        <div class="rank-span">
+          <div class="tabgroup" role="tablist" aria-label="排行时间范围">
+            <button class="tab on" role="tab" aria-selected="true" id="scope-daily">日榜</button>
+            <button class="tab" role="tab" aria-selected="false" id="scope-weekly">周榜</button>
+            <button class="tab" role="tab" aria-selected="false" id="scope-monthly">月榜</button>
+            <button class="tab" role="tab" aria-selected="false" id="scope-all">总榜</button>
+          </div>
+        </div>
+        <!-- 维度 tab -->
+        <div class="rank-dim" style="">
+          <div class="tabgroup" role="tablist" aria-label="排行维度">
+            <button class="tab on" role="tab" aria-selected="true" style="">
+              <span aria-hidden="true">🏆</span>积分
+            </button>
+            <button class="tab" role="tab" aria-selected="false" style="">
+              <span aria-hidden="true" style="">⏱️</span>学习时长
+            </button>
+            <button class="tab" role="tab" aria-selected="false" style="">
+              <span aria-hidden="true">🎖️</span>徽章数
+            </button>
+          </div>
+        </div>
+
+        <!-- tabpanel 排行列表 -->
+        <div class="rank-body" role="tabpanel">
+          <div class="rank-row mine">
+            <span class="rank-no gold" aria-label="第 1 名">👑</span>
+            <div class="r-name" style="">Adm02Test
+              <span class="r-me">我</span>
+            </div>
+            <span class="r-val">12,850<span class="r-unit">分</span></span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-no silver" aria-label="第 2 名">🥈</span>
+            <div class="r-name">小豆芽</div>
+            <span class="r-val">9,876<span class="r-unit">分</span></span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-no bronze" aria-label="第 3 名">🥉</span>
+            <div class="r-name">勤奋小海豚</div>
+            <span class="r-val">8,420<span class="r-unit">分</span></span>
+          </div>
+          <div class="rank-row">
+            <div class="rank-lg-nm">4</div>
+            <div class="r-name">阳光学习员</div>
+            <span class="r-val">7,155<span class="r-unit">分</span></span>
+          </div>
+          <div class="rank-row">
+            <div class="rank-lg-nm">5</div>
+            <div class="r-name">早起鸟</div>
+            <span class="r-val">6,990<span class="r-unit">分</span></span>
+          </div>
+          <div class="rank-row">
+            <div class="rank-lg-nm">6</div>
+            <div class="r-name">持之以恒</div>
+            <span class="r-val">6,200<span class="r-unit">分</span></span>
+          </div>
+        </div>
+
+        <!-- 我的排名 -->
+        <div class="myrank">
+          <span class="mr-lbl">📍 我的排名：</span>
+          <span class="mr-val">第 1 名</span>
+          <span class="mr-lbl" style="margin-left:12px">12,850 分 ·</span>
+          <span class="r-live">实时</span>
+        </div>
+      </div>
+
+      <!-- 排行加载态 -->
+      <div class="sk show-load" role="status" aria-busy="true">
+        <span style="position:absolute;clip:rect(0 0 0 0)">正在加载排行榜…</span>
+        <div class="sk-card" style="height:56px"></div>
+        <div class="sk-card" style="height:56px"></div>
+        <div class="sk-card" style="height:56px"></div>
+        <div class="sk-card" style="height:56px"></div>
+        <div class="sk-card" style="height:56px"></div>
+        <div class="sk-card" style="height:56px"></div>
+      </div>
+
+      <!-- 排行空态 / 错误态（注意：排行空态走 C7，错误态走 C8） -->
+      <div class="state show-empty" role="status">
+        <span class="st-emoji" aria-hidden="true">🏅</span>
+        <h3>该榜暂无数据</h3>
+        <p>快去学习抢榜首吧～</p>
+      </div>
+      <div class="state show-err" role="alert">
+        <span class="st-emoji" aria-hidden="true">😵</span>
+        <h3>排行榜加载失败</h3>
+        <p>网络开小差了，请稍后重试。</p>
+        <button class="retry">🔄 重试</button>
+      </div>
+    </section>
+<!-- ========== 积分总览 + 流水 ========== -->
+    <section class="section" aria-labelledby="points-sec" style="">
+      <div class="s-title">
+        <span class="ico blue" aria-hidden="true">💸</span>
+        <div>
+          <div class="ttl" id="points-sec">积分</div>
+          <div class="sub show-ok">等级成长与积分流水</div>
+        </div>
+      </div>
+
+      <!-- 积分总览（成功态） -->
+      <div class="points-card show-ok">
+        <div class="points-left">
+          <span class="lv-pill">🏅 Lv.5 · 进阶学咖</span>
+          <div class="total-pts">2,330</div>
+          <div class="total-label">当前积分</div>
+        </div>
+        <div class="points-right">
+          <div class="lv-range">
+            <span>Lv.5（<b>2,000</b> 分）</span>
+            <span>下一级 Lv.6（<b>3,000</b> 分）</span>
+          </div>
+          <div class="lv-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33">
+            <i style="width:33%"></i>
+          </div>
+          <div class="lv-note">距下一级还差 33%</div>
+        </div>
+      </div>
+
+      <!-- 积分流水（成功态） -->
+      <div class="log-card show-ok">
+        <div class="log-head">积分流水 <span style="color:var(--ink-faint);font-weight:600">共 6 条</span></div>
+        <div class="log-list">
+          <div class="log-item">
+            <span class="log-ico up" aria-hidden="true">⬆️</span>
+            <div class="log-mid">
+              <div class="lg-title">发布回帖</div>
+              <div class="lg-meta">在《高数进阶》下回帖 · 2026-08-21 09:12</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta up">+2</div>
+              <div class="lg-bal">余额 2,330</div>
+            </div>
+          </div>
+          <div class="log-item">
+            <span class="log-ico up" aria-hidden="true">⬆️</span>
+            <div class="log-mid">
+              <div class="lg-title">练习满分</div>
+              <div class="lg-meta">英语·时态练习 全对 · 2026-08-21 08:30</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta up">+10</div>
+              <div class="lg-bal">余额 2,328</div>
+            </div>
+          </div>
+          <div class="log-item">
+            <span class="log-ico up" aria-hidden="true">⬆️</span>
+            <div class="log-mid">
+              <div class="lg-title">徽章奖励</div>
+              <div class="lg-meta">解锁「坚持到底」 · 2026-08-20 22:45</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta up">+30</div>
+              <div class="lg-bal">余额 2,318</div>
+            </div>
+          </div>
+          <div class="log-item">
+            <span class="log-ico up" aria-hidden="true">⬆️</span>
+            <div class="log-mid">
+              <div class="lg-title">每日登录</div>
+              <div class="lg-meta">连续第 7 天 · 2026-08-20 08:00</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta up">+5</div>
+              <div class="lg-bal">余额 2,288</div>
+            </div>
+          </div>
+          <div class="log-item">
+            <span class="log-ico down" aria-hidden="true">⬇️</span>
+            <div class="log-mid">
+              <div class="lg-title">学习时长</div>
+              <div class="lg-meta">时长结算 · 2026-08-19 23:59</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta down">−0</div>
+              <div class="lg-bal">余额 2,283</div>
+            </div>
+          </div>
+          <div class="log-item">
+            <span class="log-ico up" aria-hidden="true">⬆️</span>
+            <div class="log-mid">
+              <div class="lg-title">发布帖子</div>
+              <div class="lg-meta">新帖《雅思阅读提速技巧》 · 2026-08-18 15:20</div>
+            </div>
+            <div class="log-amt">
+              <div class="lg-delta up">+5</div>
+              <div class="lg-bal">余额 2,283</div>
+            </div>
+          </div>
+        </div>
+        <!-- 分页 C2 -->
+        <div class="pager" aria-label="积分流水分页">
+          <button class="pager-btn" disabled="" aria-label="上一页">‹</button>
+          <button class="pager-btn on" aria-current="page">1</button>
+          <button class="pager-btn" aria-label="第 2 页">2</button>
+          <button class="pager-btn" aria-label="下一页">›</button>
+          <span class="total">共 6 条</span>
+        </div>
+      </div>
+
+      <!-- 积分流水空态 -->
+      
+
+      <!-- 积分加载/错误态 -->
+      <div class="sk show-load" role="status" aria-busy="true">
+        <span style="position:absolute;clip:rect(0 0 0 0)">正在加载积分…</span>
+        <div class="sk-card" style="height:130px"></div>
+        <div class="sk-card" style="height:200px"></div>
+      </div>
+      <div class="state show-err" role="alert">
+        <span class="st-emoji" aria-hidden="true">😵</span>
+        <h3>积分加载失败</h3>
+        <p>网络开小差了，请稍后重试。</p>
+        <button class="retry">🔄 重试</button>
+      </div>
+    </section>
+
+    <!-- ========== 徽章墙 ========== -->
+    <section class="section" aria-labelledby="badge-sec" style="">
+      <div class="s-title">
+        <span class="ico" aria-hidden="true">🎖️</span>
+        <div>
+          <div class="ttl" id="badge-sec">徽章</div>
+          <div class="sub show-ok">已解锁 3 / 8 枚 · 学习 / 成就 / 社交三类</div>
+        </div>
+      </div>
+
+      <!-- 成功态真实数据 -->
+      <div class="show-ok">
+        <div class="badge-head">
+          <span class="badge-count">🎖 已解锁 <b>3</b> / 8 枚</span>
+          <span class="badge-next">✨ 下一枚：第一次点赞互动</span>
+        </div>
+        <div class="badge-grid">
+          <!-- 已解锁 LEGENDARY -->
+          <div class="badge-card unlocked">
+            <span class="b-lock" hidden=""></span>
+            <div class="b-emoji">😍</div>
+            <div class="b-name">社区之星</div>
+            <span class="b-rarity legendary">传说</span>
+            <p class="b-desc">在社区互动中累计点赞 50 次</p>
+            <div class="b-reward">+50 积分 · 已解锁</div>
+          </div>
+          <!-- 已解锁 EPIC -->
+          <div class="badge-card unlocked">
+            <div class="b-emoji">🌱</div>
+            <div class="b-name">坚持到底</div>
+            <span class="b-rarity epic">史诗</span>
+            <p class="b-desc">连续学习 7 天</p>
+            <div class="b-reward">+30 积分 · 已解锁</div>
+          </div>
+          <!-- 已解锁 COMMON -->
+          <div class="badge-card unlocked">
+            <div class="b-emoji">📚</div>
+            <div class="b-name">初学乍练</div>
+            <span class="b-rarity common">普通</span>
+            <p class="b-desc">完成第一门课程学习</p>
+            <div class="b-reward">+5 积分 · 已解锁</div>
+          </div>
+          <!-- 未解锁（置灰 + 进度） -->
+          <div class="badge-card locked">
+            <span class="b-lock" aria-hidden="true">🔒</span>
+            <div class="b-emoji">💬</div>
+            <div class="b-name">互动达人</div>
+            <span class="b-rarity rare">稀有</span>
+            <p class="b-desc">累计发布 10 条有效回帖</p>
+            <div class="b-prog">
+              <div class="b-prog-row"><span>解锁进度</span><span>3/10</span></div>
+              <div class="b-bar"><i style="width:30%"></i></div>
+            </div>
+          </div>
+          <!-- 未解锁 -->
+          <div class="badge-card locked">
+            <span class="b-lock" aria-hidden="true">🔒</span>
+            <div class="b-emoji">🧠</div>
+            <div class="b-name">满分学霸</div>
+            <span class="b-rarity epic">史诗</span>
+            <p class="b-desc">练习获得一次全对满分</p>
+            <div class="b-prog">
+              <div class="b-prog-row"><span>解锁进度</span><span>6/10</span></div>
+              <div class="b-bar"><i style="width:60%"></i></div>
+            </div>
+          </div>
+          <!-- 未解锁 -->
+          <div class="badge-card locked">
+            <span class="b-lock" aria-hidden="true">🔒</span>
+            <div class="b-emoji">🔥</div>
+            <div class="b-name">连胜王者</div>
+            <span class="b-rarity legendary">传说</span>
+            <p class="b-desc">连续登录 30 天</p>
+            <div class="b-prog">
+              <div class="b-prog-row"><span>解锁进度</span><span>12/30</span></div>
+              <div class="b-bar"><i style="width:40%"></i></div>
+            </div>
+          </div>
+          <!-- 未解锁 -->
+          <div class="badge-card locked">
+            <span class="b-lock" aria-hidden="true">🔒</span>
+            <div class="b-emoji">🤝</div>
+            <div class="b-name">社区贡献</div>
+            <span class="b-rarity rare">稀有</span>
+            <p class="b-desc">发布第一篇优质帖子</p>
+            <div class="b-prog">
+              <div class="b-prog-row"><span>解锁进度</span><span>1/5</span></div>
+              <div class="b-bar"><i style="width:20%"></i></div>
+            </div>
+          </div>
+          <!-- 未解锁 -->
+          <div class="badge-card locked">
+            <span class="b-lock" aria-hidden="true">🔒</span>
+            <div class="b-emoji">⏱️</div>
+            <div class="b-name">时间管理</div>
+            <span class="b-rarity common">普通</span>
+            <p class="b-desc">累计学习时长达到 100 小时</p>
+            <div class="b-prog">
+              <div class="b-prog-row"><span>解锁进度</span><span>45/100</span></div>
+              <div class="b-bar"><i style="width:45%"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载态（徽章骨架） -->
+      <div class="sk show-load" role="status" aria-busy="true">
+        <span style="position:absolute;clip:rect(0 0 0 0)">正在加载徽章…</span>
+        <div class="sk-card"><div class="sk-line w40"></div></div>
+        <div class="sk" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+          <div class="sk-card" style="height:150px"></div>
+        </div>
+      </div>
+
+      <!-- 徽章墙空态（无徽章） -->
+      <div class="state show-empty" role="status">
+        <span class="st-emoji" aria-hidden="true">🪙</span>
+        <h3>还没有徽章</h3>
+        <p>完成学习任务、参与社区互动、坚持每天登录，徽章记录你的每一步成长。</p>
+      </div>
+
+      <!-- 徽章墙错误态 -->
+      <div class="state show-err" role="alert">
+        <span class="st-emoji" aria-hidden="true">😵</span>
+        <h3>徽章加载失败</h3>
+        <p>网络开小差了，请稍后重试。</p>
+        <button class="retry">🔄 重试</button>
+      </div>
+    </section>
+
+      </div>
+</div><!-- /.glayout -->
+
+  <script>
+  (function () {
+    // 视口切换
+    document.querySelectorAll('[data-vw]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var vw = this.dataset.vw;
+        var frame = document.documentElement;
+        frame.style.width = vw + 'px';
+        frame.style.maxWidth = '100vw';
+        frame.style.margin = '0 auto';
+        document.querySelectorAll('[data-vw]').forEach(function (x) { x.classList.remove('on'); });
+        this.classList.add('on');
+      });
+    });
+    // 演示状态切换
+    document.querySelectorAll('[data-st]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.body.dataset.st = this.dataset.st;
+        document.querySelectorAll('[data-st]').forEach(function (x) { x.classList.remove('on'); });
+        this.classList.add('on');
+      });
+    });
+    // 积分流水空态开关
+    document.querySelectorAll('[data-toggle="empty-log"]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (document.body.dataset.st === 'empty') document.body.dataset.st = 'ok';
+        var on = document.body.dataset.show === 'empty-log';
+        document.body.dataset.show = on ? '' : 'empty-log';
+        this.classList.toggle('on', !on);
+      });
+    });
+  })();
+  </script>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</body></html>

@@ -1,0 +1,546 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task56 原型 · 管理端课程总览 /admin/courses</title>
+<!--
+  task56 HTML 原型（审核稿）
+  - P13 风格 candy-playful frozen
+  - 契约：app/domains/course_admin（权威）
+    GET  /api/admin/courses/series?keyword&delivery_mode&sale_status&sort&page&page_size
+    POST /series · PATCH /series/{id} · DELETE /series/{id}（软删→off_sale）
+  - 数据列（契约缺口已实披露）：系列 / 交付模式 / 状态 / 创建时间 / 操作
+    · 无 institution_name / cohort_count（后端未返回，不做 MOCK）
+  - 行内「班次」→ 跳 /admin/courses/{seriesId}（task57 详情）
+  AUDIT LOG:
+    [2026-08-23 v1 R1] 初稿提交（FilterBar 关键词/交付/状态/排序 + DataTable + DropdownMenu 编辑/班次/上下架/删除 + 新建系列 Dialog + 删除 ConfirmDialog「下架优先于删除」+ 三态 + 响应式）→ SUBMITTED
+    [2026-08-23 v2 R2] 占位待用户审核反馈
+-->
+<style>
+  :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-6a4fd0: #6a4fd0; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --muted-bg:#eef0f5; --muted-ink:#5b647b;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 72px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .row{display:flex;gap:6px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* header */
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:2px}
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:14px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:220px}
+  .fld select{width:140px}
+  .fld select:focus,.fld input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .toolbar-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12px;color:var(--muted)}
+  .toolbar-meta b{color:var(--ink);font-size:0.8125rem}
+  /* table */
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.series-row:hover{background:var(--ht-fafbff)}
+  .series-cell{display:flex;align-items:center;gap:11px}
+  .series-cell .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0}
+  .series-cell .nm{font-weight:600;color:var(--ink)}
+  .series-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .series-cell .tg{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+  .tag-chips{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;background:var(--primary-soft);color:var(--primary)}
+  /* badge */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)} .badge-mut .pd{background:var(--muted-ink)}
+  .b-dm{display:inline-block;border-radius:7px;padding:2px 8px;font-size:12px;font-weight:600}
+  .b-live{background:var(--ht-e6f3fe);color:var(--ht-0b6bc2)}.b-rec{background:var(--ht-f1ecfe);color:var(--ht-6a4fd0)}.b-offline{background:var(--ht-fdf0e4);color:var(--ht-b4600e)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:148px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)} .dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center;opacity:.75}
+  a.dd-item{text-decoration:none}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:520px;max-height:88vh;overflow:auto}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .confirm .modal{max-width:420px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* three-state */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skrow td{padding:14px}.sk-line{height:13px;border-radius:6px}
+  /* pagination */
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  .hidden{display:none!important}
+  @media(max-width:760px){
+    .fld.search,.fld.search input,.fld select{width:100%}
+    .page-head{flex-direction:column;align-items:flex-start}
+    .mf{grid-template-columns:1fr}
+    thead th.c-meta{display:none}
+    tbody td.c-meta{display:none}
+  }
+
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item active" href="admin-courses.html" aria-current="page"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console</div>
+</header>
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <h1>课程管理</h1>
+      <div class="sub">系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series</div>
+    </div>
+    <button class="btn btn-primary" data-open="series-form" id="btn-create">
+      ＋ 新建系列
+    </button>
+  </div>
+
+  <!-- 筛选栏 -->
+  <div class="filterbar">
+    <div class="fld search"><label for="f-kw">搜索</label><input id="f-kw" class="search" type="text" placeholder="系列名称 / 编码"></div>
+    <div class="fld"><label for="f-dm">交付模式</label>
+      <select id="f-dm" onchange="applyFilter()">
+        <option value="">全部交付</option>
+        <option value="online_live">直播</option>
+        <option value="online_recorded">录播</option>
+        <option value="offline_face_to_face">面授</option>
+      </select>
+    </div>
+    <div class="fld"><label for="f-ss">状态</label>
+      <select id="f-ss" onchange="applyFilter()">
+        <option value="">全部状态</option>
+        <option value="draft">草稿</option>
+        <option value="on_sale">在售</option>
+        <option value="off_sale">已下架</option>
+      </select>
+    </div>
+    <div class="fld"><label for="f-sort">排序</label>
+      <select id="f-sort" onchange="applyFilter()">
+        <option value="default">默认排序</option>
+        <option value="newest">最新创建</option>
+        <option value="name_asc">名称升序</option>
+        <option value="name_desc">名称降序</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetFilter()">重置</button>
+  </div>
+
+  <div class="toolbar-meta"><span>共 <b id="total-count">219</b> 个系列 · 每页 10</span></div>
+
+  <!-- 表格 -->
+  <div class="tbl-card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:46%">系列</th>
+          <th>交付模式</th>
+          <th>状态</th>
+          <th class="c-meta">创建时间</th>
+          <th style="text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"><!-- rows injected --></tbody>
+    </table>
+
+    <div id="state-empty" class="state hidden">
+      <div class="st-ico">📭</div>
+      <div><b style="color:var(--ink)">暂无系列</b></div>
+      <p style="margin:4px 0 0">点击右上角「新建系列」开始搭建课程</p>
+    </div>
+
+    <div id="state-error" class="state hidden">
+      <div class="st-ico">⚠️</div>
+      <div><b style="color:var(--ink)">加载失败</b></div>
+      <p style="margin:4px 0 12px" id="err-msg">后端不可用，请稍后重试</p>
+      <button class="btn btn-ghost btn-mini" onclick="render('success')">重试</button>
+    </div>
+
+    <div id="pager" class="pager"></div>
+  </div>
+
+  <!-- 视图切换（审核用，非产物） -->
+  <div class="demo-ctrl">
+    <b>视图（审核用）</b>
+    <div class="row">
+      <button data-v="success" class="on">成功</button>
+      <button data-v="loading">加载</button>
+      <button data-v="error">错误</button>
+      <button data-v="empty">空</button>
+    </div>
+  </div>
+
+  <!-- 新建/编辑系列 Dialog -->
+  <div class="scrim" id="series-form">
+    <div class="modal">
+      <div class="mh"><h3 id="form-title">新建系列</h3><button class="m-close" data-close>&times;</button></div>
+      <form class="mb" id="series-form-fields">
+        <div class="mf">
+          <div class="mff full"><label>系列名称 *</label><input name="series_name" placeholder="如：零基础 Python 入门营"></div>
+          <div class="mff"><label>系列编码 *</label><input name="series_code" placeholder="如：PY001"></div>
+          <div class="mff"><label>机构 ID *</label><input name="institution_id" type="number" placeholder="如：1"></div>
+          <div class="mff"><label>交付模式 *</label>
+            <select name="delivery_mode">
+              <option value="online_live">直播</option>
+              <option value="online_recorded">录播</option>
+              <option value="offline_face_to_face">面授</option>
+            </select>
+          </div>
+          <div class="mff"><label>上下架状态</label>
+            <select name="sale_status">
+              <option value="draft">草稿</option>
+              <option value="on_sale">在售</option>
+              <option value="off_sale">已下架</option>
+            </select>
+          </div>
+          <div class="mff"><label>封面 URL</label><input name="cover_url" placeholder="https://…"></div>
+          <div class="mff full"><label>简介</label><textarea name="description" placeholder="课程简介…"></textarea></div>
+        </div>
+      </form>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-primary btn-mini" onclick="saveSeries()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 软删 ConfirmDialog -->
+  <div class="scrim confirm" id="confirm-del">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div>
+            <b>删除系列「<span id="del-name"></span>」？</b>
+            <p><b>下架优先于删除</b>：删除为软删，将把该系列置为「已下架」，用户端不再展示。请在确认后点击删除。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doDelete()">删除（软删）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下架 ConfirmDialog -->
+  <div class="scrim confirm" id="confirm-off">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdf0e4);color:var(--candy-orange)">👁</div>
+          <div>
+            <b>下架系列「<span id="off-name"></span>」？</b>
+            <p>下架后该系列在用户端不再展示。上架为恢复操作，随时可再上架。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doOffSale()">确认下架</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /.wrap -->
+</div><!-- /.glayout -->
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+
+<script>
+/* ============ 样例数据（审核展示用；React 实现走真实 API，无 MOCK） ============ */
+const DELIVERY = { online_live:["直播","b-live","🖥"], online_recorded:["录播","b-rec","🎞"], offline_face_to_face:["面授","b-offline","🏫"] };
+const SERIES = [
+  { id:1, name:"零基础 Python 入门营", code:"PY001", dm:"online_live", st:"on_sale", created:"2026-08-20", tg:["编程","L1"] },
+  { id:2, name:"数据分析实战营", code:"DA101", dm:"online_recorded", st:"on_sale", created:"2026-08-18", tg:["数据分析","L2"] },
+  { id:3, name:"少儿编程启蒙班", code:"KP002", dm:"offline_face_to_face", st:"draft", created:"2026-08-15", tg:["编程","L1"] },
+  { id:4, name:"前端工程师就业班", code:"FE202", dm:"online_live", st:"on_sale", created:"2026-08-12", tg:["前端","L3"] },
+  { id:5, name:"算法与数据结构（高级）", code:"AL301", dm:"online_recorded", st:"off_sale", created:"2026-08-08", tg:["算法","L4"] },
+  { id:6, name:"AI 大模型应用开发", code:"AI102", dm:"online_live", st:"draft", created:"2026-08-05", tg:["AI","L3"] },
+  { id:7, name:"数据库设计基础", code:"DB001", dm:"online_recorded", st:"on_sale", created:"2026-08-01", tg:["数据库","L2"] },
+  { id:8, name:"Unity 游戏开发入门", code:"UG401", dm:"offline_face_to_face", st:"off_sale", created:"2026-07-28", tg:["游戏","L1"] },
+  { id:9, name:"网络安全攻防演练", code:"SE501", dm:"online_live", st:"draft", created:"2026-07-25", tg:["安全","L4"] },
+  { id:10,name:"产品经理必修课", code:"PM303", dm:"online_recorded", st:"on_sale", created:"2026-07-22", tg:["产品","L2"] },
+];
+const PAGE_SIZE=5;
+const totalPages = Math.max(1, Math.ceil(SERIES.length / PAGE_SIZE));
+
+/* GWT③：draft→muted 草稿 / on_sale→success 在售 / off_sale→muted 已下架 */
+function badge(st){
+  if(st==="on_sale") return `<span class="badge badge-on"><span class="pd"></span>在售</span>`;
+  if(st==="draft")   return `<span class="badge badge-mut"><span class="pd"></span>草稿</span>`;
+  return `<span class="badge badge-mut" style="outline:1px dashed var(--line)"><span class="pd"></span>已下架</span>`;
+}
+function delivery(dm){ const [t,c]=DELIVERY[dm]||[dm,"b-live"]; return `<span class="b-dm ${c}">${t}</span>`; }
+function chips(tg){ return (tg||[]).map(t=>`<span class="tag-chips">${t}</span>`).join(""); }
+
+let state="success", page=1, openDD=null;
+
+function renderRows(){
+  const body=document.getElementById("tbl-body");
+  const start=(page-1)*PAGE_SIZE, rows=SERIES.slice(start,start+PAGE_SIZE);
+  body.innerHTML = rows.map(s=>`
+    <tr class="series-row">
+      <td>
+        <div class="series-cell">
+          <div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div>
+          <div class="min">
+            <div class="nm">${s.name}</div>
+            <div class="cd">${s.code}</div>
+            <div class="tg">${chips(s.tg)}</div>
+          </div>
+        </div>
+      </td>
+      <td>${delivery(s.dm)}</td>
+      <td>${badge(s.st)}</td>
+      <td class="c-meta">${s.created}</td>
+      <td>
+        <div class="cell-actions" style="justify-content:flex-end">
+          <div class="dd" data-row="${s.id}">
+            <button class="dd-btn" onclick="toggleDD(event,${s.id})">管理 <span>▾</span></button>
+            <div class="dd-menu">
+              <button class="dd-item" onclick="openEdit(${s.id})"><span class="ic">✎</span>编辑</button>
+              <a class="dd-item" href="/admin/courses/${s.id}"><span class="ic">🧩</span>班次</a>
+              ${s.st==="off_sale" ? `<button class="dd-item" onclick="doOnSale(${s.id})"><span class="ic">▲</span>上架</button>`
+                                  : `<button class="dd-item" onclick="openOff(${s.id})"><span class="ic">▼</span>下架</button>`}
+              <button class="dd-item danger" onclick="openDel(${s.id})"><span class="ic">🗑</span>删除</button>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>`).join("");
+}
+function renderPager(){
+  const p=document.getElementById("pager");
+  let h=`<button ${page<=1?'disabled':''} onclick="page--;render('success')">‹</button>`;
+  for(let i=1;i<=totalPages;i++) h+=`<button class="${i===page?'cur':''}" onclick="page=${i};render('success')">${i}</button>`;
+  h+=`<button ${page>=totalPages?'disabled':''} onclick="page++;render('success')">›</button>`;
+  p.innerHTML=h;
+}
+function applyFilter(){
+  renderPager(); renderRows();
+  document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open"));
+}
+function render(v){ state=v||state;
+  document.querySelectorAll("[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===state));
+  const has=state==="success";
+  document.getElementById("tbl-body").classList.toggle("hidden",!has);
+  document.getElementById("pager").classList.toggle("hidden",!has);
+  document.getElementById("state-empty").classList.toggle("hidden",state!=="empty");
+  document.getElementById("state-error").classList.toggle("hidden",state!=="error");
+  if(has){ renderRows(); renderPager(); }
+  if(state==="loading") injectSkeleton();
+  document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open"));
+}
+function injectSkeleton(){
+  let rows=""; for(let i=0;i<5;i++) rows+=`<tr class="skrow"><td colspan="5"><div class="sk sk-line" style="width:60%"></div><div class="sk sk-line" style="width:30%;margin-top:8px"></div></td></tr>`;
+  document.getElementById("tbl-body").innerHTML=rows;
+  document.getElementById("state-empty").classList.add("hidden");
+  document.getElementById("state-error").classList.add("hidden");
+}
+function toggleDD(e,id){ e.stopPropagation(); const el=document.querySelector(`.dd[data-row="${id}"]`); const was=el.classList.contains("open");
+  document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")); if(!was) el.classList.add("open"); }
+document.addEventListener("click",()=>document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")));
+document.addEventListener("keydown",()=>document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")));
+
+/* dialogs */
+function openModal(id){ document.getElementById(id).classList.add("show"); }
+function closeAll(){ document.querySelectorAll(".scrim").forEach(s=>s.classList.remove("show")); document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")); }
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeAll));
+document.querySelectorAll(".scrim").forEach(s=>s.addEventListener("click",e=>{ if(e.target===s) closeAll(); }));
+function openCreate(){ document.getElementById("form-title").textContent="新建系列"; openModal("series-form"); }
+function openEdit(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("form-title").textContent="编辑系列 · "+s.name; openModal("series-form"); }
+function openDel(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("del-name").textContent=s.name; window.__delId=id; openModal("confirm-del"); }
+function openOff(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("off-name").textContent=s.name; window.__offId=id; openModal("confirm-off"); }
+function doOnSale(id){ const s=SERIES.find(x=>x.id===id); s.st="on_sale"; alert(`已上架「${s.name}」（React：PATCH sale_status=on_sale）`); closeAll(); render(); }
+function doOffSale(){ const s=SERIES.find(x=>x.id===window.__offId); s.st="off_sale"; alert(`已下架「${s.name}」（React：PATCH sale_status=off_sale）`); closeAll(); render(); }
+function doDelete(){ const s=SERIES.find(x=>x.id===window.__delId); s.st="off_sale"; alert(`已软删「${s.name}」（React：DELETE /series/{id} → off_sale）`); closeAll(); render(); }
+function saveSeries(){ alert("保存系列（React：POST/PATCH /series）"); closeAll(); }
+function resetFilter(){
+  ["f-kw","f-dm","f-ss","f-sort"].forEach(id=>{ const el=document.getElementById(id); el.value=el.type==="text"?"":""; });
+  page=1; applyFilter();
+}
+document.getElementById("btn-create").addEventListener("click",openCreate);
+render("success");
+</script>
+</body>
+</html>

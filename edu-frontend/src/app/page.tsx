@@ -1,57 +1,23 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/lib/auth-client";
-import { isSafeRedirect } from "@/lib/redirect";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 /**
- * 根路由：根据登录态重定向
- * - 未登录 → /login（携带 ?redirect= 保持回跳）
- * - 已登录 → /dashboard 或 URL 指定的 ?redirect= 目标（安全正则校验，防 Open Redirect）
+ * 根路由：直接进入糖果色静态页面（fe-html 签收版）
+ * - 用户端仪表盘：/dashboard.html
+ * - 页面间跳转由静态 HTML 内相对链接（courses.html / chat.html 等）驱动
  */
-function RootHomePageInner() {
+export default function RootHomePage() {
   const router = useRouter();
-  const search = useSearchParams();
-  const { ready, token } = useAuthStore();
-
-  const redirect = useMemo(() => {
-    const raw = search?.get("redirect")?.trim();
-    if (raw && isSafeRedirect(raw)) return raw;
-    return null;
-  }, [search]);
 
   useEffect(() => {
-    if (!ready) return;
-    if (token) {
-      // 已登录：优先按 URL 指定 redirect 跳，否则回仪表盘
-      router.replace(redirect ?? "/dashboard");
-    } else {
-      // 未登录：去登录页，把当前已有的 redirect（如果是当前用户要去的地方）保留透传给 login
-      const dest = new URLSearchParams();
-      if (redirect) dest.set("redirect", redirect);
-      const qs = dest.toString();
-      router.replace(`/login${qs ? `?${qs}` : ""}`);
-    }
-  }, [ready, token, router, redirect]);
+    router.replace("/dashboard.html");
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground bg-gradient-to-br from-primary-soft via-white to-secondary">
       正在进入 EduAgent…
     </div>
-  );
-}
-
-export default function RootHomePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground bg-gradient-to-br from-primary-soft via-white to-secondary">
-          正在进入 EduAgent…
-        </div>
-      }
-    >
-      <RootHomePageInner />
-    </Suspense>
   );
 }

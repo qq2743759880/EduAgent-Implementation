@@ -1,0 +1,628 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task60 原型 · 管理端用户 /admin/users</title>
+<!--
+  task60 HTML 原型（审核稿）
+  - P17 风格 candy-playful frozen（复用 task58 admin-questions 同源样式）
+  - 契约为权威：后端 app/admin/user_admin/router.py + schemas.py（task14 契约⑤ 用户域）+ task15 契约⑬ 响应壳
+    列表  GET /api/admin/users?keyword&role_code&status&yn&page&page_size
+            （search 字段：username/real_name/account/mobile/email LIKE；page_size 默认 20，max 100）
+    角色  POST /api/admin/users/{id}/role   body{target_role: admin|manager|teacher|student, reason?}  → {updated,user_id,target_role}
+    状态  POST /api/admin/users/{id}/status body{status:0|1, yn?:0|1, reason?}                        → {updated,user_id,status,yn}
+    学习  GET /api/admin/users/{id}/learning  ← ⚠ 契约缺口：后端当前未注册（详见 AUDIT LOG / 缺口声明）
+    列表项 AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,created_at,updated_at,last_login_at}
+  - 红线保护（对齐后端 service 40303「至少保留 1 名可用管理员账号」）：
+    GWT③ 对「唯一可用 admin」本人的 禁用(status=0/yn=0) 或 降级(target_role!=admin) → 前端 disabled + 提示；后端仍拒绝兜底
+    判定基线：排除该用户后，有效 admin（role=admin 且 status=1 且 yn=1）计数 >= 1 才允许 禁用/降级
+  - 角色枚举：admin/manager/teacher/student（_ALLOWED_ROLES）
+  - 演示用示例行仅作 UI 形态展示；学习详情 6 指标字段为 snake_case 契约预览，端点未注册 → 缺口头条声明，不写 MOCK 假数据
+  AUDIT LOG:
+    [2026-08-24 v1 R1] 初稿提交（用户 DataTable + FilterBar 搜索防抖400ms/角色/状态组合查询/分页 + 编辑Dialog(RoleSelect+状态切换+reason)
+      + 学习详情Dialog(6 StatCard+最近动态,缺口标注) + 最后admin红线禁用演示 + 演示控制器多态）→ SUBMITTED
+-->
+<style>
+  :root{ --htc-0-0-0-0.18: rgba(0,0,0,0.18); --htc-25-28-38-0.42: rgba(25,28,38,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-5b647b: #5b647b; --ht-7c4bd6: #7c4bd6; --ht-a78bfa: #a78bfa; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-25-28-38-042: rgba(25, 28, 38, 0.042); --htc-0-0-0-018: rgba(0, 0, 0, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:30px 22px 110px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:90;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:240px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* top shell strip（管理端导航，用户管理高亮） */
+  .shell{background:var(--ht-fff);border-bottom:1px solid var(--line)}
+  .shell-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:12px 22px}
+  .brand{font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px}
+  .brand .lg{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--primary-deep),var(--candy-purple));color:var(--ht-fff);display:grid;place-items:center;font-size:14px}
+  .nav-btn{border:none;background:transparent;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .nav-btn.on{background:var(--primary-soft);color:var(--primary)}
+  .nav-btn:hover{color:var(--primary)}
+  /* page head */
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:20px 0 12px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  .page-head .act{display:flex;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--muted-bg);border-radius:999px;padding:4px 10px}
+  .chip b{color:var(--primary)}
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:12px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:250px}
+  .fld select{width:150px}
+  .fld select:focus,.fld input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .ft-note{width:100%;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .ft-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  .deb-pulse{font-weight:600;color:var(--candy-orange);opacity:0;transition:opacity .15s}
+  .deb-pulse.show{opacity:1}
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+  /* table */
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.hov:hover{background:var(--ht-fafbff)}
+  .prim-cell{display:flex;align-items:center;gap:11px}
+  .prim-cell .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0;font-size:0.9375rem;font-weight:700}
+  .prim-cell .nm{font-weight:600;color:var(--ink)}
+  .prim-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted);font-size:12px}
+  .muted{color:var(--muted)}
+  /* badges */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-role-admin{background:var(--primary-soft);color:var(--primary-deep)} .badge-role-admin .pd{background:var(--primary)}
+  .badge-role-tea{background:var(--candy-purple)/0;background:var(--ht-f3edfe);color:var(--ht-7c4bd6)} .badge-role-tea .pd{background:var(--ht-a78bfa)}
+  .badge-role-std{background:var(--muted-bg);color:var(--muted-ink)} .badge-role-std .pd{background:var(--ht-5b647b)}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-off{background:var(--muted-bg);color:var(--muted-ink)} .badge-off .pd{background:var(--muted-ink)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn-ink)} .badge-warn .pd{background:var(--warn-ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .link-btn{border:none;background:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--primary);padding:4px 6px;border-radius:7px}
+  .link-btn:hover{background:var(--primary-soft)}
+  /* pagination + result meta */
+  .tbl-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-top:1px solid var(--line)}
+  .tbl-foot .cnt{font-size:12px;color:var(--muted)}
+  .pager{display:flex;align-items:center;gap:6px}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  /* empty / error / gap */
+  .box-pad{padding:46px 20px;text-align:center;color:var(--muted)}
+  .box-pad .ic{font-size:30px;margin-bottom:8px}
+  /* dialog */
+  .mask{position:fixed;inset:0;background:var(--htc-25-28-38-042);z-index:50;display:none}
+  .dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;background:var(--ht-fff);border-radius:18px;box-shadow:0 18px 50px var(--htc-0-0-0-018);width:560px;max-width:calc(100vw - 32px);max-height:88vh;overflow:auto;display:none}
+  .mask.show,.dialog.show{display:block}
+  .dlg-h{padding:16px 18px 0}
+  .dlg-h h3{margin:0;font-size:17px}
+  .dlg-h .sub{color:var(--muted);font-size:12px;margin-top:3px}
+  .dlg-b{padding:14px 18px 18px}
+  .dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:4px 18px 16px}
+  .close-x{float:right;border:none;background:var(--muted-bg);color:var(--muted);width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1}
+  .close-x:hover{color:var(--ink)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+  .field label{font-size:11px;color:var(--muted);font-weight:600}
+  .field select,.field input,.field textarea{border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;height:36px;background:var(--ht-fff);color:var(--ink)}
+  .field textarea{height:64px;padding:8px 10px;resize:none}
+  .field select:focus,.field input:focus,.field textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  /* group toggle for 状态 */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{border:none;background:var(--ht-fff);padding:8px 16px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg button.on{background:var(--primary);color:var(--ht-fff)}
+  /* red line hint */
+  .redline{display:flex;align-items:flex-start;gap:8px;background:var(--red-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--red-ink);margin-top:12px}
+  .gap-note{display:flex;align-items:flex-start;gap:8px;background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--warn-ink);margin-bottom:10px}
+  /* learn detail 6 statcards */
+  .stat6{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sc6{border:1px solid var(--line);border-radius:12px;padding:12px}
+  .sc6 .lbl{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .sc6 .val{font-size:20px;font-weight:800;margin-top:6px;color:var(--ink)}
+  .sc6 .val small{font-size:11px;font-weight:600;color:var(--muted)}
+  .sc6 .src{font-size:0.625rem;color:var(--muted);margin-top:3px;font-family:ui-monospace,Consolas,monospace}
+  .sub-t{font-size:0.8125rem;font-weight:700;margin:16px 0 8px;display:flex;align-items:center;gap:7px}
+  .sub-t .raw{font-size:0.625rem;color:var(--muted);font-weight:500;font-family:ui-monospace,Consolas,monospace}
+  .timeline{border-left:2px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:10px}
+  .tl{display:flex;align-items:baseline;gap:8px;font-size:0.8125rem}
+  .tl .t{color:var(--muted);font-size:11px;white-space:nowrap}
+  .tl .d{color:var(--ink)}
+  .hidden{display:none!important}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="uk-skel">
+  .sk{display:inline-block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--card) 50%,var(--line) 75%);background-size:400% 100%;animation:uksh 1.2s infinite}
+  .skav{width:32px;height:32px;border-radius:50%}
+  .nm1{width:92px}.cd1{width:132px}.cell1{width:72px}.cell2{width:58px}.cell3{width:92px}.cell4{width:80px}
+  @keyframes uksh{0%{background-position:100% 0}100%{background-position:0 0}}
+</style>
+</head>
+<body class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item active" href="admin-users.html" aria-current="page"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console</div>
+</header>
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>用户管理</h1>
+      <div class="sub">全量 <code>require_role(ADMIN)</code>；<b>最后 1 个可用 admin</b> 的 禁用/降级 前端禁用 + 后端拒绝（40303）</div>
+    </div>
+    <div class="act">
+      <span class="chip">列表 <code>GET /api/admin/users</code></span>
+      <span class="chip">总计 <b id="head-total">0</b> 人</span>
+    </div>
+  </div>
+
+  <!-- FilterBar：搜索防抖 400ms + 角色/状态组合查询 -->
+  <div class="filterbar">
+    <div class="fld">
+      <label>关键词</label>
+      <input class="search" id="f-kw" placeholder="昵称 / 手机 / 账号（防抖 400ms）">
+    </div>
+    <div class="fld">
+      <label>角色</label>
+      <select id="f-role">
+        <option value="">全部角色</option>
+        <option value="admin">管理员</option>
+        <option value="manager">教务</option>
+        <option value="teacher">教师</option>
+        <option value="student">学生</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>状态</label>
+      <select id="f-status">
+        <option value="">全部状态</option>
+        <option value="1">启用</option>
+        <option value="0">禁用</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>&nbsp;</label>
+      <button class="btn btn-ghost btn-mini" onclick="resetFilter()">重置</button>
+    </div>
+    <div class="ft-note">
+      <span class="deb-pulse" id="deb-pulse" title="防抖 400ms">● 400ms 后查询</span>
+      <span>组合查询：<code>keyword</code>（username/real_name/account/mobile/email LIKE）+ <code>role_code</code> + <code>status</code>。</span>
+    </div>
+  </div>
+
+  <!-- DataTable -->
+  <div class="tbl-card">
+    <table>
+      <thead><tr>
+        <th>用户</th><th>手机</th><th>角色</th><th>状态</th><th>注册时间</th><th>最近登录</th><th style="text-align:right">操作</th>
+      </tr></thead>
+      <tbody id="u-body"></tbody>
+    </table>
+    <div class="box-pad hidden" id="u-empty"><div class="ic">🔍</div>未匹配到用户（组合查询为空/调整筛选）</div>
+    <div class="box-pad hidden" id="u-error"><div class="ic">⚠️</div>查询失败：演示空/错误态，见右下控制器</div>
+    <div class="tbl-foot">
+      <span class="cnt" id="u-count">共 0 条</span>
+      <span class="pager" id="u-pager"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 学习详情 Dialog（GWT②：6 指标 + 最近动态；GET /{id}/learning 契约缺口见缺口头条） -->
+<div class="mask" id="learn-mask"></div>
+<div class="dialog" id="learn-dlg" style="width:600px">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3>学习详情</h3>
+    <div class="sub" id="learn-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <div class="gap-note" id="learn-gap">
+      <span>⚠️</span>
+      <span><b>契约缺口 · 实披露</b>：<code>GET /api/admin/users/{id}/learning</code> 后端当前<b>未注册</b>（user_admin router 现无 learning 端点）。
+      下方按 task60 契约字段绘制 6 指标面板 + 最近动态 UI 形态（值为<b>字段预览，非真实聚合</b>，不写 MOCK）；端点接线后由后端返回真实数据渲染。</span>
+    </div>
+    <div class="stat6" id="learn-cards"></div>
+    <div class="sub-t">最近动态 <span class="raw">recent_activities[]</span></div>
+    <div class="timeline" id="learn-tl"></div>
+  </div>
+  <div class="dlg-foot"><button class="btn btn-ghost" data-close>关闭</button></div>
+</div>
+
+<!-- 编辑用户 Dialog（RoleSelect + 状态切换 + reason；红线禁用） -->
+<div class="mask" id="edit-mask"></div>
+<div class="dialog" id="edit-dlg">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3>编辑用户</h3>
+    <div class="sub" id="edit-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <div class="row">
+      <div class="field">
+        <label>角色 <span class="muted">→ POST /api/admin/users/{id}/role</span></label>
+        <select id="e-role">
+          <option value="student">学生 · student</option>
+          <option value="teacher">教师 · teacher</option>
+          <option value="manager">教务 · manager</option>
+          <option value="admin">管理员 · admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>状态 <span class="muted">→ POST /api/admin/users/{id}/status</span></label>
+        <span class="seg" id="e-status-seg">
+          <button data-st="1">启用</button><button data-st="0">禁用</button>
+        </span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>变更原因（可选，reason ≤255）</label>
+        <textarea id="e-reason" placeholder="操作留痕，选填"></textarea>
+      </div>
+    </div>
+    <div class="redline hidden" id="e-redline">
+      <span>🚫</span>
+      <span><b>红线保护</b>：该用户是<b>唯一可用 admin</b>。禁用（status=0）或降级（≠admin）将导致无人能进入管理端——前端已禁用操作；后端同样拒绝（40303「至少保留 1 名可用管理员账号」）。</span>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" data-close>取消</button>
+    <button class="btn btn-primary" id="e-save" onclick="saveEdit()">保存变更</button>
+  </div>
+</div>
+
+<!-- 演示控制器 -->
+<div class="demo-ctrl">
+  <b>演示控制器</b>
+  <div class="grp">列表态</div>
+  <div class="row">
+    <button data-demo="list" data-v="success" class="on">正常</button>
+    <button data-demo="list" data-v="loading">加载</button>
+    <button data-demo="list" data-v="empty">空态</button>
+    <button data-demo="list" data-v="error">错误</button>
+  </div>
+  <div class="grp">最后 admin 红线</div>
+  <div class="row">
+    <button data-demo="redline" data-v="on">红线 ON</button>
+    <button data-demo="redline" data-v="off" class="on">红线 OFF</button>
+  </div>
+  <div class="grp">学习详情 6 指标</div>
+  <div class="row">
+    <button data-demo="learn" data-v="preview" class="on">字段预览</button>
+    <button data-demo="learn" data-v="gap">缺口说明</button>
+  </div>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ================= 演示数据（仅 UI 形态，非后端契约束缚） ================= */
+const ROLE_LABEL={admin:"管理员",manager:"教务",teacher:"教师",student:"学生"};
+const AVATAR_GRAD=["linear-gradient(135deg,var(--primary-deep),var(--candy-purple))",
+  "linear-gradient(135deg,var(--primary),var(--candy-blue))","linear-gradient(135deg,var(--candy-green),var(--candy-green))",
+  "linear-gradient(135deg,var(--candy-orange),var(--candy-pink))","linear-gradient(135deg,var(--candy-purple),var(--candy-pink))"];
+const USERS=[
+  {id:1001,key:"admin-001",nm:"陈管理",ph:"138****0001",role:"admin",st:1,reg:"2026-03-01",last:"2026-08-23 09:12",active:true},
+  {id:1002,key:"mg-002",nm:"教务小王",ph:"139****0012",role:"manager",st:1,reg:"2026-03-05",last:"2026-08-21 17:40",active:true},
+  {id:1003,key:"tea-003",nm:"李老师",ph:"137****0033",role:"teacher",st:1,reg:"2026-03-08",last:"2026-08-22 14:20",active:true},
+  {id:1004,key:"std-004",nm:"张三",ph:"138****0044",role:"student",st:1,reg:"2026-04-12",last:"2026-08-23 20:01",active:true},
+  {id:1005,key:"std-005",nm:"王小明",ph:"136****0055",role:"student",st:1,reg:"2026-04-20",last:"2026-08-20 11:30",active:true},
+  {id:1006,key:"std-006",nm:"赵强",ph:"135****0066",role:"student",st:0,reg:"2026-05-01",last:"2026-06-30 08:00",active:false},
+  {id:1007,key:"mg-007",nm:"教务老周",ph:"139****0077",role:"manager",st:1,reg:"2026-05-09",last:"2026-08-19 10:15",active:true},
+  {id:1008,key:"std-008",nm:"孙悦",ph:"137****0088",role:"student",st:1,reg:"2026-05-15",last:"2026-08-23 19:45",active:true},
+  {id:1009,key:"std-009",nm:"周子涵",ph:"136****0099",role:"student",st:1,reg:"2026-05-22",last:"2026-08-22 12:00",active:true},
+  {id:1010,key:"std-010",nm:"吴浩",ph:"135****0100",role:"student",st:0,reg:"2026-06-02",last:"2026-07-15 09:20",active:false},
+  {id:1011,key:"std-011",nm:"郑晓",ph:"138****0111",role:"student",st:1,reg:"2026-06-10",last:"2026-08-23 16:25",active:true},
+  {id:1012,key:"std-012",nm:"钱多多",ph:"139****0122",role:"student",st:1,reg:"2026-06-18",last:"2026-08-21 22:10",active:true}
+];
+/* 学习详情 6 指标字段预览（snake_case 契约；真实数据待 GET /{id}/learning 接线） */
+const LEARN_PREVIEW={
+  active_cohorts_count:{lbl:"报名班次",val:2,unit:"班"},
+  avg_progress_pct:{lbl:"平均进度",val:68,unit:"%"},
+  total_watched_seconds:{lbl:"累计观看",val:3840,unit:"秒 64 分"},
+  homework_accuracy_pct:{lbl:"作业正确率",val:85,unit:"%"},
+  exam_avg_score:{lbl:"考试均分",val:88,unit:"分"},
+  favorite_count:{lbl:"收藏",val:5,unit:"件"}
+};
+const RECENT_ACT=[{t:"08-23",d:"完成《Python 基础 · 第 3 章》课次 · 提交作业 判题 90 分"},{t:"08-22",d:"观看视频《循环结构》1300 秒"}, {t:"08-21",d:"报名班次：Python 入门班 2 期"},{t:"08-18",d:"考试《第 1 单元测评》均分 88"}];
+
+/* ================= 状态 ================= */
+let listView="success", redlineOn=false, learnView="preview";
+let uPage=1, uKw="", uRole="", uSt="";
+const PAGE_SIZE=10;
+
+/* ================= 防抖 400ms 搜索 ================= */
+let debTimer=null;
+document.getElementById("f-kw").addEventListener("input",function(){
+  const pulse=document.getElementById("deb-pulse");
+  pulse.classList.add("show");
+  clearTimeout(debTimer);
+  debTimer=setTimeout(()=>{ uKw=this.value.trim(); pulse.classList.remove("show"); renderList(); },400);
+});
+function resetFilter(){
+  document.getElementById("f-kw").value=""; document.getElementById("f-role").value="";
+  document.getElementById("f-status").value=""; uKw="";uRole="";uSt=""; uPage=1; renderList();
+}
+document.getElementById("f-role").addEventListener("change",e=>{uRole=e.target.value;uPage=1;renderList();});
+document.getElementById("f-status").addEventListener("change",e=>{uSt=e.target.value;uPage=1;renderList();});
+
+/* ================= 最后 admin 判定 ================= */
+function activeAdmins(){ return USERS.filter(u=>u.role==="admin"&&u.st===1).length; }
+function isLastAdmin(u){ return u.role==="admin"&&u.st===1 && activeAdmins()<=1; }
+function guardDisabled(u){ return redlineOn && isLastAdmin(u); }
+
+/* ================= 列表渲染 ================= */
+function filtered(){
+  return USERS.filter(u=>
+    (!uKw || (u.nm.includes(uKw)||u.key.includes(uKw)||u.ph.includes(uKw))) &&
+    (!uRole || u.role===uRole) && (!uSt || u.st===+uSt));
+}
+function roleBadge(role){ const m={admin:"badge-role-admin",manager:"badge-role-tea",teacher:"badge-role-tea",student:"badge-role-std"}[role];
+  return `<span class="badge ${m}"><span class="pd"></span>${ROLE_LABEL[role]||role}</span>`; }
+function statusBadge(st){ return st? '<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-off"><span class="pd"></span>禁用</span>'; }
+function uRow(u,i){
+  const guard=guardDisabled(u);
+  return `<tr class="hov">
+    <td><div class="prim-cell">
+      <span class="av" style="background:${AVATAR_GRAD[i%AVATAR_GRAD.length]}">${u.nm.slice(0,1)}</span>
+      <div><div class="nm">${u.nm}${guard?' <span class="badge badge-warn"><span class="pd"></span>最后admin</span>':''}</div>
+      <div class="cd">${u.key} · UID ${u.id}</div></div></div></td>
+    <td class="nb">${u.ph}</td>
+    <td>${roleBadge(u.role)}</td>
+    <td>${statusBadge(u.st)}</td>
+    <td class="nb">${u.reg}</td>
+    <td class="nb">${u.last}</td>
+    <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end">
+      <button class="link-btn" onclick="openLearn('${u.id}','${u.nm}')">查看</button>
+      <button class="btn btn-ghost btn-mini" onclick="openEdit(${u.id})">编辑</button>
+    </div></td></tr>`;
+}
+function skelRows(){
+  var html="";
+  for(var i=0;i<5;i++){
+    html+='<tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td>'+
+      '<td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td>'+
+      '<td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td>'+
+      '<td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>';
+  }
+  return html;
+}
+function renderList(){
+  const body=document.getElementById("u-body");
+  document.getElementById("u-empty").classList.add("hidden");
+  document.getElementById("u-error").classList.add("hidden");
+  if(listView==="loading"){ body.innerHTML=skelRows(); foot(0,1); return; }
+  if(listView==="empty"){ document.getElementById("u-empty").classList.remove("hidden"); body.innerHTML=""; foot(0,1); return; }
+  if(listView==="error"){ document.getElementById("u-error").classList.remove("hidden"); body.innerHTML=""; foot(0,1); return; }
+  const list=filtered();
+  const totalPg=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+  if(uPage>totalPg)uPage=totalPg;
+  body.innerHTML=list.slice((uPage-1)*PAGE_SIZE,uPage*PAGE_SIZE).map(uRow).join("");
+  foot(list.length,totalPg);
+  document.getElementById("head-total").textContent=USERS.length;
+}
+function foot(total,totalPg){
+  document.getElementById("u-count").textContent="共 "+total+" 条";
+  document.getElementById("u-pager").innerHTML =
+    `<button ${uPage<=1?'disabled':''} onclick="go(${Math.max(1,uPage-1)})">‹</button>`+
+    Array.from({length:totalPg},(_,i)=>`<button class="${i+1===uPage?'cur':''}" onclick="go(${i+1})">${i+1}</button>`).join("")+
+    `<button ${uPage>=totalPg?'disabled':''} onclick="go(${Math.min(totalPg,uPage+1)})">›</button>`;
+}
+function go(p){ uPage=p; renderList(); }
+
+/* ================= 学习详情 Dialog（GWT②） ================= */
+function openLearn(id,nm){
+  document.getElementById("learn-sub").textContent="用户："+nm+"（UID "+id+"） · 数据源 GET /api/admin/users/"+id+"/learning";
+  const cards=document.getElementById("learn-cards");
+  const tl=document.getElementById("learn-tl");
+  if(learnView==="gap"){
+    document.getElementById("learn-gap").classList.remove("hidden");
+    cards.innerHTML=`<div class="box-pad" style="grid-column:span 3;padding:24px"><div class="ic">🔌</div>6 指标面板已设计 · 端点未注册（缺口头条见上）</div>`;
+    tl.innerHTML="";
+  }else{
+    document.getElementById("learn-gap").classList.add("hidden");
+    cards.innerHTML=Object.entries(LEARN_PREVIEW).map(([k,v])=>`<div class="sc6">
+      <div class="lbl">${v.lbl}</div><div class="val">${v.val}<small> ${v.unit}</small></div>
+      <div class="src">${k}</div></div>`).join("");
+    tl.innerHTML=RECENT_ACT.map(a=>`<div class="tl"><span class="t">${a.t}</span><span class="d">${a.d}</span></div>`).join("");
+  }
+  showModal("learn");
+}
+/* ================= 编辑用户 Dialog（RoleSelect + 状态 + reason + 红线） ================= */
+let editing=null;
+function openEdit(id){
+  editing=USERS.find(u=>u.id===id);
+  const guard=guardDisabled(editing);
+  document.getElementById("edit-sub").textContent="用户："+editing.nm+"（UID "+editing.id+"） · role/status 权限校验 + 业务码 40303";
+  const rsel=document.getElementById("e-role");
+  rsel.value=editing.role;
+  document.getElementById("e-reason").value="";
+  // 状态 seg
+  const seg=document.getElementById("e-status-seg");
+  [...seg.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",+b.dataset.st===editing.st));
+  // 红线：唯一可用 admin → 禁用禁用/降级 + 提示
+  document.getElementById("e-redline").classList.toggle("hidden",!guard);
+  rsel.disabled=guard;                          // 降级禁用
+  seg.querySelector('button[data-st="0"]').disabled=guard;  // 禁用禁用
+  document.getElementById("e-save").disabled=guard;
+  showModal("edit");
+}
+document.getElementById("e-status-seg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b||b.disabled)return;
+  [...b.parentElement.querySelectorAll("button")].forEach(x=>x.classList.toggle("on",x===b));
+});
+function saveEdit(){
+  if(editing===null)return;
+  toast("已提交角色/状态变更请求（原型演示）");
+  closeAll();
+}
+/* ================= modal toast ================= */
+function showModal(id){ document.getElementById(id+"-mask").classList.add("show"); document.getElementById(id).classList.add("show"); }
+function closeAll(){
+  document.querySelectorAll(".mask.show").forEach(x=>x.classList.remove("show"));
+  document.querySelectorAll(".dialog.show").forEach(x=>x.classList.remove("show"));
+}
+document.addEventListener("click",function(e){
+  if(e.target.classList && e.target.classList.contains("mask")) closeAll();
+  const c=e.target.closest("[data-close]"); if(c) closeAll();
+  const d=e.target.closest("[data-demo]"); if(d){ const k=d.dataset.demo,v=d.dataset.v;
+    if(k==="list"){listView=v;uPage=1;} if(k==="redline"){redlineOn=(v==="on");} if(k==="learn"){learnView=v;}
+    document.querySelectorAll('[data-demo="'+k+'"]').forEach(x=>x.classList.toggle("on",x.dataset.v===v));
+    renderList(); }
+});
+function toast(msg){ const t=document.createElement("div"); t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.2)"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),1800); }
+renderList();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task43 效果图 · /dashboard 学习仪表盘
+  > 欢迎条 + KPI 4卡 + 学习时长 7 日折线 + 学科掌握度柱状 + 学习结构饼图 +
+    最近解锁徽章墙 + 排行榜 Top5/我的排名 + 积分卡
+  > 数据形状对齐契约（真实 API，无 MOCK）：
+    GET /api/progress/dashboard?days=14 → DashboardOut（outline_correct_rate/recent_days/latest_streak_days）
+    GET /api/progress/courses             → ProgressCourseItem[]（学科完成度按 series 归并）
+    GET /api/gamification/me/badges       → {total,unlocked_count,next_milestone,items[]}
+    GET /api/gamification/me/points       → {total_points,level_no,level_title,level_progress_pct,recent_logs[]}
+    GET /api/gamification/rankings?scope=&dimension=POINTS&top_n=N → {top[],my_rank,source:"ZSET"}
+  > 图表配色 §1.7 八色：单系列线/柱用 primary(indigo)；饼图取疏色序(1/3/5/7)禁相邻同系
+  > 契约缺口（禁 MOCK）：学科掌握度按毛坯分组归并 courses 完成度，score 为原型示例展示形状；React 消费真实端点
+  AUDIT LOG:
+    [2026-08-25 v1 R1] 初稿提交（P19 布局 + 四态 + 排行周期 + 响应式 + §1.7 色板）→ SUBMITTED
+    [2026-08-25 v2 R2] 用户返工：①学科掌握度学科错误（K12 语文/数学/英语/物理/化学 → 平台真实 9 大学科 task44 CATS，编程置顶）②条形图颜色需随学科变换（垂直柱 → 水平条形，每学科独立 §1.7 图表色）→ SUBMITTED
+-->
+<html lang="zh-CN" class="" data-theme="light"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习仪表盘 · 效果图 v2（task43 /dashboard 契约⑤⑬ candy-playful STYLE FROZEN · 9 大学科水平条形）</title>
+<style>
+/* ===== 糖果色 tokens（对齐 globals.css + chart-palette.ts §1.7；业务区禁止硬编码 hex/内联色/任意字号/灰系）===== */
+:root{ --htc-225-29-72-0.06: rgba(225,29,72,0.06); --htc-225-29-72-0.4: rgba(225,29,72,0.4); --htc-255-249-240-0.95: rgba(255,249,240,0.95); --htc-31-31-31-0.05: rgba(31,31,31,0.05); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45);  --ht-f6f5ff: #f6f5ff; --ht-f7f5ff: #f7f5ff; --ht-fff9f0: #fff9f0; 
+  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
+  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
+  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
+  --candy-bg:#fff9f0;
+  /* 主色系（dashboard 非课程中心 → indigo 语义主色，糖果色仅作副色点缀） */
+  --indigo:#4f46e5; --indigo-strong:#4338ca; --indigo-deep:#312e81;
+  --indigo-soft:#eef0fd; --indigo-border:#d8dcf8; --indigo-light:#a5b4fc;
+  /* §1.7 图表 8 色定性序（chart-palette.ts；sky/violet 仅图表允许） */
+  --chart-indigo:#4f46e5; --chart-emerald:#10b981; --chart-amber:#f59e0b; --chart-rose:#f43f5e;
+  --chart-sky:#0ea5e9; --chart-violet:#8b5cf6; --chart-slate:#64748b; --chart-indigo-light:#a5b4fc;
+  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a; --white:#fff;
+  --destructive:#e11d48; --success:#059669; --warning:#f59e0b;
+  --border-chip:rgba(31,31,31,.15);
+  --tint-purple-01:rgba(124,58,237,.1); --tint-indigo-01:rgba(79,70,229,.1);
+  --tint-ink-03:rgba(31,31,31,.08);
+  --shadow-3d:0 5px 0 var(--htc-31-31-31-014); --shadow-s:0 3px 0 var(--htc-31-31-31-014);
+  --focus-ring:var(--indigo);
+  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(31, 31, 31, 0.014); --htc-255-249-240-095: rgba(255, 249, 240, 0.095); --htc-31-31-31-005: rgba(31, 31, 31, 0.005); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-225-29-72-006: rgba(225, 29, 72, 0.006); --htc-225-29-72-004: rgba(225, 29, 72, 0.004); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:auto;min-height:100dvh}
+body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:linear-gradient(180deg,var(--ht-fff9f0) 0%,var(--ht-f6f5ff) 100%);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button{font-family:inherit;cursor:pointer}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
+.visually-hidden{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.page{width:100%;max-width:1180px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
+
+/* ===== 审核工具条 + 演示说明（HTML 效果图专属，不进入 React）===== */
+.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
+.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
+.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
+.respbar button:hover{background:var(--tint-indigo-01)}
+.respbar button.on{background:var(--indigo);color:var(--white)}
+.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.7;margin-bottom:6px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:9px 12px}
+.demo-note b{color:var(--ink-strong)}
+.demo-note .warn{color:var(--indigo-strong);font-weight:800}
+.demo-note code{font-weight:800;color:var(--indigo-strong);background:var(--indigo-soft);border-radius:4px;padding:0 4px}
+
+/* ===== 页面头部 ===== */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.head .hello{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--indigo-strong);background:var(--indigo-soft);border:2px solid var(--indigo-border);border-radius:999px;padding:5px 12px}
+.head h1{font-size:26px;font-weight:900;letter-spacing:-.01em;line-height:1.15;margin-top:8px}
+.head .sub{font-size:0.8125rem;color:var(--ink-muted);margin-top:4px;max-width:560px;line-height:1.6}
+.head .acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:0.8125rem;font-weight:800;border:2px solid var(--ink);border-radius:999px;padding:8px 14px;background:var(--white);color:var(--ink);box-shadow:var(--shadow-s)}
+.btn.primary{background:var(--indigo);color:var(--white);border-color:var(--ink)}
+.btn:hover{transform:translate(-1px,-2px);box-shadow:0 6px 0 var(--htc-31-31-31-014)}
+
+/* ===== KPI 4 卡 ===== */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+.kpi{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:14px 15px;display:flex;flex-direction:column;gap:8px}
+.kpi .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kpi .lb{font-size:12px;font-weight:800;color:var(--ink-muted)}
+.kpi .ic{flex:0 0 auto;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;border:2px solid var(--ink)}
+.kpi .ic.indigo{background:var(--indigo)} .kpi .ic.green{background:var(--candy-green)} .kpi .ic.amber{background:var(--candy-yellow)} .kpi .ic.violet{background:var(--chart-violet)}
+.kpi .val{font-size:28px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:0.8125rem;font-weight:800;color:var(--ink-muted)}
+.kpi .delta{font-size:11px;font-weight:800;color:var(--ink-muted)}
+.kpi .delta.up{color:var(--success)} .kpi .delta.down{color:var(--destructive)}
+.kpi .dbar{height:8px;border-radius:99px;background:var(--tint-ink-03)}
+.kpi .dbar i{display:block;height:100%;border-radius:99px}
+
+/* ===== 图表卡片 ===== */
+.panel{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.panel .p-title{display:flex;align-items:center;gap:8px;font-size:0.9375rem;font-weight:900}
+.panel .p-title .emo{font-size:17px}
+.panel .p-title .pill{font-size:0.625rem;font-weight:800;color:var(--ink-strong);background:var(--candy-yellow);border:2px solid var(--ink);border-radius:999px;padding:1px 8px}
+.panel .p-sub{font-size:12px;color:var(--ink-muted)}
+.panel .p-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.chart{width:100%;height:224px;margin-top:6px}
+
+/* 学习时长 7 日折线（内联 SVG；单系列 → primary 主色） */
+.trend-svg{width:100%;height:220px;display:block;overflow:visible}
+.trend-labels{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-muted);padding:0 6px;margin-top:-2px}
+
+/* 学科掌握度（水平条形：9 大学科 × 独立 §1.7 图表色，编程=主学科置顶） */
+.mastery{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.mrow{display:flex;align-items:center;gap:8px}
+.mname{flex:0 0 108px;font-size:12px;font-weight:800;color:var(--ink-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtrack{flex:1;height:16px;border-radius:99px;background:var(--tint-ink-03);border:2px solid var(--ink);overflow:hidden}
+.mfill{display:block;height:100%;border-radius:99px;background:var(--c);min-width:8px}
+.mval{flex:0 0 30px;text-align:right;font-size:12px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+/* 每学科独立配色（§1.7 图表 8 色 + candy 橙补第 9 色，禁相邻同系） */
+.mrow.c1{--c:var(--chart-indigo)} .mrow.c2{--c:var(--chart-emerald)} .mrow.c3{--c:var(--chart-amber)}
+.mrow.c4{--c:var(--chart-rose)} .mrow.c5{--c:var(--chart-sky)} .mrow.c6{--c:var(--chart-violet)}
+.mrow.c7{--c:var(--chart-slate)} .mrow.c8{--c:var(--chart-indigo-light)} .mrow.c9{--c:var(--candy-orange)}
+
+/* 学习结构饼图（§1.7 疏色序 conic-gradient：indigo/amber/sky/slate 禁相邻同系） */
+.donut{position:relative;width:196px;height:196px;margin:6px auto 0;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center}
+.donut::before{content:"";position:absolute;inset:34px;border-radius:50%;background:var(--white);border:2px solid var(--border-chip)}
+.donut .center{position:relative;z-index:1;text-align:center}
+.donut .center b{display:block;font-size:25px;font-weight:900;font-variant-numeric:tabular-nums}
+.donut .center span{font-size:11px;color:var(--ink-muted);font-weight:700}
+.legend{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.legend .lg{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink-strong)}
+.legend .lg .sw{width:12px;height:12px;border-radius:4px;border:2px solid var(--ink);flex:0 0 auto}
+.legend .lg .lv{margin-left:auto;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ===== 徽章墙（最近解锁）===== */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px;margin-top:8px}
+.badge-row-panel{grid-column:1 / -1}
+.badges.badges-strip{grid-template-columns:repeat(6,minmax(92px,1fr));align-items:stretch}
+.badges.badges-strip .badge{min-height:82px}
+@container (max-width:900px){.badges.badges-strip{grid-template-columns:repeat(3,minmax(92px,1fr))}}
+@container (max-width:520px){.badges.badges-strip{grid-template-columns:repeat(2,minmax(92px,1fr))}}
+.badge{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--white);border:2px solid var(--ink);border-radius:16px;padding:10px 6px 8px;box-shadow:var(--shadow-s)}
+.badge .medal{font-size:26px;line-height:1;filter:drop-shadow(0 2px 0 var(--htc-31-31-31-012))}
+.badge .nm{font-size:11px;font-weight:800;text-align:center;color:var(--ink-strong);line-height:1.25}
+.badge .rar{font-size:9px;font-weight:800;color:var(--white);border-radius:999px;padding:1px 7px;border:1px solid var(--ink)}
+.rar.legendary{background:var(--candy-purple)} .rar.epic{background:var(--indigo)} .rar.rare{background:var(--candy-green)} .rar.common{background:var(--candy-blue)}
+
+/* ===== 排行榜 Top5 + 我的排名 + 积分卡 ===== */
+.ranklist{display:flex;flex-direction:column;margin-top:8px}
+.rankrow{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:12px}
+.rankrow+.rankrow{border-top:2px dashed var(--tint-indigo-01)}
+.rankrow.mine{background:var(--indigo-soft);border:2px solid var(--indigo-border)}
+.rankrow .pos{width:22px;text-align:center;font-size:0.8125rem;font-weight:900;font-variant-numeric:tabular-nums}
+.rankrow .avatar{flex:0 0 auto;width:26px;height:26px;border-radius:8px;border:2px solid var(--ink);background:var(--candy-bg);display:grid;place-items:center;font-size:0.8125rem}
+.rankrow .who{flex:1;min-width:0;font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rankrow .who small{display:block;font-size:0.625rem;font-weight:700;color:var(--ink-muted)}
+.rankrow .val{font-size:12px;font-weight:900;color:var(--indigo-strong);font-variant-numeric:tabular-nums}
+.rankrow.mine .val{color:var(--indigo-deep)}
+.myrank{display:flex;align-items:center;gap:10px;background:var(--white);border:2px solid var(--indigo);border-radius:14px;padding:10px 12px;margin-top:8px}
+.myrank .face{font-size:26px}
+.myrank .meta{flex:1;min-width:0}
+.myrank .meta b{font-size:14px;font-weight:900}
+.myrank .meta span{display:block;font-size:11px;color:var(--ink-muted);font-weight:700;margin-top:2px}
+.myrank .rank-big{font-size:20px;font-weight:900;color:var(--indigo-strong);font-variant-numeric:tabular-nums}
+.points{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:14px 15px;display:flex;flex-direction:column;gap:8px}
+.points .lvrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.points .lvrow b{font-size:14px;font-weight:900}
+.points .lvrow span{font-size:11px;font-weight:800;color:var(--ink-muted)}
+.lvbar{height:12px;border-radius:99px;background:var(--tint-ink-03);border:2px solid var(--ink);position:relative;overflow:hidden}
+.lvbar i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-yellow),var(--candy-orange));border-radius:99px}
+.lvbar .lvl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.plogs{display:flex;flex-direction:column;margin-top:2px}
+.plog{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-muted);font-weight:700}
+.plog+.plog{border-top:2px dashed var(--tint-indigo-01);margin-top:5px;padding-top:5px}
+.plog .dot{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+.plog .dst{margin-left:auto;font-weight:900;color:var(--success);font-variant-numeric:tabular-nums}
+
+/* ===== 状态变体：loading / empty / error ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{border:3px solid var(--ink);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--white)}
+.sk-line{height:12px;border-radius:99px;background:var(--tint-ink-03);position:relative;overflow:hidden}
+.sk-line::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,var(--indigo-soft),transparent);animation:shimmer 1.2s infinite}
+.sk-chart{height:180px;border-radius:12px;border:2px solid var(--border-chip);background:linear-gradient(120deg,var(--indigo-soft) 25%,var(--ht-f7f5ff) 37%,var(--indigo-soft) 63%)!important;background-size:400% 100%!important;animation:shimmer 1.3s infinite}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;text-align:center;border:2px dashed var(--border-chip);border-radius:16px;padding:20px}
+.empty .e-emo{font-size:32px}
+.empty p{font-size:12px;color:var(--ink-muted);font-weight:700;line-height:1.6}
+.error{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;text-align:center;background:var(--htc-225-29-72-006);border:2px solid var(--htc-225-29-72-004);border-radius:16px;padding:20px;color:var(--destructive)}
+.error p{font-size:12px;font-weight:800;line-height:1.6}
+.error .retry{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--white);background:var(--indigo);border:2px solid var(--ink);border-radius:999px;padding:5px 12px;box-shadow:var(--shadow-s)}
+
+/* ===== 布局行 ===== */
+.row{display:grid;gap:14px}
+.row.l2{grid-template-columns:1.7fr 1fr}
+.row.l3{grid-template-columns:1fr 1fr 1fr}
+.row.l3b{grid-template-columns:1fr 1.2fr 1.1fr}
+@container (max-width: 900px){.row.l2,.row.l3,.row.l3b{grid-template-columns:1fr}}
+@container (max-width: 640px){.kpis{grid-template-columns:repeat(2,1fr)}.head h1{font-size:21px}}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.page,.glayout>.wrap{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--candy-purple));color:var(--candy-purple)}
+  .gnav-item.active{background:var(--candy-green);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-green-deep,var(--candy-green))}
+  .gnav-item.active:hover{background:var(--candy-green-hover,var(--candy-green))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head><body>
+
+<!-- 审核工具条：断点预览（仅原型） -->
+<div class="respbar" role="toolbar" aria-label="断点预览（仅原型，不进入 React）">
+  <span class="rr">预览断点</span>
+  <button data-w="375">375</button><button data-w="520">520</button><button data-w="768">768</button><button data-w="1024">1024</button><button data-w="1280" class="on">1280</button><button data-w="1440">1440</button>
+  <span class="sep"></span>
+  <span class="rr">页面状态</span>
+  <button id="st-success" class="on">加载成功</button><button id="st-loading">加载中</button><button id="st-empty">空态</button><button id="st-error">错误态</button>
+  <span class="sep"></span>
+  <span class="rr">排行周期</span>
+  <button id="r-day" class="on">日榜</button><button id="r-week">周榜</button><button id="r-month">月榜</button>
+</div>
+
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">EduAgent</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item active" href="dashboard.html" aria-current="page"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>错题/单词本</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub</div>
+</header>
+<div class="page">
+
+  <!-- ===== 页面头部 ===== -->
+  <header class="head">
+    <div>
+      <span class="hello">✨ 今天也要和 EduAgent 一起进步呀</span>
+      <h1>你好，小柚子 👋</h1>
+      <p class="sub">这里是你的学习仪表盘：随时查看学习时长、学科能力、积分与排行榜，让每一次努力都能被看见。</p>
+    </div>
+    <div class="acts">
+      <button class="btn" type="button">🧑‍🎓 个人中心</button>
+      <button class="btn primary" type="button">⚙️ 调整偏好</button>
+    </div>
+  </header>
+
+  <!-- ===== KPI 4 卡（success 态）===== -->
+  <section class="v-success" data-sec="kpi">
+    <div class="kpis">
+      <div class="kpi">
+        <div class="top"><span class="lb">今日学习时长</span><span class="ic indigo">⏱️</span></div>
+        <div class="val">42<small> 分钟</small></div>
+        <div class="delta up" data-delta="kpi1">▲ 较昨日 +8 分钟</div>
+        <div class="dbar"><i style="width:68%;background:var(--indigo)"></i></div>
+      </div>
+      <div class="kpi">
+        <div class="top"><span class="lb">今日练习题</span><span class="ic green">✍️</span></div>
+        <div class="val">15<small> 道</small></div>
+        <div class="delta up" data-delta="kpi2">▲ 正确率 82%</div>
+        <div class="dbar"><i style="width:55%;background:var(--candy-green)"></i></div>
+      </div>
+      <div class="kpi">
+        <div class="top"><span class="lb">进行中课程</span><span class="ic amber">📚</span></div>
+        <div class="val">3<small> 门</small></div>
+        <div class="delta" data-delta="kpi3">— 建议一次 focus 2 门</div>
+        <div class="dbar"><i style="width:40%;background:var(--candy-yellow)"></i></div>
+      </div>
+      <div class="kpi">
+        <div class="top"><span class="lb">连续打卡</span><span class="ic violet">🔥</span></div>
+        <div class="val">6<small> 天</small></div>
+        <div class="delta up" data-delta="kpi4">▲ 近 7 天活跃 6 天</div>
+        <div class="dbar"><i style="width:86%;background:var(--chart-violet)"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 第 2 行：学习时长 7 日折线 + 学科掌握度柱状 ===== -->
+  <section class="row l2 v-success" data-sec="trend-mastery">
+    <!-- 折线：单系列 → primary 主色 -->
+    <div class="panel">
+      <div class="p-title"><span class="emo">📈</span>学习时长 · 近 7 天<span class="pill">分钟</span></div>
+      <div class="p-sub">统计每天学习时长（视频 + 练习），单位分钟；来自 /api/progress/dashboard.recent_days</div>
+      <div class="chart">
+        <svg class="trend-svg" viewBox="0 0 640 220" role="img" aria-label="近7天学习时长折线：昨天55、前天24…">
+          <defs>
+            <linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#4f46e5" stop-opacity="0.30"/>
+              <stop offset="1" stop-color="#4f46e5" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <line x1="40" y1="180" x2="620" y2="180" stroke="#e2e8f0" stroke-width="2"/>
+          <path id="trend-area" d="" fill="url(#gTrend)"/>
+          <path id="trend-line" d="" fill="none" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <g id="trend-dots" fill="#4f46e5"/>
+          <text x="10" y="24" fill="var(--ink-muted)" font-size="12" font-weight="900" text-anchor="start">时间/min</text>
+          <g id="trend-y-axis" fill="var(--ink-muted)" font-size="11" font-weight="800" text-anchor="end"></g>
+          <g id="trend-labels" fill="var(--ink-muted)" font-size="12" font-weight="700" text-anchor="middle"/>
+        </svg>
+      </div>
+    </div>
+    <!-- 学科掌握度：9 大学科（task44 契约② CATS）水平条形，每学科独立 §1.7 图表色 -->
+    <div class="panel">
+      <div class="p-title"><span class="emo">📊</span>学科掌握度<span class="pill">%</span></div>
+      <div class="p-sub">按 9 大学科归并完成度；来自 /api/progress/courses</div>
+      <div class="mastery" id="mastery">
+        <div class="mrow c1"><span class="mname">💻 编程</span><div class="mtrack"><i class="mfill" style="width:82%"></i></div><span class="mval">82%</span></div>
+        <div class="mrow c2"><span class="mname">🖥️ 计算机系统</span><div class="mtrack"><i class="mfill" style="width:74%"></i></div><span class="mval">74%</span></div>
+        <div class="mrow c3"><span class="mname">📊 数据与AI</span><div class="mtrack"><i class="mfill" style="width:71%"></i></div><span class="mval">71%</span></div>
+        <div class="mrow c4"><span class="mname">🎮 图形与游戏</span><div class="mtrack"><i class="mfill" style="width:66%"></i></div><span class="mval">66%</span></div>
+        <div class="mrow c5"><span class="mname">📐 数学</span><div class="mtrack"><i class="mfill" style="width:62%"></i></div><span class="mval">62%</span></div>
+        <div class="mrow c6"><span class="mname">🌱 校园成长</span><div class="mtrack"><i class="mfill" style="width:55%"></i></div><span class="mval">55%</span></div>
+        <div class="mrow c7"><span class="mname">📈 管理与职场</span><div class="mtrack"><i class="mfill" style="width:48%"></i></div><span class="mval">48%</span></div>
+        <div class="mrow c8"><span class="mname">🎯 考研/考证/公考</span><div class="mtrack"><i class="mfill" style="width:42%"></i></div><span class="mval">42%</span></div>
+        <div class="mrow c9"><span class="mname">🏢 企业培训</span><div class="mtrack"><i class="mfill" style="width:38%"></i></div><span class="mval">38%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 第 3 行：学习结构饼图 + 最近解锁徽章 + 排行榜/我的排名/积分 ===== -->
+  <section class="row l3b v-success" data-sec="structure-badge-rank">
+    <!-- 饼图：§1.7 疏色序 indigo/amber/sky/slate（禁相邻同系） -->
+    <div class="panel">
+      <div class="p-title"><span class="emo">🍩</span>本周学习结构<span class="pill">占比</span></div>
+      <div class="p-sub">视频 / 练习 / 测验 / 作业分布；派生自 recent_days 汇总</div>
+      <div class="donut" id="donut" style="--d0:#4f46e5;--d1:#f59e0b;--d2:#0ea5e9;--d3:#64748b"></div>
+      <div class="legend" id="structure-legend">
+        <div class="lg"><span class="sw" style="background:#4f46e5"></span>视频学习<span class="lv">58%</span></div>
+        <div class="lg"><span class="sw" style="background:#f59e0b"></span>课后练习<span class="lv">24%</span></div>
+        <div class="lg"><span class="sw" style="background:#0ea5e9"></span>在线测验<span class="lv">11%</span></div>
+        <div class="lg"><span class="sw" style="background:#64748b"></span>课后作业<span class="lv">7%</span></div>
+      </div>
+    </div>
+    <!-- 排行榜 Top5 + 我的排名 + 积分卡 -->
+    <div class="panel">
+      <div class="p-title"><span class="emo">🏆</span>本周排行榜<span class="pill">ZSET</span></div>
+      <div class="p-sub">来自 /api/gamification/rankings?dimension=POINTS</div>
+      <div class="ranklist" id="ranklist"></div>
+      <div class="myrank">
+        <span class="face">🦊</span>
+        <div class="meta"><b>我的排名</b><span id="myrank-sub">总榜 12 名 · 超越 88% 学习者</span></div>
+        <span class="rank-big" id="myrank-big">#12</span>
+      </div>
+      <div class="points">
+        <div class="lvrow"><b>💰 积分 · 学习小达人 Lv.6</b><span id="points-lv">1280 分</span></div>
+        <div class="lvbar"><i style="width:72%"></i><span class="lvl" id="points-lvl">距 Lv.7 还需 320 分</span></div>
+        <div class="plogs" id="plogs">
+          <div class="plog"><span class="dot" style="background:#ffc800"></span>每日打卡 +20<span class="dst">+20</span></div>
+          <div class="plog"><span class="dot" style="background:#58cc02"></span>完成课后作业 +30<span class="dst">+30</span></div>
+          <div class="plog"><span class="dot" style="background:#1cb0f6"></span>测验满分 +50<span class="dst">+50</span></div>
+        </div>
+      </div>
+    </div>
+  
+
+
+    <!-- 最近解锁徽章 -->
+    <div class="panel badge-row-panel">
+      <div class="p-title"><span class="emo">🎖️</span>最近解锁徽章<span class="pill">3 / 12</span></div>
+      <div class="p-sub">来自 /api/gamification/me/badges：最近解锁</div>
+      <div class="badges badges-strip">
+        <div class="badge"><span class="medal">🔥</span><span class="nm">连续打卡</span><span class="rar legendary">传说</span></div>
+        <div class="badge"><span class="medal">💯</span><span class="nm">满分达人</span><span class="rar epic">史诗</span></div>
+        <div class="badge"><span class="medal">✍️</span><span class="nm">作业达人</span><span class="rar rare">稀有</span></div>
+        <div class="badge"><span class="medal">📚</span><span class="nm">阅读之星</span><span class="rar rare">稀有</span></div>
+        <div class="badge"><span class="medal">🧠</span><span class="nm">每周学霸</span><span class="rar epic">史诗</span></div>
+        <div class="badge"><span class="medal">🌟</span><span class="nm">成长新秀</span><span class="rar common">普通</span></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===== 加载中（骨架态，整页切换）===== -->
+  <section class="v-loading" data-sec="kpi" hidden>
+    <div class="kpis"><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div></div>
+  </section>
+  <section class="row l2 v-loading" data-sec="trend-mastery" hidden>
+    <div class="sk-card"><div class="sk-line" style="width:40%"></div><div class="sk-chart"></div></div>
+    <div class="sk-card"><div class="sk-line" style="width:40%"></div><div class="sk-chart"></div></div>
+  </section>
+  <section class="row l3b v-loading" data-sec="structure-badge-rank" hidden>
+    <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
+    <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
+    <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
+  </section>
+
+  <!-- ===== 空态：全部无数据（首屏新用户）===== -->
+  <section class="v-empty" data-sec="kpi" hidden>
+    <div class="empty"><span class="e-emo">🌱</span><p>还没有学习数据。<br>去课程中心选一门课，开启你的第一次学习吧。</p></div>
+  </section>
+  <section class="v-empty" data-sec="trend-mastery" hidden>
+    <div class="row l2">
+      <div class="empty"><span class="e-emo">📈</span><p>开始学习后，这里会记录你每天的学习时长</p></div>
+      <div class="empty"><span class="e-emo">📊</span><p>完成课程后，这里会展示你的学科掌握度</p></div>
+    </div>
+  </section>
+  <section class="v-empty" data-sec="structure-badge-rank" hidden>
+    <div class="row l3b">
+      <div class="empty"><span class="e-emo">🍩</span><p>暂无学习结构数据</p></div>
+      <div class="empty"><span class="e-emo">🎖️</span><p>还差一点就解锁第一枚徽章啦</p></div>
+      <div class="empty"><span class="e-emo">🏆</span><p>暂无排行榜数据</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 错误态：数据加载失败 ===== -->
+  <section class="v-error" data-sec-all hidden>
+    <div class="row l2">
+      <div class="error" style="grid-column:1 / -1"><p>学习数据加载失败，请检查网络后重试</p><button class="retry" type="button">🔄 重试</button></div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+</div><!-- /.glayout -->
+
+<script>
+/* ===== 效果图演示控制器（仅原型，不进入 React）===== */
+(function () {
+  /* 断点预览：缩放 iframe 视口宽度 */
+  document.querySelectorAll('.respbar [data-w]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.respbar [data-w]').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      document.documentElement.style.zoom = (parseInt(b.dataset.w, 10) < 700) ? '1' : '1';
+      // 模拟容器宽度（原型仅示意，Mobile 视觉在真实设备核验）
+      var w = parseInt(b.dataset.w, 10);
+      document.body.style.maxWidth = (w < 1180 ? w : '') + 'px';
+      document.body.style.margin = w < 1180 ? '0 auto' : '';
+    });
+  });
+  /* 页面状态切换：成功 / 加载中 / 空态 / 错误态 */
+  function switchState(name) {
+    var show = (name === 'loading') ? '.v-loading' : (name === 'empty') ? '.v-empty' : (name === 'error') ? '.v-error' : '.v-success';
+    var secs = {};
+    document.querySelectorAll('.v-success,[data-sec],[data-sec-all]').forEach(function (el) {
+      if (el.classList.contains('v-success')) el.hidden = (show !== '.v-success');
+      if (el.classList.contains('v-loading')) el.hidden = (show !== '.v-loading');
+      if (el.classList.contains('v-empty')) el.hidden = (show !== '.v-empty');
+      if (el.classList.contains('v-error')) el.hidden = (show !== '.v-error');
+    });
+    ['st-success','st-loading','st-empty','st-error'].forEach(function (id) {
+      document.getElementById(id).classList.toggle('on', id === 'st-' + (name === 'loading' ? 'loading' : name) || (name==='success'&&id==='st-success'));
+    });
+  }
+  document.getElementById('st-success').addEventListener('click', function(){ switchState('success'); });
+  document.getElementById('st-loading').addEventListener('click', function(){ switchState('loading'); });
+  document.getElementById('st-empty').addEventListener('click', function(){ switchState('empty'); });
+  document.getElementById('st-error').addEventListener('click', function(){ switchState('error'); });
+
+  /* 排行周期数据：日 / 周 / 月（ZSET scope），仅值变化 */
+  var RANK = {
+    day:      { title:'本周排行榜' , rows:[['🥇','Sunny',1280],['🥈','Leo',1150],['🥉','Mia',1020],['4','Tom',980],['5','Ada',870]], mine:'#6', sub:'今日榜 6 名 · 超越 82% 学习者' },
+    week:     { title:'本周排行榜' , rows:[['🥇','Tom',6800],['🥈','Leo',6520],['🥉','Mia',6180],['4','Sunny',5880],['5','Ada',5340]], mine:'#12', sub:'总榜 12 名 · 超越 88% 学习者' },
+    month:    { title:'本月排行榜' , rows:[['🥇','Leo',15200],['🥈','Tom',14800],['🥉','Ada',13700],['4','Mia',13100],['5','Sunny',12600]], mine:'#18', sub:'月榜 18 名 · 超越 74% 学习者' }
+  };
+  var RANGE_ORDER = ['day','week','month'];
+  function renderRank(range) {
+    var d = RANK[range];
+    var box = document.getElementById('ranklist');
+    box.innerHTML = '';
+    d.rows.forEach(function (r, i) {
+      var row = document.createElement('div');
+      row.className = 'rankrow' + (i === 0 ? '' : '') + (i === 3 ? '' : '');
+      row.innerHTML =
+        '<span class="pos">' + r[0] + '</span>' +
+        '<span class="avatar">' + (i === 4 ? '🦊' : '🧑‍🎓') + '</span>' +
+        '<span class="who">' + r[1] + '<small>· Lv.6</small></span>' +
+        '<span class="val">' + r[2] + ' 分</span>';
+      box.appendChild(row);
+    });
+    document.getElementById('myrank-big').textContent = d.mine;
+    document.getElementById('myrank-sub').textContent = d.sub;
+    // 点亮当前周期选中态
+    RANGE_ORDER.forEach(function (k) { document.getElementById('r-' + k).classList.toggle('on', k === range); });
+  }
+  RANGE_ORDER.forEach(function (k) {
+    document.getElementById('r-' + k).addEventListener('click', function () { renderRank(k); });
+  });
+
+  /* 学习时长 7 日折线：SVG path 生成（primary 主色） */
+  (function trend() {
+    var data = [15, 38, 25, 46, 30, 52, 42]; // 最近 7 天 min（昨天最高）
+    var labels = ['08-19','08-20','08-21','08-22','08-23','08-24','今天'];
+    var n = data.length, W = 620, H = 200, L = 54, R = 620, T = 24, B = 188;
+    var max = Math.max.apply(null, data.concat([10]));
+    var px = function (i) { return L + (R - L) * i / (n - 1); };
+    var py = function (v) { return B - (B - T) * (v / max); };
+    var pts = data.map(function (v, i) { return [px(i), py(v)]; });
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    document.getElementById('trend-line').setAttribute('d', line);
+    document.getElementById('trend-area').setAttribute('d', line + ' L' + pts[n-1][0].toFixed(1) + ' ' + B + ' L' + pts[0][0].toFixed(1) + ' ' + B + ' Z');
+    var dots = '', labs = '', yaxis = '';
+    pts.forEach(function (p, i) {
+      dots += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" stroke="#fff" stroke-width="2"/>';
+      labs += '<text x="' + p[0].toFixed(1) + '" y="204">' + labels[i] + '</text>';
+    });
+    document.getElementById('trend-dots').innerHTML = dots;
+    for (var y = 0; y <= max; y += Math.ceil(max / 3)) {
+      var yy = py(y);
+      yaxis += '<text x="44" y="' + (yy + 4).toFixed(1) + '">' + y + '</text>';
+    }
+    document.getElementById('trend-y-axis').innerHTML = yaxis;
+    document.getElementById('trend-labels').innerHTML = labs;
+  })();
+
+  /* 学习结构饼图：conic-gradient（疏色序 indigo/amber/sky/slate） */
+  (function donut() {
+    var segs = [['视频学习',58,'#4f46e5'],['课后练习',24,'#f59e0b'],['在线测验',11,'#0ea5e9'],['课后作业',7,'#64748b']];
+    var total = segs.reduce(function (s, x) { return s + x[2]; }, 0);
+    var acc = 0, stops = [];
+    segs.forEach(function (x) { stops.push(x[2] + ' ' + acc + '% ' + (acc + x[1]) + '%'); acc += x[1]; });
+    document.getElementById('donut').style.background = 'conic-gradient(' + stops.join(',') + ')';
+    document.getElementById('donut').innerHTML = '<div class="center"><b>100%</b><span>本周已投入时间</span></div>';
+    var lg = document.getElementById('structure-legend');
+    lg.innerHTML = '';
+    segs.forEach(function (x) {
+      var d = document.createElement('div'); d.className = 'lg';
+      d.innerHTML = '<span class="sw" style="background:' + x[2] + '"></span>' + x[0] + '<span class="lv">' + x[1] + '%</span>';
+      lg.appendChild(d);
+    });
+  })();
+
+  renderRank('day');
+})();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</body></html>
