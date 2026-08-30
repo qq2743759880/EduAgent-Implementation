@@ -149,6 +149,10 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
+        # CORS 预检：OPTIONS 不带 Authorization，属安全放行路径，交给 CORS 中间件处理，
+        # 否则 /api/admin/* 的预检被本轮短路 401（无 ACAO 头）导致浏览器跨域失败。
+        if request.method == "OPTIONS":
+            return await call_next(request)
         if not path.startswith(self.ADMIN_PREFIXES):
             return await call_next(request)
 
