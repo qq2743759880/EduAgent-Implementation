@@ -245,7 +245,10 @@ async function renderPage() {
 
 function mockSuccess() {
   getSeriesDetailMock.mockResolvedValue(sampleSeries);
-  listSeriesCohortsMock.mockResolvedValue([cohortA, cohortB, cohortFull]);
+  listSeriesCohortsMock.mockResolvedValue({
+    items: [cohortA, cohortB, cohortFull],
+    page_meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
+  });
   listCohortModulesMock.mockResolvedValue({ cohort_id: 12, modules: sampleModules });
   getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
   listFavoritesMock.mockResolvedValue({ total: 0, page: 1, page_size: 100, items: [] });
@@ -262,7 +265,10 @@ beforeEach(() => {
 describe("课程详情页四态", () => {
   it("loading：骨架渲染", async () => {
     getSeriesDetailMock.mockReturnValue(new Promise(() => {}));
-    listSeriesCohortsMock.mockResolvedValue([]);
+    listSeriesCohortsMock.mockResolvedValue({
+      items: [],
+      page_meta: { page: 1, page_size: 100, total: 0, total_pages: 0 },
+    });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
     await renderPage();
     expect(await screen.findByText("课程详情")).toBeInTheDocument();
@@ -272,7 +278,10 @@ describe("课程详情页四态", () => {
     const user = userEvent.setup();
     getSeriesDetailMock.mockRejectedValueOnce(new Error("网络开小差了"));
     getSeriesDetailMock.mockResolvedValueOnce(sampleSeries);
-    listSeriesCohortsMock.mockResolvedValue([cohortB]);
+    listSeriesCohortsMock.mockResolvedValue({
+      items: [cohortB],
+      page_meta: { page: 1, page_size: 100, total: 1, total_pages: 1 },
+    });
     listCohortModulesMock.mockResolvedValue({ cohort_id: 12, modules: sampleModules });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
     await renderPage();
@@ -314,7 +323,10 @@ describe("课程详情页四态", () => {
     /* 最低价 B(2799) 满员、次低价 Full(2899) 满员 → 默认应选 A(2999, 有席位) */
     const fullB: Cohort = { ...cohortB, current_student_count: 30 };
     getSeriesDetailMock.mockResolvedValue(sampleSeries);
-    listSeriesCohortsMock.mockResolvedValue([fullB, cohortA, cohortFull]);
+    listSeriesCohortsMock.mockResolvedValue({
+      items: [fullB, cohortA, cohortFull],
+      page_meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
+    });
     listCohortModulesMock.mockResolvedValue({ cohort_id: 11, modules: sampleModules });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
     listFavoritesMock.mockResolvedValue({ total: 0, page: 1, page_size: 100, items: [] });

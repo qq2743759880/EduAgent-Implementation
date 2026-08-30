@@ -35,8 +35,8 @@ const DETAIL: QuestionDetail = {
   question_type_id: 1,
   stem: "下列 Python 代码的输出是？",
   options_json: [
-    { label: "A", content: "Hello" },
-    { label: "B", content: "World" },
+    { key: "A", text: "Hello" },
+    { key: "B", text: "World" },
   ],
   answer_text: "A",
   analysis_text: "print 输出",
@@ -84,7 +84,7 @@ describe("task59 GWT① 题型联动 + 已填数据不丢", () => {
   it("题型切换已填数据不丢：单选填 A → 多选 → 切回单选仍保留", async () => {
     const user = userEvent.setup();
     renderEditor();
-    const aInput = screen.getByPlaceholderText("选项 A 内容…");
+    const aInput = screen.getByPlaceholderText("选项 A 文本…");
     await user.clear(aInput);
     await user.type(aInput, "Hello!");
     const sel = screen.getByRole("combobox");
@@ -122,8 +122,8 @@ describe("task59 GWT② 解析必修 + 保存", () => {
         answer_text: "A",
         analysis_text: "print 输出",
         options_json: [
-          { label: "A", content: "Hello" },
-          { label: "B", content: "World" },
+          { key: "A", text: "Hello" },
+          { key: "B", text: "World" },
         ],
       }),
     );
