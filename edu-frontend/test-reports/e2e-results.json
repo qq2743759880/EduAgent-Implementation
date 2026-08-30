@@ -1,0 +1,325 @@
+{
+  "config": {
+    "argv": [
+      "E:\\stu\\trae\\TRAE SOLO CN\\ModularData\\ai-agent\\vm\\tools\\node\\node.exe",
+      "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "e2e/04-preview-consistency.spec.ts",
+      "--project=chromium-1280"
+    ],
+    "configFile": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\playwright.config.ts",
+    "rootDir": "E:/stu/project/stu/EduAgent实施手册/edu-frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "E:/stu/project/stu/EduAgent实施手册/edu-frontend/test-reports/e2e-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-1280",
+        "name": "chromium-1280",
+        "testDir": "E:/stu/project/stu/EduAgent实施手册/edu-frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "E:/stu/project/stu/EduAgent实施手册/edu-frontend/test-reports/e2e-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-375",
+        "name": "chromium-375",
+        "testDir": "E:/stu/project/stu/EduAgent实施手册/edu-frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "test-reports/e2e-html-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-reports/e2e-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "04-preview-consistency.spec.ts",
+      "file": "04-preview-consistency.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "task59 批判① —— 预览 vs 用户端渲染一致性",
+          "file": "04-preview-consistency.spec.ts",
+          "line": 34,
+          "column": 6,
+          "specs": [
+            {
+              "title": "真实题目 id=1：管理端预览渲染 Markdown 与题干一致",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-1280",
+                  "projectName": "chromium-1280",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 90928,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts",
+                            "column": 55,
+                            "line": 31
+                          },
+                          "message": "Error: locator.click: Test timeout of 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('tab', { name: /预览/ }).first()\u001b[22m\n\n\n  29 | async function openPreview(page: Page, id: number): Promise<void> {\n  30 |   await ensureEditor(page, id);\n> 31 |   await page.getByRole(\"tab\", { name: /预览/ }).first().click();\n     |                                                       ^\n  32 | }\n  33 |\n  34 | test.describe(\"task59 批判① —— 预览 vs 用户端渲染一致性\", () => {\n    at openPreview (E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts:31:55)\n    at E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts:38:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-30T08:57:32.516Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "70bb72b4f0c4dab1ee60-61c67f9281165ae63c37",
+              "file": "04-preview-consistency.spec.ts",
+              "line": 35,
+              "column": 7
+            },
+            {
+              "title": "一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位）",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-1280",
+                  "projectName": "chromium-1280",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 91256,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts",
+                            "column": 55,
+                            "line": 31
+                          },
+                          "message": "Error: locator.click: Test timeout of 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('tab', { name: /预览/ }).first()\u001b[22m\n\n\n  29 | async function openPreview(page: Page, id: number): Promise<void> {\n  30 |   await ensureEditor(page, id);\n> 31 |   await page.getByRole(\"tab\", { name: /预览/ }).first().click();\n     |                                                       ^\n  32 | }\n  33 |\n  34 | test.describe(\"task59 批判① —— 预览 vs 用户端渲染一致性\", () => {\n    at openPreview (E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts:31:55)\n    at E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts:63:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-30T08:59:06.385Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "70bb72b4f0c4dab1ee60-0f9f6137164a5ecda748",
+              "file": "04-preview-consistency.spec.ts",
+              "line": 49,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "task59 批判② —— 题型切换边界（无旧选项残留）",
+          "file": "04-preview-consistency.spec.ts",
+          "line": 69,
+          "column": 6,
+          "specs": [
+            {
+              "title": "编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失）",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-1280",
+                  "projectName": "chromium-1280",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 90914,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts",
+                            "column": 30,
+                            "line": 76
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByLabel('题型')\nExpected: visible\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByLabel('题型')\u001b[22m\n\u001b[2m  - Test timeout of 90000ms exceeded.\u001b[22m\n\n\n  74 |\n  75 |     const typeSelect = page.getByLabel(\"题型\");\n> 76 |     await expect(typeSelect).toBeVisible({ timeout: 10_000 });\n     |                              ^\n  77 |     // 初始为单选的答案（真实题目答案 B）\n  78 |     const curType = await typeSelect.inputValue().catch(() => \"\");\n  79 |     expect(curType).toBe(\"single_choice\");\n    at E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\e2e\\04-preview-consistency.spec.ts:76:30"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-30T09:00:43.628Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-frontend\\test-reports\\e2e-artifacts\\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "70bb72b4f0c4dab1ee60-6cbf6f44d1a8a9e1e9cc",
+              "file": "04-preview-consistency.spec.ts",
+              "line": 70,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-30T08:57:31.119Z",
+    "duration": 287146.185,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  }
+}
