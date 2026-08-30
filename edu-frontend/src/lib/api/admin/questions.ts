@@ -8,8 +8,7 @@
  *  - 题型枚举是 single_choice / multi_choice / true_false / fill_blank / short_answer
  *    （设计指南写的 single/multi/judge/fill/short 是占位摘要，直接提交会 422）
  *  - options_json 是 [{label, content}] 数组（非 {A:"..."} 对象）
- *  - 批量导入 POST /batch-import 的 body 是 list[dict]（非包裹对象）
- *  - 组卷 POST /papers/compose 的 body 是 {spec:{...}, paper_code, paper_title, expected_question_count}
+ *  - 批量导入走后端两段式 /import-preview + /import-execute（旧 /batch-import 契约已移除）
  *
  * 错误契约（R-7）：所有写操作失败一律向上抛 ApiError，由 useMutation onError → toast。
  */
@@ -60,6 +59,14 @@ export interface QuestionTag {
   yn: number;
   created_at: string;
   updated_at: string;
+}
+
+/** 标签列表（后端已移除 tag 维度，question schema 注释明确"标签逻辑删除→LIKE 查询"；返回空数组避免 404） */
+export async function listQuestionTags(_params: {
+  tag_type?: string;
+  subject_code?: string;
+} = {}): Promise<QuestionTag[]> {
+  return [];
 }
 
 export interface QuestionOption {
@@ -117,67 +124,6 @@ export interface QuestionCreateInput {
   tag_ids: number[];
 }
 
-export interface QuestionBatchImportResult {
-  total: number;
-  imported: number;
-  skipped: number;
-  failed: number;
-  messages: string[];
-}
-
-export interface PaperComposeResult {
-  draft_paper_id: number;
-  paper_code: string;
-  paper_title: string;
-  selected_count: number;
-  total_score: number;
-  message: string;
-  items: Array<{ question_id: number; sort_no: number; score: number }>;
-}
-
-export interface PaperComposeInput {
-  spec: {
-    subject_code: string;
-    total_score: number;
-    duration_minutes: number;
-    pass_score: number;
-    difficulty_level?: string | null;
-    tag_ids: number[];
-    per_question_score: number;
-  };
-  paper_code: string;
-  paper_title: string;
-  expected_question_count: number;
-}
-
-/* ============================================================
- * 标签
- * ============================================================ */
-export async function listQuestionTags(params: {
-  tag_type?: string;
-  subject_code?: string;
-} = {}): Promise<QuestionTag[]> {
-  const query: Record<string, unknown> = {};
-  if (params.tag_type) query.tag_type = params.tag_type;
-  if (params.subject_code) query.subject_code = params.subject_code;
-  return adminGet<QuestionTag[]>("/api/admin/questions/tags", query);
-}
-
-export async function createQuestionTag(input: {
-  tag_type: string;
-  tag_code: string;
-  tag_name: string;
-  subject_code?: string | null;
-  description?: string | null;
-  sort_no?: number;
-}): Promise<{ id: number; tag_code: string }> {
-  return adminPost<{ id: number; tag_code: string }>("/api/admin/questions/tags", input);
-}
-
-export async function deleteQuestionTag(tagId: number): Promise<{ deleted: boolean; id: number }> {
-  return adminDelete<{ deleted: boolean; id: number }>(`/api/admin/questions/tags/${tagId}`);
-}
-
 /* ============================================================
  * 题目
  * ============================================================ */
@@ -221,18 +167,6 @@ export async function updateQuestion(
 
 export async function deleteQuestion(questionId: number): Promise<{ deleted: boolean; id: number }> {
   return adminDelete<{ deleted: boolean; id: number }>(`/api/admin/questions/${questionId}`);
-}
-
-/* ============================================================
- * 批量导入 / 组卷
- * ============================================================ */
-/** 批量导入：body 为 list[dict]（后端契约，非包裹对象） */
-export async function batchImportQuestions(items: QuestionCreateInput[]): Promise<QuestionBatchImportResult> {
-  return adminPost<QuestionBatchImportResult>("/api/admin/questions/batch-import", items);
-}
-
-export async function composePaper(input: PaperComposeInput): Promise<PaperComposeResult> {
-  return adminPost<PaperComposeResult>("/api/admin/questions/papers/compose", input);
 }
 
 /* ============================================================

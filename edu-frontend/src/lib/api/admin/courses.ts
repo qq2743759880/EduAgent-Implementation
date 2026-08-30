@@ -473,18 +473,6 @@ export async function getTranscodeStatus(videoId: number): Promise<TranscodeStat
   return http.get<TranscodeStatus>(`/api/admin/courses/videos/${videoId}/transcode-status`);
 }
 
-/** 课件上传指引（保留：resource 四入口中「课件」接入 P1 管道） */
-export interface MaterialRedirectInfo {
-  redirect_endpoint: string;
-  method: string;
-  auth_header_required: boolean;
-  supported_content_types: string[];
-  tip: string;
-}
-export async function getMaterialRedirectInfo(): Promise<MaterialRedirectInfo> {
-  return adminGet<MaterialRedirectInfo>("/api/admin/courses/materials/redirect-upload");
-}
-
 /* ============================================================
  * 显示辅助（纯函数，供页面/测试复用）
  * ============================================================ */

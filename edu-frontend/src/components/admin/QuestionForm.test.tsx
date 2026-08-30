@@ -110,11 +110,10 @@ describe("QuestionForm 纯函数", () => {
 });
 
 describe("QuestionForm 题型分发", () => {
-  it("标签接口 GET /api/admin/questions/tags 被调用", async () => {
-    mockGet.mockResolvedValue([]);
+  it("标签接口返回空数组（后端已移除 tag 维度）", async () => {
     renderForm();
     await screen.findByTestId("question-form");
-    expect(mockGet).toHaveBeenCalledWith("/api/admin/questions/tags", { params: {} });
+    expect(mockGet).not.toHaveBeenCalledWith("/api/admin/questions/tags", { params: {} });
   }, 20_000);
 
   it("切换题型为判断题出现「正确/错误」按钮", async () => {

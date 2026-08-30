@@ -8,12 +8,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { http, ApiError } from "@/lib/api-client";
 import {
   QUESTION_TYPE_OPTIONS,
-  batchImportQuestions,
-  composePaper,
   createQuestion,
-  createQuestionTag,
   listQuestions,
-  listQuestionTags,
   questionTypeLabel,
   updateQuestion,
   type QuestionCreateInput,
@@ -102,55 +98,5 @@ describe("题目创建/更新", () => {
     await expect(
       createQuestion({ question_code: "Q-01", subject_code: "math", question_type: "single_choice", difficulty_level: "L1", stem_html: "x", options_json: [], correct_answer: "A", default_score: 5, knowledge_point_codes: [], tag_ids: [] }),
     ).rejects.toMatchObject({ status: 409, code: 40901 });
-  });
-});
-
-describe("批量导入 / 组卷", () => {
-  it("batchImportQuestions body 为 list[dict]（非包裹对象）", async () => {
-    mockPost.mockResolvedValueOnce({
-      total: 3, imported: 1, skipped: 1, failed: 1, messages: ["[1] skip 编码重复", "[2] schema invalid"],
-    });
-    const items = [{ question_code: "Q-1" }, { question_code: "Q-1" }, { bad: true }];
-    const resp = await batchImportQuestions(items as QuestionCreateInput[]);
-    expect(mockPost).toHaveBeenCalledWith("/api/admin/questions/batch-import", items);
-    expect(resp).toMatchObject({ imported: 1, skipped: 1, failed: 1 });
-    expect(resp.messages.length).toBeGreaterThan(0);
-  });
-
-  it("composePaper body 为 {spec:{...}, paper_code, paper_title, expected_question_count}", async () => {
-    mockPost.mockResolvedValueOnce({
-      draft_paper_id: 99, paper_code: "P-01-AB12", paper_title: "数学卷", selected_count: 20, total_score: 100, message: "ok", items: [],
-    });
-    await composePaper({
-      spec: { subject_code: "math", difficulty_level: "L2", tag_ids: [1], per_question_score: 5, total_score: 100, duration_minutes: 120, pass_score: 60 },
-      paper_code: "P-01",
-      paper_title: "数学卷",
-      expected_question_count: 20,
-    });
-    const body = mockPost.mock.calls[0][1];
-    expect(mockPost.mock.calls[0][0]).toBe("/api/admin/questions/papers/compose");
-    expect(body).toMatchObject({
-      spec: { subject_code: "math", tag_ids: [1], per_question_score: 5 },
-      paper_code: "P-01",
-      expected_question_count: 20,
-    });
-  });
-});
-
-describe("标签", () => {
-  it("listQuestionTags GET /tags", async () => {
-    mockGet.mockResolvedValueOnce([]);
-    await listQuestionTags({ subject_code: "math" });
-    expect(mockGet).toHaveBeenCalledWith("/api/admin/questions/tags", {
-      params: { subject_code: "math" },
-    });
-  });
-
-  it("createQuestionTag POST /tags", async () => {
-    mockPost.mockResolvedValueOnce({ id: 1, tag_code: "T-01" });
-    await createQuestionTag({ tag_type: "knowledge_point", tag_code: "T-01", tag_name: "定语从句" });
-    expect(mockPost).toHaveBeenCalledWith("/api/admin/questions/tags", {
-      tag_type: "knowledge_point", tag_code: "T-01", tag_name: "定语从句",
-    });
   });
 });
