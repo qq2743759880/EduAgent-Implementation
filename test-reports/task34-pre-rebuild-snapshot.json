@@ -1,0 +1,130 @@
+{
+  "task": "task34",
+  "generated_at": "2026-08-30T13:12:38",
+  "milvus_uri": "http://192.168.85.101:19530",
+  "milvus": {
+    "edu_knowledge": {
+      "rows": 4983,
+      "loaded": 3,
+      "partitions": {
+        "_default": 4976,
+        "user_970": 2,
+        "user_996": 2,
+        "user_1000": 2,
+        "course_public": 0,
+        "user_100013": 1
+      },
+      "indexes": {
+        "dense_vec": {
+          "type": "IVF_FLAT",
+          "metric": "COSINE",
+          "params": null
+        },
+        "sparse_vec": {
+          "type": "SPARSE_INVERTED_INDEX",
+          "metric": "IP",
+          "params": null
+        }
+      },
+      "schema_fields": [
+        {
+          "name": "id",
+          "type": "5",
+          "params": {}
+        },
+        {
+          "name": "chunk_id",
+          "type": "21",
+          "params": {
+            "max_length": 128
+          }
+        },
+        {
+          "name": "content",
+          "type": "21",
+          "params": {
+            "max_length": 8192
+          }
+        },
+        {
+          "name": "content_type",
+          "type": "21",
+          "params": {
+            "max_length": 32
+          }
+        },
+        {
+          "name": "source_file",
+          "type": "21",
+          "params": {
+            "max_length": 256
+          }
+        },
+        {
+          "name": "dense_vec",
+          "type": "101",
+          "params": {
+            "dim": 1024
+          }
+        },
+        {
+          "name": "sparse_vec",
+          "type": "104",
+          "params": {}
+        },
+        {
+          "name": "tenant_id",
+          "type": "21",
+          "params": {
+            "max_length": 100
+          }
+        },
+        {
+          "name": "visibility",
+          "type": "21",
+          "params": {
+            "max_length": 20
+          }
+        }
+      ],
+      "raw_dup_stats": {
+        "raw_content_non_empty": 4982,
+        "contextualized": 0,
+        "meaning": "raw_content 非空 = 每 chunk 存双份（前缀版 content + 原文 raw_content）"
+      }
+    },
+    "user_memory": {
+      "rows": 9,
+      "loaded": 3,
+      "partitions": {
+        "_default": 9
+      },
+      "indexes": {
+        "vector": {
+          "type": "AUTOINDEX",
+          "metric": "COSINE",
+          "params": null
+        }
+      }
+    },
+    "pf_bagu_kb": {
+      "rows": 5724,
+      "loaded": 3,
+      "partitions": {
+        "_default": 5724
+      },
+      "indexes": {
+        "dense": {
+          "type": "AUTOINDEX",
+          "metric": "COSINE",
+          "params": null
+        }
+      }
+    }
+  },
+  "neo4j": {
+    "nodes": 1330,
+    "rels": 6194
+  },
+  "notes": "edu_knowledge 将 drop+rebuild；pf_bagu_kb / user_memory 保留；Neo4j 全清"
+}
