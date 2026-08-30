@@ -476,4 +476,52 @@ input,select{font-family:inherit}
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（community 帖子列表 + 发帖）===== */
+(function () {
+  if (!window.EAPI) return;
+  var boards = document.getElementById("boards");
+  var totalEl = document.getElementById("total");
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
+
+  function renderPosts(items) {
+    if (!items || !items.length) {
+      boards.innerHTML = '<div style="text-align:center;color:var(--ink-faint);padding:50px 0">暂无帖子，来发第一帖吧 ✨</div>';
+      return;
+    }
+    boards.innerHTML = items.map(function (p) {
+      var tags = (p.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
+      var pin = p.is_pinned || p.pinned ? '<span class="pin">📌 置顶</span>' : "";
+      return '<article class="post" tabindex="0" data-post="' + p.post_id + '"><div class="p-top">' + pin + '<span class="board-tag">' + esc(p.board_name || p.board_code || "") + '</span></div><h3>' + esc(p.title) + '</h3><p class="p-sum">' + esc(p.summary || "") + '</p><div class="p-tags">' + tags + '</div><div class="p-meta"><span class="who">' + esc(p.author_name) + '</span><span class="sep-dot">·</span><span>' + (p.created_at || "").slice(0, 10) + '</span><span class="sep-dot">·</span><span>👁 ' + (p.view_count || 0) + '</span><span class="sep-dot">·</span><span class="cmt">💬 <i>' + (p.comment_count || 0) + '</i></span><span class="sep-dot">·</span><span>👍 ' + (p.like_count || 0) + '</span></div></article>';
+    }).join("");
+    boards.querySelectorAll(".post").forEach(function (a) {
+      a.addEventListener("click", function () { window.location.href = "/community-post.html?post_id=" + a.dataset.post; });
+    });
+  }
+
+  function load() {
+    var kw = (document.getElementById("kw") || {}).value || "";
+    EAPI.get("/api/community/posts?page=1&page_size=10" + (kw ? "&keyword=" + encodeURIComponent(kw) : "")).then(function (d) {
+      var data = d && d.items ? d : { items: [], total: 0 };
+      renderPosts(data.items);
+      if (totalEl) totalEl.textContent = "共 " + (data.total || 0) + " 条";
+    }).catch(function () {});
+  }
+
+  function openNew() {
+    var title = prompt("帖子标题：");
+    if (!title) return;
+    var content = prompt("帖子内容：");
+    if (!content) return;
+    EAPI.post("/api/community/posts", { board_code: "general", title: title, content: content }).then(function () {
+      alert("发帖成功 ✨"); load();
+    }).catch(function (e) { alert("发帖失败：" + (e.message || "网络错误")); });
+  }
+  ["postNewDesktop", "fab"].forEach(function (id) { var b = document.getElementById(id); if (b) b.addEventListener("click", openNew); });
+  var go = document.getElementById("go"); if (go) go.addEventListener("click", load);
+
+  load();
+})();
+</script>
 </body></html>

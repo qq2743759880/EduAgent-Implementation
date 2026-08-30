@@ -742,5 +742,9 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/interactive/quiz/wrong-book?page=1&page_size=10").then(function(d){var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);if(!items.length)return;var el=document.querySelector(".wrong-book .count,[class*=count]");if(el)el.textContent=items.length+(items.length?" 题":"");}).catch(function(){});})();
+</script>
 </body>
 </html>

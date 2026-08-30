@@ -377,5 +377,10 @@
 <script>
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（admin-mcp）===== */
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".page-head .sub");if(t)t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";return;}EAPI.get("/api/mcp/servers?page=1&page_size=50").then(function(d){var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);var body=document.querySelector("#srvTable tbody");if(body&&items.length){var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};body.innerHTML=items.map(function(s){return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.transport||"")+'</td><td>'+(s.last_health_ok?'<span class="chip" style="background:var(--candy-green-soft);color:var(--candy-green)">● OK</span>':'<span class="chip" style="background:var(--candy-red-soft);color:var(--candy-red)">● ERR</span>')+'</td><td>'+esc(s.tool_count||0)+'</td></tr>';}).join("");}}).catch(function(){});})();
+</script>
 </body>
 </html>

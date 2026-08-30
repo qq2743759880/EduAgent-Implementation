@@ -624,5 +624,10 @@ renderList();
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/users?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var body=document.querySelector("tbody");if(!body)return;var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};body.innerHTML=items.map(function(u){return '<tr><td>'+esc(u.account)+'</td><td>'+esc(u.nickname)+'</td><td>'+esc(u.role_code||u.role)+'</td><td>'+(u.yn===1?"启用":"停用")+'</td></tr>';}).join("");}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
 </body>
 </html>

@@ -541,8 +541,40 @@ I = eˣ sinx − (eˣ cosx + I)
     });
   });
 
-  /* 初始默认态：success 列表 */
-  buildComments();
+/* 初始默认态：success 列表 */
+buildComments();
+})();
+</script>
+
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（community-post 帖子详情 + 评论）===== */
+(function () {
+  if (!window.EAPI) return;
+  var q = new URLSearchParams(location.search);
+  var pid = q.get("post_id") || (location.pathname.match(/\/(\d+)/) || [])[1];
+  if (!pid) return;
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
+
+  EAPI.get("/api/community/posts/" + pid).then(function (p) {
+    if (!p) return;
+    var t = document.querySelector("h1,.title"); if (t && (p.title)) t.textContent = p.title;
+    var c = document.querySelector(".content,.body"); if (c && (p.content || p.summary)) c.innerHTML = esc(p.content || p.summary);
+    var b = document.getElementById("badges");
+    if (b) { b.style.visibility = "visible"; var tg = b.querySelector(".board-tag"); if (tg) tg.textContent = p.board_name || p.board_code || ""; }
+    var a = document.getElementById("actions");
+    if (a) { a.style.visibility = "visible"; var cnt = a.querySelector(".count,.cmt"); if (cnt && p.comment_count != null) cnt.textContent = p.comment_count; }
+  }).catch(function () {});
+
+  EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20").then(function (d) {
+    var items = d && d.items ? d.items : (Array.isArray(d) ? d : []);
+    var cList = document.getElementById("commentList") || document.querySelector(".comments");
+    if (!items.length || !cList) return;
+    var html = items.map(function (c) {
+      return '<div class="c-item"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + (c.created_at || "").slice(0, 10) + '</span></div><div class="c-text">' + esc(c.content_md || c.content || "") + '</div></div>';
+    }).join("");
+    cList.innerHTML = html;
+  }).catch(function () {});
 })();
 </script>
 

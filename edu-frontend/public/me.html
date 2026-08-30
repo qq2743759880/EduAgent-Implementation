@@ -4215,11 +4215,11 @@ a{text-decoration:none;color:inherit}
       <div class="avatar" aria-hidden="true">🐻</div>
       <div class="me-info">
         <div class="name-row">
-          <h1>慕剑知</h1>
+          <h1 id="me-name">慕剑知</h1>
           <button class="edit-btn">✏️ 编辑资料</button>
         </div>
-        <div class="me-goal">学习目标：<b>编程入门</b></div>
-        <div class="me-pref">
+        <div class="me-goal">学习目标：<b id="me-goal">编程入门</b></div>
+        <div class="me-pref" id="me-prefs">
           <span class="pref-tag">编程</span>
           <span class="pref-tag">数学</span>
           <span class="pref-tag">英语</span>
@@ -4234,10 +4234,10 @@ a{text-decoration:none;color:inherit}
         <div><div class="ttl" id="stats-sec">数据概览</div><div class="sub">学习时长 / 完成课次 来自 learning-summary · 积分 / 等级 来自 gamification</div></div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num">68</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
-        <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num">24</span><span class="sc-unit">课次</span></div><div class="sc-label">完成课次</div></div>
-        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num">1,280</span></div><div class="sc-label">积分</div></div>
-        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num">Lv.10</span></div><div class="sc-label">等级 · 学神</div></div>
+        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num" id="st-time">68</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
+        <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num" id="st-sessions">24</span><span class="sc-unit">课次</span></div><div class="sc-label">完成课次</div></div>
+        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num" id="st-points">1,280</span></div><div class="sc-label">积分</div></div>
+        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num" id="st-level">Lv.10</span></div><div class="sc-label">等级 · 学神</div></div>
       </div>
     </section>
 
@@ -4331,5 +4331,41 @@ a{text-decoration:none;color:inherit}
 <script>
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（me 个人中心）===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) return;
+  function set(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+
+  EAPI.get("/api/users/me").then(function (u) {
+    if (!u) return;
+    if (u.nickname) set("me-name", u.nickname);
+    var goal = u.learningGoal || u.learning_goal || "";
+    if (goal) set("me-goal", goal);
+    var prefs = u.subjectPreferences || u.subject_preferences || [];
+    var el = document.getElementById("me-prefs");
+    if (el && prefs.length) el.innerHTML = prefs.slice(0, 3).map(function (p) { return '<span class="pref-tag">' + (typeof p === "string" ? p : p.subject_name || p.subject_code || "") + '</span>'; }).join("");
+  }).catch(function () {});
+
+  Promise.allSettled([
+    EAPI.get("/api/users/me/learning-summary"),
+    EAPI.get("/api/gamification/me/points"),
+  ]).then(function (res) {
+    var sum = res[0].status === "fulfilled" ? res[0].value : null;
+    var pts = res[1].status === "fulfilled" ? res[1].value : null;
+    if (sum) {
+      var secs = sum.total_watched_seconds || 0;
+      set("st-time", Math.round(secs / 3600));
+      set("st-sessions", sum.completed_sessions_count != null ? sum.completed_sessions_count : "");
+    }
+    if (pts) {
+      set("st-points", (pts.total_points || 0).toLocaleString());
+      if (pts.level_no) set("st-level", "Lv." + pts.level_no + (pts.level_title ? " · " + pts.level_title : ""));
+    }
+  });
+})();
 </script>
 </body></html>

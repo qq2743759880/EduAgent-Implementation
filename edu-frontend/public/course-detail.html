@@ -729,5 +729,33 @@ renderBody();
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（course-detail 课程详情 + 班次）===== */
+(function () {
+  if (!window.EAPI) return;
+  var m = /\/(\d+)\.html/.exec(location.pathname) || /courses\/(\d+)/.exec(location.search || location.pathname);
+  var sid = m ? m[1] : "1001";
+  Promise.allSettled([
+    EAPI.get("/api/series/" + sid),
+    EAPI.get("/api/series/" + sid + "/cohorts"),
+  ]).then(function (res) {
+    var s = res[0].status === "fulfilled" ? res[0].value : null;
+    var cohorts = res[1].status === "fulfilled" ? res[1].value : null;
+    if (s && (s.series_name || s.name)) {
+      if (typeof SERIES !== "undefined") { SERIES.series_name = s.series_name || s.name || SERIES.series_name; SERIES.description = s.description || SERIES.description; SERIES.min_price = s.min_price || SERIES.min_price; }
+      var t = document.querySelector("h1.title,.title");
+      if (t) t.textContent = s.series_name || s.name;
+    }
+    var items = cohorts && cohorts.items ? cohorts.items : (Array.isArray(cohorts) ? cohorts : []);
+    if (items.length && typeof COHORTS !== "undefined") {
+      COHORTS = items.map(function (c) {
+        return { id: c.id, cohort_code: c.cohort_code, cohort_name: c.cohort_name, sale_price: c.sale_price || "0", max_student_count: c.max_student_count || 0, current_student_count: c.current_student_count || 0, yn: c.yn != null ? c.yn : 1, start_date: c.start_date || "", end_date: c.end_date || "" };
+      });
+      try { if (typeof renderBody === "function") renderBody(); } catch (e) {}
+    }
+  }).catch(function () {});
+})();
+</script>
 </body>
 </html>

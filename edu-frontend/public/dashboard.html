@@ -355,25 +355,25 @@ button{font-family:inherit;cursor:pointer}
     <div class="kpis">
       <div class="kpi">
         <div class="top"><span class="lb">今日学习时长</span><span class="ic indigo">⏱️</span></div>
-        <div class="val">42<small> 分钟</small></div>
+        <div class="val" id="kpi-time">42<small> 分钟</small></div>
         <div class="delta up" data-delta="kpi1">▲ 较昨日 +8 分钟</div>
         <div class="dbar"><i style="width:68%;background:var(--indigo)"></i></div>
       </div>
       <div class="kpi">
         <div class="top"><span class="lb">今日练习题</span><span class="ic green">✍️</span></div>
-        <div class="val">15<small> 道</small></div>
+        <div class="val" id="kpi-q">15<small> 道</small></div>
         <div class="delta up" data-delta="kpi2">▲ 正确率 82%</div>
         <div class="dbar"><i style="width:55%;background:var(--candy-green)"></i></div>
       </div>
       <div class="kpi">
         <div class="top"><span class="lb">进行中课程</span><span class="ic amber">📚</span></div>
-        <div class="val">3<small> 门</small></div>
+        <div class="val" id="kpi-course">3<small> 门</small></div>
         <div class="delta" data-delta="kpi3">— 建议一次 focus 2 门</div>
         <div class="dbar"><i style="width:40%;background:var(--candy-yellow)"></i></div>
       </div>
       <div class="kpi">
         <div class="top"><span class="lb">连续打卡</span><span class="ic violet">🔥</span></div>
-        <div class="val">6<small> 天</small></div>
+        <div class="val" id="kpi-streak">6<small> 天</small></div>
         <div class="delta up" data-delta="kpi4">▲ 近 7 天活跃 6 天</div>
         <div class="dbar"><i style="width:86%;background:var(--chart-violet)"></i></div>
       </div>
@@ -625,6 +625,27 @@ button{font-family:inherit;cursor:pointer}
   })();
 
   renderRank('day');
+})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* 对接真实后端：加载 /api/progress/dashboard 填充 KPI（失败保留演示值） */
+(function () {
+  if (!window.EAPI || !EAPI.store.getToken()) return;
+  EAPI.get("/api/progress/dashboard?days=14")
+    .then(function (d) {
+      if (!d) return;
+      var secs = d.total_study_seconds || 0, min = Math.round(secs / 60);
+      var el = document.getElementById("kpi-time");
+      if (el) el.innerHTML = min + "<small> 分钟</small>";
+      var q = document.getElementById("kpi-q");
+      if (q && d.total_questions_attempted != null) q.innerHTML = d.total_questions_attempted + "<small> 道</small>";
+      var c = document.getElementById("kpi-course");
+      if (c && d.active_courses_count != null) c.innerHTML = d.active_courses_count + "<small> 门</small>";
+      var s = document.getElementById("kpi-streak");
+      if (s && d.latest_streak_days != null) s.innerHTML = d.latest_streak_days + "<small> 天</small>";
+    })
+    .catch(function () { /* 保留演示值 */ });
 })();
 </script>
 <script>

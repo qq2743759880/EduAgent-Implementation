@@ -1,55 +1,23 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/lib/auth-client";
-import { isSafeRedirect } from "@/lib/redirect";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 /**
- * 根路由：根据登录态重定向
- * - 未登录 → /login（携带 ?redirect= 保持回跳）
- * - 已登录 → /dashboard 或 URL 指定的 ?redirect= 目标（安全正则校验，防 Open Redirect）
+ * 根路由：进入 fe-html 糖果色静态页入口
+ * - 未登录/已登录都先进 login-register.html（页面内判断跳转 /dashboard.html）
+ * - 登录后存 token（localStorage edu:auth:token），各静态页 edu-api.js 读取
  */
-function RootHomePageInner() {
+export default function RootHomePage() {
   const router = useRouter();
-  const search = useSearchParams();
-  const { ready, token } = useAuthStore();
-
-  const redirect = useMemo(() => {
-    const raw = search?.get("redirect")?.trim();
-    if (raw && isSafeRedirect(raw)) return raw;
-    return null;
-  }, [search]);
 
   useEffect(() => {
-    if (!ready) return;
-    if (token) {
-      router.replace(redirect ?? "/dashboard");
-    } else {
-      const dest = new URLSearchParams();
-      if (redirect) dest.set("redirect", redirect);
-      const qs = dest.toString();
-      router.replace(`/login${qs ? `?${qs}` : ""}`);
-    }
-  }, [ready, token, router, redirect]);
+    router.replace("/login-register.html");
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground bg-gradient-to-br from-primary-soft via-white to-secondary">
       正在进入 EduAgent…
     </div>
-  );
-}
-
-export default function RootHomePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground bg-gradient-to-br from-primary-soft via-white to-secondary">
-          正在进入 EduAgent…
-        </div>
-      }
-    >
-      <RootHomePageInner />
-    </Suspense>
   );
 }

@@ -542,5 +542,10 @@ function resetFilter(){
 document.getElementById("btn-create").addEventListener("click",openCreate);
 render("success");
 </script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/courses/series?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var body=document.querySelector("tbody");if(!body)return;var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};var rows=items.map(function(s){return '<tr><td>'+esc(s.series_code||"")+'</td><td>'+esc(s.series_name||"")+'</td><td>'+esc(s.delivery_mode||"")+'</td><td>'+esc(s.sale_status||"")+'</td><td>¥'+Number(s.min_price||0).toFixed(2)+'</td></tr>';}).join("");body.innerHTML=rows;}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
 </body>
 </html>

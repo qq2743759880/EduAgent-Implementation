@@ -487,4 +487,9 @@ button{font-family:inherit;cursor:pointer}
 })();
 </script>
 
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/users/dashboard/metrics").then(function(d){if(!d)return;var map={total_users:d.total_users,active_users:d.active_users,new_users_today:d.new_users_today};Object.keys(map).forEach(function(k){var el=document.querySelector("[data-metric='"+k+"'],[data-k='"+k+"'],."+k+" .num");if(el&&map[k]!=null)el.textContent=map[k];});}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
 </body></html>

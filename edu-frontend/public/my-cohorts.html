@@ -548,5 +548,9 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/enrollments/me/cohorts?page=1&page_size=10").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var list=document.querySelector(".cohort-list,.list");if(!list)return;var rows=list.querySelectorAll(".cohort,.item,.row");if(!rows.length)return;items.slice(0,rows.length).forEach(function(c,i){var n=rows[i].querySelector("h3,.name,.title");if(n)n.textContent=c.series_title||c.cohort_name||n.textContent;var s=rows[i].querySelector(".status,[class*=status]");if(s&&c.enroll_status)s.textContent=c.enroll_status;});}).catch(function(){});})();
+</script>
 </body>
 </html>

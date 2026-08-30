@@ -594,5 +594,10 @@ demo.upload('empty'); demo.task('empty'); demo.part('normal'); refreshHealth();
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;Promise.allSettled([EAPI.get("/api/knowledge/tasks?page=1&page_size=10"),EAPI.get("/api/admin/rag/collections")]).then(function(r){var tasks=r[0].status==="fulfilled"?r[0].value:null;if(tasks&&(tasks.items||tasks.tasks||Array.isArray(tasks))){var list=tasks.items||tasks.tasks||tasks;var body=document.querySelector("#taskTable tbody,#task-table tbody");if(body&&list.length){var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};body.innerHTML=list.map(function(x){return '<tr><td>'+esc(x.task_id||x.id)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.total_chunks||0)+'</td><td>'+esc(x.created_at||"")+'</td></tr>';}).join("");}}var cols=r[1].status==="fulfilled"?r[1].value:null;if(cols&&cols.items){var el=document.querySelector("[data-collection-count],[class*=row-count]");if(el&&cols.total!=null)el.textContent=cols.total;}}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
 </body>
 </html>

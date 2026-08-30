@@ -3175,4 +3175,8 @@ a.session{text-decoration:none}
 </script>
 
 </div></div>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=/\/learning\/(\d+)\/(\d+)/.exec(location.pathname);var sid=m?m[2]:null;if(!sid)return;EAPI.get("/api/learning/sessions/"+sid).then(function(d){if(!d)return;var t=document.querySelector("h1,.title,[class*=title]");if(t&&d.session_title)t.textContent=d.session_title;}).catch(function(){});})();
+</script>
 </body></html>

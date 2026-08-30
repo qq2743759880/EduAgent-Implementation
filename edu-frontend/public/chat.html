@@ -622,6 +622,120 @@ window.addEventListener("resize", ()=>{ if(window.innerWidth>760) drawer(false);
 renderSides();
 draw("history");
 </script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（chat）===== */
+(function () {
+  if (!window.EAPI) return;
+  var token = EAPI.store.getToken();
+  if (!token) { window.location.href = "/login-register.html"; return; }
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $("stage");
+  var sessions = [], activeId = null;
+
+  function fmt(ts) {
+    if (!ts) return "刚刚";
+    var d = new Date(ts.replace(" ", "T"));
+    if (isNaN(d)) return "最近";
+    var h = d.getHours().toString().padStart(2, "0"), m = d.getMinutes().toString().padStart(2, "0");
+    var today = new Date();
+    if (d.toDateString() === today.toDateString()) return h + ":" + m;
+    return (d.getMonth() + 1) + "-" + d.getDate();
+  }
+
+  function loadSessions() {
+    return EAPI.get("/api/chat/sessions").then(function (list) {
+      sessions = (list || []).map(function (s) {
+        return { id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at) };
+      });
+      renderSides();
+      if (sessions.length) { activeId = sessions[0].id; loadHistory(activeId); }
+      else emptyState();
+    }).catch(function () {});
+  }
+
+  function renderSides() {
+    var html = sessions.map(function (s, i) {
+      return '<button class="sess ' + (s.id === activeId ? "on" : "") + '" data-id="' + s.id + '"><span class="ic">💬</span><span class="si"><span class="t">' + s.title + '</span><span class="d">' + s.date + '</span></span><span class="del" data-del="' + s.id + '" title="删除会话">🗑</span></button>';
+    }).join("");
+    ["sideList", "drawerList"].forEach(function (id) { if ($(id)) $(id).innerHTML = html; });
+    ["sideList", "drawerList"].forEach(function (id) {
+      if (!$(id)) return;
+      $(id).querySelectorAll(".sess").forEach(function (b) {
+        b.addEventListener("click", function () { activeId = b.dataset.id; renderSides(); loadHistory(activeId); });
+      });
+      $(id).querySelectorAll(".del").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.stopPropagation();
+          EAPI.del("/api/chat/sessions/" + b.dataset.del).then(function () { loadSessions(); }).catch(function () {});
+        });
+      });
+    });
+  }
+
+  function loadHistory(sid) {
+    EAPI.get("/api/chat/sessions/" + sid + "/history").then(function (msgs) {
+      var list = (msgs && msgs.messages) || msgs || [];
+      stage.innerHTML = historyHtml(list);
+    }).catch(function () {});
+  }
+
+  function historyHtml(list) {
+    if (!list || !list.length) return emptyHtml();
+    return list.map(function (m) {
+      var isUser = m.role === "user" || m.role === "human";
+      return '<div class="msg ' + (isUser ? "me" : "ai") + '"><div class="bubble">' + esc(m.content || m.text || "") + '</div></div>';
+    }).join("");
+  }
+
+  function emptyHtml() { return '<div class="empty" style="text-align:center;color:var(--ink-faint);padding:60px 0">开始和 EduAgent 对话吧 ✨</div>'; }
+  function emptyState() { stage.innerHTML = emptyHtml(); }
+  function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+
+  /* ---- 发送：SSE 流式 ---- */
+  var input = $("composerInput"), send = $("sendBtn");
+  function doSend() {
+    var text = (input.value || "").trim();
+    if (!text) return;
+    var sid = activeId;
+    stage.innerHTML = historyHtml([]) + '<div class="msg me"><div class="bubble">' + esc(text) + '</div></div><div class="msg ai"><div class="bubble" id="aiResp">…</div></div>';
+    input.value = "";
+    fetch(EAPI.BASE + "/api/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
+      body: JSON.stringify({ query: text, session_id: sid || null, stream: true }),
+    }).then(function (resp) {
+      var reader = resp.body.getReader(), dec = new TextDecoder(), buf = "", evt = "";
+      function pump() {
+        return reader.read().then(function (r) {
+          if (r.done) return;
+          buf += dec.decode(r.value, { stream: true });
+          var lines = buf.split("\n"); buf = lines.pop();
+          lines.forEach(function (line) {
+            line = line.trim();
+            if (!line) return;
+            if (line.startsWith("event:")) { evt = line.slice(6).trim(); return; }
+            if (!line.startsWith("data:")) return;
+            var payload = line.slice(5).trim();
+            var el = $("aiResp"); if (!el) return;
+            if (evt === "token") { try { var j = JSON.parse(payload); el.textContent += j.token || ""; } catch (e) {} }
+            else if (evt === "done") { try { var d = JSON.parse(payload); if (d.content) el.textContent = d.content; } catch (e) {} }
+            else if (evt === "error") { try { var er = JSON.parse(payload); el.textContent = "（回答失败：" + (er.message || "未知错误") + "）"; } catch (e) {} }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function (e) {
+      var el = $("aiResp"); if (el) el.textContent = "（网络错误：" + e.message + "）";
+    });
+  }
+  send.addEventListener("click", doSend);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+
+  loadSessions();
+})();
+</script>
 <script>
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();

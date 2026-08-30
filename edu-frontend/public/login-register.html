@@ -2929,6 +2929,7 @@
   </div>
 </div>
 
+<script src="/edu-api.js"></script>
 <script>
 var page = "login", lstate = "normal", rstate = "normal";
 
@@ -2962,15 +2963,23 @@ function applyLogin(){
   }
 }
 function loginSubmit(){
-  if(lstate==="eother"){ toast("登录失败（500 · 服务暂时不可用）", "toast-error"); applyLogin(); return; }
-  if(lstate==="e401") return;
   var btn = document.getElementById("login-btn");
+  var id = document.getElementById("li-id").value.trim();
+  var pwd = document.getElementById("li-pwd").value;
+  if (!id || !pwd) { toast("请输入账号和密码", "toast-error"); return; }
   btn.classList.add("busy");
-  setTimeout(()=>{
-    if(lstate==="succ"){ toast("🍭 登录成功，正在跳转 /dashboard …", "toast-ok"); routeFlow("succ"); }
-    applyLogin();
-    btn.classList.remove("busy");
-  }, 700);
+  EAPI.post("/api/auth/login", { account: id, password: pwd })
+    .then(function (data) {
+      EAPI.store.setToken(data.access_token);
+      toast("🍭 登录成功，正在跳转 /dashboard …", "toast-ok");
+      setTimeout(function () { window.location.href = "/dashboard.html"; }, 400);
+    })
+    .catch(function (err) {
+      btn.classList.remove("busy");
+      toast("登录失败：" + (err && err.message ? err.message : "网络错误"), "toast-error");
+      var el = document.getElementById("li-banner");
+      if (el) { el.querySelector("#li-banner-t").textContent = err && err.message || "登录失败"; el.classList.add("show"); }
+    });
 }
 document.getElementById("page-seg").addEventListener("click",function(e){
   var b=e.target.closest("[data-page]"); if(!b)return; setPage(b.dataset.page);
