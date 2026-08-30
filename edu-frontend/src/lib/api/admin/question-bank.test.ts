@@ -118,14 +118,14 @@ describe("题目详情 / 更新（task59）", () => {
       stem: "2+2=?",
       answer_text: "D",
       analysis_text: "2+2=4",
-      options_json: [{ label: "A", content: "1" }],
+      options_json: [{ key: "A", text: "1" }],
     });
     expect(mockPatch).toHaveBeenCalledWith("/api/admin/questions/questions/9001", {
       question_type_id: 1,
       stem: "2+2=?",
       answer_text: "D",
       analysis_text: "2+2=4",
-      options_json: [{ label: "A", content: "1" }],
+      options_json: [{ key: "A", text: "1" }],
     });
   });
 
