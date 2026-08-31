@@ -314,7 +314,7 @@ body[data-show="empty-log"] .log-empty{display:flex}
     <a class="gnav-item active" href="achievements.html" aria-current="page"><span>成就中心</span></a>
     <a class="gnav-item" href="me.html"><span>个人中心</span></a>
   </nav>
-  <div class="gnav-foot">Learning Hub</div>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a></div>
 </header>
   <div class="page">
     <!-- Hero 成就横幅 -->
@@ -739,6 +739,17 @@ body[data-show="empty-log"] .log-empty{display:flex}
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
 <script src="/edu-api.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
 <script>
 (function(){if(!window.EAPI||!EAPI.store.getToken())return;Promise.allSettled([EAPI.get("/api/gamification/me/badges"),EAPI.get("/api/gamification/me/points")]).then(function(r){var b=r[0].status==="fulfilled"?r[0].value:null;if(b&&b.items&&b.items.length){var wall=document.querySelector(".badge-wall,.badges");if(wall&&wall.querySelectorAll(".badge").length){var bts=wall.querySelectorAll(".badge");b.items.slice(0,bts.length).forEach(function(bd,i){var n=bts[i].querySelector(".name,.t");if(n)n.textContent=bd.badge_name||bd.name||n.textContent;});}}var p=r[1].status==="fulfilled"?r[1].value:null;if(p){var el=document.querySelector(".points-num,[class*=points] .num");if(el)el.textContent=p.total_points||el.textContent;}}).catch(function(){});})();
 </script>

@@ -287,7 +287,7 @@ textarea,input{font-family:inherit}
     <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
     <a class="gnav-item" href="me.html"><span>个人中心</span></a>
   </nav>
-  <div class="gnav-foot">Learning Hub</div>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a></div>
   <div class="gnav-user" aria-label="顶栏右侧快捷入口">
     <a class="gnav-user-link" href="chat.html" aria-label="问 AI">✨ 问 AI</a>
     <a class="gnav-user-link ava" href="me.html" aria-label="个人中心">🐣</a>
@@ -547,6 +547,17 @@ buildComments();
 </script>
 
 <script src="/edu-api.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
 <script>
 /* ===== 对接真实后端（community-post 帖子详情 + 评论）===== */
 (function () {

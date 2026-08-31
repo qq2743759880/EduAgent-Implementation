@@ -2971,8 +2971,10 @@ function loginSubmit(){
   EAPI.post("/api/auth/login", { account: id, password: pwd })
     .then(function (data) {
       EAPI.store.setToken(data.access_token);
-      toast("🍭 登录成功，正在跳转 /dashboard …", "toast-ok");
-      setTimeout(function () { window.location.href = "/dashboard.html"; }, 400);
+      var role = data.user && data.user.role;
+      var dest = (role === "admin" || role === "manager") ? "/admin-dashboard.html" : "/dashboard.html";
+      toast("🍭 登录成功，正在跳转" + (role === "admin" ? "管理端" : "学习端") + " …", "toast-ok");
+      setTimeout(function () { window.location.href = dest; }, 400);
     })
     .catch(function (err) {
       btn.classList.remove("busy");

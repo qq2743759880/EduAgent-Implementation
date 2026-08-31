@@ -333,7 +333,7 @@ button{font-family:inherit;cursor:pointer}
     <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
     <a class="gnav-item" href="me.html"><span>个人中心</span></a>
   </nav>
-  <div class="gnav-foot">Learning Hub</div>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a></div>
 </header>
 <div class="page">
 
@@ -632,6 +632,12 @@ button{font-family:inherit;cursor:pointer}
 /* 对接真实后端：加载 /api/progress/dashboard 填充 KPI（失败保留演示值） */
 (function () {
   if (!window.EAPI || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    var adminEntry = document.getElementById("adminEntry");
+    if (adminEntry && u && (u.role === "admin" || u.role === "manager")) {
+      adminEntry.style.display = "";
+    }
+  }).catch(function () {});
   EAPI.get("/api/progress/dashboard?days=14")
     .then(function (d) {
       if (!d) return;

@@ -4188,7 +4188,7 @@ a{text-decoration:none;color:inherit}
     <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
     <a class="gnav-item active" href="me.html" aria-current="page"><span>个人中心</span></a>
   </nav>
-  <div class="gnav-foot">Learning Hub</div>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a></div>
 </header>
 
   <!-- 审核工具条（不进入 React）：视口切换 + 演示态 -->
@@ -4333,6 +4333,17 @@ a{text-decoration:none;color:inherit}
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
 <script src="/edu-api.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
 <script>
 /* ===== 对接真实后端（me 个人中心）===== */
 (function () {
