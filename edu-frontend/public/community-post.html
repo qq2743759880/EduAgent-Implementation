@@ -393,15 +393,15 @@ I = eˣ sinx − (eˣ cosx + I)
   var metaFav=document.getElementById('metaFav');
   var pointsHint=document.getElementById('pointsHint');
 
-  /* 点赞 toggle（演示：active 切换 + 计数 ±1 + 积分提示） */
-  likeBtn.addEventListener('click',function(){
+  /* 点赞/收藏 toggle：真实接入时由 task118 脚本接管，此演示逻辑不执行（防双绑） */
+  likeBtn.addEventListener('click',function(){ if(window.__REAL_COMMUNITY__) return;
     var on=likeBtn.classList.toggle('on');
     var n=parseInt(likeCnt.textContent,10)+(on?1:-1);
     likeCnt.textContent=n; metaLike.textContent=n;
     if(on){pointsHint.style.display='inline-flex';setTimeout(function(){pointsHint.style.display='none'},1800);}
   });
   /* 收藏 toggle */
-  favBtn.addEventListener('click',function(){
+  favBtn.addEventListener('click',function(){ if(window.__REAL_COMMUNITY__) return;
     var on=favBtn.classList.toggle('on');
     var n=parseInt(favCnt.textContent,10)+(on?1:-1);
     favCnt.textContent=n; metaFav.textContent=n;
@@ -424,7 +424,7 @@ I = eˣ sinx − (eˣ cosx + I)
     cmtTotal.textContent=n+' 条'; metaCmt.textContent=n;
     cmtInput.value='';
   }
-  cmtSubmit.addEventListener('click',function(){
+  cmtSubmit.addEventListener('click',function(){ if(window.__REAL_COMMUNITY__) return;
     var t=cmtInput.value.trim();
     if(!t){cmtInput.focus();return;}
     addComment(t);
@@ -432,7 +432,7 @@ I = eˣ sinx − (eˣ cosx + I)
   });
 
   /* 评论点赞（事件委托） */
-  cList.addEventListener('click',function(e){
+  cList.addEventListener('click',function(e){ if(window.__REAL_COMMUNITY__) return;
     var b=e.target.closest('.c-like');
     if(!b)return;
     var on=b.classList.toggle('on');
@@ -559,33 +559,126 @@ buildComments();
 })();
 </script>
 <script>
-/* ===== 对接真实后端（community-post 帖子详情 + 评论）===== */
+/* ===== 对接真实后端（community-post 详情 + 帖子点赞/收藏 + 评论发布/点赞 + 未登录跳转 + 行内错误反馈）=====
+   task118 实测契约：
+   - GET  /posts/{id}            → PostDetail（含 content_md, like_count, favorite_count, mine_react_like, mine_react_favorite, comment_count）
+   - POST /posts/{id}/like|favorite → ReactToggleResp{active, total_count}
+   - GET  /posts/{id}/comments   → items[CommentItem{comment_id, author_name, content_md, like_count, mine_liked, created_at}]
+   - POST /posts/{id}/comments   → body{content_md}；resp{comment_id, created_at, points}
+   - POST /comments/{id}/like    → ReactToggleResp{active, total_count}
+   无 post_id → 效果图预览保留 demo；有 post_id → 必须登录（查询/互动均需 token），无 token 跳登录 */
 (function () {
   if (!window.EAPI) return;
   var q = new URLSearchParams(location.search);
-  var pid = q.get("post_id") || (location.pathname.match(/\/(\d+)/) || [])[1];
-  if (!pid) return;
+  var pid = q.get("post_id");
+  if (!pid) return;                  // 无 post_id = 效果图预览，保留 demo 态
+  window.__REAL_COMMUNITY__ = true;  // 通知 demo IIFE 停止模拟，防双绑
+  if (!EAPI.store.getToken()) {      // 后端所有查询/互动都要求鉴权，未登录直接跳登录
+    try { location.href = EAPI.buildLoginUrl(location.href); } catch (e) { location.href = "/login-register.html"; }
+    return;
+  }
   var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
+  var BOARD = { english: "英语", math: "数学", programming: "编程", general: "综合" };
+  var likeBtn = document.getElementById("likeBtn"), likeCnt = document.getElementById("likeCnt"), metaLike = document.getElementById("metaLike");
+  var favBtn = document.getElementById("favBtn"), favCnt = document.getElementById("favCnt"), metaFav = document.getElementById("metaFav");
+  var cList = document.getElementById("cList"), cmtInput = document.getElementById("cmtInput"), cmtSubmit = document.getElementById("cmtSubmit");
+  var cmtTotal = document.getElementById("cmtTotal"), metaCmt = document.getElementById("metaCmt"), pointsHint = document.getElementById("pointsHint");
+  var bodyCard = document.getElementById("bodyCard"), mdBody = document.getElementById("mdBody");
+  var badges = document.getElementById("badges"), actions = document.getElementById("actions"), postTitle = document.getElementById("postTitle"), postMeta = document.getElementById("postMeta");
 
+  function setOn(el, on) { el.classList.toggle("on", !!on); if (el.setAttribute) el.setAttribute("aria-pressed", on ? "true" : "false"); }
+  function show(num, v) { if (num) num.textContent = v; }
+  function setTotal(v) { show(cmtTotal, v + " 条"); show(metaCmt, v); var pg = document.querySelector("#pager .total"); if (pg) pg.textContent = "共 " + v + " 条"; }
+  function hint() { if (pointsHint) { pointsHint.style.display = "inline-flex"; setTimeout(function () { pointsHint.style.display = "none"; }, 1800); } }
+  function flash(m) { // 行内错误/反馈（critique：失败行内可见）
+    var f = document.getElementById("cmtErr");
+    if (!f) {
+      f = document.createElement("div"); f.id = "cmtErr";
+      f.style.cssText = "font-size:12px;color:var(--candy-red-deep,#d63e3e);margin-top:6px;min-height:16px;font-weight:700";
+      var composer = document.getElementById("composer"); if (composer) composer.appendChild(f);
+    }
+    f.textContent = m; clearTimeout(flash.__t); if (m) flash.__t = setTimeout(function () { f.textContent = ""; }, 4000);
+  }
+
+  /* ---- 帖子详情渲染 ---- */
   EAPI.get("/api/community/posts/" + pid).then(function (p) {
     if (!p) return;
-    var t = document.querySelector("h1,.title"); if (t && (p.title)) t.textContent = p.title;
-    var c = document.querySelector(".content,.body"); if (c && (p.content || p.summary)) c.innerHTML = esc(p.content || p.summary);
-    var b = document.getElementById("badges");
-    if (b) { b.style.visibility = "visible"; var tg = b.querySelector(".board-tag"); if (tg) tg.textContent = p.board_name || p.board_code || ""; }
-    var a = document.getElementById("actions");
-    if (a) { a.style.visibility = "visible"; var cnt = a.querySelector(".count,.cmt"); if (cnt && p.comment_count != null) cnt.textContent = p.comment_count; }
+    if (postTitle && p.title) { postTitle.textContent = p.title; postTitle.style.visibility = "visible"; }
+    if (postMeta) { var who = postMeta.querySelector(".who"); if (who && p.author_name) who.textContent = p.author_name; if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "").replace("T", " ").slice(0, 16); postMeta.style.visibility = "visible"; }
+    if (mdBody && p.content_md) mdBody.innerHTML = esc(p.content_md).replace(/\n/g, "<br>");
+    if (bodyCard) bodyCard.style.visibility = "visible";
+    if (badges) { badges.style.visibility = "visible"; var tg = badges.querySelector(".board-tag"); if (tg) { tg.className = "board-tag " + ({ en: "en", english: "en", math: "math", prog: "prog", programming: "prog", gen: "gen", general: "gen" }[p.board_code] || "gen"); tg.textContent = BOARD[p.board_code] || p.board_code || ""; } }
+    if (actions) { actions.style.visibility = "visible"; actions.style.display = "flex"; }
+    var cm = document.getElementById("comments"); if (cm) cm.style.visibility = "visible";
+    show(likeCnt, p.like_count); show(metaLike, p.like_count); show(favCnt, p.favorite_count); show(metaFav, p.favorite_count);
+    setOn(likeBtn, !!p.mine_react_like); setOn(favBtn, !!p.mine_react_favorite);
+    setTotal(p.comment_count || 0);
+    if (p.is_locked) { if (cmtInput) { cmtInput.disabled = true; cmtInput.placeholder = "本帖已锁定，无法评论"; } if (cmtSubmit) cmtSubmit.disabled = true; if (actions) actions.style.display = "none"; }
+  }).catch(function (e) { flash("帖子加载失败：" + ((e && e.message) || "网络错误")); });
+
+  /* ---- 评论列表渲染（实测字段 comment_id/author_name/content_md/like_count/mine_liked/created_at）---- */
+  function renderComments(items) {
+    if (!items || !items.length) { cList.innerHTML = '<div class="state"><span class="st-emoji">🛋️</span><h3>暂无评论</h3><p>还没有人评论，来抢沙发吧～</p></div>'; return; }
+    cList.innerHTML = items.map(function (c) {
+      return '<div class="c-item" data-cid="' + c.comment_id + '"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + esc((c.created_at || "").replace("T", " ").slice(0, 16)) + '</span><button type="button" class="c-like' + (c.mine_liked ? " on" : "") + '" data-cid="' + c.comment_id + '" aria-pressed="' + (c.mine_liked ? "true" : "false") + '">👍 <b>' + c.like_count + '</b></button></div><div class="c-body"><div class="md"><p>' + esc(c.content_md) + '</p></div></div></div>';
+    }).join("");
+  }
+  EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20").then(function (d) {
+    renderComments(d && d.items ? d.items : []);
   }).catch(function () {});
 
-  EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20").then(function (d) {
-    var items = d && d.items ? d.items : (Array.isArray(d) ? d : []);
-    var cList = document.getElementById("commentList") || document.querySelector(".comments");
-    if (!items.length || !cList) return;
-    var html = items.map(function (c) {
-      return '<div class="c-item"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + (c.created_at || "").slice(0, 10) + '</span></div><div class="c-text">' + esc(c.content_md || c.content || "") + '</div></div>';
-    }).join("");
-    cList.innerHTML = html;
-  }).catch(function () {});
+  /* ---- 通用反应（帖子点赞/收藏：乐观更新 + 失败回滚 + 双击防抖）---- */
+  function bindReact(btn, cnt, meta, url) {
+    var busy = false;
+    btn.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (busy) return;                 // 双击防抖
+      var wasOn = btn.classList.contains("on");
+      var old = parseInt(cnt.textContent, 10) || 0;
+      var next = old + (wasOn ? -1 : 1); if (next < 0) next = 0;
+      busy = true; setOn(btn, !wasOn); show(cnt, next); if (meta) show(meta, next); // 乐观更新
+      EAPI.post(url).then(function (d) {
+        busy = false;
+        var on = !!d.active, n = (d.total_count != null) ? d.total_count : next;
+        setOn(btn, on); show(cnt, n); if (meta) show(meta, n);
+        if (on && url.indexOf("/like") > -1) hint();
+      }).catch(function () { busy = false; setOn(btn, wasOn); show(cnt, old); if (meta) show(meta, old); flash("操作失败，请重试"); }); // 失败回滚 + 行内提示
+    });
+  }
+  bindReact(likeBtn, likeCnt, metaLike, "/api/community/posts/" + pid + "/like");
+  bindReact(favBtn, favCnt, metaFav, "/api/community/posts/" + pid + "/favorite");
+
+  /* ---- 发评论（POST /posts/{id}/comments，成功后重载列表 + 更新计数）---- */
+  cmtSubmit.addEventListener("click", function () {
+    var t = (cmtInput.value || "").trim();
+    if (!t) { cmtInput.focus(); flash("评论不能为空"); return; }
+    if (cmtSubmit.disabled) return;     // 防抖
+    cmtSubmit.disabled = true; flash("");
+    EAPI.post("/api/community/posts/" + pid + "/comments", { content_md: t }).then(function () {
+      cmtInput.value = "";
+      return EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20");
+    }).then(function (d) {
+      renderComments(d && d.items ? d.items : []);
+      setTotal(d && d.total != null ? d.total : 0);
+      hint();
+    }).catch(function (e) { flash("发布失败：" + ((e && e.message) || "网络错误")); })
+      .finally(function () { cmtSubmit.disabled = false; });
+  });
+
+  /* ---- 评论点赞（POST /comments/{id}/like，事件委托 + 乐观更新 + 失败回滚）---- */
+  cList.addEventListener("click", function (e) {
+    var b = e.target.closest(".c-like"); if (!b || b.dataset.busy) return;
+    b.dataset.busy = "1";              // 双击防抖
+    var cid = b.dataset.cid, wasOn = b.classList.contains("on");
+    var num = b.querySelector("b"), old = parseInt(num.textContent, 10) || 0;
+    var next = old + (wasOn ? -1 : 1); if (next < 0) next = 0;
+    setOn(b, !wasOn); num.textContent = next; // 乐观更新
+    EAPI.post("/api/community/comments/" + cid + "/like").then(function (d) {
+      b.dataset.busy = "";
+      var on = !!d.active, n = (d.total_count != null) ? d.total_count : next;
+      setOn(b, on); num.textContent = n;
+    }).catch(function () { b.dataset.busy = ""; setOn(b, wasOn); num.textContent = old; flash("点赞失败，请重试"); }); // 失败回滚 + 行内提示
+  });
 })();
 </script>
 

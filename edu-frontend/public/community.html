@@ -489,45 +489,171 @@ input,select{font-family:inherit}
 })();
 </script>
 <script>
-/* ===== 对接真实后端（community 帖子列表 + 发帖）===== */
+/* ===== 对接真实后端（community 帖子列表 + 版块筛选 + 列表点赞 + 发帖弹窗）=====
+   - 版块筛选：GET /posts?board_code=xxx（curl 实测参数名 board_code；值 english/math/programming/general）
+   - 列表点赞：POST /posts/{id}/like（实测返回 {active,total_count}；/posts 列表不返回 is_liked → localStorage 回补高亮，task118 风险预案）
+   - 发帖：POST /posts（实测字段 content_md 而非 content；tags 数组；成功后列表头部插入）
+   - 未登录点互动按钮 → EAPI.buildLoginUrl 跳登录，不发请求（实测未带 token 点赞仍返回 200，故必须前端先拦）
+task118 仅改本页，不重定义全局 $ / renderSides。 */
 (function () {
   if (!window.EAPI) return;
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
   var boards = document.getElementById("boards");
   var totalEl = document.getElementById("total");
-  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
+  var CODE = { all: "", en: "english", math: "math", prog: "programming", gen: "general" };
+  var BOARD = { english: ["英语", "en"], math: ["数学", "math"], programming: ["编程", "prog"], general: ["综合", "gen"] };
+  var currentBoard = "";
+
+  var LK = "edu:community:liked";
+  var likedMap = {};
+  try { likedMap = JSON.parse(localStorage.getItem(LK) || "{}"); } catch (e) {}
+
+  function noToken() { return !EAPI.store.getToken(); }
+  function goLogin() { try { location.href = EAPI.buildLoginUrl(location.href); } catch (e) { location.href = "/login-register.html"; } }
+
+  document.head.insertAdjacentHTML("beforeend",
+    "<style>#boards .like-btn{border:2px solid var(--ink,#1f1f1f);background:#fff;color:#1f1f1f;border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 2px 0 var(--htc-31-31-31-014,rgba(31,31,31,.14))}#boards .like-btn.on{background:var(--candy-green,#58cc02);color:#fff;border-color:var(--ink,#1f1f1f)}#boards .like-btn:active{transform:translateY(1px);box-shadow:none}.post .p-meta{row-gap:6px}" +
+    "#postModal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:16px}#postModal.open{display:flex}.pm-mask{position:absolute;inset:0;background:rgba(31,31,31,.5)}.pm-card{position:relative;width:min(520px,94vw);background:var(--candy-bg,#fff9f0);border:3px solid var(--ink,#1f1f1f);border-radius:18px;box-shadow:0 6px 24px rgba(31,31,31,.25);padding:18px 20px;max-height:88vh;overflow:auto}.pm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:16px}.pm-x{border:2px solid var(--ink,#1f1f1f);background:#fff;border-radius:999px;width:30px;height:30px;font-weight:800;cursor:pointer}.pm-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}.pm-field label{font-size:12px;font-weight:800;color:var(--ink-strong,#4a4a4a)}.pm-field input,.pm-field textarea{border:2px solid var(--ink,#1f1f1f);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;resize:vertical;outline:none}.pm-field input:focus,.pm-field textarea:focus{border-color:var(--candy-purple,#7c3aed)}.pm-board{display:flex;flex-wrap:wrap;gap:8px}.pm-chip{border:2px solid var(--ink,#1f1f1f);background:#fff;border-radius:999px;padding:5px 14px;font-weight:800;font-size:13px;cursor:pointer}.pm-chip.on{background:var(--candy-green,#58cc02);color:#fff}.pm-err{min-height:18px;font-size:12px;color:var(--candy-red-deep,#d63e3e);margin-bottom:8px}.pm-foot{display:flex;justify-content:flex-end;gap:8px}.pm-cancel{border:2px solid var(--ink,#1f1f1f);background:#fff;border-radius:10px;padding:8px 16px;font-weight:800;cursor:pointer}.pm-submit{border:3px solid var(--ink,#1f1f1f);background:var(--candy-orange,#ff4d00);color:#fff;border-radius:10px;padding:8px 18px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 var(--candy-orange-deep,#c74000)}.pm-submit:disabled{opacity:.5;cursor:not-allowed}#boards .post.locked .like-btn{opacity:.5;pointer-events:none;cursor:not-allowed}#boards .post .lock{font-size:11px;font-weight:800;color:var(--candy-red-deep,#d63e3e)}</style>");
+
+  function setLiked(btn, liked) { btn.classList.toggle("on", !!liked); btn.setAttribute("aria-pressed", liked ? "true" : "false"); }
 
   function renderPosts(items) {
     if (!items || !items.length) {
-      boards.innerHTML = '<div style="text-align:center;color:var(--ink-faint);padding:50px 0">暂无帖子，来发第一帖吧 ✨</div>';
+      boards.innerHTML = '<div class="state" role="status"><span class="st-emoji">🏝️</span><h3>暂无帖子</h3><p>这个版块还没有人发过帖，来当第一个分享的人吧～</p></div>';
       return;
     }
     boards.innerHTML = items.map(function (p) {
       var tags = (p.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
-      var pin = p.is_pinned || p.pinned ? '<span class="pin">📌 置顶</span>' : "";
-      return '<article class="post" tabindex="0" data-post="' + p.post_id + '"><div class="p-top">' + pin + '<span class="board-tag">' + esc(p.board_name || p.board_code || "") + '</span></div><h3>' + esc(p.title) + '</h3><p class="p-sum">' + esc(p.summary || "") + '</p><div class="p-tags">' + tags + '</div><div class="p-meta"><span class="who">' + esc(p.author_name) + '</span><span class="sep-dot">·</span><span>' + (p.created_at || "").slice(0, 10) + '</span><span class="sep-dot">·</span><span>👁 ' + (p.view_count || 0) + '</span><span class="sep-dot">·</span><span class="cmt">💬 <i>' + (p.comment_count || 0) + '</i></span><span class="sep-dot">·</span><span>👍 ' + (p.like_count || 0) + '</span></div></article>';
+      var pin = (p.is_pinned || p.pinned) ? '<span class="pin">📌 置顶</span>' : "";
+      var m = BOARD[p.board_code] || ["", ""];
+      var liked = p.mine_react_like != null ? !!p.mine_react_like : !!likedMap[p.post_id];   // 实测列表返回 mine_react_like，优先后端字段（刷新可持续）
+      if (liked) likedMap[p.post_id] = 1;
+      var on = liked ? " on" : "";
+      var locked = !!p.is_locked;
+      return '<article class="post' + (locked ? " locked" : "") + '" tabindex="0" data-post="' + p.post_id + '"><div class="p-top">' + pin + '<span class="board-tag ' + m[1] + '">' + esc(m[0] || p.board_code || "") + '</span>' + (locked ? '<span class="lock">🔒 锁定</span>' : '') + '</div><h3>' + esc(p.title) + '</h3><p class="p-sum">' + esc(p.summary || "") + '</p><div class="p-tags">' + tags + '</div><div class="p-meta"><span class="who">' + esc(p.author_name) + '</span><span class="sep-dot">·</span><span>' + (p.created_at || "").slice(0, 10) + '</span><span class="sep-dot">·</span><span>👁 ' + (p.view_count || 0) + '</span><span class="sep-dot">·</span><span class="cmt">💬 <i>' + (p.comment_count || 0) + '</i></span><span class="sep-dot">·</span><button type="button" class="like-btn' + on + '" data-post="' + p.post_id + '" ' + (locked ? 'disabled aria-disabled="true"' : '') + ' aria-pressed="' + (on ? "true" : "false") + '">👍 <i>' + (p.like_count || 0) + '</i></button></div></article>';
     }).join("");
-    boards.querySelectorAll(".post").forEach(function (a) {
-      a.addEventListener("click", function () { window.location.href = "/community-post.html?post_id=" + a.dataset.post; });
+    bindBoards();
+  }
+
+  function bindBoards() {
+    if (boards.dataset.task118Bound) return;   // 只绑定一次（prependPost 复用会重复绑定 → 已改容器级委托，防重复 POST）
+    boards.dataset.task118Bound = "1";
+    boards.addEventListener("click", function (e) {
+      var lb = e.target.closest(".like-btn");
+      if (lb) { e.stopPropagation(); likePost(lb); return; }
+      var card = e.target.closest(".post");     // 列表→详情跳转（task110 保留）
+      if (card && card.dataset.post) window.location.href = "/community-post.html?post_id=" + card.dataset.post;
     });
+  }
+
+  function likePost(btn) {
+    if (noToken()) { goLogin(); return; }
+    if (btn.dataset.busy) return;   // 双击防抖（与详情页 bindReact 一致）
+    var pid = btn.dataset.post;
+    var wasOn = btn.classList.contains("on");
+    var num = btn.querySelector("i");
+    var old = parseInt((num ? num.textContent : "0"), 10) || 0;
+    var next = !wasOn;
+    btn.dataset.busy = "1";
+    setLiked(btn, next); if (num) num.textContent = next ? old + 1 : old - 1;   // 乐观更新
+    EAPI.post("/api/community/posts/" + pid + "/like").then(function (d) {
+      var active = d ? !!d.active : next;
+      var total = (d && d.total_count != null) ? d.total_count : (next ? old + 1 : old - 1);
+      setLiked(btn, active); if (num) num.textContent = total;
+      if (active) likedMap[pid] = 1; else delete likedMap[pid];
+      try { localStorage.setItem(LK, JSON.stringify(likedMap)); } catch (e2) {}
+    }).catch(function () { setLiked(btn, wasOn); if (num) num.textContent = old; })   // 失败回滚
+      .finally(function () { delete btn.dataset.busy; });
+  }
+
+  function prependPost(post) {
+    var m = BOARD[post.board_code] || ["", ""];
+    var tags = (post.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
+    var card = '<article class="post" tabindex="0" data-post="' + post.post_id + '"><div class="p-top"><span class="board-tag ' + m[1] + '">' + esc(m[0]) + '</span></div><h3>' + esc(post.title) + '</h3><p class="p-sum">' + esc(post.summary || "") + '</p><div class="p-tags">' + tags + '</div><div class="p-meta"><span class="who">' + esc(post.author_name) + '</span><span class="sep-dot">·</span><span>刚刚</span><span class="sep-dot">·</span><span>👁 0</span><span class="sep-dot">·</span><span class="cmt">💬 <i>0</i></span><span class="sep-dot">·</span><button type="button" class="like-btn" data-post="' + post.post_id + '" aria-pressed="false">👍 <i>0</i></button></div></article>';
+    boards.insertAdjacentHTML("afterbegin", card);
+    bindBoards();
   }
 
   function load() {
     var kw = (document.getElementById("kw") || {}).value || "";
-    EAPI.get("/api/community/posts?page=1&page_size=10" + (kw ? "&keyword=" + encodeURIComponent(kw) : "")).then(function (d) {
+    var url = "/api/community/posts?page=1&page_size=10";
+    if (currentBoard) url += "&board_code=" + encodeURIComponent(currentBoard);
+    if (kw) url += "&keyword=" + encodeURIComponent(kw);
+    EAPI.get(url).then(function (d) {
       var data = d && d.items ? d : { items: [], total: 0 };
       renderPosts(data.items);
       if (totalEl) totalEl.textContent = "共 " + (data.total || 0) + " 条";
     }).catch(function () {});
   }
 
+  /* ---- 版块 chips 筛选（board_code 实测）---- */
+  (function initChips() {
+    var cEls = Array.prototype.slice.call(document.querySelectorAll("#chips .chip"));
+    function activate(node) { cEls.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); }); node.classList.add("on"); node.setAttribute("aria-pressed", "true"); }
+    cEls.forEach(function (c) { if (c.dataset.b === "all") activate(c); });   // 默认全部
+    cEls.forEach(function (c) {
+      c.addEventListener("click", function () { activate(c); currentBoard = CODE[c.dataset.b] || ""; load(); });
+    });
+  })();
+
+  /* ---- 发帖弹窗（替换 prompt()）---- */
+  var modal = null, mTitle, mContent, mTags, mErr, mSubmit, selBoard = "general";
+  var toast = null;
+  function flashNote(msg) {
+    if (!toast) { toast = document.createElement("div"); toast.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:999;background:var(--candy-green,#58cc02);color:#fff;font-weight:800;padding:10px 18px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.25);transition:opacity .3s"; document.body.appendChild(toast); }
+    toast.textContent = msg; toast.style.opacity = "1";
+    clearTimeout(flashNote.__t); flashNote.__t = setTimeout(function () { toast.style.opacity = "0"; }, 2000);
+  }
+  function ensureModal() {
+    if (modal) return;
+    modal = document.createElement("div"); modal.id = "postModal";
+    modal.innerHTML = '<div class="pm-mask"></div><div class="pm-card" role="dialog" aria-modal="true" aria-label="发新帖"><div class="pm-head"><b>＋ 发新帖</b><button type="button" class="pm-x" aria-label="关闭">✕</button></div>'
+      + '<div class="pm-field"><label for="pmTitle">标题</label><input id="pmTitle" maxlength="80" placeholder="一句话说清你的问题/分享"></div>'
+      + '<div class="pm-field"><label>版块</label><div class="pm-board" role="group" aria-label="选择版块">'
+      + ['english:英语:en', 'math:数学:math', 'programming:编程:prog', 'general:综合:gen'].map(function (s) { var p = s.split(":"); return '<button type="button" class="pm-chip" data-bc="' + p[0] + '">' + p[1] + '</button>'; }).join("")
+      + '</div></div>'
+      + '<div class="pm-field"><label for="pmContent">内容（Markdown 支持）</label><textarea id="pmContent" rows="6" placeholder="写正文…"></textarea></div>'
+      + '<div class="pm-field"><label for="pmTags">标签（逗号分隔，最多 8 个）</label><input id="pmTags" maxlength="80" placeholder="高数, 错题"></div>'
+      + '<div class="pm-err" id="pmErr"></div>'
+      + '<div class="pm-foot"><button type="button" class="pm-cancel">取消</button><button type="button" class="pm-submit">发布</button></div></div>';
+    document.body.appendChild(modal);
+    mTitle = document.getElementById("pmTitle"); mContent = document.getElementById("pmContent");
+    mTags = document.getElementById("pmTags"); mErr = document.getElementById("pmErr"); mSubmit = modal.querySelector(".pm-submit");
+    function closeM() { modal.classList.remove("open"); }
+    modal.querySelector(".pm-mask").addEventListener("click", closeM);
+    modal.querySelector(".pm-cancel").addEventListener("click", closeM);
+    modal.querySelector(".pm-x").addEventListener("click", closeM);
+    modal.querySelectorAll(".pm-chip").forEach(function (c) {
+      c.addEventListener("click", function () {
+        modal.querySelectorAll(".pm-chip").forEach(function (x) { x.classList.remove("on"); });
+        c.classList.add("on"); selBoard = c.dataset.bc;
+      });
+    });
+    mSubmit.onclick = function () {
+      var title = (mTitle.value || "").trim(), content = (mContent.value || "").trim();
+      if (!title) { mErr.textContent = "请输入标题"; mTitle.focus(); return; }
+      if (!content) { mErr.textContent = "请输入内容"; mContent.focus(); return; }
+      var tags = (mTags.value || "").split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 8);
+      mSubmit.disabled = true; mErr.textContent = "";
+      EAPI.post("/api/community/posts", { board_code: selBoard, title: title, content_md: content, tags: tags }).then(function (d) {
+        modal.classList.remove("open");
+        if (d && d.post_id) {
+          prependPost({ post_id: d.post_id, board_code: selBoard, title: title, summary: content, tags: tags, author_name: "我", is_pinned: false });
+          var tot = parseInt((totalEl ? totalEl.textContent : "0").replace(/\D/g, ""), 10) || 0;
+          if (totalEl) totalEl.textContent = "共 " + (tot + 1) + " 条";
+        } else { load(); }
+        flashNote("发帖成功 ✨");
+      }).catch(function (e) { mErr.textContent = "发布失败：" + ((e && e.message) || "网络错误"); }).finally(function () { mSubmit.disabled = false; });
+    };
+  }
   function openNew() {
-    var title = prompt("帖子标题：");
-    if (!title) return;
-    var content = prompt("帖子内容：");
-    if (!content) return;
-    EAPI.post("/api/community/posts", { board_code: "general", title: title, content: content }).then(function () {
-      alert("发帖成功 ✨"); load();
-    }).catch(function (e) { alert("发帖失败：" + (e.message || "网络错误")); });
+    if (noToken()) { goLogin(); return; }
+    ensureModal();
+    mTitle.value = ""; mContent.value = ""; mTags.value = ""; mErr.textContent = "";
+    var def = BOARD[currentBoard] ? currentBoard : "general";
+    modal.querySelectorAll(".pm-chip").forEach(function (c) { c.classList.toggle("on", c.dataset.bc === def); });
+    selBoard = def;
+    modal.classList.add("open"); mTitle.focus();
   }
   ["postNewDesktop", "fab"].forEach(function (id) { var b = document.getElementById(id); if (b) b.addEventListener("click", openNew); });
   var go = document.getElementById("go"); if (go) go.addEventListener("click", load);
