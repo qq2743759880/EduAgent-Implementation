@@ -23,6 +23,7 @@
   - 历史死契约（batch-import/papers/compose/tags）已清理（b36e1aa），严禁复活。
     objective_flag 由题型维表映射：objective=1 客观（绿）/ 0 主观（紫）→ StatusBadge
   AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-24 v1/v1.1 R1/R2] task58 纯演示原型（题库/题目两级 Tabs + 批量导入四步假数据 + 演示控制器）
     [2026-09-02 task107 v REAL] 真实接入：题库/题目列表真实渲染+分页；题目行点击跳 admin-question-detail.html?id=；
       SINGLE/MULTI/JUDGE 新建/编辑内联表单接 POST/PATCH；批量导入接 import-preview→import-execute；
@@ -998,10 +999,34 @@ renderBanks("success");
 </script>
 <script src="/edu-api.js"></script>
 <script>
+/* ═ task109 管理端角色守卫（共用片段，内联于 8 个 admin 页；来源见页头注释 AUDIT LOG）═
+ * ①本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——DEBUG 态后端无 token 会回虚拟 admin）
+ * ②有 token → GET /api/auth/me 校验 data.role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ * ③auth/me 失败(网络/停机)无法校验身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入已收敛为 window.bootAdmin()，由本守卫通过后调用。 */
+(function () {
+  if (!window.EAPI) return;
+  var redir = location.pathname + location.search;
+  if (!EAPI.store.getToken()) { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} return; }
+  var ADMIN = { admin: 1, manager: 1 };
+  function banner(txt) {
+    try { var d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)"; d.textContent = txt; document.body.appendChild(d); } catch (e) {}
+  }
+  var __rt = 0; function runBoot() { if (window.bootAdmin) window.bootAdmin(); else if (__rt++ < 30) setTimeout(runBoot, 10); }
+  EAPI.get("/api/auth/me").then(function (me) {
+    if (me && ADMIN[me.role]) { runBoot(); }
+    else { banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…"); setTimeout(function () { try { location.replace("/dashboard.html"); } catch (e) {} }, 1200); }
+  }).catch(function () {
+    banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+    setTimeout(function () { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} }, 1200);
+  });
+})();
+</script>
+<script>
 /* ===== 真实接入：admin-questions 对接 /api/admin/questions（task107）=====
  * 契约见页头注释（均已 curl 实测）。首期新建/编辑仅 SINGLE(1)/MULTI(2)/JUDGE(3)，其余题型只读展示。
  * 无 token 静默降级：提示 admin 账号，不发任何请求。注入不重定义全局 $ / renderSides。 */
-(function(){
+window.bootAdmin=function(){
   if(!window.EAPI) return;
   var qs=function(id){ return document.getElementById(id); };
   var esc=function(s){ var d=document.createElement("div"); d.textContent=(s==null?"":String(s)); return d.innerHTML; };
@@ -1236,7 +1261,7 @@ renderBanks("success");
   /* ---- 初始化 ---- */
   state.importPreview=null;
   loadTypes().then(function(){ return loadBanks(1); });
-})();
+};
 </script>
 </body>
 </html>

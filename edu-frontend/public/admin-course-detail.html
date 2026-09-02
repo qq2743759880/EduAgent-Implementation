@@ -18,6 +18,7 @@
     · 章节管理 session_video_chapter：路由层无 CRUD 端点 → 表单位置标注「待后端端点接线」，列表做存量展示样
   - 审核态多开：默认「管理班次」选中第一班次 → 展开模块半「已绑定视频 转码中」场景
   AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-24 v1 R1] 初稿提交（系列信息卡可编辑 + 新增班次 + 班次表 + 模块 Accordion + 课次列表 resource 4 入口 + 视频分片 Stepper/转码轮询徽章/Timeline + 章节管理 + 全软删 + 演示控制器多态）→ SUBMITTED
     [2026-08-24 v1.1 R2] 修演示控制器多态切换 Bug：从「空班次」切回成功/转码状态时，班次行被永久隐藏（applyView 未恢复 tr.display 且空态占位重复追加）。改为 else 分支统一恢复 data-seat 行可见 + 移除空态占位，空态分支只隐藏 data-seat 行且空态占位判重 → 已修复重交
 -->
@@ -778,8 +779,33 @@
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&s.series_name)t.textContent=s.series_name;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 课程系列加载失败："+(err&&err.message||"未知错误");});})();
+/* ═ task109 管理端角色守卫（共用片段，内联于 8 个 admin 页；来源见页头注释 AUDIT LOG）═
+ * ①本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——DEBUG 态后端无 token 会回虚拟 admin）
+ * ②有 token → GET /api/auth/me 校验 data.role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ * ③auth/me 失败(网络/停机)无法校验身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入已收敛为 window.bootAdmin()，由本守卫通过后调用。 */
+(function () {
+  if (!window.EAPI) return;
+  var redir = location.pathname + location.search;
+  if (!EAPI.store.getToken()) { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} return; }
+  var ADMIN = { admin: 1, manager: 1 };
+  function banner(txt) {
+    try { var d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)"; d.textContent = txt; document.body.appendChild(d); } catch (e) {}
+  }
+  var __rt = 0; function runBoot() { if (window.bootAdmin) window.bootAdmin(); else if (__rt++ < 30) setTimeout(runBoot, 10); }
+  EAPI.get("/api/auth/me").then(function (me) {
+    if (me && ADMIN[me.role]) { runBoot(); }
+    else { banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…"); setTimeout(function () { try { location.replace("/dashboard.html"); } catch (e) {} }, 1200); }
+  }).catch(function () {
+    banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+    setTimeout(function () { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} }, 1200);
+  });
+})();
+</script>
+<script>
+window.bootAdmin=function(){
+if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&s.series_name)t.textContent=s.series_name;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 课程系列加载失败："+(err&&err.message||"未知错误");});};
 </script>
 </body>
 </html>

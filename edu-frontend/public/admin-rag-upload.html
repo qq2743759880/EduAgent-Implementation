@@ -18,6 +18,7 @@
   - 前端校验拦截（上传阶段，本地即时，非后端返回）：扩展名白名单 + 单文件≤200MB + ≤50 文件
   - 演示用示例行仅作 UI 形态展示；各端点未注册 → 缺口头条声明 + 字段结构预览（snake_case），不 MOCK 假数据
   AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-24 v1 R1] 初稿提交（Tabs[集合|上传|调参|审计日志|高级检索] + UploadPanel 拖拽/多选/白名单/200MB/50文件/校验拦截 + onUploadProgress 进度条
       + TaskTable(5s轮询 pending→running→done/failed + chunks 进度 + 错误明细 + 重试) + PartitionPanel(_default 禁删) + CollectionHealthCard(上传完成 invalidate refetch 行数闭环)
       + 契约⑥缺口披露 + 演示控制器多态）→ SUBMITTED
@@ -597,7 +598,32 @@ demo.upload('empty'); demo.task('empty'); demo.part('normal'); refreshHealth();
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+/* ═ task109 管理端角色守卫（共用片段，内联于 8 个 admin 页；来源见页头注释 AUDIT LOG）═
+ * ①本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——DEBUG 态后端无 token 会回虚拟 admin）
+ * ②有 token → GET /api/auth/me 校验 data.role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ * ③auth/me 失败(网络/停机)无法校验身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入已收敛为 window.bootAdmin()，由本守卫通过后调用。 */
+(function () {
+  if (!window.EAPI) return;
+  var redir = location.pathname + location.search;
+  if (!EAPI.store.getToken()) { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} return; }
+  var ADMIN = { admin: 1, manager: 1 };
+  function banner(txt) {
+    try { var d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)"; d.textContent = txt; document.body.appendChild(d); } catch (e) {}
+  }
+  var __rt = 0; function runBoot() { if (window.bootAdmin) window.bootAdmin(); else if (__rt++ < 30) setTimeout(runBoot, 10); }
+  EAPI.get("/api/auth/me").then(function (me) {
+    if (me && ADMIN[me.role]) { runBoot(); }
+    else { banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…"); setTimeout(function () { try { location.replace("/dashboard.html"); } catch (e) {} }, 1200); }
+  }).catch(function () {
+    banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+    setTimeout(function () { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} }, 1200);
+  });
+})();
+</script>
+<script>
+window.bootAdmin=function(){
+if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
 var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
 var stBadge=function(st){var m={"pending":"待处理","running":"处理中","succeeded":"完成","failed":"失败"};return'<span class="badge '+(st==="succeeded"?"badge-ok":st==="failed"?"badge-err":"badge-warn")+'"><i class="pd"></i>'+esc(m[st]||st||"—")+'</span>'};
 var cnt=function(arr){return Array.isArray(arr)?arr.length:(arr==null?0:String(arr).split(",").filter(Boolean).length)};
@@ -618,7 +644,7 @@ Promise.allSettled([EAPI.get("/api/knowledge/tasks?page=1&page_size=10"),EAPI.ge
     else if(cols.items){total=Array.isArray(cols.items)?cols.items.length:0;}
   }
   if(total!=null){var el=document.querySelector("[data-collection-count]")||document.getElementById("hRows");if(el)el.textContent=total;}
-}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 知识库数据加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});})();
+}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 知识库数据加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});};
 </script>
 </body>
 </html>

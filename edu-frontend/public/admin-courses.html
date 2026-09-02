@@ -14,6 +14,7 @@
     · 无 institution_name / cohort_count（后端未返回，不做 MOCK）
   - 行内「班次」→ 跳 /admin/courses/{seriesId}（task57 详情）
   AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-23 v1 R1] 初稿提交（FilterBar 关键词/交付/状态/排序 + DataTable + DropdownMenu 编辑/班次/上下架/删除 + 新建系列 Dialog + 删除 ConfirmDialog「下架优先于删除」+ 三态 + 响应式）→ SUBMITTED
     [2026-08-23 v2 R2] 占位待用户审核反馈
 -->
@@ -544,14 +545,39 @@ render("success");
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+/* ═ task109 管理端角色守卫（共用片段，内联于 8 个 admin 页；来源见页头注释 AUDIT LOG）═
+ * ①本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——DEBUG 态后端无 token 会回虚拟 admin）
+ * ②有 token → GET /api/auth/me 校验 data.role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ * ③auth/me 失败(网络/停机)无法校验身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入已收敛为 window.bootAdmin()，由本守卫通过后调用。 */
+(function () {
+  if (!window.EAPI) return;
+  var redir = location.pathname + location.search;
+  if (!EAPI.store.getToken()) { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} return; }
+  var ADMIN = { admin: 1, manager: 1 };
+  function banner(txt) {
+    try { var d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)"; d.textContent = txt; document.body.appendChild(d); } catch (e) {}
+  }
+  var __rt = 0; function runBoot() { if (window.bootAdmin) window.bootAdmin(); else if (__rt++ < 30) setTimeout(runBoot, 10); }
+  EAPI.get("/api/auth/me").then(function (me) {
+    if (me && ADMIN[me.role]) { runBoot(); }
+    else { banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…"); setTimeout(function () { try { location.replace("/dashboard.html"); } catch (e) {} }, 1200); }
+  }).catch(function () {
+    banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+    setTimeout(function () { try { location.replace(EAPI.buildLoginUrl(redir)); } catch (e) {} }, 1200);
+  });
+})();
+</script>
+<script>
+window.bootAdmin=function(){
+if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
 var badge=function(st){if(st==="on_sale")return'<span class="badge badge-ok"><i class="pd"></i>在售</span>';if(st==="off_sale")return'<span class="badge badge-off"><i class="pd"></i>下架</span>';return'<span class="badge badge-warn"><i class="pd"></i>'+(st||"—")+'</span>';};
 var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
 EAPI.get("/api/admin/courses/series?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];var body=document.querySelector("#tbl-body");if(!body)return;if(!items.length){body.innerHTML="";var se=document.getElementById("state-empty");if(se)se.classList.remove("hidden");var st=document.getElementById("state-total");if(st)st.textContent=0;return;}var row=function(s){return '<tr class="series-row"><td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div class="min"><div class="nm">'+esc(s.series_name||"—")+'</div><div class="cd">'+esc(s.series_code||"")+'</div></div></div></td><td>'+esc(s.delivery_mode||"—")+'</td><td>'+badge(s.sale_status)+'</td><td class="c-meta">'+esc((s.created_at||"").slice(0,10))+'</td><td><div class="cell-actions" style="justify-content:flex-end"><button class="dd-btn" onclick="alert(\'操作接线：PATCH /api/admin/courses/series/'+s.id+'（task117）\')">管理 ▾</button></div></td></tr>'};
 body.innerHTML=items.map(row).join("");
 var st=document.getElementById("state-total");if(st)st.textContent=items.length;
 document.getElementById("state-empty").classList.add("hidden");document.getElementById("state-error").classList.add("hidden");
-}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 系列加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});})();
+}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 系列加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});};
 </script>
 </body>
 </html>
