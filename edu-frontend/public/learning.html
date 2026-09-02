@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <!--
   STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
-  task48 学习播放页效果图 · 契约⑪ GET /api/learning/sessions/{id} 等 10 端点（task21/23 待联调）
+  task48 学习播放页效果图 · task119 对接 /api/study/*（courses/{id}/access | courses/{id}/outline |
+             sessions/{id} | sessions/{id}/complete）与 /api/progress/video/tick-batch（真实契约；旧 /api/learning 死路径已清零）
   DIRECTION: 学中玩 · 糖果色卡通风 —— 视频区 16:9 + 右侧大纲 Accordion（✓已完成/▶当前/○未开始）
              + Tabs（视频/作业/考试）+ 底部工具栏（AI 提问→/chat?context=session:{id} / 错题本→/practice）
              + 转码占位（转码中/不可播 不白屏）+ 未报名 403 ErrorState 守卫。
@@ -3202,6 +3203,288 @@ a.session{text-decoration:none}
     var t = document.querySelector("h1,.title,[class*=title]");
     if (t && d.session_title) t.textContent = d.session_title;
   }).catch(function () {});
+})();
+</script>
+<script>
+/* task119：learning 学习动线真实接入（仅学习页，非全局）
+ * 契约（curl 实测，task103 沿用）：
+ *   GET  /api/study/courses/{series_id}/access   → {accessible, cohort_id, reason}
+ *   GET  /api/study/courses/{series_id}/outline  → StudyOutline{series_title,overall_ratio,total_sessions,completed_sessions,modules[{module_title,sessions[{session_id,session_title,session_no,duration_minutes,watch_ratio,homework_done,transcode_status}]}]}
+ *   GET  /api/study/sessions/{session_id}        → StudySessionDetail{...video{...transcode_status,video_url},assets[]}
+ *   POST /api/progress/video/tick-batch          → VideoTickBatchIn{play_session_id,session_id,ticks[]≤200}
+ *   POST /api/study/sessions/{session_id}/complete → {session_id, completed}
+ * 边界三态：转码中（pending/in_progress→占位）/ 无报名（access.accessible=false→403 守卫）/
+ *          access 403（session detail err.status===403→守卫）。
+ * 无 token → 本块整体跳过，保留演示态；有 token → 全部真实数据。
+ * 不重定义全局 $ / renderSides；只读不覆盖 task103 的 LEARNING_ENTRY。 */
+(function () {
+  if (!window.EAPI) return;
+  var E = EAPI;
+  if (!E.store.getToken()) return; // 无 token 保留演示态
+  var $ = function (s) { return document.querySelector(s); };
+  var $all = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  var state = {
+    series_id: 0, cohort_id: 0, session_id: 0,
+    outline: null, play_session_id: 0, tickBuf: [], flushtimer: null, sending: false
+  };
+
+  // ---- 参数：EAPI.pageId 统一读 ?name=（task102；禁正则在查参上）----
+  state.series_id = parseInt(E.pageId("series_id"), 10) || 0;
+  state.cohort_id = parseInt(E.pageId("cohort_id"), 10) || 0;
+  state.session_id = parseInt(E.pageId("session_id"), 10) || 0;
+  if (!state.series_id && !state.cohort_id && !state.session_id) return; // 无入口参数 → 保留演示态
+
+  function netType() { try { var c = navigator.connection; return (c && c.effectiveType) ? c.effectiveType.toUpperCase() : "WIFI"; } catch (e) { return "WIFI"; } }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function showAccess(ok, reason) {
+    var guard = $(".error-demo");
+    if (guard) guard.style.display = ok ? "none" : "";
+    if (guard && !ok && reason) {
+      var t = guard.querySelector(".t"), d = guard.querySelector(".d");
+      if (t) t.textContent = "本课为报名专属内容";
+      if (d) d.textContent = reason || "仅已报名该班次的学员可观看该课次。";
+    }
+    var demos = $(".demos");
+    if (demos) demos.style.display = ok ? "none" : "none"; // 真实模式始终隐藏原型演示控件
+  }
+
+  /* ---- 侧栏大纲渲染（模块→课次树 + watch_ratio 进度 + 当前课次高亮）---- */
+  function renderOutline(o) {
+    var aside = $(".syllabus-card");
+    if (!aside) return;
+    var head = $(".syl-head");
+    if (head) {
+      var cnt = head.querySelector(".cnt");
+      if (cnt) cnt.textContent = o.overall_ratio + "% 已学 · " + o.completed_sessions + "/" + o.total_sessions + " 完成";
+    }
+    var curSid = state.session_id, curModOwner = false;
+    var html = "";
+    (o.modules || []).forEach(function (m) {
+      var modHasCur = (m.sessions || []).some(function (s) { return s.session_id === curSid; });
+      if (modHasCur) curModOwner = true;
+      var doneCnt = (m.sessions || []).filter(function (s) { return s.watch_ratio >= 80 && s.homework_done; }).length;
+      html += '<div class="acc"' + (modHasCur ? ' open=""' : "") + ">";
+      html += '<button type="button" class="acc-head" aria-expanded="' + (modHasCur ? "true" : "false") + '"><span class="acc-ind">' + (modHasCur ? "▼" : "▶") + "</span> " + esc(m.module_title) + ' <span class="syl-cnt">' + doneCnt + "/" + (m.sessions || []).length + "</span></button>";
+      html += '<div class="acc-body">';
+      (m.sessions || []).forEach(function (s) {
+        var isCur = s.session_id === curSid;
+        var cls = isCur ? "cur" : (s.watch_ratio >= 80 && s.homework_done ? "done" : "todo");
+        var st = isCur ? "▶" : (s.watch_ratio >= 80 && s.homework_done ? "✓" : "○");
+        html += '<a class="session ' + cls + '"' + (isCur ? ' aria-current="page"' : "") +
+          ' href="learning.html?cohort_id=' + state.cohort_id + '&series_id=' + state.series_id + '&session_id=' + s.session_id + '">' +
+          '<span class="st ' + cls + '">' + st + "</span><span class=\"nm\">" + esc(s.session_title) + "</span>" +
+          '<span class="dur">' + (s.watch_ratio > 0 ? Math.round(s.watch_ratio) + "%" : (s.duration_minutes ? s.duration_minutes + "分" : "")) + "</span></a>";
+      });
+      html += "</div></div>";
+    });
+    var body = aside.querySelector(".acc-body, .lvl-row");
+    if (body) { // 整块替换章节区（保留 syl-head）
+      var wrap = document.createElement("div");
+      wrap.innerHTML = html;
+      $all(".lvl-row", aside).forEach(function (n) { n.remove(); });
+      $all(".acc", aside).forEach(function (n) { n.remove(); });
+      aside.appendChild(wrap);
+    }
+    return o;
+  }
+
+  /* ---- 课次详情渲染：视频（转码/不可播/可播）+ 资源入口 ---- */
+  function renderSession(d) {
+    state.session_id = d.session_id; state.series_id = d.series_id || state.series_id;
+    if (state.cohort_id) { var a = $("a.breadcrumb .cur, .series-head h1"); if (a) a.textContent = d.session_title; }
+    var h1 = $(".series-head h1");
+    if (h1) h1.textContent = d.session_title;
+    var sname = $(".series-head .tt .series");
+    if (sname && state.outline) sname.textContent = state.outline.series_title;
+    var st = $(".player-meta .session-title");
+    if (st) st.textContent = "这一课你将学会：" + d.session_title;
+
+    // --- 视频区：按 transcode_status 三态 ---
+    var vs = $(".video-stage"), box = $("#transcodeBox"), pb = $("#playBtn");
+    var video = vs && vs.querySelector("video.real-video");
+    if (video) { video.remove(); video = null; }
+    var v = d.video;
+    if (v && v.transcode_status === "completed" && v.video_url) {
+      if (box) box.hidden = true;
+      if (vs) {
+        var vdo = document.createElement("video");
+        vdo.className = "real-video";
+        vdo.controls = true; vdo.preload = "metadata";
+        vdo.style.cssText = "width:100%;aspect-ratio:16/9;display:block;background:#000;";
+        vdo.src = v.video_url;
+        vs.insertBefore(vdo, vs.firstChild);
+        $all(".thumb,.dim", vs).forEach(function (n) { n.remove(); });
+        if (pb) pb.style.display = "none";
+        var ch = $("#curCh");
+        if (ch) ch.textContent = "正播放 · " + d.session_title;
+        wirePlayback(vdo, v.duration_seconds || 0);
+      }
+    } else if (v && (v.transcode_status === "pending" || v.transcode_status === "in_progress")) {
+      if (box) { box.hidden = false; } // 转码中
+      if (pb) pb.style.display = "none";
+    } else if (v && v.transcode_status === "failed") {
+      if (box) { box.hidden = false; var ic = $("#tcIcon"), t2 = $("#tcTitle"), t3 = $("#tcDesc"); if (ic) { ic.textContent = "📵"; } if (t2) t2.textContent = "暂不可播"; if (t3) t3.textContent = "该课次视频处理失败或已下架，请联系助教。下方文字资源仍可查看。"; }
+      if (pb) pb.style.display = "none";
+    } else {
+      if (box) box.hidden = false; // 无视频 → 占位
+      if (pb) pb.style.display = "none";
+    }
+
+    // --- 资源入口（作业/讲义/参考资料）按 material_category ---
+    var panel = $("#p-hw");
+    if (panel) {
+      var assets = (d.assets || []).filter(function (a) { return a.material_category !== "video"; });
+      var catLabel = { handout: "讲义", exercise: "作业练习", reference: "参考资料", image: "图片" };
+      if (assets.length) {
+        panel.innerHTML = '<h3>📝 本节资源</h3>' + assets.map(function (a) {
+          return '<div class="hw-card"><div class="hw-head"><span class="ic">📎</span><span class="t">' + esc(a.asset_name) + "</span><span class=\"meta\"><span class=\"chip orange\">" + (catLabel[a.material_category] || a.material_category) + "</span></span></div><a class=\"btn btn-primary\" href=\"" + esc(a.file_url) + '" target="_blank" rel="noopener">打开资源</a></div>';
+        }).join("");
+      } else {
+        panel.innerHTML = '<h3>📝 本节资源</h3><p class="intro-p">本节暂无文字资源。</p>';
+      }
+    }
+    var exPanel = $("#p-exam");
+    if (exPanel) exPanel.querySelector("h3") && exPanel.classList.forEach(function () {});
+    // 考试 tab：真实契约无考试落点 → 诚实空态（不伪造）
+    if (exPanel) exPanel.innerHTML = '<h3>📐 本节考试</h3><p class="intro-p">本节暂无考试安排。</p>';
+
+    // --- 完成态 + 标记完成按钮 ---
+    renderComplete(d);
+  }
+
+  function renderComplete(d) {
+    var prog = $(".player-meta .prog-row");
+    if (!prog) return;
+    var flag = prog.querySelector(".done-flag");
+    var isDone = (d.video && d.video.transcode_status === "completed");
+    // 从大纲取当前课次完成度
+    var cur = findOutlineSession(state.session_id);
+    var done = cur ? (cur.watch_ratio >= 80) : isDone;
+    if (flag) { flag.textContent = done ? "🎉 判定：观看 ≥80% 或作业提交（已完成）" : "⏳ 观看进度 " + (cur ? Math.round(cur.watch_ratio) : 0) + "% 后标记完成"; }
+    var btn = $("#realCompleteBtn");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.id = "realCompleteBtn";
+      btn.type = "button";
+      btn.className = "btn btn-primary";
+      btn.style.marginLeft = "auto";
+      btn.textContent = "标记完成";
+      prog.appendChild(btn);
+    }
+    btn.onclick = function () {
+      E.post("/api/study/sessions/" + state.session_id + "/complete").then(function (r) {
+        if (flag) flag.textContent = "🎉 已标记完成";
+        refreshOutline(); // 完成后刷新大纲树状态
+      }).catch(function (err) { console.warn("[learning] complete failed", err && err.message); });
+    };
+  }
+
+  function findOutlineSession(sid) {
+    if (!state.outline) return null;
+    for (var i = 0; i < state.outline.modules.length; i++) {
+      for (var j = 0; j < state.outline.modules[i].sessions.length; j++) {
+        if (state.outline.modules[i].sessions[j].session_id === sid) return state.outline.modules[i].sessions[j];
+      }
+    }
+    return null;
+  }
+
+  function refreshOutline() {
+    if (!state.series_id) return;
+    E.get("/api/study/courses/" + state.series_id + "/outline").then(function (o) {
+      state.outline = o; renderOutline(o); renderComplete({});
+      // 重新刷新当前课次完成标签
+      var cur = findOutlineSession(state.session_id);
+      var flag = $(".player-meta .prog-row .done-flag");
+      if (flag) flag.textContent = cur && cur.watch_ratio >= 80 ? "🎉 判定：观看 ≥80% 或作业提交（已完成）" : "⏳ 观看进度 " + (cur ? Math.round(cur.watch_ratio) : 0) + "%";
+    }).catch(function (e) { console.warn("[learning] outline refresh failed", e && e.message); });
+  }
+
+  /* ---- 播放打点：timeupdate 每 30s 攒 TICK → tick-batch ≤200；失败静默重试≤2 后 console.warn ---- */
+  function wirePlayback(vdo, duration) {
+    var lastTickPos = -1;
+    function pushTick(type) {
+      var pos = Math.max(0, Math.floor(vdo.currentTime || 0));
+      if (type === "PLAY") { lastTickPos = pos; }              // 建立基线
+      else if (type === "TICK") { if (pos - lastTickPos < 30) return; lastTickPos = pos; } // 每 ≥30s 攒一条
+      function tsLocal() { var d = new Date(), p = function (n, l) { l = l || 2; return ("0" + n).slice(-l); }; return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); }
+      state.tickBuf.push({ event_type: type, position_seconds: pos, playback_rate: vdo.playbackRate || 1, network_type: netType(), event_time: tsLocal() });
+      if (state.tickBuf.length >= 200) flushTicks();
+    }
+    vdo.addEventListener("play", function () { pushTick("PLAY"); });
+    vdo.addEventListener("timeupdate", function () { pushTick("TICK"); });
+    if (!state.flushtimer) state.flushtimer = setInterval(flushTicks, 30000);
+  }
+
+  function flushTicks() {
+    if (state.sending) return;
+    if (!state.session_id || !state.tickBuf.length) return;
+    var batch = state.tickBuf.splice(0, Math.min(200, state.tickBuf.length));
+    state.sending = true;
+    var tries = 0;
+    (function attempt() {
+      /* play_session_id：后端需已存在的 session_video_play.id（无创建端点，缺口见完工报告）。
+       * 客户端先取一个自增占位；后端 400010（play_session not found）即按"失败静默重试≤2 次后 console.warn"处理。 */
+      if (!state.play_session_id) state.play_session_id = Math.floor(Date.now() / 1000) % 1000000 + 1;
+      tries++;
+      E.post("/api/progress/video/tick-batch", { play_session_id: state.play_session_id, session_id: state.session_id, ticks: batch })
+        .then(function () { state.sending = false; })
+        .catch(function (err) {
+          if (tries <= 2) { setTimeout(attempt, 500); return; }
+          state.sending = false;
+          console.warn("[learning] tick-batch failed (≤" + tries + " 次重试后丢弃)", err && err.message);
+        });
+    })();
+  }
+
+  /* ---- 离开页面 flush 剩余打点（尽力而为，异步请求可能被浏览器截断）---- */
+  window.addEventListener("beforeunload", function () { try { flushTicks(); } catch (e) {} });
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") { try { flushTicks(); } catch (e) {} } });
+
+  /* ---- 启动：解析 series → access → outline → session ---- */
+  function start(sid) {
+    state.series_id = sid;
+    showAccess(true);
+    E.get("/api/study/courses/" + sid + "/access").then(function (acc) {
+      if (acc && acc.cohort_id) state.cohort_id = parseInt(acc.cohort_id, 10);
+      renderCoHortEntry();
+      if (acc && acc.accessible === false) { showAccess(false, acc.reason); return; }
+      showAccess(true);
+      E.get("/api/study/courses/" + sid + "/outline").then(function (o) { state.outline = o; var sname = $(".series-head .tt .series"); if (sname) sname.textContent = o.series_title; renderOutline(o); if (state.session_id) loadSession(state.session_id); else pickFirst(o); })
+        .catch(function (e) { console.warn("[learning] outline failed", e && e.message); showAccess(false, e && e.message); });
+    }).catch(function (accErr) {
+      console.warn("[learning] access failed", accErr && accErr.message);
+      showAccess(false, (accErr && accErr.body && accErr.body.message) || "无法校验班次访问权限");
+    });
+  }
+  function renderCoHortEntry() { var bc = $(".breadcrumb"); if (bc && state.cohort_id) { var a = bc.querySelector("a"); if (a) a.href = "my-cohorts.html"; } }
+
+  function loadSession(sid) {
+    E.get("/api/study/sessions/" + sid).then(renderSession).catch(function (err) {
+      if (err && err.status === 403) { showAccess(false, (err.body && err.body.message) || "仅报名该班次的学员可访问本课次内容"); return; }
+      console.warn("[learning] session detail failed", err && err.message);
+      showAccess(false, (err && err.message) || "课次加载失败");
+    });
+  }
+  function pickFirst(o) { if (o && o.modules && o.modules.length && o.modules[0].sessions && o.modules[0].sessions.length) loadSession(o.modules[0].sessions[0].session_id); }
+
+  if (state.series_id) { start(state.series_id); return; }
+  // 无 series_id → 按 cohort 找 series（GET /api/enrollments/me/cohorts）
+  if (state.cohort_id) {
+    E.get("/api/enrollments/me/cohorts").then(function (list) {
+      var arr = Array.isArray(list) ? list : [];
+      var it = arr.filter(function (x) { return String(x.cohort_id) === String(state.cohort_id); })[0];
+      if (it && it.series_id) start(parseInt(it.series_id, 10));
+      else { showAccess(false, "未找到该班次的报名信息"); }
+    }).catch(function (e) { console.warn("[learning] enrollments failed", e && e.message); showAccess(false, "未找到该班次的报名信息"); });
+    return;
+  }
+  if (state.session_id) {
+    // 只有 session_id：从 session 详情反查 series_id 后走完整链路
+    E.get("/api/study/sessions/" + state.session_id).then(function (d) { if (d && d.series_id) start(parseInt(d.series_id, 10)); }).catch(function (e) { console.warn("[learning] no series context", e && e.message); });
+  }
 })();
 </script>
 </body></html>
