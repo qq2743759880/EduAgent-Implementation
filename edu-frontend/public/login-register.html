@@ -20,6 +20,15 @@
   - 受保护页/根路由守卫：GuestOnlyRoute / 根 / 分流（本原型以「路由回跳演示条」展示 J25 redirect 回跳）
   - 前端校验拦截（LoginSchema/RegisterSchema）：账号 3-20 字母开头 / 昵称 2-32 / 邮箱格式 / 密码 ≥6 不含中文 / 两次一致
   - 本原型为 UI 形态展示（演示数据仅作状态切换，非后端契约束缚）；真实数据依赖见各卡端点标注
+
+  task108（2026-09-02，fe-html 对接后端实证）：
+  - 注册已接真实 POST /api/auth/register：字段按 UserRegister（nickname/password 必填强密码，mobile/email 二选一，account 可选）。
+    curl 实测（edu-agent app/auth/schemas.py:40）：成功返回 201 {code:0,data:{user_id}}——「不返回 token」，
+    故走「注册成功 → 预填登录账号 → 手动登录」两步（改动小者）。
+  - 登录成功读 ?redirect= 优先回跳（EAPI.getRedirectParam 仅放行站内相对路径，防开放跳转）；
+    无 redirect 时按 data.user.role 分流（admin/manager→admin-dashboard.html，student→dashboard.html）。
+  - 两个 <form> 均加 onsubmit() 内 preventDefault，提交按钮 type=submit，Enter 即可提交不刷新、不丢状态。
+  - 移除演示控制器（demo-ctrl）与 demo 状态机；登录/注册提交已全部改为真实 API 调用。
   AUDIT LOG:
     [2026-08-24 v1 R1] 初稿提交（登录/注册/根路由/409/AUTH_EXPIRED 演示）→ SUBMITTED
     [2026-08-25 v1 用户反馈] 糖果味不足 → 粉紫糖果强化 → RESUBMITTED
@@ -118,13 +127,6 @@
   .seg button{border:none;background:transparent;padding:8px 20px;font:inherit;font-size:14px;font-weight:800;color:var(--muted);cursor:pointer;border-radius:999px;transition:.15s}
   .seg button.on{background:linear-gradient(120deg,var(--primary),var(--primary-strong));color:var(--ht-fff);box-shadow:0 4px 12px var(--htc-109-40-217-003)}
   .seg-c{text-align:center}
-  /* 演示控制器 */
-  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:90;background:var(--ht-fff);border:1px solid var(--primary-border);border-radius:12px;box-shadow:0 6px 20px var(--htc-109-40-217-012);padding:10px 12px;font-size:12px;color:var(--muted)}
-  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
-  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
-  .demo-ctrl .row{display:flex;gap:5px;flex-wrap:wrap;max-width:250px}
-  .demo-ctrl button{border:1px solid var(--primary-border);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
-  .demo-ctrl button.on{background:var(--primary-strong);border-color:var(--primary-strong);color:var(--ht-fff)}
   .hidden{display:none!important}
 </style>
 <script type="module">(async () => {
@@ -2812,7 +2814,7 @@
 
       <div class="card-b">
         <!-- ============ 登录表单 ============ -->
-        <form class="form" id="login-form">
+        <form class="form" id="login-form" onsubmit="return loginOnSubmit(event)">
           <div class="field">
             <label>账号 / 邮箱<span class="endpoint">POST /api/auth/login</span></label>
             <div class="ctl"><input id="li-id" placeholder="输入账号，或邮箱（含 @）" autocomplete="username"></div>
@@ -2839,13 +2841,13 @@
             <span>忘记密码？请联系管理员</span>
           </div>
 
-          <button type="button" class="btn btn-login" id="login-btn" onclick="loginSubmit()">
+          <button type="submit" class="btn btn-login" id="login-btn">
             <span class="sp"></span><span class="lbl-s">🚀 登录</span>
           </button>
         </form>
 
         <!-- ============ 注册表单 ============ -->
-        <form class="form hidden" id="reg-form">
+        <form class="form hidden" id="reg-form" onsubmit="return regOnSubmit(event)">
           <div class="field">
             <label>账号（登录用）<span class="endpoint">POST /api/auth/register</span></label>
             <div class="ctl"><input id="rg-u" placeholder="3-20 位，字母开头，可含数字、下划线、短横线"></div>
@@ -2885,7 +2887,7 @@
               失败壳 <code id="rg-conflict-code">"40912" · 409</code> — 展示后端 message，保留已填内容；命中字段追加行内错误</span>
           </div>
 
-          <button type="button" class="btn btn-reg" id="reg-btn" onclick="regSubmit()">
+          <button type="submit" class="btn btn-reg" id="reg-btn">
             <span class="sp"></span><span class="lbl-s">🎀 创建账号</span>
           </button>
           <p class="terms">点击「创建账号」即代表你同意 EduAgent 的服务条款与隐私政策。账号仅用于存储个人学习进度与徽章。</p>
@@ -2900,38 +2902,9 @@
   </div>
 </div>
 
-<!-- 演示控制器 -->
-<div class="demo-ctrl">
-  <b>🍬 演示控制器</b>
-  <div class="grp">页面</div>
-  <div class="row">
-    <button data-demo="page" data-v="login" class="on">登录 /login</button>
-    <button data-demo="page" data-v="register">注册 /register</button>
-  </div>
-  <div class="grp">登录形态</div>
-  <div class="row">
-    <button data-demo="login" data-v="normal" class="on">正常</button>
-    <button data-demo="login" data-v="e401">401 错误横幅</button>
-    <button data-demo="login" data-v="eother">其他错误 toast</button>
-    <button data-demo="login" data-v="succ">成功·回跳</button>
-  </div>
-  <div class="grp">注册形态</div>
-  <div class="row">
-    <button data-demo="reg" data-v="normal" class="on">正常</button>
-    <button data-demo="reg" data-v="c409u">40912·账号冲突</button>
-    <button data-demo="reg" data-v="c409e">40912·邮箱冲突</button>
-    <button data-demo="reg" data-v="succ">成功·跳登录</button>
-  </div>
-  <div class="grp">字符串码 toast</div>
-  <div class="row">
-    <button data-demo="code" data-v="expired">AUTH_EXPIRED</button>
-    <button data-demo="code" data-v="token">40101 refresh</button>
-  </div>
-</div>
-
 <script src="/edu-api.js"></script>
 <script>
-var page = "login", lstate = "normal", rstate = "normal";
+var page = "login";
 
 function setPage(p){
   page = p;
@@ -2952,99 +2925,6 @@ function clearStates(){
   document.querySelectorAll(".ctl input").forEach(x=>x.classList.remove("err"));
 }
 
-function applyLogin(){
-  document.getElementById("li-banner").classList.remove("show");
-  document.getElementById("login-btn").classList.remove("busy");
-  if(lstate==="e401"){
-    document.getElementById("li-banner-t").textContent = "账号或密码错误";
-    document.getElementById("li-banner-code").textContent = '"40111" · 401';
-    document.getElementById("li-banner").classList.add("show");
-    ["li-id","li-pwd"].forEach(id=>{var el=document.getElementById(id);el.value="student_2026";el.classList.add("err");});
-  }
-}
-function loginSubmit(){
-  var btn = document.getElementById("login-btn");
-  var id = document.getElementById("li-id").value.trim();
-  var pwd = document.getElementById("li-pwd").value;
-  if (!id || !pwd) { toast("请输入账号和密码", "toast-error"); return; }
-  btn.classList.add("busy");
-  EAPI.post("/api/auth/login", { account: id, password: pwd })
-    .then(function (data) {
-      EAPI.store.setToken(data.access_token);
-      var role = data.user && data.user.role;
-      var dest = (role === "admin" || role === "manager") ? "/admin-dashboard.html" : "/dashboard.html";
-      toast("🍭 登录成功，正在跳转" + (role === "admin" ? "管理端" : "学习端") + " …", "toast-ok");
-      setTimeout(function () { window.location.href = dest; }, 400);
-    })
-    .catch(function (err) {
-      btn.classList.remove("busy");
-      toast("登录失败：" + (err && err.message ? err.message : "网络错误"), "toast-error");
-      var el = document.getElementById("li-banner");
-      if (el) { el.querySelector("#li-banner-t").textContent = err && err.message || "登录失败"; el.classList.add("show"); }
-    });
-}
-document.getElementById("page-seg").addEventListener("click",function(e){
-  var b=e.target.closest("[data-page]"); if(!b)return; setPage(b.dataset.page);
-});
-document.querySelectorAll("[data-eye]").forEach(b=>b.addEventListener("click",function(){
-  var el=document.getElementById(this.dataset.eye);
-  el.type = el.type==="password" ? "text" : "password";
-  this.textContent = el.type==="password" ? "👁" : "🙈";
-}));
-
-function applyRegister(){
-  document.getElementById("rg-conflict").classList.remove("show");
-  document.querySelectorAll(".ferr").forEach(x=>x.classList.remove("show"));
-  document.querySelectorAll(".ctl input").forEach(x=>x.classList.remove("err"));
-  document.getElementById("reg-btn").classList.remove("busy");
-  if(rstate==="c409u"){
-    document.getElementById("rg-conflict-t").textContent = "该账号已被注册，请直接登录";
-    document.getElementById("rg-conflict-code").textContent = '"40912" · 409';
-    document.getElementById("rg-conflict").classList.add("show");
-    document.getElementById("rg-u").classList.add("err");
-    document.getElementById("rg-u-err").textContent = "该账号已被占用";
-    document.getElementById("rg-u-err").classList.add("show");
-  } else if(rstate==="c409e"){
-    document.getElementById("rg-conflict-t").textContent = "该邮箱已注册，请直接登录";
-    document.getElementById("rg-conflict-code").textContent = '"40912" · 409';
-    document.getElementById("rg-conflict").classList.add("show");
-    document.getElementById("rg-e").classList.add("err");
-    document.getElementById("rg-e-err").textContent = "邮箱已被注册";
-    document.getElementById("rg-e-err").classList.add("show");
-  }
-}
-function regSubmit(){
-  var btn=document.getElementById("reg-btn");
-  if(rstate==="c409u"||rstate==="c409e"){ applyRegister(); return; }
-  btn.classList.add("busy");
-  setTimeout(()=>{
-    if(rstate==="succ"){
-      toast("🎀 注册成功，已预填账号跳转登录页", "toast-ok");
-      setPage("login");
-      document.getElementById("li-id").value = document.getElementById("rg-u").value || "student_2026";
-    } else {
-      applyRegister();
-    }
-    btn.classList.remove("busy");
-  }, 700);
-}
-
-function routeFlow(kind){
-  var cur=document.getElementById("rt-current"), flow=document.getElementById("rt-flow");
-  var map={
-    root_guest:['/ (根)', '未登录', '/login  ?redirect= /dashboard'],
-    root_logged:['/ (根)', '已登录', '/dashboard'],
-    now:['/login?redirect=/dashboard'],
-    succ:['受保护页 /dashboard', '未登录', '/login?redirect=/dashboard', '登录成功', '/dashboard']
-  };
-  var list = map[kind] || map.now;
-  cur.textContent = list[0];
-  flow.innerHTML = list.map((x,i)=>{
-    var onLast = (i===0||i===list.length-1) ? 'route-chip' : 'route-chip gray';
-    return i? '<span class="route-arrow">›</span><span class="'+onLast+'">'+x+'</span>' : '<span class="'+onLast+'">'+x+'</span>';
-  }).join('');
-}
-
 function toast(msg, cls){
   var t=document.createElement("div");
   var base="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);padding:12px 20px;border-radius:16px;font-size:14px;font-weight:600;z-index:99;box-shadow:0 10px 28px rgba(0,0,0,.16);max-width:82vw;color:#fff";
@@ -3055,26 +2935,81 @@ function toast(msg, cls){
   setTimeout(()=>t.remove(), 2000);
 }
 
-document.addEventListener("click", function(e){
-  var d = e.target.closest("[data-demo]");
-  if(d){ var k=d.dataset.demo,v=d.dataset.v;
-    if(k==="page"){ setPage(v); }
-    if(k==="login"){ lstate=v; if(v!=="succ") routeFlow("now"); }
-    if(k==="reg"){ rstate=v; }
-    if(k==="code"){
-      if(v==="expired") toast("AUTH_EXPIRED · 登录已过期，请重新登录", "toast-error");
-      if(v==="token") toast("40101 · 会话无效，已为你跳转登录页（回跳原路）", "toast-error");
-    }
-    document.querySelectorAll('[data-demo="'+k+'"]').forEach(x=>x.classList.toggle("on", x.dataset.v===v));
-    applyLogin(); applyRegister();
-    return;
-  }
-  var r = e.target.closest("[data-route]");
-  if(r){ routeFlow(r.dataset.route); }
-});
+function showLoginBanner(msg){
+  document.getElementById("li-banner-t").textContent = msg || "登录失败";
+  document.getElementById("li-banner").classList.add("show");
+}
+function showRegBanner(msg){
+  document.getElementById("rg-conflict-t").textContent = msg || "注册失败";
+  document.getElementById("rg-conflict").classList.add("show");
+}
 
-routeFlow("now");
-applyLogin();
+// 表单 onsubmit：preventDefault 阻止原生提交刷新，同一函数兼作 Enter 提交（button=submit）
+function loginOnSubmit(ev){ if (ev && ev.preventDefault) ev.preventDefault(); loginSubmit(); return false; }
+function regOnSubmit(ev){ if (ev && ev.preventDefault) ev.preventDefault(); regSubmit(); return false; }
+
+function loginSubmit(){
+  var btn = document.getElementById("login-btn");
+  var id = document.getElementById("li-id").value.trim();
+  var pwd = document.getElementById("li-pwd").value;
+  clearStates();
+  if (!id || !pwd) { toast("请输入账号和密码", "toast-error"); return; }
+  btn.classList.add("busy");
+  EAPI.post("/api/auth/login", { account: id, password: pwd })
+    .then(function (data) {
+      EAPI.store.setToken(data.access_token);
+      var role = data.user && data.user.role;
+      // ?redirect= 优先级最高（仅站内相对路径，EAPI.getRedirectParam 已防开放跳转）；否则按角色分流
+      var redir = EAPI.getRedirectParam();
+      var dest2 = redir || ((role === "admin" || role === "manager") ? "/admin-dashboard.html" : "/dashboard.html");
+      toast("🍭 登录成功，正在跳转 …", "toast-ok");
+      setTimeout(function () { window.location.href = dest2; }, 400);
+    })
+    .catch(function (err) {
+      btn.classList.remove("busy");
+      toast("登录失败：" + (err && err.message ? err.message : "网络错误"), "toast-error");
+      showLoginBanner(err && err.message || "登录失败");
+    });
+}
+
+function regSubmit(){
+  var btn = document.getElementById("reg-btn");
+  var u = document.getElementById("rg-u").value.trim();
+  var n = document.getElementById("rg-n").value.trim();
+  var e = document.getElementById("rg-e").value.trim();
+  var p = document.getElementById("rg-p").value;
+  var c = document.getElementById("rg-c").value;
+  clearStates();
+  if (!n) { toast("请填写昵称", "toast-error"); return; }
+  if (!p) { toast("请填写密码", "toast-error"); return; }
+  if (p !== c) { toast("两次输入的密码不一致", "toast-error"); return; }
+  if (!e) { toast("请填写邮箱（注册需手机号或邮箱，本页仅提供邮箱）", "toast-error"); return; }
+  // 注册用表单仅含邮箱，无手机号字段；按 UserRegister 传昵称/邮箱/密码，account 可选（非空才带，避免空串触发 min_length=4 校验失败）
+  var payload = { nickname: n, password: p, email: e };
+  if (u) payload.account = u;
+  btn.classList.add("busy");
+  EAPI.post("/api/auth/register", payload)
+    .then(function () {
+      // 注册成功返回 201 {code:0,data:{user_id}}，不返回 token → 预填登录账号跳登录页两步
+      toast("🎀 注册成功，账号已预填，请登录", "toast-ok");
+      setPage("login");
+      document.getElementById("li-id").value = u || e || n;
+    })
+    .catch(function (err) {
+      btn.classList.remove("busy");
+      toast("注册失败：" + (err && err.message ? err.message : "网络错误"), "toast-error");
+      showRegBanner(err && err.message || "注册失败");
+    });
+}
+
+document.getElementById("page-seg").addEventListener("click",function(e){
+  var b=e.target.closest("[data-page]"); if(!b)return; setPage(b.dataset.page);
+});
+document.querySelectorAll("[data-eye]").forEach(b=>b.addEventListener("click",function(){
+  var el=document.getElementById(this.dataset.eye);
+  el.type = el.type==="password" ? "text" : "password";
+  this.textContent = el.type==="password" ? "👁" : "🙈";
+}));
 </script>
 
 </div></div>
