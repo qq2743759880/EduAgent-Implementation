@@ -629,7 +629,8 @@ button{font-family:inherit;cursor:pointer}
 </script>
 <script src="/edu-api.js"></script>
 <script>
-/* 对接真实后端：加载 /api/progress/dashboard 填充 KPI（失败保留演示值） */
+/* task105：KPI 对齐 DashboardOut 真实字段（总学习时长/连续天数）+ recent_days 渲染趋势图。
+ * 答题数(道)与在学课程(门)两卡：后端暂无对应字段（契约 C-A 后才有），本波次显示 "—"（严禁 undefined/NaN）。 */
 (function () {
   if (!window.EAPI || !EAPI.store.getToken()) return;
   EAPI.get("/api/users/me").then(function (u) {
@@ -638,18 +639,52 @@ button{font-family:inherit;cursor:pointer}
       adminEntry.style.display = "";
     }
   }).catch(function () {});
+
+  function drawTrend(data, labels) {
+    var el = document.getElementById("trend-line"), ar = document.getElementById("trend-area"),
+        dt = document.getElementById("trend-dots"), lb = document.getElementById("trend-labels"),
+        ya = document.getElementById("trend-y-axis");
+    if (!el) return;
+    var n = data.length; if (!n) return;
+    var W = 620, H = 200, L = 54, R = 620, T = 24, B = 188;
+    var max = Math.max.apply(null, data.concat([10]));
+    var px = function (i) { return L + (R - L) * i / (n - 1); };
+    var py = function (v) { return B - (B - T) * (v / max); };
+    var pts = data.map(function (v, i) { return [px(i), py(v)]; });
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    el.setAttribute('d', line);
+    ar.setAttribute('d', line + ' L' + pts[n-1][0].toFixed(1) + ' ' + B + ' L' + pts[0][0].toFixed(1) + ' ' + B + ' Z');
+    var dots = '', labs = '', yaxis = '';
+    pts.forEach(function (p, i) {
+      dots += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" stroke="#fff" stroke-width="2"/>';
+      labs += '<text x="' + p[0].toFixed(1) + '" y="204">' + (labels[i] || '') + '</text>';
+    });
+    dt.innerHTML = dots;
+    for (var y = 0; y <= max; y += Math.ceil(max / 3)) {
+      var yy = py(y); yaxis += '<text x="44" y="' + (yy + 4).toFixed(1) + '">' + Math.round(y) + '</text>';
+    }
+    ya.innerHTML = yaxis;
+    lb.innerHTML = labs;
+  }
+
   EAPI.get("/api/progress/dashboard?days=14")
     .then(function (d) {
       if (!d) return;
       var secs = d.total_study_seconds || 0, min = Math.round(secs / 60);
       var el = document.getElementById("kpi-time");
       if (el) el.innerHTML = min + "<small> 分钟</small>";
-      var q = document.getElementById("kpi-q");
-      if (q && d.total_questions_attempted != null) q.innerHTML = d.total_questions_attempted + "<small> 道</small>";
-      var c = document.getElementById("kpi-course");
-      if (c && d.active_courses_count != null) c.innerHTML = d.active_courses_count + "<small> 门</small>";
+      var q = document.getElementById("kpi-q");      // 答题数卡：后端暂无字段 → "—"
+      if (q) q.innerHTML = "—";
+      var c = document.getElementById("kpi-course"); // 在学课程卡：后端暂无字段 → "—"
+      if (c) c.innerHTML = "—";
       var s = document.getElementById("kpi-streak");
       if (s && d.latest_streak_days != null) s.innerHTML = d.latest_streak_days + "<small> 天</small>";
+      // recent_days（新→旧）反转成 旧→新，按天渲染分钟趋势
+      var days = Array.isArray(d.recent_days) ? d.recent_days.slice() : [];
+      days.reverse();
+      var vals = days.map(function (x) { return Math.round((x.study_seconds || 0) / 60); });
+      var labs = days.map(function (x) { return String(x.stat_date || "").slice(5); });
+      if (vals.length >= 2) drawTrend(vals, labs);
     })
     .catch(function () { /* 保留演示值 */ });
 })();

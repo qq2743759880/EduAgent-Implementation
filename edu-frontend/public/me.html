@@ -4231,11 +4231,11 @@ a{text-decoration:none;color:inherit}
     <section class="section" aria-labelledby="stats-sec">
       <div class="s-title">
         <span class="ico blue" aria-hidden="true">📊</span>
-        <div><div class="ttl" id="stats-sec">数据概览</div><div class="sub">学习时长 / 完成课次 来自 learning-summary · 积分 / 等级 来自 gamification</div></div>
+        <div><div class="ttl" id="stats-sec">数据概览</div><div class="sub">学习时长 / 在学班次 来自 learning-summary · 积分 / 等级 来自 gamification</div></div>
       </div>
       <div class="stat-grid">
         <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num" id="st-time">68</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
-        <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num" id="st-sessions">24</span><span class="sc-unit">课次</span></div><div class="sc-label">完成课次</div></div>
+        <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num" id="st-sessions">0</span><span class="sc-unit">班次</span></div><div class="sc-label">在学班次</div></div>
         <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num" id="st-points">1,280</span></div><div class="sc-label">积分</div></div>
         <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num" id="st-level">Lv.10</span></div><div class="sc-label">等级 · 学神</div></div>
       </div>
@@ -4368,9 +4368,9 @@ a{text-decoration:none;color:inherit}
     var sum = res[0].status === "fulfilled" ? res[0].value : null;
     var pts = res[1].status === "fulfilled" ? res[1].value : null;
     if (sum) {
-      var secs = sum.total_watched_seconds || 0;
+      var secs = Number(sum.total_watched_seconds) || 0;
       set("st-time", Math.round(secs / 3600));
-      set("st-sessions", sum.completed_sessions_count != null ? sum.completed_sessions_count : "");
+      set("st-sessions", sum.active_cohorts_count != null ? sum.active_cohorts_count : "0");
     }
     if (pts) {
       set("st-points", (pts.total_points || 0).toLocaleString());

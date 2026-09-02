@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!--
   STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
   task53 v1 效果图 · /achievements 成就中心
@@ -751,6 +751,134 @@ body[data-show="empty-log"] .log-empty{display:flex}
 })();
 </script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;Promise.allSettled([EAPI.get("/api/gamification/me/badges"),EAPI.get("/api/gamification/me/points")]).then(function(r){var b=r[0].status==="fulfilled"?r[0].value:null;if(b&&b.items&&b.items.length){var wall=document.querySelector(".badge-wall,.badges");if(wall&&wall.querySelectorAll(".badge").length){var bts=wall.querySelectorAll(".badge");b.items.slice(0,bts.length).forEach(function(bd,i){var n=bts[i].querySelector(".name,.t");if(n)n.textContent=bd.badge_name||bd.name||n.textContent;});}}var p=r[1].status==="fulfilled"?r[1].value:null;if(p){var el=document.querySelector(".points-num,[class*=points] .num");if(el)el.textContent=p.total_points||el.textContent;}}).catch(function(){});})();
+/* task105：徽章墙 / 积分流水 / 排行榜接真实 API。无 token 保留演示数据。
+ * 选择器对齐真实 DOM：.badge-grid/.badge-card、.total-pts、.log-list、.rank-body。 */
+(function () {
+  if (!window.EAPI || !EAPI.store.getToken()) return;
+
+  var POINT_LABEL = { LIKE_GAIN:"获得点赞", POST_CREATE:"发布动态", BADGE_BONUS:"徽章奖励", COMMENT_CREATE:"社区回帖", STUDY_GAIN:"学习积分", EXAM_GAIN:"测验积分", HOMEWORK_GAIN:"作业积分", SIGN_IN_GAIN:"每日签到" };
+
+  function badgeCard(bd) {
+    var r = (bd.rarity || "").toLowerCase();
+    var rl = { common:"普通", rare:"稀有", epic:"史诗", legendary:"传说" }[r] || "普通";
+    var unlocked = !!bd.unlocked;
+    var cur = Math.round(bd.progress_current || 0), req = Math.round(bd.progress_required || 0);
+    var prog = Math.min(100, Math.round(bd.progress_pct || 0));
+    var bodyBody = unlocked
+      ? '<div class="b-reward">+' + (bd.reward_points || 0) + ' 积分 · 已解锁</div>'
+      : '<div class="b-prog"><div class="b-prog-row"><span>解锁进度</span><span>' + cur + '/' + req + '</span></div><div class="b-bar"><i style="width:' + prog + '%"></i></div></div>';
+    return '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
+      + (unlocked ? '<span class="b-lock" hidden=""></span>' : '<span class="b-lock" aria-hidden="true">🔒</span>')
+      + '<div class="b-emoji">' + (bd.icon_emoji || "🎖️") + '</div>'
+      + '<div class="b-name">' + (bd.badge_name || "") + '</div>'
+      + '<span class="b-rarity ' + r + '">' + rl + '</span>'
+      + '<p class="b-desc">' + (bd.badge_desc || "") + '</p>' + bodyBody + '</div>';
+  }
+
+  function renderBadges(b) {
+    if (!b) return;
+    var grid = document.querySelector(".badge-grid");
+    if (grid && b.items) grid.innerHTML = b.items.map(badgeCard).join("");
+    var cnt = document.querySelector(".badge-count");
+    if (cnt) cnt.innerHTML = "🎖 已解锁 <b>" + (b.unlocked_count || 0) + "</b> / " + (b.total || (b.items && b.items.length) || 0) + " 枚";
+    var nx = document.querySelector(".badge-next");
+    if (nx) nx.textContent = b.next_milestone ? "✨ " + String(b.next_milestone).replace(/^下一目标：/, "") : "";
+  }
+
+  function renderPoints(p) {
+    if (!p) return;
+    var tot = document.querySelector(".total-pts");
+    if (tot) tot.textContent = Number(p.total_points || 0).toLocaleString("zh-CN");
+    var pill = document.querySelector(".lv-pill");
+    if (pill) pill.textContent = "🏅 Lv." + (p.level_no || 0) + " · " + (p.level_title || "");
+    var range = document.querySelector(".lv-range");
+    if (range) range.innerHTML = "<span>Lv." + (p.level_no || 0) + "（<b>" + Number(p.level_min || 0).toLocaleString("zh-CN") + "</b> 分）</span><span>下一级 Lv." + ((p.level_no || 0) + 1) + "（<b>" + Number(p.next_level_min || 0).toLocaleString("zh-CN") + "</b> 分）</span>";
+    var pc = Math.min(100, Math.round(p.level_progress_pct || 0));
+    var prog = document.querySelector(".lv-prog");
+    if (prog) { prog.setAttribute("aria-valuenow", String(pc)); var i = prog.querySelector("i"); if (i) i.style.width = pc + "%"; }
+    var note = document.querySelector(".lv-note");
+    if (note) note.textContent = "距下一级还差 " + (100 - pc) + "%";
+
+    var logs = p.recent_logs || [];
+    var list = document.querySelector(".log-list");
+    if (list) list.innerHTML = logs.map(function (l) {
+      var up = (l.delta || 0) >= 0;
+      var lbl = POINT_LABEL[l.point_type] || l.point_type || "积分变化";
+      return '<div class="log-item"><span class="log-ico ' + (up ? 'up' : 'down') + '" aria-hidden="true">' + (up ? '⬆️' : '⬇️') + '</span>'
+        + '<div class="log-mid"><div class="lg-title">' + lbl + (l.note ? " · " + l.note : "") + '</div><div class="lg-meta">' + String(l.created_at || "").replace("T", " ") + '</div></div>'
+        + '<div class="log-amt"><div class="lg-delta ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '') + l.delta + '</div><div class="lg-bal">余额 ' + l.balance_after + '</div></div></div>';
+    }).join("");
+    var head = document.querySelector(".log-head");
+    if (head) head.innerHTML = "积分流水 <span style=\"color:var(--ink-faint);font-weight:600\">共 " + (p.logs_total || logs.length) + " 条</span>";
+  }
+
+  function renderRank(scope, dim, d) {
+    var data = d || {};
+    var top = data.top || [];
+    var body = document.querySelector(".rank-body");
+    var unit = dim === "STUDY_MIN" ? "分钟" : (dim === "BADGE_COUNT" ? "枚" : "分");
+    if (body) body.innerHTML = top.map(function (r, i) {
+      var medal = i === 0 ? "👑" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : null));
+      var noHtml = medal
+        ? '<span class="rank-no ' + (i === 0 ? 'gold' : (i === 1 ? 'silver' : 'bronze')) + '" aria-label="第 ' + r.rank_no + ' 名">' + medal + '</span>'
+        : '<div class="rank-no">' + (r.rank_no || (i + 1)) + '</div>';
+      return '<div class="rank-row ' + (r.is_myself ? 'mine' : '') + '">' + noHtml
+        + '<div class="r-name">' + (r.user_name || "用户" + (r.user_id || "")) + (r.is_myself ? '<span class="r-me">我</span>' : '') + '</div>'
+        + '<span class="r-val">' + Number(r.metric_value || 0).toLocaleString("zh-CN") + '<span class="r-unit">' + unit + '</span></span>'
+        + (data.source === "LIVE_CALC" ? '<span class="r-live">实时</span>' : '') + '</div>';
+    }).join("");
+    var mr = document.querySelector(".mr-val");
+    var myr = data.my_rank;
+    if (mr) mr.textContent = myr ? "第 " + myr.rank_no + " 名" : "未上榜";
+    var mrp = document.querySelector(".myrank .r-live"); // 保留实时角标不覆盖
+    var snap = document.querySelector(".rh-meta");
+    if (snap) snap.textContent = "快照日期：" + (data.snapshot_date || "") + " · " + scope + " 榜";
+  }
+
+  function curScope() {
+    var el = document.querySelector(".rank-span .tabgroup .tab.on");
+    return ({ "scope-daily": "DAILY", "scope-weekly": "WEEKLY", "scope-monthly": "MONTHLY", "scope-all": "ALL_TIME" }[el ? el.id : ""] || "WEEKLY");
+  }
+  function curDim() {
+    var cells = document.querySelectorAll(".rank-dim .tabgroup .tab");
+    var on = null; for (var i = 0; i < cells.length; i++) if (cells[i].classList.contains("on")) { on = i; break; }
+    return on === 1 ? "STUDY_MIN" : (on === 2 ? "BADGE_COUNT" : "POINTS");
+  }
+  function loadRank() {
+    var scope = curScope(), dim = curDim();
+    EAPI.get("/api/gamification/rankings?scope=" + scope + "&dimension=" + dim + "&top_n=10").then(function (d) { renderRank(scope, dim, d); }).catch(function () {});
+  }
+  function bindRank() {
+    var scopes = document.querySelectorAll(".rank-span .tab");
+    Array.prototype.forEach.call(scopes, function (btn) {
+      btn.addEventListener("click", function () {
+        scopes.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-selected", "false"); });
+        btn.classList.add("on"); btn.setAttribute("aria-selected", "true"); loadRank();
+      });
+    });
+    var dims = document.querySelectorAll(".rank-dim .tab");
+    Array.prototype.forEach.call(dims, function (btn) {
+      btn.addEventListener("click", function () {
+        dims.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-selected", "false"); });
+        btn.classList.add("on"); btn.setAttribute("aria-selected", "true"); loadRank();
+      });
+    });
+  }
+
+  var wkBtn = document.getElementById("scope-weekly"); // 默认周榜(按 spec WEEKLY)
+  if (wkBtn) { wkBtn.classList.add("on"); wkBtn.setAttribute("aria-selected", "true"); }
+  var daily = document.getElementById("scope-daily"); if (daily) { daily.classList.remove("on"); daily.setAttribute("aria-selected", "false"); }
+
+  Promise.allSettled([
+    EAPI.get("/api/gamification/me/badges"),
+    EAPI.get("/api/gamification/me/points"),
+    EAPI.get("/api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=10"),
+  ]).then(function (r) {
+    renderBadges(r[0].status === "fulfilled" ? r[0].value : null);
+    renderPoints(r[1].status === "fulfilled" ? r[1].value : null);
+    renderRank("WEEKLY", "POINTS", r[2].status === "fulfilled" ? r[2].value : null);
+    bindRank();
+  }).catch(function () {});
+})();
 </script>
 </body></html>

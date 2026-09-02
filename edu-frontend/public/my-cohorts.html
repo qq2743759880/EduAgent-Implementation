@@ -561,7 +561,69 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
 })();
 </script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/enrollments/me/cohorts?page=1&page_size=10").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var list=document.querySelector(".cohort-list,.list");if(!list)return;var rows=list.querySelectorAll(".cohort,.item,.row");if(!rows.length)return;items.slice(0,rows.length).forEach(function(c,i){var n=rows[i].querySelector("h3,.name,.title");if(n)n.textContent=c.series_title||c.cohort_name||n.textContent;var s=rows[i].querySelector(".status,[class*=status]");if(s&&c.enroll_status)s.textContent=c.enroll_status;});}).catch(function(){});})();
+/* task105：我的班次接 /api/enrollments/me/cohorts，选择器对齐真实 DOM(.cohort-card)，按 enroll_status 过滤三 Tab。
+ * 空态「去选课」→ courses.html；错误态「重试」→ 真实重载。无 token 保留演示数据。 */
+(function () {
+  if (!window.EAPI || !EAPI.store.getToken()) return;
+
+  var DL = { online_live:"在线直播", online_recorded:"在线录播", offline_face_to_face:"线下面授" };
+  var STATUS_BADGE = { active:"学习中", completed:"已完成", cancelled:"已退款", refunded:"已退款" };
+
+  function cardHtml(c) {
+    var ratio = Math.round(c.overall_ratio || 0);
+    var dl = DL[c.delivery_mode] || "在线课程";
+    var st = c.enroll_status;
+    var badge = STATUS_BADGE[st] || (st || "未标注");
+    var cov = "cov--t" + (((c.cohort_id || 0) % 5) + 1);
+    var next = "";
+    if (c.next_session && c.next_session.session_title) {
+      next = '<div class="next-lesson"><span class="clock" aria-hidden="true">⏰</span><span class="nl-text">下次课 <b>' + c.next_session.session_title + '</b></span>'
+        + (c.next_session.teaching_at ? '<span class="when">' + c.next_session.teaching_at + '</span>' : '') + '</div>';
+    }
+    var action = st === "active"
+      ? '<a class="btn btn-primary" href="learning.html?cohort_id=' + c.cohort_id + '">▶ 继续学习</a><a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>'
+      : '<a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>';
+    return '<article class="cohort-card' + (st === "refunded" || st === "cancelled" ? " refunded" : "") + '">'
+      + '<div class="cc-cover ' + cov + '"><span class="blob b1" aria-hidden="true"></span><span class="blob b2" aria-hidden="true"></span>'
+      + '<span class="mascot" aria-hidden="true">🦉</span><div class="tt"><div class="series">' + (c.series_name || "课程") + ' · ' + dl + '</div><div class="name">' + (c.cohort_name || "") + '</div></div>'
+      + '<span class="badge b-active">' + badge + '</span></div>'
+      + '<div class="cc-body"><div class="prog-row"><span class="prog-label">课程进度</span><span class="prog-pct">' + ratio + '%</span></div>'
+      + '<div class="prog-bar" role="progressbar" aria-valuenow="' + ratio + '" aria-valuemin="0" aria-valuemax="100"><div class="prog-fill" style="width:' + ratio + '%"></div></div>'
+      + '<div class="prog-meta"><span>模块 <b>' + (c.module_done || 0) + '/' + (c.module_total || 0) + '</b></span><span>课次 <b>' + (c.session_done || 0) + '/' + (c.session_total || 0) + '</b></span></div>'
+      + next + '<div class="actions">' + action + '</div></div></article>';
+  }
+
+  function showPanel(name) {
+    ["success", "loading", "error", "empty"].forEach(function (p) {
+      var el = document.getElementById("panel-" + p);
+      if (el) el.style.display = (p === name) ? "" : "none";
+    });
+  }
+
+  var goCourse = document.querySelector("#panel-empty .btn");
+  if (goCourse) goCourse.addEventListener("click", function () { location.href = "courses.html"; });
+  var retry = document.querySelector("#panel-error .btn");
+  if (retry) retry.addEventListener("click", function () { location.reload(); });
+
+  EAPI.get("/api/enrollments/me/cohorts?page=1&page_size=10").then(function (d) {
+    var items = Array.isArray(d) ? d : (d && d.items ? d.items : []);
+    if (!items.length) { showPanel("empty"); return; }
+    var by = { active: [], completed: [], refunded: [] };
+    items.forEach(function (c) {
+      var st = c.enroll_status;
+      if (st === "completed") by.completed.push(c);
+      else if (st === "active") by.active.push(c);
+      else by.refunded.push(c); // cancelled / refunded
+    });
+    ["active", "completed", "refunded"].forEach(function (k) {
+      var p = document.getElementById("tab-" + k), g = p ? p.querySelector(".grid") : null;
+      if (g) g.innerHTML = by[k].map(cardHtml).join("");
+      var tb = document.getElementById("tabbtn-" + k), cnt = tb ? tb.querySelector(".cnt") : null;
+      if (cnt) cnt.textContent = by[k].length;
+    });
+    showPanel("success");
+  }).catch(function () { showPanel("error"); });
+})();
 </script>
 </body>
 </html>
