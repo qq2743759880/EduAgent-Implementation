@@ -1,36 +1,32 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>task58 原型 · 管理端题库 /admin/questions</title>
 <!--
-  task58 HTML 原型（审核稿）
-  - P15 风格 candy-playful frozen（复用 task56/57 同源样式）
-  - 契约为权威：.opencode/handoffs/task13-contract.md（contract④，question 域）
-    两级管理：question_bank（题库 CRUD，bank_code 唯一）→ question（题目，question_code 唯一 per bank）
-    端点（前缀 /api/admin/questions）：
-      题库  GET /banks（分页+关键词） · POST /banks · PATCH /banks/{id} · DELETE /banks/{id}（yn 软删）
-      题目  GET /banks/{bank_id}/questions?question_type&keyword（LIKE stem+analysis_text）· POST /questions
-            PATCH /questions/{id} · DELETE /questions/{id}
-      导入  POST /import-preview?bank_id=N（逐行校验不落库）→ POST /import-execute?bank_id=N（幂等）
-    错误码：40921 题库编码重复 / 40922 题目编码重复（唯一约束冲突段）
-    标签废除：不再维护 admin_question_tag → 改用 stem+analysis_text LIKE 全文检索（无标签筛选控件残留）
-  - 关键对齐说明：
-    · 题目列表经选中题库联动（"管理"任一题库行 → 切「题目」Tab，GET /banks/{bank_id}/questions）
-      （P15/GWT 中 /api/admin/questions?bank_id= 为简写语义；本原型以 contract④ 的 REST 路径为权威）
-    · 「编辑 / 解析」→ 跳 task59 /admin/questions/[id]（页面右侧「观测点」说明 + 行内按钮占位跳转）
-    · 批量导入四步：上传 → 校验预览 → 进度 → 结果报告（失败行可定位）
-    · objective_flag：objective=1 客观（绿）/ objective=0 主观（紫）→ StatusBadge
+  task107 真实接入（W1 · admin-questions.html 真实接入题库 API） — 后续审计以本文档为准
+  - P15 风格 candy-playful frozen（复用 task56/57/58 同源样式）
+  - 注入 edu-api.js（</body> 前）+ IIFE：先判 token，无 token 静默降级（提示 admin 账号，不发任何请求）
+  - 实际消费端点清单（契约注释纪律，均已 curl 实测，见 test-reports/task107-completion-report.md）：
+      题库列表   GET /api/admin/questions/banks?page=&page_size=&keyword=  → data{total,page,page_size,items:[{id,institution_id,category_id,bank_code,bank_name,yn,...}]}
+      题目列表   GET /api/admin/questions/banks/{bank_id}/questions?page=&page_size=&question_type_id=&keyword= → data{total,page,page_size,items:[{id,bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text,yn,...}]}
+      题目详情   GET /api/admin/questions/questions/{id}
+      题型维表   GET /api/admin/questions/types  → data{items:[{id,type_code,type_name,objective_flag,auto_marking_flag,sort_no}]}
+      新建题目   POST /api/admin/questions/questions       body{bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text}
+      编辑题目   PATCH /api/admin/questions/questions/{id} body{question_type_id,stem,options_json,answer_text,analysis_text}
+      删除题目   DELETE /api/admin/questions/questions/{id} → data{deleted:true,id}
+      批量预览   POST /api/admin/questions/import-preview?bank_id=N  body{items:[...]} → data{total_rows,valid_rows,invalid_rows,rows:[{row_index,question_code,valid,errors}]}
+      批量执行   POST /api/admin/questions/import-execute?bank_id=N body{items:[...]} → data{total,imported,skipped,failed,messages}（幂等：重复 question_code 跳过返回原记录）
+    options_json 格式实测：[{"label":"A","content":"选项内容"},...]
+  - 首期新建/编辑仅支持 single_choice(1)/multiple_choice(2)/true_false(3)（题干/选项/答案/解析）；其余题型列表只读展示。
+  - 历史死契约（batch-import/papers/compose/tags）已清理（b36e1aa），严禁复活。
+    objective_flag 由题型维表映射：objective=1 客观（绿）/ 0 主观（紫）→ StatusBadge
   AUDIT LOG:
-    [2026-08-24 v1 R1] 初稿提交（题库/题目两级 Tabs + 题库 DataTable bank_code 唯一提示 + 新建/编辑题库 Dialog +
-      删库 ConfirmDialog「题量确认」+ 题目 Tab 选中库联动 + 全文检索(无标签控件) + 批量导入四步 Stepper
-      Uploader→预览N行→进度轮询→结果报告失败行定位 + objective 客观/主观徽章 + 演示控制器多态）→ SUBMITTED
-    [2026-08-24 v1.1 R2] 修正演示数据：题库由 4 个扩为 31 个并按知识点分类正确划分（编程/前端/算法/数据库/安全/
-      数学/英语/语文/物理/化学/生物/历史/地理 分属不同题库）；原「少儿数学题库（1752 题）」实为编程题、跨类错放，
-      改为匹配的「Python 基础编程题库」（编程, 1752）以保证 question 与分类一致；题库/题目列表改为每页 10 条分页
-      （renderPager 按 data-bind 调 bk/q 页，data-pg 分发），分类筛选/题库计数同步扩展；
-      题目列表改为按所选题库分类取样例（sampleQuestions(bank.cat)，跨类不混放），题量展示库真实 total → 已修复重交
+    [2026-08-24 v1/v1.1 R1/R2] task58 纯演示原型（题库/题目两级 Tabs + 批量导入四步假数据 + 演示控制器）
+    [2026-09-02 task107 v REAL] 真实接入：题库/题目列表真实渲染+分页；题目行点击跳 admin-question-detail.html?id=；
+      SINGLE/MULTI/JUDGE 新建/编辑内联表单接 POST/PATCH；批量导入接 import-preview→import-execute；
+      未登录显示「请用 admin 账号登录」提示（与 task102 同款）；隐藏演示控制器，不写 MOCK 假数据。
 -->
 <style>
   :root{ --htc-0-0-0-0.2: rgba(0,0,0,0.2); --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-f0f1f7: #f0f1f7; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fff: #fff; 
@@ -349,11 +345,11 @@
   <div class="page-head">
     <div>
       <h1>题库管理</h1>
-      <div class="sub">题库 → 题目 两级管理 · 批量导入 1752 题 · /admin/questions</div>
+      <div class="sub">题库 → 题目 两级管理 · 真实接入后端 API · /admin/questions</div>
     </div>
     <div class="act">
       <button class="btn btn-ghost" id="btn-import" onclick="openImport(1)">⬆ 批量导入</button>
-      <button class="btn btn-primary" data-open="bank-form">＋ 新建题库</button>
+      <button class="btn btn-primary" onclick="openBankForm()">＋ 新建题库</button>
     </div>
   </div>
 
@@ -384,7 +380,7 @@
     <div class="tbl-card">
       <table>
         <thead>
-          <tr><th style="width:34%">题库</th><th>分类</th><th>题目数</th><th>状态</th><th style="text-align:right">操作</th></tr>
+          <tr><th style="width:34%">题库</th><th>分类</th><th>ID</th><th>状态</th><th style="text-align:right">操作</th></tr>
         </thead>
         <tbody id="bank-body"></tbody>
       </table>
@@ -485,12 +481,9 @@
         <div class="mf">
           <div class="mff full"><label>题库名称 *</label><input name="bank_name" placeholder="如：编程基础 · 进阶题库"></div>
           <div class="mff"><label>题库编码 *（唯一）</label><input name="bank_code" placeholder="如：PROG-L2"></div>
-          <div class="mff"><label>机构 ID *</label><input name="institution_id" type="number" placeholder="如：1"></div>
-          <div class="mff"><label>分类</label>
-            <select name="category"><option value="编程">编程</option><option value="数学">数学</option><option value="英语">英语</option><option value="算法">算法</option></select>
-          </div>
-          <div class="mff full"><label>简介</label><textarea name="description" placeholder="题库用途 / 适用人群…"></textarea></div>
-          <div class="mff full"><span class="req-chip">bank_code 冲突时返回 <code>40921</code>，保存按钮将提示「题库编码已存在」</span></div>
+          <div class="mff"><label>分类 ID *</label><input name="category_id" type="number" value="1" placeholder="如：1"></div>
+          <div class="mff"><label>机构 ID *</label><input name="institution_id" type="number" value="1" placeholder="如：1"></div>
+          <div class="mff full"><span class="req-chip">body 字段实测(institution_id, category_id, bank_code, bank_name)；分类按 ID 维表，无 ID 填 1</span></div>
         </div>
       </form>
       <div class="mfoot">
@@ -538,6 +531,38 @@
     </div>
   </div>
 
+  <!-- ============ 新建/编辑题目 Inline 表单 Dialog（SINGLE/MULTI/JUDGE，接 POST/PATCH） ============ -->
+  <div class="scrim" id="q-form">
+    <div class="modal">
+      <div class="mh"><h3 id="q-form-title">新建题目</h3><button class="m-close" data-close>&times;</button></div>
+      <form class="mb" id="q-form-fields" autocomplete="off">
+        <div class="mf">
+          <div class="mff"><label>题型 *</label>
+            <select id="qf-type" onchange="qfTypeChange()">
+              <option value="1">单选题</option><option value="2">多选题</option><option value="3">判断题</option>
+            </select>
+          </div>
+          <div class="mff" id="qf-code-wrap"><label>题号 *（唯一 per 题库）</label><input id="qf-code" placeholder="如：T107-Q001"></div>
+          <div class="mff full"><label>题干 stem *</label><textarea id="qf-stem" placeholder="请输入题干"></textarea></div>
+          <div class="mff full" id="qf-options-wrap">
+            <label>选项（单选/多选）</label>
+            <div id="qf-options-body"></div>
+            <div class="field-tip">填空/简答等其余题型本期只读展示，不在页内编辑。</div>
+          </div>
+          <div class="mff full"><label>答案 answer_text *</label>
+            <input id="qf-answer" placeholder="单选/判断填选项字母(如 A)；多选填连续字母(如 AB)">
+          </div>
+          <div class="mff full"><label>解析 analysis_text</label><textarea id="qf-analysis" placeholder="解析（可空）"></textarea></div>
+          <div class="mff full"><span class="req-chip" id="qf-bank-hint"></span></div>
+        </div>
+      </form>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-primary btn-mini" onclick="saveQuestion()">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 批量导入 Dialog（四步） ============ -->
   <div class="scrim" id="import-dialog">
     <div class="modal wide">
@@ -557,15 +582,9 @@
 
         <!-- Step 1 上传 -->
         <div class="imp-step" data-idx="1">
-          <div class="up-drop" id="up-drop" onclick="fakePick()">
-            <div class="big">📤</div>
-            拖拽 <code>.xlsx</code> / <code>.csv</code> 到此处，或点击选择文件
-            <div class="field-tip" style="margin-top:6px">前置校验：题干必填 · 答案必填 · 题型枚举（提问型/客观题）</div>
-          </div>
-          <div class="up-file hidden" id="up-file">
-            <div>📄</div>
-            <div><div class="nm" id="up-file-name">编程题库_v2.xlsx</div><div class="meta" id="up-file-meta">1,752 行 · 送往 /import-preview</div></div>
-          </div>
+          <p class="field-tip">请先在「题库」Tab 选中一个目标题库，再在此粘贴待导入题目数组（JSON，≤10 题），发往 <code>import-preview</code>。</p>
+          <p class="field-tip" id="imp-bank-hint" style="color:var(--primary)">当前未选中题库（先到题库 Tab 点「管理」）</p>
+          <textarea id="imp-json-input" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--ink)" placeholder='[{"question_code":"Q1","question_type_id":1,"stem":"题干","options_json":[{"label":"A","content":"甲"},{"label":"B","content":"乙"}],"answer_text":"A","analysis_text":"解析"}]'></textarea>
           <div class="mfoot" style="padding:14px 0 0;border-top:none">
             <button class="btn btn-ghost btn-mini" data-close>取消</button>
             <button class="btn btn-primary btn-mini" onclick="previewDone()">开始校验 →</button>
@@ -581,7 +600,7 @@
           </table></div>
           <div class="mfoot" style="padding:14px 0 0;border-top:none">
             <button class="btn btn-ghost btn-mini" onclick="impBack(1)">← 重传</button>
-            <button class="btn btn-primary btn-mini" onclick="startImport()">确认导入 1,752 行 →</button>
+            <button class="btn btn-primary btn-mini" id="import-confirm-btn" onclick="startImport()">确认导入 0 行 →</button>
           </div>
         </div>
 
@@ -976,6 +995,248 @@ renderBanks("success");
 <script>
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 真实接入：admin-questions 对接 /api/admin/questions（task107）=====
+ * 契约见页头注释（均已 curl 实测）。首期新建/编辑仅 SINGLE(1)/MULTI(2)/JUDGE(3)，其余题型只读展示。
+ * 无 token 静默降级：提示 admin 账号，不发任何请求。注入不重定义全局 $ / renderSides。 */
+(function(){
+  if(!window.EAPI) return;
+  var qs=function(id){ return document.getElementById(id); };
+  var esc=function(s){ var d=document.createElement("div"); d.textContent=(s==null?"":String(s)); return d.innerHTML; };
+  var PAGE_SIZE=10;
+  var state={ bankPage:1,qPage:1,curBank:null,typeMap:{},currentBanks:[],currentQuestions:[],qEditId:null,editOpts:null,importItems:null };
+
+  /* ---- token 闸门：无 token 提示 admin 账号，不发任何请求 ---- */
+  if(!EAPI.store.getToken()){
+    var sub=document.querySelector(".page-head .sub");
+    if(sub && sub.textContent.indexOf("admin 账号")<0) sub.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    qs("bank-body").innerHTML=""; qs("q-body").innerHTML="";
+    var bc=qs("bank-count"); if(bc) bc.textContent="0";
+    return;
+  }
+  /* 隐藏演示控制器（审核用，非产物） */
+  var demo=document.querySelector(".demo-ctrl"); if(demo) demo.style.display="none";
+
+  function toast(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){ d.remove(); },3000); }
+  function closeModals(){ document.querySelectorAll(".scrim.show").forEach(function(x){ x.classList.remove("show"); }); }
+  function setState3(n1,a1,n2,a2,n3,a3){ qs(n1).classList.toggle("hidden",!a1); qs(n2).classList.toggle("hidden",!a2); qs(n3).classList.toggle("hidden",!a3); }
+  function typeName(id){ var t=state.typeMap[id]; return t?t.type_name:("#"+id); }
+  function typeObj(id){ var t=state.typeMap[id]; return !!(t&&t.objective_flag); }
+
+  /* ---- 题型维表（GET types） —— 用于题型名/客观徽章/题型筛选 ---- */
+  function loadTypes(){
+    return EAPI.get("/api/admin/questions/types").then(function(d){
+      var items=(d&&d.items)||[], map={};
+      items.forEach(function(t){ map[t.id]=t; }); state.typeMap=map;
+      var sel=qs("f-q-type");
+      if(sel&&items.length){ sel.innerHTML='<option value="">全部题型</option>'+items.map(function(t){ return '<option value="'+t.id+'">'+esc(t.type_name)+'</option>'; }).join(""); }
+      return map;
+    }).catch(function(){ return state.typeMap; });
+  }
+
+  /* ---- 题库列表（GET banks） ---- */
+  function loadBanks(page){
+    page=page||1; state.bankPage=page;
+    var kw=(qs("f-bank-kw")?qs("f-bank-kw").value.trim():"");
+    var url="/api/admin/questions/banks?page="+page+"&page_size="+PAGE_SIZE;
+    if(kw) url+="&keyword="+encodeURIComponent(kw);
+    return EAPI.get(url).then(function(d){
+      var items=(d&&d.items)||[], total=(d&&d.total)||0;
+      state.currentBanks=items;
+      qs("bank-count").textContent=total;
+      if(!items.length){ qs("bank-body").innerHTML=""; setState3("bank-empty",true,"bank-error",false,"bank-pager",false); return; }
+      setState3("bank-empty",false,"bank-error",false,"bank-pager",true);
+      qs("bank-body").innerHTML=items.map(bankTr).join("");
+      qs("bank-pager").innerHTML=pagerHTML("bankPage",page,total);
+      qs("bank-pager").onclick=function(e){ var k=e.target.closest("button[data-bkpg]"); if(k) loadBanks(+k.getAttribute("data-bkpg")); };
+    }).catch(function(err){ qs("bank-err-msg").textContent=(err&&err.message)||"后端不可用"; setState3("bank-empty",false,"bank-error",true,"bank-pager",false); });
+  }
+  function bankTr(b){
+    var status=b.yn?'<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-mut"><span class="pd"></span>停用</span>';
+    return '<tr class="hov"><td><div class="prim-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div><div class="nm">'+esc(b.bank_name)+'</div><div class="cd">'+esc(b.bank_code)+' · institution#'+b.institution_id+'</div></div></div></td><td><span class="tag-chips">分类 #'+b.category_id+'</span></td><td class="nb">'+b.id+'</td><td>'+status+'</td><td class="cell-actions" style="justify-content:flex-end"><button class="btn btn-primary btn-mini" data-manage-bank="'+b.id+'">管理</button></td></tr>';
+  }
+  function findBank(id){ for(var i=0;i<state.currentBanks.length;i++){ if(state.currentBanks[i].id===id) return state.currentBanks[i]; } return null; }
+
+  /* ---- 题目列表（GET banks/{id}/questions），按题型/关键词过滤 ---- */
+  function selectBank(b){ state.curBank=b; state.qPage=1; var tip=qs("tab-q-bank"); if(tip){ tip.style.display="inline"; tip.textContent="· "+b.bank_name; } qs("q-cur-bank").textContent=b.bank_name+"（"+b.bank_code+"）"; switchTab("questions"); }
+  function switchTab(t){
+    document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x.getAttribute("data-tab")===t); });
+    qs("pane-banks").classList.toggle("hidden", t!=="banks");
+    qs("pane-questions").classList.toggle("hidden", t!=="questions");
+    if(t==="questions"&&state.curBank) loadQuestions(state.qPage);
+  }
+  function loadQuestions(page){
+    page=page||1; state.qPage=page;
+    if(!state.curBank){ qs("q-body").innerHTML=""; qs("q-count").textContent="0"; qs("q-pager").innerHTML=""; setState3("q-none",true,"q-empty",false,"q-error",false); return; }
+    var url="/api/admin/questions/banks/"+state.curBank.id+"/questions?page="+page+"&page_size="+PAGE_SIZE;
+    var tv=qs("f-q-type")?qs("f-q-type").value:""; if(tv) url+="&question_type_id="+tv;
+    var kwv=qs("f-q-kw")?qs("f-q-kw").value.trim():""; if(kwv) url+="&keyword="+encodeURIComponent(kwv);
+    return EAPI.get(url).then(function(d){
+      var items=(d&&d.items)||[], total=(d&&d.total)||0;
+      state.currentQuestions=items;
+      qs("q-count").textContent=total;
+      setState3("q-none",false,"q-empty",!items.length,"q-error",false);
+      qs("q-body").innerHTML=items.map(qTr).join("");
+      qs("q-pager").innerHTML=pagerHTML("qPage",page,total);
+      qs("q-pager").onclick=function(e){ var k=e.target.closest("button[data-qpg]"); if(k) loadQuestions(+k.getAttribute("data-qpg")); };
+    }).catch(function(){ setState3("q-none",false,"q-empty",false,"q-error",true); });
+  }
+  function qTr(q){
+    var obj=typeObj(q.question_type_id);
+    var objBadge=obj?'<span class="badge badge-obj"><span class="pd"></span>客观</span>':'<span class="badge badge-subj"><span class="pd"></span>主观</span>';
+    var status=q.yn?'<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-mut"><span class="pd"></span>停用</span>';
+    var editable=(q.question_type_id===1||q.question_type_id===2||q.question_type_id===3);
+    var op=editable?'<button class="btn btn-ghost btn-mini" data-edit-q="'+q.id+'">编辑</button>':'<span class="muted" title="其余题型本期只读展示">只读</span>';
+    return '<tr class="hov" data-qrow="'+q.id+'" style="cursor:pointer"><td class="nb">'+esc(q.question_code)+'</td><td>'+esc(typeName(q.question_type_id))+'</td><td><div class="stem-clamp">'+esc(q.stem)+'</div></td><td>'+objBadge+'</td><td>'+status+'</td><td class="cell-actions" style="justify-content:flex-end"><span class="muted" style="font-size:12px">详情</span>'+op+'</td></tr>';
+  }
+  function findQ(id){ for(var i=0;i<state.currentQuestions.length;i++){ if(state.currentQuestions[i].id===id) return state.currentQuestions[i]; } return null; }
+
+  /* ---- 行点击：题目行 → 详情页跳转 admin-question-detail.html?id= ---- */
+  qs("q-body").addEventListener("click", function(e){
+    var eb=e.target.closest("[data-edit-q]");
+    if(eb){ e.stopPropagation(); openQForm(+eb.getAttribute("data-edit-q")); return; }
+    var row=e.target.closest("[data-qrow]");
+    if(row) window.location.href="admin-question-detail.html?id="+row.getAttribute("data-qrow");
+  });
+  qs("bank-body").addEventListener("click", function(e){
+    var mb=e.target.closest("[data-manage-bank]");
+    if(mb){ var b=findBank(+mb.getAttribute("data-manage-bank")); if(b) selectBank(b); }
+  });
+
+  /* ---- 分页按钮 ---- */
+  function pagerHTML(bind,page,total){
+    var tp=Math.max(1,Math.ceil(total/PAGE_SIZE));
+    var attr=(bind==="qPage")?"data-qpg":"data-bkpg";
+    var h='<button '+attr+'="'+Math.max(1,page-1)+'"'+(page<=1?' disabled':'')+'>‹</button>';
+    for(var i=1;i<=tp;i++) h+='<button '+attr+'="'+i+'" class="'+(i===page?'cur':'')+'">'+i+'</button>';
+    h+='<button '+attr+'="'+Math.min(tp,page+1)+'"'+(page>=tp?' disabled':'')+'>›</button>';
+    return h;
+  }
+
+  /* ---- 新建题库（POST /banks） ---- */
+  window.openBankForm=function(){
+    qs("bank-form-title").textContent="新建题库";
+    var f=qs("bank-form-fields"); f.bank_name.value=""; f.bank_code.value=""; f.category_id.value="1"; f.institution_id.value="1";
+    qs("bank-form").classList.add("show");
+  };
+  window.saveBank=function(){
+    var f=qs("bank-form-fields");
+    var body={ institution_id:+f.institution_id.value||1, category_id:+f.category_id.value||1, bank_code:f.bank_code.value.trim(), bank_name:f.bank_name.value.trim() };
+    if(!body.bank_name||!body.bank_code){ toast("题库名称与编码必填"); return; }
+    closeModals();
+    EAPI.post("/api/admin/questions/banks", body).then(function(){ toast("题库已创建"); loadBanks(1); })
+      .catch(function(err){ toast("创建失败："+((err&&err.message)||"未知错误")); });
+  };
+
+  /* ---- 新建/编辑题目（POST/PATCH questions） ---- */
+  window.openQForm=function(id){
+    state.qEditId=id||null;
+    qs("q-form-title").textContent=id?"编辑题目":"新建题目";
+    qs("qf-code-wrap").style.display=id?"none":"block";
+    qs("qf-options-wrap").style.display="block";
+    qs("qf-stem").value=""; qs("qf-answer").value=""; qs("qf-analysis").value="";
+    state.editOpts=null;
+    if(id){ var q=findQ(id); if(q){ qs("qf-type").value=q.question_type_id; qs("qf-stem").value=q.stem||""; qs("qf-answer").value=q.answer_text||""; qs("qf-analysis").value=q.analysis_text||""; state.editOpts=q.options_json||null; } else { qs("qf-type").value="1"; } }
+    else { qs("qf-type").value="1"; }
+    qs("qf-bank-hint").textContent=state.curBank?("目标题库：#"+state.curBank.id+" "+state.curBank.bank_name):"未选中题库";
+    qfTypeChange();
+    qs("q-form").classList.add("show");
+  };
+  window.qfTypeChange=function(){
+    var t=+qs("qf-type").value;
+    qs("qf-options-wrap").style.display=(t===3)?"none":"block";
+    qs("qf-answer").placeholder=t===2?"填连续字母，如 AB":(t===3?"填 正确 / 错误":"填选项字母，如 A");
+    if(t!==3) renderQFOptions();
+  };
+  function renderQFOptions(){
+    var byLabel={}; (state.editOpts||[]).forEach(function(o){ byLabel[o.label]=o.content; });
+    var html="";
+    ["A","B","C","D"].forEach(function(l){ html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="font-weight:700;width:16px">'+l+'</span><input data-opt-label="'+l+'" style="flex:1;height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:0.8125rem" value="'+esc(byLabel[l]||"")+'"></div>'; });
+    qs("qf-options-body").innerHTML=html;
+  }
+  function collectQFOptions(){
+    var arr=[];
+    document.querySelectorAll("#qf-options-body input[data-opt-label]").forEach(function(inp){ var v=inp.value.trim(); if(v) arr.push({ label:inp.getAttribute("data-opt-label"), content:v }); });
+    return arr;
+  }
+  window.saveQuestion=function(){
+    if(!state.curBank){ toast("请先在题库 Tab 选中题库"); return; }
+    var t=+qs("qf-type").value, stem=qs("qf-stem").value.trim(), ans=qs("qf-answer").value.trim(), analysis=qs("qf-analysis").value.trim();
+    if(!stem){ toast("题干为必填"); return; }
+    if(!ans){ toast("答案为必填"); return; }
+    var options=null; if(t!==3){ options=collectQFOptions(); if(!options.length){ toast("请填写至少一项选项"); return; } }
+    var base={ question_type_id:t, stem:stem, options_json:options, answer_text:ans, analysis_text:analysis };
+    var p, editing=!!state.qEditId;
+    if(editing) p=EAPI.patch("/api/admin/questions/questions/"+state.qEditId, base);
+    else { var code=qs("qf-code").value.trim(); if(!code){ toast("题号必填"); return; } base.bank_id=state.curBank.id; base.question_code=code; p=EAPI.post("/api/admin/questions/questions", base); }
+    closeModals();
+    p.then(function(){ toast(editing?"题目已更新":"题目已创建"); state.qEditId=null; loadQuestions(state.qPage); })
+      .catch(function(err){ toast("保存失败："+((err&&err.message)||"未知错误")); });
+  };
+
+  /* ---- 批量导入：import-preview → import-execute ---- */
+  window.openImport=function(){ impShowBankHint(); qs("import-dialog").classList.add("show"); impStep(1); };
+  function impShowBankHint(){ var h=qs("imp-bank-hint"); if(h) h.textContent=state.curBank?("目标题库：#"+state.curBank.id+" "+state.curBank.bank_name):"当前未选中题库（先到题库 Tab 点「管理」）"; }
+  window.impStep=function(n){
+    document.querySelectorAll(".imp-step").forEach(function(x){ x.classList.toggle("hidden", Number(x.getAttribute("data-idx"))!==n); });
+    qs("imp-step-hint").textContent="Step "+n+"/4 · "+["上传文件","校验预览","导入进度","结果报告"][n-1];
+    document.querySelectorAll(".stp,.stp-conn").forEach(function(x){ var i=Number(x.getAttribute("data-step")||x.getAttribute("data-conn")||0); x.classList.toggle("done", !!i&&i<n); x.classList.toggle("cur", i===n); });
+  };
+  window.impBack=function(n){ impStep(n); };
+  window.previewDone=function(){
+    if(!state.curBank){ toast("请先选中目标题库（题库 Tab 点「管理」）"); return; }
+    var raw=qs("imp-json-input").value.trim(); if(!raw){ toast("请粘贴待导入题目数组 JSON"); return; }
+    var arr; try{ arr=JSON.parse(raw); }catch(e){ toast("JSON 解析失败："+e.message); return; }
+    if(!Array.isArray(arr)||!arr.length){ toast("需为非空数组"); return; }
+    if(arr.length>10){ toast("首期单次导入 ≤10 题"); return; }
+    EAPI.post("/api/admin/questions/import-preview?bank_id="+state.curBank.id, { items:arr }).then(function(d){
+      state.importItems=arr; renderPreview(d); impStep(2);
+    }).catch(function(err){ toast("校验失败："+((err&&err.message)||"")); });
+  };
+  function renderPreview(d){
+    d=d||state.importPreview||{total_rows:0,valid_rows:0,invalid_rows:0,rows:[]};
+    qs("pv-total").textContent=d.total_rows; qs("pv-valid").textContent=d.valid_rows; qs("pv-invalid").textContent=d.invalid_rows;
+    var arr=state.importItems||[];
+    qs("pv-body").innerHTML=(d.rows||[]).map(function(r){
+      var item=arr[r.row_index]||{}; var valid=!!r.valid;
+      var errs=(r.errors||[]).map(function(x){ return '<span class="err-pill">'+esc(x)+'</span>'; }).join("");
+      return '<tr class="'+(valid?'':'row-bad')+'"><td class="nb">#'+r.row_index+'</td><td class="nb">'+esc(r.question_code||"—")+'</td><td>'+(item.question_type_id!=null?esc(typeName(item.question_type_id)):"")+'</td><td class="stem-clamp">'+(item.stem?esc(item.stem):"<em>（空）</em>")+'</td><td>'+(valid?'<span class="ok-pill">✓ 有效</span>':errs)+'</td></tr>';
+    }).join("");
+    qs("import-confirm-btn").textContent="确认导入 "+d.valid_rows+" 行 →";
+  }
+  window.startImport=function(){
+    if(!state.curBank){ toast("请先选中题库"); return; }
+    if(!state.importItems){ toast("请先进行校验预览"); return; }
+    EAPI.post("/api/admin/questions/import-execute?bank_id="+state.curBank.id, { items:state.importItems }).then(function(d){
+      renderResult(d); if(state.curBank) loadQuestions(1); impStep(4);
+    }).catch(function(err){ toast("导入失败："+((err&&err.message)||"")); });
+  };
+  function renderResult(d){
+    d=d||{total:0,imported:0,skipped:0,failed:0,messages:[]};
+    qs("res-imp").textContent=d.imported; qs("res-skip").textContent=d.skipped; qs("res-fail").textContent=d.failed;
+    var msgs=(d.messages&&d.messages.length)?d.messages:["导入处理完成"];
+    qs("res-msgs").innerHTML=msgs.map(function(m){ var cls=m.indexOf("失败")>=0?"ms-fail":(m.indexOf("跳过")>=0?"ms-skip":"ms-ok"); return '<div class="'+cls+'">'+esc(m)+'</div>'; }).join("");
+  }
+
+  /* ---- 覆盖原演示渲染入口，使切页/重试走真实数据 ---- */
+  window.renderBanks=function(){ loadBanks(state.bankPage); };
+  window.renderQuestions=function(){ loadQuestions(state.qPage); };
+  window.switchTab=switchTab;
+  window.selectBank=selectBank;
+  window.resetBankFilter=function(){ qs("f-bank-kw").value=""; qs("f-bank-cat").value=""; loadBanks(1); };
+  window.resetQFilter=function(){ qs("f-q-kw").value=""; qs("f-q-type").value=""; loadQuestions(1); };
+
+  /* ---- 搜索/筛选触发 ---- */
+  var bkw=qs("f-bank-kw"); if(bkw) bkw.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); loadBanks(1); } });
+  var qkw=qs("f-q-kw"); if(qkw) qkw.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); loadQuestions(1); } });
+  var qtype=qs("f-q-type"); if(qtype) qtype.addEventListener("change", function(){ loadQuestions(1); });
+
+  /* ---- 初始化 ---- */
+  state.importPreview=null;
+  loadTypes().then(function(){ return loadBanks(1); });
+})();
 </script>
 </body>
 </html>
