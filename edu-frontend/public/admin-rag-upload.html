@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -411,6 +411,7 @@
         </div>
       </div>
       <div class="health-stat">
+        <div class="hs"><span class="k">集合数</span><span class="v" data-collection-count>—</span></div>
         <div class="hs"><span class="k">向量行数</span><span class="v" id="hRows">0</span></div>
         <div class="hs"><span class="k">分区数</span><span class="v" id="hParts">0</span></div>
         <div class="hs"><span class="k">最近上传</span><span class="v" id="hLast">—</span></div>
@@ -596,8 +597,28 @@ demo.upload('empty'); demo.task('empty'); demo.part('normal'); refreshHealth();
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;Promise.allSettled([EAPI.get("/api/knowledge/tasks?page=1&page_size=10"),EAPI.get("/api/admin/rag/collections")]).then(function(r){var tasks=r[0].status==="fulfilled"?r[0].value:null;if(tasks&&(tasks.items||tasks.tasks||Array.isArray(tasks))){var list=tasks.items||tasks.tasks||tasks;var body=document.querySelector("#taskTable tbody,#task-table tbody");if(body&&list.length){var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};body.innerHTML=list.map(function(x){return '<tr><td>'+esc(x.task_id||x.id)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.total_chunks||0)+'</td><td>'+esc(x.created_at||"")+'</td></tr>';}).join("");}}var cols=r[1].status==="fulfilled"?r[1].value:null;if(cols&&cols.items){var el=document.querySelector("[data-collection-count],[class*=row-count]");if(el&&cols.total!=null)el.textContent=cols.total;}}).catch(function(){});})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+var stBadge=function(st){var m={"pending":"待处理","running":"处理中","succeeded":"完成","failed":"失败"};return'<span class="badge '+(st==="succeeded"?"badge-ok":st==="failed"?"badge-err":"badge-warn")+'"><i class="pd"></i>'+esc(m[st]||st||"—")+'</span>'};
+var cnt=function(arr){return Array.isArray(arr)?arr.length:(arr==null?0:String(arr).split(",").filter(Boolean).length)};
+Promise.allSettled([EAPI.get("/api/knowledge/tasks?page=1&page_size=10"),EAPI.get("/api/admin/rag/collections")]).then(function(r){
+  var tasks=r[0].status==="fulfilled"?r[0].value:null;
+  var body=document.querySelector("#taskTable tbody,#task-table tbody");
+  if(body){
+    var list=tasks?(tasks.items||tasks.tasks||(Array.isArray(tasks)?tasks:null)):null;
+    if(list&&list.length){
+      body.innerHTML=list.map(function(x){var err=x.error||"—";var prog=(x.imported_chunks!=null&&x.total_chunks!=null)?(x.imported_chunks+" / "+x.total_chunks):(x.total_chunks!=null?String(x.total_chunks):"0");return '<tr><td>'+esc(x.task_id||"—")+'</td><td>'+esc(x.task_type||"—")+'</td><td>'+cnt(x.source_files)+'</td><td>'+esc(prog)+'</td><td>'+stBadge(x.status)+'</td><td class="hint">'+esc(err)+'</td><td class="c-meta">'+esc((x.created_at||"—").slice(0,19))+'</td><td style="text-align:right"><button class="btn-ghost btn btn-mini" onclick="alert(\'任务操作接线：/api/knowledge/tasks（task117）\')">操作</button></td></tr>'}).join("");
+    }else{body.innerHTML='<tr><td colspan="8" class="box-pad"><div class="ic">📭</div>暂无导入任务</td></tr>';}
+  }
+  var cols=r[1].status==="fulfilled"?r[1].value:null;
+  var total=null;
+  if(cols!=null){
+    if(Array.isArray(cols)){total=cols.length;}
+    else if(cols.total!=null){total=cols.total;}
+    else if(cols.items){total=Array.isArray(cols.items)?cols.items.length:0;}
+  }
+  if(total!=null){var el=document.querySelector("[data-collection-count]")||document.getElementById("hRows");if(el)el.textContent=total;}
+}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 知识库数据加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});})();
 </script>
 </body>
 </html>

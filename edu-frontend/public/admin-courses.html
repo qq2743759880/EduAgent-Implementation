@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -544,8 +544,14 @@ render("success");
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/courses/series?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var body=document.querySelector("tbody");if(!body)return;var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};var rows=items.map(function(s){return '<tr><td>'+esc(s.series_code||"")+'</td><td>'+esc(s.series_name||"")+'</td><td>'+esc(s.delivery_mode||"")+'</td><td>'+esc(s.sale_status||"")+'</td><td>¥'+Number(s.min_price||0).toFixed(2)+'</td></tr>';}).join("");body.innerHTML=rows;}).catch(function(){});})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var badge=function(st){if(st==="on_sale")return'<span class="badge badge-ok"><i class="pd"></i>在售</span>';if(st==="off_sale")return'<span class="badge badge-off"><i class="pd"></i>下架</span>';return'<span class="badge badge-warn"><i class="pd"></i>'+(st||"—")+'</span>';};
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+EAPI.get("/api/admin/courses/series?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];var body=document.querySelector("#tbl-body");if(!body)return;if(!items.length){body.innerHTML="";var se=document.getElementById("state-empty");if(se)se.classList.remove("hidden");var st=document.getElementById("state-total");if(st)st.textContent=0;return;}var row=function(s){return '<tr class="series-row"><td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div class="min"><div class="nm">'+esc(s.series_name||"—")+'</div><div class="cd">'+esc(s.series_code||"")+'</div></div></div></td><td>'+esc(s.delivery_mode||"—")+'</td><td>'+badge(s.sale_status)+'</td><td class="c-meta">'+esc((s.created_at||"").slice(0,10))+'</td><td><div class="cell-actions" style="justify-content:flex-end"><button class="dd-btn" onclick="alert(\'操作接线：PATCH /api/admin/courses/series/'+s.id+'（task117）\')">管理 ▾</button></div></td></tr>'};
+body.innerHTML=items.map(row).join("");
+var st=document.getElementById("state-total");if(st)st.textContent=items.length;
+document.getElementById("state-empty").classList.add("hidden");document.getElementById("state-error").classList.add("hidden");
+}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 系列加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});})();
 </script>
 </body>
 </html>

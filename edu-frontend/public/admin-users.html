@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -626,8 +626,14 @@ renderList();
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/users?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];if(!items.length)return;var body=document.querySelector("tbody");if(!body)return;var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};body.innerHTML=items.map(function(u){return '<tr><td>'+esc(u.account)+'</td><td>'+esc(u.nickname)+'</td><td>'+esc(u.role_code||u.role)+'</td><td>'+(u.yn===1?"启用":"停用")+'</td></tr>';}).join("");}).catch(function(){});})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+var roleBadge=function(r){return'<span class="chip">'+esc(r||"—")+'</span>'};
+var stBadge=function(st){return st===1?'<span class="badge badge-ok"><i class="pd"></i>启用</span>':'<span class="badge badge-off"><i class="pd"></i>停用</span>'};
+EAPI.get("/api/admin/users?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];var body=document.querySelector("tbody");if(!body)return;if(!items.length){body.innerHTML="";var se=document.querySelector(".state,.state-empty");if(se)se.classList.remove("hidden");return;}var row=function(u){return '<tr><td><b>'+esc(u.real_name||u.username||"—")+'</b>'+(u.username?'<div class="muted note-sm">'+esc(u.username)+' · UID '+esc(u.user_id||"")+'</div>':'')+'</td><td>'+esc(u.phone||"—")+'</td><td>'+roleBadge(u.role_code)+'</td><td>'+stBadge(u.status)+'</td><td class="c-meta">'+esc((u.created_at||"").slice(0,10))+'</td><td class="c-meta">'+esc((u.last_login_at||"—").slice(0,10))+'</td><td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button class="dd-btn" onclick="alert(\'操作接线：POST /api/admin/users/'+u.user_id+'/role · status（task117）\')">操作 ▾</button></div></td></tr>'};
+body.innerHTML=items.map(row).join("");
+var se=document.querySelector(".state,.state-empty");if(se)se.classList.add("hidden");
+}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 用户列表加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});})();
 </script>
 </body>
 </html>
