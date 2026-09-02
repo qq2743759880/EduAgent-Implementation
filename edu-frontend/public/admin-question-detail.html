@@ -764,7 +764,7 @@ function demoEmptyAnalysis(){
   renderPreviews();
   doSave(false);
 }
-function doBack(){ alertMsg("← 返回 /admin/questions 题库列表"); }
+function doBack(){ window.location.href = "admin-questions.html"; }
 function alertMsg(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){d.remove();},3000); }
 
 /* 初始化 */

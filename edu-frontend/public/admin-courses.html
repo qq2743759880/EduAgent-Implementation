@@ -480,7 +480,7 @@ function renderRows(){
             <button class="dd-btn" onclick="toggleDD(event,${s.id})">管理 <span>▾</span></button>
             <div class="dd-menu">
               <button class="dd-item" onclick="openEdit(${s.id})"><span class="ic">✎</span>编辑</button>
-              <a class="dd-item" href="/admin/courses/${s.id}"><span class="ic">🧩</span>班次</a>
+              <a class="dd-item" href="admin-course-detail.html?id=${s.id}"><span class="ic">🧩</span>班次</a>
               ${s.st==="off_sale" ? `<button class="dd-item" onclick="doOnSale(${s.id})"><span class="ic">▲</span>上架</button>`
                                   : `<button class="dd-item" onclick="openOff(${s.id})"><span class="ic">▼</span>下架</button>`}
               <button class="dd-item danger" onclick="openDel(${s.id})"><span class="ic">🗑</span>删除</button>
