@@ -114,6 +114,7 @@ SESSION_NO_CONFLICT = "40904"      # 课次编号重复（module_id + session_no
 ASSET_CODE_CONFLICT = "40905"      # 资源编码重复（session_id + asset_code）
 VIDEO_CODE_CONFLICT = "40906"      # 视频编码重复（asset_id + video_code）
 CHAPTER_NO_CONFLICT = "40907"      # 章节号重复（video_id + chapter_no）
+SERIES_IN_USE = "40908"          # 系列被班次/订单引用，禁止真删（hard delete 前置校验）
 
 # ═══════════════════════════════════════════
 # 题库域（question_admin）— 40921~40929 唯一约束冲突（task13 新段）

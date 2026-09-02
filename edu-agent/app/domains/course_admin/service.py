@@ -22,6 +22,7 @@ from app.common.error_codes import (
     MODULE_STAGE_CONFLICT,
     SESSION_NO_CONFLICT,
     SERIES_CODE_CONFLICT,
+    SERIES_IN_USE,
     VIDEO_CODE_CONFLICT,
 )
 from app.common.exceptions import AppException, ConflictError, NotFoundError
@@ -121,12 +122,34 @@ async def update_series(series_id: int, data: SeriesUpdateAdmin) -> SeriesRespon
     return SeriesResponseAdmin(**_parse_json_columns(dict(updated)))
 
 
-async def delete_series(series_id: int) -> None:
-    """软删系列：sale_status = 'off_sale'（表无 yn 列）。"""
+async def delete_series(series_id: int, hard: bool = False) -> None:
+    """删除系列。
+
+    - hard=False（默认）：软删下架 → sale_status='off_sale'。series 表无 yn 列，
+      下架语义由 sale_status 状态机表达（与前端「下架」文案一致，消除假删除缺陷）。
+    - hard=True：仅由路由层在 ADMIN 角色下放行；先做外键引用校验，
+      若存在活动班次或订单引用则抛 409（SERIES_IN_USE），绝不静默；
+      仅当零引用时物理删除整行。
+    """
     row = await _series_repo.get_by_id(series_id)
     if not row:
         raise NotFoundError("系列", str(series_id))
-    await _series_repo.off_sale(series_id)
+    if hard:
+        refs = await _series_repo.count_references(series_id)
+        if refs["total"] > 0:
+            raise ConflictError(
+                f"系列仍被 {refs['cohorts']} 个班次（含已下架）、{refs['orders']} 笔订单引用，无法彻底删除",
+                code=SERIES_IN_USE,
+            )
+        try:
+            await _series_repo.physical_delete(series_id)
+        except Exception as e:  # 兜底：分类关联/收藏等其它残留外键导致删除失败，绝不静默为 500
+            raise ConflictError(
+                f"系列仍存在其它关联记录，无法彻底删除：{e}",
+                code=SERIES_IN_USE,
+            )
+    else:
+        await _series_repo.off_sale(series_id)
     await invalidate(f"course:series:detail:{series_id}")
 
 
@@ -134,11 +157,13 @@ async def list_series_admin(
     *, keyword: Optional[str] = None, institution_id: Optional[int] = None,
     delivery_mode: Optional[str] = None, sale_status: Optional[str] = None,
     sort: str = "default", page: int = 1, page_size: int = 20,
+    include_deleted: bool = False,
 ) -> dict:
     rows, total = await _series_repo.list_series(
         keyword=keyword, institution_id=institution_id,
         delivery_mode=delivery_mode, sale_status=sale_status,
         sort=sort, page=page, page_size=page_size,
+        include_deleted=include_deleted,
     )
     items = [SeriesResponseAdmin(**_parse_json_columns(dict(r))) for r in rows]
     return {"items": items, "page_meta": _build_page_meta(page, page_size, total)}
