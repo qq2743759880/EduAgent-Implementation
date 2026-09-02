@@ -18,6 +18,7 @@
   - 前端校验拦截（上传阶段，本地即时，非后端返回）：扩展名白名单 + 单文件≤200MB + ≤50 文件
   - 演示用示例行仅作 UI 形态展示；各端点未注册 → 缺口头条声明 + 字段结构预览（snake_case），不 MOCK 假数据
   AUDIT LOG:
+    [2026-09-02 task61] 真实上传接入：补 <input type="file" multiple accept=".md,.txt,.markdown,.pdf,.docx">；逐文件 FormData POST /api/knowledge/admin/upload（原生 XHR 带进度，EAPI 不支持 FormData）；GET /api/knowledge/tasks 5s 轮询（document.hidden 暂停）；分区 GET/DELETE /api/knowledge/partitions（_default 禁删 + confirm 二次确认 + 失败行内可见）。上传/轮询/分区逻辑全部挂入 window.bootAdmin 内（task109 守卫通过后调用），未破坏守卫结构；移除 demo-ctrl 与 5 个演示按钮。task106 列对齐 + data-collection-count 保留。实测：md/docx→succeeded(total_chunks>0)，pdf→failed(后端缺 pdfplumber)，.exe 被后端 400 拒绝。
     [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-24 v1 R1] 初稿提交（Tabs[集合|上传|调参|审计日志|高级检索] + UploadPanel 拖拽/多选/白名单/200MB/50文件/校验拦截 + onUploadProgress 进度条
       + TaskTable(5s轮询 pending→running→done/failed + chunks 进度 + 错误明细 + 重试) + PartitionPanel(_default 禁删) + CollectionHealthCard(上传完成 invalidate refetch 行数闭环)
@@ -35,13 +36,6 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
   .wrap{max-width:1180px;margin:0 auto;padding:30px 22px 120px}
-  /* 演示控制器 */
-  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:90;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
-  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
-  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
-  .demo-ctrl .row{display:flex;gap:5px;flex-wrap:wrap;max-width:250px}
-  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
-  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
   /* top shell strip（管理端导航，RAG 控制台高亮） */
   .shell{background:var(--ht-fff);border-bottom:1px solid var(--line)}
   .shell-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:12px 22px}
@@ -313,18 +307,15 @@
       <div class="sub">知识库多文件上传 / 导入任务轮询 / 分区管理 / 集合健康闭环（FR-RAG-02）</div>
     </div>
     <div class="act">
-      <span class="chip">契约⑥（task36）<b>未冻结</b></span>
+      <span class="chip">契约⑥（task36）<b>已冻结 ✅</b></span>
       <span class="chip">端点 <b>4</b></span>
       <span class="chip">上传配额 50 文件 / 200MB 个</span>
     </div>
   </div>
 
-  <!-- 契约缺口声明：契约⑥未冻结，端点未接线 → 与 task60 learning 同模式：真实请求 + 缺口头条 + 不写 MOCK -->
-  <div class="gap-note">⚠ 契约缺口（如实披露）：契约⑥（task36 RAG 上传后端）<b>未冻结</b>。本页依赖的
-    <code>POST /api/knowledge/admin/upload</code>、<code>GET /api/knowledge/tasks</code>、
-    <code>GET /api/knowledge/status/{task_id}</code>、<code>GET/DELETE /api/knowledge/partitions</code>
-    后端当前<b>未接线</b>。React 实现将照常发起这些请求；收到 404 → 列表/上传触发失败态，并展示本文档定义的字段结构预览（snake_case）。
-    下方演示行（任务/分区/集合）<b>仅作 UI 形态展示，不写 MOCK 假数据进真实列表</b>；待 task36 落库后自动渲染真实数据。</div>
+  <!-- 真实接入说明（task61：契约⑥已冻结并接真实后端） -->
+  <div class="gap-note">✅ 已接入真实知识库上传闭环（契约⑥）：选择/拖入文件 → 前端预校验（扩展名白名单、≤200MB、≤50 个）→ 逐文件 <code>POST /api/knowledge/admin/upload</code> →
+    <code>GET /api/knowledge/tasks</code> 5s 轮询跟踪 pending→running→succeeded/failed；分区走 <code>GET/DELETE /api/knowledge/partitions</code>。PDF 解析依赖后端 pdfplumber 依赖。</div>
 
   <!-- RAG 控制台 Tabs：新增「上传」Tab -->
   <div class="tabs">
@@ -349,10 +340,8 @@
       <div class="tip">支持多选；前端校验：扩展名白名单 + 单文件 ≤200MB + 总数 ≤50</div>
       <span class="allow"><code>.md</code><code>.txt</code><code>.markdown</code><code>.pdf</code><code>.docx</code></span>
     </label>
-    <div class="pick-row">
-      <button class="btn-ghost btn btn-mini" onclick="demo.upload('picked')">模拟选入 3 个合法文件</button>
-      <button class="btn-ghost btn btn-mini" onclick="demo.upload('pickedBad')">模拟选入 1 个非法（.exe / 超大）</button>
-    </div>
+    <input type="file" id="file-input" multiple accept=".md,.txt,.markdown,.pdf,.docx" style="display:none">
+    <div class="pick-row"><span class="muted note-sm">最多 50 个文件 · 单文件 ≤200MB · 本地即时校验拦截</span></div>
 
     <!-- 文件列表：名称 | 大小 | 校验状态 | 移除 -->
     <div class="file-list" id="fileList"></div>
@@ -365,14 +354,14 @@
     </div>
 
     <div class="pick-row">
-      <button class="btn-primary btn" id="upBtn" onclick="demo.upload('start')">开始上传</button>
+      <button class="btn-primary btn" id="upBtn">开始上传</button>
     </div>
   </div>
 
   <!-- ② 任务列表 TaskTable（5s 轮询） -->
   <div class="tbl-card" id="taskCard">
     <div class="card-h pad-h">
-      <h3>导入任务 <span class="poll" id="taskPoll"><span class="dot"></span>5s 轮询 refetchInterval=5000 · 终态停</span></h3>
+      <h3>导入任务 <span class="poll" id="taskPoll"><span class="dot"></span>5s 轮询 · 页面隐藏时暂停</span></h3>
       <span class="hint">GET /api/knowledge/tasks · 分页倒序（newest first）</span>
     </div>
     <table id="taskTable">
@@ -382,7 +371,7 @@
         </tr>
       </thead>
       <tbody id="taskBody">
-        <tr><td colspan="8" class="box-pad"><div class="ic">⏳</div>加载任务中…（GET /api/knowledge/tasks 未接线 → 契约缺口置空态）</td></tr>
+        <tr><td colspan="8" class="box-pad"><div class="ic">⏳</div>加载任务中…（GET /api/knowledge/tasks）</td></tr>
       </tbody>
     </table>
     <div class="tbl-foot">
@@ -426,172 +415,18 @@
         <h3>分区管理</h3>
         <span class="hint">GET/DELETE /api/knowledge/partitions</span>
       </div>
-      <div class="box-pad part-empty" id="partEmpty">分区加载中…（端点未接线 → 契约缺口置空态）</div>
+      <div class="box-pad part-empty" id="partEmpty">分区加载中…（GET /api/knowledge/partitions）</div>
       <div id="partList"></div>
       <div class="dlg-hint" id="defaultHint" style="display:none">🔒 公共分区 _default 不可删除：前端禁用删除按钮 + 后端拒绝兜底。删除其他分区将清空其向量/分块.</div>
     </div>
   </div>
 
-  <div class="foot-note">HTML 审核稿 · candy-playful（P18 FROZEN）· 契约⑥未冻结 · 演示行仅形态展示，真实数据待 task36 落库</div>
-</div>
-
-<!-- 演示控制器 -->
-<div class="demo-ctrl" id="demo-ctrl">
-  <b>演示控制器</b>
-  <div class="grp">上传 UploadPanel</div>
-  <div class="row" id="gUpload"></div>
-  <div class="grp">任务 TaskTable</div>
-  <div class="row" id="gTask"></div>
-  <div class="grp">分区 Partition</div>
-  <div class="row" id="gPart"></div>
-  <div class="grp">集合 Health</div>
-  <div class="row" id="gHealth"></div>
+  <div class="foot-note">HTML 审核稿 · candy-playful（P18 FROZEN）· 契约⑥已冻结 ✅ · 已接入真实上传/轮询/分区</div>
 </div>
 </div><!-- /.glayout -->
 
-<script>
-/* ============ 演示控制器（仅 ui 形态；真实数据待契约⑥落库，不 MOCK 进真实列表） ============ */
-var STATE = { upload:'empty', task:'empty', part:'normal', health:100, rows:0, total:0 };
 
-var demo = {
-  upload: function(mode){
-    if(mode==='empty'){ STATE.upload='empty'; fillFiles([]); hideProg(); setBtn('开始上传', true, '开始上传'); }
-    else if(mode==='picked'){ STATE.upload='picked'; demoUpPicked(); setBtn('开始上传 →', true, '开始上传'); }
-    else if(mode==='pickedBad'){ STATE.upload='pickedBad'; demoUpBad(); setBtn('开始上传', true, '开始上传'); }
-    else if(mode==='start'){
-      STATE.upload='uploading';
-      setBtn('转知识任务中…', false);
-      var n = document.querySelectorAll('#fileList .file-row').length || 0;
-      animateProg(n, 0);
-    }
-    else if(mode==='done'){ STATE.upload='done'; doneUpload(); }
-  },
-  task: function(mode){
-    STATE.task = mode; STATE.total = mode==='empty'?0:3;
-    document.getElementById('taskTotal').textContent = STATE.total;
-    fillTasks(mode);
-    setGrp('gTask', ['empty','pending','running','done','failed'], mode);
-  },
-  part: function(mode){ STATE.part=mode; fillParts(mode); setGrp('gPart',['normal','empty'],mode); },
-  health: function(r){ STATE.rows = r; refreshHealth(); }
-};
 
-function setBtn(label, okHint, idLabel){
-  var b = document.getElementById('upBtn');
-  b.textContent = label; b.disabled = !okHint;
-}
-function setGrp(gid, opts, cur){
-  var g = document.getElementById(gid); g.innerHTML='';
-  opts.forEach(function(o){
-    var c = document.createElement('button');
-    c.textContent = o; c.className = o===cur?'on':''; c.onclick = function(){ demo[gid==='gTask'?'task':(gid==='gPart'?'part':'upload')](o); };
-    g.appendChild(c);
-  });
-}
-
-/* ---- upload ---- */
-var FILES;
-function demoUpPicked(){ FILES=[{n:'课程大纲.md',s:'1.2MB',fx:'MD',c:'--',ok:true,cls:''},{n:'AI 入门导论.pdf',s:'184MB',fx:'PDF',c:'--',ok:true,cls:''},{n:'prompt_规范.txt',s:'86KB',fx:'TXT',c:'--',ok:true,cls:''}]; fillFiles(FILES); }
-function demoUpBad(){ FILES=[{n:'install.exe',s:'2.4MB',fx:'exe',c:'非法扩展名（白名单外）',ok:false,cls:'brushout'},{n:'巨型数据集_220MB.docx',s:'220MB',fx:'docx',c:'超过单文件 200MB 上限',ok:false,cls:'brushout'},{n:'课程大纲.md',s:'1.2MB',fx:'MD',c:'通过',ok:true,cls:''}]; fillFiles(FILES); }
-
-function fillFiles(list){
-  var el = document.getElementById('fileList');
-  if(!list || !list.length){ el.innerHTML='<div class="muted file-note">尚未选择文件 — 最多 50 个，前端即时校验拦截</div>'; return; }
-  el.innerHTML = list.map(function(f,i){
-    var fxc = ({MD:'fx-md',PDF:'fx-pdf',TXT:'fx-txt',docx:'fx-docx'}[f.fx]) || 'fx-other';
-    var st = '<span class="st '+(f.ok?'v-ok':'v-bad')+'">'+(f.c==='--'?'<span class="dot-ok">●</span>&nbsp;状态待校验':(f.ok?'✓ '+f.c:'✕ '+f.c))+'</span>';
-    return '<div class="file-row '+(f.cls||'')+'"><span class="fx '+fxc+'">'+f.fx+'</span>'+
-      '<span class="nm">'+f.n+'</span><span class="sz">'+f.s+'</span>'+st+
-      '<button class="rm" onclick="demo.upload(\'empty\')">×</button></div>';
-  }).join('');
-}
-
-function animateProg(n, p){
-  var fill=document.getElementById('upFill'), meta=document.getElementById('upMeta'), note=document.getElementById('upNote'), prog=document.getElementById('upProg');
-  prog.classList.add('show');
-  if(p>=100){
-    fill.style.width='100%'; meta.innerHTML='<b>'+n+'/'+n+'</b> · 上传完成，已创建导入任务';
-    note.textContent='✅ 进入下方任务列表 → 上传完成 invalidate ["rag","collection"] 行数刷新';
-    setTimeout(function(){ STATE.upload='done'; refreshHealth(); }, 600);
-    return;
-  }
-  fill.style.width = p + '%';
-  var done = Math.round(n * p/100);
-  if(done>n)done=n;
-  meta.innerHTML='<b>'+done+'/'+n+'</b> · 转知识任务中…';
-  note.textContent='axios onUploadProgress → 进度条实时刷新';
-  setTimeout(function(){ animateProg(n, Math.min(100, p + (22 + Math.random()*18))); }, 420);
-}
-function doneUpload(){
-  setBtn('重新选择', true, '开始上传');
-  hideProg();
-  STATE.task='pending'; STATE.total=3; document.getElementById('taskTotal').textContent='3';
-  fillTasks('pending'); setGrp('gTask',['empty','pending','running','done','failed'],'pending');
-  refreshHealth();
-}
-function hideProg(){ document.getElementById('upProg').classList.remove('show'); }
-
-/* ---- task table ---- */
-function fillTasks(mode){
-  var rows={
-    empty:[],
-    pending:[{id:'T-883',typ:'文档',n:2,chunks:'0/160',pct:0,st:statusBadge('pending'),stk:'pending',err:'',t:'08-16 15:02',errCls:''}],
-    running:[{id:'T-884',typ:'文档',n:3,chunks:'120/300',pct:40,st:statusBadge('running'),stk:'running',err:'',t:'08-16 14:58',errCls:''},{id:'T-883',typ:'文档',n:2,chunks:'80/160',pct:50,st:statusBadge('running'),stk:'running',err:'',t:'08-16 15:02',errCls:''}],
-    done:[{id:'T-882',typ:'文档',n:3,chunks:'300/300',pct:100,st:statusBadge('done'),stk:'done',err:'',t:'08-16 13:40',errCls:''},{id:'T-881',typ:'PDF',n:1,chunks:'80/80',pct:100,st:statusBadge('done'),stk:'done',err:'',t:'08-16 13:05',errCls:''}],
-    failed:[{id:'T-880',typ:'docx',n:2,chunks:'45/200',pct:22,st:statusBadge('failed'),stk:'failed',err:'err-note',t:'08-16 12:10',errCls:'err-note'}]
-  }[mode];
-  var body=document.getElementById('taskBody'); var poll=document.getElementById('taskPoll');
-  if(mode==='empty'){ body.innerHTML='<tr><td colspan="8" class="box-pad"><div class="ic">🗃️</div>暂无导入任务</td></tr>'; }
-  else if(mode==='running'){ poll.style.display='inline-flex'; body.innerHTML=rows.map(function(r){ return row(r); }).join(''); poll.setAttribute('data-on','1'); }
-  else{
-    // done/failed/pending → 轮询件显示但非运行态
-    body.innerHTML=rows.map(function(r){ return row(r); }).join('');
-  }
-  function statusBadge(k){ return '<span class="badge b-'+k+'"><span class="pd"></span>'+({pending:'排队',running:'运行中',done:'完成',failed:'失败'}[k])+'</span>'; }
-  function row(r){
-    var chunk = r.stk==='failed'
-      ? '<div class="err-note"><span>🗙</span><code>chunk 校验失败 · 源文件 208/300 处格式损坏</code></div>'
-      : '<div class="chunks"><div class="lbl"><span>'+r.chunks+' 分块</span><span>'+(r.pct===100?'':r.pct+'%')+'</span></div><div class="p-mini"><i style="width:'+r.pct+'%"></i></div></div>';
-    var action = r.stk==='failed'
-      ? '<button class="link-btn" onclick="demo.task(\'running\')">↻ 重试</button>'
-      : (r.stk==='running' ? '<button class="link-btn" disabled>轮询中</button>' : '<span class="muted note-sm">—</span>');
-    return '<tr><td class="nb">'+r.id+'</td><td>'+r.typ+'</td><td>'+r.n+'</td><td>'+chunk+'</td><td>'+r.st+'</td><td>'+(r.errCls?errCell(r):'<span class="muted">—</span>')+'</td><td class="nb">'+r.t+'</td><td><div class="cell-actions">'+action+'</div></td></tr>';
-    function errCell(){ return '<span class="nb err-i">详见下</span>'; }
-  }
-}
-
-/* ---- partitions ---- */
-function fillParts(mode){
-  var list=document.getElementById('partList'), empty=document.getElementById('partEmpty'), hint=document.getElementById('defaultHint');
-  if(mode==='empty'){ list.innerHTML=''; empty.style.display='block'; empty.innerHTML='<div class="ic">🗃️</div>暂无分区'; hint.style.display='none'; return; }
-  empty.style.display='none';
-  var parts=[{name:'_default',meta:'公共分区 · 4,216 行',def:true},{name:'2026春季班',meta:'2,510 行 · 1 天前',def:false},{name:'公开问答库',meta:'1,204 行 · 3 天前',def:false}];
-  list.innerHTML=parts.map(function(p){
-    var d = p.def
-      ? '<span class="default-tag">🔒 公共分区 · 不可删除</span>'
-      : '<button class="btn-danger btn-mini btn" onclick="alert(\'确认删除分区 "'+p.name+'"，将清空其向量/分块？\')">删除</button>';
-    return '<div class="part-row"><span class="pn">'+p.name+'</span><span class="pmeta">'+p.meta+'</span><div class="act">'+d+'</div></div>';
-  }).join('');
-  hint.style.display='flex';
-}
-
-/* ---- collection health ---- */
-function refreshHealth(){
-  var rows=STATE.rows;
-  document.getElementById('hRows').textContent = rows.toLocaleString();
-  document.getElementById('hLast').textContent = rows>0 ? ('08-16 15:02 (T-884)') : '—';
-  var ring=document.getElementById('hringFg');
-  var pct = STATE.health; ring.setAttribute('stroke-dashoffset', 163.4*(1-pct/100));
-  document.getElementById('hRingN').textContent = pct+'%';
-}
-
-/* ---- init ---- */
-setGrp('gUpload',['empty','picked','pickedBad','start','done'],'empty');
-setGrp('gTask',['empty','pending','running','done','failed'],'empty');
-setGrp('gPart',['normal','empty'],'normal');
-(function(){ var g=document.getElementById('gHealth'); var opts=['0','1840','4216']; opts.forEach(function(o){ var c=document.createElement('button'); c.textContent=o; c.className=(o==='1840')?'':'on'; c.onclick=function(){ demo.health(+o); setGrp('gHealth',opts,o); }; g.appendChild(c); }); })();
-demo.upload('empty'); demo.task('empty'); demo.part('normal'); refreshHealth();
-</script>
 <script>
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
@@ -622,29 +457,248 @@ demo.upload('empty'); demo.task('empty'); demo.part('normal'); refreshHealth();
 })();
 </script>
 <script>
-window.bootAdmin=function(){
-if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
-var stBadge=function(st){var m={"pending":"待处理","running":"处理中","succeeded":"完成","failed":"失败"};return'<span class="badge '+(st==="succeeded"?"badge-ok":st==="failed"?"badge-err":"badge-warn")+'"><i class="pd"></i>'+esc(m[st]||st||"—")+'</span>'};
-var cnt=function(arr){return Array.isArray(arr)?arr.length:(arr==null?0:String(arr).split(",").filter(Boolean).length)};
-Promise.allSettled([EAPI.get("/api/knowledge/tasks?page=1&page_size=10"),EAPI.get("/api/admin/rag/collections")]).then(function(r){
-  var tasks=r[0].status==="fulfilled"?r[0].value:null;
-  var body=document.querySelector("#taskTable tbody,#task-table tbody");
-  if(body){
-    var list=tasks?(tasks.items||tasks.tasks||(Array.isArray(tasks)?tasks:null)):null;
-    if(list&&list.length){
-      body.innerHTML=list.map(function(x){var err=x.error||"—";var prog=(x.imported_chunks!=null&&x.total_chunks!=null)?(x.imported_chunks+" / "+x.total_chunks):(x.total_chunks!=null?String(x.total_chunks):"0");return '<tr><td>'+esc(x.task_id||"—")+'</td><td>'+esc(x.task_type||"—")+'</td><td>'+cnt(x.source_files)+'</td><td>'+esc(prog)+'</td><td>'+stBadge(x.status)+'</td><td class="hint">'+esc(err)+'</td><td class="c-meta">'+esc((x.created_at||"—").slice(0,19))+'</td><td style="text-align:right"><button class="btn-ghost btn btn-mini" onclick="alert(\'任务操作接线：/api/knowledge/tasks（task117）\')">操作</button></td></tr>'}).join("");
-    }else{body.innerHTML='<tr><td colspan="8" class="box-pad"><div class="ic">📭</div>暂无导入任务</td></tr>';}
+window.bootAdmin = function () {
+  if (window.__ragBooted) return;            // 防重复（守卫 runBoot 轮询式重入）
+  window.__ragBooted = true;
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) return;        // 守卫已保证有 token，双保险
+
+  var esc = function (t) { var x = document.createElement("div"); x.textContent = (t == null ? "" : t); return x.innerHTML; };
+  var $ = function (id) { return document.getElementById(id); };   // 页面内局部别名，不污染全局
+  var VALID_EXT = { md: 1, txt: 1, markdown: 1, pdf: 1, docx: 1 };
+  var EXT_META = { md: ["MD", "fx-md"], markdown: ["MD", "fx-md"], txt: ["TXT", "fx-txt"], pdf: ["PDF", "fx-pdf"], docx: ["DOCX", "fx-docx"] };
+  var MAX_SIZE = 200 * 1024 * 1024;          // 单文件 ≤200MB（契约⑥）
+  var MAX_FILES = 50;                        // ≤50 个（admin/upload 上限，契约⑥）
+
+  var files = [];                            // 已选区：{file, reason}
+  var pollTimer = null, partErrEl = null;
+
+  function extOf(name) { var i = String(name || "").lastIndexOf("."); return i >= 0 ? String(name).slice(i + 1).toLowerCase() : ""; }
+  function sizeTxt(b) {
+    if (b == null) return "—";
+    if (b >= 1024 * 1024 * 1024) return (b / (1024 * 1024 * 1024)).toFixed(2) + "GB";
+    if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + "MB";
+    if (b >= 1024) return (b / 1024).toFixed(1) + "KB";
+    return b + "B";
   }
-  var cols=r[1].status==="fulfilled"?r[1].value:null;
-  var total=null;
-  if(cols!=null){
-    if(Array.isArray(cols)){total=cols.length;}
-    else if(cols.total!=null){total=cols.total;}
-    else if(cols.items){total=Array.isArray(cols.items)?cols.items.length:0;}
+  function validateFile(f) {
+    if (!VALID_EXT[extOf(f.name)]) return "非法扩展名（仅 .md/.txt/.markdown/.pdf/.docx）";
+    if (f.size > MAX_SIZE) return "超过单文件 200MB 上限";
+    if (f.size <= 0) return "文件为空";
+    return "";
   }
-  if(total!=null){var el=document.querySelector("[data-collection-count]")||document.getElementById("hRows");if(el)el.textContent=total;}
-}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 知识库数据加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});};
+  var taskTypeName = function (t) { return { system_init: "系统导入", user_upload: "用户上传" }[t] || t || "—"; };
+
+  /* ================= ① 上传区：真实文件选择 + 前端预校验 ================= */
+  var fileInput = $("file-input"), fileListEl = $("fileList");
+  var upBtn = $("upBtn"), upProg = $("upProg"), upFill = $("upFill"), upMeta = $("upMeta"), upNote = $("upNote");
+  var drop = $("drop");
+
+  function renderFiles() {
+    if (!fileListEl) return;
+    if (!files.length) { fileListEl.innerHTML = '<div class="muted file-note">尚未选择文件 — 最多 50 个，前端即时校验拦截</div>'; return; }
+    fileListEl.innerHTML = files.map(function (it, i) {
+      var m = EXT_META[extOf(it.file.name)] || ["?", "fx-other"];
+      var st = it.reason
+        ? '<span class="st v-bad">✕ ' + esc(it.reason) + '</span>'
+        : '<span class="st v-ok">✓ 通过</span>';
+      return '<div class="file-row' + (it.reason ? " brushout" : "") + '"><span class="fx ' + m[1] + '">' + m[0] + '</span>' +
+        '<span class="nm">' + esc(it.file.name) + '</span><span class="sz">' + sizeTxt(it.file.size) + '</span>' + st +
+        '<button class="rm" type="button" data-rm="' + i + '">×</button></div>';
+    }).join("");
+    var rs = fileListEl.querySelectorAll("[data-rm]");
+    for (var k = 0; k < rs.length; k++) (function (idx) {
+      rs[k].onclick = function () { files.splice(idx, 1); renderFiles(); updateStartBtn(); };
+    })(k);
+  }
+  function updateStartBtn() {
+    if (!upBtn) return;
+    var good = files.filter(function (f) { return !f.reason; }).length;
+    upBtn.disabled = good < 1;
+    upBtn.textContent = good ? ("开始上传（" + good + " 个合法文件）") : "开始上传";
+  }
+  function showUploadNote(msg, isErr) {
+    if (!upNote) return;
+    upNote.textContent = (isErr ? "✕ " : "") + msg;
+    upNote.style.color = isErr ? "#c2263f" : "";
+  }
+  function addFiles(incoming) {                 // input 与拖拽共用
+    var before = files.length;
+    for (var i = 0; i < incoming.length; i++) {
+      if (files.length >= MAX_FILES) break;
+      files.push({ file: incoming[i], reason: validateFile(incoming[i]) });
+    }
+    if (files.length - before !== incoming.length) showUploadNote("超过 50 个文件上限，超出部分已忽略");
+    renderFiles(); updateStartBtn();
+  }
+  if (fileInput) {
+    fileInput.onchange = function () {
+      addFiles(Array.prototype.slice.call(fileInput.files || []));
+      fileInput.value = "";                     // 允许重复选中同一文件
+    };
+  }
+  if (drop) {
+    function dz(e) { if (e) e.preventDefault(); }
+    drop.addEventListener("dragover", function (e) { dz(e); drop.classList.add("hover"); });
+    drop.addEventListener("dragleave", function () { drop.classList.remove("hover"); });
+    drop.addEventListener("drop", function (e) {
+      dz(e); drop.classList.remove("hover");
+      addFiles((e.dataTransfer && e.dataTransfer.files) ? Array.prototype.slice.call(e.dataTransfer.files) : []);
+    });
+  }
+
+  /* ================= ② 上传执行：逐文件 FormData POST（原生 XHR 带进度；EAPI 不支持 FormData） ================= */
+  var uploading = false;
+  if (upBtn) upBtn.onclick = function () {
+    var good = files.filter(function (f) { return !f.reason; });
+    if (!good.length) { showUploadNote("请先选择合法的文档文件", true); return; }
+    if (uploading) return;
+    uploading = true;
+    upBtn.disabled = true; upBtn.textContent = "上传中…";
+    if (upProg) upProg.classList.add("show");
+    var done = 0, total = good.length;
+    function prog() {
+      if (upFill) upFill.style.width = (done / total * 100) + "%";
+      if (upMeta) upMeta.innerHTML = "<b>" + done + "/" + total + "</b> · 已转交知识任务";
+    }
+    function submit(i) {
+      if (i >= total) {                            // 全部提交完成
+        uploading = false; updateStartBtn();
+        if (upProg) setTimeout(function () { upProg.classList.remove("show"); }, 900);
+        if (upMeta) upMeta.innerHTML = "<b>" + done + "/" + total + "</b> · 已创建导入任务";
+        showUploadNote("已提交 " + done + " 个文件，进入任务列表跟踪（5s 轮询）");
+        var inv = $("invalidateLine"); if (inv) inv.classList.add("show");
+        files = []; renderFiles();                // 清空选区，避免重复提交
+        refreshTasks(); startPoll();
+        return;
+      }
+      var it = good[i], fd = new FormData();
+      fd.append("files", it.file);
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", EAPI.BASE + "/api/knowledge/admin/upload");
+      xhr.setRequestHeader("Authorization", "Bearer " + (EAPI.store.getToken() || ""));
+      xhr.onload = function () {
+        var j = null; try { j = JSON.parse(xhr.responseText); } catch (e) {}
+        if (xhr.status >= 200 && xhr.status < 300 && j && j.code === 0) {
+          showUploadNote("已提交 " + (done + 1) + "/" + total + "（" + esc(it.file.name) + "）");
+        } else {
+          var msg = (j && (j.message || j.detail)) || ("HTTP " + xhr.status);
+          showUploadNote("上传失败：" + esc(it.file.name) + " — " + esc(msg), true);
+        }
+        done++; prog(); submit(i + 1);
+      };
+      xhr.onerror = function () { showUploadNote("网络错误：上传 " + esc(it.file.name) + " 失败", true); done++; prog(); submit(i + 1); };
+      xhr.send(fd);
+    }
+    prog(); submit(0);
+  };
+
+  /* ================= ③ 任务列表：渲染 + 5s 轮询（页面隐藏时暂停） ================= */
+  function statusBadge(st) {
+    var def = { pending: ["b-pending", "排队中"], running: ["b-running", "导入中"], succeeded: ["b-done", "完成"], failed: ["b-failed", "失败"] };
+    var d = def[st] || ["b-pending", st || "—"];
+    return '<span class="badge ' + d[0] + '"><span class="pd"></span>' + d[1] + '</span>';
+  }
+  function errCell(msg) {
+    var s = String(msg || "");
+    return '<span class="nb err-i" title="' + esc(s) + '">' + esc(s.slice(0, 36)) + (s.length > 36 ? "…" : "") + '</span>';
+  }
+  function renderTasks(list) {
+    var body = document.querySelector("#taskTable tbody");
+    if (!body) return;
+    var items = (list && list.items) || (Array.isArray(list) ? list : []);
+    var te = $("taskTotal");
+    if (te) te.textContent = (list && list.total != null) ? list.total : items.length;
+    if (!items.length) { body.innerHTML = '<tr><td colspan="8" class="box-pad"><div class="ic">📭</div>暂无导入任务</td></tr>'; return; }
+    body.innerHTML = items.map(function (x) {
+      var tc = x.total_chunks || 0, ic = x.imported_chunks || 0;
+      var pct = tc > 0 ? Math.round(ic / tc * 100) : 0;
+      var chunk = '<div class="chunks"><div class="lbl"><span>' + ic + ' / ' + tc + ' 分块</span>' + (tc > 0 ? '<span>' + pct + '%</span>' : '') + '</div><div class="p-mini"><i style="width:' + pct + '%"></i></div></div>';
+      return '<tr><td class="nb">' + esc(x.task_id || "—") + '</td>' +
+        '<td>' + esc(taskTypeName(x.task_type)) + '</td>' +
+        '<td>' + esc(Array.isArray(x.source_files) ? x.source_files.length : 0) + '</td>' +
+        '<td>' + chunk + '</td>' +
+        '<td>' + statusBadge(x.status) + '</td>' +
+        '<td>' + (x.error ? errCell(x.error) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="nb">' + esc(String(x.created_at || "").slice(0, 19)) + '</td>' +
+        '<td><div class="cell-actions"><span class="muted note-sm">—</span></div></td></tr>';
+    }).join("");
+  }
+  function refreshTasks() {
+    EAPI.get("/api/knowledge/tasks?page=1&page_size=10").then(renderTasks).catch(function () {});
+  }
+  function startPoll() {
+    if (pollTimer) return;
+    pollTimer = setInterval(function () { if (!document.hidden) refreshTasks(); }, 5000);
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshTasks(); });
+  window.addEventListener("pagehide", function () { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } });
+
+  /* ================= ④ 分区管理：列表 + 删除（二次确认 + 失败行内可见） ================= */
+  var partList = $("partList"), partEmpty = $("partEmpty"), defaultHint = $("defaultHint");
+  function showPartErr(msg) {
+    if (!partErrEl && partList) {
+      partErrEl = document.createElement("div");
+      partErrEl.style.cssText = "background:#fdeef1;color:#c2263f;border-radius:8px;padding:8px 10px;font-size:12px;margin-top:8px";
+      partList.parentNode && partList.parentNode.appendChild(partErrEl);
+    }
+    if (partErrEl) partErrEl.textContent = "分区操作失败：" + (msg || "");
+  }
+  function refreshPartitions() {
+    EAPI.get("/api/knowledge/partitions").then(function (data) {
+      var parts = (data && data.partitions) || [];
+      if (!partList) return;
+      var hP = $("hParts"); if (hP) hP.textContent = (data && data.total_partitions != null ? data.total_partitions : parts.length);
+      if (!parts.length) {
+        if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = '<div class="ic">🗃️</div>暂无分区'; }
+        if (defaultHint) defaultHint.style.display = "none";
+        partList.innerHTML = ""; return;
+      }
+      if (partEmpty) partEmpty.style.display = "none";
+      partList.innerHTML = parts.map(function (p) {
+        var name = p.name != null ? p.name : p.partition_name;
+        var def = String(name) === "_default";
+        var act = def
+          ? '<span class="default-tag">🔒 公共分区 · 不可删除</span>'
+          : '<button class="btn-danger btn-mini btn" type="button" data-del="' + esc(name) + '">删除</button>';
+        return '<div class="part-row"><span class="pn">' + esc(name) + '</span><span class="pmeta">' + p.row_count + ' 行</span><div class="act">' + act + '</div></div>';
+      }).join("");
+      if (defaultHint) defaultHint.style.display = (parts.some(function (p) { return String(p.name) === "_default"; })) ? "flex" : "none";
+      var ds = partList.querySelectorAll("[data-del]");
+      for (var n = 0; n < ds.length; n++) (function (btn) {
+        btn.onclick = function () {
+          var name = btn.getAttribute("data-del");
+          if (!window.confirm("确认删除分区「" + name + "」？该操作将清空该分区全部向量/分块，且不可恢复。")) return;
+          EAPI.del("/api/knowledge/partitions/" + encodeURIComponent(name)).then(function () {
+            if (partErrEl && partErrEl.parentNode) { partErrEl.parentNode.removeChild(partErrEl); partErrEl = null; }
+            refreshPartitions();
+          }).catch(function (e) {
+            showPartErr((e && e.message) || "删除失败（分区可能仍被 Milvus 占用）");
+            refreshPartitions();
+          });
+        };
+      })(ds[n]);
+    }).catch(function (e) {
+      if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = '<div class="ic">⚠️</div>分区加载失败：' + esc((e && e.message) || "后端不可用"); }
+    });
+  }
+
+  /* ================= ⑤ 集合健康 + 初始化 ================= */
+  function refreshHealth() {
+    EAPI.get("/api/admin/rag/collections").then(function (cols) {
+      var arr = Array.isArray(cols) ? cols : [];
+      var cEl = document.querySelector("[data-collection-count]");   // task106 保留：集合数 DOM
+      if (cEl) cEl.textContent = arr.length;
+      var rEl = $("hRows"); if (rEl) rEl.textContent = arr.reduce(function (s, c) { return s + (c.row_count || 0); }, 0).toLocaleString();
+      var last = arr[arr.length - 1], lEl = $("hLast");
+      if (lEl) lEl.textContent = (last && last.last_rebuild_at) ? String(last.last_rebuild_at).replace("T", " ").slice(0, 19) : "—";
+    }).catch(function () {});
+  }
+
+  renderFiles(); updateStartBtn();
+  refreshTasks(); startPoll();
+  refreshPartitions(); refreshHealth();
+};
 </script>
 </body>
 </html>
