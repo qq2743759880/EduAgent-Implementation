@@ -12,6 +12,8 @@
  *      所有 API 错误统一 console.error("[EAPI]", err) 后 rethrow，不再静默吞
  *   6) EAPI.getRedirectParam() / EAPI.buildLoginUrl(url)：?redirect= 参数读取与登录链接构造（task108 登录页复用），
  *      仅接受站内相对路径（防开放跳转）
+ *   7) EAPI.pageId(name)：从 location.search 统一读 ?name= 取参（trim，缺参返回 ""），
+ *      供详情页/列表页取 id（task102/103/119 复用）；query 优先，不读路径
  * - 向后兼容：EAPI.get/post/put/patch/del、EAPI.store.{getToken,setToken,clear}、EAPI.BASE、EAPI.TOKEN_KEY 签名不变
  * - 用法：<script src="/edu-api.js"></script>，调 EAPI.get/post(...)
  */
@@ -63,6 +65,14 @@
     try {
       const q = new URLSearchParams(location.search || "");
       return sanitizeRedirect(q.get("redirect") || "");
+    } catch (e) { return ""; }
+  }
+  // ---- 改动点7：EAPI.pageId(name) 统一查 query 取参（task102/103/119 复用）----
+  function pageId(name) {
+    try {
+      const q = new URLSearchParams(location.search || "");
+      const v = typeof name === "string" ? q.get(name) : q.get("id");
+      return v === null || v === undefined ? "" : String(v).trim();
     } catch (e) { return ""; }
   }
   function currentPathWithQuery() {
@@ -196,6 +206,7 @@
     onError,
     getRedirectParam,
     buildLoginUrl,
+    pageId,
   };
 
   global.EAPI = EAPI;

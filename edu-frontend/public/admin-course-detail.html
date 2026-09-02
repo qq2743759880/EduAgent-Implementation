@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -778,8 +778,8 @@
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=(location.pathname.match(//(d+)/)||[])[1];if(!m)return;EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&(s.series_name))t.textContent=s.series_name;}).catch(function(){});})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&s.series_name)t.textContent=s.series_name;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 课程系列加载失败："+(err&&err.message||"未知错误");});})();
 </script>
 </body>
 </html>

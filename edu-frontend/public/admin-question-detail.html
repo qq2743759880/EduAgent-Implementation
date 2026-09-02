@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -778,8 +778,8 @@ renderPrevOptions();
 </script>
 <script src="/edu-api.js"></script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=(location.pathname.match(//(d+)/)||[])[1];if(!m)return;EAPI.get("/api/admin/questions/questions/"+m).then(function(q){if(!q)return;var t=document.querySelector("h1,.title");if(t)t.textContent=q.question_code||t.textContent;var s=document.querySelector(".stem,[class*=stem]");if(s&&q.stem_html)s.innerHTML=q.stem_html;}).catch(function(){});})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/questions/questions/"+m).then(function(q){if(!q)return;var t=document.querySelector("h1,.title");if(t&&q.question_code)t.textContent=q.question_code||t.textContent;var s=document.getElementById("f-stem");if(s&&q.stem) s.value=q.stem;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 题目加载失败："+(err&&err.message||"未知错误");});})();
 </script>
 </body>
 </html>
