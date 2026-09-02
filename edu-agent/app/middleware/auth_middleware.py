@@ -137,6 +137,8 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
         "/api/mcp/",
         "/api/knowledge/admin/",
         "/api/knowledge/partitions",
+        "/api/metrics/",
+        "/api/memory/admin/",
     )
 
     # 角色伪造堵截（judge R1 裁定）：管理前缀请求一律剥离 X-Force-Role 头，

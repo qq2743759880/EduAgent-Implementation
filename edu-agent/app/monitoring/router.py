@@ -3,10 +3,11 @@
 - /metrics：Prometheus 抓取端点（text/plain）。
 - /api/metrics/cache-context-dashboard：task97 联合看板（上下文水位 task96 + 缓存命中 task97）JSON。
 """
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse, Response
 
 from app.monitoring.metrics import render_metrics
+from app.auth import CurrentUser, UserRole, require_role
 
 router = APIRouter(tags=["监控"])
 
@@ -23,6 +24,7 @@ async def metrics_endpoint():
 @router.get("/api/metrics/cache-context-dashboard")
 async def cache_context_dashboard(
     session_id: str | None = Query(default=None, description="可选：指定会话，便于前端观测单会话水位"),
+    current_user: CurrentUser = Depends(require_role([UserRole.ADMIN, UserRole.MANAGER])),
 ):
     """联合看板：上下文水位（task96 ContextUsageMonitor）+ 缓存命中（task97 CacheMonitor）。
 
@@ -38,7 +40,9 @@ async def cache_context_dashboard(
 
 
 @router.get("/api/metrics/otel")
-async def otel_metrics_snapshot():
+async def otel_metrics_snapshot(
+    current_user: CurrentUser = Depends(require_role([UserRole.ADMIN, UserRole.MANAGER])),
+):
     """task-O1 5 维指标全局快照（AC2）。
 
     进程内累加器，每项含计数 + 比例 + 溯源事件列表；供观测面板（task-FE-O1）消费。
@@ -56,6 +60,7 @@ async def otel_metrics_snapshot():
 async def trace_events(
     trace_id: str,
     limit: int = Query(default=500, ge=1, le=5000, description="返回事件上限"),
+    current_user: CurrentUser = Depends(require_role([UserRole.ADMIN, UserRole.MANAGER])),
 ):
     """按 trace_id 检索一次完整问答的全部观测事件（task-O1 AC1 交付契约，供 task-FE-O1 观测面板）。
 

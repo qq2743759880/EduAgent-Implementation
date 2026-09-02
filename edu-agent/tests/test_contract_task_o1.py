@@ -280,10 +280,17 @@ async def test_trace_retrieval_endpoint_contract(iso):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
+    from app.auth.dependencies import get_current_user
+    from app.auth.schemas import UserInfo, UserRole
     from app.monitoring.router import router as monitoring_router
 
     app = FastAPI()
     app.include_router(monitoring_router)
+
+    # task113：metrics 端点已加 require_role(ADMIN, MANAGER)，契约测试需提供鉴权用户
+    admin_user = UserInfo(user_id=1, nickname="t", real_name="t", mobile=None,
+                          email="t@e", gender=None, avatar_url=None, role=UserRole.ADMIN)
+    app.dependency_overrides[get_current_user] = lambda: admin_user
 
     with TestClient(app) as client:
         r = client.get(f"/api/metrics/trace/{tid}")
