@@ -3188,6 +3188,20 @@ a.session{text-decoration:none}
 })();
 </script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=/\/learning\/(\d+)\/(\d+)/.exec(location.pathname);var sid=m?m[2]:null;if(!sid)return;EAPI.get("/api/learning/sessions/"+sid).then(function(d){if(!d)return;var t=document.querySelector("h1,.title,[class*=title]");if(t&&d.session_title)t.textContent=d.session_title;}).catch(function(){});})();
+/* task103 入口：从 URL 取 cohort_id / session_id / series_id（learning 完整闭环归 task119）
+ * 修复原 /learning/{id}/{sid} 路径正则在静态服务下永不匹配的缺陷，改为读 ?cohort_id=&session_id=。
+ * 读取结果挂到 window.LEARNING_ENTRY 供后续接入使用；有 session_id 且有 token 时尽力回填标题。 */
+(function () {
+  if (!window.EAPI) return;
+  function q(name){ try { var v = new URLSearchParams(location.search||"").get(name); return v===null||v===""? "" : String(v).trim(); } catch(e){ return ""; } }
+  var cohort_id = q("cohort_id"), session_id = q("session_id"), series_id = q("series_id");
+  window.LEARNING_ENTRY = { cohort_id: cohort_id, session_id: session_id, series_id: series_id };
+  if (!session_id || !EAPI.store.getToken()) return;
+  EAPI.get("/api/study/sessions/" + session_id).then(function (d) {
+    if (!d) return;
+    var t = document.querySelector("h1,.title,[class*=title]");
+    if (t && d.session_title) t.textContent = d.session_title;
+  }).catch(function () {});
+})();
 </script>
 </body></html>

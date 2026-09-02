@@ -89,6 +89,7 @@ select,input{font-family:inherit}
 
 /* ===== CohortList（RadioGroup 班次卡）===== */
 .cohorts{display:grid;gap:10px}
+.cohort-item{display:flex;flex-direction:column;gap:8px}
 .cohort{border:3px solid var(--ink);border-radius:14px;background:var(--ht-fff);padding:12px 14px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease}
 .cohort .radio{width:20px;height:20px;border:3px solid var(--htc-31-31-31-003);border-radius:50%;flex-shrink:0;display:grid;place-items:center}
 .cohort.selected{border-color:var(--candy-orange);box-shadow:0 4px 0 var(--htc-255-77-0-002)}
@@ -531,16 +532,19 @@ function cohortHtml(c){
   const full = c.current_student_count >= c.max_student_count;
   const remaining = c.max_student_count - c.current_student_count;
   const ratio = Math.min(100, Math.round(c.current_student_count/c.max_student_count*100));
-  return `<button class="cohort ${selected===c.id?'selected':''} ${full?'disabled':''}" data-cohort="${c.id}" ${full?'disabled':''} role="radio" aria-checked="${selected===c.id}">
+  return `<div class="cohort-item">
+  <button class="cohort ${selected===c.id?'selected':''} ${full?'disabled':''}" data-cohort="${c.id}" ${full?'disabled':''} role="radio" aria-checked="${selected===c.id}">
     <span class="radio"></span>
     <span class="cohort-info">
       <span class="cohort-name">${c.cohort_name}</span>
       <span class="cohort-tags"><span class="badge ${full?'destructive':'success'}">${full?'已满员':'有席位'}</span><span style="font-size:11px;color:var(--ink-muted)">${c.start_date.split("-").slice(1).join("/")} 开班</span></span>
       <span class="seat-bar"><span class="seat-fill ${ratio>80?'hot':''}" style="width:${ratio}%"></span></span>
-      <span style="font-size:11px;color:var(--ink-muted)">${full?'已报满':'余 '+remaining+'/'+c.max_student_count+' 席'} · 班主任 ${c.teacher}</span>
+      <span style="font-size:11px;color:var(--ink-muted)">${full?'已报满':'余 '+remaining+'/'+c.max_student_count+' 席'} · 班主任 ${c.teacher||"助教团队"}</span>
     </span>
     <span class="cohort-price">¥${parseFloat(c.sale_price).toLocaleString("zh-CN")}</span>
-  </button>`;
+  </button>
+  <button class="btn go-learn" data-golearn="${c.id}" style="width:100%;padding:9px 0;background:var(--candy-green);color:#fff;box-shadow:0 4px 0 var(--candy-green-deep)" ${full?'disabled':''}>去学习</button>
+  </div>`;
 }
 
 /* ---------- 四级树（TreeAccordion）---------- */
@@ -600,21 +604,23 @@ function mindmapHtml(){
 function heroHtml(){
   const c=cohortById(selected);
   const fullCls = authed?"":` data-login-hint="true"`;
+  const DL = SERIES.delivery_mode==="online_live"?"在线直播":SERIES.delivery_mode==="online_recorded"?"在线录播":"线下面授";
+  const catNames = ((SERIES.categories||[]).map(x=>x.category_name).join(" · ")) || ((SERIES.category_names||[]).join(" · ")) || "课程";
+  const priceMax = (SERIES.max_price!=null && SERIES.max_price!=="") ? parseFloat(SERIES.max_price).toLocaleString("zh-CN") : "";
   return `<section class="hero" aria-label="课程信息">
     <div class="cover">
       <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
       <span class="mascot" aria-hidden="true">🦉</span>
-      <span class="delivery">🖥 在线直播</span>
+      <span class="delivery">🖥 ${DL}</span>
       <h1 class="title">${SERIES.series_name}</h1>
-      <p class="sub">${SERIES.description}</p>
+      <p class="sub">${SERIES.description||""}</p>
       <div class="facts">
-        <span class="fact">👥 学员 ${SERIES.facts.learners}</span>
-        <span class="fact">⭐ ${SERIES.facts.rating} 分</span>
-        <span class="fact">📅 ${SERIES.facts.cohorts} 个班次</span>
+        <span class="fact">🏷 ${catNames}</span>
+        <span class="fact">📅 ${SERIES.cohort_count||0} 个班次在售</span>
       </div>
     </div>
     <div class="buy">
-      <div class="price-min">班次价格 <b><span style="font-size:20px">¥</span>${parseFloat(SERIES.min_price).toLocaleString("zh-CN")}</b><span class="qi"> 起</span></div>
+      <div class="price-min">班次价格 <b><span style="font-size:20px">¥</span>${parseFloat(SERIES.min_price).toLocaleString("zh-CN")}</b><span class="qi"> 起</span>${priceMax?` <span style="font-size:12px;color:var(--ink-muted)">~ ¥${priceMax}</span>`:""}</div>
       <div class="cohorts" id="cohortList">
         ${COHORTS.map(cohortHtml).join("")}
       </div>
@@ -642,11 +648,12 @@ function tabsHtml(){
 }
 function cohortDetailHtml(){
   const c=cohortById(selected);
+  const DL = SERIES.delivery_mode==="online_live"?"在线直播":SERIES.delivery_mode==="online_recorded"?"在线录播":"线下面授";
   const rows=[
     ["班次","名称",c.cohort_name],["编码",c.cohort_code],
     ["开班",c.start_date],["结班",c.end_date||"—"],
-    ["班主任",c.teacher],["容量",`${c.current_student_count}/${c.max_student_count}`],
-    ["价格","¥"+c.sale_price],["模式",SERIES.meta]
+    ["班主任",c.teacher||"助教团队"],["容量",`${c.current_student_count}/${c.max_student_count}`],
+    ["价格","¥"+c.sale_price],["模式",DL]
   ];
   return `<div class="tree"><div class="tree-node"><div class="lvl" style="cursor:default"><span class="t-title">班次排期与容量</span></div>
     <div class="lvl-children open">
@@ -699,6 +706,41 @@ function bindCoupon(){
   btn.addEventListener("click",()=>{ renderCoupons(); openCoupon(true); });
 }
 
+/* task103：班次「去学习」——登录 → 鉴权(access) → 跳 learning.html */
+function bindLearn(){
+  document.querySelectorAll("#cohortList .go-learn").forEach(function(b){
+    b.addEventListener("click", function(ev){
+      if (ev) ev.stopPropagation();
+      var cid = b.getAttribute("data-golearn");
+      if (!(window.EAPI && EAPI.store && EAPI.store.getToken())) {
+        if (window.EAPI && EAPI.buildLoginUrl) window.location.href = EAPI.buildLoginUrl(location.pathname + location.search);
+        else alert("请先登录");
+        return;
+      }
+      var sid = SERIES.id;
+      function go(cohortId, sessionId){
+        var q = "learning.html?cohort_id=" + (cohortId||"") + "&session_id=" + (sessionId||"");
+        window.location.href = q;
+      }
+      EAPI.get("/api/study/courses/" + sid + "/access").then(function(acc){
+        if (!acc || acc.accessible !== true) {
+          alert("你尚未报名该班次，请先报名再进入学习");
+          window.location.href = "my-cohorts.html";
+          return;
+        }
+        var cohortId = acc.cohort_id || cid;
+        EAPI.get("/api/study/courses/" + sid + "/outline").then(function(o){
+          var first = "";
+          if (o && o.modules) {
+            for (var i=0;i<o.modules.length;i++){ var ss=(o.modules[i].sessions)||[]; if(ss.length){ first=ss[0].id; break; } }
+          }
+          go(cohortId, first);
+        }).catch(function(){ go(cohortId, ""); });
+      }).catch(function(){ alert("鉴权失败，请稍后重试"); });
+    });
+  });
+}
+
 function renderBody(){
   const area=document.getElementById("mainArea");
   if(state==="loading"){
@@ -710,7 +752,7 @@ function renderBody(){
     return;
   }
   area.innerHTML = heroHtml() + tabsHtml();
-  bindEnroll(); bindFav(); bindCohorts(); bindTabs(); bindCoupon();
+  bindEnroll(); bindFav(); bindCohorts(); bindTabs(); bindCoupon(); bindLearn();
 }
 
 /* ---------- 状态 / 登录态 / 视口 演示 ---------- */
@@ -742,30 +784,52 @@ renderBody();
 })();
 </script>
 <script>
-/* ===== 对接真实后端（course-detail 课程详情 + 班次）===== */
+/* ===== 对接真实后端（course-detail：EAPI.pageId 取参 + 详情 + 班次）=====
+ * 已知坑修复：不再用路径正则取 id（静态服务下永远匹配不到、恒回退 1001），改用 ?id=。 */
 (function () {
   if (!window.EAPI) return;
-  var m = /\/(\d+)\.html/.exec(location.pathname) || /courses\/(\d+)/.exec(location.search || location.pathname);
-  var sid = m ? m[1] : "1001";
+  var sid = EAPI.pageId("id");
+  function showEmpty(){
+    try {
+      var area = document.getElementById("mainArea");
+      if (area) area.innerHTML = `<div class="state-fill"><div class="t">课程不存在或链接缺少 id</div><div class="d">请从课程列表选择一个系列课程</div><button class="btn" onclick="location.href='courses.html'">返回课程列表</button></div>`;
+    } catch (e) {}
+  }
+  if (!sid) { showEmpty(); return; }
+
   Promise.allSettled([
     EAPI.get("/api/series/" + sid),
     EAPI.get("/api/series/" + sid + "/cohorts"),
   ]).then(function (res) {
     var s = res[0].status === "fulfilled" ? res[0].value : null;
     var cohorts = res[1].status === "fulfilled" ? res[1].value : null;
-    if (s && (s.series_name || s.name)) {
-      if (typeof SERIES !== "undefined") { SERIES.series_name = s.series_name || s.name || SERIES.series_name; SERIES.description = s.description || SERIES.description; SERIES.min_price = s.min_price || SERIES.min_price; }
-      var t = document.querySelector("h1.title,.title");
-      if (t) t.textContent = s.series_name || s.name;
+    if (!s || !(s.series_name || s.name)) { showEmpty(); return; }
+
+    if (typeof SERIES !== "undefined") {
+      SERIES.id = s.id;
+      SERIES.series_name = s.series_name || s.name || SERIES.series_name;
+      SERIES.description = s.description || "";
+      SERIES.delivery_mode = s.delivery_mode || SERIES.delivery_mode;
+      SERIES.series_code = s.series_code || "";
+      SERIES.min_price = s.min_price || SERIES.min_price;
+      SERIES.max_price = (s.max_price!=null) ? s.max_price : SERIES.min_price;
+      SERIES.categories = (s.categories && s.categories.length) ? s.categories : (s.category_names||[]).map(function(n){ return { category_name: n }; });
+      SERIES.cohort_count = (typeof s.cohort_count === "number") ? s.cohort_count : 0;
     }
+    var t = document.querySelector("h1.title,.title");
+    if (t) t.textContent = s.series_name || s.name;
+
     var items = cohorts && cohorts.items ? cohorts.items : (Array.isArray(cohorts) ? cohorts : []);
     if (items.length && typeof COHORTS !== "undefined") {
       COHORTS = items.map(function (c) {
-        return { id: c.id, cohort_code: c.cohort_code, cohort_name: c.cohort_name, sale_price: c.sale_price || "0", max_student_count: c.max_student_count || 0, current_student_count: c.current_student_count || 0, yn: c.yn != null ? c.yn : 1, start_date: c.start_date || "", end_date: c.end_date || "" };
+        return { id: c.id, cohort_code: c.cohort_code, cohort_name: c.cohort_name, sale_price: c.sale_price || "0", max_student_count: c.max_student_count || 0, current_student_count: c.current_student_count || 0, yn: c.yn != null ? c.yn : 1, start_date: c.start_date || "", end_date: c.end_date || "", teacher: c.head_teacher_id ? ("教师"+c.head_teacher_id) : "" };
       });
-      try { if (typeof renderBody === "function") renderBody(); } catch (e) {}
+      // 默认选中「有席位 + 价格最低」班次，保持与「最低价」展示一致
+      var seatable = COHORTS.filter(function(c){ return c.current_student_count < c.max_student_count; }).sort(function(a,b){ return parseFloat(a.sale_price)-parseFloat(b.sale_price); });
+      if (seatable.length) selected = seatable[0].id; else if (COHORTS[0]) selected = COHORTS[0].id;
     }
-  }).catch(function () {});
+    try { if (typeof renderBody === "function") renderBody(); } catch (e) {}
+  }).catch(function(){ showEmpty(); });
 })();
 </script>
 </body>

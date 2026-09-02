@@ -133,6 +133,8 @@
   .card{background:var(--card);border:2px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease,border-color .18s ease;cursor:pointer}
   .card:hover{border-color:var(--candy-purple);box-shadow:0 10px 24px -10px var(--htc-124-58-237-028);transform:translateY(-4px) rotate(-.4deg)}
   .card:active{transform:scale(.97)}
+  .card-link{display:block;height:100%;color:inherit;text-decoration:none}
+  .card-link .card{height:100%}
   /* 封面：糖果色渐变族 × 学科 emoji 图标 × 几何图案（参考「脚本与自动化编程」封面：渐变+图标+斜线） */
   .cover{position:relative;aspect-ratio:16/9;overflow:hidden}
   .cover--t1{background:linear-gradient(135deg,var(--ht-ff4d00),var(--ht-ffb199))}   /* 橙 */
@@ -483,7 +485,12 @@
  * React 实现阶段将真实请求 GET /api/series
  * ===================================================================== */
 const DM = { "online_live":"在线直播", "online_recorded":"在线录播", "offline_face_to_face":"线下面授" };
-const COVER = (i) => `https://cdn.example.com/covers/course-${String(i).padStart(3,"0")}.jpg`;
+/* 封面策略：真实 cover_url 且非占位假域名时用图片，否则用首字母色块占位 */
+function coverSrc(s){
+  const cv = s && s.cover_url;
+  if (cv && /^https?:\/\//i.test(cv) && !/cdn[.]example[.]com/i.test(cv)) return cv;
+  return "";
+}
 
 /* ---- 两级导航：一级学科大类 → 二级课程方向（用户方案，9 大类）---- */
 const CATS = {
@@ -531,6 +538,7 @@ const STATE_LABEL = { success:"成功", empty:"空态", loading:"加载", error:
 
 let filters = { category:"全部", sub:"", delivery:"", price:"", sort:"default", keyword:"" };
 let page = 1, PAGE_SIZE = 15, state = "success";
+let totalCount = 0, totalPages = 1;   // 真实分页元数据（task103 接真）
 
 /* ---- 两级导航渲染：一级学科大类 chips（9 类）+ 二级方向动态 ---- */
 function renderCats(){
@@ -563,28 +571,64 @@ function selChips(rowId,el){ document.getElementById(rowId).querySelectorAll(".c
 
 function applyFilter(k, v){ filters[k]=v; page=1; refresh(); }
 
-/* ---- 刷新：先 loading，再落地当前 state ---- */
-function refresh(){
-  renderResultBar("loading");
-  renderLoading();
-  setTimeout(()=>applyState(state), 420);
+/* ---- 刷新：task103 接真 —— 从后端真实请求分页，翻页/筛选/关键词都发真实 ?page=n ---- */
+function buildQuery(){
+  const q=new URLSearchParams();
+  q.set("page", page); q.set("page_size", PAGE_SIZE);
+  if (filters.category && filters.category!=="全部") q.set("category", filters.category);
+  if (filters.sub) q.set("category", filters.sub);          // 二级方向覆盖共享 category 参数
+  if (filters.delivery) q.set("delivery_mode", filters.delivery);
+  if (filters.keyword) q.set("keyword", filters.keyword);
+  if (filters.price){ const r=filters.price.split("-"); if(r[0]) q.set("price_min", r[0]); if(r[1]) q.set("price_max", r[1]); }
+  if (filters.sort && filters.sort!=="default") q.set("sort", filters.sort);
+  return q.toString();
 }
+function fetchPage(){
+  renderLoading();
+  const hasApi = !!(window.EAPI && EAPI.get);
+  if (!hasApi) {  // 无 EAPI 时降级演示数据，保证静态页可开
+    const list=[...ALL].slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+    const total=ALL.length, tPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+    renderSuccess(list, total, tPages);
+    return;
+  }
+  EAPI.get("/api/series?"+buildQuery()).then(function(d){
+    const items = (d && d.items) ? d.items : (Array.isArray(d) ? d : []);
+    const pm = (d && d.page_meta) ? d.page_meta : null;
+    const total = pm && typeof pm.total==="number" ? pm.total : items.length;
+    const tPages = pm && typeof pm.total_pages==="number" ? pm.total_pages : Math.max(1, Math.ceil(total/PAGE_SIZE));
+    totalCount = total; totalPages = tPages;
+    renderSuccess(items, total, tPages);
+  }).catch(function(){
+    renderError();
+  });
+}
+function refresh(){ fetchPage(); }
 let storedState="success";
 
 /* ---- 卡片渲染（糖果渐变 + 学科 emoji + 斜线图案；价格「¥X 起」+ XP 徽章 + 进度环）---- */
 const TONES=["t1","t2","t3","t4","t5"], PATTERNS=["p1","p2","p3","p4","p5"];
 function coverClass(id){ const i=id-1001; return `cover--${TONES[i%5]} cover--${PATTERNS[Math.floor(i/5)%5]}`; }
 function cardHtml(s){
+  const url = `course-detail.html?id=${s.id}`;
   const price = (s.min_price!==null && s.min_price!==undefined) ? s.min_price : null;
-  const coverFail = `onerror="this.remove()"`;
+  const cov = coverSrc(s);   // task103：真实非假域名封面才用图，否则首字母色块占位
+  const coverImg = cov ? `<img class="cov" src="${cov}" alt="${s.series_name}封面" loading="lazy" onerror="this.remove()" />` : "";
   const emoji = SUB_EMOJI[s.sub_category] || CAT_EMOJI[(s.category_names||[])[0]] || "📚";
   const pct = (s.id*7)%100; // 学习进度环（装饰性社交证明）
+  // 元信息：真实列表项无 cohort_count/learners/xp，用可用字段动态拼装
+  const metas = [];
+  if (s.cohort_count != null) metas.push(`<span>${s.cohort_count} 个班次</span>`);
+  else if (s.delivery_mode) metas.push(`<span>${DM[s.delivery_mode]||"在线课程"}</span>`);
+  if (s.learners != null) metas.push(`<span class="dot"></span><span class="hot">🔥 ${(s.learners/1000>=1)?((s.learners/1000).toFixed(1)+"k"):s.learners} 人学过</span>`);
+  metas.push(`<span class="dot"></span><span class="ring-wrap"><span class="ring" style="--p:${pct}"><b>${pct}%</b></span>进度</span>`);
   return `
-  <article class="card" tabindex="0" role="button" aria-label="${s.series_name}">
+  <a class="card-link" href="${url}" aria-label="${s.series_name}">
+  <article class="card" tabindex="0">
     <div class="cover ${coverClass(s.id)}">
       <div class="pattern"></div>
-      <img class="cov" src="${COVER(s.id)}" alt="${s.series_name}封面" loading="lazy" ${coverFail} />
-      <h3 class="cover-title">${s.series_name.replace(/·(直播|录播)$/,"")}</h3>
+      ${coverImg}
+      <h3 class="cover-title">${s.series_name.replace(/·(直播|录播|面授)$/,"")}</h3>
       <span class="delivery">${DM[s.delivery_mode]||"在线课程"}</span>
       <span class="xp-badge">+${s.xp||0} XP</span>
       <span class="subject-emoji">${emoji}</span>
@@ -594,17 +638,14 @@ function cardHtml(s){
       <h3 class="card-title">${s.series_name}</h3>
       <div class="cat-row"><span class="cat">${emoji} ${s.sub_category||(s.category_names||[])[0]||"课程"}</span></div>
       <div class="meta-row">
-        <span>${s.cohort_count} 个班次</span>
-        <span class="dot"></span>
-        <span class="hot">🔥 ${(s.learners||0)/1000>=1?((s.learners/1000).toFixed(1)+"k"):s.learners} 人学过</span>
-        <span class="dot"></span>
-        <span class="ring-wrap"><span class="ring" style="--p:${pct}"><b>${pct}%</b></span>进度</span>
+        ${metas.join("")}
       </div>
       <div class="price-row">
         ${price!==null ? `<span class="price"><span class="cny">¥</span>${formatPrice(price)}<span class="qi">起</span></span>` : `<span class="price-empty">-</span>`}
       </div>
     </div>
-  </article>`;
+  </article>
+  </a>`;
 }
 function formatPrice(p){ const n=parseFloat(p); return n.toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 
@@ -617,33 +658,8 @@ function renderResultBar(kind, total){
   else { el.textContent=""; }
 }
 
-/* ---- 成功态：默认展示 15 门 + 真实数据量分页；筛选则按内嵌集过滤 ---- */
-function renderSuccess(){
-  let list=[...ALL];
-  if(filters.category!=="全部") list = list.filter(it=>(it.category_names||[]).join(",").includes(filters.category));
-  if(filters.sub) list = list.filter(it=>it.sub_category===filters.sub);
-  if(filters.delivery) list = list.filter(it=>it.delivery_mode===filters.delivery);
-  if(filters.price){
-    const [lo,hi]=filters.price.split("-").map(x=>x?parseInt(x):null);
-    list = list.filter(it=>{ const p=it.min_price?parseFloat(it.min_price):null; if(p===null) return false; if(lo!==null&&p<lo) return false; if(hi!==null&&p>hi) return false; return true; });
-  }
-  if(filters.keyword) list = list.filter(it=>(it.series_name+it.series_code+(it.description||"")).toLowerCase().includes(filters.keyword.toLowerCase()));
-  if(filters.sort==="newest") list = list.slice().reverse();
-  if(filters.sort==="price_asc") list = list.slice().sort((a,b)=>(a.min_price?parseFloat(a.min_price):Infinity)-(b.min_price?parseFloat(b.min_price):Infinity));
-  if(filters.sort==="price_desc") list = list.slice().sort((a,b)=>(b.min_price?parseFloat(b.min_price):-1)-(a.min_price?parseFloat(a.min_price):-1));
-
-  // 是否「默认浏览态」（无任何筛选/关键词）：用真实数据量 2628/176 体现；否则用内嵌集演示过滤
-  const isDefault = filters.category==="全部" && !filters.sub && !filters.delivery && !filters.price && filters.sort==="default" && !filters.keyword;
-  let total, totalPages;
-  let pageItems;
-  if(isDefault){
-    total=TOTAL_REAL; totalPages=TOTAL_PAGES_REAL;
-    pageItems = list.slice(0, PAGE_SIZE);
-  } else {
-    total=list.length; totalPages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
-    pageItems = list.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
-  }
-
+/* ---- 成功态：渲染后端返回的当前页 items + 真实分页（task103 接真）---- */
+function renderSuccess(pageItems, total, tPages){
   const area=document.getElementById("contentArea");
   if(pageItems.length===0){
     const catEmoji = filters.category!=="全部" ? (CAT_EMOJI[filters.category]||"📚") : "🔍";
@@ -651,7 +667,7 @@ function renderSuccess(){
   } else {
     area.innerHTML = `<div class="grid">${pageItems.map(cardHtml).join("")}</div>`;
   }
-  renderPagination(total, totalPages);
+  renderPagination(total, tPages);
   renderResultBar(pageItems.length===0?"empty":"success", total);
 }
 
@@ -671,7 +687,7 @@ function renderError(){
 }
 function applyState(s){
   state=s; storedState=s;
-  if(s==="success") renderSuccess();
+  if(s==="success") fetchPage();
   else if(s==="loading") renderLoading();
   else if(s==="empty"){ document.getElementById("contentArea").innerHTML = `<div class="empty"><div class="icon">🔍</div><div class="t">没有符合条件的课程</div><div class="d">换一个关键词或筛选条件再试试</div><button class="btn" onclick="resetAll()">查看全部课程</button></div>`;
     document.getElementById("pgInfo").textContent=""; document.getElementById("pgPages").innerHTML=""; renderResultBar("empty"); }
@@ -693,7 +709,7 @@ function renderPagination(total, totalPages){
 }
 function goPage(p){ page=p; refresh(); }
 document.getElementById("pgPrev").addEventListener("click",()=>{ if(page>1){page--; refresh();} });
-document.getElementById("pgNext").addEventListener("click",()=>{ if(page<TOTAL_PAGES_REAL){page++; refresh();} });
+document.getElementById("pgNext").addEventListener("click",()=>{ if(page<totalPages){page++; refresh();} });
 
 /* ---- 状态演示器 ---- */
 function statebar(){
@@ -767,7 +783,8 @@ setTimeout(()=>{ const f=document.getElementById("xpFill"); if(f) f.style.width=
 })();
 </script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/series?page=1&page_size=12").then(function(d){var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);if(!items.length)return;var cards=document.querySelectorAll(".course-card,.grid>.card");if(!cards.length)return;items.slice(0,cards.length).forEach(function(s,i){var c=cards[i];var t=c.querySelector("h3,.title,.name");if(t)t.textContent=s.series_name||t.textContent;var p=c.querySelector(".price,[class*=price]");if(p&&s.min_price)p.textContent="¥"+Number(s.min_price).toFixed(2);});}).catch(function(){});})();
+/* 课程列表真实数据已在主脚本 fetchPage() 中按当前页加载（含真实分页/筛选）。
+ * 此处不再重复请求 page=1 覆盖分页结果。 */
 </script>
 </body>
 </html>
