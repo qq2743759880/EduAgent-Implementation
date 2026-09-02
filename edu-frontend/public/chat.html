@@ -482,6 +482,12 @@ let activeId = "s2";
 let seq = 0;
 let state = "history"; // history|streaming|degraded|error|empty
 
+/* task104：登录态（localStorage 有 token = 有登录）时解绑 demo 控制器，
+   避免 document 级委托与注入元素级监听双绑定 .sess → 点真实会话读 MESSAGES[realId] 抛 TypeError，
+   以及 demo 的 newSession/hamb 用演示数据覆盖真实列表。无 token 时演示态保留（chat 页本会跳登录）。 */
+let __logon = false;
+try { __logon = !!window.localStorage.getItem("edu:auth:token"); } catch (e) { __logon = false; }
+
 /* ---- 会话列表渲染（双容器：侧栏 + 抽屉）---- */
 function sessCard(s){
   const on = s.id===activeId;
@@ -587,15 +593,17 @@ function delSession(id){
 }
 
 /* ---- 事件绑定（委托：侧栏 + 抽屉）---- */
-document.addEventListener("click", (e)=>{
-  const del = e.target.closest("[data-del]");
-  if(del){ e.stopPropagation(); delSession(del.dataset.del); return; }
-  const row = e.target.closest(".sess");
-  if(row){ onPick(row.dataset.id); drawer(false); }
-});
-$("#sideNew").addEventListener("click", newSession);
-$("#drawerNew").addEventListener("click", newSession);
-$("#newSession").addEventListener("click", newSession);
+if (!__logon) {
+  document.addEventListener("click", (e)=>{
+    const del = e.target.closest("[data-del]");
+    if(del){ e.stopPropagation(); delSession(del.dataset.del); return; }
+    const row = e.target.closest(".sess");
+    if(row){ onPick(row.dataset.id); drawer(false); }
+  });
+  $("#sideNew").addEventListener("click", newSession);
+  $("#drawerNew").addEventListener("click", newSession);
+  $("#newSession").addEventListener("click", newSession);
+}
 $("#toastClose").addEventListener("click", ()=>document.getElementById("toast").style.display="none");
 
 /* ---- 移动抽屉开关 ---- */
@@ -603,24 +611,25 @@ function drawer(open){
   $("#drawer").classList.toggle("open", open);
   $("#scrim").classList.toggle("open", open);
 }
-$("#hamb").addEventListener("click", ()=>{ renderSides(); drawer(true); });
+$("#hamb").addEventListener("click", ()=>{ if(!__logon) renderSides(); drawer(true); });
 $("#drawerClose").addEventListener("click", ()=>drawer(false));
 $("#scrim").addEventListener("click", ()=>drawer(false));
 
-/* ---- 视口切换 ---- */
-document.querySelectorAll(".respbar button[data-w]").forEach(b=>b.addEventListener("click",()=>{
-  document.body.style.width=b.dataset.w+"px"; document.body.style.margin="0 auto";
-  document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.toggle("on",x===b));
-}));
-document.getElementById("resetVp").addEventListener("click",()=>{ document.body.style.width="auto"; document.body.style.margin="0"; document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.remove("on")); });
-/* ---- 状态演示绑定 ---- */
-document.querySelectorAll(".respbar button[data-s]").forEach(b=>b.addEventListener("click",()=>draw(b.dataset.s)));
+/* ---- 视口切换（仅演示态）---- */
+if (!__logon) {
+  document.querySelectorAll(".respbar button[data-w]").forEach(b=>b.addEventListener("click",()=>{
+    document.body.style.width=b.dataset.w+"px"; document.body.style.margin="0 auto";
+    document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.toggle("on",x===b));
+  }));
+  document.getElementById("resetVp").addEventListener("click",()=>{ document.body.style.width="auto"; document.body.style.margin="0"; document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.remove("on")); });
+  /* ---- 状态演示绑定（仅演示态）---- */
+  document.querySelectorAll(".respbar button[data-s]").forEach(b=>b.addEventListener("click",()=>draw(b.dataset.s)));
+}
 document.getElementById("composerInput").addEventListener("input",e=>{ e.target.style.height="auto"; e.target.style.height=Math.min(120,Math.max(44,e.target.scrollHeight))+"px"; });
 
-/* ---- 首屏：历史态 + 渲染侧栏 ---- */
+/* ---- 首屏：历史态 + 渲染侧栏（仅演示态；登录态由注入 loadSessions 接管）---- */
 window.addEventListener("resize", ()=>{ if(window.innerWidth>760) drawer(false); });
-renderSides();
-draw("history");
+if (!__logon) { renderSides(); draw("history"); }
 </script>
 <script src="/edu-api.js"></script>
 <script>
@@ -695,7 +704,7 @@ draw("history");
     if (!list || !list.length) return emptyHtml();
     return list.map(function (m) {
       var isUser = m.role === "user" || m.role === "human";
-      return '<div class="msg ' + (isUser ? "me" : "ai") + '"><div class="bubble">' + esc(m.content || m.text || "") + '</div></div>';
+      return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="bubb">' + esc(m.content || m.text || "") + '</div></div>';
     }).join("");
   }
 
@@ -709,7 +718,7 @@ draw("history");
     var text = (input.value || "").trim();
     if (!text) return;
     var sid = activeId;
-    stage.innerHTML = historyHtml([]) + '<div class="msg me"><div class="bubble">' + esc(text) + '</div></div><div class="msg ai"><div class="bubble" id="aiResp">…</div></div>';
+    stage.innerHTML = historyHtml([]) + '<div class="msg user"><div class="bubb">' + esc(text) + '</div></div><div class="msg ai"><div class="bubb" id="aiResp">…</div></div>';
     input.value = "";
     fetch(EAPI.BASE + "/api/chat/stream", {
       method: "POST",
@@ -729,8 +738,12 @@ draw("history");
             if (!line.startsWith("data:")) return;
             var payload = line.slice(5).trim();
             var el = $("aiResp"); if (!el) return;
-            if (evt === "token") { try { var j = JSON.parse(payload); el.textContent += j.token || ""; } catch (e) {} }
-            else if (evt === "done") { try { var d = JSON.parse(payload); if (d.content) el.textContent = d.content; } catch (e) {} }
+            if (evt === "token") { try { var j = JSON.parse(payload); el.textContent += j.delta || ""; } catch (e) {} }
+            else if (evt === "done") {
+              /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
+                 流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则刷新列表使会话入列表 */
+              try { var d = JSON.parse(payload); if (!sid && d && d.data && d.data.session_id) loadSessions(); } catch (e) {}
+            }
             else if (evt === "error") { try { var er = JSON.parse(payload); el.textContent = "（回答失败：" + (er.message || "未知错误") + "）"; } catch (e) {} }
           });
           return pump();
@@ -743,6 +756,27 @@ draw("history");
   }
   send.addEventListener("click", doSend);
   input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+
+  /* ---- task104：新建会话接真实 API（POST /api/chat/sessions，body 可空）---- */
+  function createSession() {
+    return EAPI.post("/api/chat/sessions", {}).then(function (s) {
+      if (!s || !s.session_id) return;
+      sessions.unshift({ id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at) });
+      activeId = s.session_id;
+      renderSides();
+      loadHistory(activeId);
+    }).catch(function () {});
+  }
+  ["newSession", "sideNew", "drawerNew"].forEach(function (id) {
+    var el = $(id); if (el) el.addEventListener("click", function (e) { e.preventDefault(); createSession(); });
+  });
+  /* 登录态下 hamb 由注入接管（demo 版已解绑），打开移动抽屉并渲染真实会话列表 */
+  var hamb = $("hamb");
+  if (hamb) hamb.addEventListener("click", function () {
+    renderSides();
+    var dr = $("drawer"); if (dr) dr.classList.add("open");
+    var sc = $("scrim"); if (sc) sc.classList.add("open");
+  });
 
   loadSessions();
 })();
