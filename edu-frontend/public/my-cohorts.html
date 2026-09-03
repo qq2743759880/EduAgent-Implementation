@@ -625,5 +625,9 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
   }).catch(function () { showPanel("error"); });
 })();
 </script>
+<script>
+/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
+(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
+</script>
 </body>
 </html>

@@ -44,13 +44,7 @@ textarea{font-family:inherit}
 /* 页面区：flex:1 撑满剩余视口高（确定高度）+ 水平居中（margin auto）→ 无横向溢出、无手动拖条 */
 .page{flex:1;min-height:0;width:100%;max-width:1240px;margin-left:auto;margin-right:auto;padding:14px 16px 16px;display:flex;gap:16px}
 
-/* ===== 审核工具条（HTML 效果图专属，不进入 React）：body flex 顶行，参与文档流→绝不与页面重叠 ===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--htc-124-58-237-001)}
-.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* 审核工具条（respbar）样式已移除：演示状态条为开发工具残留，不再渲染 */
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 
 /* ===== 布局：主区（flex column，确定高度内聊天区独立滚动、composer 常驻底部）===== */
@@ -270,7 +264,7 @@ textarea{font-family:inherit}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -426,24 +420,7 @@ textarea{font-family:inherit}
   <span class="x" id="toastClose">✕</span>
 </p>
 
-<!-- 审核工具条（HTML 效果图专属，不进入 React） -->
-<div class="respbar">
-  <span class="rr">状态演示（会话列表可点选/删除/新建）</span>
-  <button class="on" data-s="history">历史态</button>
-  <button data-s="streaming" class="">流式态</button>
-  <button data-s="degraded" class="">降级态</button>
-  <button data-s="error" class="">错误态</button>
-  <button data-s="empty" class="">空态</button>
-  <span class="sep"></span>
-  <span class="rr">视口</span>
-  <button data-w="375" class="">375</button>
-  <button data-w="768" class="">768</button>
-  <button data-w="1024" class="on">1024</button>
-  <button data-w="1280" class="">1280</button>
-  <button data-w="1440" class="">1440</button>
-  <span class="sep"></span>
-  <button id="resetVp">自适应</button>
-</div>
+<!-- 演示状态条（respbar）已移除：属 HTML 效果图审核工具残留，无 token 演示态由脚本保底渲染，前端不保留开发工具栏 -->
 
 <script>
 /* =====================================================================
@@ -549,7 +526,6 @@ function htmlEmpty(){
 
 function draw(s){
   state = s;
-  document.querySelectorAll(".respbar button[data-s]").forEach(b=>b.classList.toggle("on", b.dataset.s===s));
   const stage = $("#stage");
   const isStream = s==="streaming";
   const ctxTag=$("#ctxTag"), qHint=$("#queueHint"), dg=$("#degradeBanner"), input=$("#composerInput"), send=$("#sendBtn");
@@ -615,16 +591,8 @@ $("#hamb").addEventListener("click", ()=>{ if(!__logon) renderSides(); drawer(tr
 $("#drawerClose").addEventListener("click", ()=>drawer(false));
 $("#scrim").addEventListener("click", ()=>drawer(false));
 
-/* ---- 视口切换（仅演示态）---- */
-if (!__logon) {
-  document.querySelectorAll(".respbar button[data-w]").forEach(b=>b.addEventListener("click",()=>{
-    document.body.style.width=b.dataset.w+"px"; document.body.style.margin="0 auto";
-    document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.toggle("on",x===b));
-  }));
-  document.getElementById("resetVp").addEventListener("click",()=>{ document.body.style.width="auto"; document.body.style.margin="0"; document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.remove("on")); });
-  /* ---- 状态演示绑定（仅演示态）---- */
-  document.querySelectorAll(".respbar button[data-s]").forEach(b=>b.addEventListener("click",()=>draw(b.dataset.s)));
-}
+/* 视口切换/状态演示绑定已随 respbar 一并移除（开发工具残留）；
+   __logon 仅用于保底决定是否渲染演示会话，无 token 时演示态保留。 */
 document.getElementById("composerInput").addEventListener("input",e=>{ e.target.style.height="auto"; e.target.style.height=Math.min(120,Math.max(44,e.target.scrollHeight))+"px"; });
 
 /* ---- 首屏：历史态 + 渲染侧栏（仅演示态；登录态由注入 loadSessions 接管）---- */

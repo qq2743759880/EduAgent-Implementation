@@ -192,6 +192,40 @@
     if (typeof window !== "undefined" && !onLoginPage()) gotoLogin(currentPathWithQuery());
   }
 
+  // ---- 改动点8（task122）：默认统一错误提示，3s toast + 自动消失 ----
+  // 页面无需重复注册；如页面需自定义提示，可再调 EAPI.onError(customFn) 追加。
+  // console.error("[EAPI]", ...) 已在 emitOnce 统一输出，此处只负责可见的 toast。
+  function defaultErrorToast(err) {
+    try {
+      if (!err || err.__toasted) return;
+      err.__toasted = true;
+      if (err.status === 401) return; // 即将跳转登录，不再追加 toast
+      var msg = (err && err.message) || "请求失败";
+      var reduceMotion = false;
+      try { reduceMotion = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+      var root = document.getElementById("eapi-toast-root");
+      if (!root) {
+        root = document.createElement("div");
+        root.id = "eapi-toast-root";
+        root.setAttribute("aria-live", "assertive");
+        root.setAttribute("role", "status");
+        root.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:min(92vw,520px);font:600 13px/1.45 -apple-system,'Segoe UI',system-ui,sans-serif";
+        try { document.body.appendChild(root); } catch (e) { return; }
+      }
+      var t = document.createElement("div");
+      t.textContent = "⚠ " + msg;
+      t.style.cssText = "background:#fff;color:#1f2937;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:8px;padding:10px 14px;box-shadow:0 6px 18px rgba(0,0,0,.16);opacity:0;transform:translateY(6px);transition:opacity .2s ease,transform .2s ease;pointer-events:auto;max-width:100%;text-align:left;white-space:normal;word-break:break-word";
+      root.appendChild(t);
+      requestAnimationFrame(function () { t.style.opacity = "1"; t.style.transform = "none"; });
+      setTimeout(function () {
+        if (reduceMotion) { if (t.parentNode) t.parentNode.removeChild(t); return; }
+        t.style.opacity = "0"; t.style.transform = "translateY(6px)";
+        setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 220);
+      }, 3000);
+    } catch (e) {}
+  }
+  onError(defaultErrorToast);
+
   const EAPI = {
     BASE: initialBase,
     TOKEN_KEY,

@@ -42,13 +42,7 @@ body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;cont
 button{font-family:inherit;cursor:pointer}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:16px}
 
-/* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与者流→绝不与页面重叠 ===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--htc-124-58-237-001)}
-.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* 演示控制工具条（respbar）样式已移除：开发工具残留 */
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 
 /* ===== Hero 成就横幅 ===== */
@@ -242,7 +236,7 @@ body[data-show="empty-log"] .log-empty{display:flex}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -278,25 +272,7 @@ body[data-show="empty-log"] .log-empty{display:flex}
 </style>
 </head>
 <body data-st="ok" data-show="" class="on">
-  <!-- 审核工具条（不进入 React）：视口切换 + 演示态 -->
-  <div class="respbar" role="toolbar" aria-label="效果图演示控制">
-    <span class="rr">视口:</span>
-    <button data-vw="1440" class="on">1440</button>
-    <button data-vw="1024">1024</button>
-    <button data-vw="820">820</button>
-    <button data-vw="768">768</button>
-    <button data-vw="520">520</button>
-    <button data-vw="375">375</button>
-    <span class="sep"></span>
-    <span class="rr">状态:</span>
-    <button data-st="ok" class="">成功</button>
-    <button data-st="loading">加载</button>
-    <button data-st="empty">空态</button>
-    <button data-st="error">错误</button>
-    <button data-st="privacy">隐私排行</button>
-    <span class="sep"></span>
-    <button data-toggle="empty-log">积分流水空</button>
-  </div>
+  <!-- 演示控制工具条（respbar）已移除：属 HTML 效果图审核残留；无 token 演示态由脚本保底渲染，保留默认成功态 -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -701,37 +677,7 @@ body[data-show="empty-log"] .log-empty{display:flex}
 </div><!-- /.glayout -->
 
   <script>
-  (function () {
-    // 视口切换
-    document.querySelectorAll('[data-vw]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var vw = this.dataset.vw;
-        var frame = document.documentElement;
-        frame.style.width = vw + 'px';
-        frame.style.maxWidth = '100vw';
-        frame.style.margin = '0 auto';
-        document.querySelectorAll('[data-vw]').forEach(function (x) { x.classList.remove('on'); });
-        this.classList.add('on');
-      });
-    });
-    // 演示状态切换
-    document.querySelectorAll('[data-st]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.body.dataset.st = this.dataset.st;
-        document.querySelectorAll('[data-st]').forEach(function (x) { x.classList.remove('on'); });
-        this.classList.add('on');
-      });
-    });
-    // 积分流水空态开关
-    document.querySelectorAll('[data-toggle="empty-log"]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (document.body.dataset.st === 'empty') document.body.dataset.st = 'ok';
-        var on = document.body.dataset.show === 'empty-log';
-        document.body.dataset.show = on ? '' : 'empty-log';
-        this.classList.toggle('on', !on);
-      });
-    });
-  })();
+  /* 演示控制绑定已随 respbar 一并移除（开发工具残留）；body data-st 保持默认 "ok" 成功态 */
   </script>
 
 <script>
@@ -880,5 +826,9 @@ body[data-show="empty-log"] .log-empty{display:flex}
     bindRank();
   }).catch(function () {});
 })();
+</script>
+<script>
+/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
+(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
 </script>
 </body></html>

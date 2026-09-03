@@ -786,5 +786,9 @@ setTimeout(()=>{ const f=document.getElementById("xpFill"); if(f) f.style.width=
 /* 课程列表真实数据已在主脚本 fetchPage() 中按当前页加载（含真实分页/筛选）。
  * 此处不再重复请求 page=1 覆盖分页结果。 */
 </script>
+<script>
+/* task122：无 EAPI 静态降级演示态加「演示数据」角标（正常部署加载 edu-api.js 后不显示） */
+(function(){ if(window.EAPI&&window.EAPI.get)return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
+</script>
 </body>
 </html>

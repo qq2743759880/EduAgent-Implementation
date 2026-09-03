@@ -242,13 +242,7 @@ a.session{text-decoration:none}
 .brandbar-back{font-size:0.8125rem;font-weight:700;color:var(--candy-blue);text-decoration:none;border:2px solid var(--border-chip);padding:6px 12px;border-radius:10px;transition:background .15s}
 .brandbar-back:hover{background:var(--candy-blue-soft)}
 </style>
-<script type="module">(async () => {
-  try {
-    const client = await import('/@vite/client');
-    const hmr = client.createHotContext('hmr-handler/fake.js');
-    hmr.on('vite:afterUpdate', window['__ICUBE_WEBVIEW_HMR_CALLBACK_1787275634365']);
-  } catch {}
-})();</script><style>.buttonsCard-bTXa5j {
+<style>.buttonsCard-bTXa5j {
   padding: var(--spacer-4);
   background: none;
   align-items: center;
@@ -580,13 +574,7 @@ a.session{text-decoration:none}
   line-height: 18px;
 }
 
-</style><script type="module">(async () => {
-  try {
-    const client = await import('/@vite/client');
-    const hmr = client.createHotContext('hmr-handler/fake.js');
-    hmr.on('vite:afterUpdate', window['__ICUBE_WEBVIEW_HMR_CALLBACK_1787275634381']);
-  } catch {}
-})();</script><style>.buttonsCard-bTXa5j {
+</style><style>.buttonsCard-bTXa5j {
   padding: var(--spacer-4);
   background: none;
   align-items: center;
@@ -918,13 +906,7 @@ a.session{text-decoration:none}
   line-height: 18px;
 }
 
-</style><script type="module">(async () => {
-  try {
-    const client = await import('/@vite/client');
-    const hmr = client.createHotContext('hmr-handler/fake.js');
-    hmr.on('vite:afterUpdate', window['__ICUBE_WEBVIEW_HMR_CALLBACK_1787275634390']);
-  } catch {}
-})();</script><style>.buttonsCard-bTXa5j {
+</style><style>.buttonsCard-bTXa5j {
   padding: var(--spacer-4);
   background: none;
   align-items: center;
@@ -1256,13 +1238,7 @@ a.session{text-decoration:none}
   line-height: 18px;
 }
 
-</style><script type="module">(async () => {
-  try {
-    const client = await import('/@vite/client');
-    const hmr = client.createHotContext('hmr-handler/fake.js');
-    hmr.on('vite:afterUpdate', window['__ICUBE_WEBVIEW_HMR_CALLBACK_1787275634398']);
-  } catch {}
-})();</script><style>.buttonsCard-bTXa5j {
+</style><style>.buttonsCard-bTXa5j {
   padding: var(--spacer-4);
   background: none;
   align-items: center;
@@ -3486,5 +3462,9 @@ a.session{text-decoration:none}
     E.get("/api/study/sessions/" + state.session_id).then(function (d) { if (d && d.series_id) start(parseInt(d.series_id, 10)); }).catch(function (e) { console.warn("[learning] no series context", e && e.message); });
   }
 })();
+</script>
+<script>
+/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
+(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
 </script>
 </body></html>
