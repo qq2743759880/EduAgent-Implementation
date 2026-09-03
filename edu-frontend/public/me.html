@@ -4168,6 +4168,22 @@ a{text-decoration:none;color:inherit}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style>
+  /* ===== task121 编辑资料弹窗 ===== */
+  .em-overlay{position:fixed;inset:0;background:rgba(30,27,75,.42);display:none;align-items:center;justify-content:center;z-index:90;padding:18px}
+  .em-overlay.open{display:flex}
+  .em-modal{width:min(640px,100%);max-height:90vh;overflow:auto;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-xl);box-shadow:var(--shadow-3d);padding:22px 24px}
+  .em-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .em-title{font-size:18px;font-weight:900;color:var(--ink)}
+  .em-close{border:2px solid var(--ink);background:var(--white);border-radius:999px;width:34px;height:34px;font-size:16px;cursor:pointer;font-weight:800;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .em-note{font-size:12px;color:var(--ink-faint);font-weight:600;margin:-6px 0 12px}
+  .em-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px}
+  .em-actions .f-hint{margin-right:auto}
+  .em-err{display:none;margin-top:12px;padding:10px 12px;border:2px solid var(--candy-red);background:#fff4f4;color:#b91c1c;border-radius:12px;font-size:13px;font-weight:700;white-space:pre-wrap}
+  .em-err.show{display:block}
+  .em-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-weight:800;font-size:14px;padding:11px 20px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:95}
+  .em-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
 </head>
 <body data-st="ok" class="on">
 
@@ -4377,6 +4393,162 @@ a{text-decoration:none;color:inherit}
       if (pts.level_no) set("st-level", "Lv." + pts.level_no + (pts.level_title ? " · " + pts.level_title : ""));
     }
   });
+})();
+</script>
+
+<!-- ===== task121 编辑资料弹窗 ===== -->
+<div class="em-overlay" id="emOverlay" role="dialog" aria-modal="true" aria-labelledby="emTitle">
+  <div class="em-modal">
+    <div class="em-head">
+      <div class="em-title" id="emTitle">✏️ 编辑资料</div>
+      <button type="button" class="em-close" id="emClose" aria-label="关闭">✕</button>
+    </div>
+    <p class="em-note">只保存你修改过的字段；学习目标 / 兴趣标签用逗号分隔，学科偏好用「编码:1-5」一行一个。</p>
+    <form id="emForm" class="form-card" style="box-shadow:none">
+      <div class="form-grid">
+        <div class="field"><label>昵称</label><input type="text" id="em-nickname" maxlength="64" placeholder="你的昵称"></div>
+        <div class="field"><label>性别</label><select id="em-gender"><option value="">不修改</option><option value="male">男</option><option value="female">女</option><option value="other">其他</option><option value="secret">保密</option></select></div>
+        <div class="field"><label>生日</label><input type="date" id="em-birthday"></div>
+        <div class="field"><label>年级编码</label><input type="text" id="em-grade_code" maxlength="32" placeholder="如 senior_high_2"></div>
+        <div class="field"><label>每周可用时长（小时/周，0-168）</label><input type="number" id="em-weekly" min="0" max="168" step="1"></div>
+        <div class="field"><label>头像 URL（粘贴图片链接，不支持上传）</label><input type="text" id="em-avatar_url" maxlength="255" placeholder="https://…"></div>
+      </div>
+      <div class="form-grid" style="margin-top:14px">
+        <div class="field" style="grid-column:1/-1"><label>学习目标（逗号分隔）</label><input type="text" id="em-learning_goals" placeholder="编程入门, 升学备考"></div>
+        <div class="field" style="grid-column:1/-1"><label>学科偏好（每行 编码:分数）</label><textarea id="em-subject_preferences" rows="3" placeholder="programming:5&#10;math:4" style="font-family:inherit;border:2px solid var(--ink);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;color:var(--ink);outline:none"></textarea></div>
+        <div class="field" style="grid-column:1/-1"><label>兴趣标签（逗号分隔）</label><input type="text" id="em-interest_tags" placeholder="算法, 机器人"></div>
+      </div>
+      <div class="em-err" id="emErr"></div>
+      <div class="em-actions">
+        <span class="f-hint">保存后个人中心头部立即更新</span>
+        <button type="button" class="em-close-btn" id="emCancel" style="border:2px solid var(--ink);background:var(--white);border-radius:12px;padding:8px 18px;font-weight:800;cursor:pointer">取消</button>
+        <button type="submit" class="save-btn" id="emSave">💾 保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="em-toast" id="emToast"></div>
+
+<script>
+/* ===== task121 编辑资料弹窗逻辑 ===== */
+(function () {
+  if (!window.EAPI || !EAPI.store.getToken()) return;
+  var overlay = document.getElementById("emOverlay");
+  var form = document.getElementById("emForm");
+  var errBox = document.getElementById("emErr");
+  var toast = document.getElementById("emToast");
+  var dirty = false;
+  var original = {};
+
+  function setVal(id, v) { var el = document.getElementById(id); if (el && v != null) el.value = v; }
+  function getNum(id) { var el = document.getElementById(id); var v = el.value.trim(); return v === "" ? null : Number(v); }
+
+  function splitList(s) {
+    return s.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function parseSubjects(s) {
+    var out = [];
+    s.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (line) {
+      var m = line.match(/^([^:：]+)\s*[:：]\s*(\d+)$/);
+      if (!m) throw new Error("学科偏好格式错误：「" + line + "」应为 编码:分数（1-5）");
+      var score = parseInt(m[2], 10);
+      if (score < 1 || score > 5) throw new Error("学科偏好「" + m[1] + "」分数需在 1-5");
+      out.push({ subject_code: m[1].trim(), preference_score: score });
+    });
+    return out;
+  }
+
+  function open() {
+    errBox.classList.remove("show"); errBox.textContent = "";
+    EAPI.get("/api/users/me/profile").then(function (p) {
+      if (!p) return;
+      original = p;
+      setVal("em-nickname", p.nickname);
+      setVal("em-gender", p.gender || "");
+      setVal("em-birthday", p.birthday ? String(p.birthday).slice(0, 10) : "");
+      setVal("em-grade_code", p.grade_code);
+      setVal("em-weekly", p.weekly_available_hours);
+      setVal("em-avatar_url", p.avatar_url);
+      setVal("em-learning_goals", (p.learning_goals || []).join(", "));
+      setVal("em-subject_preferences", (p.subject_preferences || []).map(function (x) { return x.subject_code + ":" + x.preference_score; }).join("\n"));
+      setVal("em-interest_tags", (p.interest_tags || []).join(", "));
+      dirty = false;
+      overlay.classList.add("open");
+    }).catch(function () { showErr("加载资料失败，请稍后重试"); });
+  }
+  function close() {
+    if (dirty && !confirm("有未保存的修改，确定放弃吗？")) return;
+    overlay.classList.remove("open");
+  }
+  function showErr(msg) { errBox.textContent = msg; errBox.classList.add("show"); }
+  function showToast(msg) {
+    toast.textContent = msg; toast.classList.add("show");
+    setTimeout(function () { toast.classList.remove("show"); }, 2200);
+  }
+  function updateHeader(p) {
+    if (p.nickname) { var n = document.getElementById("me-name"); if (n) n.textContent = p.nickname; }
+    if (p.avatar_url) { var av = document.querySelector(".me-head .avatar"); if (av) { av.textContent = ""; av.style.backgroundImage = "url('" + p.avatar_url + "')"; av.style.backgroundSize = "cover"; } }
+    var prefs = p.subject_preferences || [];
+    var el = document.getElementById("me-prefs");
+    if (el) el.innerHTML = prefs.length
+      ? prefs.slice(0, 3).map(function (x) { return '<span class="pref-tag">' + x.subject_code + '</span>'; }).join("")
+      : (p.interest_tags || []).slice(0, 3).map(function (t) { return '<span class="pref-tag">' + t + '</span>'; }).join("");
+  }
+
+  form.addEventListener("input", function () { dirty = true; });
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errBox.classList.remove("show");
+    var payload = {};
+    try {
+      var nick = document.getElementById("em-nickname").value.trim();
+      if (nick !== (original.nickname || "")) payload.nickname = nick;
+      var gender = document.getElementById("em-gender").value;
+      if (gender && gender !== (original.gender || "")) payload.gender = gender;
+      var b = document.getElementById("em-birthday").value;
+      if (b && b !== String(original.birthday || "").slice(0, 10)) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(b)) throw new Error("生日格式应为 YYYY-MM-DD");
+        payload.birthday = b;
+      }
+      var grade = document.getElementById("em-grade_code").value.trim();
+      if (grade !== (original.grade_code || "")) payload.grade_code = grade;
+      var wk = getNum("em-weekly");
+      if (wk !== null && wk !== original.weekly_available_hours) {
+        if (wk < 0 || wk > 168 || !Number.isInteger(wk)) throw new Error("每周可用时长需为 0-168 的整数");
+        payload.weekly_available_hours = wk;
+      }
+      var av = document.getElementById("em-avatar_url").value.trim();
+      if (av !== (original.avatar_url || "")) payload.avatar_url = av;
+      var goals = splitList(document.getElementById("em-learning_goals").value);
+      if (JSON.stringify(goals) !== JSON.stringify(original.learning_goals || [])) payload.learning_goals = goals;
+      var subs = parseSubjects(document.getElementById("em-subject_preferences").value);
+      if (JSON.stringify(subs) !== JSON.stringify(original.subject_preferences || [])) payload.subject_preferences = subs;
+      var tags = splitList(document.getElementById("em-interest_tags").value);
+      if (JSON.stringify(tags) !== JSON.stringify(original.interest_tags || [])) payload.interest_tags = tags;
+    } catch (err) { showErr(err.message); return; }
+
+    if (Object.keys(payload).length === 0) { showToast("没有需要保存的修改"); return; }
+
+    EAPI.put("/api/users/me/profile", payload).then(function (p) {
+      updateHeader(p);
+      dirty = false;
+      overlay.classList.remove("open");
+      showToast("资料已更新");
+    }).catch(function (e) {
+      var d = e && e.data;
+      if (Array.isArray(d) && d[0] && d[0].msg) showErr("保存失败：" + d.map(function (x) { return x.msg; }).join("；"));
+      else showErr("保存失败：" + ((e && e.message) || "未知错误"));
+    });
+  });
+
+  var editBtn = document.querySelector(".edit-btn");
+  if (editBtn && !editBtn.dataset.bound) { editBtn.dataset.bound = "1"; editBtn.addEventListener("click", open); }
+  document.getElementById("emClose").addEventListener("click", close);
+  document.getElementById("emCancel").addEventListener("click", close);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+
+  // dashboard 通过 ?edit=1 直达编辑弹窗
+  if (/[?&]edit=1\b/.test(location.search)) open();
 })();
 </script>
 </body></html>

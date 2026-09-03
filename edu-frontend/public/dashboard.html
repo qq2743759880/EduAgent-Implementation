@@ -346,7 +346,7 @@ button{font-family:inherit;cursor:pointer}
     </div>
     <div class="acts">
       <button class="btn" type="button" onclick="location.href='me.html'">🧑‍🎓 个人中心</button>
-      <button class="btn primary" type="button" onclick="location.href='me.html'">⚙️ 调整偏好</button>
+      <button class="btn primary" type="button" onclick="location.href='me.html?edit=1'">⚙️ 调整偏好</button>
     </div>
   </header>
 
@@ -673,8 +673,9 @@ button{font-family:inherit;cursor:pointer}
       var secs = d.total_study_seconds || 0, min = Math.round(secs / 60);
       var el = document.getElementById("kpi-time");
       if (el) el.innerHTML = min + "<small> 分钟</small>";
-      var q = document.getElementById("kpi-q");      // 答题数卡：后端暂无字段 → "—"
-      if (q) q.innerHTML = "—";
+      // 答题数卡：接真实字段 total_questions_attempted（编排者实测 GET /api/progress/dashboard 已返回）
+      var q = document.getElementById("kpi-q");
+      if (q) q.innerHTML = (d.total_questions_attempted != null ? d.total_questions_attempted : "—") + "<small> 道</small>";
       var c = document.getElementById("kpi-course"); // 在学课程卡：后端暂无字段 → "—"
       if (c) c.innerHTML = "—";
       var s = document.getElementById("kpi-streak");
