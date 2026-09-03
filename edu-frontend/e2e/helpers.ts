@@ -4,11 +4,13 @@ import { type Page } from "@playwright/test";
 export const STUDENT = Object.freeze({ account: "stu01test", password: "Test@123456" });
 export const ADMIN = Object.freeze({ account: "adm02test", password: "Test@123456" });
 
-/** 用户端 8 项侧边导航（对齐 navigation-baseline / (user)/layout.tsx） */
+/** 用户端侧边导航（对齐 navigation-baseline / (user)/layout.tsx，含 Season-2 订单/工单） */
 export const USER_NAV = [
   ["/community", "社区"],
   ["/chat", "AI 学习问答"],
   ["/courses", "课程中心"],
+  ["/orders", "我的订单"],
+  ["/tickets", "我的工单"],
   ["/dashboard", "学习仪表盘"],
   ["/practice/wrong-book", "错题 / 单词本"],
   ["/my-courses", "我的班次"],
@@ -55,11 +57,11 @@ export async function login(
   }
 }
 
-/** 断言用户端主导航 8 项均已渲染（桌面可见或移动端存在于 DOM） */
-export function expectUserNav(page: Page) {
+/** 断言用户端主导航项均在渲染中出现（桌面可见或移动端存在于 DOM） */
+export async function expectUserNav(page: Page) {
   for (const [href, label] of USER_NAV) {
     const link = page.locator(`header nav a[href="${href}"], nav a[href="${href}"]`).first();
-    const count = link.count();
+    const count = await link.count();
     if (count === 0) throw new Error(`缺导航项 ${label} (${href})`);
   }
 }

@@ -15,8 +15,8 @@ test("探针：浏览器内 admin token 调用题型枚举", async ({ page }) =>
           headers: tok ? { Authorization: `Bearer ${tok}` } : {},
         });
         const text = await r.text();
-        let parsed: unknown = null;
-        try { parsed = JSON.parse(text); } catch {}
+        let parsed: { code?: unknown } | null = null;
+        try { parsed = JSON.parse(text) as { code?: unknown } | null; } catch {}
         out[path] = { status: r.status, ms: Date.now() - t0, code: parsed?.code ?? null, hasData: parsed ? "data" in parsed : false, bodyHead: text.slice(0, 60) };
       } catch (e: unknown) {
         out[path] = { ms: Date.now() - t0, err: e instanceof Error ? e.message : String(e) };

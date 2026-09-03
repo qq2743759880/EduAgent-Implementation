@@ -81,8 +81,14 @@ describe("lib/status 枚举映射表（单源）", () => {
     expect(statusTone("transcode_status", "failed")).toBe("danger");
     expect(statusText("review_status", "rejected")).toBe("已驳回");
     expect(statusTone("review_status", "rejected")).toBe("danger");
-    expect(statusText("ticket_status", "in_progress")).toBe("处理中");
-    expect(statusTone("ticket_status", "in_progress")).toBe("primary");
+    expect(statusText("ticket_status", "open")).toBe("待受理");
+    expect(statusTone("ticket_status", "open")).toBe("warning");
+    expect(statusText("ticket_status", "processing")).toBe("处理中");
+    expect(statusTone("ticket_status", "processing")).toBe("primary");
+    expect(statusText("ticket_status", "resolved")).toBe("已解决");
+    expect(statusTone("ticket_status", "resolved")).toBe("success");
+    expect(statusText("ticket_status", "closed")).toBe("已关闭");
+    expect(statusTone("ticket_status", "closed")).toBe("neutral");
   });
 
   it("priority/series_sale/delivery_mode/order_item_status", () => {

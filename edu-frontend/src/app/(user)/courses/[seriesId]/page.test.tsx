@@ -381,10 +381,12 @@ describe("课程详情页交互", () => {
       discount_amount: 0,
       pay_amount: 2799,
       coupon_id: null,
-      status: "created",
+      status: "pending",
       created_at: "2026-08-20T00:00:00",
       paid_at: null,
       cancelled_at: null,
+      items: [],
+      payments: [],
     });
     await renderPage();
     await screen.findAllByText("通用编程入门班");

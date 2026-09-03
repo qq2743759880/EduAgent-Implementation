@@ -88,7 +88,7 @@ test.describe("全链路主流程（GWT①）", () => {
     // student 不应能停留在管理页（管理守卫拦截）
     // 后端 /api/admin/users 应按契约 403 + 错误壳
     expect(res).not.toHaveProperty("__err");
-    if (res.api && !res.api.__err) {
+    if ("api" in res && res.api && !res.api.__err) {
       // 统一错误壳：code 为字符串、data 为 null
       expect(typeof res.api.code).toBe("string");
       expect(res.api.data).toBeNull();
