@@ -319,6 +319,55 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
     .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
     .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
   }
+  /* ===== task120 真实数据层（登录态注入，未登录演示态不受影响）===== */
+  .hid{display:none!important}
+  .wb-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .wb-filter .pill{border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);font-size:12px;font-weight:800;padding:6px 14px;color:var(--ink-strong);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
+  .wb-filter .pill.on{background:var(--candy-green);color:var(--ht-fff);border-color:var(--candy-green-deep)}
+  .wb-count{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-muted)}
+  .pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:12px 14px;border-top:2px solid var(--htc-31-31-31-008)}
+  .pager .info{font-size:12px;font-weight:800;color:var(--ink-muted)}
+  .redo:disabled{opacity:.4;cursor:not-allowed}
+  /* 复习会话真实容器 */
+  #review-real{padding:20px 18px 24px}
+  .rev-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-muted);margin-bottom:12px}
+  .rev-prog{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .rev-prog .bar{flex:1;min-width:120px;height:14px;border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);overflow:hidden}
+  .rev-prog .bar i{display:block;height:100%;background:var(--candy-yellow);border-right:2px solid var(--ink)}
+  .rev-start{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);border-radius:14px;color:var(--ht-fff);font-size:0.9375rem;font-weight:800;padding:11px 24px;background:var(--candy-green);box-shadow:0 4px 0 var(--shadow-green)}
+  .rev-start:disabled{opacity:.5;cursor:not-allowed}
+  .rev-stem{font-size:17px;font-weight:800;line-height:1.5;margin:14px 0 18px}
+  .rev-expl{background:var(--ht-fff);border:3px dashed var(--candy-purple);border-radius:var(--radius-lg);padding:16px 18px;margin-top:16px;white-space:pre-wrap;line-height:1.7;font-size:0.8125rem;color:var(--ink-strong)}
+  .rev-mast{font-size:12px;font-weight:800;margin-top:10px;color:var(--candy-purple)}
+  .rev-note{font-size:12px;font-weight:700;color:var(--ink-muted);margin:12px 0 0}
+  .rev-empty{text-align:center;padding:40px 20px;color:var(--ink-muted);font-size:0.8125rem}
+  /* 单词本真实容器 */
+  .vocab-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+  .vocab-toolbar select{border:2px solid var(--ink);border-radius:10px;font-size:13px;font-weight:800;padding:6px 10px;background:var(--ht-fff);font-family:inherit}
+  .vocab-date{font-size:12px;font-weight:800;color:var(--ink-muted)}
+  .word-grid{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:720px){.word-grid{grid-template-columns:repeat(2,1fr)}}
+  .word-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-s);padding:16px 16px 14px;display:flex;flex-direction:column;gap:8px}
+  .word-card .w-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .word-card .word{font-size:20px;font-weight:900;color:var(--candy-blue-deep)}
+  .word-card .phone{font-size:12px;color:var(--ink-muted)}
+  .word-card .chip{font-size:10px;font-weight:800;border-radius:999px;padding:2px 9px;border:2px solid var(--ink);margin-left:auto}
+  .word-card .meaning{font-size:14px;font-weight:700;color:var(--ink)}
+  .word-card .ex{font-size:12px;color:var(--ink-strong);line-height:1.6}
+  .word-card .ex b{color:var(--candy-green-deep)}
+  .word-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  .word-acts button{border:2px solid var(--ink);border-radius:12px;font-size:13px;font-weight:800;padding:8px 0;box-shadow:0 2px 0 var(--htc-31-31-31-015)}
+  .word-acts button:disabled{opacity:.5;cursor:not-allowed}
+  .wa-yes{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+  .wa-so{background:var(--candy-orange-soft);color:var(--candy-orange-deep)}
+  .wa-no{background:var(--error-bg);color:var(--candy-red)}
+  .word-fb{font-size:12px;font-weight:700;color:var(--candy-green-deep);min-height:16px}
+  .prog-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(min-width:720px){.prog-grid{grid-template-columns:repeat(4,1fr)}}
+  .prog-cell{background:var(--ht-fff);border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow-s);padding:12px 14px}
+  .prog-cell .n{font-size:20px;font-weight:900;color:var(--candy-green-deep);font-variant-numeric:tabular-nums}
+  .prog-cell .l{font-size:11px;color:var(--ink-muted);font-weight:700;margin-top:2px}
+  .norec{font-size:12px;font-weight:700;color:var(--ink-muted);background:var(--ht-fff);border:2px dashed var(--border-chip);border-radius:12px;padding:14px;line-height:1.6}
   .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
   .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
   .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
@@ -410,19 +459,19 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
       <section class="stat-grid" aria-label="复习概览">
         <div class="stat-card green">
           <span class="ic" aria-hidden="true">📚</span>
-          <div><div class="num">23</div><div class="lbl">今日待复习 <b>错题</b></div></div>
+          <div><div class="num" id="statWrong">23</div><div class="lbl">今日待复习 <b>错题</b></div></div>
         </div>
         <div class="stat-card blue">
           <span class="ic" aria-hidden="true">🔤</span>
-          <div><div class="num">12</div><div class="lbl">待回忆 <b>单词</b></div></div>
+          <div><div class="num" id="statWord">12</div><div class="lbl">待回忆 <b>单词</b></div></div>
         </div>
         <div class="stat-card orange">
           <span class="ic" aria-hidden="true">📈</span>
-          <div><div class="num">67%</div><div class="lbl">近 7 日 <b>正确率</b></div></div>
+          <div><div class="num" id="statAcc">67%</div><div class="lbl">近 30 日 <b>正确率</b></div></div>
         </div>
         <div class="stat-card purple">
           <span class="ic" aria-hidden="true">🔥</span>
-          <div><div class="num">5</div><div class="lbl">连续 <b>学习天数</b></div></div>
+          <div><div class="num" id="statStreak">5</div><div class="lbl">连续 <b>学习天数</b></div></div>
         </div>
       </section>
 
@@ -452,8 +501,8 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
       </section>
 
       <!-- ③ 复习题目列表（错题本 DataTable）-->
-      <h2 class="sec-h">复习题目列表 <span class="tag">错题本 · 共 23 题</span></h2>
-      <div class="panel">
+      <h2 class="sec-h">复习题目列表 <span class="tag" id="wbDemoTag">错题本 · 共 23 题</span></h2>
+      <div class="panel" id="wbDemoPanel">
         <div class="tlist-scroll">
         <table class="tlist">
           <caption class="visually-hidden">错题本列表</caption>
@@ -495,6 +544,31 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
             </tr>
           </tbody>
         </table>
+        </div>
+      </div>
+
+      <!-- ③b 错题本 · 真实数据容器（登录态注入，未登录隐藏）-->
+      <div id="wb-real" class="hid">
+        <div class="wb-filter" role="group" aria-label="错题本状态过滤">
+          <button type="button" class="pill on" data-wstatus="ACTIVE">待复习</button>
+          <button type="button" class="pill" data-wstatus="MASTERED">已掌握</button>
+          <button type="button" class="pill" data-wstatus="ARCHIVED">已归档</button>
+          <button type="button" class="pill" data-wstatus="ALL">全部</button>
+          <span class="wb-count" id="wbCount"></span>
+        </div>
+        <div class="panel">
+          <div class="tlist-scroll">
+            <table class="tlist">
+              <caption class="visually-hidden">错题本真实数据</caption>
+              <thead><tr><th scope="col">题型</th><th scope="col">题干</th><th scope="col">错次</th><th scope="col">到期时间</th><th scope="col">动作</th></tr></thead>
+              <tbody id="wrongTbody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <button class="redo" id="wbPrev" type="button">← 上一页</button>
+            <span class="info" id="wbPageInfo"></span>
+            <button class="redo" id="wbNext" type="button">下一页 →</button>
+          </div>
         </div>
       </div>
 
@@ -630,7 +704,39 @@ for i, v in enumerate(nums):
           </div>
 
         </div>
+        <div id="review-real" class="hid"></div>
       </section>
+
+      <!-- ⑤ 单词本 · 真实容器（登录态注入）：今日计划 + SM-2 回忆 + 进度 -->
+      <div id="vocab-real" class="hid">
+        <div class="sec-h" style="margin-top:26px">今日单词计划 <span class="tag">SM-2 间隔回忆</span></div>
+        <div class="vocab-toolbar">
+          <label class="demo-note" style="margin:0">等级
+            <select id="vocabLevel" aria-label="选择单词等级">
+              <option value="L1">L1 入门</option><option value="L2">L2 基础</option>
+              <option value="L3">L3 进阶</option><option value="L4">L4 提升</option><option value="L5">L5 高阶</option>
+            </select>
+          </label>
+          <span class="vocab-date" id="vocabDate"></span>
+        </div>
+        <div id="vocabCards"></div>
+        <div class="sec-h" style="margin-top:26px">学习进度 <span class="tag" id="vocabProgTag"></span></div>
+        <div id="vocabProg"></div>
+      </div>
+
+      <!-- ⑥ 专项练习 · 题型选择（登录态注入）：SINGLE/MULTI/JUDGE 支持，其余标注迭代二 -->
+      <div id="topic-real" class="hid">
+        <div class="sec-h" style="margin-top:26px">专项练习 <span class="tag">按题型刷题</span></div>
+        <div class="wb-filter" role="group" aria-label="专项题型选择">
+          <button type="button" class="pill" data-ttype="SINGLE">单选</button>
+          <button type="button" class="pill" data-ttype="MULTI">多选</button>
+          <button type="button" class="pill" data-ttype="JUDGE">判断</button>
+          <button type="button" class="pill" data-ttype="FILL" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>填空 · 迭代二</button>
+          <button type="button" class="pill" data-ttype="DRAG_SORT" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>拖拽排序 · 迭代二</button>
+          <button type="button" class="pill" data-ttype="MATCH" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>连线匹配 · 迭代二</button>
+        </div>
+        <p class="demo-note">选择题型后自动进入下方复习会话，逐一判分并回写错题本。</p>
+      </div>
     </div>
 
     <!-- ============ LOADING：骨架 ============ -->
@@ -755,7 +861,450 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
 })();
 </script>
 <script>
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/interactive/quiz/wrong-book?page=1&page_size=10").then(function(d){var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);if(!items.length)return;var el=document.querySelector(".wrong-book .count,[class*=count]");if(el)el.textContent=items.length+(items.length?" 题":"");}).catch(function(){});})();
+/* ===== task120 真实接入（登录态注入；未登录保留演示态）===== */
+(function () {
+  if (!window.EAPI || !EAPI.store || !EAPI.store.getToken()) return; // 未登录 → 保留演示态
+
+  var $$ = function (id) { return document.getElementById(id); };
+  var SUP = { SINGLE: '单选', MULTI: '多选', JUDGE: '判断', FILL: '填空', DRAG_SORT: '拖拽排序', MATCH: '连线匹配' };
+  var SUPKEY = { SINGLE: 'single', MULTI: 'multi', JUDGE: 'judge', FILL: 'blank', DRAG_SORT: 'drag', MATCH: 'match' };
+  // 首期复习仅支持三类，其余置灰"迭代二"
+  var SUP_REVIEW = { SINGLE: true, MULTI: true, JUDGE: true, FILL: false, DRAG_SORT: false, MATCH: false };
+
+  var WB = { status: 'ACTIVE', page: 1, size: 10 };   // 错题本
+  var RV = { type: null, idx: 0, total: 5, run: false, busy: false, chosen: null, q: null }; // 复习会话
+  var WV = { level: 'L1' };                            // 单词等级（默认 L1，该级已实证有词库）
+
+  /* ---------- 通用工具 ---------- */
+  function fmtDate(s) {
+    if (!s) return '—';
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return String(s).slice(0, 10);
+    return d.toISOString ? d.toISOString().slice(0, 10) : String(s).slice(0, 10);
+  }
+  function setText(id, t) { var el = $$(id); if (el) el.textContent = t != null ? t : '—'; }
+  function typeLabel(t) { return SUP[t] || t || ''; }
+
+  /* ================= ① 统计概览 ================= */
+  function loadStats() {
+    EAPI.get('/api/interactive/quiz/wrong-book?status=ACTIVE&page=1&page_size=10')
+      .then(function (d) { if (d && d.total != null) setText('statWrong', d.total); })
+      .catch(function () {});
+    EAPI.get('/api/vocab/progress?level_code=' + WV.level)
+      .then(function (p) {
+        if (!p) return;
+        setText('statAcc', Math.round((p.accuracy_30d || 0) * 100) + '%');
+        setText('statStreak', p.streak_days);
+        // 待回忆单词由 loadVocab 依据今日计划(due+new)写入，避免用不存在的 due 字段
+      })
+      .catch(function () {});
+  }
+
+  /* ================= ② 错题本 DataTable ================= */
+  function loadWrong() {
+    var tbody = $$('wrongTbody');
+    setText('wbCount', '加载中…');
+    EAPI.get('/api/interactive/quiz/wrong-book?status=' + WB.status + '&page=' + WB.page + '&page_size=' + WB.size)
+      .then(function (d) {
+        var items = (d && d.items) || [];
+        // 写入统计/总览
+        if (WB.status === 'ACTIVE') setText('statWrong', d.total);
+        if ($$('wbDemoTag')) $$('wbDemoTag').textContent = '错题本 · 共 ' + (d.total || 0) + ' 题';
+        setText('wbCount', '共 ' + (d.total || 0) + ' 题 · 第 ' + (d.page || 1) + '/' + Math.max(1, Math.ceil((d.total || 0) / WB.size)) + ' 页');
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="rev-empty">当前过滤下暂无错题 🎉</td></tr>';
+        } else {
+          // 逐行补充题干（wrong-book 无 title，需按 custom_code 拉题目详情）
+          tbody.innerHTML = items.map(function (row) {
+            var sup = SUP_REVIEW[row.question_type] !== false;
+            return '<tr>' +
+              '<td><span class="type-chip ' + (SUPKEY[row.question_type] || 'single') + '">' + typeLabel(row.question_type) + '</span></td>' +
+              '<td class="q-stem" data-wcode="' + (row.custom_code || '') + '">加载中…</td>' +
+              '<td>' + (row.wrong_count != null ? row.wrong_count : '—') + '</td>' +
+              '<td class="err-date">' + fmtDate(row.next_review_at) + '</td>' +
+              '<td>' + (sup
+                ? '<button class="redo" type="button" data-wredo="' + row.custom_code + '">重做</button>'
+                : '<span class="demo-note" style="margin:0">迭代二</span>') + '</td>' +
+              '</tr>';
+          }).join('');
+          // 并行拉题干
+          items.forEach(function (row) {
+            if (!row.custom_code) return;
+            EAPI.get('/api/interactive/quiz/question/' + encodeURIComponent(row.custom_code))
+              .then(function (q) {
+                var cell = tbody.querySelector('td[data-wcode="' + row.custom_code + '"]');
+                if (cell) cell.textContent = (q && q.title) || ('#' + row.custom_code);
+              })
+              .catch(function () {
+                var cell = tbody.querySelector('td[data-wcode="' + row.custom_code + '"]');
+                if (cell) cell.textContent = '#' + row.custom_code;
+              });
+          });
+        }
+      })
+      .catch(function () {
+        setText('wbCount', '加载失败');
+        tbody.innerHTML = '<tr><td colspan="5" class="rev-empty">加载错题本失败，请稍后重试</td></tr>';
+      });
+  }
+  function bindWrongControls() {
+    document.querySelectorAll('#wb-real .pill').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('#wb-real .pill').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        WB.status = b.dataset.wstatus; WB.page = 1;
+        loadWrong();
+      });
+    });
+    $$('wbPrev').addEventListener('click', function () { if (WB.page > 1) { WB.page--; loadWrong(); } });
+    $$('wbNext').addEventListener('click', function () { WB.page++; loadWrong(); });
+    document.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('[data-wredo]');
+      if (b) {
+        var sup = b.closest('tr').querySelector('.type-chip');
+        startReview({ type: null }); // 通用 5 题复习（后端 next 自带错题优先）
+      }
+    });
+  }
+
+  /* ================= ③ 复习会话（真判分）================= */
+  function hideQuizDemo() {
+    var quiz = $$('quiz');
+    if (!quiz) return;
+    Array.prototype.forEach.call(quiz.children, function (c) {
+      if (c.id !== 'review-real') c.style.display = 'none';
+    });
+    $$('review-real').classList.remove('hid');
+  }
+  function startReview(opts) {
+    RV.type = (opts && opts.type) || null;
+    RV.idx = 0; RV.total = 5; RV.run = true; RV.busy = false;
+    hideQuizDemo();
+    renderReviewHead();
+    getNext();
+  }
+  function renderReviewHead() {
+    $$('review-real').innerHTML =
+      '<div class="rev-prog"><button class="rev-start" id="rvStart" type="button">开始新一轮复习</button>' +
+      '<span class="bar" style="flex:1"><i id="rvBar" style="width:0%"></i></span>' +
+      '<span class="rev-note" id="rvCount">0 / ' + RV.total + '</span></div>' +
+      '<div id="rvBody" class="rev-meta"></div>';
+    $$('rvStart').addEventListener('click', function () { startReview({ type: RV.type }); });
+  }
+  function getNext() {
+    var qs = RV.type ? '?question_type=' + RV.type : '';
+    RV.busy = true;
+    EAPI.get('/api/interactive/quiz/next' + qs)
+      .then(function (q) {
+        RV.busy = false;
+        RV.q = q;
+        RV.chosen = null;
+        RV.idx++;
+        renderQuestion(q);
+      })
+      .catch(function (e) {
+        RV.busy = false;
+        if ($$('rvBody')) $$('rvBody').innerHTML =
+          '<div class="rev-empty">加载题目失败，请检查网络后重试' + (e && e.message ? '：' + e.message : '') + '</div>';
+      });
+  }
+  function renderQuestion(q) {
+    var body = $$('rvBody');
+    var meta = '<span class="no">第 ' + RV.idx + ' 题 / ' + RV.total + '</span>' +
+               '<span class="type-chip ' + (SUPKEY[q.question_type] || 'single') + '">' + typeLabel(q.question_type) + '</span>' +
+               '<span>· ' + (q.subject_code || '') + '</span>';
+    var stem = '<div class="rev-stem">' + (q.title || '') + '</div>';
+    var input = '';
+    var t = q.question_type;
+    if (t === 'SINGLE') {
+      input = '<div class="options" role="group" aria-label="单选">' + (q.choices || []).map(function (c) {
+        return '<button class="opt rv-opt" type="button" data-key="' + c.key + '"><span class="key">' + c.key + '</span>' + c.text + '</button>';
+      }).join('') + '</div>';
+    } else if (t === 'MULTI') {
+      input = '<div class="options" role="group" aria-label="多选（可多选后提交）">' + (q.choices || []).map(function (c) {
+        return '<button class="opt rv-opt rv-multi" type="button" data-key="' + c.key + '"><span class="key">' + c.key + '</span>' + c.text + '</button>';
+      }).join('') + '</div>';
+    } else if (t === 'JUDGE') {
+      input = '<div class="judge-wrap" role="group" aria-label="判断">' +
+        '<button class="judge-opt rv-judge" type="button" data-judge="true"><span class="emoj">✅</span> 正确</button>' +
+        '<button class="judge-opt rv-judge" type="button" data-judge="false"><span class="emoj">❌</span> 错误</button></div>';
+    } else {
+      input = '<div class="rev-empty">题型 ' + typeLabel(t) + ' 暂不支持，首期复习支持单选/多选/判断，其余迭代二。</div>';
+    }
+    var submitBtn = (t === 'SINGLE' || t === 'JUDGE')
+      ? '<button class="submit rv-submit" type="button">提交答案</button>'
+      : (t === 'MULTI' ? '<button class="submit rv-submit" type="button">提交所选（' + (q.choices || []).length + ' 项可选）</button>' : '');
+    if (t !== 'SINGLE' && t !== 'MULTI' && t !== 'JUDGE') submitBtn = '';
+    body.innerHTML = meta + stem + input +
+      '<div style="display:flex;gap:10px;align-items:center;margin-top:6px">' + submitBtn +
+      '<button class="redo rv-next" type="button" style="display:none">下一题 →</button></div>' +
+      '<div class="result ok hid rv-result" role="status" aria-live="polite">' +
+      '<span class="big">✓</span><div><div class="t"></div><div class="d"></div></div></div>' +
+      '<div class="rev-expl hid rv-expl"></div>' +
+      '<div class="rev-mast hid rv-mast"></div>';
+
+    // 绑定交互
+    bindQuestion(t);
+
+    // 单选：点选项即定答案
+    if (t === 'SINGLE') {
+      document.querySelectorAll('#rvBody .rv-opt').forEach(function (o) {
+        o.addEventListener('click', function () {
+          if (RV.busy) return;
+          RV.chosen = o.dataset.key;
+          document.querySelectorAll('#rvBody .rv-opt').forEach(function (x) { x.classList.remove('correct'); });
+          o.classList.add('correct');
+        });
+      });
+    } else if (t === 'JUDGE') {
+      document.querySelectorAll('#rvBody .rv-judge').forEach(function (o) {
+        o.addEventListener('click', function () {
+          if (RV.busy) return;
+          RV.chosen = o.dataset.judge === 'true';
+          document.querySelectorAll('#rvBody .rv-judge').forEach(function (x) { x.classList.remove('correct'); });
+          o.classList.add('correct');
+        });
+      });
+    } else if (t === 'MULTI') {
+      document.querySelectorAll('#rvBody .rv-multi').forEach(function (o) {
+        o.addEventListener('click', function () {
+          if (RV.busy) return;
+          o.classList.toggle('correct');
+        });
+      });
+    }
+    var sbtn = document.querySelector('#rvBody .rv-submit');
+    if (sbtn) sbtn.addEventListener('click', function () { doSubmit(); });
+    document.querySelectorAll('#rvBody .rv-next').forEach(function (n) {
+      n.addEventListener('click', function () { nextQuestion(); });
+    });
+  }
+  function collectAnswer(t) {
+    if (t === 'SINGLE') return RV.chosen;
+    if (t === 'JUDGE') return RV.chosen;
+    if (t === 'MULTI') {
+      var ks = Array.prototype.map.call(document.querySelectorAll('#rvBody .rv-multi.correct'), function (o) { return o.dataset.key; });
+      return ks;
+    }
+    return null;
+  }
+  function doSubmit() {
+    if (RV.busy) return;
+    if (!RV.q) return;
+    var t = RV.q.question_type;
+    var ans = collectAnswer(t);
+    if (t === 'SINGLE' || t === 'JUDGE') {
+      if (ans === null || ans === undefined) { alert('请先选择答案'); return; }
+    }
+    if (t === 'MULTI' && !(ans && ans.length)) { alert('请至少选择一项'); return; }
+    var btn = document.querySelector('#rvBody .rv-submit');
+    if (btn) { btn.disabled = true; btn.classList.add('gray'); }
+    RV.busy = true; // 防重复提交
+    var payload = {
+      question_id: RV.q.question_id,
+      custom_code: RV.q.custom_code,
+      question_type: t,
+      answer: ans,
+      time_spent_sec: 12
+    };
+    EAPI.post('/api/interactive/quiz/submit', payload)
+      .then(function (r) {
+        RV.busy = false;
+        renderResult2(r); // r 即 SubmitResult：对错/得分/是否入错题本/解析/掌握度变化
+      })
+      .catch(function (e) {
+        RV.busy = false;
+        if (btn) { btn.disabled = false; btn.classList.remove('gray'); }
+        var res = document.querySelector('#rvBody .rv-result');
+        if (res) {
+          res.classList.remove('hid'); res.classList.remove('ok'); res.classList.add('error');
+          res.querySelector('.big').textContent = '✗';
+          res.querySelector('.t').textContent = '提交失败';
+          res.querySelector('.d').textContent = (e && e.message) || '网络错误，请重试';
+        }
+      });
+  }
+  function renderResult2(r) {
+    var res = document.querySelector('#rvBody .rv-result');
+    var expl = document.querySelector('#rvBody .rv-expl');
+    var mast = document.querySelector('#rvBody .rv-mast');
+    var nxt = document.querySelector('#rvBody .rv-next');
+    if (res) {
+      res.classList.remove('hid');
+      res.classList.toggle('ok', !!r.is_correct);
+      res.classList.toggle('error', !r.is_correct);
+      res.querySelector('.big').textContent = r.is_correct ? '✓' : '✗';
+      res.querySelector('.t').textContent = r.is_correct ? '回答正确！' : '回答错误';
+      var d = '得分 ' + (r.score != null ? r.score + '/' + (r.score_max || '-') : '-');
+      if (r.added_to_wrong_book) d += ' · 已加入错题本';
+      res.querySelector('.d').textContent = d;
+    }
+    // 解析如实渲染（text，不伪造 markdown）
+    if (expl) {
+      expl.classList.remove('hid');
+      expl.textContent = (r.explain_text || '（本题暂无解析）');
+      expl.classList.toggle('hid', !r.explain_text);
+    }
+    // 掌握度变化
+    if (mast) {
+      var mc = r.mastery_change || {};
+      var keys = Object.keys(mc);
+      if (keys.length) {
+        mast.classList.remove('hid');
+        mast.textContent = '掌握度变化：' + keys.map(function (k) {
+          var v = mc[k];
+          var s = (v >= 0 ? '+' : '') + (Math.round(v * 100) / 100);
+          return s + ' ' + (k || '');
+        }).join('，');
+      } else {
+        mast.classList.add('hid');
+      }
+    }
+    // 下一题
+    if (nxt) {
+      document.querySelectorAll('#rvBody .rv-next').forEach(function (n) { n.style.display = 'inline-flex'; });
+    }
+    // 进度条
+    var fill = $$('rvBar'); var cnt = $$('rvCount');
+    if (fill) fill.style.width = Math.min(100, (RV.idx / RV.total) * 100) + '%';
+    if (cnt) cnt.textContent = RV.idx + ' / ' + RV.total;
+  }
+  function nextQuestion() {
+    if (RV.idx >= RV.total) {
+      if ($$('rvBody')) $$('rvBody').innerHTML = '<div class="rev-empty">本轮已完成（' + RV.total + ' 题）· 可点击上方「开始新一轮复习」</div>';
+      return;
+    }
+    getNext();
+  }
+
+  /* ================= ④ 单词本 ================= */
+  function loadVocab() {
+    var cards = $$('vocabCards');
+    setText('vocabDate', '加载今日计划…');
+    EAPI.get('/api/vocab/daily?level_code=' + WV.level + '&new_quota=15&review_quota=30')
+      .then(function (d) {
+        if (!d) return;
+        setText('vocabDate', '今日计划 · ' + (d.target_level_code || WV.level) + ' · ' + (d.date_label || ''));
+        var all = (d.due_cards || []).concat(d.new_cards || []);
+        setText('statWord', all.length || '—');
+        if (!all.length) {
+          cards.innerHTML = '<div class="norec">该等级暂无今日单词，换个等级或先去学习新词。</div>';
+        } else {
+          cards.innerHTML = '<div class="word-grid">' + all.map(function (c) {
+            return '<div class="word-card" data-cid="' + c.card_id + '">' +
+              '<div class="w-top"><span class="word">' + esc(c.word) + '</span>' +
+              (c.phonetic_us ? '<span class="phone">' + esc(c.phonetic_us) + '</span>' : '') +
+              '<span class="chip">' + (c.mastery_status || 'NEW') + '</span></div>' +
+              '<div class="meaning">' + esc(c.meaning_cn || '') + '</div>' +
+              (c.example_en ? '<div class="ex">' + esc(c.example_en) + (c.example_cn ? '<br>' + esc(c.example_cn) : '') + '</div>' : '') +
+              '<div class="word-acts">' +
+              '<button class="wa-yes" type="button" data-rq="5">认识</button>' +
+              '<button class="wa-so" type="button" data-rq="3">模糊</button>' +
+              '<button class="wa-no" type="button" data-rq="1">忘记</button></div>' +
+              '<div class="word-fb"></div></div>';
+          }).join('') + '</div>';
+          // 绑定 recall
+          document.querySelectorAll('#vocabCards .word-acts button').forEach(function (b) {
+            b.addEventListener('click', function () {
+              if (b.disabled) return;
+              var card = b.closest('.word-card');
+              var cid = parseInt(card.dataset.cid, 10);
+              var q = parseInt(b.dataset.rq, 10); // 认识=5 模糊=3 忘记=1
+              // 防重复：禁用本卡所有动作
+              card.querySelectorAll('.word-acts button').forEach(function (x) { x.disabled = true; });
+              EAPI.post('/api/vocab/recall', { card_id: cid, quality: q, quiz_type: 'PICK' })
+                .then(function (r) {
+                  var fb = card.querySelector('.word-fb');
+                  if (r) {
+                    fb.textContent = (r.mastery_status || '') + ' · 间隔 ' + (r.new_interval_days != null ? r.new_interval_days : '-') + ' 天 · 评价 ' + (r.total_reviews || 0) + ' 次';
+                  } else {
+                    fb.textContent = '已记录';
+                  }
+                  loadVocabProgress();
+                })
+                .catch(function () {
+                  card.querySelectorAll('.word-acts button').forEach(function (x) { x.disabled = false; });
+                  var fb = card.querySelector('.word-fb');
+                  fb.textContent = '上报失败，请重试';
+                });
+            });
+          });
+        }
+        loadVocabProgress();
+      })
+      .catch(function () {
+        setText('vocabDate', '加载今日计划失败，请稍后重试');
+        cards.innerHTML = '';
+        loadVocabProgress();
+      });
+  }
+  function loadVocabProgress() {
+    EAPI.get('/api/vocab/progress?level_code=' + WV.level)
+      .then(function (p) {
+        if (!p) return;
+        setText('vocabProgTag', p.level_code + ' · 词库 ' + (p.total_words || 0));
+        $$('vocabProg').innerHTML =
+          '<div class="prog-grid">' +
+          progCell(p.mastered, '已掌握') +
+          progCell(p.learning, '学习中') +
+          progCell(p.new_today, '今日新增') +
+          progCell(p.reviewed_today, '今日复习') +
+          progCell(p.streak_days, '连续打卡') +
+          progCell(Math.round((p.accuracy_30d || 0) * 100) + '%', '30 日正确率') +
+          progCell(p.total_reviews, '累计复习') +
+          progCell(p.expected_days_to_level_up != null ? p.expected_days_to_level_up : '—', '预计升级天数') +
+          '</div>';
+      })
+      .catch(function () { $$('vocabProg').innerHTML = '<div class="norec">进度加载失败</div>'; });
+  }
+  function progCell(n, l) { return '<div class="prog-cell"><div class="n">' + (n != null ? n : '—') + '</div><div class="l">' + l + '</div></div>'; }
+  function bindVocabControls() {
+    $$('vocabLevel').addEventListener('change', function () {
+      WV.level = this.value;
+      loadVocab();
+    });
+  }
+  function bindTopicControls() {
+    document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.disabled) return;
+        document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        startReview({ type: b.dataset.ttype });
+      });
+    });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ================= 初始化 ================= */
+  function init() {
+    hideQuizDemo();                 // 复习会话切真实层
+    if ($$('wbDemoPanel')) $$('wbDemoPanel').style.display = 'none'; // 隐藏演示错题表
+    $$('wb-real').classList.remove('hid');
+    $$('vocab-real').classList.remove('hid');
+    $$('topic-real').classList.remove('hid');
+
+    loadStats();
+    loadWrong();
+    loadVocab();
+    bindWrongControls();
+    bindVocabControls();
+    bindTopicControls();
+
+    // 入口卡行动绑定（登录态）：错题本→启动真复习；单词本/专项→滚动到对应区块
+    var greenGo = document.querySelector('.entry.green .go');
+    if (greenGo) greenGo.addEventListener('click', function (e) { e.preventDefault(); startReview({ type: null }); });
+    var blueGo = document.querySelector('.entry.blue .go');
+    if (blueGo) blueGo.addEventListener('click', function () { if ($$('vocab-real')) $$('vocab-real').scrollIntoView({ behavior: 'smooth' }); });
+    var purpleGo = document.querySelector('.entry.purple .go');
+    if (purpleGo) purpleGo.addEventListener('click', function () { if ($$('topic-real')) $$('topic-real').scrollIntoView({ behavior: 'smooth' }); });
+  }
+  init();
+})();
 </script>
 </body>
 </html>
