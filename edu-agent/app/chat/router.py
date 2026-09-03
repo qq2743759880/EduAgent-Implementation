@@ -43,6 +43,7 @@ from app.chat.service import (
     search_only,
 )
 from app.common.exceptions import AppException, NotFoundError, ValidationError
+from app.common.error_codes import INTERNAL_ERROR
 
 
 router = APIRouter(prefix="/api/chat", tags=["P2-知识问答"])
@@ -240,19 +241,22 @@ async def chat_stream_sse(
         })
         # 2) 逐个 token 发送
         buf: list[str] = []
-        degraded_extra: str | None = None
         try:
             async for delta in token_aiter:
                 buf.append(delta)
                 yield _sse_line(SseEventType.TOKEN.value, {"delta": delta})
         except Exception as e:
-            degraded_extra = f"流式 token 中断：{type(e).__name__}"
-            logger.warning(f"[P2 stream] token 迭代异常：{type(e).__name__}: {e}")
-            # 不抛，继续收齐 buf 尝试落库并发 done
+            # 两段式错误模型 · 第二段：流已建连，生成真失败（如 LLM key 失效/下游超时）
+            # → 发 error 事件并安全收束（返回，关闭连接）。不再静默转 done+degraded_reason，
+            # 使前端 error 分支真实可达（audit P1-10 / task115 C-B）。
+            code, msg = INTERNAL_ERROR, f"答案生成失败：{type(e).__name__}"
+            logger.warning(f"[P2 stream] token 迭代异常，发 error 事件：{code} {msg} ({e})")
+            yield _sse_line(SseEventType.ERROR.value, {"code": code, "message": msg})
+            return
         # 3) 最终：落库 + done 事件
         answer_text = "".join(buf)
         try:
-            final_info = await build_finalize(answer_text, degraded_extra=degraded_extra)
+            final_info = await build_finalize(answer_text, degraded_extra=None)
         except Exception as e:
             # 落库失败：不泄漏到前端，只在 done 的 degraded_reason 里提示
             logger.warning(f"[P2 stream] 落库失败：{type(e).__name__}: {e}")
