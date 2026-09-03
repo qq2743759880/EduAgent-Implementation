@@ -18,16 +18,26 @@
  */
 import { http } from "@/lib/api-client";
 
-/** GET /api/users/me 契约（router.py:39-57 实证形状） */
+/**
+ * GET /api/users/me 契约（task114 C-A 冻结，router.py:39-57 实证形状 snake_case）
+ * data = {user_id, account, username, nickname, role, email, mobile, real_name,
+ *         gender, avatar_url, learning_goal[], subject_preferences[], profile}
+ * role 为字符串枚举；learning_goal / subject_preferences 为 string[]。
+ */
 export interface MeHead {
-  id: number;
+  user_id: number;
+  account?: string | null;
+  username?: string | null;
   nickname: string;
+  role?: string | null;
   email?: string | null;
-  avatar?: string | null;
-  roles?: string[];
-  tenantId?: number | null;
-  learningGoal?: string;
-  subjectPreferences?: string[];
+  mobile?: string | null;
+  real_name?: string | null;
+  gender?: string | null;
+  avatar_url?: string | null;
+  /** 学科 code 列表（C-A snake_case；新契约不再有 camelCase subjectPreferences） */
+  learning_goal: string[];
+  subject_preferences: string[];
   profile?: Record<string, unknown>;
 }
 

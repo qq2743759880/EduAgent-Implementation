@@ -518,4 +518,16 @@ describe("getMySubjectPreferences（snake/camel 双命名兜底）", () => {
     const prefs = await getMySubjectPreferences();
     expect(prefs).toEqual([{ subject_code: "physics", preference_score: 4 }]);
   });
+
+  it("C-A 对齐：主源无字段 → /me 顶层 subject_preferences（snake_case code 数组）优先", async () => {
+    mockGet
+      .mockResolvedValueOnce({ nickname: "x" }) // /me/profile 无 subject_preferences
+      .mockResolvedValueOnce({ subject_preferences: ["english", "math"] }); // /me C-A snake_case
+    const prefs = await getMySubjectPreferences();
+    expect(prefs).toEqual([
+      { subject_code: "english", preference_score: 5 },
+      { subject_code: "math", preference_score: 5 },
+    ]);
+    expect(mockGet).toHaveBeenCalledTimes(2);
+  });
 });

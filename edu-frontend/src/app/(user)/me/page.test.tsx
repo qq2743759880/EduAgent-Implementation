@@ -24,10 +24,10 @@ const pointsMock = vi.mocked(getMyPoints);
 
 function resolveAll() {
   meMock.mockResolvedValue({
-    id: 1,
+    user_id: 1,
     nickname: "慕剑知",
-    learningGoal: "编程入门",
-    subjectPreferences: ["programming"],
+    learning_goal: ["编程入门"],
+    subject_preferences: ["programming"],
   });
   summaryMock.mockResolvedValue({
     total_watched_seconds: 3600,

@@ -16,10 +16,10 @@ const mockGetMe = vi.mocked(getMe);
 
 function makeHead(): MeHead {
   return {
-    id: 1,
+    user_id: 1,
     nickname: "慕剑知",
-    learningGoal: "编程入门",
-    subjectPreferences: ["programming", "math"],
+    learning_goal: ["编程入门"],
+    subject_preferences: ["programming", "math"],
   };
 }
 

@@ -8,10 +8,11 @@
  *   - searchRagOnly 返回契约对象 RagSearchOnlyResponse
  *   - chatNonStream：RagAnswerResponse → ChatMessage 映射
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { http } from "@/lib/api-client";
 import {
   chatNonStream,
+  chatStream,
   createChatSession,
   deleteChatSession,
   getChatHistory,
@@ -246,3 +247,97 @@ describe("chatNonStream（RagAnswerResponse → ChatMessage）", () => {
     expect(msg.rag_retrieved_count).toBe(10);
   });
 });
+
+/* ---------------- chatStream SSE（task114 C-A：delta/done 嵌套壳/error） ---------------- */
+
+describe("chatStream SSE（C-A：delta 累加 / done 嵌套壳 / error 分支）", () => {
+  afterEach(() => {
+    // @ts-expect-error 还原全局 fetch
+    delete globalThis.fetch;
+  });
+
+  it("delta 事件累加 content（token 字段已弃用，只认 delta）", async () => {
+    const body =
+      "event: start\ndata: {\"session_id\":\"s_1\"}\n\n" +
+      "event: delta\ndata: {\"delta\":\"你好\"}\n\n" +
+      "event: delta\ndata: {\"delta\":\"，小柚\"}\n\n" +
+      "event: done\ndata: {\"code\":0,\"message\":\"ok\",\"data\":{\"session_id\":\"s_1\",\"message_id\":\"m1\",\"retrieved_count\":1,\"latency_ms\":12}}\n\n";
+    const encoder = new TextEncoder();
+    const bodyReadable = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        ctrl.enqueue(encoder.encode(body));
+        ctrl.close();
+      },
+    });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, body: bodyReadable, text: () => Promise.resolve("") });
+
+    const deltas: string[] = [];
+    const final = new Promise<unknown>((resolve, reject) => {
+      chatStream("问题", {
+        sessionId: "s_1",
+        onDelta: (d) => deltas.push(d),
+        onDone: (m) => resolve(m),
+        onError: (e) => reject(e),
+      });
+    });
+    const msg = await Promise.race([final, delayTimeout()]) as { content: string };
+    expect(deltas).toEqual(["你好", "，小柚"]);
+    expect(msg.content).toBe("你好，小柚");
+  });
+
+  it("done 事件解嵌套壳 {code,message,data} → 透出 message_id/session_id", async () => {
+    const body =
+      "event: done\ndata: {\"code\":0,\"message\":\"ok\",\"data\":{\"session_id\":\"s_9\",\"message_id\":\"m99\",\"degraded_reason\":null}}\n\n";
+    const encoder = new TextEncoder();
+    const bodyReadable = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        ctrl.enqueue(encoder.encode(body));
+        ctrl.close();
+      },
+    });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, body: bodyReadable, text: () => Promise.resolve("") });
+
+    const final = new Promise<{ session_id: string; message_id: string }>((resolve, reject) => {
+      chatStream("问题", {
+        sessionId: "s_1",
+        onDone: (m) => resolve(m),
+        onError: (e) => reject(e),
+      });
+    });
+    const msg = await Promise.race([final, delayTimeout()]);
+    expect(msg.session_id).toBe("s_9");
+    expect(msg.message_id).toBe("m99");
+  });
+
+  it("error 事件分支 → onError（message 透出），不产出 done", async () => {
+    const body = "event: error\ndata: {\"message\":\"生成失败\"}\n\n";
+    const encoder = new TextEncoder();
+    const bodyReadable = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        ctrl.enqueue(encoder.encode(body));
+        ctrl.close();
+      },
+    });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, body: bodyReadable, text: () => Promise.resolve("") });
+
+    const doneCalled = vi.fn();
+    const err = new Promise<Error>((resolve, reject) => {
+      chatStream("问题", {
+        sessionId: "s_1",
+        onDone: doneCalled,
+        onError: (e) => resolve(e),
+      });
+      void reject;
+    });
+    const resolved = await Promise.race([err, delayTimeout()]);
+    expect(resolved.message).toBe("生成失败");
+    expect(doneCalled).not.toHaveBeenCalled();
+  });
+});
+
+/** 兜底超时（若流事件未如约触发，避免测试挂死） */
+function delayTimeout(): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("SSE 测试超时：流事件未按契约触发")), 2000),
+  );
+}

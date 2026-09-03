@@ -28,7 +28,7 @@ export function MeHeader() {
   }
   if (!data) return null;
 
-  const avatarUrl = data.avatar?.trim() || null;
+  const avatarUrl = data.avatar_url?.trim() || null;
   return (
     <div className="flex items-center gap-4 rounded-2xl border-[3px] border-foreground bg-white p-5 shadow-[0_4px_0_rgba(31,31,31,0.14)]">
       {avatarUrl ? (
@@ -57,14 +57,14 @@ export function MeHeader() {
             ✏️ 编辑资料
           </button>
         </div>
-        {data.learningGoal ? (
+        {Array.isArray(data.learning_goal) && data.learning_goal.length > 0 ? (
           <div className="mt-2 text-sm font-semibold text-muted-foreground">
-            学习目标：<b className="text-foreground">{data.learningGoal}</b>
+            学习目标：<b className="text-foreground">{data.learning_goal.join("、")}</b>
           </div>
         ) : null}
-        {Array.isArray(data.subjectPreferences) && data.subjectPreferences.length > 0 ? (
+        {Array.isArray(data.subject_preferences) && data.subject_preferences.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.subjectPreferences.map((code) => (
+            {data.subject_preferences.map((code) => (
               <span
                 key={code}
                 className="inline-flex items-center gap-1 rounded-full border-[1.5px] border-border bg-candy-purple-soft px-2.5 py-0.5 text-xs font-bold text-primary"

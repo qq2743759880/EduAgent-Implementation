@@ -119,10 +119,18 @@ function readProfileSubjectPreferences(
   return normalizeStructured(body.subject_preferences);
 }
 
-/** /api/users/me 契约：subjectPreferences（camelCase code 数组）+ profile.subject_preferences 嵌套 */
+/** /api/users/me 契约：subject_preferences（C-A snake_case code 数组）+ profile.subject_preferences 嵌套 */
 function readMeSubjectPreferences(
   body: Record<string, unknown>,
 ): SubjectPreference[] | null {
+  // C-A 冻结（task114）：/api/users/me 顶层 subject_preferences 为学科 code 数组（preference_score 取 5 对齐 PUT 语义）
+  const topRaw = body.subject_preferences;
+  if (Array.isArray(topRaw)) {
+    return topRaw
+      .filter((x): x is string => typeof x === "string")
+      .map((code) => ({ subject_code: code, preference_score: 5 }));
+  }
+  // 兼容历史 camelCase 降级源（低优先级，仅老端点未换代前兜底）
   const camelRaw = body.subjectPreferences;
   if (Array.isArray(camelRaw)) {
     return camelRaw
