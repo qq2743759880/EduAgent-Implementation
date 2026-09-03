@@ -94,6 +94,7 @@ export const UNIQUE_CONFLICT_TIPS: Record<number, string> = {
   40905: "资源编码已存在（session + asset_code 冲突）",
   40906: "视频编码已存在（asset + video_code 冲突）",
   40907: "章节号已存在（video + chapter_no 冲突）",
+  40908: "系列仍被班次（含已下架）或订单引用，无法彻底删除",
 };
 
 /* ============================================================
@@ -302,9 +303,16 @@ export interface AdminSeriesListItem {
   updated_at: string;
 }
 
+/**
+ * 系列列表响应（C-B 任务115 分页统一：权威读外层 {total,page,page_size,items}）。
+ * `page_meta` 为过渡兼容字段（值同源派生），新前端一律不消费。
+ */
 export interface AdminSeriesListResponse {
+  total: number;
+  page: number;
+  page_size: number;
   items: AdminSeriesListItem[];
-  page_meta: {
+  page_meta?: {
     page: number;
     page_size: number;
     total: number;
@@ -318,6 +326,8 @@ export interface ListAdminSeriesParams extends AdminPageParams {
   sale_status?: SaleStatusCode;
   sort?: SeriesSortCode;
   institution_id?: number;
+  /** C-C 任务116：true = 回收站视图（含已下架 off_sale 系列）；缺省过滤 off_sale */
+  include_deleted?: boolean;
 }
 
 /* ============================================================
@@ -331,6 +341,7 @@ export async function listAdminSeries(
   if (params.sale_status) query.sale_status = params.sale_status;
   if (params.sort) query.sort = params.sort;
   if (params.institution_id != null) query.institution_id = params.institution_id;
+  if (params.include_deleted) query.include_deleted = true;
   if (params.keyword?.trim()) query.keyword = params.keyword.trim();
   return adminGet<AdminSeriesListResponse>("/api/admin/courses/series", query);
 }
@@ -351,9 +362,17 @@ export async function updateAdminSeries(
   return adminPatch<{ updated: boolean; id: number }>(`/api/admin/courses/series/${seriesId}`, input);
 }
 
-/** 软删系列：series 无 yn 列 → DELETE 置 sale_status='off_sale' */
-export async function deleteAdminSeries(seriesId: number): Promise<{ deleted: boolean; id: number }> {
-  return adminDelete<{ deleted: boolean; id: number }>(`/api/admin/courses/series/${seriesId}`);
+/**
+ * 删除系列（C-C 任务116 双路径）：
+ *   - hard=false（默认）：软删下架，series.sale_status = 'off_sale'（不物理删除）
+ *   - hard=true：物理真删（ADMIN-only 后端校验 + 零引用才删；被引返回 40908）
+ */
+export async function deleteAdminSeries(
+  seriesId: number,
+  hard = false,
+): Promise<{ deleted: boolean; id: number }> {
+  const q = hard ? "?hard=true" : "";
+  return adminDelete<{ deleted: boolean; id: number }>(`/api/admin/courses/series/${seriesId}${q}`);
 }
 
 /* ============================================================

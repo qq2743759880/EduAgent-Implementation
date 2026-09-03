@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { http, ApiError } from "@/lib/api-client";
 import {
   createRagPreset,
+  listKnowledgeTasks,
   listRagAuditLog,
   listRagCollections,
   listRagPresets,
@@ -197,6 +198,44 @@ describe("高级检索", () => {
   it("search 失败必须抛（写操作 R-7）", async () => {
     mockPost.mockRejectedValueOnce(new ApiError(403, { code: 40300, message: "角色无权限" }));
     await expect(ragAdminSearch({ query: "q" })).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("知识导入任务列表（契约⑥ task36）", () => {
+  it("GET /api/knowledge/tasks 带分页参数，返回 AdminPage 外层（total/page/page_size/items）", async () => {
+    mockGet.mockResolvedValueOnce({
+      total: 2,
+      page: 1,
+      page_size: 10,
+      items: [
+        {
+          task_id: "task_1_abc",
+          task_type: "user_upload",
+          tenant_id: "user_802",
+          visibility: "private",
+          status: "succeeded",
+          total_chunks: 40,
+          imported_chunks: 40,
+          source_files: ["a.md", "b.txt"],
+          error: null,
+          created_at: "2026-08-12T01:00:00",
+        },
+      ],
+    });
+    const res = await listKnowledgeTasks({ page: 1, page_size: 10 });
+    expect(mockGet).toHaveBeenCalledWith("/api/knowledge/tasks", {
+      params: { page: 1, page_size: 10 },
+    });
+    expect(res.total).toBe(2);
+    expect(res.items[0].status).toBe("succeeded");
+  });
+
+  it("缺省参数时走默认 page=1/page_size=10", async () => {
+    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 10, items: [] });
+    await listKnowledgeTasks();
+    expect(mockGet).toHaveBeenCalledWith("/api/knowledge/tasks", {
+      params: { page: 1, page_size: 10 },
+    });
   });
 });
 

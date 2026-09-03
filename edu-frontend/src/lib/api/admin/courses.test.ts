@@ -40,7 +40,7 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("系列 CRUD", () => {
   it("listAdminSeries 传递 delivery_mode/sale_status/sort/institution_id/keyword 与分页参数", async () => {
-    mockGet.mockResolvedValueOnce({ items: [], page_meta: { page: 2, page_size: 20, total: 0, total_pages: 0, has_more: false } });
+    mockGet.mockResolvedValueOnce({ total: 0, page: 2, page_size: 20, items: [] });
     await listAdminSeries({
       delivery_mode: "online_live",
       sale_status: "on_sale",
@@ -64,8 +64,24 @@ describe("系列 CRUD", () => {
   });
 
   it("listAdminSeries 关键字前后空格会被 trim，空筛选不传", async () => {
-    mockGet.mockResolvedValueOnce({ items: [], page_meta: { page: 1, page_size: 20, total: 0, total_pages: 0, has_more: false } });
+    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 20, items: [] });
     await listAdminSeries({ keyword: "  ", delivery_mode: undefined });
+    expect(mockGet).toHaveBeenCalledWith("/api/admin/courses/series", {
+      params: { page: 1, page_size: 20 },
+    });
+  });
+
+  it("listAdminSeries include_deleted=true 触发 -> 传 ?include_deleted（C-C 回收站视图）", async () => {
+    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 20, items: [] });
+    await listAdminSeries({ include_deleted: true, page: 1, page_size: 20 });
+    expect(mockGet).toHaveBeenCalledWith("/api/admin/courses/series", {
+      params: { page: 1, page_size: 20, include_deleted: true },
+    });
+  });
+
+  it("listAdminSeries 缺省 include_deleted 不传（默认过滤已下架）", async () => {
+    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 20, items: [] });
+    await listAdminSeries({ page: 1, page_size: 20 });
     expect(mockGet).toHaveBeenCalledWith("/api/admin/courses/series", {
       params: { page: 1, page_size: 20 },
     });
@@ -94,6 +110,12 @@ describe("系列 CRUD", () => {
     mockDelete.mockResolvedValueOnce({ deleted: true, id: 9 });
     await deleteAdminSeries(9);
     expect(mockDelete).toHaveBeenCalledWith("/api/admin/courses/series/9");
+  });
+
+  it("deleteAdminSeries hard=true -> DELETE /series/{id}?hard=true（C-C 硬删）", async () => {
+    mockDelete.mockResolvedValueOnce({ deleted: true, id: 9 });
+    await deleteAdminSeries(9, true);
+    expect(mockDelete).toHaveBeenCalledWith("/api/admin/courses/series/9?hard=true");
   });
 
   it("deliveryModeLabel 枚举标签映射", () => {

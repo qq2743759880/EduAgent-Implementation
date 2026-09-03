@@ -269,6 +269,28 @@ export interface KnowledgeTaskDetail {
   source_files: string[];
 }
 
+/** 导入任务类型（GET /api/knowledge/tasks 列表元素 · task_type） */
+export type RagTaskType = "system_init" | "user_upload" | (string & {});
+
+/**
+ * 导入任务列表元素（GET /api/knowledge/tasks，契约⑥ task36 冻结）。
+ * 注意：列表端点的 status 使用**表词汇** succeeded（区别于单查 status/{task_id} 的 done）。
+ */
+export interface KnowledgeTaskRecord {
+  task_id: string;
+  task_type: RagTaskType;
+  tenant_id: string;
+  visibility: "public" | "private";
+  status: "pending" | "running" | "succeeded" | "failed" | (string & {});
+  total_chunks: number;
+  imported_chunks: number;
+  source_files: string[];
+  error?: string | null;
+  created_at: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+}
+
 /** GET /api/knowledge/partitions 返回（Milvus 原生列表，字段未定形） */
 export interface KnowledgePartitionList {
   total_partitions: number;
@@ -312,11 +334,19 @@ export function getKnowledgeTaskStatus(
 }
 
 /**
- * 任务列表（PROPOSED — 后端仅有单查 status/{task_id}，列表端点缺失，
- * 已上浮 .opencode/handoffs/api-request.md 请求后端补齐；实现前调用会 404）
+ * 任务列表分页倒序（GET /api/knowledge/tasks，契约⑥ task36）。
+ * 列表 status 使用表词汇 succeeded|failed|running|pending。
  */
-export function listKnowledgeTasks(): Promise<KnowledgeTaskDetail[]> {
-  return adminGet<KnowledgeTaskDetail[]>("/api/knowledge/tasks");
+export function listKnowledgeTasks(
+  params: { page?: number; page_size?: number } = {},
+): Promise<AdminPage<KnowledgeTaskRecord>> {
+  return adminGet<AdminPage<KnowledgeTaskRecord>>(
+    "/api/knowledge/tasks",
+    {
+      page: params.page ?? 1,
+      page_size: params.page_size ?? 10,
+    },
+  );
 }
 
 /** 分区列表（Milvus 原生；不可达时后端 503） */

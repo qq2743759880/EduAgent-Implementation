@@ -18,6 +18,7 @@ import { CollectionTable } from "@/components/admin/rag/CollectionTable";
 import { PresetForm } from "@/components/admin/rag/PresetForm";
 import { AuditLogTable } from "@/components/admin/rag/AuditLogTable";
 import { SearchTester } from "@/components/admin/rag/SearchTester";
+import { UploadPanel } from "@/components/admin/rag/UploadPanel";
 import { EmptyState, ErrorState, LoadingState } from "@/components/admin/controls";
 import { listRagCollections, listRagPresets } from "@/lib/api/admin/rag";
 
@@ -55,10 +56,16 @@ export default function AdminRagPage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900">RAG 控制台</h1>
           <p className="text-sm text-slate-500">
-            知识库集合 / 参数预设 / 审计日志 / 高级检索（仅 admin）
+            文件上传 / 知识库集合 / 参数预设 / 审计日志 / 高级检索（仅 admin）
           </p>
         </div>
       </div>
+
+      {/* 文件上传 + 导入任务 */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-700">文件上传</h2>
+        <UploadPanel />
+      </section>
 
       {/* 集合列表 + 重建 */}
       <section className="space-y-2">

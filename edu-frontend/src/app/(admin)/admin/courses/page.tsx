@@ -4,15 +4,17 @@
  *  - 创建/编辑：SeriesForm（POST /series · PATCH /series/{id}，institution_id+delivery_mode 契约）
  *  - 上架/下架：PATCH /series/{id} { sale_status }（on_sale/off_sale）
  *  - 软删：DELETE /series/{id}（series 表无 yn 列 → 置 off_sale，『下架优先于删除』confirm 提示）
+ *  - C-C 任务116：回收站视图 `?include_deleted=true`（含已下架系列）+ ADMIN 硬删 `?hard=true`（零引用才删、被引用 40908 拒绝）
  *  - 行操作下拉：编辑 / 班次(→ /admin/courses/{id}，task57) / 上架|下架 / 删除
  *  - RBAC：非 admin 由 (admin)/layout.tsx AdminGuard 拦截（本页不重复）
  */
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { BookOpen, Eye, EyeOff, Layers, MoreHorizontal, Plus, Search, Trash2, PencilLine } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Layers, MoreHorizontal, Plus, Recycle, Search, Trash2, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,12 +40,14 @@ import {
   deliveryModeLabel,
   listAdminSeries,
   saleStatusLabel,
+  uniqueConflictTip,
   updateAdminSeries,
   type AdminSeriesListItem,
   type DeliveryModeCode,
   type SaleStatusCode,
   type SeriesSortCode,
 } from "@/lib/api/admin/courses";
+import { getMe } from "@/lib/api/me";
 
 const PAGE_SIZE = 10;
 
@@ -54,17 +58,27 @@ export default function AdminCoursesPage() {
   const [sort, setSort] = useState<SeriesSortCode | "">("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
+  const [includeDeleted, setIncludeDeleted] = useState(false);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AdminSeriesListItem | null>(null);
   const [delTarget, setDelTarget] = useState<AdminSeriesListItem | null>(null);
+  const [hardTarget, setHardTarget] = useState<AdminSeriesListItem | null>(null);
   const [offTarget, setOffTarget] = useState<AdminSeriesListItem | null>(null);
 
   // perf F1：关键词 300ms 防抖后进 queryKey（applied 快照）
   const appliedKeyword = useDebouncedValue(keyword, 300);
 
+  // 当前操作用户角色：C-C 硬删 `hard=true` 仅 ADMIN 可执行（后端还做 40300 兜底）
+  const meQ = useQuery({
+    queryKey: ["admin", "me", "role"] as const,
+    queryFn: getMe,
+    staleTime: 60_000,
+  });
+  const isAdmin = meQ.data?.role === "admin";
+
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["admin", "courses", "series", { delivery_mode: deliveryMode || undefined, sale_status: saleStatus || undefined, sort: sort || undefined, keyword: appliedKeyword || undefined, page }] as const,
+    queryKey: ["admin", "courses", "series", { delivery_mode: deliveryMode || undefined, sale_status: saleStatus || undefined, sort: sort || undefined, keyword: appliedKeyword || undefined, page, include_deleted: includeDeleted || undefined }] as const,
     async queryFn() {
       return listAdminSeries({
         delivery_mode: deliveryMode || undefined,
@@ -73,6 +87,7 @@ export default function AdminCoursesPage() {
         keyword: appliedKeyword || undefined,
         page,
         page_size: PAGE_SIZE,
+        include_deleted: includeDeleted || undefined,
       });
     },
     placeholderData: (prev) => prev,
@@ -96,9 +111,28 @@ export default function AdminCoursesPage() {
       toast.success("系列已删除（软删为下架）");
       invalidate();
     },
+    onError: (err) => {
+      // C-C 任务116：软删失败按 409xx 命中文案（其它错误 fallback 网络/通用消息）
+      toast.error(uniqueConflictTip(err, "删除失败"));
+    },
   });
 
-  const totalPages = Math.max(1, data?.page_meta?.total_pages ?? 1);
+  /** C-C 硬删（`hard=true`，ADMIN-only）：零引用才物理删；被引用返回 40908 → 命中文案 */
+  const hardDeleteMutation = useMutation({
+    mutationFn: (id: number) => deleteAdminSeries(id, true),
+    onSuccess: (_d, id) => {
+      toast.success("系列已彻底删除");
+      setHardTarget(null);
+      invalidate();
+    },
+    onError: (err) => {
+      toast.error(uniqueConflictTip(err, "彻底删除失败"));
+      setHardTarget(null);
+    },
+  });
+
+  // C-B 任务115：权威分页读外层 {total,page,page_size,items}（page_meta 为兼容期并存字段，不再消费）
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
 
   return (
     <div className="space-y-5">
@@ -107,9 +141,19 @@ export default function AdminCoursesPage() {
           <h1 className="text-xl font-semibold text-foreground">课程管理</h1>
           <p className="text-sm text-muted-foreground">系列 → 班次 · 上下架与软删 · 来源 /api/admin/courses/series</p>
         </div>
-        <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
-          <Plus className="mr-1.5 h-4 w-4" /> 新建系列
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={includeDeleted ? "default" : "outline"}
+            onClick={() => { setIncludeDeleted((v) => !v); setPage(1); }}
+            data-testid="recycle-toggle"
+            title="C-C 任务116：?include_deleted=true 回收站视图（含已下架系列）"
+          >
+            <Recycle className="mr-1.5 h-4 w-4" /> {includeDeleted ? "回收站视图" : "回收站"}
+          </Button>
+          <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Plus className="mr-1.5 h-4 w-4" /> 新建系列
+          </Button>
+        </div>
       </div>
 
       {/* 筛选栏 */}
@@ -153,7 +197,7 @@ export default function AdminCoursesPage() {
         </Button>
       </div>
 
-      <div className="text-sm text-muted-foreground">共 <b className="text-foreground">{data?.page_meta?.total ?? 0}</b> 个系列</div>
+      <div className="text-sm text-muted-foreground">共 <b className="text-foreground">{data?.total ?? 0}</b> 个系列</div>
 
       {/* 列表三态 + DataTable */}
       {isLoading && !data ? (
@@ -255,6 +299,23 @@ export default function AdminCoursesPage() {
         confirmLabel="删除（软删）"
         variant="danger"
         onConfirm={() => { if (delTarget) deleteMutation.mutate(delTarget.id); setDelTarget(null); }}
+      >
+        {isAdmin && delTarget && (
+          <Button variant="outline" className="mr-auto border-destructive/40 text-destructive" onClick={() => { setHardTarget(delTarget); setDelTarget(null); }}>
+            <Trash2 className="mr-1.5 h-4 w-4" /> 彻底删除（移除记录）
+          </Button>
+        )}
+      </ConfirmDialog>
+
+      {/* C-C 硬删确认（ADMIN-only：零引用物理删；有引用后端 40908 拒绝） */}
+      <ConfirmDialog
+        open={Boolean(hardTarget)}
+        onOpenChange={(o) => !o && setHardTarget(null)}
+        title="彻底删除系列？"
+        description={hardTarget ? `确定彻底删除「${hardTarget.series_name}」吗？将物理删除数据库记录且不可恢复。若仍被班次（含已下架）或订单引用，后端将返回 40908 拒绝。` : ""}
+        confirmLabel={hardDeleteMutation.isPending ? "已提交…" : "彻底删除"}
+        variant="danger"
+        onConfirm={() => { if (hardTarget) hardDeleteMutation.mutate(hardTarget.id); }}
       />
     </div>
   );
@@ -292,6 +353,7 @@ function ConfirmDialog({
   confirmLabel,
   variant,
   onConfirm,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -300,6 +362,7 @@ function ConfirmDialog({
   confirmLabel: string;
   variant?: "danger";
   onConfirm: () => void;
+  children?: ReactNode;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -309,6 +372,7 @@ function ConfirmDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
+          {children}
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
           <Button variant={variant === "danger" ? "destructive" : "default"} onClick={onConfirm}>{confirmLabel}</Button>
         </DialogFooter>
