@@ -84,13 +84,10 @@ function CoursesSearchPageInner() {
     staleTime: 60_000,
   });
 
+  // 契约②（C-B）：listSeries 返回外层 {total,page,page_size,items}，total_pages 不再下发，前端计算
   const items: SeriesListItem[] = data?.items ?? [];
-  const pageMeta = data?.page_meta ?? {
-    page,
-    page_size: pageSize,
-    total: items.length,
-    total_pages: Math.max(1, Math.ceil(items.length / pageSize)),
-  };
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const pushUrl = useCallback(
     (next: Partial<CourseSearchInput>) => {
@@ -157,8 +154,8 @@ function CoursesSearchPageInner() {
             {parsed.q ? `搜索结果：${parsed.q}` : "搜索课程"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            共 {pageMeta.total.toLocaleString()} 条结果（第 {pageMeta.page}/
-            {Math.max(1, pageMeta.total_pages)} 页）
+            共 {total.toLocaleString()} 条结果（第 {data?.page ?? page}/
+            {totalPages} 页）
           </p>
 
           {appliedChips.length > 0 && (
@@ -219,11 +216,11 @@ function CoursesSearchPageInner() {
                   ))}
                 </div>
 
-                {pageMeta.total_pages > 1 && (
+                {totalPages > 1 && (
                   <div className="pt-4">
                     <PaginationBar
-                      page={pageMeta.page}
-                      total_pages={pageMeta.total_pages}
+                      page={data?.page ?? page}
+                      total_pages={totalPages}
                       onChange={(p) => pushUrl({ page: p })}
                     />
                   </div>

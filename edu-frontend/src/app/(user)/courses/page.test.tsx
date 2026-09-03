@@ -38,16 +38,19 @@ const sampleItem: SeriesListItem = {
   updated_at: "2026-01-01T00:00:00",
 };
 
-function makeData(items: SeriesListData["items"] = [sampleItem]): SeriesListData {
+/**
+ * makeData — C-B（task115）后 SeriesListData 权威结构：外层 {total,page,page_size,items}。
+ * page_meta 为过渡期兼容字段，页面不再消费；分页断言一律走外层 triple。
+ */
+function makeData(
+  items: SeriesListData["items"] = [sampleItem],
+  overrides: Partial<Pick<SeriesListData, "total" | "page" | "page_size">> = {},
+): SeriesListData {
   return {
+    total: overrides.total ?? items.length,
+    page: overrides.page ?? 1,
+    page_size: overrides.page_size ?? 15,
     items,
-    page_meta: {
-      page: 1,
-      page_size: 15,
-      total: items.length,
-      total_pages: Math.max(1, Math.ceil(items.length / 15)),
-      has_more: false,
-    },
   };
 }
 
@@ -108,5 +111,23 @@ describe("courses 页面四态", () => {
     expect(screen.getByText("¥2,999")).toBeInTheDocument();
     // Pagination 渲染（C2）
     expect(screen.getByRole("navigation")).toBeInTheDocument();
+  });
+
+  it("分页权威字段：总数/页码/分页尺寸从外层 triple 读取（page_meta 兼容字段不再消费）", async () => {
+    // 只返回外层 {total,page,page_size,items}，天然不含 page_meta ——
+    // 若页面仍读 page_meta.total 会得到 0，断言 45 可证明读的是外层 total。
+    listSeriesMock.mockResolvedValue(
+      makeData([sampleItem], { total: 45, page: 3, page_size: 15 }),
+    );
+    renderPage();
+    // 异步等待 query 解析后，总数从外层 total 渲染
+    expect(
+      await screen.findByText((_, el) => el?.textContent === "共 45 门课程"),
+    ).toBeInTheDocument();
+    // 页码也来自外层 page=3：Pagination 渲染范围为「第 31-45 条 / 共 45 条」
+    // （start=(page-1)*page_size+1=31），读不到外层 page 会落到 fallback=1 → 第 1-15 条。
+    expect(
+      await screen.findByText("第 31-45 条 / 共 45 条"),
+    ).toBeInTheDocument();
   });
 });

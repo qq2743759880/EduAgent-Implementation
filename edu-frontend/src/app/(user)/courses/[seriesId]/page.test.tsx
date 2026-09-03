@@ -246,8 +246,10 @@ async function renderPage() {
 function mockSuccess() {
   getSeriesDetailMock.mockResolvedValue(sampleSeries);
   listSeriesCohortsMock.mockResolvedValue({
+    total: 3,
+    page: 1,
+    page_size: 100,
     items: [cohortA, cohortB, cohortFull],
-    page_meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
   });
   listCohortModulesMock.mockResolvedValue({ cohort_id: 12, modules: sampleModules });
   getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
@@ -266,8 +268,10 @@ describe("课程详情页四态", () => {
   it("loading：骨架渲染", async () => {
     getSeriesDetailMock.mockReturnValue(new Promise(() => {}));
     listSeriesCohortsMock.mockResolvedValue({
+      total: 0,
+      page: 1,
+      page_size: 100,
       items: [],
-      page_meta: { page: 1, page_size: 100, total: 0, total_pages: 0 },
     });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
     await renderPage();
@@ -279,8 +283,10 @@ describe("课程详情页四态", () => {
     getSeriesDetailMock.mockRejectedValueOnce(new Error("网络开小差了"));
     getSeriesDetailMock.mockResolvedValueOnce(sampleSeries);
     listSeriesCohortsMock.mockResolvedValue({
+      total: 1,
+      page: 1,
+      page_size: 100,
       items: [cohortB],
-      page_meta: { page: 1, page_size: 100, total: 1, total_pages: 1 },
     });
     listCohortModulesMock.mockResolvedValue({ cohort_id: 12, modules: sampleModules });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });
@@ -324,8 +330,10 @@ describe("课程详情页四态", () => {
     const fullB: Cohort = { ...cohortB, current_student_count: 30 };
     getSeriesDetailMock.mockResolvedValue(sampleSeries);
     listSeriesCohortsMock.mockResolvedValue({
+      total: 3,
+      page: 1,
+      page_size: 100,
       items: [fullB, cohortA, cohortFull],
-      page_meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
     });
     listCohortModulesMock.mockResolvedValue({ cohort_id: 11, modules: sampleModules });
     getCourseMindmapMock.mockResolvedValue({ nodes: [], links: [], categories: [] });

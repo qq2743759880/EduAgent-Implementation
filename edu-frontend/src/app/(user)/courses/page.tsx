@@ -49,14 +49,11 @@ export default function CoursesHomePage() {
     staleTime: 60_000,
   });
 
+  // 契约②（C-B）：listSeries 返回外层 {total,page,page_size,items}，不再消费 page_meta 兼容字段
   const items: SeriesListItem[] = data?.items ?? [];
-  const pageMeta = data?.page_meta ?? {
-    page,
-    page_size: PAGE_SIZE,
-    total: 0,
-    total_pages: 1,
-    has_more: false,
-  };
+  const total = data?.total ?? 0;
+  const pageSize = data?.page_size ?? PAGE_SIZE;
+  const currentPage = data?.page ?? page;
 
   const onFiltersChange = useCallback((next: CourseFilterValue) => {
     setFilters(next);
@@ -104,7 +101,7 @@ export default function CoursesHomePage() {
             </>
           ) : (
             <>
-              共 <b className="font-bold text-foreground">{pageMeta.total.toLocaleString()}</b> 门课程
+              共 <b className="font-bold text-foreground">{total.toLocaleString()}</b> 门课程
             </>
           )}
         </div>
@@ -132,9 +129,9 @@ export default function CoursesHomePage() {
             </div>
             <div className="mt-6">
               <Pagination
-                page={pageMeta.page}
-                pageSize={pageMeta.page_size}
-                total={pageMeta.total}
+                page={currentPage}
+                pageSize={pageSize}
+                total={total}
                 onPageChange={setPage}
               />
             </div>

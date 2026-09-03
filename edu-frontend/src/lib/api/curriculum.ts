@@ -3,9 +3,9 @@
  *
  * 层级变更（task11 后）：series → cohort（班次）→ module（模块挂班次）→ session（课次挂模块）
  * 旧 /api/curriculum/* 已 307 重定向，前端直连新端点：
- *   - GET /api/series                    → SeriesListData {items, page_meta}
+ *   - GET /api/series                    → SeriesListData {total,page,page_size,items}（C-B 后权威）
  *   - GET /api/series/{id}               → SeriesDetail
- *   - GET /api/series/{id}/cohorts       → Cohort[]
+ *   - GET /api/series/{id}/cohorts       → CohortListData {total,page,page_size,items}（C-B 后权威）
  *   - GET /api/cohorts/{id}              → CohortDetail {cohort, modules}
  *   - GET /api/cohorts/{id}/modules      → CohortModulesData {cohort_id, modules}
  * 思维导图：GET /api/mindmap/course/{seriesId}（匿名）
@@ -88,9 +88,18 @@ export interface SeriesListItem {
   updated_at: string;
 }
 
+/**
+ * 课程域分页权威结构（契约②，C-B task115 统一）：
+ * 外层 {total,page,page_size,items}；`page_meta` 为过渡期兼容字段（值同源派生），
+ * 新前端一律读取外层 triple，弃用期（page_meta 移除后）不受影响。
+ */
 export interface SeriesListData {
+  total: number;
+  page: number;
+  page_size: number;
   items: SeriesListItem[];
-  page_meta: PageMeta;
+  /** C-B 过渡期兼容字段，禁止新代码消费；值由 total/page/page_size 派生 */
+  page_meta?: PageMeta;
 }
 
 export interface CategoryBrief {
@@ -198,10 +207,14 @@ export interface CohortModulesData {
   modules: ModuleWithSessions[];
 }
 
-/** /api/series/{id}/cohorts 分页壳（后端返回 {items, page_meta}） */
+/** /api/series/{id}/cohorts 分页壳（C-B 后外层为 {total,page,page_size,items}） */
 export interface CohortListData {
+  total: number;
+  page: number;
+  page_size: number;
   items: Cohort[];
-  page_meta: { page: number; page_size: number; total: number; total_pages: number };
+  /** C-B 过渡期兼容字段，禁止新代码消费 */
+  page_meta?: { page: number; page_size: number; total: number; total_pages: number };
 }
 
 /* =========================================================

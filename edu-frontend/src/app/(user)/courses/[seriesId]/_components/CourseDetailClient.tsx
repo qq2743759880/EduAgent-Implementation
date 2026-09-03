@@ -96,7 +96,7 @@ export function CourseDetailClient({ seriesId }: { seriesId: number }) {
   });
 
   /* ---------- 班次选择（默认最低价在售班次） ---------- */
-  // 后端 /api/series/{id}/cohorts 返回分页壳 {items, page_meta}
+  // C-B（task115）后 /api/series/{id}/cohorts 返回外层 {total,page,page_size,items}，读外层 items
   const cohorts = useMemo(() => cohortsQ.data?.items ?? [], [cohortsQ.data]);
   const [selectedCohortId, setSelectedCohortId] = useState<number | null>(null);
   const defaultCohort = useMemo(() => {
