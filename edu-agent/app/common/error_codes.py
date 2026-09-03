@@ -103,6 +103,7 @@ STUDY_HOMEWORK_NOT_FOUND = "40441"  # 作业不存在
 STUDY_EXAM_NOT_FOUND = "40442"      # 考试不存在
 STUDY_ACCESS_DENIED = "40340"       # 无学习权限（未报名）
 STUDY_PROGRESS_INVALID = "40041"    # 学习进度数据异常
+STUDY_REVIEW_DUPLICATE = "40044"    # 已评价过该系列（course_review 防刷，Season-2 需求 B 登记）
 
 # ═══════════════════════════════════════════
 # 课程管理域（course_admin）— 40901~40907 唯一约束冲突

@@ -350,6 +350,10 @@ from app.curriculum.router import router as curriculum_router
 app.include_router(curriculum_router)                  # 旧课程路由 → 308 重定向（task11）
 from app.domains.course.router import router as course_router
 app.include_router(course_router)                      # 课程域 C 端 5 端点（task11 契约冻结②）
+from app.domains.review.router import router as review_router
+from app.domains.review.admin_router import admin_router as review_admin_router
+app.include_router(review_router)                      # 课程系列评价 用户端（Season-2 需求 B）
+app.include_router(review_admin_router)                # 课程系列评价 管理端（Season-2 需求 B）
 from app.users.router import router as users_router
 app.include_router(users_router)                       # 用户画像（P0-P 步骤4）—— 新增
 from app.chat.router import router as chat_router
@@ -393,6 +397,8 @@ from app.domains.trade.refund.router import router as refund_router
 from app.domains.trade.refund.router import admin_router as refund_admin_router
 app.include_router(refund_router)                                  # 退款/交易（task19 契约⑩）
 app.include_router(refund_admin_router)                            # 退款审批 stub（task19 HITL 预留）
+from app.admin.trade_admin.router import router as trade_admin_router
+app.include_router(trade_admin_router)                             # 管理端 交易运营聚合（Season-2 需求 A）
 from app.domains.enrollment.router import router as enrollment_router
 app.include_router(enrollment_router)                              # 报名/我的班次（task20 契约⑪前段）
 from app.domains.learning.router import router as learning_router
