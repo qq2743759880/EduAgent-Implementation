@@ -152,6 +152,11 @@
     .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
     .gnav.open{transform:translateX(0)}
   }
+  /* task117 · 行内 toast（消费后端 message：409/422/40908） */
+  .em-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#2b2f3a;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:.25s;z-index:300;max-width:82vw;text-align:center}
+  .em-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .em-toast.ok{background:#0e7a4d}
+  .em-toast.err{background:#e23b5a}
 </style>
 
 
@@ -276,7 +281,7 @@
 
   <!-- 筛选栏 -->
   <div class="filterbar">
-    <div class="fld search"><label for="f-kw">搜索</label><input id="f-kw" class="search" type="text" placeholder="系列名称 / 编码"></div>
+    <div class="fld search"><label for="f-kw">搜索</label><input id="f-kw" class="search" type="text" placeholder="系列名称 / 编码" oninput="onKwInput()"></div>
     <div class="fld"><label for="f-dm">交付模式</label>
       <select id="f-dm" onchange="applyFilter()">
         <option value="">全部交付</option>
@@ -304,7 +309,7 @@
     <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetFilter()">重置</button>
   </div>
 
-  <div class="toolbar-meta"><span>共 <b id="total-count">219</b> 个系列 · 每页 10</span></div>
+  <div class="toolbar-meta"><span>共 <b id="total-count">0</b> 个系列 · 每页 20</span></div>
 
   <!-- 表格 -->
   <div class="tbl-card">
@@ -331,7 +336,7 @@
       <div class="st-ico">⚠️</div>
       <div><b style="color:var(--ink)">加载失败</b></div>
       <p style="margin:4px 0 12px" id="err-msg">后端不可用，请稍后重试</p>
-      <button class="btn btn-ghost btn-mini" onclick="render('success')">重试</button>
+      <button class="btn btn-ghost btn-mini" onclick="refreshList()">重试</button>
     </div>
 
     <div id="pager" class="pager"></div>
@@ -376,6 +381,7 @@
         </div>
       </form>
       <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" disabled title="后端视频接口待实现（task13 分片上传占位）" style="opacity:.6;cursor:not-allowed">🎬 视频上传（占位）</button>
         <button class="btn btn-ghost btn-mini" data-close>取消</button>
         <button class="btn btn-primary btn-mini" onclick="saveSeries()">保存</button>
       </div>
@@ -389,14 +395,14 @@
         <div class="c-msg">
           <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
           <div>
-            <b>删除系列「<span id="del-name"></span>」？</b>
-            <p><b>下架优先于删除</b>：删除为软删，将把该系列置为「已下架」，用户端不再展示。请在确认后点击删除。</p>
+            <b>下架系列「<span id="del-name"></span>」（可在回收站查看）？</b>
+            <p>下架为软删：将把该系列置为「已下架」，用户端不再展示；记录保留，可在回收站（include_deleted）中查看/恢复。此操作<b>不会永久删除</b>数据。</p>
           </div>
         </div>
       </div>
       <div class="mfoot">
         <button class="btn btn-ghost btn-mini" data-close>取消</button>
-        <button class="btn btn-danger btn-mini" onclick="doDelete()">删除（软删）</button>
+        <button class="btn btn-danger btn-mini" onclick="doDelete()">确认下架（软删）</button>
       </div>
     </div>
   </div>
@@ -498,8 +504,9 @@ function renderPager(){
   p.innerHTML=h;
 }
 function applyFilter(){
-  renderPager(); renderRows();
+  __page = 1;
   document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open"));
+  loadSeries();
 }
 function render(v){ state=v||state;
   document.querySelectorAll("[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===state));
@@ -528,17 +535,167 @@ function openModal(id){ document.getElementById(id).classList.add("show"); }
 function closeAll(){ document.querySelectorAll(".scrim").forEach(s=>s.classList.remove("show")); document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")); }
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeAll));
 document.querySelectorAll(".scrim").forEach(s=>s.addEventListener("click",e=>{ if(e.target===s) closeAll(); }));
-function openCreate(){ document.getElementById("form-title").textContent="新建系列"; openModal("series-form"); }
-function openEdit(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("form-title").textContent="编辑系列 · "+s.name; openModal("series-form"); }
-function openDel(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("del-name").textContent=s.name; window.__delId=id; openModal("confirm-del"); }
-function openOff(id){ const s=SERIES.find(x=>x.id===id); document.getElementById("off-name").textContent=s.name; window.__offId=id; openModal("confirm-off"); }
-function doOnSale(id){ const s=SERIES.find(x=>x.id===id); s.st="on_sale"; alert(`已上架「${s.name}」（React：PATCH sale_status=on_sale）`); closeAll(); render(); }
-function doOffSale(){ const s=SERIES.find(x=>x.id===window.__offId); s.st="off_sale"; alert(`已下架「${s.name}」（React：PATCH sale_status=off_sale）`); closeAll(); render(); }
-function doDelete(){ const s=SERIES.find(x=>x.id===window.__delId); s.st="off_sale"; alert(`已软删「${s.name}」（React：DELETE /series/{id} → off_sale）`); closeAll(); render(); }
-function saveSeries(){ alert("保存系列（React：POST/PATCH /series）"); closeAll(); }
+/* ── task117：真实 CRUD 接线（消费 task116 C-C 契约：软删/上下架/sale_status）── */
+function esc(t){ var x=document.createElement("div"); x.textContent=t==null?"":t; return x.innerHTML; }
+function errMsg(e){
+  if(!e) return "操作失败";
+  if(e.message && e.message.indexOf("HTTP ") !== 0 && e.message !== "") return e.message;
+  if(e.body && Array.isArray(e.body.data) && e.body.data.length){
+    return e.body.data.map(function(d){ return (d&&d.msg)||""; }).filter(Boolean).join("；");
+  }
+  if(e.body && Array.isArray(e.body.detail) && e.body.detail.length){
+    return e.body.detail.map(function(d){ return (d&&d.msg)||""; }).filter(Boolean).join("；");
+  }
+  return (e.message||"操作失败");
+}
+function toast(msg,type){
+  var t=document.getElementById("emToast");
+  if(!t){ t=document.createElement("div"); t.id="emToast"; t.className="em-toast"; document.body.appendChild(t); }
+  t.textContent=msg||""; t.className="em-toast show "+(type==="err"?"err":"ok");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(function(){ t.className="em-toast"; },3400);
+}
+function ensureAdminId(){
+  if(window.__adminId) return Promise.resolve(window.__adminId);
+  return EAPI.get("/api/auth/me").then(function(me){ window.__adminId = me && (me.user_id!=null?me.user_id:me.id); return window.__adminId; });
+}
+function openCreate(){ window.__editId=null; var f=document.getElementById("series-form-fields"); if(f&&f.reset)f.reset(); document.getElementById("form-title").textContent="新建系列"; openModal("series-form"); }
+function fillForm(s){
+  var f=document.getElementById("series-form-fields");
+  f.series_name.value = s.series_name!=null?s.series_name:(s.name||"");
+  f.series_code.value = s.series_code||"";
+  f.institution_id.value = s.institution_id!=null?s.institution_id:"";
+  f.delivery_mode.value = s.delivery_mode||"online_live";
+  f.sale_status.value = s.sale_status||"draft";
+  f.cover_url.value = s.cover_url||"";
+  f.description.value = s.description||"";
+}
+function openEdit(id){
+  var s=(window.__rows&&window.__rows[id])||SERIES.find(function(x){return x.id===id;})||null;
+  if(s){ fillForm(s); window.__editId=id; document.getElementById("form-title").textContent="编辑系列 · "+(s.series_name||s.name||""); openModal("series-form"); return; }
+  EAPI.get("/api/admin/courses/series/"+id).then(function(d){ fillForm(d); window.__editId=id; document.getElementById("form-title").textContent="编辑系列 · "+(d.series_name||""); openModal("series-form"); }).catch(function(e){ toast(errMsg(e),"err"); });
+}
+function openDel(id){
+  var s=(window.__rows&&window.__rows[id])||SERIES.find(function(x){return x.id===id;});
+  document.getElementById("del-name").textContent = s?(s.series_name||s.name||""):id;
+  window.__delId=id; openModal("confirm-del");
+}
+function openOff(id){
+  var s=(window.__rows&&window.__rows[id])||SERIES.find(function(x){return x.id===id;});
+  document.getElementById("off-name").textContent = s?(s.series_name||s.name||""):id;
+  window.__offId=id; openModal("confirm-off");
+}
+function doOnSale(id){
+  EAPI.patch("/api/admin/courses/series/"+id,{sale_status:"on_sale"})
+    .then(function(){ closeAll(); toast("已上架","ok"); refreshList(); })
+    .catch(function(e){ toast(errMsg(e),"err"); });
+}
+function doOffSale(){
+  var id=window.__offId;
+  EAPI.patch("/api/admin/courses/series/"+id,{sale_status:"off_sale"})
+    .then(function(){ closeAll(); toast("已下架","ok"); refreshList(); })
+    .catch(function(e){ toast(errMsg(e),"err"); });
+}
+function doDelete(){
+  var id=window.__delId;
+  EAPI.del("/api/admin/courses/series/"+id)
+    .then(function(){ closeAll(); toast("已下架（可在回收站查看）","ok"); refreshList(); })
+    .catch(function(e){ toast(errMsg(e),"err"); });
+}
+function saveSeries(){
+  var f=document.getElementById("series-form-fields");
+  var name=f.series_name.value.trim(), code=f.series_code.value.trim(), inst=parseInt(f.institution_id.value,10);
+  if(!name||!code||isNaN(inst)){ toast("请填写系列名称、编码、机构 ID","err"); return; }
+  var desc=f.description.value.trim()||null, cover=f.cover_url.value.trim()||null;
+  if(window.__editId){
+    var patch={ series_name:name, delivery_mode:f.delivery_mode.value, sale_status:f.sale_status.value, description:desc, cover_url:cover };
+    EAPI.patch("/api/admin/courses/series/"+window.__editId, patch)
+      .then(function(){ closeAll(); toast("已保存修改","ok"); refreshList(); })
+      .catch(function(e){ toast(errMsg(e),"err"); });
+  } else {
+    ensureAdminId().then(function(aid){
+      if(!aid){ toast("无法获取当前管理员 ID，请重新登录","err"); return; }
+      var payload={ series_name:name, series_code:code, institution_id:inst, delivery_mode:f.delivery_mode.value, sale_status:f.sale_status.value, description:desc, cover_url:cover, created_by:aid };
+      EAPI.post("/api/admin/courses/series", payload)
+        .then(function(){ closeAll(); toast("已创建系列","ok"); refreshList(); })
+        .catch(function(e){ toast(errMsg(e),"err"); });
+    }).catch(function(e){ toast(errMsg(e),"err"); });
+  }
+}
+var __page = 1, REAL_PAGE_SIZE = 20, __kwTimer = null;
+function onKwInput(){ clearTimeout(__kwTimer); __kwTimer = setTimeout(applyFilter, 350); }
+function buildSeriesQuery(){
+  var p = ["page=" + __page, "page_size=" + REAL_PAGE_SIZE];
+  var kw = (document.getElementById("f-kw").value || "").trim();
+  if(kw) p.push("keyword=" + encodeURIComponent(kw));
+  var dm = document.getElementById("f-dm").value;
+  if(dm) p.push("delivery_mode=" + encodeURIComponent(dm));
+  var ss = document.getElementById("f-ss").value;
+  if(ss) p.push("sale_status=" + encodeURIComponent(ss));
+  var sort = document.getElementById("f-sort").value;
+  if(sort && sort !== "default") p.push("sort=" + encodeURIComponent(sort));
+  return p.join("&");
+}
+function showEmpty(b){ var el=document.getElementById("state-empty"); if(el) el.classList.toggle("hidden", !b); }
+function showError(b){ var el=document.getElementById("state-error"); if(el) el.classList.toggle("hidden", !b); }
+function renderPagerReal(pm){
+  var p = document.getElementById("pager"); if(!p) return;
+  var tp = (pm && pm.total_pages) ? pm.total_pages : 1;
+  var cur = (pm && pm.page) ? pm.page : __page;
+  if(tp <= 1){ p.innerHTML = ""; return; }
+  var h = '<button ' + (cur<=1?'disabled':'') + ' onclick="gotoPage(' + (cur-1) + ')">‹</button>';
+  for(var i=1;i<=tp;i++) h += '<button class="' + (i===cur?'cur':'') + '" onclick="gotoPage(' + i + ')">' + i + '</button>';
+  h += '<button ' + (cur>=tp?'disabled':'') + ' onclick="gotoPage(' + (cur+1) + ')">›</button>';
+  p.innerHTML = h;
+}
+function gotoPage(n){ if(n<1) n=1; __page=n; loadSeries(); if(window.scrollTo) window.scrollTo({top:0,behavior:"smooth"}); }
+function loadSeries(){
+  if(!window.EAPI) return;
+  EAPI.get("/api/admin/courses/series?" + buildSeriesQuery()).then(function(d){
+    var items=(d&&d.items)?d.items:[]; window.__rows={}; items.forEach(function(s){ window.__rows[s.id]=s; });
+    var body=document.getElementById("tbl-body");
+    body.innerHTML = items.map(rowHtml).join("");
+    body.classList.remove("hidden");
+    var pg=document.getElementById("pager"); if(pg) pg.classList.remove("hidden");
+    showEmpty(!items.length); showError(false);
+    var tc=document.getElementById("total-count");
+    if(tc) tc.textContent = (d&&d.page_meta&&typeof d.page_meta.total==="number") ? d.page_meta.total : items.length;
+    renderPagerReal(d&&d.page_meta);
+    var sub=document.querySelector(".page-head .sub");
+    if(sub && sub.textContent.indexOf("⚠")===0) sub.textContent="系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series";
+  }).catch(function(err){
+    var body=document.getElementById("tbl-body"); if(body) body.innerHTML="";
+    showError(true); showEmpty(false);
+    var t=document.querySelector(".page-head .sub,.toolbar-meta");
+    if(t&&!t.textContent.includes("admin 账号")){ t.textContent="⚠ 系列加载失败："+errMsg(err)+"（task117）"; }
+  });
+}
+function rowHtml(s){
+  var st=s.sale_status||"draft";
+  var dmMap={online_live:["直播","b-live"],online_recorded:["录播","b-rec"],offline_face_to_face:["面授","b-offline"]};
+  var dm=dmMap[s.delivery_mode]||[s.delivery_mode||"—","b-live"];
+  var badge = st==="on_sale" ? '<span class="badge badge-on"><span class="pd"></span>在售</span>'
+            : st==="off_sale" ? '<span class="badge badge-mut" style="outline:1px dashed var(--line)"><span class="pd"></span>已下架</span>'
+            : '<span class="badge badge-mut"><span class="pd"></span>草稿</span>';
+  return '<tr class="series-row"><td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div class="min"><div class="nm">'+esc(s.series_name||"—")+'</div><div class="cd">'+esc(s.series_code||"")+'</div></div></div></td>'
+    +'<td><span class="b-dm '+dm[1]+'">'+dm[0]+'</span></td>'
+    +'<td>'+badge+'</td>'
+    +'<td class="c-meta">'+esc((s.created_at||"").slice(0,10))+'</td>'
+    +'<td><div class="cell-actions" style="justify-content:flex-end"><div class="dd" data-row="'+s.id+'">'
+    +'<button class="dd-btn" onclick="toggleDD(event,'+s.id+')">管理 <span>▾</span></button>'
+    +'<div class="dd-menu">'
+    +'<button class="dd-item" onclick="openEdit('+s.id+')"><span class="ic">✎</span>编辑</button>'
+    +'<a class="dd-item" href="admin-course-detail.html?id='+s.id+'"><span class="ic">🧩</span>班次</a>'
+    +(st==="off_sale"
+        ? '<button class="dd-item" onclick="doOnSale('+s.id+')"><span class="ic">▲</span>上架</button>'
+        : '<button class="dd-item" onclick="openOff('+s.id+')"><span class="ic">▼</span>下架</button>')
+    +'<button class="dd-item danger" onclick="openDel('+s.id+')"><span class="ic">🗑</span>删除</button>'
+    +'</div></div></div></td></tr>';
+}
+function refreshList(){ loadSeries(); }
 function resetFilter(){
-  ["f-kw","f-dm","f-ss","f-sort"].forEach(id=>{ const el=document.getElementById(id); el.value=el.type==="text"?"":""; });
-  page=1; applyFilter();
+  ["f-kw","f-dm","f-ss","f-sort"].forEach(function(id){ var el=document.getElementById(id); el.value=""; });
+  __page = 1; loadSeries();
 }
 document.getElementById("btn-create").addEventListener("click",openCreate);
 render("success");
@@ -570,14 +727,11 @@ render("success");
 </script>
 <script>
 window.bootAdmin=function(){
-if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var badge=function(st){if(st==="on_sale")return'<span class="badge badge-ok"><i class="pd"></i>在售</span>';if(st==="off_sale")return'<span class="badge badge-off"><i class="pd"></i>下架</span>';return'<span class="badge badge-warn"><i class="pd"></i>'+(st||"—")+'</span>';};
-var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
-EAPI.get("/api/admin/courses/series?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];var body=document.querySelector("#tbl-body");if(!body)return;if(!items.length){body.innerHTML="";var se=document.getElementById("state-empty");if(se)se.classList.remove("hidden");var st=document.getElementById("state-total");if(st)st.textContent=0;return;}var row=function(s){return '<tr class="series-row"><td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div class="min"><div class="nm">'+esc(s.series_name||"—")+'</div><div class="cd">'+esc(s.series_code||"")+'</div></div></div></td><td>'+esc(s.delivery_mode||"—")+'</td><td>'+badge(s.sale_status)+'</td><td class="c-meta">'+esc((s.created_at||"").slice(0,10))+'</td><td><div class="cell-actions" style="justify-content:flex-end"><button class="dd-btn" onclick="alert(\'操作接线：PATCH /api/admin/courses/series/'+s.id+'（task117）\')">管理 ▾</button></div></td></tr>'};
-body.innerHTML=items.map(row).join("");
-var st=document.getElementById("state-total");if(st)st.textContent=items.length;
-document.getElementById("state-empty").classList.add("hidden");document.getElementById("state-error").classList.add("hidden");
-}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 系列加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});};
+if(!window.EAPI)return;
+if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+/* 守卫通过后：由 loadSeries() 真实拉取并渲染（消费 task116 C-C 契约） */
+loadSeries();
+};
 </script>
 </body>
 </html>

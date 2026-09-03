@@ -1,0 +1,67 @@
+=== 0. 登录 admin (adm02test) ===
+role: admin user_id: 100003
+
+=== 1. 取一个有效 institution_id ===
+list status=200 items=50
+使用 institution_id = 1
+
+=== 2. 新建系列（唯一 code=T117_1788402075）===
+200 {"code": 0, "message": "ok", "data": {"id": 2652, "institution_id": 1, "delivery_mode": "online_live", "series_code": "T117_1788402075", "series_name": "task117 验收系列 T117_1788402075", "description": null, "cover_url": null, "target_learner_identity_codes": null, "target_learning_goal_codes": null, "target_grade_codes": null, "sale_status": "draft", "created_by": 100003, "created_at": "2026-09-03T10:21:22", "updated_at": "2026-09-03T10:21:22"}}
+[PASS] 新建系列成功  id=2652
+
+=== 3. 默认列表命中新建行（keyword=T117_1788402075）===
+[PASS] 列表立现新建行  in_list=True
+
+=== 4. 编辑名称 PATCH ===
+200 {"code": 0, "message": "ok", "data": {"id": 2652, "institution_id": 1, "delivery_mode": "online_live", "series_code": "T117_1788402075", "series_name": "task117 改名 T117_1788402075", "description": null, "cover_url": null, "target_learner_identity_codes": null, "target_learning_goal_codes": null, "target_grade_codes": null, "sale_status": "draft", "created_by": 100003, "created_at": "2026-09-03T10:21:22", "updated_at": "2026-09-03T10:21:26"}}
+[PASS] PATCH 改名成功
+[PASS] 刷新后为新值  got=task117 改名 T117_1788402075
+
+=== 5. 上架 on_sale ===
+200 {"code": 0, "message": "ok", "data": {"id": 2652, "institution_id": 1, "delivery_mode": "online_live", "series_code": "T117_1788402075", "series_name": "task117 改名 T117_1788402075", "description": null, "cover_url": null, "target_learner_identity_codes": null, "target_learning_goal_codes": null, "target_grade_codes": null, "sale_status": "on_sale", "created_by": 100003, "created_at": "2026-09-03T10:21:22", "updated_at": "2026-09-03T10:21:32"}}
+[PASS] 上架成功
+[PASS] 状态=on_sale  st=on_sale
+
+=== 6. 下架 off_sale ===
+200 {"code": 0, "message": "ok", "data": {"id": 2652, "institution_id": 1, "delivery_mode": "online_live", "series_code": "T117_1788402075", "series_name": "task117 改名 T117_1788402075", "description": null, "cover_url": null, "target_learner_identity_codes": null, "target_learning_goal_codes": null, "target_grade_codes": null, "sale_status": "off_sale", "created_by": 100003, "created_at": "2026-09-03T10:21:22", "updated_at": "2026-09-03T10:21:38"}}
+[PASS] 下架成功
+[PASS] 状态=off_sale
+
+=== 7. 软删 DELETE（默认路径，呼应 C-C）===
+200 {"code": 0, "message": "系列已下架", "data": null}
+[PASS] 软删 message=系列已下架  msg=系列已下架
+
+=== 8. 默认列表消失（C-C：WHERE sale_status != 'off_sale'）===
+[PASS] 默认列表已剔除软删行  in_list=False
+
+=== 9. include_deleted=true 回收站仍可见（软删保留行）===
+[PASS] 回收站视图仍可见  in_recycle=True
+
+=== 10. 重复 code → 40901 ===
+409 {"code": "40901", "message": "系列编码 'T117_1788402075' 已存在", "data": null}
+[PASS] 重复编码 409/40901  code=40901
+
+=== 11. 非法 delivery_mode → 42200 ===
+422 {"code": "42200", "message": "String should match pattern '^(online_live|online_recorded|offline_face_to_face)$'", "data": [{"type": "string_pattern_mismatch", "loc": ["body", "delivery_mode"], "msg": "String should match pattern '^(online_live|online_recorded|offline_face_to_face)$'", "input": "invalid_mode", "ctx": {"pattern": "^(online_live|online_recorded|offline_face_to_face)$"}}]}
+[PASS] 非法字段 422/42200  code=42200
+
+=== 清理：hard 删除测试系列（零引用，彻底清除）===
+200 {"code": 0, "message": "系列已彻底删除", "data": null}
+[PASS] 清理：hard 删除成功  msg=系列已彻底删除
+
+==== 汇总 ====
+[PASS] 新建系列成功  id=2652
+[PASS] 列表立现新建行  in_list=True
+[PASS] PATCH 改名成功
+[PASS] 刷新后为新值  got=task117 改名 T117_1788402075
+[PASS] 上架成功
+[PASS] 状态=on_sale  st=on_sale
+[PASS] 下架成功
+[PASS] 状态=off_sale
+[PASS] 软删 message=系列已下架  msg=系列已下架
+[PASS] 默认列表已剔除软删行  in_list=False
+[PASS] 回收站视图仍可见  in_recycle=True
+[PASS] 重复编码 409/40901  code=40901
+[PASS] 非法字段 422/42200  code=42200
+[PASS] 清理：hard 删除成功  msg=系列已彻底删除
+PASS=14 FAIL=0

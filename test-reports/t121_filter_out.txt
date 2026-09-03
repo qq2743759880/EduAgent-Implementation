@@ -1,0 +1,22 @@
+role: admin user_id: 100003
+默认列表 items=50 total=2629
+[PASS] 默认列表非空  items=50
+基准系列: id=2629 code=itest-series-1 dm=online_recorded st=draft name=ITest系列
+[PASS] keyword=编码 命中该系列  code=itest-series-1 返回=1
+[PASS] delivery_mode 过滤一致  dm=online_recorded 返回=20
+[PASS] sale_status 过滤一致  st=draft 返回=1
+[PASS] sort=name_asc 升序生效  items=50
+[PASS] sort=newest 被接受(200)  status=200
+[PASS] 非法 sort 被拒(422)  status=422
+[PASS] 组合筛选一致  返回=1
+
+==== 汇总 ====
+[PASS] 默认列表非空  items=50
+[PASS] keyword=编码 命中该系列  code=itest-series-1 返回=1
+[PASS] delivery_mode 过滤一致  dm=online_recorded 返回=20
+[PASS] sale_status 过滤一致  st=draft 返回=1
+[PASS] sort=name_asc 升序生效  items=50
+[PASS] sort=newest 被接受(200)  status=200
+[PASS] 非法 sort 被拒(422)  status=422
+[PASS] 组合筛选一致  返回=1
+PASS=8 FAIL=0
