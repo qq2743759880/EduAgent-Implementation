@@ -15,6 +15,7 @@ P2 问答路由：
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
@@ -43,7 +44,14 @@ from app.chat.service import (
     search_only,
 )
 from app.common.exceptions import AppException, NotFoundError, ValidationError
-from app.common.error_codes import INTERNAL_ERROR
+from app.common.error_codes import (
+    CHAT_PERSIST_FAIL,
+    LLM_AUTH,
+    LLM_RATE_LIMIT,
+    LLM_TIMEOUT,
+    LLM_UNAVAILABLE,
+    SERVICE_DOWNSTREAM,
+)
 
 
 router = APIRouter(prefix="/api/chat", tags=["P2-知识问答"])
@@ -73,6 +81,52 @@ def _translate_exception(e: Exception) -> None:
     # 非预期：记录日志并 500（不把 traceback 暴露）
     logger.exception(f"[P2 router] 未处理异常：{e}")
     raise HTTPException(status_code=500, detail={"code": "CHAT_INTERNAL_ERROR", "message": "问答服务暂不可用，请稍后重试"})
+
+
+# ============================================================
+# 工具：流式"建连后"异常 → 可区分错误码 映射（W2 批判 C3 落地）
+# ============================================================
+def _map_stream_exception(e: Exception) -> tuple[str, str]:
+    """把 SSE 连接建立后的生成/落库期异常映射为「可区分错误码 + 可读 message」。
+
+    两段式错误模型契约（批判 C3.1 承认的取舍）：
+      - 连接前：service_chat_stream 抛错 → 同步 HTTP 4xx/5xx（见 chat_stream_sse 顶部 try/except）。
+      - 建连后：token 迭代 / build_finalize 失败 → 流内 `event: error`，code 用本函数映射。
+    本函数只据「异常类型 + 消息特征」映射，不回传 traceback；
+    目标是让前端 error 分支从固定 50000 单调 → 可区分（LLM_AUTH / LLM_TIMEOUT /
+    LLM_RATE_LIMIT / LLM_UNAVAILABLE / SERVICE_DOWNSTREAM）。
+    """
+    lowered = f"{type(e).__name__} {e}".lower()
+
+    def _has(*words: str) -> bool:
+        return any(w in lowered for w in words)
+
+    # 1) 超时：内置 TimeoutError（py3.11 与 asyncio.TimeoutError 同对象）+ 特征词
+    if isinstance(e, TimeoutError) or _has("timeout", "timed out", "60s 无增量"):
+        return LLM_TIMEOUT, f"答案生成超时：{type(e).__name__}"
+
+    # 2) LLM HTTP 状态码特征（LLM 客户端抛的 RuntimeError "LLM stream HTTP <code>: ..."）
+    _st = re.search(r"http\D{0,4}(\d{3})", lowered)
+    status_code = int(_st.group(1)) if _st else None
+    if status_code is not None:
+        if status_code in (401, 403):
+            return LLM_AUTH, f"LLM 下游鉴权/密钥失效(HTTP {status_code})：{type(e).__name__}"
+        if status_code == 429:
+            return LLM_RATE_LIMIT, f"LLM 下游限流(HTTP 429)：{type(e).__name__}"
+        if status_code >= 500:
+            return LLM_UNAVAILABLE, f"LLM 下游服务不可用(HTTP {status_code})：{type(e).__name__}"
+
+    # 3) 语义/类型特征（openai 风格异常 / 连接失败）
+    if _has("authenticationerror", "unauthorized", "invalid api key", "invalidapikey", "api key invalid"):
+        return LLM_AUTH, f"LLM 下游鉴权/密钥失效：{type(e).__name__}"
+    if _has("ratelimiterror", "rate limit", "too many requests", "not enough quota", "quota"):
+        return LLM_RATE_LIMIT, f"LLM 下游限流/额度不足：{type(e).__name__}"
+    if _has("connectionerror", "connection error", "connectionrefused", "failed to connect",
+            "apiconnectionerror", "connection aborted", "connect timed out"):
+        return LLM_UNAVAILABLE, f"LLM 下游连接失败：{type(e).__name__}"
+
+    # 4) 其它未归类 → 通用下游兜底（保持区别于 50000，便于前端识别"生成期下游失败"）
+    return SERVICE_DOWNSTREAM, f"答案生成失败（下游依赖）：{type(e).__name__}"
 
 
 # ============================================================
@@ -213,7 +267,11 @@ async def chat_stream_sse(
             req, user_id=user.user_id, role=user.role,
         )
     except Exception as e:
-        # 在响应开始前出错：同步返回 4xx/5xx，不发 SSE
+        # 两段式错误模型 · 第一段：**建连前失败**（service_chat_stream 检索/初始化抛错）。
+        # 此刻 SSE 连接尚未建立，无法发流内事件，故「同步返回 HTTP 4xx/5xx」，不发 SSE——
+        # 这是批判 C3.1 认可的双通道取舍：
+        #   「连接前 → 同步 HTTP；建连后（token 迭代 / build_finalize 落库）→ 流内 event: error」
+        # 请勿把此处改成发 SSE，否则会破坏「响应体开始前即失败复用 HTTP 状态码」的契约。
         try:
             _translate_exception(e)
         except HTTPException as he:
@@ -246,10 +304,12 @@ async def chat_stream_sse(
                 buf.append(delta)
                 yield _sse_line(SseEventType.TOKEN.value, {"delta": delta})
         except Exception as e:
-            # 两段式错误模型 · 第二段：流已建连，生成真失败（如 LLM key 失效/下游超时）
-            # → 发 error 事件并安全收束（返回，关闭连接）。不再静默转 done+degraded_reason，
-            # 使前端 error 分支真实可达（audit P1-10 / task115 C-B）。
-            code, msg = INTERNAL_ERROR, f"答案生成失败：{type(e).__name__}"
+            # 两段式错误模型 · 第二段：流已建连，生成真失败（如 LLM key 失效/下游超时/限流）
+            # → 发 `event: error` 并安全收束（return，关闭连接）。错误码从固定 50000 提升为
+            # 可区分下游码（LLM_AUTH/LLM_TIMEOUT/LLM_RATE_LIMIT/LLM_UNAVAILABLE/SERVICE_DOWNSTREAM，
+            # 见 _map_stream_exception），使前端 error 分支真实可达且可区分（audit P1-10 /
+            # task115 C-B / W2 批判 C3）。此时 START/RETRIEVAL 帧已先行发出，未丢帧。
+            code, msg = _map_stream_exception(e)
             logger.warning(f"[P2 stream] token 迭代异常，发 error 事件：{code} {msg} ({e})")
             yield _sse_line(SseEventType.ERROR.value, {"code": code, "message": msg})
             return
@@ -258,17 +318,34 @@ async def chat_stream_sse(
         try:
             final_info = await build_finalize(answer_text, degraded_extra=None)
         except Exception as e:
-            # 落库失败：不泄漏到前端，只在 done 的 degraded_reason 里提示
-            logger.warning(f"[P2 stream] 落库失败：{type(e).__name__}: {e}")
-            final_info = {
+            # 两段式错误模型 · 第三段：落库失败（build_finalize 抛错）。
+            # 不再静默只写 degraded_reason（W2 批判 C3.1）——显式发 `event: error` 且
+            # code=CHAT_PERSIST_FAIL，并回传已生成 token 数 / 占位 message_id，让前端明确知道
+            # 「答案已生成但未入库」。随后补一个带 degraded 提示的 done 做正常收束兜底（不静默）。
+            generated_tokens = len(buf)
+            logger.warning(f"[P2 stream] 落库失败，发 error 事件：{CHAT_PERSIST_FAIL} ({e})")
+            yield _sse_line(SseEventType.ERROR.value, {
+                "code": CHAT_PERSIST_FAIL,
+                "message": f"答案生成成功但落库失败：{type(e).__name__}（内容未保存到会话）",
+                "generated_tokens": generated_tokens,
                 "session_id": session_id_out,
                 "message_id": None,
-                "retrieved_count": int(bundle.raw_retrieved_count),
-                "final_count": int(len(bundle.docs)),
-                "latency_ms": 0,
-                "rewrite_query": bundle.rewrite_query,
-                "degraded_reason": f"流式落库失败({type(e).__name__})",
-            }
+            })
+            yield _sse_line(SseEventType.DONE.value, {
+                "code": 0,
+                "message": "ok",
+                "data": {
+                    "session_id": session_id_out,
+                    "message_id": None,
+                    "retrieved_count": int(bundle.raw_retrieved_count),
+                    "final_count": int(len(bundle.docs)),
+                    "latency_ms": 0,
+                    "rewrite_query": bundle.rewrite_query,
+                    "degraded_reason": f"答案已生成但流式落库失败({type(e).__name__})：未入库",
+                },
+            })
+            return
+
         # 契约① SSE 例外：done 事件 data 内嵌统一壳 {code:0, message:"ok", data:{...}}
         yield _sse_line(SseEventType.DONE.value, {
             "code": 0,

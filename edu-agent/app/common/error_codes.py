@@ -125,6 +125,18 @@ QUESTION_CODE_CONFLICT = "40922"   # 题目编码重复（bank_id + question_cod
 EXAM_CODE_CONFLICT = "40923"       # 考试编码重复（session_id + exam_code）
 
 # ═══════════════════════════════════════════
+# 问答/LLM 下游域（chat/llm）— 5001x（流式"建连后"错误通道专用，W2 批判 C3 登记 2026-09-04）
+# 语义：SSE 连接建立后，token 迭代 / 落库阶段的失败不再固定 50000 单调或静默 degraded_reason，
+# 统一走 `event: error` 并携带可区分 subcode。映射规则见 router._map_stream_exception。
+# ═══════════════════════════════════════════
+LLM_AUTH = "50011"            # LLM 下游认证/密钥失效（401/403/authentication/invalid api key）
+LLM_TIMEOUT = "50012"         # LLM 下游超时（无增量 60s / 请求 timeout / timed out）
+LLM_RATE_LIMIT = "50013"      # LLM 下游限流（429/rate limit/too many requests）
+LLM_UNAVAILABLE = "50014"     # LLM 下游不可达（连接失败/ConnectionError/下游 5xx）
+SERVICE_DOWNSTREAM = "50015"  # 下游依赖通用兜底（生成期其它未归类异常）
+CHAT_PERSIST_FAIL = "50016"   # 流式答案已生成但落库失败（build_finalize 抛错）
+
+# ═══════════════════════════════════════════
 # 社区域（community）
 # ═══════════════════════════════════════════
 COMMUNITY_POST_NOT_FOUND = "40410"     # 帖子不存在
