@@ -52,12 +52,6 @@ button{font-family:inherit;cursor:pointer}
 .page{width:100%;max-width:1180px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
 
 /* ===== 审核工具条 + 演示说明（HTML 效果图专属，不进入 React）===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--tint-indigo-01)}
-.respbar button.on{background:var(--indigo);color:var(--white)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.7;margin-bottom:6px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:9px 12px}
 .demo-note b{color:var(--ink-strong)}
 .demo-note .warn{color:var(--indigo-strong);font-weight:800}
@@ -269,7 +263,7 @@ button{font-family:inherit;cursor:pointer}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -305,17 +299,7 @@ button{font-family:inherit;cursor:pointer}
 </style>
 </head><body>
 
-<!-- 审核工具条：断点预览（仅原型） -->
-<div class="respbar" role="toolbar" aria-label="断点预览（仅原型，不进入 React）">
-  <span class="rr">预览断点</span>
-  <button data-w="375">375</button><button data-w="520">520</button><button data-w="768">768</button><button data-w="1024">1024</button><button data-w="1280" class="on">1280</button><button data-w="1440">1440</button>
-  <span class="sep"></span>
-  <span class="rr">页面状态</span>
-  <button id="st-success" class="on">加载成功</button><button id="st-loading">加载中</button><button id="st-empty">空态</button><button id="st-error">错误态</button>
-  <span class="sep"></span>
-  <span class="rr">排行周期</span>
-  <button id="r-day" class="on">日榜</button><button id="r-week">周榜</button><button id="r-month">月榜</button>
-</div>
+<!-- respbar 演示工具条已移除（critique C4） -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -518,39 +502,8 @@ button{font-family:inherit;cursor:pointer}
 </div><!-- /.glayout -->
 
 <script>
-/* ===== 效果图演示控制器（仅原型，不进入 React）===== */
+/* ===== 效果图演示数据兜底渲染（respbar 工具条已移除，保留演示内容作未登录兜底）===== */
 (function () {
-  /* 断点预览：缩放 iframe 视口宽度 */
-  document.querySelectorAll('.respbar [data-w]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('.respbar [data-w]').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      document.documentElement.style.zoom = (parseInt(b.dataset.w, 10) < 700) ? '1' : '1';
-      // 模拟容器宽度（原型仅示意，Mobile 视觉在真实设备核验）
-      var w = parseInt(b.dataset.w, 10);
-      document.body.style.maxWidth = (w < 1180 ? w : '') + 'px';
-      document.body.style.margin = w < 1180 ? '0 auto' : '';
-    });
-  });
-  /* 页面状态切换：成功 / 加载中 / 空态 / 错误态 */
-  function switchState(name) {
-    var show = (name === 'loading') ? '.v-loading' : (name === 'empty') ? '.v-empty' : (name === 'error') ? '.v-error' : '.v-success';
-    var secs = {};
-    document.querySelectorAll('.v-success,[data-sec],[data-sec-all]').forEach(function (el) {
-      if (el.classList.contains('v-success')) el.hidden = (show !== '.v-success');
-      if (el.classList.contains('v-loading')) el.hidden = (show !== '.v-loading');
-      if (el.classList.contains('v-empty')) el.hidden = (show !== '.v-empty');
-      if (el.classList.contains('v-error')) el.hidden = (show !== '.v-error');
-    });
-    ['st-success','st-loading','st-empty','st-error'].forEach(function (id) {
-      document.getElementById(id).classList.toggle('on', id === 'st-' + (name === 'loading' ? 'loading' : name) || (name==='success'&&id==='st-success'));
-    });
-  }
-  document.getElementById('st-success').addEventListener('click', function(){ switchState('success'); });
-  document.getElementById('st-loading').addEventListener('click', function(){ switchState('loading'); });
-  document.getElementById('st-empty').addEventListener('click', function(){ switchState('empty'); });
-  document.getElementById('st-error').addEventListener('click', function(){ switchState('error'); });
-
   /* 排行周期数据：日 / 周 / 月（ZSET scope），仅值变化 */
   var RANK = {
     day:      { title:'本周排行榜' , rows:[['🥇','Sunny',1280],['🥈','Leo',1150],['🥉','Mia',1020],['4','Tom',980],['5','Ada',870]], mine:'#6', sub:'今日榜 6 名 · 超越 82% 学习者' },
@@ -574,14 +527,9 @@ button{font-family:inherit;cursor:pointer}
     });
     document.getElementById('myrank-big').textContent = d.mine;
     document.getElementById('myrank-sub').textContent = d.sub;
-    // 点亮当前周期选中态
-    RANGE_ORDER.forEach(function (k) { document.getElementById('r-' + k).classList.toggle('on', k === range); });
   }
-  RANGE_ORDER.forEach(function (k) {
-    document.getElementById('r-' + k).addEventListener('click', function () { renderRank(k); });
-  });
 
-  /* 学习时长 7 日折线：SVG path 生成（primary 主色） */
+  /* 学习时长 7 日折线：SVG path 生成（primary 主色，演示兜底，登录态由真实接口覆盖） */
   (function trend() {
     var data = [15, 38, 25, 46, 30, 52, 42]; // 最近 7 天 min（昨天最高）
     var labels = ['08-19','08-20','08-21','08-22','08-23','08-24','今天'];
@@ -607,7 +555,7 @@ button{font-family:inherit;cursor:pointer}
     document.getElementById('trend-labels').innerHTML = labs;
   })();
 
-  /* 学习结构饼图：conic-gradient（疏色序 indigo/amber/sky/slate） */
+  /* 学习结构饼图：conic-gradient（疏色序 indigo/amber/sky/slate，演示兜底） */
   (function donut() {
     var segs = [['视频学习',58,'#4f46e5'],['课后练习',24,'#f59e0b'],['在线测验',11,'#0ea5e9'],['课后作业',7,'#64748b']];
     var total = segs.reduce(function (s, x) { return s + x[2]; }, 0);

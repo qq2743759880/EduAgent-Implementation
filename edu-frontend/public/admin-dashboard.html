@@ -52,12 +52,7 @@ button{font-family:inherit;cursor:pointer}
 .page{width:100%;max-width:1180px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
 
 /* ===== 审核工具条（HTML 效果图专属，不进入 React）===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--tint-purple-01)}
-.respbar button.on{background:var(--candy-purple);color:var(--white)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* respbar 演示工具条样式已移除（critique C4） */
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 .demo-note b{color:var(--ink-strong)}
 .demo-note .warn{color:var(--candy-orange-deep);font-weight:800}
@@ -223,7 +218,7 @@ button{font-family:inherit;cursor:pointer}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -259,19 +254,8 @@ button{font-family:inherit;cursor:pointer}
 </style>
 </head>
 <body class="admin-html-page">
-<!-- 审核工具条（HTML 效果图专属）-->
-<div class="respbar" role="toolbar" aria-label="视口切换">
-  <span class="rr">视口:</span>
-  <button type="button" data-vp="375">375</button>
-  <button type="button" data-vp="768">768</button>
-  <button type="button" data-vp="1280" class="on">1280</button>
-  <button type="button" data-vp="1440">1440</button>
-  <span class="sep"></span>
-  <button type="button" data-state="success" class="on">成功态</button>
-  <button type="button" data-state="loading">加载态</button>
-  <button type="button" data-state="empty">空态</button>
-  <button type="button" data-state="error">错误态</button>
-</div>
+<!-- respbar 演示工具条已移除（critique C4）；数据由 window.bootAdmin() 真实接口渲染 -->
+
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
 <div class="glayout">
@@ -428,7 +412,7 @@ button{font-family:inherit;cursor:pointer}
       <span class="st-emoji" aria-hidden="true">📭</span>
       <h3>暂无运营数据</h3>
       <p>当前抽取周期内暂无用户/活跃指标。请确认数据接入完成后再返回，或点击下方刷新重试。</p>
-      <button type="button" class="retry" onclick="document.querySelector('.respbar [data-state=\'success\']').click()">⟳ 刷新数据</button>
+      <button type="button" class="retry" onclick="location.reload()">⟳ 刷新数据</button>
     </div>
   </section>
 
@@ -452,39 +436,10 @@ button{font-family:inherit;cursor:pointer}
 <!-- 审核交互脚本（HTML 效果图专属，不进入 React） -->
 <script>
 (function(){
-  var vpBtns=[].slice.call(document.querySelectorAll('.respbar [data-vp]'));
-  var stBtns=[].slice.call(document.querySelectorAll('.respbar [data-state]'));
-  var views={success:document.getElementById('view-success'),loading:document.getElementById('view-loading'),empty:document.getElementById('view-empty'),error:document.getElementById('view-error')};
-  function fmt(n){return Math.round(n).toLocaleString('en-US');}
-  function animateKpis(){
-    var vals=document.querySelectorAll('#view-success .kpi .val');
-    vals.forEach(function(el){
-      var txt=(el.childNodes[0]&&el.childNodes[0].nodeValue)||'';
-      var m=txt.replace(/,/g,'').trim().match(/^(\d+(?:\.\d+)?)/);
-      if(!m)return;
-      var target=parseFloat(m[1]), dec=(m[1].indexOf('.')>=0)?(m[1].split('.')[1].length):0;
-      var dur=900, t0=null;
-      function step(ts){ if(!t0)t0=ts; var p=Math.min(1,(ts-t0)/dur); var v=target*(1-Math.pow(1-p,3));
-        var out=dec? v.toFixed(dec) : fmt(v);
-        el.childNodes[0].nodeValue = (dec? out : (target>=1000? Number(out).toLocaleString('en-US') : out));
-        if(p<1) requestAnimationFrame(step); }
-      requestAnimationFrame(step);
-    });
-  }
-  function setVp(w){
-    document.body.style.width=w+'px';
-    document.body.style.maxWidth='100%';
-    document.body.style.marginLeft='auto';document.body.style.marginRight='auto';
-    vpBtns.forEach(function(b){b.classList.toggle('on',b.dataset.vp===String(w));});
-  }
-  function setState(s){
-    Object.keys(views).forEach(function(k){views[k].hidden = k!==s;});
-    stBtns.forEach(function(b){b.classList.toggle('on',b.dataset.state===s);});
-    if(s==='success') animateKpis();
-  }
-  vpBtns.forEach(function(b){b.addEventListener('click',function(){setVp(b.dataset.vp);});});
-  stBtns.forEach(function(b){b.addEventListener('click',function(){setState(b.dataset.state);});});
-  animateKpis();
+  // respbar 演示工具条已移除（critique C4）：视口切换([data-vp])与四态切换([data-state])绑定随工具条一并删除；
+  // 页面数据由 window.bootAdmin() 真实接口渲染成功/空/错误态，KPI 数值不再由演示脚本注入。
+  var succ=document.getElementById('view-success');
+  if(succ) succ.hidden=false;
 })();
 </script>
 

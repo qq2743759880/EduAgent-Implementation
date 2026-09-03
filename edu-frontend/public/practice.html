@@ -143,6 +143,8 @@ a{color:inherit;text-decoration:none}
 .q-typebar button{border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);font-size:12px;font-weight:800;padding:6px 14px;color:var(--ink-strong);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
 .q-typebar button:hover{background:var(--candy-bg)}
 .q-typebar button.on{background:var(--candy-orange);color:var(--ht-fff);border-color:var(--candy-orange-deep)}
+  /* 演示题型条：填空(blank)对齐登录态 FILL:false，标为「迭代二」占位（critique C6） */
+  .q-typebar button.iter2{border-style:dashed;background:var(--candy-bg)}
 .q-body{padding:22px 20px 24px}
 .q-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-muted);margin-bottom:12px}
 .q-meta .no{font-weight:800;color:var(--ink)}
@@ -324,6 +326,10 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   .wb-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
   .wb-filter .pill{border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);font-size:12px;font-weight:800;padding:6px 14px;color:var(--ink-strong);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
   .wb-filter .pill.on{background:var(--candy-green);color:var(--ht-fff);border-color:var(--candy-green-deep)}
+  /* 迭代二暂未开放题型：显式可点击 → 点击/悬停弹出说明（critique C6），不再静默置灰 */
+  .wb-filter .pill.iter2{background:var(--candy-bg);border-style:dashed;cursor:pointer}
+  .wb-filter .pill.iter2:hover{background:var(--candy-orange);color:var(--ht-fff);border-color:var(--candy-orange-deep)}
+  .iter2-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:500;background:var(--candy-orange-deep);color:var(--ht-fff);font-size:13px;font-weight:700;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px -4px var(--htc-31-31-31-035);max-width:90vw;text-align:center}
   .wb-count{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-muted)}
   .pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:12px 14px;border-top:2px solid var(--htc-31-31-31-008)}
   .pager .info{font-size:12px;font-weight:800;color:var(--ink-muted)}
@@ -376,7 +382,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}  /* respbar 演示工具条已移除（critique C4） */
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -585,7 +591,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <div class="q-typebar" role="tablist" aria-label="题型演示">
           <button class="on" type="button" role="tab" aria-selected="true" data-type="single">① 单选</button>
           <button type="button" role="tab" aria-selected="false" data-type="multi">② 多选</button>
-          <button type="button" role="tab" aria-selected="false" data-type="blank">③ 填空</button>
+          <button type="button" role="tab" aria-selected="false" data-type="blank" data-iter2="填空" class="iter2" title="填空题型暂未开放，已登记迭代二">③ 填空 · 迭代二</button>
           <button type="button" role="tab" aria-selected="false" data-type="judge">④ 判断</button>
         </div>
         <div class="q-body" id="qBody">
@@ -731,9 +737,9 @@ for i, v in enumerate(nums):
           <button type="button" class="pill" data-ttype="SINGLE">单选</button>
           <button type="button" class="pill" data-ttype="MULTI">多选</button>
           <button type="button" class="pill" data-ttype="JUDGE">判断</button>
-          <button type="button" class="pill" data-ttype="FILL" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>填空 · 迭代二</button>
-          <button type="button" class="pill" data-ttype="DRAG_SORT" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>拖拽排序 · 迭代二</button>
-          <button type="button" class="pill" data-ttype="MATCH" title="迭代二暂不支持" style="opacity:.45;cursor:not-allowed" disabled>连线匹配 · 迭代二</button>
+          <button type="button" class="pill iter2" data-ttype="FILL" data-iter2="填空" title="该题型（填空）暂未开放，已登记迭代二">填空 · 迭代二</button>
+          <button type="button" class="pill iter2" data-ttype="DRAG_SORT" data-iter2="拖拽排序" title="该题型（拖拽排序）暂未开放，已登记迭代二">拖拽排序 · 迭代二</button>
+          <button type="button" class="pill iter2" data-ttype="MATCH" data-iter2="连线匹配" title="该题型（连线匹配）暂未开放，已登记迭代二">连线匹配 · 迭代二</button>
         </div>
         <p class="demo-note">选择题型后自动进入下方复习会话，逐一判分并回写错题本。</p>
       </div>
@@ -805,11 +811,23 @@ stateBtns.forEach(b => b.addEventListener('click', () => {
 /* ===== 题型切换 ===== */
 const qTypes = document.querySelectorAll('.q-typebar button');
 qTypes.forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.iter2) { showIter2(b.dataset.iter2); return; }   // 填空=迭代二占位（critique C6），不切演示题
   qTypes.forEach(x => { x.classList.remove('on'); x.setAttribute('aria-selected','false'); });
   b.classList.add('on'); b.setAttribute('aria-selected','true');
   document.querySelectorAll('.quiz-item').forEach(el => el.classList.add('hid'));
   document.getElementById('qi-' + b.dataset.type).classList.remove('hid');
 }));
+
+/* ===== 迭代二题型显式说明（critique C6）：不再静默置灰，点击/悬停给出去向 ===== */
+let iter2Timer = null;
+function showIter2(name) {
+  let t = document.getElementById('iter2-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'iter2-toast'; t.className = 'iter2-toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
+  t.textContent = '该题型（' + name + '）暂未开放，已登记迭代二。';
+  t.style.display = 'block';
+  if (iter2Timer) clearTimeout(iter2Timer);
+  iter2Timer = setTimeout(function () { t.style.display = 'none'; }, 2600);
+}
 
 /* ===== 填空：提交判分 ===== */
 const blankSubmit = document.getElementById('qi-blank-submit');
@@ -1267,7 +1285,7 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
   function bindTopicControls() {
     document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (b.disabled) return;
+        if (b.dataset.iter2) { if (window.showIter2) showIter2(b.dataset.iter2); return; }  // 迭代二占位：显式说明（critique C6）
         document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
         startReview({ type: b.dataset.ttype });

@@ -56,13 +56,7 @@ input,select{font-family:inherit}
 .visually-hidden{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .page{width:100%;max-width:1080px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
 
-/* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与文档流→绝不与页面重叠（chat.html 同款）===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--tint-purple-01)}
-.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* respbar 演示工具条样式已移除（critique C4） */
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 
 /* ===== Hero 横幅（糖果渐变底 + 白字 + emoji 装饰）===== */
@@ -241,7 +235,7 @@ input,select{font-family:inherit}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -278,22 +272,7 @@ input,select{font-family:inherit}
 </head>
 <body>
 
-<!-- 审核工具条（不进入 React）：视口切换 + 四态演示 -->
-<div class="respbar" aria-label="效果图审核工具条">
-  <span class="rr">视口:</span>
-  <button type="button" data-vw="1440" class="on">1440</button>
-  <button type="button" data-vw="1280">1280</button>
-  <button type="button" data-vw="1024">1024</button>
-  <button type="button" data-vw="768">768</button>
-  <button type="button" data-vw="520">520</button>
-  <button type="button" data-vw="375">375</button>
-  <span class="sep" aria-hidden="true"></span>
-  <span class="rr">状态:</span>
-  <button type="button" data-st="ok" class="on">成功</button>
-  <button type="button" data-st="loading">加载</button>
-  <button type="button" data-st="empty">空态</button>
-  <button type="button" data-st="error">错误</button>
-</div>
+<!-- respbar 演示工具条已移除（critique C4）；未登录演示列表由脚本 buildOk() 兜底 -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -381,20 +360,8 @@ input,select{font-family:inherit}
 </div><!-- /.glayout -->
 
 <script>
-/* ===== HTML 效果图专属演示脚本（不进入 React）：视口切换 + 四态切换 ===== */
+/* ===== HTML 效果图专属演示脚本（respbar 工具条已移除，保留演示列表兜底）===== */
 (function(){
-  var bar = document.querySelector('.respbar');
-
-  /* 视口切换：以 html 宽度驱动 @container 断点 */
-  bar.querySelectorAll('[data-vw]').forEach(function(b){
-    b.addEventListener('click', function(){
-      bar.querySelectorAll('[data-vw]').forEach(function(x){ x.classList.remove('on'); });
-      b.classList.add('on');
-      document.documentElement.style.width = b.dataset.vw + 'px';
-      document.documentElement.style.margin = '0 auto';
-    });
-  });
-
   var boards = document.getElementById('boards');
   var pager  = document.getElementById('pager');
 
@@ -447,17 +414,6 @@ input,select{font-family:inherit}
     boards.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>帖子加载失败</h3>'
       + '<p>网络开小差了，请稍后重试。若仍无法加载，可点击下方按钮刷新。</p><button type="button" class="retry">🔄 重试</button>';
   }
-
-  /* 四态切换 */
-  var views = {ok:buildOk, loading:buildLoading, empty:buildEmpty, error:buildError};
-  bar.querySelectorAll('[data-st]').forEach(function(b){
-    b.addEventListener('click', function(){
-      bar.querySelectorAll('[data-st]').forEach(function(x){ x.classList.remove('on'); });
-      b.classList.add('on');
-      views[b.dataset.st]();
-      pager.style.visibility = (b.dataset.st === 'ok') ? 'visible' : 'hidden';
-    });
-  });
 
   /* 版块筛选高亮（单选，切 aria-pressed） */
   document.getElementById('chips').querySelectorAll('.chip').forEach(function(c){

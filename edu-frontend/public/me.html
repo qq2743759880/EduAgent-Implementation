@@ -47,13 +47,7 @@ button{font-family:inherit;cursor:pointer}
 a{text-decoration:none;color:inherit}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:18px}
 
-/* ===== 审核工具条（HTML 效果图专属，不进入 React）===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--htc-124-58-237-001)}
-.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* respbar 演示工具条样式已移除（critique C4） */
 
 /* ===== 个人中心头卡（头像渐变 + 昵称/目标/偏好）===== */
 .me-head{display:flex;align-items:center;gap:18px;border:3px solid var(--ink);border-radius:var(--radius-xl);background:var(--white);box-shadow:var(--shadow-3d);padding:22px 24px;flex-wrap:wrap}
@@ -4086,7 +4080,7 @@ a{text-decoration:none;color:inherit}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -4159,21 +4153,7 @@ a{text-decoration:none;color:inherit}
   <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
 </header>
 
-  <!-- 审核工具条（不进入 React）：视口切换 + 演示态 -->
-  <div class="respbar" role="toolbar" aria-label="效果图演示控制">
-    <span class="rr">视口:</span>
-    <button data-vw="1440" class="on">1440</button>
-    <button data-vw="1024">1024</button>
-    <button data-vw="820">820</button>
-    <button data-vw="768">768</button>
-    <button data-vw="520">520</button>
-    <button data-vw="375">375</button>
-    <span class="sep"></span>
-    <span class="rr">状态:</span>
-    <button data-st="ok" class="">成功</button>
-    <button data-st="loading">加载</button>
-    <button data-st="error">错误</button>
-  </div>
+  <!-- respbar 演示工具条已移除（critique C4）。保留 <body data-st="ok"> 作为未登录演示成功态兜底 -->
 
   <!-- ========== 成功态 ========== -->
   <div class="page show-ok">
@@ -4273,26 +4253,8 @@ a{text-decoration:none;color:inherit}
 
   <script>
   (function () {
-    // 视口切换
-    document.querySelectorAll('[data-vw]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var vw = this.dataset.vw;
-        var frame = document.documentElement;
-        frame.style.width = vw + 'px';
-        frame.style.maxWidth = '100vw';
-        frame.style.margin = '0 auto';
-        document.querySelectorAll('[data-vw]').forEach(function (x) { x.classList.remove('on'); });
-        this.classList.add('on');
-      });
-    });
-    // 演示状态切换
-    document.querySelectorAll('[data-st]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.body.dataset.st = this.dataset.st;
-        document.querySelectorAll('[data-st]').forEach(function (x) { x.classList.remove('on'); });
-        this.classList.add('on');
-      });
-    });
+    // respbar 演示工具条已移除（critique C4）：视口切换([data-vw])与演示态切换([data-st])绑定随工具条一并删除；
+    // 未登录演示成功态由 <body data-st="ok"> + [data-st] CSS 静态兜底，登录态由下方真实接口覆盖。
   })();
   </script>
 

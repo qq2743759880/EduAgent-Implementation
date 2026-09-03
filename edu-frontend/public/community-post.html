@@ -44,12 +44,7 @@ textarea,input{font-family:inherit}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
 
 /* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与文档流→绝不与页面重叠 ===== */
-.respbar{flex:0 0 auto;z-index:50;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--htc-255-249-240-095);border-bottom:2px solid var(--border-chip);padding:6px 12px;box-shadow:0 2px 0 var(--htc-31-31-31-005)}
-.respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
-.respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-strong);padding:5px 10px;border-radius:8px;font-weight:600}
-.respbar button:hover{background:var(--htc-124-58-237-001)}
-.respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
-.respbar .sep{width:1px;height:18px;background:var(--border-chip)}
+/* respbar 演示工具条样式已移除（critique C4） */
 .demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 
 /* ===== 详情头 ===== */
@@ -216,7 +211,7 @@ textarea,input{font-family:inherit}
   .chat-page .drawer.open{transform:translateX(0)}
   .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
   .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
-  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
   .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
   .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
   .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
@@ -253,23 +248,7 @@ textarea,input{font-family:inherit}
 </head>
 <body>
 
-<!-- 审核工具条（不进入 React）：视口切换 + 四态演示 -->
-<div class="respbar">
-  <span class="rr">视口:</span>
-  <button data-vw="1440" class="on">1440</button>
-  <button data-vw="1024">1024</button>
-  <button data-vw="820">820</button>
-  <button data-vw="768">768</button>
-  <button data-vw="520">520</button>
-  <button data-vw="375">375</button>
-  <span class="sep"></span>
-  <span class="rr">状态:</span>
-  <button data-st="ok" class="">成功</button>
-  <button data-st="loading">加载</button>
-  <button data-st="empty" class="">空评论</button>
-  <button data-st="locked" class="">锁定帖</button>
-  <button data-st="error" class="on">帖子不存在</button>
-</div>
+<!-- respbar 演示工具条已移除（critique C4）；未登录演示详情/评论由脚本 buildComments() 兜底 -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -372,19 +351,8 @@ I = eˣ sinx − (eˣ cosx + I)
 </div><!-- /.glayout -->
 
 <script>
-/* ===== HTML 效果图专属演示脚本（不进入 React）：视口切换 + 四态切换 + 点赞/收藏/评论交互 ===== */
+/* ===== HTML 效果图专属演示脚本（respbar 工具条已移除，保留演示兜底交互）===== */
 (function(){
-  var bar=document.querySelector('.respbar');
-
-  /* 视口切换 */
-  bar.querySelectorAll('[data-vw]').forEach(function(b){
-    b.addEventListener('click',function(){
-      bar.querySelectorAll('[data-vw]').forEach(function(x){x.classList.remove('on')});
-      b.classList.add('on');
-      document.documentElement.style.width=b.dataset.vw+'px';
-    });
-  });
-
   var likeBtn=document.getElementById('likeBtn');
   var favBtn=document.getElementById('favBtn');
   var likeCnt=document.getElementById('likeCnt');
@@ -532,16 +500,7 @@ I = eˣ sinx − (eˣ cosx + I)
     comments.style.visibility='visible';
     document.getElementById('pager').style.visibility='visible';
   }
-  var views={ok:function(){resetPage();buildComments();},loading:function(){resetPage();buildLoading();},empty:function(){resetPage();buildEmpty();},locked:function(){resetPage();buildLocked();},error:function(){resetPage();buildError();}};
-  bar.querySelectorAll('[data-st]').forEach(function(b){
-    b.addEventListener('click',function(){
-      bar.querySelectorAll('[data-st]').forEach(function(x){x.classList.remove('on')});
-      b.classList.add('on');
-      views[b.dataset.st]();
-    });
-  });
-
-/* 初始默认态：success 列表 */
+  /* 初始默认态：success 列表（respbar 四态切换已移除，critique C4；保留成功态兜底渲染） */
 buildComments();
 })();
 </script>
