@@ -112,10 +112,11 @@ export const STATUS_MAPS: Record<StatusMapKey, Record<string, StatusMapEntry>> =
     approved: { label: "已通过", tone: "success" },
     rejected: { label: "已驳回", tone: "danger" },
   },
-  // 工单
+  // 工单（task22 契约⑫ 权威：open/processing/resolved/closed）
   ticket_status: {
-    pending: { label: "待受理", tone: "warning" },
-    in_progress: { label: "处理中", tone: "primary" },
+    open: { label: "待受理", tone: "warning" },
+    processing: { label: "处理中", tone: "primary" },
+    resolved: { label: "已解决", tone: "success" },
     closed: { label: "已关闭", tone: "neutral" },
   },
   // 优先级
