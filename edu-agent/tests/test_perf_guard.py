@@ -30,7 +30,11 @@ async def test_milvus_timeout_degrades(monkeypatch):
     monkeypatch.setattr(retriever.settings, "MILVUS_SEARCH_TIMEOUT", 0.1)
     # 其他通道直接跳过
     monkeypatch.setattr(retriever, "_rewrite_query_by_hyde_if_enabled", lambda q, use_hyde: (q, False, None))
-    monkeypatch.setattr(retriever, "_graph_expand", lambda *a, **kw: ([], None))
+
+    async def _graph_noop(*a, **kw):
+        return [], None
+
+    monkeypatch.setattr(retriever, "_graph_expand", _graph_noop)
     monkeypatch.setattr(retriever, "_rule_rerank", lambda q, docs: docs)
     monkeypatch.setattr(retriever, "_cliff_cutoff", lambda docs, final_max_k, drop_ratio: docs)
 
@@ -55,7 +59,11 @@ async def test_milvus_fast_returns_docs(monkeypatch):
     monkeypatch.setattr(retriever, "_milvus_hybrid_search_safe", fast_safe)
     monkeypatch.setattr(retriever.settings, "MILVUS_SEARCH_TIMEOUT", 5.0)
     monkeypatch.setattr(retriever, "_rewrite_query_by_hyde_if_enabled", lambda q, use_hyde: (q, False, None))
-    monkeypatch.setattr(retriever, "_graph_expand", lambda *a, **kw: ([], None))
+
+    async def _graph_noop2(*a, **kw):
+        return [], None
+
+    monkeypatch.setattr(retriever, "_graph_expand", _graph_noop2)
 
     # task31 后 _rerank_docs 已改为 async def；隔离重排阶段需用 async fake，
     # 否则 line498 `await _rerank_docs(...)` 会因「await 一个 tuple」而 TypeError（GWT③ 真实失配修复）

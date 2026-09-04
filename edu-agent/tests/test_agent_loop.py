@@ -54,6 +54,7 @@ class _FakeClient:
 async def test_decide_need_search(monkeypatch):
     fake = _FakeClient('{"need_search": true, "query_rewrite": "英语 音标 ENG-L1", "tool_plan": [], "answer_direct": ""}')
     monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+    monkeypatch.setattr(agent_mod.settings, "RULE_ROUTING_ENABLED", False, raising=False)
 
     plan = await agent_mod.decide_agent_plan("英语音标怎么学")
     assert plan.need_search is True
@@ -68,6 +69,7 @@ async def test_decide_need_search(monkeypatch):
 async def test_decide_no_search_direct(monkeypatch):
     fake = _FakeClient('{"need_search": false, "query_rewrite": "", "tool_plan": [], "answer_direct": "你好！我是 EduAgent，很高兴为你服务。"}')
     monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+    monkeypatch.setattr(agent_mod.settings, "RULE_ROUTING_ENABLED", False, raising=False)
     plan = await agent_mod.decide_agent_plan("你好")
     assert plan.need_search is False
     assert plan.answer_direct != ""
@@ -81,6 +83,7 @@ async def test_decide_llm_failure_falls_back_to_search(monkeypatch):
             raise RuntimeError("LLM down")
 
     monkeypatch.setattr(agent_mod, "_ChatClient", Boom)
+    monkeypatch.setattr(agent_mod.settings, "RULE_ROUTING_ENABLED", False, raising=False)
     plan = await agent_mod.decide_agent_plan("任意问题")
     # LLM 失败 → 保守回退检索
     assert plan.need_search is True
@@ -91,6 +94,7 @@ async def test_decide_llm_failure_falls_back_to_search(monkeypatch):
 async def test_decide_unparseable_falls_back(monkeypatch):
     fake = _FakeClient("抱歉，我无法理解你的问题。")
     monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+    monkeypatch.setattr(agent_mod.settings, "RULE_ROUTING_ENABLED", False, raising=False)
     plan = await agent_mod.decide_agent_plan("xxx")
     assert plan.need_search is True
     assert plan.decision_error == "decision_unparseable"

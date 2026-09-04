@@ -42,8 +42,11 @@ class TestAC1Shadow:
         # 隔离重检索内部（避免真实 Milvus/embedder IO），仅验证影子机制不改主路径
         async def _fake_rerank(q, docs):
             return docs, None
+
+        async def _graph_noop(*a, **k):
+            return [], None
         monkeypatch.setattr(R, "_milvus_hybrid_search_safe", lambda *a, **k: ([], None))
-        monkeypatch.setattr(R, "_graph_expand", lambda *a, **k: ([], None))
+        monkeypatch.setattr(R, "_graph_expand", _graph_noop)
         monkeypatch.setattr(R, "_rerank_docs", _fake_rerank)
 
         kw = dict(user_id=1, role=UserRole.ADMIN, use_hyde=False,

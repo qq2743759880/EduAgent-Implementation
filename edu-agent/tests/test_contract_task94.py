@@ -90,13 +90,17 @@ class TestGwt4Registry:
         assert report["dead_links"] == 0
         assert report["ok"] is True
 
-    def test_live_ai_hub_124_registered(self):
-        """LIVE：真实 AI-Hub 中心库应注册 124 个 skill，无死链。"""
+    def test_live_ai_hub_174_registered(self):
+        """LIVE：真实 AI-Hub 中心库应注册 174 个 skill，无死链。
+
+        task37：AI-Hub 技能库由 124 → 174（中心库持续沉淀），按真实契约更新断言；
+        该数随 center 库增长是预期，临界时由编排者刷新。
+        """
         root = r"D:\.ai-hub\skills"
         if not os.path.exists(root):
             pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
         report = verify.verify_registry()
-        assert report["total"] == 124, report
+        assert report["total"] == 174, report
         assert report["dead_links"] == 0, report["dead"]
         assert report["ok"] is True
 

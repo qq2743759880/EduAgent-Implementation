@@ -28,7 +28,7 @@ os.environ["no_proxy"] = "127.0.0.1,localhost"
 
 BASE = os.environ.get("TEST_BASE", "http://127.0.0.1:8000")
 ADMIN_BASE = "/api/admin/courses"
-RESTORE_PREFIX = "/api/course-admin"
+RESTORE_PREFIX = "/api/admin/courses"
 
 # 测试环境账号（AGENTS 记忆已验证）
 _ADMIN = os.environ.get("TEST_ADMIN_ACCOUNT", "adm02test")
