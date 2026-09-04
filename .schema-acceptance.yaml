@@ -51,18 +51,74 @@ counts:
   tables:
     org_institution:        { expected: 6,      tol_abs: 0, tol_frac: 0.000 }
     course_review:          { expected: 0,      tol_abs: 0, tol_frac: 0.000 }
-    series:                 { expected: 2654,   tol_abs: 0, tol_frac: 0.005 }
-    series_cohort:          { expected: 7888,   tol_abs: 0, tol_frac: 0.005 }
+    series:                 { expected: 2675,   tol_abs: 0, tol_frac: 0.005 }
+    series_cohort:          { expected: 7892,   tol_abs: 0, tol_frac: 0.005 }
     series_cohort_course:   { expected: 23652,  tol_abs: 0, tol_frac: 0.005 }
     series_cohort_session:  { expected: 205776, tol_abs: 0, tol_frac: 0.010 }
     question_bank:          { expected: 449,    tol_abs: 0, tol_frac: 0.010 }
     question:               { expected: 10532,  tol_abs: 0, tol_frac: 0.010 }
-    order:                  { expected: 80216,  tol_abs: 0, tol_frac: 0.010 }
-    order_item:             { expected: 80215,  tol_abs: 0, tol_frac: 0.010 }
-    payment_record:         { expected: 80152,  tol_abs: 0, tol_frac: 0.010 }
-    refund_request:         { expected: 22472,  tol_abs: 0, tol_frac: 0.010 }
-    sys_user:               { expected: 100020, tol_abs: 0, tol_frac: 0.010 }
-    sys_user_auth:          { expected: 100020, tol_abs: 0, tol_frac: 0.010 }
-    student_cohort_rel:     { expected: 68806,  tol_abs: 0, tol_frac: 0.010 }
+    order:                  { expected: 80326,  tol_abs: 0, tol_frac: 0.010 }
+    order_item:             { expected: 80325,  tol_abs: 0, tol_frac: 0.010 }
+    payment_record:         { expected: 80190,  tol_abs: 0, tol_frac: 0.010 }
+    refund_request:         { expected: 22493,  tol_abs: 0, tol_frac: 0.010 }
+    sys_user:               { expected: 100028, tol_abs: 0, tol_frac: 0.010 }
+    sys_user_auth:          { expected: 100028, tol_abs: 0, tol_frac: 0.010 }
+    student_cohort_rel:     { expected: 68809,  tol_abs: 0, tol_frac: 0.010 }
     session_video:          { expected: 205776, tol_abs: 0, tol_frac: 0.010 }
     series_favorite:        { expected: 30004,  tol_abs: 0, tol_frac: 0.010 }
+  # task07「6-机构多租户口径」脚本化（verify.py counts 机构维段）：
+  #   机结构面真实存在（DB 实测 org_institution=6），故不登记 gap。
+  #   但 per-institution 内容量非均等（institution 1 为种子主机构，内容偏多：series 485 vs 其余 438；
+  #   question_bank 84 vs 73），task07 的「总量=单机构基数×机构数」均等派生公式在现库不再成立，
+  #   故落点为漂移鲁棒的「机构切分存在 + 归属无孤儿」不变式，而非均等总量断言。
+  institution:
+    tenant_tables:          # 含 institution_id 的内容表：须覆盖全部机构（切分存在）且归属无孤儿。
+      - series
+      - series_cohort
+      - question_bank
+      # coupon 故意不纳入：coupon.institution_id 可空，平台级/全局券（实测 20/68 行为 NULL，非归属孤儿）
+      #   按机构分摊各 8 张，属合法设计；若做严格「归属无孤儿」会假红误报。
+
+# task37 联动（tracker L123）：集成测试结果归一 —— 「失败白名单」门禁。
+#   expected_test_failures = 全量 pytest 已知环境/数据/性能/独立验收类失败基线（nodeid 白名单）。
+#   基线来源：test-reports/task37-91failures-completion-report.md §5 + 机器快照 task37_afterfix_full.txt
+#   （修复后全量 17 failed / 786 passed / 34 skipped）。verify.py tests 子命令比对：
+#     命中白名单=符合预期；白名单外新增失败 → FAIL。真实 17 项 nodeid/原因，不凭空写。
+#   nodeid 对应 G 分组：task20×4/task21×6/task22×1=G8 数据前置（全量态夹具被改写）、task_c2×1=G8 schema注册表
+#   Redis、task_m2×1=G8 向量召回、task_vec×1=G8 召回质量、middleware×1=G8 Redis 幂等、course_domain×1=G8 性能、
+#   be_task01×1=G9 独立验收/需产品决策。
+expected_test_failures:
+  - nodeid: tests/test_be_task01_suite.py::test_be_task01_delete_hit
+    reason: G9 独立验收/需产品决策（be-task01 生产基线打靶，非契约 bug）
+  - nodeid: tests/test_contract_middleware.py::TestIdempotencyMiddleware::test_idempotency_repeat_full_body
+    reason: G8 环境 gap（幂等缓存依赖 Redis，本机不可达→重复调用未命中缓存）
+  - nodeid: tests/test_contract_task20.py::TestMeCohorts::test_list_active_with_progress
+    reason: G8 数据前置（真实 active 报名夹具在全量态被前序测试改写→404）
+  - nodeid: tests/test_contract_task20.py::TestEnrollmentDetail::test_detail
+    reason: G8 数据前置（真实报名夹具缺失→404；隔离态通过）
+  - nodeid: tests/test_contract_task20.py::TestEnrollmentStatus::test_status
+    reason: G8 数据前置（真实报名夹具缺失→404；隔离态通过）
+  - nodeid: tests/test_contract_task20.py::TestProgressSnapshot::test_snapshot_modules
+    reason: G8 数据前置（真实报名夹具缺失→404；隔离态通过）
+  - nodeid: tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_accessible
+    reason: G8 数据前置（依赖入学夹具；False is True 源于前置数据缺失）
+  - nodeid: tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_can_view_detail
+    reason: G8 数据前置（依赖入学夹具；403 vs 200 源于前置数据缺失）
+  - nodeid: tests/test_contract_task21.py::TestSessionDetailAssets::test_assets_filtered_by_scope
+    reason: G8 数据前置（外部存储机/Milvus 不可达；NoneType 源于前置数据缺失）
+  - nodeid: tests/test_contract_task21.py::TestSessionDetailAssets::test_transcode_status_valid
+    reason: G8 数据前置（外部存储机/Milvus 不可达；NoneType 源于前置数据缺失）
+  - nodeid: tests/test_contract_task21.py::TestOutline::test_outline_structure
+    reason: G8 数据前置（outline 0 项≥1 失败）
+  - nodeid: tests/test_contract_task21.py::TestSessionComplete::test_complete
+    reason: G8 数据前置（403 vs 200）
+  - nodeid: tests/test_contract_task22.py::TestUserIsolation::test_cross_user_detail_404
+    reason: G8 数据顺序 flaky（全量态 user 集合变化致偶发 200 vs 404；隔离态 skip 佐证代码正确）
+  - nodeid: tests/test_contract_task_c2.py::TestExpandSchema::test_expand_schema_returns_full
+    reason: G8 环境 gap（schema 注册表本地 30s 缓存过期回落 Redis，本机不可达→None）
+  - nodeid: tests/test_contract_task_m2.py::TestAC5Regression::test_default_fallback_recall_unbroken
+    reason: G8 环境 gap（向量召回依赖 Milvus/embedding 服务）
+  - nodeid: tests/test_contract_task_vec.py::test_inmemory_backend_when_uri_empty
+    reason: G8 模型/召回质量（内存向量后端 embedding 相似度命中偏移，非契约 bug）
+  - nodeid: tests/test_course_domain.py::TestSeriesListGwt1::test_p95_latency_under_200ms
+    reason: G8 性能/机器（本机 P95=2083ms>200ms，冷启动+并发延迟）

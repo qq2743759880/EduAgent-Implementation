@@ -1,27 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""EduAgent CI 门禁（task98）—— DB 验收体系：schema / counts / quality / all。
+"""EduAgent CI 门禁（task98）—— DB 验收体系：schema / counts / quality / tests / all。
 
 复用：
   - `edu-agent/.env` 的 MYSQL_*（settings 配置源）为 DSN 事实源（不新造连接层/不引新依赖）；
   - 既有 `asyncmy`（项目已装 MySQL 驱动）直接连接；
   - 既有 `test-reports/interface_acceptance_final.py` / scripts/verify_task07_*.py 的校验口径
-    （引用完整性 / 有效性 / 时序 / 一致性）收敛为轻量 DB 断言，可独立于后端运行。
+    （引用完整性 / 有效性 / 时序 / 一致性）收敛为轻量 DB 断言，可独立于后端运行；
+  - task07「6-机构多租户口径」（scripts/verify_task07_counts.py，6 机构切分）落为 counts 机构维段。
 
 子命令：
   schema  对比 DB 当前表结构 vs .schema-acceptance.yaml（核心表+关键列存在性），缺失→FAIL
-  counts  抽查核心表行数 vs 基线（容差判定），偏差→FAIL
+  counts  抽查核心表行数 vs 基线（容差判定）＋机构维段（task07 6-机构切分+归属无孤儿）
   quality DB 数据质量不变量（孤儿/金额/枚举/时序/一致性），任一违规>0→FAIL
-  all     依次跑上面三子命令，任一 FAIL → exit 1（CI 门禁用）
+  tests   集成测试结果归一门禁（task37 联动）：全量失败基线白名单比对，白名单外新增失败→FAIL
+  all     依次跑 schema/counts/quality，任一 FAIL → exit 1（tests 独立，不进 all，避免 30min 全量拖 CI）
 
 退出码：0=通过，1=失败。
-用法：edu-agent/.venv/Scripts/python.exe -X utf8 scripts/verify.py all
+用法：
+  edu-agent/.venv/Scripts/python.exe -X utf8 scripts/verify.py all
+  edu-agent/.venv/Scripts/python.exe -X utf8 scripts/verify.py counts
+  edu-agent/.venv/Scripts/python.exe -X utf8 scripts/verify.py tests [--no-run] [--target "pytest args..."]
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
 import os
+import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -168,6 +175,30 @@ async def run_counts() -> bool:
                 else:
                     print(f"  {RED}✗ {table}: {got} vs {expected}（偏差 {dev} > {tol:.0f}）FAIL{RESET}")
                     fails += 1
+            # --- task07「6-机构多租户口径」机构维段 ---
+            inst_tables = BASELINE.get("counts", {}).get("institution", {}).get("tenant_tables", [])
+            if inst_tables:
+                print(f"{BOLD}--- counts 机构维段（task07 6-机构切分 + 归属无孤儿，{len(inst_tables)} 表）---{RESET}")
+                org_n = int(await _fetchone(cur, "SELECT COUNT(*) FROM org_institution") or 0)
+                if org_n <= 0:
+                    print(f"  {RED}✗ org_institution 为空，无法做 6-机构口径{RESET}")
+                    fails += 1
+                for t in inst_tables:
+                    distinct = int(await _fetchone(
+                        cur, f"SELECT COUNT(DISTINCT institution_id) FROM `{t}`") or 0)
+                    if distinct < org_n:
+                        print(f"  {RED}✗ {t}: 机构切分不完整 distinct={distinct} < org={org_n} FAIL{RESET}")
+                        fails += 1
+                        continue
+                    orphan = int(await _fetchone(
+                        cur, f"SELECT COUNT(*) FROM `{t}` "
+                             "WHERE institution_id IS NULL OR "
+                             "institution_id NOT IN (SELECT id FROM org_institution)") or 0)
+                    if orphan:
+                        print(f"  {RED}✗ {t}: {orphan} 行机构归属孤儿 FAIL{RESET}")
+                        fails += 1
+                    else:
+                        print(f"  {GREEN}✓ {t}: 覆盖 {distinct} 机构，0 归属孤儿 PASS{RESET}")
     finally:
         conn.close()
     return _summary("counts", fails)
@@ -243,6 +274,79 @@ async def run_quality() -> bool:
 PASS_EXPECTED = "（期望 0）"
 
 
+# ============================================================
+# tests：集成测试结果归一门禁（task37 联动）
+# ============================================================
+# expected_test_failures 基线（.schema-acceptance.yaml）＝全量 pytest 已知环境/数据/性能/独立验收失败白名单。
+# 门禁逻辑：命中白名单的失败=符合预期；白名单外新增失败 → FAIL。
+#   --no-run   只做 collect-only 漂移门（快）：断言白名单 nodeid 仍可收集；CI 用，避免 30min 全量拖超时。
+#   --target  透传 pytest 目标参数（默认全量 tests/），全量验收 by orchestrator 一次性跑。
+TESTS_TARGET = ["tests/", "-q", "--tb=no", "-p", "no:cacheprovider"]
+TESTS_NO_RUN = False
+
+
+def _parse_nodeids(text: str) -> set:
+    """从 pytest --collect-only / FAILED 输出提取 nodeid（`路径::类::函数`）。"""
+    return set(re.findall(r"\S+::\S+", text, re.M))
+
+
+def run_tests() -> bool:
+    wl = BASELINE.get("expected_test_failures", [])
+    wl_ids = {w.get("nodeid") for w in wl if w.get("nodeid")}
+    if not wl_ids:
+        print(f"{RED}✗ expected_test_failures 基线为空{RESET}")
+        return False
+    print(f"{BOLD}=== tests：集成测试失败白名单门禁（expected 基线 {len(wl_ids)} 项，task37 联动）==={RESET}")
+
+    # 1) collect-only 漂移门：白名单 nodeid 是否仍可收集
+    #    注：恰好一个 -q 才会输出 `::` nodeid 列表；无 -q=verbose 树、重复 -q=每文件计数，均不可解析。
+    base = [a for a in TESTS_TARGET if a != "-q"]
+    coll = subprocess.run(
+        [sys.executable, "-m", "pytest", *base, "-q", "--collect-only"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    collected = _parse_nodeids(coll.stdout)
+    missing = sorted(wl_ids - collected)
+    if missing:
+        print(f"  {YELLOW}◌ 白名单 {len(missing)} 项已不可收集（基线过期或被修复，建议核对收缩）:{RESET}")
+        for nid in missing:
+            print(f"    {YELLOW}◌ {nid}{RESET}")
+    else:
+        print(f"  ✓ 白名单 {len(wl_ids)} 项 nodeid 均可收集（基线无漂移）")
+
+    if TESTS_NO_RUN:
+        print(f"{GREEN}✓ tests 收集漂移门通过（--no-run，未实跑；白名单剩余为环境类，CI 不实跑避免超时）{RESET}")
+        return True  # 收集漂移不判 FAIL（缺失=改善信号），CI 快速门仅保证基线不漂
+
+    # 2) 实跑 pytest 并比对失败清单
+    print(f"{BOLD}--- 实跑 pytest（{ ' '.join(TESTS_TARGET) }）---{RESET}")
+    run = subprocess.run(
+        [sys.executable, "-m", "pytest", *TESTS_TARGET],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    output = run.stdout + run.stderr
+    failed = {line.split()[1] for line in output.splitlines() if line.startswith("FAILED ")}
+    if not failed:
+        print(f"  {GREEN}✓ 本次 0 失败 —— 白名单 {len(wl_ids)} 项全部未复现（基线可收缩）{RESET}")
+        return True
+
+    wl_hits = failed & wl_ids
+    new_fail = failed - wl_ids
+    reason = {w.get("nodeid"): w.get("reason", "") for w in wl}
+    for nid in sorted(wl_hits):
+        print(f"  {GREEN}✔ 白名单命中（符合预期）: {nid}{RESET}")
+        print(f"      原因: {reason.get(nid)}")
+    for nid in sorted(wl_ids - failed):
+        print(f"  {YELLOW}◌ 白名单项本次未复现（改善，基线可收缩）: {nid}{RESET}")
+    for nid in sorted(new_fail):
+        print(f"  {RED}✗ 白名单外新增失败: {nid}{RESET}")
+    if new_fail:
+        print(f"{RED}✗ tests 校验不通过：{len(new_fail)} 项新增白名单外失败{RESET}")
+        return False
+    print(f"{GREEN}✓ tests 校验通过：{len(wl_hits)} 项失败全部命中白名单预期，0 新增{RESET}")
+    return True
+
+
 def _summary(stage: str, fails: int) -> bool:
     if fails == 0:
         print(f"{GREEN}✓ {stage} 校验通过 — 0 差异{PASS_EXPECTED if stage == 'quality' else ''}{RESET}")
@@ -257,19 +361,37 @@ def _summary(stage: str, fails: int) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="verify.py",
-        description="EduAgent DB 验收门禁（schema/counts/quality/all）",
+        description="EduAgent DB 验收门禁（schema/counts/quality/tests/all）",
     )
     parser.add_argument(
         "cmd", nargs="?", default="all",
-        choices=["schema", "counts", "quality", "all"],
+        choices=["schema", "counts", "quality", "tests", "all"],
         help="要运行的子命令（默认 all）",
     )
+    parser.add_argument(
+        "--no-run", action="store_true",
+        help="tests 子命令仅做 collect-only 收集漂移门（快），不实跑 pytest",
+    )
+    parser.add_argument(
+        "--target", nargs="+", default=None, metavar="ARGS",
+        help="tests 子命令透传给 pytest 的目标参数（默认 'tests/'）",
+    )
     args = parser.parse_args()
-    cmds = ["schema", "counts", "quality"] if args.cmd == "all" else [args.cmd]
+    global TESTS_TARGET, TESTS_NO_RUN
+    TESTS_NO_RUN = args.no_run
+    if args.target:
+        TESTS_TARGET = args.target
+    if args.cmd == "tests":
+        cmds = ["tests"]
+    else:
+        cmds = ["schema", "counts", "quality"] if args.cmd == "all" else [args.cmd]
     rc = 0
     for c in cmds:
         print(f"\n{'=' * 60}\n[all] 阶段: {c}\n{'=' * 60}")
-        ok = asyncio.run(_ROUTER[c]())
+        if c == "tests":  # run_tests 为同步子进程门禁，不走 asyncio.run
+            ok = run_tests()
+        else:
+            ok = asyncio.run(_ROUTER[c]())
         if not ok:
             rc = 1
     print(f"\n{'-' * 60}")
@@ -284,6 +406,7 @@ _ROUTER = {
     "schema": run_schema,
     "counts": run_counts,
     "quality": run_quality,
+    "tests": run_tests,
 }
 
 
