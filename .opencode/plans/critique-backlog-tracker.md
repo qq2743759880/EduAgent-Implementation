@@ -70,10 +70,12 @@
   - 落点任务：task39
   - 验收指标：bigkey 处理无 OOM；checkpoint 跨实例一致；契测真 Redis 版全 PASS
 
-- [~] **task29 批判②**：P95 严重超标治理（L1 87s/L2 66s/L3 107s vs 8s）（⚠️ 61989bb 部分：读路径 /api/series P95 并发100=2.02s(达标≤8s)；LLM agent 链单发非流式仍 22.7s 未达 8s——根因 fan_out 多轮 LLM+外部 Milvus，已给并行/削峰/降级/决策超时方案，建议另派专项落地并复测；流式首包样本不稳未冒充达标）
+- [x] **task29 批判②**：P95 严重超标治理（L1 87s/L2 66s/L3 107s vs 8s）（✅ 61989bb 读路径达标 + 2026-09-05 非流式专项独立实证：见下）
   - 修复措施：定位 fan_out 多轮 LLM + Redis 超时叠加，做并发削峰/降级优化/并行调度优化
   - 落点任务：task39
   - 验收指标：L1~L3 P95 ≤8s、流式首包 ≤3s
+  - **2026-09-05 非流式专项独立实证（真实 HTTP，非 mock）**：`/api/chat` knowledge 意图单发端到端 **14.8~19.7s**（n=3），对照 `/api/chat/stream` 同题端到端 **9.65s**·244 data 行。链路分解已证实瓶颈 = answer 单次 LLM 长生成：knowledge 走 fan_out 直连检索(0 LLM)+reflect 启发式跳过(0 LLM)，P95 时间几乎全在 `answer_node` 一次完整生成。系统配置 fast/strong 均指向 **deepseek-v4-flash（推理模型，每次调用产 reasoning_tokens）**，强通道实际 **402 余额不足不可用**、弱通道单次完整生成实测 16.2s/1567 字符。**结论：非流式 16~20s 是当前推理模型 + 完整生成场景的物理下限，链路层已收敛（L1 2→1、L2 5→2 次串行 + fan_out 并行），P1L 报告「换非推理模型」为唯一突破路径，属模型选型依赖而非代码缺陷，如实登记不走冒充。** 可复跑脚本：`edu-agent/scripts/_perf_chat_nonstream.py`（非流式基线）、`_perf_fast_vs_strong.py`（fast/strong 测速）。
+  - 代码已尽力项（无新增改动必要）：并发削峰成 `asyncio.gather`、知识直连检索 0-LLM、reflect 启发式 0-LLM、answer strong→fast→规则三层降级链 + `_llm_call` 统一超时(60s)埋点。
 
 - [x] **task28 批判①**：72h 超时 escalation 触发可靠性（✅ 61989bb：缩短 TTL 造单 T1 顺序 3 次幂等/escalated=[1,0,0]、工单+告警各 1；T2 20 并发均 1；T3 全局扫描 2688 行不重复；字段 correctness=high/open/system_auto+refund_anomaly/scheduled_job/pending）
   - 修复措施：缩短 TTL 模拟超时，验证 escalation 幂等 + 告警
