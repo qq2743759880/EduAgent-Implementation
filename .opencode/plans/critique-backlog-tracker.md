@@ -219,8 +219,10 @@
 - [x] W2-C5 [x] 删除语义软删+真删+40908 三态无回收站 UI、?hard 仅 ADMIN 前端靠猜（对标 django-safedelete/Entra soft-delete-purge）——补 POST restore 端点+admin 回收站 Tab｜独立小任务（✅ commit 155b4b0+35b94fe：`POST /api/admin/courses/series/{series_id}/restore`（与既有 course_admin CRUD 同前缀，AdminAuthMiddleware 覆盖，匿名 401），软删 off_sale→draft；契约单 handoffs/critique-C5-contract.md；独立实证 E2E 全通：create→soft-delete→include_deleted 可见 off_sale→restore `{series_id,status:"restored"}`→默认列表 draft→错误分支 404/40400 + 401/40101；admin-courses.html 回收站 Tab。⚠️ 遗留独立问题：仓库 JSON 列传 list 触发 50000 tuple/version 类型报错，与 C5 契约无涉，待单独立项））
 - [x] W2-C6 [x] practice 只判三题型，FILL/DRAG_SORT/MATCH 静默置灰"迭代二"且演示态仍有 blank（对标 Moodle 20+ 题型显式引导）——置灰改显式提示+badge 标注+迭代二 PBI 带 deadline｜前端小改+PBI（✅ commit 8eb8cab：三题型改可点击 .pill.iter2+data-iter2，点击 showIter2 弹 role=status 说明"暂未开放已登记迭代二"；演示 blank tab 改"填空 · 迭代二"对齐登录态 FILL:false；登记 PBI-ITER2-TYPES。⚠️ 迭代二 deadline 仍待 PBI 排期）
 
-## W2 批判验收补充遗留（2026-09-04 独立实证发现，属独立于本批判项的新增待办）
+## W2 批判验收补充遗留（2026-09-04 独立实证发现，属独立于本批判项的新增待办——三遗留项均已闭环 ✅ commit 4a9bacc）
 
-- [ ] **course_admin 仓库 JSON 列 500**：创建系列 payload 含列表字段（如 `target_learner_identity_codes:[...]`）时返回 `500 {code:"50000"}`（`Argument 'val' has incorrect type (expected tuple, got list)`）。仓库层 JSON 列未序列化（tuple/str 入库 mismatch），与 C5 契约无涉。修复措施：系列仓库 JSON 列表字段用 `json.dumps`/正确 tuple 化后入库；落点：迭代二/独立小任务；验收指标：创建含列表字段的系列不再 500，DB JSON 列类型一致。
+- [x] **course_admin 仓库 JSON 列 500**：创建系列 payload 含列表字段（如 `target_learner_identity_codes:[...]`）时返回 `500 {code:"50000"}`（`Argument 'val' has incorrect type (expected tuple, got list)`）。修复措施（✅ 4a9bacc）：`series_repo.py` insert/update 对 `target_*_codes` 三列用 `_json_or_null()` 序列化（None→NULL/list→json.dumps/已 str 原样），读侧 `_parse_json_columns` 读写对称；真实 HTTP 创建/更新含 list 字段 200 且 round-trip 回 list，`tests/test_course_admin_json_columns.py` 3 passed。
 
-- [ ] **W4 回归门禁落地**（C2/C4 共性，此前已登记）：将 `grep page_meta`=0 与 `grep respbar`（限注释）挂进 L4 全量回归门禁，防复生。
+- [x] **W4 回归门禁落地**（C2/C4 共性）：（✅ 4a9bacc）新增 `scripts/gate-w4-critique.mjs`（纯 node）：grep `page_meta`=0 + `respbar`=注释，去注释/字符串后代码清洗串判定（防恒 PASS 负向自检 `--with-src` 可打破）；实测 `GATE_RESULT=OK`；已接入 `run_regression.ps1` 末尾 `W4_GATE`（缺 node 跳过不中断）。
+
+- [x] **C6 迭代二 PBI-ITER2-TYPES deadline**：（✅ 4a9bacc）排期落盘 `.ai-hub/plans/tasks/W2-优化修改方案.md` §W2-C6 PBI 排期登记，deadline=2026-09-30（迭代二、不早于 W4 回归门禁通过后启动）。

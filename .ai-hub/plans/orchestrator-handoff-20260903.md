@@ -95,10 +95,12 @@
 - 配套 commit：ef7a9b4（task39 契测去除 PageMeta 引用，防 PageMeta 已删导致 ImportError）。
 - 注：auth_middleware.py 中残留的 `/api/course-admin/` 前缀新增已还原（grep 确认该前缀无任何路由使用，C5 已统一到 `/api/admin/courses`）。
 
-**遗留独立待办（与 C5 契约无涉，已登记 .opencode/plans/critique-backlog-tracker.md §W2 验收补充遗留）**：
-1. course_admin 仓库 JSON 列（target_learner_identity_codes 等列表字段）入库触发 50000 tuple/version 类型报错——待单独立项。
-2. W4 回归门禁：grep `page_meta`=0 + grep `respbar`（限注释）挂进 L4 全量回归防复生。
-3. C6 迭代二 deadline 的 PBI-ITER2-TYPES 排期。
+**遗留独立待办（与 C5 契约无涉，曾登记于 .opencode/plans/critique-backlog-tracker.md §W2 验收补充遗留）——本节 3 项已全部闭环**：
+1. **course_admin JSON 列 500 修复**（✅ commit 4a9bacc）：`series_repo.py` insert/update 对 `target_*_codes` 三列经 `_json_or_null()` 序列化（None→NULL/list→json.dumps/已 str 原样），与读侧 `_parse_json_columns` 读写对称；真实 HTTP 创建/更新含 `["C1","C2"]` 系列返回 200 且 round-trip 回 list；新增 `tests/test_course_admin_json_columns.py` 3 passed；完工报告 `test-reports/遗留项1-series-json写侧序列化完成报告.md`。资产消费证据齐全（harden 输入边界序列化 + tt §5.2 + sdlc 主干）。
+2. **W4 回归门禁落地**（✅ commit 4a9bacc）：新增 `scripts/gate-w4-critique.mjs`（纯 node），grep `page_meta`=0 + `respbar`=注释（去注释去字符串后代码清洗串判定，防恒 PASS 的负向自检 `--with-src` 可打破）；实测 `GATE_RESULT=OK`/exit 0（page_meta 9 处+respbar 24 处均注释命中、主动命中=0）；已接入 `run_regression.ps1` 末尾 `W4_GATE` 段（缺 node 则 `W4_GATE_SKIPPED` 不中断）。完工报告 `test-reports/w4-critique-gate-completion-report.md`。
+3. **C6 PBI-ITER2-TYPES deadline**（✅ commit 4a9bacc）：排期登记落盘 `.ai-hub/plans/tasks/W2-优化修改方案.md` §W2-C6 PBI 排期登记，deadline=2026-09-30（迭代二、不早于 W4 回归门禁通过后启动，滚动更新机制已写入）。
+
+> 三遗留项均独立复验通过（编排者复跑 `gate-w4-critique.mjs` → GATE_RESULT=OK；`pytest test_course_admin_json_columns.py` → 3 passed；git diff 核 diff 授权集正确）。不同 commit，仅 add 本批 7 文件。
 
 **看板同步说明**：D 盘中心库看板 `D:\.ai-hub\memory\project-handoff.md` 由编排者独占写权，当前会话受工作目录写限制，无法直接改 D 盘——已将本收口记录落入本工作区镜像 handoff（本文件），待编排者/具备 D 盘写权的通道合并进中心库。
 
