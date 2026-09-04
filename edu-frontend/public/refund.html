@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>退款中心 · EduAgent（task66 真实契约版）</title>
+<!--
+  ============================================================
+  退款页（task66）· 真实契约对接（非 MOCK）
+  接口契约权威来源 = 后端源码（编辑者已核对）：
+    app/domains/trade/refund/router.py     前缀 /api/refunds
+    app/domains/trade/refund/schemas.py    RefundCreateInput / Refund / RefundPage
+    app/domains/trade/order/router.py      /api/trade/orders（refundable=true）
+    app/domains/after_sales/router.py      /api/trade/after_sales/ticket
+    app/domains/trade/refund/service.py    金额服务端强制 ≤ 实付（GWT①）
+  端点清单（均为真实端点，页面逐一对齐）：
+    GET  /api/refunds                    我的退款（倒序，分页 {total,page,page_size,items}）
+    POST /api/refunds                    申请退款（refund_type 四枚举 + 金额服务端校验）
+    POST /api/refunds/{refund_id}/cancel 撤销退款（仅 pending）
+    GET  /api/trade/orders?refundable=true 可退款订单（paid/completed/partial_refunded）
+    POST /api/trade/after_sales/ticket   反馈/退款工单（ticket_type=refund/appeal）
+  金额红线：退款金额须 ≤ 实付；前端做友好提示，服务端强制校验兜底（不信任前端，GWT①）。
+  ============================================================
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
+  :root{
+    --candy-orange:#FF4D00; --candy-green:#58CC02; --candy-purple:#7C3AED;
+    --candy-yellow:#FFC800; --candy-blue:#1CB0F6; --candy-pink:#FF86D0; --candy-red:#FF4B4B;
+    --primary:var(--candy-green); --primary-strong:#46A302; --primary-soft:#E9FBD8;
+    --accent:var(--candy-orange); --accent-strong:#E04400; --accent-soft:#FFE8DC;
+    --secondary:var(--candy-purple); --secondary-soft:#F1E8FF;
+    --success:var(--candy-green); --warning:var(--candy-yellow); --destructive:var(--candy-red);
+    --ink:#3C3C3C; --ink-strong:#1F1F1F; --ink-soft:#6B6B6B; --ink-faint:#9A9A9A;
+    --bg:#FFF9F0; --card:#FFFFFF; --line:#F0E6DA; --line-strong:#E4D5C4;
+    --radius:1.5rem; --radius-lg:1.25rem; --radius-md:0.9rem; --radius-pill:999px;
+    --font-head:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --stroke:3px solid var(--ink);
+    --shadow-pop:0 6px 0 rgba(31,31,31,.12);
+    --shadow-md:0 4px 16px rgba(31,31,31,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
+  .page{max-width:1060px;margin:0 auto;padding:24px 20px 72px}
+  .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--ink-strong)}
+  .doc-badge{font-size:11px;color:var(--candy-purple);background:var(--secondary-soft);border:1px solid var(--line-strong);padding:3px 10px;border-radius:999px;font-weight:700}
+  .subtitle{font-size:.8125rem;color:var(--ink-soft);margin-bottom:18px}
+  .back{font-size:.8125rem;color:var(--secondary);text-decoration:none;font-weight:700;margin-left:auto;background:var(--secondary-soft);padding:8px 14px;border-radius:var(--radius-pill)}
+  .back:hover{color:var(--secondary)}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:var(--stroke);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-pop)}
+  .card h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--ink-strong);display:flex;align-items:center;gap:8px;margin-bottom:16px}
+  .card h2 .dot{width:12px;height:12px;border-radius:50%}
+
+  /* ===== 表单 ===== */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:2px solid var(--line-strong);border-radius:var(--radius-md);background:#fff;color:var(--ink-strong);outline:none;transition:border-color .15s}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--candy-purple)}
+  .field .hint{font-size:12px;color:var(--ink-faint);margin-top:4px}
+  .field .err{font-size:12px;color:var(--destructive);margin-top:4px;display:none;font-weight:600}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border:var(--stroke);border-radius:var(--radius-pill);font-weight:800;font-size:14px;color:#fff;background:var(--primary);box-shadow:var(--shadow-pop);transition:transform .08s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .btn.ghost{background:var(--secondary);}
+  .btn.warn{background:var(--accent)}
+  .btn.full{width:100%}
+
+  .pill{display:inline-block;padding:4px 12px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:800}
+  .pill.pending{background:var(--warning);color:#5b3b00}
+  .pill.approved{background:#dbeafe;color:#1e40af}
+  .pill.rejected{background:#fee2e2;color:#991b1b}
+  .pill.refunded{background:var(--primary-soft);color:var(--primary-strong)}
+
+  /* ===== 退款列表 ===== */
+  .list-empty{text-align:center;padding:34px 10px;color:var(--ink-faint);border:2px dashed var(--line-strong);border-radius:var(--radius-lg);font-size:14px}
+  .refund-item{border:2px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;background:#fffdf8}
+  .refund-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .refund-no{font-family:var(--font-head);font-weight:800;font-size:15px;color:var(--ink-strong)}
+  .refund-meta{font-size:13px;color:var(--ink-soft);line-height:1.7}
+  .refund-meta b{color:var(--ink)}
+  .refund-actions{margin-top:10px;text-align:right}
+  .refund-actions .btn{padding:7px 16px;font-size:13px}
+
+  .pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .pager button{border:var(--stroke);background:#fff;border-radius:var(--radius-md);padding:6px 14px;font-weight:800;font-size:13px}
+  .pager button:disabled{opacity:.45;cursor:not-allowed}
+  .pager span{font-size:13px;color:var(--ink-soft);font-weight:700}
+
+  .msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;font-weight:800;font-size:13px;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2);display:none}
+  hr.divider{margin:20px 0;border:0;border-top:2px dashed var(--line-strong)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <h1 class="page-title">💸 退款中心</h1>
+    <span class="doc-badge">真实接口 · 金额服务端校验</span>
+    <a class="back" href="/dashboard.html">← 返回学习端</a>
+  </div>
+  <p class="subtitle">填写订单 → 发起退款（金额须 ≤ 实付，超出会被系统拦截）→ 待处理中可撤销</p>
+
+  <div class="grid">
+    <!-- ============ 发起退款 ============ -->
+    <section class="card" id="applyCard">
+      <h2><span class="dot" style="background:var(--candy-green)"></span>发起退款</h2>
+      <form id="applyForm" novalidate>
+        <div class="field">
+          <label for="orderSel">可退款订单</label>
+          <select id="orderSel" required>
+            <option value="">— 加载中… —</option>
+          </select>
+          <div class="hint" id="orderHint">仅展示已支付、可退款的订单</div>
+          <div class="err" id="orderErr">请选择一个可退订单</div>
+        </div>
+        <div class="field">
+          <label for="refundType">退款类型</label>
+          <select id="refundType" required>
+            <option value="">请选择退款类型</option>
+            <option value="personal_reason">个人原因</option>
+            <option value="course_unsatisfied">课程不满意</option>
+            <option value="schedule_conflict">时间冲突</option>
+            <option value="duplicate_purchase">重复购买</option>
+          </select>
+          <div class="err" id="typeErr">请选择退款类型</div>
+        </div>
+        <div class="field">
+          <label for="amount">退款金额（¥）</label>
+          <input type="number" id="amount" min="0.01" step="0.01" placeholder="≤ 订单实付金额" required />
+          <div class="hint" id="amountHint">可退订单实付上限以所选订单为准</div>
+          <div class="err" id="amountErr">金额须在 0.01 ~ 实付金额之间</div>
+        </div>
+        <div class="field">
+          <label for="reason">退款原因</label>
+          <textarea id="reason" rows="3" maxlength="2000" placeholder="请简要说明退款原因" required></textarea>
+          <div class="err" id="reasonErr">请填写退款原因</div>
+        </div>
+        <button class="btn warn full" id="applyBtn" type="submit">提交退款申请</button>
+      </form>
+    </section>
+
+    <!-- ============ 反馈 / 退款工单 ============ -->
+    <section class="card">
+      <h2><span class="dot" style="background:var(--candy-purple)"></span>问题反馈工单</h2>
+      <form id="ticketForm" novalidate>
+        <div class="field">
+          <label>工单类型</label>
+          <select id="ticketType" required>
+            <option value="refund">退款问题</option>
+            <option value="appeal">人工申诉</option>
+            <option value="consult">咨询</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>标题</label>
+          <input id="ticketTitle" maxlength="255" placeholder="一句话概述问题" required />
+          <div class="err" id="ttErr">请填写标题</div>
+        </div>
+        <div class="field">
+          <label>内容</label>
+          <textarea id="ticketContent" rows="3" maxlength="4000" placeholder="详细描述（可关联订单号）" required></textarea>
+          <div class="err" id="tcErr">请填写内容</div>
+        </div>
+        <div class="field">
+          <label>关联订单号（可选）</label>
+          <input id="ticketOrder" maxlength="64" placeholder="如 1-260904101919-bf0fb5" />
+        </div>
+        <button class="btn ghost full" id="ticketBtn" type="submit">提交工单</button>
+      </form>
+    </section>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ============ 我的退款 ============ -->
+  <section class="card" style="margin-top:4px">
+    <h2><span class="dot" style="background:var(--candy-orange)"></span>我的退款记录</h2>
+    <div id="refundList"></div>
+    <div class="pager" id="pager" style="display:none">
+      <button id="pgPrev" type="button">上一页</button>
+      <span id="pgInfo"></span>
+      <button id="pgNext" type="button">下一页</button>
+    </div>
+  </section>
+</div>
+
+<div class="msg" id="flash"></div>
+
+<script src="/edu-api.js"></script>
+<script>
+/* task66：退款中心真实数据加载（对接 /api/refunds + /api/trade/orders）。
+ * 角色守卫三段（纪律 lesson10）：
+ *   1) 本地无 token → 跳 login-register 带 redirect
+ *   2) 有 token  → GET /api/auth/me 校验 role=student；admin/manager/teacher → 跳回 dashboard
+ *   3) auth/me 失败无法确认身份 → 按未授权跳登录（防 DEBUG 降级绕过）
+ * 通过后才调 window.bootRefund() 注入真实数据；无 EAPI 时静默降级演示态。
+ */
+(function(){
+  if(!window.EAPI) return;
+  var loginUrl;
+  try{ loginUrl = EAPI.buildLoginUrl(location.pathname+location.search); }catch(e){ loginUrl="/login-register.html"; }
+  if(!EAPI.store.getToken()){ location.replace(loginUrl); return; }
+  EAPI.get("/api/auth/me").then(function(me){
+    if(me && me.role==="student"){
+      var boot = window.bootRefund;
+      if(typeof boot==="function"){ try{ boot(); }catch(e){ console.error("bootRefund",e); } }
+    } else {
+      flash("当前角色 "+(me&&me.role?me.role:"未知")+" 无权访问退款中心，正在跳回学习端…");
+      setTimeout(function(){ try{ location.replace("/dashboard.html"); }catch(e){} },1200);
+    }
+  }).catch(function(){
+    flash("身份校验失败，正在跳转登录…");
+    setTimeout(function(){ try{ location.replace(loginUrl); }catch(e){} },1200);
+  });
+})();
+</script>
+
+<script>
+/* 降级角标：无 EAPI（纯静态打开）时显示「演示数据」标识，正常部署加载 edu-api.js 后不显示 */
+(function(){ if(window.EAPI&&window.EAPI.get)return; var b=document.createElement("div");
+  b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px";
+  document.body.appendChild(b); })();
+</script>
+
+<script>
+/* ===== task66 bootRefund：退款中心真实数据注入 ===== */
+(function(global){
+  if(!global.EAPI) return;
+  var E = global.EAPI;
+  var state = { page:1, pageSize:10, total:0, items:[], orders:[] };
+
+  function $(id){ return document.getElementById(id); }
+  function flash(t){ var m=$("flash"); if(!m)return;
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#ef4444" : "#16a34a";
+    m.textContent = t; m.style.display="block";
+    clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  var TYPE_LABEL = {
+    personal_reason:"个人原因", course_unsatisfied:"课程不满意",
+    schedule_conflict:"时间冲突", duplicate_purchase:"重复购买"
+  };
+  var STATUS = {
+    pending:"pending", approved:"approved", rejected:"rejected", refunded:"refunded"
+  };
+  function statusText(s){
+    switch(s){
+      case "pending": return "到账审核中";
+      case "approved": return "已批准·待退款";
+      case "rejected": return "已拒绝";
+      case "refunded": return "已退款";
+      default: return s || "-";
+    }
+  }
+  function money(v){ var n=Number(v); return isFinite(n)? n.toFixed(2) : "-"; }
+
+  /* ---------- 可退款订单下拉 ---------- */
+  function loadOrders(){
+    var sel=$("orderSel"); if(!sel) return;
+    if(!E.store.getToken()) return;
+    E.get("/api/trade/orders?refundable=true&page=1&page_size=50").then(function(data){
+      data = data || {};
+      var items = data.items || [];
+      state.orders = items;
+      if(!items.length){
+        sel.innerHTML = '<option value="">— 暂无已支付可退订单 —</option>';
+        $("orderHint").textContent = "请先在「课程中心」购买并完成支付";
+        return;
+      }
+      var opts = ['<option value="">请选择订单</option>'].concat(items.map(function(o){
+        return '<option value="'+esc(o.order_no)+'" data-pay="'+Number(o.pay_amount||0)+'" data-title="'+esc(o.series_title||o.order_no)+'">'
+             + esc(o.order_no) + ' · ' + esc(o.series_title||'') + ' · ¥' + money(o.pay_amount||0) + '</option>';
+      }));
+      sel.innerHTML = opts.join("");
+      $("orderHint").textContent = items.length + " 个已支付订单可退款";
+    }).catch(function(){ flash("加载可退订单失败，请重试"); });
+  }
+
+  /* ---------- 退款列表 + 分页 ---------- */
+  function loadRefunds(){
+    var box=$("refundList"); if(!box) return;
+    box.innerHTML = '<div class="list-empty">加载中…</div>';
+    E.get("/api/refunds?page="+state.page+"&page_size="+state.pageSize).then(function(data){
+      data = data || {};
+      var items = data.items || [];
+      state.total = data.total || 0;
+      state.items = items;
+      renderList();
+    }).catch(function(){
+      box.innerHTML = '<div class="list-empty">加载退款记录失败</div>';
+    });
+  }
+
+  function renderList(){
+    var box=$("refundList"), pager=$("pager");
+    if(!state.items.length){
+      box.innerHTML = '<div class="list-empty">暂无退款记录</div>';
+      if(pager) pager.style.display="none";
+      return;
+    }
+    var html = state.items.map(function(it){
+      var type = TYPE_LABEL[it.refund_type] || it.refund_type || "-";
+      var stCls = STATUS[it.refund_status] || "pending";
+      var cancelBtn = "";
+      if(it.refund_status==="pending" && !it.cancelled){
+        cancelBtn = '<div class="refund-actions"><button class="btn warn" data-cancel="'+it.id+'" type="button">撤销申请</button></div>';
+      }
+      var reason = it.remark
+        ? '<div class="refund-meta">处理备注：'+esc(it.remark)+'</div>' : "";
+      return '<div class="refund-item">'
+        + '<div class="refund-head"><span class="refund-no">'+esc(it.refund_no)+'</span>'
+        + '<span class="pill '+stCls+'">'+statusText(it.refund_status)+'</span></div>'
+        + '<div class="refund-meta">关联订单：<b>'+esc(it.order_no)+'</b></div>'
+        + '<div class="refund-meta">类型：'+esc(type)+' · 申请金额：<b>¥'+money(it.apply_amount)+'</b>'
+        + (it.approved_amount!=null ? ' · 批准金额：<b>¥'+money(it.approved_amount)+'</b>' : '') + '</div>'
+        + '<div class="refund-meta">申请时间：'+esc(String(it.applied_at||"").replace("T"," "))+'</div>'
+        + reason
+        + cancelBtn + '</div>';
+    }).join("");
+    box.innerHTML = html;
+    if(pager){
+      var pages = Math.max(1, Math.ceil(state.total/state.pageSize));
+      pager.style.display = "flex";
+      $("pgInfo").textContent = "第 "+state.page+" / "+pages+" 页 · 共 "+state.total+" 条";
+      $("pgPrev").disabled = state.page<=1;
+      $("pgNext").disabled = state.page>=pages;
+    }
+  }
+
+  /* ---------- 发起退款 ---------- */
+  function applyRefund(e){
+    e.preventDefault();
+    var order=$("orderSel").value, type=$("refundType").value;
+    var amount=parseFloat($("amount").value), reason=$("reason").value.trim();
+    var orderErr=$("orderErr"), typeErr=$("typeErr"), amtErr=$("amountErr"), rsErr=$("reasonErr");
+    orderErr.style.display = order?"none":"block";
+    typeErr.style.display = type?"none":"block";
+    rsErr.style.display = reason?"none":"block";
+
+    var orderObj = state.orders.filter(function(o){ return o.order_no===order; })[0];
+    var pay = orderObj ? Number(orderObj.pay_amount||0) : 0;
+    if(!order || !type || !reason){ flash("请完整填写退款申请"); return; }
+
+    // 前端友好校验（硬约束在服务端：≤ 实付）
+    var valid = isFinite(amount) && amount>0 && amount <= pay + 1e-6;
+    amtErr.style.display = valid ? "none":"block";
+    $("amountHint").textContent = orderObj
+      ? "该订单实付 ¥"+money(pay)+"，退款金额不得超过此值（超出由服务端拦截）"
+      : "可退订单实付上限以所选订单为准";
+    if(!valid){ return; }
+
+    var btn=$("applyBtn"); btn.disabled=true; btn.textContent="提交中…";
+    E.post("/api/refunds", {
+      order_no: order, refund_type: type,
+      apply_amount: Math.round(amount*100)/100, reason: reason
+    }).then(function(r){
+      flash("退款申请已提交（"+(r&&r.refund_no)+"），进入到账审核中");
+      $("applyForm").reset();
+      state.page=1; loadRefunds(); loadOrders();
+    }).catch(function(err){
+      var msg = (err&&err.message)||"申请失败";
+      flash(msg); // 覆盖金额超限 / 非可退订单等服务端拒绝反馈
+    }).finally(function(){ btn.disabled=false; btn.textContent="提交退款申请"; });
+  }
+
+  /* ---------- 撤销退款 ---------- */
+  function cancelRefund(id, btn){
+    btn.disabled=true; btn.textContent="撤销中…";
+    E.post("/api/refunds/"+id+"/cancel", {}).then(function(){
+      flash("退款申请已撤销");
+      loadRefunds();
+    }).catch(function(err){
+      flash((err&&err.message)||"撤销失败");
+      btn.disabled=false; btn.textContent="撤销申请";
+    });
+  }
+
+  /* ---------- 工单 ---------- */
+  function submitTicket(e){
+    e.preventDefault();
+    var title=$("ticketTitle").value.trim(), content=$("ticketContent").value.trim();
+    $("ttErr").style.display = title?"none":"block";
+    $("tcErr").style.display = content?"none":"block";
+    if(!title||!content){ flash("请填写工单标题与内容"); return; }
+    var btn=$("ticketBtn"); btn.disabled=true; btn.textContent="提交中…";
+    var body = { ticket_type:$("ticketType").value, title:title, content:content };
+    var ord=$("ticketOrder").value.trim();
+    if(ord) body.order_no = ord;
+    E.post("/api/trade/after_sales/ticket", body).then(function(){
+      flash("工单已提交，客服将尽快处理");
+      $("ticketForm").reset();
+    }).catch(function(err){
+      flash((err&&err.message)||"工单提交失败");
+    }).finally(function(){ btn.disabled=false; btn.textContent="提交工单"; });
+  }
+
+  function wire(){
+    $("applyForm").addEventListener("submit", applyRefund);
+    $("ticketForm").addEventListener("submit", submitTicket);
+    $("pgPrev").addEventListener("click", function(){ if(state.page>1){ state.page--; loadRefunds(); } });
+    $("pgNext").addEventListener("click", function(){ state.page++; loadRefunds(); });
+    $("refundList").addEventListener("click", function(ev){
+      var b = ev.target.closest && ev.target.closest("[data-cancel]");
+      if(b) cancelRefund(Number(b.getAttribute("data-cancel")), b);
+    });
+    $("orderSel").addEventListener("change", function(){
+      var o = state.orders.filter(function(x){ return x.order_no===this.value; }.bind(this))[0];
+      $("amountHint").textContent = o ? "该订单实付 ¥"+money(o.pay_amount||0)+"，退款金额不得超过此值"
+                                      : "可退订单实付上限以所选订单为准";
+    });
+  }
+
+  global.bootRefund = function(){
+    wire();
+    loadRefunds();
+    loadOrders();
+  };
+})(window);
+</script>
+</body>
+</html>
