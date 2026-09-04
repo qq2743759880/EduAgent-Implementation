@@ -25,7 +25,7 @@ from app.config import Settings, settings  # noqa: E402
 from app.core import warmup as warmup_mod  # noqa: E402
 from app.domains.course import router as course_router  # noqa: E402
 from app.domains.course import service as course_svc  # noqa: E402
-from app.domains.course.schemas import CohortListData, PageMeta  # noqa: E402
+from app.domains.course.schemas import CohortListData  # noqa: E402
 from app.monitoring import metrics as metrics_mod  # noqa: E402
 
 
@@ -207,22 +207,21 @@ class TestWarmupBackendPolicy:
 class TestCohortsPagedShell:
     """task39 压测采样发现：/api/series/{id}/cohorts 无条件 500。
 
-    svc.list_cohorts 自 R2 裁定起返回 CohortListData 分页壳（items + page_meta），
-    不再是裸列表。旧代码直接迭代 pydantic 模型 → 得到 (字段名, 值) 元组 →
-    元组无 .model_dump() → 500。契约测试没覆盖到，是靠真实压测才暴露的。
+    svc.list_cohorts 自 R2 裁定起返回 CohortListData 分页壳（外层 {total,page,page_size,items}，
+    C2 已删 page_meta 双轨），不再是裸列表。旧代码直接迭代 pydantic 模型 → 得到
+    (字段名, 值) 元组 → 元组无 .model_dump() → 500。契约测试没覆盖到，是靠真实压测才暴露的。
     """
 
     @staticmethod
     def _paged():
         return CohortListData.model_construct(
-            items=[],
-            page_meta=PageMeta(page=1, page_size=10, total=0, total_pages=0, has_more=False),
+            items=[], total=0, page=1, page_size=10,
         )
 
     def test_root_cause_pinned_iterating_model_yields_tuples(self):
         """把根因钉住：pydantic 模型被迭代时给出 (字段名, 值) 元组。"""
         first = next(iter(self._paged()))
-        assert isinstance(first, tuple) and first[0] == "items"
+        assert isinstance(first, tuple) and first[0] in {"items", "total", "page", "page_size"}
         assert not hasattr(first, "model_dump"), "元组没有 model_dump —— 这正是旧代码 500 的原因"
 
     def test_endpoint_serializes_paged_shell(self, monkeypatch):
@@ -235,7 +234,7 @@ class TestCohortsPagedShell:
         monkeypatch.setattr(course_svc, "list_cohorts", _fake)
         resp = asyncio.run(course_router.list_series_cohorts(1))
         data = resp["data"] if isinstance(resp, dict) else resp.data
-        assert set(data) == {"items", "page_meta"}, f"出口形态与分页壳不一致: {list(data)}"
+        assert set(data) == {"items", "total", "page", "page_size"}, f"出口形态与分页壳不一致: {list(data)}"
 
     def test_consistent_with_sibling_endpoints(self, monkeypatch):
         """出口形态必须与 get_series_detail / get_cohort_detail 对齐（都是 model_dump）。"""
