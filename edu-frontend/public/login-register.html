@@ -2967,10 +2967,26 @@ function regSubmit(){
   btn.classList.add("busy");
   EAPI.post("/api/auth/register", payload)
     .then(function () {
-      // 注册成功返回 201 {code:0,data:{user_id}}，不返回 token → 预填登录账号跳登录页两步
-      toast("🎀 注册成功，账号已预填，请登录", "toast-ok");
-      setPage("login");
-      document.getElementById("li-id").value = u || e || n;
+      // W1-C4：register 实测只返回 201 {code:0,data:{user_id}}，无 token（Situation B）→ 不能直接自动登录，
+      // 改为注册成功后立即调一次 login（用用户刚提交的登录账号+密码）写 token 后按角色跳转，消除「两步登录」体验割裂。
+      // login 账号取 register 推导规则（account>email 兜底）一致的 u||e；跳转复用 login 同款角色分流锚点。
+      EAPI.post("/api/auth/login", { account: u || e, password: p })
+        .then(function (d2) {
+          EAPI.store.setToken(d2.access_token);
+          if (d2.refresh_token) EAPI.store.setRefreshToken(d2.refresh_token); // 对齐 W1-C1：持久 refresh_token
+          var role = d2.user && d2.user.role;
+          var redir = EAPI.getRedirectParam();
+          var dest2 = redir || ((role === "admin" || role === "manager") ? "/admin-dashboard.html" : "/dashboard.html");
+          toast("🎀 注册成功，已自动登录，正在进入 …", "toast-ok");
+          setTimeout(function () { window.location.href = dest2; }, 400);
+        })
+        .catch(function () {
+          // 自动登录失败 → 静默降级回登录页并预填账号，不阻断用户手动登录；注册失败提示不弱化
+          btn.classList.remove("busy");
+          toast("账号已创建，自动登录失败，请手动登录", "toast-error");
+          setPage("login");
+          document.getElementById("li-id").value = u || e || n;
+        });
     })
     .catch(function (err) {
       btn.classList.remove("busy");
