@@ -1,0 +1,110 @@
+# EduAgent 优化期编排者交接单（2026-09-03，自 ZCode 移交）
+
+> 本单是唯一交接事实源。新编排者按此接管，无需原会话上下文。所有路径均已验证存在。
+
+## 一、角色与使命
+
+你是 **tt 工作流编排者**（多 agent 平台编排闭环）。工作模式（用户裁定的特殊流程）：**你不直接写代码、不派子 agent**——你生成开工 Prompt → 用户粘贴到各 agent 平台执行 → 平台改文件+写完工报告（不 commit）→ 用户回传「平台名+完成情况」→ 你**独立实证验收**（复跑机验命令，不采信报告）→ 通过则你**选择性 commit 并生成下一张开工单**，不通过则出返工单换平台。
+当前项目：EduAgent 前后端一致性优化期（22 任务，源自用户四类痛点：前端交互 bug / 前后端接口不匹配 / 功能未完善 / 跳转混乱）。
+
+## 二、必读文档（按序，全部存在）
+
+1. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\README.md` —— 计划索引与全局决策
+2. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\audit-20260902.md` —— 实证审计（前端 22 页逐页/后端路由面/契约不符 X1~X9/遗留 L1~L21），**所有需求的证据来源**
+3. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\prd-optimization-v1.md` —— 目标 O1~O5、决策点 D1~D5（用户已按默认确认）
+4. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\dev-plan.md` —— 22 任务总纲+依赖图（机验 review-gate PASS）
+5. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\task-agent-matrix.md` —— **v1.3 资产分级硬约束（A/B/C 级）+ 验收侧硬约束**，你的操作手册
+6. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\orchestration-execution.md` —— 执行排序 S1~S8、契约冻结清单、集成 Gate L0~L4
+7. `E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\tasks\taskNN-*.md` —— 任务详档（开工单的唯一需求来源）
+8. `E:\stu\project\stu\EduAgent实施手册\AGENTS.md` —— 项目关键教训（SSE 契约/静态页注入模式/DEBUG 红线等）
+
+## 三、状态快照（2026-09-03）
+
+**分支**：`feature/opt-waves`（从 feature/task44-courses 拉出；main 严重落后勿用）。基线已含 17 个优化 commit。
+
+**已关闭 18/22**（commit 摘要见 git log --oneline）：task101(edu-api.js加固) 102(admin详情页语法+pageId) 103(课程动线) 104(chat双绑定+SSE契约) 105~107(字段对齐/表格列/题库接入) 108(注册/登出/redirect) 109(管理端守卫bootAdmin) 110(死链清零+scan-deadlinks.mjs) 113(BE安全七项:award 403/quiz correct移除/metrics鉴权/40021→40024等) 116(删除语义C-C冻结+40908+孤儿归档) 61(RAG上传,pdfplumber已补装) 118(community闭环) 119(learning学习动线) 120(practice真判分) 121(me资料编辑)。
+**契约冻结状态**：C-C（删除语义，handoffs/task116-contract.md）与契约⑥（RAG上传，handoffs/task36-contract.md）已冻结验收；**C-A（响应壳统一）与 C-B（分页统一+SSE error）尚未派发**（task114/115，涉及决策点 D1/D2，派发时机待用户确认）。
+
+**在途**：task117（admin-courses CRUD 消费 C-C）已派未回传——工作区若有 `edu-frontend/public/admin-courses.html` 的 M 改动即其在途产物，等回传验收，勿动。
+
+**待办队列**：①收 task117 → ②派 task114/115（先问用户是否本轮做契约统一）→ ③派 task122（全站卫生，必须最后）→ ④派 task123（流程收尾）→ ⑤L4 全量回归（interface_acceptance_final.py + 前端 vitest 491 用例 + 22 页渲染截图视觉验收）→ ⑥W2 里程碑批判闸门（模板照抄 `.ai-hub/plans/tasks/W1-技术批判.md`/`W1-优化修改方案.md`，双 tracker 登记：`.opencode/plans/critique-backlog-tracker.md` 权威 + `.ai-hub/plans/tasks/plans/critique-backlog-tracker.md` 机验镜像，跑 `node C:\Users\Administrator\.agents\skills\tt\scripts\review-gate.mjs --dir .ai-hub/plans/tasks --id W2`，文件命名 `W2-技术批判.md` 无 task 前缀、条目 `## C{n}` 标题、URL 带 https、含日期）→ ⑦同步看板 `D:\.ai-hub\memory\project-handoff.md`（编排者独占写权）。
+
+## 四、环境情报（全部实测）
+
+- **后端**：uvicorn 8000，项目 `edu-agent/`，venv=`edu-agent/.venv`。启动：`cd edu-agent && .venv/Scripts/python.exe -m uvicorn app.main:app --port 8000`。**受管实例会被执行者误杀（本轮 2 次）**——每次验收前先 `curl -m 5 http://127.0.0.1:8000/health`，无响应就重启；改后端代码后必须重启才生效（无 --reload）。重启用后台方式（Bash run_in_background），`cmd /c start /B` 偶发静默失败。
+- **执行者沙箱**：其他平台 agent **杀不掉也看不到**你的进程（他们 cmd/taskkill 受限），他们的惯例是自起隔离端口（如 8077）自测自关——合理，验收时以你自己的受管实例复验为准。
+- **测试账号**（密码均 `Test@123456`）：student `user000001`（有 series 1/cohort 1 报名、错题、积分、会话数据）、admin `adm02test`、manager `mgr01test`。
+- **DEBUG=true**（edu-agent/.env）：无 Authorization 头返回虚拟管理员——测 401/403 必须用**无效 token**（Bearer garbage）或真实 student token，不能裸调。DEBUG=False 的部署检查单在 task123。
+- **DB**：MySQL edu@localhost root/123456；VM 192.168.85.101 跑 Milvus/Mongo/MinIO/Neo4j（Redis 本机 6379 拒连为常态，代码有降级）。
+- **前端**：静态页在 `edu-frontend/public/`（next dev 3000 托管，但验收只需文件+curl，不必起 next）。
+
+## 五、验收操作手册（每任务必做）
+
+1. **范围**：`git status --short | grep -v "^??"` 核对改动文件=任务授权集（注意：git 只跟踪了部分 edu-agent/app 文件，未跟踪文件的修改不显示 M——用 grep 行号证据核）。
+2. **资产证据**（B/A 级任务）：完工报告必须有「资产消费证据」段；抽查声称的方法论与 diff 对应（冒充=打回）。**引用资产路径前自己先 `ls` 探测**（harden 在 vendor 里不存在，在 `C:\Users\Administrator\.agents\skills\harden\SKILL.md`；harden 方法论也在 `vendor/security/` 集群内）。
+3. **机验标准件**：
+   - 前端页语法：node 提取全部内联 `<script>` 逐块 `new Function()` 解析（0 SyntaxError）
+   - 死链：`node test-reports/scan-deadlinks.mjs`
+   - 接口：curl 真实 HTTP 核字段（登录拿 token → 打端点 → node 解析断言）
+   - 后端：`edu-agent/.venv/Scripts/python.exe -m pytest tests/test_contract_task113.py tests/test_contract_task116.py -q`（27+7 例）+ `python test-reports/interface_acceptance_final.py`（160 请求，exit 0；约 10 分钟，建议后台跑）
+4. **commit 纪律**：只 `git add` 本任务文件+报告；多任务并行在途时工作区混着别人的改动，**严禁 `git add .`**。格式 `feat(opt)/taskNN: 摘要——要点；编排者实证:xxx`。CRLF 警告无害；`git status` 显示 M 但 `git diff --ignore-cr-at-eol` 为空 = 行尾幻影，`git checkout -- <file>` 还原。
+
+## 六、已知坑（实测踩过，勿再踩）
+
+1. **裸 DTO 域**：`/api/users/me/profile`、interactive 全系（wrong-book 返回 `{items}` 无 total）、enrollments（**裸数组**）、vocab——无 {code,data} 壳，edu-api.js 原样透传，前端消费按裸形状。
+2. **chat SSE**：token 事件字段是 `delta`（非 token）；done 事件是嵌套壳 `{code:0,data:{...}}`；后端不发 error 事件（C-B 才补）。
+3. **tick-batch 的 event_time**：后端 naive datetime 做差，带 Z 的 toISOString() 会 500，用本地时间字符串。
+4. **课程域分页**：`{items,page_meta:{page,page_size,total,total_pages,has_more}}`（其余域是 `{total,page,page_size,items}`）——C-B 未做前前端按 page_meta 消费。
+5. **种子数据假域名**：课程 cover_url 与用户 avatar_url 含 `cdn.example.com`（前端已防御，task123 清种子）。
+6. **Git-Bash 中文 curl**：-d 中文参数报 40000 是传输伪像，用 python 脚本或文件体重发再判断。
+7. **测试数据**：task118 留有锁定测试帖 88/89/90（is_locked:true 折叠）；task119 给 user000001 造了 cohort 1 报名（保留，后续有用）——均已登记 task123 清单。
+
+## 七、行为红线（违反即事故）
+
+1. 验收**必须独立实证**：至少复跑 2~3 条机验命令，禁止只读完工报告就 DONE。
+2. **严禁 `git add .` / `git add -A`**；严禁 commit 执行者在途文件。
+3. 契约任务（114/115）先出契约单（handoffs/taskNN-contract.md 含真实 curl 抓包），你核验后其前端消费方才放行。
+4. 开工单必含：必读文档具名路径 / 当前任务 / 环境与账号 / 硬性守则（不改 schemas.py 除契约任务、不重定义全局 $/renderSides、只改授权文件、curl 实测、禁 Playwright、不 commit）/ 完工报告路径 / **资产调用段（按矩阵 A/B/C 分级具名路径）**。
+5. 每完成一个验收必须**同时生成下一张开工单**（双件套纪律）；批判闸门每波次必跑。
+6. 需要用户拍板的（派发时机/范围裁剪/破坏性操作如删种子数据）——**停下来问，别自作主张**。
+
+## 八、Season 2（v3.4 总计划存量）怎么编排
+
+读 `.ai-hub/plans/next-season-reconciliation.md`——已对账完毕，**S2-D1 已拍板（2026-09-03）：方案 B，React 线继续 + task114/115 本轮做**。真实存量 = ①3 项完工待验收（task98/99/P1C，零开发量）②4 项后端（task35 Neo4j/task45 搜索/task66 退款状态机/task92 批判①）③React 线前端批（管理端 ~14 页按 6 页/批 × 3 批 + FE-M1/O1，**前置 = C-A/C-B 契约冻结**）④优化期尾巴（task117/114/115/122/123 + L4 + W2 闸门）。后端多线并行时执行者用隔离端口自测（8077 模式），受管 8000 仅编排者验收时重启。建议派发顺序见该文档，纪律与本单 §七完全一致。
+
+### §8.1 React 线任务重述使命（用户 2026-09-03 指令：旧定义过时，需按现状重排）
+
+旧定义（v3.4 的 task43~61、70~91、FE-M1/O1）**已过时**，重述输入（已勘察实证）：
+
+1. **React 应用已有 ~20 个 page.tsx 路由**（`edu-frontend/src/app/(user)/`: login/dashboard/courses/courses-search/courses-[seriesId]/my-courses/learning-[seriesId]-[sessionId]/chat/community/community-[postId]/achievements/me；`(admin)/`: admin-dashboard/courses/courses-[seriesId]/questions/questions-[id]/users/rag/mcp）——旧任务是"新建页面"，新任务是"**对齐真实契约 + 清 MOCK + 补真实交互**"（每任务第 0 步 = 页面现状审计：哪些区块 MOCK/哪些已接）。
+2. **后端事实已变**（优化期落地）：C-C 删除语义（软删下架/回收站/40908）、quiz correct 已移除（判分只走 /submit）、award 403、metrics 鉴权、chat SSE token=delta + done 嵌套壳、learning 用 /api/study/* + tick-batch event_time 无时区、users/profile 与 interactive/enrollments/vocab 为裸 DTO（**C-A 包壳后此条失效，以 C-A 契约单为准**）、课程域分页 page_meta（**C-B 统一后失效**）。
+3. **task70~91 的后端缺口**：trade（订单/支付/退款）/market（券/收藏）/after_sales（工单）域存在；**公告/报表/CRM 后端域不存在**——相关页面任务需范围裁剪（砍掉）或先立后端任务，编排者二选一并上浮用户。
+4. **硬前置**：C-A/C-B（task114/115）冻结验收前，React 页不得开始契约对齐（否则对完又变）；C-A/C-B 之后 React 批才开工。
+5. 重述产出物：`react-line-replan-v2.md`（新任务卡：路由 × 现状 × 目标契约 × 验收要点，按 6 页/批分批）+ 每批派单时按惯例生成 per-task 详档。
+
+新编排者接手后按此重述 React 线，替换旧定义（旧定义保留在 .opencode/plans/tasks/ 作历史，不删）。
+
+## 九.1、W2 批判落实收口记录（2026-09-04 追加）
+
+**W2 批判 6/6 已全部落地 + 独立实证 PASS**（C1/C2/C3/C4/C5/C6）：
+- C1(响应壳 OpenAPI 上移,664774b)、C3(chat SSE 错误统一,65b31a2)、C4(respbar 归零,8eb8cab)、C6(practice 显式提示,8eb8cab)、C2(page_meta 双轨删除,155b4b0+35b94fe)、C5(回收站 restore 闭环,155b4b0+35b94fe)。
+- 本次（本轮会话）独立复验 agent 实证三重契约：
+  - C1：/openapi.json `/api/users/me/profile` schema→`Shell_UserProfile_` 单层壳（$ref 感知幂等，无数据套数据）；运行期顶层 `{code,message,data}`。
+  - C2：`rg page_meta` 仅注释 0 双写；/api/admin/courses/series data 键 `{total,page,page_size,items}` 无 page_meta。
+  - C5：E2E 全通 create→软删→include_deleted 可见 off_sale→restore `{series_id,status:"restored"}`→默认列表 draft→404/40400+401/40101；契约单 handoffs/critique-C5-contract.md。
+- 配套 commit：ef7a9b4（task39 契测去除 PageMeta 引用，防 PageMeta 已删导致 ImportError）。
+- 注：auth_middleware.py 中残留的 `/api/course-admin/` 前缀新增已还原（grep 确认该前缀无任何路由使用，C5 已统一到 `/api/admin/courses`）。
+
+**遗留独立待办（与 C5 契约无涉，已登记 .opencode/plans/critique-backlog-tracker.md §W2 验收补充遗留）**：
+1. course_admin 仓库 JSON 列（target_learner_identity_codes 等列表字段）入库触发 50000 tuple/version 类型报错——待单独立项。
+2. W4 回归门禁：grep `page_meta`=0 + grep `respbar`（限注释）挂进 L4 全量回归防复生。
+3. C6 迭代二 deadline 的 PBI-ITER2-TYPES 排期。
+
+**看板同步说明**：D 盘中心库看板 `D:\.ai-hub\memory\project-handoff.md` 由编排者独占写权，当前会话受工作目录写限制，无法直接改 D 盘——已将本收口记录落入本工作区镜像 handoff（本文件），待编排者/具备 D 盘写权的通道合并进中心库。
+
+## 九、给新编排者的第一件事
+
+1. 读完全部必读文档（§二）。
+2. `git -C E:\stu\project\stu\EduAgent实施手册 log --oneline -25` + `git status --short` 建立现场认知；`curl -m 5 http://127.0.0.1:8000/health` 确认后端。
+3. 向用户确认：task117 是否已回传？task114/115（契约统一，动 4 个域）是否本轮做？
+4. 按 §三待办队列继续推进，直至 22/22 + W2 批判闸门 PASS + 看板同步，然后向用户交付最终总结报告。
