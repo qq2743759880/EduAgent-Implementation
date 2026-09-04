@@ -125,15 +125,8 @@
   - 验收指标：验收框架能标记 expected；回归可对比
 
 ### task70~91（管理端补全）
-- [ ] **task16 批判**：热门课程榜契约缺口
-  - 修复措施：前端实现时按 api-request.md 权威对齐热门榜契约
-  - 落点任务：task70~91
-  - 验收指标：热门榜页面字段与契约一致；无 MOCK
-
-- [ ] **task57 批判**：后端章节端点接续后联调
-  - 修复措施：后端补章节端点后，前端课程详情 CRUD 联调
-  - 落点任务：task70~91
-  - 验收指标：章节 CRUD 全通；无 disabled 占位
+- [x] **task16 批判**：热门课程榜契约缺口（✅ 复核结论：6 页热门榜关联核实无 MOCK——唯一"热门榜"实体 admin-dashboard.html 是明示契约缺口的静态占位(禁 MOCK)；后端 `/api/series` 排序白名单仅 default|newest|price_asc|price_desc，无 popular/hot 排序端点（`sort=popular` 真实 HTTP 422），用 newest 冒充属语义错配故不改。登记 gap：建议后端补热门排序或 admin rank 聚合端点，单独派任务）
+- [x] **task57 批判**：后端章节端点接续后联调（✅ 复核结论：后端**无独立视频章节 CRUD 端点**（`/api/admin/courses/videos/1/chapters` 真实 HTTP 404，schema/repo 有但路由层未接线），结构化情况 B 登记 gap 不硬造前端猜端点；`admin-course-detail.html` 章节块是正确缺口披露(gap-tag 待接线)。案例澄清：课次/学习内容端点真实存在（`GET /api/cohorts/1/modules` 实测 3 模块、admin session CRUD 在），缺口仅限"视频章节 CRUD"。补后端章节端点另行派单）
 
 ### task34（kb-rebuild-milvus）
 - [ ] **task30 批判①**：raw_content 双份存储真实增长统计 + VARCHAR(8000) 上限验证
@@ -148,10 +141,7 @@
   - 验收指标：图谱实体入库；retriever graph_entities 非空；Neo4j 连通无降级
 
 ### task66（前端退款页）
-- [ ] **task19 批判**：退款状态机语义确认
-  - 修复措施：前端退款页实现时按 task19 状态机（pending/approved/rejected/refunded）确认展示语义
-  - 落点任务：task66
-  - 验收指标：退款状态展示与后端一致；无 MOCK
+- [x] **task19 批判**：退款状态机语义确认（✅ commit db2915e+后续：新增 `edu-frontend/public/refund.html` 退款中心，真实对接 `/api/refunds`（申请/列表/撤销）+ `/api/trade/orders?refundable`，状态 pending"到账审核中"/approved/rejected/refunded，四枚举 refund_type、金额服务端强校验(40230 拦截实证)、分页外层 {total,page,page_size,items} 禁 page_meta、角色守卫。⚠️ 附带发现并修复后端缺陷：`after_sales/repository.py` `resolve_order_item` 引用不存在的 `order_item.yn` 列（PG 语法触发）→ 带 order_no 建工单 500，已删 yn 过滤修复，带 order_no 200）
 
 ## 二、新增批判 → 滞后任务挂钩规则（强制）
 
