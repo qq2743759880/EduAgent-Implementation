@@ -68,6 +68,35 @@ class TestReconcileAmountPrecision:
         types = [a["type"] for a in result["anomalies"]]
         assert "AMOUNT_MISMATCH" not in types
 
+    def test_status_drift_detected(self, monkeypatch):
+        """P2 backlog 闭环：payment=paid 但 order 仍 pending/closed → STATUS_DRIFT 异常。"""
+        import asyncio
+
+        paid = [{
+            "payment_no": "P4", "order_id": 4, "amount": 0.15,
+            "order_no": "O4", "payable_amount": 0.15, "order_status": "pending",
+        }]
+        result = asyncio.run(self._run(monkeypatch, paid))
+        drift = [a for a in result["anomalies"] if a["type"] == "STATUS_DRIFT"]
+        assert len(drift) == 1, f"应检出 1 条 STATUS_DRIFT：{result['anomalies']}"
+        assert drift[0]["order_status"] == "pending"
+        assert result["ok"] is False
+
+    def test_no_status_drift_when_order_paid(self, monkeypatch):
+        """payment=paid 且 order=paid → 无 STATUS_DRIFT（与既有正常数据兼容）。"""
+        import asyncio
+
+        paid = [
+            {"payment_no": "P5", "order_id": 5, "amount": 0.10,
+             "order_no": "O5", "payable_amount": 0.10, "order_status": "paid"},
+            {"payment_no": "P6", "order_id": 6, "amount": 0.10,
+             "order_no": "O6", "payable_amount": 0.10, "order_status": "partial_refunded"},
+        ]
+        result = asyncio.run(self._run(monkeypatch, paid))
+        types = [a["type"] for a in result["anomalies"]]
+        assert "STATUS_DRIFT" not in types
+        assert result["ok"] is True
+
 
 # ════════════════════════════════════════════════════════════
 # 二、LLM 重试退避尊重 Retry-After（对标 OpenAI/Anthropic 官方 SDK）

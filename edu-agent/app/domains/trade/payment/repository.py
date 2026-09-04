@@ -238,6 +238,8 @@ class PaymentReconcileRepo:
         order_amounts: dict[int, float] = {}
         payment_count_per_order: dict[int, int] = {}
         total_amount = 0.0
+        # 支付已入账但订单应处于 paid / 退款态（partial_refunded/refunded）——其余状态视为状态漂移
+        _ORDER_OK_AFTER_PAID = {"paid", "partial_refunded", "refunded"}
         for r in paid:
             oid = int(r["order_id"])
             amt = float(r["amount"])
@@ -253,6 +255,16 @@ class PaymentReconcileRepo:
                     "order_no": r["order_no"],
                     "pay_amount": amt,
                     "order_payable": float(r["payable_amount"]),
+                })
+            # 状态漂移：资金已入账（payment=paid）但订单状态既非 paid 也非退款态
+            # （如 pending/closed/cancelled）→ 资金与订单状态断裂，需人工介入（GWT④ 资金安全残差）。
+            if r["order_status"] not in _ORDER_OK_AFTER_PAID:
+                anomalies.append({
+                    "type": "STATUS_DRIFT",
+                    "payment_no": r["payment_no"],
+                    "order_no": r["order_no"],
+                    "order_id": oid,
+                    "order_status": r["order_status"],
                 })
 
         # 重复入账：同一订单 >1 笔 paid 支付
