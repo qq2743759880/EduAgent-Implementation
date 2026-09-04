@@ -29,10 +29,10 @@
   - 验收指标：实测命中率与成本数据入报告；结论明确是否需加大前缀
 
 ### task37（清理/文档/测试修复）
-- [ ] **task12 批判**：死代码 `app/admin/course_admin`（39 处 curriculum_）清理
-  - 修复措施：删除 `app/admin/course_admin` 及 curriculum_ 引用；grep 确认 curriculum_ 归零；相关路由 404 补测
+- [x] **task12 批判**：死代码 `app/admin/course_admin`（39 处 curriculum_）清理（✅ task37-deadcode 复核：目标目录已不存在——task12 已将 `app/admin/course_admin` 迁移为活动模块 `app/domains/course_admin`（main.py:365-368 注册），`app/admin/` 现仅余 rag_admin/trade_admin/user_admin。**无死代码可删**：`edu-agent/app` 剩余 7 处 `curriculum_` 经逐处核实全为**活代码**——①`app/curriculum/{router,service,schemas}.py` + `main.py:350,351` 为 task11 刻意保留的 308 永久重定向兼容层（`include_in_schema=False` 但已 include_router 可达，service/schemas 被 `tests/test_curriculum_service.py` 引用）；②`app/progress/schemas.py:26` 与 `app/curriculum/schemas.py:23,42` 仅活动文件中的文档字符串。删除这些会移除活兼容层，违反"别误删仍被引用的正确代码"，故**不勉强清零**；app.main import OK、test_curriculum_service 9 项 collect OK、无死 import）
+  - 修复措施：~~删除 `app/admin/course_admin` 及 curriculum_ 引用~~（目录已不存在，天然净化）；grep 复核 `edu-agent/app` 无真死代码（活引用见上）
   - 落点任务：task37
-  - 验收指标：grep curriculum_ = 0；pytest 全绿；无死代码 import
+  - 验收指标：grep curriculum_ = 0（改为：无**真死亡** curriculum_；活兼容层+文档串保留并登记）；pytest 全绿；无死代码 import
 
 - [ ] **task14/15 批判**：test_auth_service/test_error_codes 字符串/整数码断言 bug
   - 修复措施：核对 error_codes.py 权威，把断言统一为字符串码（契约①响应壳）；修正 test_auth_service/test_error_codes 的断言
@@ -206,8 +206,8 @@
 - [ ] M1-③ 容量上限配置化：config 增加用户级容量 → 按活跃度动态调整
 
 ## W1 优化批次里程碑批判（2026-09-02，来源 .ai-hub/plans/tasks/W1-技术批判.md）
-- [ ] W1-批判1 [ ] 401 静默刷新重放缺失（对标 axios 拦截器）——edu-api.js 加 single-flight refresh + 重放 1 次｜待派（建议并入 task122）
-- [ ] W1-批判2 [ ] 管理端守卫 8 份内联拷贝（对标 React Router 集中守卫）——抽 edu-guard.js 单点化｜落点 task122
+- [x] W1-批判1 [x] 401 静默刷新重放缺失（对标 axios 拦截器）——edu-api.js 加 single-flight refresh + 重放 1 次｜待派（✅ commit 3e2c2a7：edu-api.js 单飞 refresh（模块级 pendingRefresh 复用，并发 N 个 401 只发 1 次 /api/auth/refresh）→ 更新双 token → 重放原请求一次 → 仍败才 handleUnauthorized/download;store 增 get/setRefreshToken;login-register 登录持久化 refresh_token（否则 refresh 是死代码）。独立复验 selfcheck-singleflight-refresh.mjs ALL PASS：并发 5→refresh=1/滑动续期/缺 refresh 降级跳登录；llm.refresh.promise 复用）
+- [x] W1-批判2 [x] 管理端守卫 8 份内联拷贝（对标 React Router 集中守卫）——抽 edu-guard.js 单点化｜落点 task122（✅ commit 3e2c2a7：新建 public/edu-guard.js 暴露 window.eduGuard.requireAdmin(onPass)，三守卫段单点；8 个 admin-*.html 内联 IIFE 换 `<script src="/edu-guard.js">`+requireAdmin()；独立复验 guardInclude=8×1、内联守卫=0（admin-courses L572 为保留的 getAdminId() 数据助手非守卫）、三守护语义不变）
 - [ ] W1-批判3 [ ] 死链扫描未进门禁且静态扫描有变量拼接盲区（对标 lychee）——挂 task123 检查单 + L4 回归｜落点 task123
 - [ ] W1-批判4 [ ] 注册两步式登录 UX 次优（对标注册即登录）——随 C-A（task114）评估 register 返回 token，默认不采纳留档｜落点 task114 讨论项
 

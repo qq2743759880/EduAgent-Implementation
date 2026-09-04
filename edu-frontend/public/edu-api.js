@@ -19,6 +19,8 @@
  */
 (function (global) {
   const TOKEN_KEY = "edu:auth:token";
+  const REFRESH_KEY = "edu:auth:refresh";
+  const REFRESH_PATH = "/api/auth/refresh";
   const DEFAULT_BASE = "http://127.0.0.1:8000";
   const LOGIN_PAGE = "/login-register.html";
   const DEFAULT_TIMEOUT_MS = 15000;
@@ -47,8 +49,15 @@
     setToken(t) {
       try { localStorage.setItem(TOKEN_KEY, t); } catch (e) {}
     },
+    getRefreshToken() {
+      try { return localStorage.getItem(REFRESH_KEY) || ""; } catch (e) { return ""; }
+    },
+    setRefreshToken(t) {
+      try { localStorage.setItem(REFRESH_KEY, t); } catch (e) {}
+    },
     clear() {
       try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      try { localStorage.removeItem(REFRESH_KEY); } catch (e) {}
     },
   };
 
@@ -122,13 +131,8 @@
       if (text && text.length) {
         try { json = JSON.parse(text); isJson = true; } catch (e) {}
       }
-      // 改动点1：401 只看 HTTP 状态码，无条件清 token；非登录页跳登录并带回跳参数
-      if (resp.status === 401) {
-        store.clear();
-        if (typeof window !== "undefined" && !onLoginPage()) gotoLogin(currentPathWithQuery());
-        throw apiError(401, (isJson && json && (json.message || json.detail)) || "登录凭证无效或已过期", json);
-      }
-      // 改动点2：非 2xx 一律抛带 status 的 Error，禁止 return null
+      // 改动点1_rev：401 不再在此处理——已上移 request() 走「单飞 refresh + 重放」（W1-C1）；
+      //               非 2xx 一律抛带 status 的 Error，禁止 return null
       if (!resp.ok) {
         const msg = isJson && json ? (json.message || (typeof json.detail === "string" ? json.detail : "")) : "";
         throw apiError(resp.status, msg || "HTTP " + resp.status, json);
@@ -145,7 +149,57 @@
     });
   }
 
-  function request(method, path, body) {
+  // ---- W1-C1：单飞 refresh + 重放（harden 并发防护；多标签并发 401 只发一次 /refresh）----
+  let refreshPromise = null; // 模块级单飞：并发 401 复用同一 refresh Promise，不重复发请求
+  function doRefresh(okHandler) {
+    const rt = store.getRefreshToken();
+    if (!rt) { okHandler(false); return; } // 无 refresh_token → 直接降级登录跳转
+    // refresh 用 body 携带 refresh_token，不带过期 access（否则 401 死锁）；独立超时
+    const timeoutMs = typeof EAPI.TIMEOUT_MS === "number" && EAPI.TIMEOUT_MS > 0 ? EAPI.TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    fetch(trimSlash(EAPI.BASE) + REFRESH_PATH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: rt }),
+      signal: controller ? controller.signal : undefined,
+    }).then((resp) => {
+      if (timer !== null) clearTimeout(timer);
+      if (resp.status !== 200) { okHandler(false); return; } // refresh 401/失败 → 走登录
+      resp.text().then((text) => {
+        let json = null;
+        try { json = JSON.parse(text); } catch (e) {}
+        const data = json && json.code === 0 && json.data ? json.data : null;
+        if (data && typeof data.access_token === "string" && data.access_token) {
+          store.setToken(data.access_token);               // 更新 access
+          if (typeof data.refresh_token === "string" && data.refresh_token) {
+            store.setRefreshToken(data.refresh_token);     // 滑动续期 refresh
+          }
+          okHandler(true);
+        } else { okHandler(false); }
+      }).catch(() => { okHandler(false); });
+    }).catch(() => {
+      if (timer !== null) clearTimeout(timer);
+      okHandler(false); // 网络失败：refresh 挂了 → 登录跳转（不静默抛网络错误给页面）
+    });
+  }
+  function scheduleRefresh() {
+    if (!refreshPromise) {
+      refreshPromise = new Promise((resolve) => doRefresh(resolve)).then((ok) => {
+        refreshPromise = null; // 完成后复位，供下一轮 401 再进入
+        return ok;
+      });
+    }
+    return refreshPromise;
+  }
+  // 原 401 分支逻辑（改动点1）收敛于此：清 token + 跳登录带 redirect + 抛错（复用 apiError）
+  function handleUnauthorized(status, msg) {
+    store.clear();
+    if (typeof window !== "undefined" && !onLoginPage()) gotoLogin(currentPathWithQuery());
+    throw apiError(status || 401, msg || "登录凭证无效或已过期");
+  }
+
+  function request(method, path, body, _replayed) {
     const base = trimSlash(EAPI.BASE) || DEFAULT_BASE; // 每次调用时读取，支持运行时覆盖
     const p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
     const headers = { "Content-Type": "application/json" };
@@ -165,6 +219,15 @@
     }).then(
       (resp) => {
         if (timer !== null) clearTimeout(timer);
+        // 401 → W1-C1 单飞 refresh 后重放一次；已重放/无 refresh_token/refresh 失败 → 走登录
+        if (resp.status === 401) {
+          if (_replayed) return handleUnauthorized(401, "重新登录后凭证仍无效");
+          if (!store.getRefreshToken()) return handleUnauthorized(401);
+          return scheduleRefresh().then((ok) => {
+            if (!ok) return handleUnauthorized(401, "登录已过期，请重新登录");
+            return request(method, path, body, true); // 用新 access 重放原请求一次
+          });
+        }
         return parseResponse(resp);
       },
       (e) => {

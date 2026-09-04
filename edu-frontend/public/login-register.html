@@ -2934,6 +2934,7 @@ function loginSubmit(){
   EAPI.post("/api/auth/login", { account: id, password: pwd })
     .then(function (data) {
       EAPI.store.setToken(data.access_token);
+      if (data.refresh_token) EAPI.store.setRefreshToken(data.refresh_token); // W1-C1：持久 refresh_token 供 401 单飞refresh
       var role = data.user && data.user.role;
       // ?redirect= 优先级最高（仅站内相对路径，EAPI.getRedirectParam 已防开放跳转）；否则按角色分流
       var redir = EAPI.getRedirectParam();
