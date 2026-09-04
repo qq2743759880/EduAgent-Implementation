@@ -240,3 +240,31 @@ async def admin_get_transcode_status(
 ):
     result = await svc.get_transcode_status(video_id)
     return ok(data=result)
+
+
+# ═══════════════════════════════════════════
+# 系列回收站恢复（C5：软删三态 → 回收站恢复最小闭环）
+# ═══════════════════════════════════════════
+# 契约锁定路径 POST /api/admin/courses/series/{series_id}/restore（与既有管理端
+# course_admin CRUD 同前缀 /api/admin/courses，前端按此消费）。
+restore_router = APIRouter(
+    prefix="/api/admin/courses",
+    tags=["course_admin · 系列回收站恢复（C5）"],
+    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))],
+)
+
+
+@restore_router.post(
+    "/series/{series_id}/restore",
+    summary="管理端·从回收站恢复已下架系列（C5）",
+)
+async def admin_restore_series(
+    series_id: int,
+    me: CurrentUser = Depends(get_current_user),
+):
+    """恢复已软删（sale_status='off_sale'）的系列 → sale_status='draft'（草稿，可再次上架）。
+
+    错误：404（不存在/未处于软删态）、409（series_code 被其它系列占用）。
+    """
+    result = await svc.restore_series(series_id)
+    return ok(data=result)

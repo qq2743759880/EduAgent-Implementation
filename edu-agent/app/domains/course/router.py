@@ -48,7 +48,7 @@ async def list_series(
         page=page,
         page_size=page_size,
     )
-    # data 为 {items:[BaseModel], page_meta:BaseModel}，FastAPI jsonable_encoder 自动展开
+    # data 为 {total,page,page_size,items:[BaseModel]}，FastAPI jsonable_encoder 自动展开
     return ok(data=data)
 
 
@@ -67,8 +67,8 @@ async def get_series_detail(series_id: int):
 @router.get("/api/series/{series_id}/cohorts", summary="系列下全部在售班次")
 async def list_series_cohorts(series_id: int):
     # task39 压测采样发现：svc.list_cohorts 自 R2 裁定起返回 **CohortListData 分页壳**
-    # （items + page_meta），不再是裸列表。直接迭代 pydantic 模型得到的是
-    # (字段名, 值) 元组 → 元组无 .model_dump() → 该接口**无条件 500**。
+    # （外层 {total,page,page_size,items}，C2 删 page_meta），不再是裸列表。直接迭代
+    # pydantic 模型得到的是 (字段名, 值) 元组 → 元组无 .model_dump() → 该接口**无条件 500**。
     # 出口形态与 get_series_detail / get_cohort_detail 对齐。
     cohorts = await svc.list_cohorts(series_id)
     return ok(data=cohorts.model_dump(mode="json"))

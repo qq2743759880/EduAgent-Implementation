@@ -128,6 +128,13 @@ class SeriesAdminRepo:
             (series_id,),
         )
 
+    async def restore(self, series_id: int) -> int:
+        """从回收站恢复系列：sale_status = 'draft'（草稿，管理员可再次上架）。"""
+        return await execute_write(
+            "UPDATE series SET sale_status = 'draft', updated_at = NOW() WHERE id = %s",
+            (series_id,),
+        )
+
     async def count_references(self, series_id: int) -> dict:
         """外键引用计数：全部班次行（含软删 yn=0，FK 仍绑定）+ 经班次的订单明细。
 

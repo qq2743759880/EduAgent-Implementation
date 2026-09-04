@@ -3,7 +3,7 @@
 
 契约要点（前端 TraeWork task44/45/46 消费）：
 - 全字段 snake_case，与 edu.sql 列名一一对应
-- 列表分页统一 {items: [...], page_meta: {...}}
+- 列表分页统一外层 {total, page, page_size, items}（C-B 全站权威，无 page_meta 双轨，C2 已删）
 - 价格：series 主表无价格，min_price 为班次最低价聚合（ sale_price 1999~5999 ）
 """
 from __future__ import annotations
@@ -13,17 +13,6 @@ from decimal import Decimal
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
-
-
-# ============================================================
-# 分页元数据（全列表端点统一）
-# ============================================================
-class PageMeta(BaseModel):
-    page: int = Field(..., description="当前页码，从 1 开始")
-    page_size: int = Field(..., description="每页条数，1~100")
-    total: int = Field(..., description="总记录数")
-    total_pages: int = Field(..., description="总页数")
-    has_more: bool = Field(..., description="是否有下一页")
 
 
 # ============================================================
@@ -50,18 +39,12 @@ class SeriesListItem(BaseModel):
 
 
 class SeriesListData(BaseModel):
-    """系列列表分页 DTO（task115 C-B：全站 {total,page,page_size,items} 权威）。
-
-    权威字段：外层 total/page/page_size/items（与全站其余域 community/market/admin/gamification 一致）。
-    兼容窗口：page_meta 保留一个迭代期（同源派生），前端切外层字段后下一迭代删除
-    （详见 .ai-hub/plans/handoffs/task115-contract.md 弃用时间表）。
-    """
+    """系列列表分页 DTO（C-B：全站 {total,page,page_size,items} 权威，C2 已删 page_meta 双轨）。"""
 
     total: int
     page: int
     page_size: int
     items: List[SeriesListItem]
-    page_meta: PageMeta
 
 
 class CategoryBrief(BaseModel):
@@ -115,13 +98,12 @@ class Cohort(BaseModel):
 
 
 class CohortListData(BaseModel):
-    """班次列表分页 DTO（C-B：全站 {total,page,page_size,items} 权威 + page_meta 兼容窗口）。"""
+    """班次列表分页 DTO（C-B：全站 {total,page,page_size,items} 权威，C2 已删 page_meta 双轨）。"""
 
     total: int
     page: int
     page_size: int
     items: List[Cohort]
-    page_meta: PageMeta
 
 
 # ============================================================

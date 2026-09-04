@@ -20,17 +20,6 @@ from pydantic import BaseModel, Field, model_validator
 
 
 # ═══════════════════════════════════════════
-# 分页元数据（与 task11 一致）
-# ═══════════════════════════════════════════
-class PageMeta(BaseModel):
-    page: int = Field(..., description="当前页码，从 1 开始")
-    page_size: int = Field(..., description="每页条数，1~100")
-    total: int = Field(..., description="总记录数")
-    total_pages: int = Field(..., description="总页数")
-    has_more: bool = Field(..., description="是否有下一页")
-
-
-# ═══════════════════════════════════════════
 # Series（课程系列）
 # ═══════════════════════════════════════════
 class SeriesCreateAdmin(BaseModel):
@@ -77,7 +66,9 @@ class SeriesResponseAdmin(BaseModel):
 
 class SeriesListDataAdmin(BaseModel):
     items: List[SeriesResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -133,7 +124,9 @@ class CohortResponseAdmin(BaseModel):
 
 class CohortListDataAdmin(BaseModel):
     items: List[CohortResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -184,7 +177,9 @@ class ModuleResponseAdmin(BaseModel):
 
 class ModuleListDataAdmin(BaseModel):
     items: List[ModuleResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -229,7 +224,9 @@ class SessionResponseAdmin(BaseModel):
 
 class SessionListDataAdmin(BaseModel):
     items: List[SessionResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -266,7 +263,9 @@ class AssetResponseAdmin(BaseModel):
 
 class AssetListDataAdmin(BaseModel):
     items: List[AssetResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -311,7 +310,9 @@ class VideoResponseAdmin(BaseModel):
 
 class VideoListDataAdmin(BaseModel):
     items: List[VideoResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════
@@ -350,7 +351,9 @@ class ChapterResponseAdmin(BaseModel):
 
 class ChapterListDataAdmin(BaseModel):
     items: List[ChapterResponseAdmin]
-    page_meta: PageMeta
+    total: int
+    page: int
+    page_size: int
 
 
 # ═══════════════════════════════════════════

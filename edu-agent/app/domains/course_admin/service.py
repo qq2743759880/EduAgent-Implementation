@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import json
-import math
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -20,6 +19,7 @@ from app.common.error_codes import (
     CHAPTER_NO_CONFLICT,
     COHORT_CODE_CONFLICT,
     MODULE_STAGE_CONFLICT,
+    NOT_FOUND,
     SESSION_NO_CONFLICT,
     SERIES_CODE_CONFLICT,
     SERIES_IN_USE,
@@ -43,7 +43,6 @@ from app.domains.course_admin.schemas import (
     ModuleCreateAdmin,
     ModuleResponseAdmin,
     ModuleUpdateAdmin,
-    PageMeta,
     SeriesCreateAdmin,
     SeriesResponseAdmin,
     SeriesUpdateAdmin,
@@ -79,17 +78,6 @@ def _parse_json_columns(row: dict) -> dict:
             except (ValueError, TypeError):
                 row[col] = None
     return row
-
-
-def _build_page_meta(page: int, page_size: int, total: int) -> PageMeta:
-    total_pages = math.ceil(total / page_size) if page_size > 0 else 0
-    return PageMeta(
-        page=page,
-        page_size=page_size,
-        total=total,
-        total_pages=total_pages,
-        has_more=page < total_pages,
-    )
 
 
 # ═══════════════════════════════════════════
@@ -153,6 +141,34 @@ async def delete_series(series_id: int, hard: bool = False) -> None:
     await invalidate(f"course:series:detail:{series_id}")
 
 
+async def restore_series(series_id: int) -> dict:
+    """从回收站恢复已下架系列（C5：软删三态闭环中的"回收站恢复"最小闭环）。
+
+    - 仅恢复 sale_status='off_sale'（软删下架）的系列 → sale_status='draft'（草稿，管理员可再次上架）。
+      series 表无 yn 列（下架由 sale_status 状态机表达），故无 yn 字段可置回。
+    - 系列不存在 / 未处于软删态 → 404（NotFoundError 保持业务 message）。
+    - 恢复时 series_code 已被其它系列占用（institution_id + series_code 唯一性）→ 409（SERIES_CODE_CONFLICT）。
+    - 仅针对软删态系列；不影响原 DELETE 的 ?hard=true 真删语义（真删无法恢复，本就不可达本端点）。
+    """
+    row = await _series_repo.get_by_id(series_id)
+    if not row:
+        raise NotFoundError("系列", str(series_id))
+    if row["sale_status"] != "off_sale":
+        raise AppException(
+            NOT_FOUND,
+            f"系列 {series_id} 未处于回收站（已下架）状态，无法恢复",
+        )
+    existing = await _series_repo.get_by_code(row["institution_id"], row["series_code"])
+    if existing and existing["id"] != series_id:
+        raise ConflictError(
+            f"系列编码 '{row['series_code']}' 已被其它系列占用，无法恢复",
+            code=SERIES_CODE_CONFLICT,
+        )
+    await _series_repo.restore(series_id)
+    await invalidate(f"course:series:detail:{series_id}")
+    return {"series_id": series_id, "status": "restored"}
+
+
 async def list_series_admin(
     *, keyword: Optional[str] = None, institution_id: Optional[int] = None,
     delivery_mode: Optional[str] = None, sale_status: Optional[str] = None,
@@ -166,7 +182,7 @@ async def list_series_admin(
         include_deleted=include_deleted,
     )
     items = [SeriesResponseAdmin(**_parse_json_columns(dict(r))) for r in rows]
-    return {"items": items, "page_meta": _build_page_meta(page, page_size, total)}
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 async def get_series_admin(series_id: int) -> SeriesResponseAdmin:

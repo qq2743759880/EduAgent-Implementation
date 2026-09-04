@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import json
-import math
 from datetime import datetime, timedelta
 
 from app.common.error_codes import NOT_FOUND
@@ -21,7 +20,7 @@ from app.domains.course.repository import (
 from app.domains.course.schemas import (
     Cohort, CohortDetail, CohortListData, CohortModulesData,
     Module, ModuleWithSessions,
-    PageMeta, SeriesDetail, SeriesListItem, Session, SessionVideo,
+    SeriesDetail, SeriesListItem, Session, SessionVideo,
 )
 
 _series_repo = SeriesRepo()
@@ -61,17 +60,6 @@ def _parse_json_columns(row: dict) -> dict:
     return row
 
 
-def _build_page_meta(page: int, page_size: int, total: int) -> PageMeta:
-    total_pages = math.ceil(total / page_size) if page_size > 0 else 0
-    return PageMeta(
-        page=page,
-        page_size=page_size,
-        total=total,
-        total_pages=total_pages,
-        has_more=page < total_pages,
-    )
-
-
 async def list_series(
     *,
     category: str | None = None,
@@ -87,7 +75,7 @@ async def list_series(
     系列筛选列表。
 
     Returns:
-        {total, page, page_size, items: [SeriesListItem], page_meta: PageMeta(兼容窗口, 同源派生)}
+        {total, page, page_size, items: [SeriesListItem]}（C2：外层 triple 唯一，无 page_meta）
     """
     # S5（judge 裁定）：价格区间倒置 → 422 壳，防止前端静默无结果
     if price_min is not None and price_max is not None and price_min > price_max:
@@ -118,14 +106,12 @@ async def list_series(
         r["category_names"] = cat_names.get(r["id"], [])
         items.append(SeriesListItem(**r))
 
-    # task115 C-B：权威外层 {total,page,page_size,items} + page_meta 兼容窗口（同源派生）
-    meta = _build_page_meta(page, page_size, total)
+    # C2: task115 C-B 权威外层 {total,page,page_size,items}（page_meta 双轨已删）
     return {
         "total": total,
         "page": page,
         "page_size": page_size,
         "items": items,
-        "page_meta": meta,
     }
 
 
@@ -157,24 +143,21 @@ async def get_series_detail(series_id: int) -> SeriesDetail:
 
 async def list_cohorts(series_id: int) -> CohortListData:
     """
-    系列下班次列表（分页壳：全集量小，固定 page=1/total_pages=1/has_more=False）。
+    系列下班次列表（分页壳：全集量小，固定 page=1/page_size=total）。
 
     R2（judge 裁定）：统一分页壳，避免"裸数组 vs 声明"契约矛盾。
-    全集填充语义：page=1, page_size=total, total, total_pages=1, has_more=False。
+    全集填充语义：page=1, page_size=total（C2：外层 {total,page,page_size,items}，无 page_meta）。
     """
     if await _series_repo.get_series(series_id) is None:
         raise AppException(NOT_FOUND, "系列不存在或已下架")
     rows = await _cohort_repo.list_by_series(series_id)
     items = [Cohort(**r) for r in rows]
     total = len(items)
-    # task115 C-B：权威外层 {total,page,page_size,items} + page_meta 兼容窗口（同源派生）
-    meta = PageMeta(page=1, page_size=total, total=total, total_pages=1, has_more=False)
     return CohortListData(
         total=total,
         page=1,
         page_size=total,
         items=items,
-        page_meta=meta,
     )
 
 
