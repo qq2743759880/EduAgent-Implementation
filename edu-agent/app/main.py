@@ -33,6 +33,7 @@ from app.common.exceptions import AppException
 from app.common.logging import logger
 from app.common.security_headers import SecurityHeadersMiddleware
 from app.config import settings
+from app.core.openapi_shell import install_openapi_shell
 from app.database import (
     close_milvus, close_minio, close_mongo, close_mysql, close_neo4j, close_redis,
     init_milvus, init_minio, init_mongo, init_mysql, init_mysql_ro, init_neo4j, init_redis,
@@ -362,7 +363,9 @@ from app.admin.rag_admin.router import router as rag_admin_router
 app.include_router(rag_admin_router)                   # 管理端 RAG 控制台（P7 路径 B）
 
 from app.domains.course_admin.router import router as course_admin_router
+from app.domains.course_admin.router import restore_router as course_admin_restore_router
 app.include_router(course_admin_router)                # 管理端 课程管理 CRUD（task12）
+app.include_router(course_admin_restore_router)        # 管理端 系列回收站恢复（C5）
 from app.domains.question_admin.router import router as question_admin_router
 app.include_router(question_admin_router)              # 管理端 题库管理（task13 重写：edu.sql question_bank/question）
 from app.admin.user_admin.router import router as user_admin_router
@@ -422,3 +425,14 @@ async def root():
         "message": f"欢迎使用 {settings.APP_NAME} — 多学科在线教育平台 AI Agent",
         "docs": "/docs" if settings.DEBUG else "文档已关闭（生产模式）",
     }
+
+
+# ── OpenAPI 响应壳契约上移（W2 批判 C1） ──
+# 运行时 RespWrapMiddleware 已把 2xx JSON 包成 {code,message,data} 壳（黑盒兜底），
+# 此处覆写 app.openapi，把"壳形态"同步到 /docs 契约层：每个 2xx application/json
+# 响应 schema 统一展开为壳，避免 /docs 声明裸 DTO 与运行实体不一致。仅在懒加载
+# /openapi.json 时生效，不改任何 HTTP 响应实体。
+# skip_paths：SSE 端点（FastAPI 默认会给流式端点生成 application/json 的 200，
+# 无法仅凭 schema 区分真 JSON 与 SSE，按路径显式豁免；运行时由 RespWrapMiddleware
+# 按 content-type 豁免，二者保持一致）。
+install_openapi_shell(app, skip_paths=("/api/chat/stream",))

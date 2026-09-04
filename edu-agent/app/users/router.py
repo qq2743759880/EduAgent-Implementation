@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.auth.dependencies import CurrentUser, get_current_user
-from app.core.resp import ok
+from app.core.resp import Shell, ok
 from app.database import fetch_one
 from app.users import service as users_service
 from app.users.schemas import UserProfile, UserProfileUpdate
@@ -21,19 +21,19 @@ from app.users.schemas import UserProfile, UserProfileUpdate
 router = APIRouter(prefix="/api/users", tags=["users · 用户画像"])
 
 
-@router.get("/me/profile", response_model=UserProfile, summary="获取当前用户的画像")
+@router.get("/me/profile", response_model=Shell[UserProfile], summary="获取当前用户的画像")
 async def get_my_profile(
     user: Annotated[CurrentUser, Depends(get_current_user)],
-) -> UserProfile:
-    return await users_service.get_or_create_profile(user)
+) -> Shell[UserProfile]:
+    return ok(data=await users_service.get_or_create_profile(user))
 
 
-@router.put("/me/profile", response_model=UserProfile, summary="部分更新当前用户的画像")
+@router.put("/me/profile", response_model=Shell[UserProfile], summary="部分更新当前用户的画像")
 async def update_my_profile(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     body: UserProfileUpdate,
-) -> UserProfile:
-    return await users_service.update_profile(user, body)
+) -> Shell[UserProfile]:
+    return ok(data=await users_service.update_profile(user, body))
 
 
 @router.get("/me", response_model=dict, summary="兼容端点：GET /api/users/me（返回 auth info + 画像合并视图，task114 新契约 snake_case）")
