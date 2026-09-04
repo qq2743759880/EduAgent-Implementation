@@ -229,6 +229,11 @@ class PaymentReconcileRepo:
                 " FROM payment_record p JOIN `order` o ON o.id=p.order_id WHERE p.payment_status='paid'",
             )
 
+        def _cents(x) -> int:
+            """金额转分（整数）：规避浮点尾差（0.1+0.05 求和 vs 0.15 直存）导致误报 AMOUNT_MISMATCH。
+            对账金额比较一律用分单位整数，对齐支付平台"金额以分为单位"的资金口径。"""
+            return round(float(x) * 100)
+
         anomalies: list[dict] = []
         order_amounts: dict[int, float] = {}
         payment_count_per_order: dict[int, int] = {}
@@ -239,8 +244,9 @@ class PaymentReconcileRepo:
             total_amount += amt
             payment_count_per_order[oid] = payment_count_per_order.get(oid, 0) + 1
             order_amounts[oid] = float(r["payable_amount"])
-            # 金额不一致：试 payment.amount != order.payable_amount（退款除外）
-            if float(r["amount"]) != float(r["payable_amount"]) and r["order_status"] not in ("partial_refunded", "refunded"):
+            # 金额不一致：payment.amount != order.payable_amount（退款除外）。
+            # 用分单位整数比较，规避浮点尾差误报（critique round4 竞品对标修复）。
+            if _cents(r["amount"]) != _cents(r["payable_amount"]) and r["order_status"] not in ("partial_refunded", "refunded"):
                 anomalies.append({
                     "type": "AMOUNT_MISMATCH",
                     "payment_no": r["payment_no"],

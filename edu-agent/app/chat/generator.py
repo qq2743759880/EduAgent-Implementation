@@ -128,6 +128,23 @@ def _local_rule_answer(query: str, docs: list[RetrievedDoc], degraded: str | Non
 # ============================================================
 # 3. LLM 客户端封装（OpenAI-compatible 同步 HTTP → 包装为 async 跑在线程池）
 # ============================================================
+def _retry_after_from(resp) -> float | None:
+    """从 LLM 响应头解析 ``Retry-After``（秒），供重试退避覆盖默认指数/线性。
+    对标 OpenAI/Anthropic 官方 SDK：429/503 响应携带 Retry-After 时应以服务方指令为准。
+    解析失败/缺头 → 返回 None（回退 core/retry 默认退避）。"""
+    try:
+        raw = resp.headers.get("Retry-After") if getattr(resp, "headers", None) else None
+        if raw is None:
+            return None
+        raw = str(raw).strip()
+        if not raw:
+            return None
+        # 仅支持秒级数值（HTTP-date 形式极少见，遇则按 None 处理交给默认退避）
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 class _ChatClient:
     """兼容 DashScope compatible-mode 与任何 OpenAI 协议服务；单例懒加载。
 
@@ -219,7 +236,7 @@ class _ChatClient:
                         raise
                 if not _retry.should_retry(cat, attempt):
                     raise
-                wait = _retry.next_backoff(cat, attempt)
+                wait = _retry.next_backoff(cat, attempt, retry_after=getattr(exc, "retry_after", None))
                 if wait > 0:
                     time.sleep(wait)
                 attempt += 1
@@ -250,7 +267,7 @@ class _ChatClient:
                     continue
                 if not _retry.should_retry(cat, attempt):
                     raise
-                wait = _retry.next_backoff(cat, attempt)
+                wait = _retry.next_backoff(cat, attempt, retry_after=getattr(exc, "retry_after", None))
                 if wait > 0:
                     time.sleep(wait)
                 attempt += 1
@@ -302,7 +319,14 @@ class _ChatClient:
                     llm_latency_ms=round(_latency, 1),
                 )
         if resp.status_code != 200:
-            raise RuntimeError(f"LLM HTTP {resp.status_code}: {resp.text[:400]}")
+            exc = RuntimeError(f"LLM HTTP {resp.status_code}: {resp.text[:400]}")
+
+            # critique round4（对标 OpenAI SDK）：429/503 携带 Retry-After 时，
+            # 附加到异常供重试退避覆盖默认指数/线性（尊重服务方退避指令）。
+            ra = _retry_after_from(resp)
+            if ra is not None:
+                exc.retry_after = ra
+            raise exc
         data = resp.json()
         # task97 R5 缓存监控：上报 cache_read/creation token（真实多轮对话观测命中率）
         self._report_cache_usage(data, model)
@@ -372,7 +396,13 @@ class _ChatClient:
             stream=True,
         ) as resp:
             if resp.status_code != 200:
-                raise RuntimeError(f"LLM stream HTTP {resp.status_code}: {resp.text[:400]}")
+                exc = RuntimeError(f"LLM stream HTTP {resp.status_code}: {resp.text[:400]}")
+
+                # critique round4（对标 OpenAI SDK）：429/503 携带 Retry-After 时附加到异常。
+                ra = _retry_after_from(resp)
+                if ra is not None:
+                    exc.retry_after = ra
+                raise exc
             # 关键修复（2026-08-12 根因）：LLM 网关返回 content-type: application/json 无 charset，
             # requests 对响应流推断 encoding=ISO-8859-1，iter_lines(decode_unicode=True) 会把 UTF-8 中文
             # 误解码成 mojibake（如 "你好世界" → "ä½ å¥½"）。resp.json() 有特殊修正不受影响，但流式必须显式指定。

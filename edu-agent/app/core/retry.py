@@ -70,6 +70,7 @@ def next_backoff(
     base: float = 1.0,
     cap: float = 30.0,
     jitter: float = 0.0,
+    retry_after: float | None = None,
 ) -> float:
     """计算第 ``attempt`` 次（1-based）重试前的等待秒数。
 
@@ -77,10 +78,15 @@ def next_backoff(
     - TIMEOUT：线性 base*attempt 秒（1,2,…），封顶 cap；
     - MODEL_ERROR：0 秒（立即切源，不等待）；
     - UNKNOWN：base*attempt 秒（1 次后交 task-T1）。
+    - 若调用方从响应头解析出 ``Retry-After``（对标 OpenAI/Anthropic 官方 SDK 必读该头）：
+      任一类型下均以服务方指令为准，``wait = min(retry_after, cap)`` 覆盖上式（仍封顶防死等）。
     """
     cat = classify_error(category)
     attempt = max(1, int(attempt))
-    if cat == ErrorCategory.RATE_LIMIT:
+    # Retry-After 优先：服务方给出的精确退避指令（如 429/503 响应头），封顶保护。
+    if retry_after is not None and retry_after >= 0:
+        wait = min(float(retry_after), cap)
+    elif cat == ErrorCategory.RATE_LIMIT:
         wait = min(2.0 ** attempt, cap)
     elif cat == ErrorCategory.TIMEOUT:
         wait = min(base * attempt, cap)
@@ -110,12 +116,12 @@ def should_retry(category: Any, attempt: int) -> bool:
     return attempt <= MAX_RETRIES.get(cat, 1)
 
 
-def plan_retry(category: Any, attempt: int, *, base: float = 1.0, cap: float = 30.0, jitter: float = 0.0) -> dict:
+def plan_retry(category: Any, attempt: int, *, base: float = 1.0, cap: float = 30.0, jitter: float = 0.0, retry_after: float | None = None) -> dict:
     """一体化退避决策：返回 {category, wait, switch_model, retry, max_retries}。"""
     cat = classify_error(category)
     return {
         "category": cat.value,
-        "wait": next_backoff(cat, attempt, base=base, cap=cap, jitter=jitter),
+        "wait": next_backoff(cat, attempt, base=base, cap=cap, jitter=jitter, retry_after=retry_after),
         "switch_model": should_switch_model(cat),
         "retry": should_retry(cat, attempt),
         "max_retries": MAX_RETRIES.get(cat, 1),

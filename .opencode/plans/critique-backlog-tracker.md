@@ -206,7 +206,11 @@
 - [x] W2-C3 [x] chat SSE error 仅覆盖 token 迭代段且码硬编码 50000，初始化/检索/落库三段仍 HTTP/静默（对标 WHATWG SSE 统一错误模型）——生成器整体 try/except 统一 error+保留下游码｜chat/router 重构小任务（✅ commit 65b31a2：_map_stream_exception 动态码 LLM_AUTH/LLM_TIMEOUT/LLM_RATE_LIMIT/LLM_UNAVAILABLE/SERVICE_DOWNSTREAM/CHAT_PERSIST_FAIL 增登记 error_codes 5001x；落库失败静默→显式 event:error+degraded done 兜底；done 壳/code:0 保留；新增 test_chat_stream_error.py 5 用例全绿；资产消费证据 test-reports/critique-C3-completion-report.md）
 - [x] W2-C4 [x] task122 清演示残留不彻底：18/36 页仍带可交互 respbar（dashboard 旗舰有活"断点预览"toolbar，对标 ESLint 门禁）——全站 respbar 归零+grep 挂 W4 回归门禁｜task122 补刀（✅ commit 8eb8cab：18 页删活动 respbar CSS/toolbar/绑定，保留演示数据兜底+角标+`已移除(critique C4)`注释；dashboard 空态 retry 改 location.reload；编排者实证 `git grep respbar` 24 行全注释、活动行=0；资产消费证据 test-reports/critique-C4C6-completion-report.md。⚠️ W4 门禁项仍待办：grep respbar=注释 挂进 L4 回归防复生）
 - [x] W2-C5 [x] 删除语义软删+真删+40908 三态无回收站 UI、?hard 仅 ADMIN 前端靠猜（对标 django-safedelete/Entra soft-delete-purge）——补 POST restore 端点+admin 回收站 Tab｜独立小任务（✅ commit 155b4b0+35b94fe：`POST /api/admin/courses/series/{series_id}/restore`（与既有 course_admin CRUD 同前缀，AdminAuthMiddleware 覆盖，匿名 401），软删 off_sale→draft；契约单 handoffs/critique-C5-contract.md；独立实证 E2E 全通：create→soft-delete→include_deleted 可见 off_sale→restore `{series_id,status:"restored"}`→默认列表 draft→错误分支 404/40400 + 401/40101；admin-courses.html 回收站 Tab。⚠️ 遗留独立问题：仓库 JSON 列传 list 触发 50000 tuple/version 类型报错，与 C5 契约无涉，待单独立项））
+- [x] **series 软删语义独立复核（2026-09-05 真实 HTTP 确证，W2-C5 补充证据）**：默认 `DELETE /api/admin/courses/series/{id}` → `{code:0,"系列已下架"}`，随后 `GET /series/{id}` 仍 200 且 `sale_status=off_sale`（记录保留）= **C5 软删覆盖确认**（series 表无 yn 列，用 sale_status 状态机 draft/on_sale/off_sale 表达，与 deleted 逻辑互斥确证）；显式 `?hard=true`（ADMIN 角色+前置引用校验）→ `{code:0,"系列已彻底删除"}` → 再 `GET` 得 404（真删通道独立存在）。软删/真删双通道并行、语义清晰，C5 契约通过。报告 test-reports/verify-series-softdel.md。
+
 - [x] W2-C6 [x] practice 只判三题型，FILL/DRAG_SORT/MATCH 静默置灰"迭代二"且演示态仍有 blank（对标 Moodle 20+ 题型显式引导）——置灰改显式提示+badge 标注+迭代二 PBI 带 deadline｜前端小改+PBI（✅ commit 8eb8cab 显式提示；✅ ✅ PBI-ITER2-TYPES **迭代二已闭环 commit 8ea8a0e**：practice.html 支持 FILL/DRAG_SORT/MATCH 真实作答——SUP_REVIEW 三型置 true、renderQuestion/collectAnswer 增三型渲染+收集、移除 iter2 tab/pill/toast/data-iter2、必填校验+错误反馈三态；后端已有 _grade 六型判分；真实 HTTP 打靶 7 case（FILL/DRAG/MATCH 对错、位置分、配对分）证 is_correct 真实判定；错题本三型可复习 total=8；grep iter2 残留=0、新代码零硬编码色。判定口径三项全部达成。报告 test-reports/critique-C6-PBI-ITER2-TYPES-completion-report.md）
+
+- [x] **前端 vitest 基线回归（2026-09-05）**：`npm run test`（vitest 4.1.10）全量 **79 test files / 548 tests 全绿，零失败零回归**（query-client 401/403 全局单次 toast、dashboard rank slice、admin courses/users/rag/mcp、react 组件 suite 全覆盖）。基线护栏在 Futuristic 前端侧反弹，确认前端功能无回归。命令：`edu-frontend` 下 `npm run test`。
 
 ## W2 批判验收补充遗留（2026-09-04 独立实证发现，属独立于本批判项的新增待办——三遗留项均已闭环 ✅ commit 4a9bacc）
 
@@ -227,3 +231,16 @@
 
 - [x] **task39 限流/缓存/分布式锁真 Redis 验收（真实 HTTP + 真实 Redis）**：限流规则 `60s/10` 第 10 个放行、**第 11 个拒**（HTTP 429 + `{code:"42900"}`），删 key 后即时恢复且计数归 1 → 证明走真实 Redis 分布式计数非降级；缓存 `get_or_load` miss 322.6ms→hit 5.3ms、真实 HTTP GET /api/series/1 首次写 `course:series:detail:1`(TTL≈322s) 二次命中；分布式锁 SETNX+随机token+EX10+Lua释放 30 并发仅 1 成功、30×5 轮最大同时持有=1、持锁期他人 acquire=False。报告 `edu-agent/test-reports/critique-task39-redis-accept.md` / 脚本 `_t39_redis_real.py`。
 - [x] **task39 批判③——缓存击穿互斥锁 token 恒为 "1"（P2 潜在缺陷，已修复）**：`app/core/cache.py` 互斥锁 `set(mutex_key,"1",nx=True,...)` 用常量 "1" 作锁值，Lua 释放注释自称"校验 token 防误删"但 token 恒定 → 比较恒真，防误删形同虚设。慢 loader 超锁（loader 耗时 > mutex_timeout=10s）后他人抢锁重建，旧持有者延迟释放会 `GET==“1”` 误删他人已重获的锁，导致多余重建。修复：锁值改用 `uuid4().hex` 唯一随机 token，Lua 释放比对 `mutex_token`；真实 Redis 实证：A(AAA) 释放同 token→删；B 抢锁(BBB) 后 A 延迟释放(AAA)→del=0 且 B 锁完好；B 释放→删。`tests/test_core.py` cache 相关 32 用例全绿。
+
+## critique Round4 竞品对标批判（2026-09-05 收口批，来源 test-reports/critique-round4-competitor.md）
+
+- [x] **支付对账金额比较浮点尾差（P2 真缺陷，已修复）**：`PaymentReconcileRepo.run_reconcile()` 判 `AMOUNT_MISMATCH` 用 `float(amount) != float(payable_amount)` 原生浮点比较——`0.1+0.05`（=0.15000000000000002）vs 直存 `0.15`（=0.15）恒不等 → 真实一致资金被误报不一致，资金对账误报代价高（需人工整改）。修复：新增 `_cents(x)=round(float(x)*100)` 分单位整数比较（对齐支付宝/微信「金额以分为单位」口径）；真实不一致/退款豁免仍正常。当前对账 0 测试覆盖，`tests/test_critique_round4.py::TestReconcileAmountPrecision` 3 用例补齐（monkeypatch fetch_all 注入 crafted 数据）。
+  - 修复措施：`run_reconcile` 金额比较改分单位整数（`round(float(x)*100)`），复用阈值/豁免逻辑不变。
+  - 落点任务：支付对账（R4 独立修复）
+  - 验收指标：`0.1+0.05` vs `0.15` 不误报；`0.20` vs `0.15` 仍检出；refunded 豁免；3 用例 PASS。
+- [x] **LLM 重试退避未尊重 Retry-After 响应头（对标 OpenAI/Anthropic 官方 SDK，已修复）**：`core/retry.py` 固定指数/线性退避，完全忽略服务方 `Retry-After` 指令 → 429/503 时要么提前重试（再触发限流/白烧配额）要么过度推迟。修复：`next_backoff`/`plan_retry` 新增 `retry_after` 参数（任一类型下 `wait=min(retry_after,cap)` 仍封顶+jitter）；`generator.py` 新增 `_retry_after_from(resp)` 解析头，`call_chat`/`call_chat_stream` 抛错点附加 `exc.retry_after`，两处 `*_with_retry` 注入退避。`tests/test_critique_round4.py` Retry-After 9 用例 PASS。
+  - 修复措施：本轮次新增可选 `retry_after` 覆盖退避；去重实测后尊重服务方秒级指令。
+  - 落点任务：task-G1 补充（R4 独立增强）
+  - 验收指标：`retry_after=5→wait=5`；`=999 cap=30→30`；缺头回退指数；`call_chat_with_retry` 首调 429(ra=7)→重试前 sleep(7)。
+- [ ] **支付回调验签/金额校验缺真实渠道实现（登记缺口，待真实渠道接入）**：`mock_notify` 仅校验 mock 渠道；`settle_payment` 用记录内金额，未验「第三方回调金额 vs payable_amount」。支付宝/微信规范要求验签（RSA/SHA256）+验商户号+验金额。当前真实渠道回调未接线，属「接入前置需求」非既有缺陷；接入时必须补 `verify_signature()+verify_amount()` 闸门。落点：真实支付渠道接入任务。
+- [ ] **对账状态漂移检测缺失（增强项，入 backlog）**：`run_reconcile` 未检测「payment_record=paid 但 order 非 paid」漂移（资金安全最值得关注残差）。建议后续补状态漂移 SQL。本次未实施（避免扩大对账变更面）。
