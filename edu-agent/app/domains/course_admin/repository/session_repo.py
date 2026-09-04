@@ -75,6 +75,28 @@ class SessionAdminRepo:
             tuple(args),
         )
 
+    # 引用 series_cohort_session 的子表单（实时 DB information_schema 实测，2026-09-04）
+    _CHILD_TABLES = (
+        "session_asset", "session_attendance", "session_exam", "session_homework",
+        "session_homework_submission", "session_teacher_rel", "risk_alert_event",
+        "teacher_compensation_item",
+    )
+
+    async def count_references(self, session_id: int) -> dict:
+        """外键引用计数：全部子表中引用本课次的记录总数。
+
+        >0 禁止物理删除（C-C 删除语义：绝不级联删子数据，避免 FK 500，如 risk_alert_event）。
+        """
+        sub = " + ".join(
+            f"(SELECT COUNT(*) FROM {t} c WHERE c.session_id = %s)" for t in self._CHILD_TABLES
+        )
+        row = await fetch_one(
+            f"SELECT {sub} AS total",
+            tuple([session_id] * len(self._CHILD_TABLES)),
+        )
+        total = int(row["total"]) if row and row["total"] is not None else 0
+        return {"total": total}
+
     async def hard_delete(self, session_id: int) -> int:
         """物理删除（表无软删列；删除前先清子表引用 session_asset，避免外键错误）。"""
         await execute_write(

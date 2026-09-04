@@ -203,6 +203,8 @@ class TestWritePathDEL:
                 return self.rows
             async def hard_delete(self, mid):
                 pass
+            async def count_references(self, mid):
+                return {"sessions": 0, "total": 0}
             async def get_by_stage(self, cohort_id, stage_no):
                 return None
             async def insert(self, data):

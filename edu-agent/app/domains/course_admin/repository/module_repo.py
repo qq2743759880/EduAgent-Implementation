@@ -70,6 +70,19 @@ class ModuleAdminRepo:
             tuple(args),
         )
 
+    async def count_references(self, module_id: int) -> dict:
+        """外键引用计数：模块下未删除的课次（series_cohort_session 指向本模块）。
+
+        >0 禁止物理删除（C-C 删除语义：绝不级联删子数据，避免 FK 500）。
+        """
+        row = await fetch_one(
+            "SELECT COUNT(*) AS sessions FROM series_cohort_session "
+            "WHERE series_cohort_course_id = %s",
+            (module_id,),
+        )
+        sessions = int(row["sessions"]) if row else 0
+        return {"sessions": sessions, "total": sessions}
+
     async def hard_delete(self, module_id: int) -> int:
         """物理删除（表无软删列，删除前先清子表引用 series_cohort_session）。"""
         # 先删子表：series_cohort_session（外键 fk_series_cohort_session_course）

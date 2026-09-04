@@ -288,10 +288,20 @@ async def update_module(module_id: int, data: ModuleUpdateAdmin) -> ModuleRespon
 
 
 async def delete_module(module_id: int) -> None:
-    """物理删除模块（series_cohort_course 无 yn 列，edu.sql 权威结构）。"""
+    """物理删除模块（series_cohort_course 无 yn 列，edu.sql 权威结构）。
+
+    - 前置引用校验（C-C 删除语义，对齐 series hard delete 40908）：模块仍存在
+      课次（series_cohort_session）→ 抛 40908，绝不级联删子数据、绝不静默 500。
+    """
     row = await _module_repo.get_by_id(module_id)
     if not row:
         raise NotFoundError("模块", str(module_id))
+    refs = await _module_repo.count_references(module_id)
+    if refs["total"] > 0:
+        raise ConflictError(
+            f"模块仍被 {refs['sessions']} 个课次引用，无法删除",
+            code=SERIES_IN_USE,
+        )
     await _module_repo.hard_delete(module_id)
     # task23 写后 DEL：删除模块同样失效 cohort:detail 模块列表
     await invalidate(f"course:cohort:detail:{row['cohort_id']}")
@@ -339,10 +349,20 @@ async def update_session(session_id: int, data: SessionUpdateAdmin) -> SessionRe
 
 
 async def delete_session(session_id: int) -> None:
-    """物理删除课次（series_cohort_session 无 yn 列，teaching_status 非软删标记）。"""
+    """物理删除课次（series_cohort_session 无 yn 列，teaching_status 非软删标记）。
+
+    - 前置引用校验（C-C 删除语义，对齐 series hard delete 40908）：课次仍被任一
+      子表引用（课件/考勤/考试/作业/授课老师/告警等）→ 抛 40908，绝不级联删、绝不静默 500。
+    """
     row = await _session_repo.get_by_id(session_id)
     if not row:
         raise NotFoundError("课次", str(session_id))
+    refs = await _session_repo.count_references(session_id)
+    if refs["total"] > 0:
+        raise ConflictError(
+            f"课次仍被 {refs['total']} 条子记录引用，无法删除",
+            code=SERIES_IN_USE,
+        )
     await _session_repo.hard_delete(session_id)
 
 
