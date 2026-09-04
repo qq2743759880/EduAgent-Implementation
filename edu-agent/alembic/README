@@ -1,0 +1,54 @@
+# EduAgent Alembic 数据库迁移
+
+项目表结构用原生 SQL（无 ORM），通过 Alembic 做 schema 版本管理。
+
+## 环境要求
+
+```bash
+pip install alembic pymysql   # kb311 环境已装
+```
+
+连接串在 `alembic.ini`（`mysql+pymysql://...`），运行时后端仍用 asyncmy，互不影响。
+
+## 常用命令（在 edu-agent/ 目录执行）
+
+```bash
+# 1) 新环境部署：从零建全部表（105 业务表 + alembic_version）
+python -m alembic upgrade head
+
+# 2) 存量环境初始化（表已存在）：仅标记版本，不重建表
+python -m alembic stamp head
+
+# 3) 开发时改表结构：生成新迁移，手写 upgrade/downgrade
+python -m alembic revision -m "add sys_user.remark"
+#    编辑生成的 versions/xxx.py，在 upgrade()/downgrade() 里写 ALTER 语句
+
+# 4) 应用迁移到当前库
+python -m alembic upgrade head
+
+# 5) 回滚上一个迁移
+python -m alembic downgrade -1
+
+# 6) 查看当前版本
+python -m alembic current
+python -m alembic history
+```
+
+## 文件结构
+
+```
+alembic.ini                     # 连接配置（含 sqlalchemy.url）
+alembic/
+  env.py                        # 环境脚本（本项目无需 autogenerate，target_metadata=None）
+  baseline_schema.sql           # 初始 105 表 DDL（由 SHOW CREATE TABLE 生成，勿手改）
+  versions/
+    94fadf13f4ca_...py          # baseline 迁移：执行 baseline_schema.sql
+```
+
+## 约定
+
+- **新增迁移**：基于当前 head 生成 revision，upgrade/downgrade 必须成对且可逆。
+- **baseline_schema.sql**：只在 schema 需要整体重建时重新生成
+  （`scripts/gen_schema.py` 逻辑：连库 SHOW CREATE TABLE 全部导出）。
+- **迁移顺序**：每个 revision 的 `down_revision` 指向前一个，形成线性链。
+- **生产发布**：`git pull` 后 `alembic upgrade head`，再重启后端。
