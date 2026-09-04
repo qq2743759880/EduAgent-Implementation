@@ -58,3 +58,8 @@ redis.zip
 
 # alembic 本地默认 DB URL 含明文口令(root:123456@localhost)，不入库
 alembic.ini
+
+# edu-agent 根目录一次性探针/检查/临时脚本(未匹配通用下划线模式者)
+/_check*
+/_tmp*
+/tmp_smoke_*
