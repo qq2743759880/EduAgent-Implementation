@@ -34,7 +34,7 @@
   - 落点任务：task37
   - 验收指标：grep curriculum_ = 0（改为：无**真死亡** curriculum_；活兼容层+文档串保留并登记）；pytest 全绿；无死代码 import
 
-- [ ] **task14/15 批判**：test_auth_service/test_error_codes 字符串/整数码断言 bug
+- [x] **task14/15 批判**：test_auth_service/test_error_codes 字符串/整数码断言 bug（✅ 复核结论：审计 task37-errorcode 后确认两文件断言**早已收敛**，全部字符串码且与 error_codes.py 权威精确一致，pytest 33/33 PASS（auth 23+error_codes 10），**空 diff 无改动**。唯一非断码 L86 `AppException(code=40000)` 是 int 构造测 http 映射（契约接受 str|int），非 bug。附带小发现：`exceptions.py` DatabaseError 默认码"50002"/LLMError"50001"未抽为 error_codes.py 具名常量——非契约违背，建议后续抽常量，见报告 §4）
   - 修复措施：核对 error_codes.py 权威，把断言统一为字符串码（契约①响应壳）；修正 test_auth_service/test_error_codes 的断言
   - 落点任务：task37
   - 验收指标：修正后两测试文件全 PASS；断言与 error_codes.py 一致
@@ -112,10 +112,7 @@
   - 验收指标：切换用例全 PASS；无数据残留
 
 ### task98（verify.py 验收体系）
-- [ ] **task07/10 批判**：CI 门禁（P4）落地
-  - 修复措施：实现 `scripts/verify.py`（schema/counts/quality/all 四子命令）+ `.schema-acceptance.yaml` + GitHub Actions workflow
-  - 落点任务：task98
-  - 验收指标：verify.py 四子命令可跑；CI gate 失败禁合并；文档对齐 db-acceptance-principles
+- [x] **task98（verify.py 验收体系）**：CI 门禁（P4）落地（✅ 待commit：`scripts/verify.py`（schema/counts/quality/all 四子命令，argparse+复用 asyncmy/`.env` DSN）+ `.schema-acceptance.yaml`（16 表 schema、17 表 counts 基线）+ `.github/workflows/verify-gate.yml`（merge 跑 schema+quality）。独立复验 `.venv python scripts/verify.py all` EXIT=0 三阶段全绿（schema 16 表 0 差异/counts 17 表容差内/quality 12 断言 0 违规）。设计边界：CI 空库 counts 无种子会 FAIL，故 workflow 跑 schema+quality、counts 走验收/生产库）。
 
 - [ ] **task07 批判**：口径漂移（6-机构 vs 全局）脚本化
   - 修复措施：verify.py counts 子命令支持机构维度，脚本化 6-机构口径校验
@@ -208,7 +205,7 @@
 ## W1 优化批次里程碑批判（2026-09-02，来源 .ai-hub/plans/tasks/W1-技术批判.md）
 - [x] W1-批判1 [x] 401 静默刷新重放缺失（对标 axios 拦截器）——edu-api.js 加 single-flight refresh + 重放 1 次｜待派（✅ commit 203a1e5：edu-api.js 单飞 refresh（模块级 pendingRefresh 复用，并发 N 个 401 只发 1 次 /api/auth/refresh）→ 更新双 token → 重放原请求一次 → 仍败才 handleUnauthorized/download;store 增 get/setRefreshToken;login-register 登录持久化 refresh_token（否则 refresh 是死代码）。独立复验 selfcheck-singleflight-refresh.mjs ALL PASS：并发 5→refresh=1/滑动续期/缺 refresh 降级跳登录）
 - [x] W1-批判2 [x] 管理端守卫 8 份内联拷贝（对标 React Router 集中守卫）——抽 edu-guard.js 单点化｜落点 task122（✅ commit 203a1e5：新建 public/edu-guard.js 暴露 window.eduGuard.requireAdmin(onPass)，三守卫段单点；8 个 admin-*.html 内联 IIFE 换 `<script src="/edu-guard.js">`+requireAdmin()；独立复验 guardInclude=8×1、内联守卫=0（admin-courses L572 为保留的 getAdminId() 数据助手非守卫）、三守护语义不变）
-- [ ] W1-批判3 [ ] 死链扫描未进门禁且静态扫描有变量拼接盲区（对标 lychee）——挂 task123 检查单 + L4 回归｜落点 task123
+- [x] W1-批判3 [x] 死链扫描未进门禁且静态扫描有变量拼接盲区（对标 lychee）——挂 task123 检查单 + L4 回归｜落点 task123（✅ 框架承接：`test-reports/scan-deadlinks.mjs`（实际路径，非 public/）工具头固化口径（静态孤立页门禁/变量拼接盲区须人工走查/exception 白名单预留）；挂载入 `deploy/README.md` task123 检查单 §5 死链扫描固定条目；本批实跑 0 死链/0 假阴性 20 页 208 链接全通；community.html 动态拼接跳转登记为已知盲区）
 - [ ] W1-批判4 [ ] 注册两步式登录 UX 次优（对标注册即登录）——随 C-A（task114）评估 register 返回 token，默认不采纳留档｜落点 task114 讨论项
 
 ## W2 优化批次里程碑批判（2026-09-04，来源 .ai-hub/plans/tasks/W2-技术批判.md）

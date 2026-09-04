@@ -1,0 +1,77 @@
+name: DB acceptance gate (schema + quality)
+
+# task98 CI 门禁（P4）—— schema 漂移 + 数据质量不变量守卫。
+# 失败禁合并：本 job 失败 → PR check 失败 → 配合分支保护规则"required status checks"阻断合并。
+#
+# 说明（counts 的边界）：
+#   - schema/quality 为数据架构不变量，任何具备既定 schema 的库都必须成立 → 作为 merge gate。
+#   - counts 是"种子验收数据"的行数基线（数千~数十万行，.schema-acceptance.yaml），
+#     只对验收库/生产库有意义；CI 全新空库上 counts 必然 FAIL，故**不放进 CI gate**。
+#   - 本地/验收库跑全量：`edu-agent/.venv/Scripts/python.exe -X utf8 scripts/verify.py all`。
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  db-acceptance:
+    name: schema + quality
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: edu_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -prootpw"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps (verify.py 最小集 + alembic)
+        run: pip install asyncmy pyyaml alembic pymysql sqlalchemy
+      - name: Provision acceptance schema (alembic head → 与本地库对齐)
+        working-directory: edu-agent
+        env:
+          ALEMBIC_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/edu_ci
+        run: |
+          cp alembic.ini alembic.ci.ini
+          python - <<'EOF'
+          import os
+          from alembic.config import Config
+          from alembic import command
+          cfg = Config("alembic.ci.ini")
+          cfg.set_main_option("sqlalchemy.url", os.environ["ALEMBIC_URL"])
+          command.upgrade(cfg, "head")
+          print("schema provisioned via alembic head")
+          EOF
+      - name: Run verify.py schema
+        working-directory: edu-agent
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3306"
+          MYSQL_USER: root
+          MYSQL_PASSWORD: rootpw
+          MYSQL_DATABASE: edu_ci
+        run: |
+          python -X utf8 ../scripts/verify.py schema
+      - name: Run verify.py quality
+        working-directory: edu-agent
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3306"
+          MYSQL_USER: root
+          MYSQL_PASSWORD: rootpw
+          MYSQL_DATABASE: edu_ci
+        run: |
+          python -X utf8 ../scripts/verify.py quality

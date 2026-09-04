@@ -1,0 +1,66 @@
+﻿
+============================================================
+[all] 阶段: schema
+============================================================
+[1m=== schema：DB 表结构 vs .schema-acceptance.yaml（16 表）===[0m
+  [92m✓ sys_user: 表 + 6 关键列就位[0m
+  [92m✓ sys_user_auth: 表 + 5 关键列就位[0m
+  [92m✓ org_institution: 表 + 4 关键列就位[0m
+  [92m✓ series: 表 + 6 关键列就位[0m
+  [92m✓ series_cohort: 表 + 9 关键列就位[0m
+  [92m✓ series_cohort_course: 表 + 5 关键列就位[0m
+  [92m✓ series_cohort_session: 表 + 6 关键列就位[0m
+  [92m✓ question_bank: 表 + 5 关键列就位[0m
+  [92m✓ question: 表 + 5 关键列就位[0m
+  [92m✓ order: 表 + 8 关键列就位[0m
+  [92m✓ order_item: 表 + 6 关键列就位[0m
+  [92m✓ payment_record: 表 + 7 关键列就位[0m
+  [92m✓ refund_request: 表 + 7 关键列就位[0m
+  [92m✓ student_cohort_rel: 表 + 6 关键列就位[0m
+  [92m✓ session_video: 表 + 5 关键列就位[0m
+  [92m✓ coupon: 表 + 6 关键列就位[0m
+[92m✓ schema 校验通过 — 0 差异[0m
+
+============================================================
+[all] 阶段: counts
+============================================================
+[1m=== counts：核心表行数 vs 基线（17 表）===[0m
+  [92m✓ org_institution: 6 vs 6（容差 0）PASS[0m
+  [92m✓ course_review: 0 vs 0（容差 0）PASS[0m
+  [92m✓ series: 2654 vs 2654（容差 13）PASS[0m
+  [92m✓ series_cohort: 7888 vs 7888（容差 39）PASS[0m
+  [92m✓ series_cohort_course: 23652 vs 23652（容差 118）PASS[0m
+  [92m✓ series_cohort_session: 205776 vs 205776（容差 2058）PASS[0m
+  [92m✓ question_bank: 449 vs 449（容差 4）PASS[0m
+  [92m✓ question: 10532 vs 10532（容差 105）PASS[0m
+  [92m✓ order: 80216 vs 80216（容差 802）PASS[0m
+  [92m✓ order_item: 80215 vs 80215（容差 802）PASS[0m
+  [92m✓ payment_record: 80152 vs 80152（容差 802）PASS[0m
+  [92m✓ refund_request: 22472 vs 22472（容差 225）PASS[0m
+  [92m✓ sys_user: 100020 vs 100020（容差 1000）PASS[0m
+  [92m✓ sys_user_auth: 100020 vs 100020（容差 1000）PASS[0m
+  [92m✓ student_cohort_rel: 68806 vs 68806（容差 688）PASS[0m
+  [92m✓ session_video: 205776 vs 205776（容差 2058）PASS[0m
+  [92m✓ series_favorite: 30004 vs 30004（容差 300）PASS[0m
+[92m✓ counts 校验通过 — 0 差异[0m
+
+============================================================
+[all] 阶段: quality
+============================================================
+[1m=== quality：DB 数据质量不变量（12 项断言）===[0m
+  [92m✓ referential:series_cohort.series_id→series: 0 违规（期望 0）[0m
+  [92m✓ referential:series_cohort_course.cohort_id→series_cohort: 0 违规（期望 0）[0m
+  [92m✓ referential:series_cohort_session.series_cohort_course_id→series_cohort_course: 0 违规（期望 0）[0m
+  [92m✓ referential:order_item.order_id→`order`: 0 违规（期望 0）[0m
+  [92m✓ referential:payment_record.order_id→`order`: 0 违规（期望 0）[0m
+  [92m✓ validity:order.total_amount>0: 0 违规（期望 0）[0m
+  [92m✓ validity:payment_record.amount>0: 0 违规（期望 0）[0m
+  [92m✓ validity:order.created_at∈[2020,2027]: 0 违规（期望 0）[0m
+  [92m✓ temporal:order.created_at≤payment.paid_at: 0 违规（期望 0）[0m
+  [92m✓ temporal:series_cohort.start_date≤end_date: 0 违规（期望 0）[0m
+  [92m✓ temporal:order.created_at≤updated_at: 0 违规（期望 0）[0m
+  [92m✓ consistency:order.payable_amount==SUM(order_item.payable_amount): 0 违规（期望 0）[0m
+[92m✓ quality 校验通过 — 0 差异（期望 0）[0m
+
+------------------------------------------------------------
+[92m[1m✓ 校验通过 — 可发布/合并（exit 0）[0m

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * task110 — 全站死链扫描器（一次性工具，可留作回归）
+ * task110 — 全站死链扫描器（一次性工具，已挂 W4(task123) 检查单作回归项）
  * 用法: node test-reports/scan-deadlinks.mjs
  * 遍历 edu-frontend/public/*.html，提取：
  *   a) href="..."
@@ -8,6 +8,18 @@
  *      （含 onclick="location.href='xxx.html'" 内联）
  *   c) ${...} 模板串（按 ? / ${ 前缀匹配文件名）
  * 判定目标文件是否存在于 public 目录；query 参数名与目标页取参不强制在此解析（人工对照）。
+ *
+ * 口径（W1-批判3 承接，C-17）：
+ * - 本工具为【静态孤立页/死链门禁】，仅做「目标文件是否存在」的静态可达性判定，
+ *   输出是回归门固定条目，等价"全站无硬编码死链 + 无因缺文件导致的孤立页"。
+ * - 【盲区（非运行时巡检）】静态扫描对【变量拼接/运行时拼接跳转】无感知——
+ *   形如 `"/x.html?"+id`、`location.href = "/community-post.html?id=" + pid` 的动态跳转
+ *   目标不在此静态判定范围内（运行时跳转被禁用，本工具不请求真实 URL）。
+ *   → 后果：可能把仅靠动态拼接可达的页面（如 community-post.html 这类 ID 跳转详情页）
+ *     误判为"孤立页/死链"，属假阴性。此类页面必须【人工走查】社区/详情等 ID 动态跳转链路。
+ * - exception 规则：如需排除已知动态拼接页或手动加白名单，在本工具维护一行
+ *   whitelist 正则集合，被命中则跳过 ok 判定（当前无需白名单：
+ *   2026-09-04 全量扫描 20 页 / 208 有效链接 = 0 死链、0 假阴性，community-post.html dead=0 ok=13）。
  */
 import fs from "fs";
 import path from "path";

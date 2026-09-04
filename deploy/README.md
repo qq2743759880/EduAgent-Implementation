@@ -93,6 +93,12 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 # 4) /api/metrics 鉴权生效（依赖 task113）：无 token 返回 401；仅 ADMIN/MANAGER 可读
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/api/metrics/cache-context-dashboard
 #    期望：401
+
+# 5) 死链扫描（W1-批判3 承接，C-17，L4/里程碑回归固定条目）：
+#    跑通静态死链门禁 = 无死链 + 无伪孤立页（快照入 test-reports/critique-W1C3-completion-report.md）
+#    已知盲区：变量拼接跳转（"/x.html?"+id）非静态可判，社区/详情 ID 动态页需人工走查。
+node test-reports/scan-deadlinks.mjs
+#    期望：最后一行「=== 死链总数: 0 ===」
 ```
 
 ### venv 依赖清单（task61 补装，出包前核对）

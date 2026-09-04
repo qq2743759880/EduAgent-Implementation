@@ -1,0 +1,68 @@
+# EduAgent DB 验收基线（task98 CI 门禁事实源）
+# ---------------------------------------------------------------------------
+# 对比口径：
+#   schema  = 核心表 + 关键列「存在性」断言（容忍 DB 中多余列，防 schema 漂移漏表/漏关键列）。
+#   counts  = 核心表行数基线（相对 tol_frac / 绝对 tol_abs 容差）；
+#             PASS 判据：|actual - expected| <= max(tol_abs, expected * tol_frac)。
+#   quality = DB 数据质量不变量（引用完整性/有效性/时序/一致性），实现在 scripts/verify.py。
+#
+# 基线来源：2026-09-04 与本地实际库（MYSQL_DATABASE=edu，103 表）information_schema 实测落档。
+# 改 yaml 前先跑 `verify.py counts/schema` 在目标库上复测，勿盲改基线。
+# ---------------------------------------------------------------------------
+
+schema:
+  # 用户/课程/班次/订单/退款等核心业务表关键列（存在性断言，DB 可有多余列）
+  tables:
+    sys_user:
+      required_columns: [id, account, username, status, created_at, updated_at]
+    sys_user_auth:
+      required_columns: [id, user_id, password_hash, role_code, created_at]
+    org_institution:
+      required_columns: [id, institution_code, institution_name, created_at]
+    series:
+      required_columns: [id, institution_id, series_code, series_name, sale_status, created_at]
+    series_cohort:
+      required_columns: [id, institution_id, series_id, cohort_code, cohort_name, sale_price, start_date, end_date, created_at]
+    series_cohort_course:
+      required_columns: [id, cohort_id, module_code, module_name, created_at]
+    series_cohort_session:
+      required_columns: [id, series_cohort_course_id, session_no, session_title, teaching_date, created_at]
+    question_bank:
+      required_columns: [id, institution_id, bank_code, bank_name, created_at]
+    question:
+      required_columns: [id, bank_id, question_code, stem, created_at]
+    order:
+      required_columns: [id, order_no, user_id, order_status, total_amount, payable_amount, paid_amount, created_at]
+    order_item:
+      required_columns: [id, order_id, cohort_id, item_name, payable_amount, created_at]
+    payment_record:
+      required_columns: [id, order_id, payment_no, payment_status, amount, paid_at, created_at]
+    refund_request:
+      required_columns: [id, refund_no, order_id, refund_type, refund_status, apply_amount, created_at]
+    student_cohort_rel:
+      required_columns: [id, user_id, student_id, cohort_id, enroll_status, created_at]
+    session_video:
+      required_columns: [id, asset_id, video_title, duration_seconds, created_at]
+    coupon:
+      required_columns: [id, institution_id, coupon_code, coupon_name, coupon_type, created_at]
+
+counts:
+  # 行数基线（2026-09-04 实测）。tol_abs+期望为小表精确断言；大表给相对容差吸收测试数据波动。
+  tables:
+    org_institution:        { expected: 6,      tol_abs: 0, tol_frac: 0.000 }
+    course_review:          { expected: 0,      tol_abs: 0, tol_frac: 0.000 }
+    series:                 { expected: 2654,   tol_abs: 0, tol_frac: 0.005 }
+    series_cohort:          { expected: 7888,   tol_abs: 0, tol_frac: 0.005 }
+    series_cohort_course:   { expected: 23652,  tol_abs: 0, tol_frac: 0.005 }
+    series_cohort_session:  { expected: 205776, tol_abs: 0, tol_frac: 0.010 }
+    question_bank:          { expected: 449,    tol_abs: 0, tol_frac: 0.010 }
+    question:               { expected: 10532,  tol_abs: 0, tol_frac: 0.010 }
+    order:                  { expected: 80216,  tol_abs: 0, tol_frac: 0.010 }
+    order_item:             { expected: 80215,  tol_abs: 0, tol_frac: 0.010 }
+    payment_record:         { expected: 80152,  tol_abs: 0, tol_frac: 0.010 }
+    refund_request:         { expected: 22472,  tol_abs: 0, tol_frac: 0.010 }
+    sys_user:               { expected: 100020, tol_abs: 0, tol_frac: 0.010 }
+    sys_user_auth:          { expected: 100020, tol_abs: 0, tol_frac: 0.010 }
+    student_cohort_rel:     { expected: 68806,  tol_abs: 0, tol_frac: 0.010 }
+    session_video:          { expected: 205776, tol_abs: 0, tol_frac: 0.010 }
+    series_favorite:        { expected: 30004,  tol_abs: 0, tol_frac: 0.010 }
