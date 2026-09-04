@@ -1,0 +1,60 @@
+.env
+data/
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+*.log.err
+*.egg-info/
+.venv/
+.vscode/
+.idea/
+# 包含 VM 登录凭据（root/redhat），严禁入库
+scripts/ssh_*.py
+# 一次性手动打点测试脚本（hit/restart 模式），不入库
+scripts/*_hit.py
+scripts/restart_uvicorn*.py
+# 本地临时文件
+*.tmp
+uv_tmp_*.log
+*.pid
+
+
+# ============================================================
+# P1-基建(task-P1-git-baseline): 一次性探查/验证脚本与运行产物，严禁入库
+# 判别原则: 无法"可重放保持"或含临时/敏感性质的一律不入，保守不入
+# ============================================================
+
+# 一次性验证/探查/冒烟/诊断/基准 脚本（任意层级）
+_verify*
+_probe*
+_smoke*
+_diag*
+_bench*
+_t*
+# scripts/ 下所有下划线起始的一次性任务脚本
+scripts/_*
+
+# 一次性运行输出 / 验证结果
+*_out.txt
+verify_out.txt
+smoke_out.txt
+reverify_out.txt
+pytest*_out.txt
+*_results.json
+*_result.json
+
+# 覆盖率 / 压测(locust) / 打包产物
+.coverage
+.coverage.*
+*.csv
+locust_*.html
+redis.zip
+*.zip
+
+# 第三方二进制运行目录（Redis Windows 发行包）
+/tools/
+
+# alembic 本地默认 DB URL 含明文口令(root:123456@localhost)，不入库
+alembic.ini
