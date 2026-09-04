@@ -1,0 +1,38 @@
+# task01: 自建表保留清单（29 张）
+
+以下表**不属于** edu.sql 的 66 表，重构时不会被 DROP，结构与数据均不受影响：
+
+- `chat_session`
+- `chat_message`
+- `community_post`
+- `community_comment`
+- `community_react`
+- `coding_challenge`
+- `coding_submission`
+- `quiz_answer_session`
+- `quiz_wrong_book`
+- `vocab_entry`
+- `user_vocab_card`
+- `gamification_badge`
+- `user_badge`
+- `user_point_log`
+- `ranking_snapshot`
+- `graph_node`
+- `graph_edge`
+- `mcp_server`
+- `mcp_tool`
+- `mcp_tool_call_log`
+- `rag_audit_log`
+- `rag_collection_meta`
+- `rag_param_preset`
+- `learning_daily_summary`
+- `user_profile`
+- `recommend_feedback`
+- `learning_path_instance`
+- `alembic_version`
+- `sys_user_auth`
+
+共 29 张表。
+
+> 注意：`student_cohort_rel`、`session_*`、`series_*`、`question`、`order` 等属于 edu.sql 66 表，**必须 DROP+CREATE 重建**（见 01_drop_create_all.sql），不在本保留清单内。
+> （v1.0 曾将 student_cohort_rel 误列于此，已由编排者修正。）
