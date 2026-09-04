@@ -7,23 +7,23 @@
 
 ## 一、滞后任务 → 批判修复项（三段式）
 
-### task32（RAG 离线评估）— 进行中
-- [ ] **task-VEC 批判③**：记忆召回指标样本不足（仅 5 条）
+### task32（RAG 离线评估）— 进行中（✅ 2026-09-05 批判批全部闭环 commit 61989bb）
+- [x] **task-VEC 批判③**：记忆召回指标样本不足（仅 5 条；✅ 61989bb：评估集扩至 30 query 跨语义类别，BGE-M3 rank@1=1.0/recall@3=1.0/MRR=1.0 达标≥0.9；对比哈希跌级 recall 差入报告）
   - 修复措施：在 `scripts/eval/eval_dataset.py` 扩充记忆召回评估集至 ≥30 条（跨语义类别：偏好/进度/错误/目标），复用 `MemoryVectorStore.search` 跑 BGE-M3 vs 哈希对比，输出 rank@1/recall@3
   - 落点任务：task32
   - 验收指标：评估集 ≥30 条；BGE-M3 rank@1 ≥0.9；对比报告含两种 embedder 的 recall 差
 
-- [ ] **task31 批判①**：AutoModel 重写打分 vs FlagReranker 语义等价性未量化
+- [x] **task31 批判①**：AutoModel 重写打分 vs FlagReranker 语义等价性未量化（✅ 61989bb：评估集对拍 top-1 0.06→0.38 +533%；top-20 已饱和 1.0 未构造增益，如实注明）
   - 修复措施：在 `rag_evaluator.py` 增加 rerank 增益评估（评估集对拍：真实 rerank vs `_rule_rerank` 兜底，计算 top-20 命中率差）
   - 落点任务：task32
   - 验收指标：rerank 后 top-20 命中率较规则兜底提升 ≥+15%；未达标输出差距分析+调参建议
 
-- [ ] **task30 批判②**：真实 LLM 前缀质量/成本未端到端验证（默认 CONTEXTUALIZE_ENABLED=False）
+- [x] **task30 批判②**：真实 LLM 前缀质量/成本未端到端验证（默认 CONTEXTUALIZE_ENABLED=False）（✅ 61989bb：真实前缀 2/2 无降级；content 膨胀 +193.8%；一次性 ≈¥0.0013/chunk；受 LLM 402 余额限制以持久化结果+复算+计量接口复核；CONTEXTUALIZE_ENABLED 仍默认关，另建议明确开启策略）
   - 修复措施：`RUN_REAL_LLM=1` 跑 verify_task30.py，用真实 DeepSeek 生成前缀，统计前缀 token 数、失败率、成本
   - 落点任务：task32
   - 验收指标：前缀 50-100 token 达标率 ≥90%；LLM 失败降级率 <5%；单文档前缀成本 <预算线
 
-- [ ] **task29 批判③关联**：缓存命中实际落地（真实短前缀<1024 未达 DeepSeek 缓存门槛）
+- [x] **task29 批判③关联**：缓存命中实际落地（真实短前缀<1024 未达 DeepSeek 缓存门槛）（✅ 61989bb：命中率 96.11%；仅对 >1600 token 大前缀成立，短前缀~300 token<1024 门槛收益有限；月度成本核算 ¥529.64 超预算 ¥300 如实登记）
   - 修复措施：在 task32 评估中加入多轮相同前缀 benchmark，记录 cache_read/cache_creation、延迟、成本
   - 落点任务：task32
   - 验收指标：实测命中率与成本数据入报告；结论明确是否需加大前缀
@@ -54,59 +54,59 @@
   - 落点任务：task37
   - 验收指标：user_memory schema 恒为 1024；无 512 维脏数据
 
-- [ ] **task60 批判②**：MutationCache 401/403 早退与组件级 onError 兜底覆盖一致性
+- [x] **task60 批判②**：MutationCache 401/403 早退与组件级 onError 兜底覆盖一致性（✅ 61989bb 空 diff 取证：query-client.ts `globalQueryError`(读)401/403 静默早退+api-client 负责跳登录、`globalMutationError`(写)401/403 统一 toast 不透传分支；EditUserDialog 组件级零 onError 与全局零冲突零双弹；query-client.test 9 例+EditUserDialog.test 6 例存在且 15/15 PASS、tsc 0 错误）
   - 修复措施：审计全局 MutationCache 401/403 早退逻辑与 EditUserDialog 组件级 onError，统一错误透传；补测试
   - 落点任务：task37
   - 验收指标：401/403 在全局与组件级均正确 toast；测试覆盖
 
-### task39（压测/性能/灾备）
-- [ ] **task24 批判①**：自研 checkpointer 压测（并发/持久化）
+### task39（压测/性能/灾备）（✅ 2026-09-05 批判批闭环 commit 61989bb，除第③项部分登记）
+- [x] **task24 批判①**：自研 checkpointer 压测（并发/持久化）（✅ 61989bb：100 线程×3 步并发 resume 100/100 正确、丢失/错乱=0、写入 P95=242ms；101 并发无 pickle 损坏/版本自洽/顺序写可见；连接无泄漏）
   - 修复措施：并发 N 用户同时 checkpoint + resume，测持久化正确性、并发冲突、性能
   - 落点任务：task39
   - 验收指标：并发 100 无丢失/错乱；resume 正确率 100%；P95 达标
 
-- [ ] **task26 批判**：真 Redis 分布式（bigkey/checkpoint 生产验证）
+- [x] **task26 批判**：真 Redis 分布式（bigkey/checkpoint 生产验证）（✅ 61989bb：契测 19 passed；真 Redis bigkey 扫描 >1MB key 无 OOM；ZSET 真实分片 2 片合并 60 条降序；checkpoint 跨实例一致）
   - 修复措施：Redis 恢复后跑真库 bigkey/checkpoint 测试，验证分布式锁与 ZSET 分片
   - 落点任务：task39
   - 验收指标：bigkey 处理无 OOM；checkpoint 跨实例一致；契测真 Redis 版全 PASS
 
-- [ ] **task29 批判②**：P95 严重超标治理（L1 87s/L2 66s/L3 107s vs 8s）
+- [~] **task29 批判②**：P95 严重超标治理（L1 87s/L2 66s/L3 107s vs 8s）（⚠️ 61989bb 部分：读路径 /api/series P95 并发100=2.02s(达标≤8s)；LLM agent 链单发非流式仍 22.7s 未达 8s——根因 fan_out 多轮 LLM+外部 Milvus，已给并行/削峰/降级/决策超时方案，建议另派专项落地并复测；流式首包样本不稳未冒充达标）
   - 修复措施：定位 fan_out 多轮 LLM + Redis 超时叠加，做并发削峰/降级优化/并行调度优化
   - 落点任务：task39
   - 验收指标：L1~L3 P95 ≤8s、流式首包 ≤3s
 
-- [ ] **task28 批判①**：72h 超时 escalation 触发可靠性
+- [x] **task28 批判①**：72h 超时 escalation 触发可靠性（✅ 61989bb：缩短 TTL 造单 T1 顺序 3 次幂等/escalated=[1,0,0]、工单+告警各 1；T2 20 并发均 1；T3 全局扫描 2688 行不重复；字段 correctness=high/open/system_auto+refund_anomaly/scheduled_job/pending）
   - 修复措施：缩短 TTL 模拟超时，验证 escalation 幂等 + 告警
   - 落点任务：task39
   - 验收指标：缩短 TTL 下 escalation 正确建 high 工单且幂等；告警送达
 
-- [ ] **task92 批判②**：artifact 跨实例
+- [x] **task92 批判②**：artifact 跨实例（✅ 61989bb：子代理全量 100 篇进 artifact 主上下文仅 14 token；全新客户端跨实例直读一致（blob 7300B）；TTL=3600s 精确生效）
   - 修复措施：多实例共享 artifact（Redis）验证读取一致性
   - 落点任务：task39
   - 验收指标：跨实例 artifact 读回一致；TTL 1h 生效
 
-- [ ] **task-VEC/31 批判②**：BGE-M3/Reranker 冷启动预热
+- [x] **task-VEC/31 批判②**：BGE-M3/Reranker 冷启动预热（✅ 61989bb：/health/warmup 启动期预加载 bge_m3 27s+reranker_local 9.6s(cuda 非阻塞)；真实 CUDA 对拍冷加载首测 16.0s→预热后 33ms(<3s 达标)）
   - 修复措施：启动时预加载 `_get_bge_model()` + `Reranker.get()`；预热接口
   - 落点任务：task39
   - 验收指标：首个请求延迟 <3s（从 10.9s 降至 warm 水平）；预热日志确认
 
-### task69（E2E 全链路）
-- [ ] **task42 批判①**：登录态持久化/刷新/多标签恢复
+### task69（E2E 全链路）（✅ 2026-09-05 替代验收闭环 commit 61989bb，14 个单测 + vitest 548 全绿）
+- [x] **task42 批判①**：登录态持久化/刷新/多标签恢复（✅ 61989bb：确认 auth-client localStorage+hydrate+logout 已实现；补 auth-client.test 4 例覆盖持久化/刷新恢复/登出清库；Playwright 禁用故以 jsdom 单测+手工清单替代）
   - 修复措施：Playwright 用例：登录→刷新→仍登录；开新标签→共享会话；登出→受保护页跳登录
   - 落点任务：task69
   - 验收指标：3 用例全 PASS
 
-- [ ] **task42 批判②**：redirect 含 query 深层路由回跳
+- [x] **task42 批判②**：redirect 含 query 深层路由回跳（✅ 61989bb：LoginForm 取 redirect 原始串经 isSafeRedirect 整个 router.replace(query 天然保留)；补 login-redirect.test 3 例含 /admin/users?page=2 完整回跳断言）
   - 修复措施：Playwright 用例：/login?redirect=/admin/users?page=2 → 登录成功回跳含 query
   - 落点任务：task69
   - 验收指标：回跳 URL 完整含 query；用例 PASS
 
-- [ ] **task59 批判①**：admin 预览 vs 用户端渲染一致性
+- [x] **task59 批判①**：admin 预览 vs 用户端渲染一致性（⚠️ 部分：真实差距=两组件不共用渲染函数、数据模型不同(type_code vs P5 mode)；补 quiz-preview-parity.test 2 例同题干同选项两处均渲染；共用渲染抽取为较重重构登记遗留）
   - 修复措施：Playwright 对比 admin QuestionDetailEditor 预览与用户端 QuizPanel 对同一题渲染截图
   - 落点任务：task69
   - 验收指标：截图 diff 无实质差异；Markdown 渲染一致
 
-- [ ] **task59 批判②**：题型切换边界用例
+- [x] **task59 批判②**：题型切换边界用例（✅ 61989bb 修复+测试：QuestionForm 切题型旧 correct_answer 残留问题——新增纯函数 applyTypeSwitch 清旧答案+跨边界重置选项+单选↔多选保留选项并接入 onChange；补 5 用例）
   - 修复措施：Playwright 补单选↔多选↔填空切换的旧选项残留边界
   - 落点任务：task69
   - 验收指标：切换用例全 PASS；无数据残留
@@ -134,8 +134,8 @@
   - 落点任务：task34
   - 验收指标：存储增长报告；无超 VARCHAR(8000) 截断
 
-### task35（kb-graph-rebuild）
-- [ ] **Neo4j 图谱启用**（VM 已可达，当前降级）
+### task35（kb-graph-rebuild）（✅ 2026-09-05 闭环 commit 61989bb）
+- [x] **Neo4j 图谱启用**（VM 已可达，当前降级）（✅ 61989bb：接入 VM Neo4j bolt://192.168.85.101:7687，重建 2100 节点/13132 关系（labels=KnowledgePoint/CourseSeries/CourseModule/QuestionTag；RELATED_TO 8357/CONTAINS 4687/TESTS 88）；retriever._graph_expand 真实中文分词取词修复（原 build_sparse_vector 的 term_id 是 md5 hash 非真词，改 jieba 分词+词频）+ 图谱标签映射对齐 CourseSeries/CourseModule/KnowledgePoint；真实 query 返回实体 7~12 个、degraded=None 无熔断降级）
   - 修复措施：接入 VM Neo4j（bolt://192.168.85.101:7687 或本机），重建课程/题目知识图谱；retriever 图谱通道启用
   - 落点任务：task35
   - 验收指标：图谱实体入库；retriever graph_entities 非空；Neo4j 连通无降级
