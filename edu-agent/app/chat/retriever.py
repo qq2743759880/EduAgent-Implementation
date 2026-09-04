@@ -282,9 +282,30 @@ async def _graph_expand(
         return [], "Neo4j 未连接（跳过图谱扩展）"
     try:
         ensure_jieba_ready()
-        term_weights = build_sparse_vector(query)
-        top_terms = sorted(term_weights.items(), key=lambda kv: kv[1], reverse=True)[:top_k_keywords]
-        if not top_terms:
+        # task35 修复：build_sparse_vector 返回的 key 是稀疏 term_id（md5 hash 整数串），
+        # 不是真实中文词，直接用其作为 Neo4j 关键词永远匹配不到节点名。
+        # 这里改为取「jieba 真实分词 + 词频排序」作为关键词。
+        from app.knowledge.importer.embedder import (_RE_CHINESE_WORD,
+                                                     load_jieba_resources)
+        stop_words, _ji = load_jieba_resources()
+        kws_counter: dict[str, int] = {}
+        if _ji:
+            import jieba as _jieba
+            for tok in _jieba.cut(query):
+                tok = tok.strip().lower()
+                if not tok or tok in stop_words:
+                    continue
+                if not _RE_CHINESE_WORD.match(tok):
+                    continue
+                kws_counter[tok] = kws_counter.get(tok, 0) + 1
+        else:
+            for tok in re.split(r"[^\u4e00-\u9fa5A-Za-z0-9_+\-#.]+", query.lower()):
+                if tok and tok not in stop_words:
+                    kws_counter[tok] = kws_counter.get(tok, 0) + 1
+        if not kws_counter:
+            return [], None
+        keywords = [k for k, _ in sorted(kws_counter.items(), key=lambda kv: kv[1], reverse=True)][:top_k_keywords]
+        if not keywords:
             return [], None
 
         cypher = """
@@ -297,9 +318,9 @@ async def _graph_expand(
         RETURN labels(n)[0] AS type1, n.name AS name1, type(r) AS rel, labels(m)[0] AS type2, m.name AS name2
         LIMIT 200
         """
-        keywords = [k for k, _ in top_terms]
         type_map = {
-            "Series": "Series", "Module": "Module", "Keyword": "Keyword",
+            "CourseSeries": "Series", "CourseModule": "Module", "KnowledgePoint": "Keyword",
+            "QuestionTag": "QuestionTag", "Series": "Series", "Module": "Module",
             "Prerequisite": "Prerequisite", "Course": "Series", "Chunk": "Keyword",
         }
 

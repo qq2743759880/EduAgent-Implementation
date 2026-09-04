@@ -155,6 +155,12 @@ function QuestionFormBody({
     });
   }
 
+  /** 题型切换：清空旧答案、跨越选择题↔非选择题边界时重置旧选项（防旧选项/旧答案残留，task69/59②） */
+  function changeType(nextType: string) {
+    setForm((prev) => applyTypeSwitch(prev, nextType));
+    setErrors((prev) => ({ ...prev, question_type: "", correct_answer: "" }));
+  }
+
   function addOption() {
     setForm((prev) => {
       const labels = buildOptionLabels(prev.options.length + 1);
@@ -219,7 +225,7 @@ function QuestionFormBody({
         <FieldRow id="qf-type" label="题型" required error={errors.question_type}>
           <NativeSelect
             value={form.question_type}
-            onChange={(e) => patch("question_type", e.target.value)}
+            onChange={(e) => changeType(e.target.value)}
             data-testid="question-type-select"
           >
             <option value="" disabled>选择题型</option>
@@ -461,6 +467,36 @@ function ChoiceEditor({
 }
 
 /* ---------------- 纯函数（可单测） ---------------- */
+
+const DEFAULT_OPTIONS: QuestionOption[] = [
+  { label: "A", content: "" },
+  { label: "B", content: "" },
+  { label: "C", content: "" },
+  { label: "D", content: "" },
+];
+
+function isChoiceType(type: string): boolean {
+  return type === "single_choice" || type === "multi_choice";
+}
+
+/**
+ * 题型切换的状态转换（task69 · task59 批判②「旧选项残留」）。
+ *  - 旧答案格式随题型变化（单选 label / 多选 label / 判断"对"/"错" / 填空文本），
+ *    一律清空，杜绝 answer_example 式残留（如单选留 "B" 又当填空答案被提交）。
+ *  - 跨越「选择题 ↔ 非选择题」边界时重置为默认选项，避免从填空切回单选时
+ *    带入旧题干的残留选项内容。
+ *  - 单选 ↔ 多选互切保留已填选项（仅答案语义切换，选项仍有效）。
+ */
+export function applyTypeSwitch(prev: QuestionFormState, nextType: string): QuestionFormState {
+  if (!nextType || nextType === prev.question_type) return prev;
+  const crossedChoiceBoundary = isChoiceType(nextType) !== isChoiceType(prev.question_type);
+  return {
+    ...prev,
+    question_type: nextType,
+    correct_answer: "",
+    options: crossedChoiceBoundary ? DEFAULT_OPTIONS.map((o) => ({ ...o })) : prev.options,
+  };
+}
 
 export function initialForm(
   question?: QuestionAdminDetail | null,

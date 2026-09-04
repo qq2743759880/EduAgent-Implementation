@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "@/lib/api-client";
 import {
   QuestionForm,
+  applyTypeSwitch,
   buildQuestionPayload,
   initialForm,
   validateForm,
@@ -109,6 +110,53 @@ describe("QuestionForm 纯函数", () => {
   });
 });
 
+describe("applyTypeSwitch 题型切换边界（task69·task59 批判②：无旧选项/旧答案残留）", () => {
+  const choiceForm = () => {
+    const f = initialForm(null, "math");
+    f.question_type = "single_choice";
+    f.options = [
+      { label: "A", content: "1 + 1" },
+      { label: "B", content: "2" },
+    ];
+    f.correct_answer = "B";
+    return f;
+  };
+
+  it("单选 → 填空：旧答案 label「B」被清空（不残余到填空答案）", () => {
+    const next = applyTypeSwitch(choiceForm(), "fill_blank");
+    expect(next.question_type).toBe("fill_blank");
+    expect(next.correct_answer).toBe("");
+  });
+
+  it("单选 → 填空 → 切回单选：旧选项内容被重置为默认空选项（无残留选项）", () => {
+    let f = choiceForm();
+    f = applyTypeSwitch(f, "fill_blank");
+    f.correct_answer = "transformation";
+    f = applyTypeSwitch(f, "single_choice");
+    expect(f.question_type).toBe("single_choice");
+    expect(f.correct_answer).toBe("");
+    expect(f.options.map((o) => o.label)).toEqual(["A", "B", "C", "D"]);
+    expect(f.options.every((o) => o.content === "")).toBe(true);
+  });
+
+  it("单选 ↔ 多选互切保留已填选项，仅清空答案", () => {
+    const f = choiceForm();
+    const multi = applyTypeSwitch(f, "multi_choice");
+    expect(multi.options.map((o) => o.content)).toEqual(["1 + 1", "2"]);
+    expect(multi.correct_answer).toBe("");
+    const back = applyTypeSwitch(multi, "single_choice");
+    expect(back.options.map((o) => o.label)).toEqual(["A", "B"]);
+    expect(back.options[0].content).toBe("1 + 1");
+  });
+
+  it("同一题型 / 空值切换 → 原样返回（不重置）", () => {
+    const f = choiceForm();
+    f.correct_answer = "B";
+    expect(applyTypeSwitch(f, "single_choice")).toBe(f);
+    expect(applyTypeSwitch(f, "")).toBe(f);
+  });
+});
+
 describe("QuestionForm 题型分发", () => {
   it("标签接口返回空数组（后端已移除 tag 维度）", async () => {
     renderForm();
@@ -132,5 +180,17 @@ describe("QuestionForm 题型分发", () => {
     fireEvent.change(typeSelect, { target: { value: "single_choice" } });
     expect(screen.getByTestId("option-correct-A")).toBeInTheDocument();
     expect(screen.getByTestId("option-correct-D")).toBeInTheDocument();
+  });
+
+  it("单选已标答案 B → 切填空：填空答案框为空（旧答案不残留）", async () => {
+    mockGet.mockResolvedValue([]);
+    renderForm();
+    const typeSelect = await screen.findByTestId("question-type-select");
+    fireEvent.change(typeSelect, { target: { value: "single_choice" } });
+    fireEvent.click(screen.getByTestId("option-correct-B"));
+    expect(screen.getByTestId("option-correct-B").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.change(typeSelect, { target: { value: "fill_blank" } });
+    const fillInput = screen.getByPlaceholderText(/如：transformation/) as HTMLInputElement;
+    expect(fillInput.value).toBe("");
   });
 });
