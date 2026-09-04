@@ -156,3 +156,20 @@
 4. **C6-PBI-ITER2-TYPES 迭代二闭环（`8ea8a0e`）**：practice.html 支持 FILL/DRAG_SORT/MATCH 三题型真实作答——`SUP_REVIEW` 三型置 true、`renderQuestion`/`collectAnswer` 增三型渲染+收集、移除 iter2 tab/pill/toast/`data-iter2`、必填校验+错误反馈三态（`renderFill`/`renderDrag`/`renderMatch`/`fillBlankCount` 辅助 + candy CSS，零新增硬编码色）。后端 `_grade` 本已六型判分（无需改后端）。独立实证：真实 HTTP 打靶 7 case（FILL 对错、DRAG 对/位置分、MATCH 对/配对分）`is_correct` 均为真实判定；错题本三型可复习 total=8；`grep data-iter2/showIter2/iter2-toast/.iter2`=0；JS `node --check` OK。判定口径三项（登录态可作答/错题本可复习/后端真实判定）全达成。风险登记：FILL 空位数靠 `items`→题干下划线→兜底 1 推断（后端不下发空位数，真实题库占位风格不统一可能少计/多计），已如实记录。报告 `test-reports/critique-C6-PBI-ITER2-TYPES-completion-report.md`。
 5. **tracker 关闭登记（`68fbac9`）**：W2-C6 迭代二 PBI-ITER2-TYPES 标记闭环，deadline 已兑现（提前 09-30）。
 
+## 十二、2026-09-05 编排批（RAG/task37/task39/task69 开放批判批闭环）
+
+> 环境全通（后端8000/Redis/VM-Neo4j 7687）后，上批"ALL TASKS DONE"看板校对发现 tracker 仍有开放 `[ ]` 批判项。本批按编排顺序派 4 个独立子 agent 全部闭环，commit `61989bb` + tracker `437f0f6`。
+
+1. **task35 Neo4j 图谱重建**（此前 VM 断连 BLOCKED，现已闭环）：接 VM `bolt://192.168.85.101:7687` 重建 2100 节点/13132 关系（KnowledgePoint/CourseSeries/CourseModule/QuestionTag；RELATED_TO 8357/CONTAINS 4687/TESTS 88）；`retriever._graph_expand` 真实中文分词取词修复（原 `build_sparse_vector` 的 term_id 是 md5 hash 非真词、永远匹配不到节点名 → 改 jieba 分词+词频）+ 图谱标签映射对齐；真实 query 返回实体 7~12 个、`degraded=None` 无熔断降级。
+2. **task32 RAG**（4 项全闭环）：记忆召回评估集扩至 30 query、BGE-M3 rank@1=1.0/recall@3=1.0；rerank top-1 0.06→0.38(+533%, top-20 已饱和)；真实前缀 2/2 无降级、content 膨胀 +193.8%、一次性≈¥0.0013/chunk；缓存命中 96.11%（仅大前缀生效）；受 LLM 402 余额限制以持久化结果+复算+计量接口复核，未烧额度未编造。新增脚本 `scripts/verify_task30_cost.py`/`scripts/eval/verify_task29_cache_cost.py`/`scripts/kb_graph_rebuild_task35.py`。
+3. **task37 前端两项**：核查为空 diff 取证（MarkdownView 已用语义 token `text-[15px]`=0；MutationCache 全局读 401/403 静默早退+写统一 toast，EditUserDialog 组件级零 onError 与全局零冲突）。
+4. **task39 性能/灾备**（6 项，第③部分）：checkpointer 100 并发 resume 100/100、写入 P95=242ms；真 Redis bigkey 无 OOM、ZSET 真实分片；72h escalation 幂等(2688 行不重复)；artifact 跨实例读回一致 TTL=3600s；BGE/Reranker 冷启动 16.0s→33ms。⚠️ **task29 P95 LLM 链单发非流式仍 22.7s 未达 8s**（读路径 2.02s 达标）——根因 fan_out 多轮 LLM+Milvus，方案已给，登记另派专项，未伪 DONE。
+5. **task69 E2E**（Playwright 被 AGENTS 禁用→替代验收）：14 个单测 + QuestionForm 题型切换旧答案残留修复（新增纯函数 `applyTypeSwitch` 清旧答案+跨边界重置选项）；vitest 548 用例全绿、tsc 0 错误。
+
+### 本批遗留登记
+- **task29 P95 LLM 链未达 8s**（22.7s）：fan_out 多轮 LLM 治理另派专项（并行/削峰/降级/决策超时）。
+- **task69 task59批判① 共用渲染抽取**（admin QuestionDetailEditor vs QuizPanel 不共用渲染函数）为较重重构未做，登记遗留。
+- **task37 task-VEC批判① user_memory 512→1024 历史残留**：仍开放待查（Milvus 确认）。
+- **task98 task07批判① 机构口径脚本化** 与 **task34 task30批判① raw_content 存储增长**：仍开放，非本批范围。
+- 收尾提示：仓库仍有大量未跟踪编排产物（根级 .gitignore 覆盖不足），建议独立 repo hygiene 任务。
+
