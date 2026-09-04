@@ -16,6 +16,8 @@ from app.common.exceptions import PermissionDeniedError
 from app.core.resp import ok
 from app.domains.course_admin import service as svc
 from app.domains.course_admin.schemas import (
+    ChapterCreateAdmin,
+    ChapterUpdateAdmin,
     CohortCreateAdmin,
     CohortUpdateAdmin,
     ModuleCreateAdmin,
@@ -202,6 +204,41 @@ async def admin_update_session(session_id: int, payload: SessionUpdateAdmin,
 async def admin_delete_session(session_id: int, me: CurrentUser = Depends(get_current_user)):
     await svc.delete_session(session_id)
     return ok(data=None, message="课次已删除")
+
+
+# ═══════════════════════════════════════════
+# 视频章节 Video Chapter CRUD（5 端点，P1-2 task57 gap 接线）
+# ═══════════════════════════════════════════
+
+@router.get("/videos/{video_id}/chapters", summary="管理端·视频章节列表（按视频）")
+async def admin_list_chapters(video_id: int, me: CurrentUser = Depends(get_current_user)):
+    items = await svc.list_chapters_by_video(video_id)
+    return ok(data=[i.model_dump(mode="json") for i in items])
+
+
+@router.get("/chapters/{chapter_id}", summary="管理端·视频章节详情")
+async def admin_get_chapter(chapter_id: int, me: CurrentUser = Depends(get_current_user)):
+    detail = await svc.get_chapter_admin(chapter_id)
+    return ok(data=detail.model_dump(mode="json"))
+
+
+@router.post("/chapters", summary="管理端·创建视频章节")
+async def admin_create_chapter(payload: ChapterCreateAdmin, me: CurrentUser = Depends(get_current_user)):
+    result = await svc.create_chapter(payload)
+    return ok(data=result.model_dump(mode="json"))
+
+
+@router.patch("/chapters/{chapter_id}", summary="管理端·更新视频章节")
+async def admin_update_chapter(chapter_id: int, payload: ChapterUpdateAdmin,
+                               me: CurrentUser = Depends(get_current_user)):
+    result = await svc.update_chapter(chapter_id, payload)
+    return ok(data=result.model_dump(mode="json"))
+
+
+@router.delete("/chapters/{chapter_id}", summary="管理端·物理删除视频章节")
+async def admin_delete_chapter(chapter_id: int, me: CurrentUser = Depends(get_current_user)):
+    await svc.delete_chapter(chapter_id)
+    return ok(data=None, message="章节已删除")
 
 
 # ═══════════════════════════════════════════

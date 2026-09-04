@@ -30,6 +30,7 @@ from app.core.cache import invalidate
 from app.common.logging import logger
 from app.domains.course_admin.repository import (
     AssetAdminRepo,
+    ChapterAdminRepo,
     CohortAdminRepo,
     ModuleAdminRepo,
     SeriesAdminRepo,
@@ -37,6 +38,9 @@ from app.domains.course_admin.repository import (
     VideoAdminRepo,
 )
 from app.domains.course_admin.schemas import (
+    ChapterCreateAdmin,
+    ChapterResponseAdmin,
+    ChapterUpdateAdmin,
     CohortCreateAdmin,
     CohortResponseAdmin,
     CohortUpdateAdmin,
@@ -57,6 +61,7 @@ _module_repo = ModuleAdminRepo()
 _session_repo = SessionAdminRepo()
 _asset_repo = AssetAdminRepo()
 _video_repo = VideoAdminRepo()
+_chapter_repo = ChapterAdminRepo()
 
 
 def _fix_time_columns(row: dict) -> dict:
@@ -357,6 +362,54 @@ async def get_session_admin(session_id: int) -> SessionResponseAdmin:
     if not row:
         raise NotFoundError("课次", str(session_id))
     return SessionResponseAdmin(**_fix_time_columns(dict(row)))
+
+
+# ═══════════════════════════════════════════
+# Video Chapter（视频章节，P1-2 task57 gap 接线）
+# ═══════════════════════════════════════════
+
+async def create_chapter(data: ChapterCreateAdmin) -> ChapterResponseAdmin:
+    """创建章节。唯一约束：video_id + chapter_no。"""
+    existing = await _chapter_repo.get_by_chapter_no(data.video_id, data.chapter_no)
+    if existing:
+        raise ConflictError(
+            f"视频 {data.video_id} 章节号 {data.chapter_no} 已存在",
+            code=CHAPTER_NO_CONFLICT,
+        )
+    new_id = await _chapter_repo.insert(data.model_dump(exclude_unset=True))
+    row = await _chapter_repo.get_by_chapter_no(data.video_id, data.chapter_no)
+    if not row:
+        raise AppException("50000", "创建章节后查询失败")
+    return ChapterResponseAdmin(**row)
+
+
+async def update_chapter(chapter_id: int, data: ChapterUpdateAdmin) -> ChapterResponseAdmin:
+    row = await _chapter_repo.get_by_id(chapter_id)
+    if not row:
+        raise NotFoundError("章节", str(chapter_id))
+    await _chapter_repo.update(chapter_id, data.model_dump(exclude_unset=True, exclude_none=True))
+    updated = await _chapter_repo.get_by_id(chapter_id)
+    return ChapterResponseAdmin(**updated)
+
+
+async def delete_chapter(chapter_id: int) -> None:
+    """物理删除章节（session_video_chapter 无 yn 列）。"""
+    row = await _chapter_repo.get_by_id(chapter_id)
+    if not row:
+        raise NotFoundError("章节", str(chapter_id))
+    await _chapter_repo.hard_delete(chapter_id)
+
+
+async def list_chapters_by_video(video_id: int) -> list[ChapterResponseAdmin]:
+    rows = await _chapter_repo.list_by_video(video_id)
+    return [ChapterResponseAdmin(**r) for r in rows]
+
+
+async def get_chapter_admin(chapter_id: int) -> ChapterResponseAdmin:
+    row = await _chapter_repo.get_by_id(chapter_id)
+    if not row:
+        raise NotFoundError("章节", str(chapter_id))
+    return ChapterResponseAdmin(**row)
 
 
 # ═══════════════════════════════════════════

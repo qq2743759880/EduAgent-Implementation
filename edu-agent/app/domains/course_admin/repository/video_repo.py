@@ -90,6 +90,12 @@ class ChapterAdminRepo:
             (video_id, chapter_no),
         )
 
+    async def get_by_id(self, chapter_id: int) -> Optional[dict]:
+        return await fetch_one(
+            "SELECT * FROM session_video_chapter WHERE id = %s",
+            (chapter_id,),
+        )
+
     async def insert(self, data: dict) -> int:
         return await execute_write(
             "INSERT INTO session_video_chapter (video_id, chapter_no, chapter_title, "

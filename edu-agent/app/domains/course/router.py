@@ -4,7 +4,7 @@
 契约：
 - 响应壳沿用契约①：成功 ok() / 失败 AppException → 全局 handler
 - 筛选参数：category（分类名模糊）/ delivery_mode（白名单）/ keyword / price_min / price_max
-- 排序白名单：default / newest / price_asc / price_desc
+- 排序白名单：default / newest / price_asc / price_desc / popular（系列实付销量降序）
 - 分页：page ≥ 1，page_size 1~100
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ async def list_series(
     keyword: Optional[str] = Query(None, description="关键词（名称/简介/编码模糊）", min_length=1, max_length=64),
     price_min: Optional[float] = Query(None, ge=0, allow_inf_nan=False, description="最低价（按班次最低价过滤）"),
     price_max: Optional[float] = Query(None, ge=0, allow_inf_nan=False, description="最高价"),
-    sort: str = Query("default", pattern=r"^(default|newest|price_asc|price_desc)$", description="排序"),
+    sort: str = Query("default", pattern=r"^(default|newest|price_asc|price_desc|popular)$", description="排序：default/newest/price_asc/price_desc/popular(实付销量降序)"),
     page: int = Query(1, ge=1, description="页码，从 1 开始"),
     page_size: int = Query(20, ge=1, le=100, description="每页条数，1~100"),
 ):
