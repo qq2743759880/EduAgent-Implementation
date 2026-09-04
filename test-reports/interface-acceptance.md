@@ -1,7 +1,7 @@
 # EduAgent 独立接口验收报告（be-tester 最终版）
 
 - 测试方式：真实 HTTP 请求独立实证（Python requests 直连 127.0.0.1:8000），不采信任何既有报告/交接单
-- 日期：2026-09-04 22:18:39 ｜ 总请求数：162 ｜ 耗时：21.0s
+- 日期：2026-09-05 02:26:54 ｜ 总请求数：162 ｜ 耗时：16.1s
 - 后端路由清单 193 条（方法×路径） ｜ 前端源码真实引用 93 条（src/lib/api/*.ts 提取，_frontend_api.txt 的 56 条已过时）
 - 判定口径：OK=成功壳 code=0 ｜ BIZ=业务错误(路由存在+错误壳) ｜ BARE=裸响应(无壳，前端可透传) ｜ FAIL500=HTTP 500 缺陷 ｜ DEBUG=无token被DEBUG降级(代码确认) ｜ FAIL=其他
 
@@ -84,9 +84,9 @@
 | POST | `/api/admin/users/{user_id}/role` | 422 | 42200 | BIZ | 业务错误 code=42200 |
 | POST | `/api/admin/users/{user_id}/status` | 200 | 0 | OK | 成功 code=0 |
 | GET | `/api/admin/courses/series (无token)` | 401 | 40101 | BIZ | 业务错误 code=40101 |
-| POST | `/api/admin/courses/series` | 200 | 0 | OK | 创建成功 sid=2699（HTTP 200，非 201） |
-| PATCH | `/api/admin/courses/series/2699` | 200 | 0 | OK | 修改series |
-| DELETE | `/api/admin/courses/series/2699` | 200 | 0 | OK | 删除series（清理） |
+| POST | `/api/admin/courses/series` | 200 | 0 | OK | 创建成功 sid=2701（HTTP 200，非 201） |
+| PATCH | `/api/admin/courses/series/2701` | 200 | 0 | OK | 修改series |
+| DELETE | `/api/admin/courses/series/2701` | 200 | 0 | OK | 删除series（清理） |
 | DELETE | `/api/admin/courses/modules/1(被引用)` | 409 | 40908 | OK | 存在被引用模块删除应返回业务码(409xx)而非50000, data=None | 模块仍被 8 个课次引用，无法删除 |
 | DELETE | `/api/admin/courses/sessions/29786(被引用)` | 409 | 40908 | OK | 存在被引用课次删除应返回业务码(409xx)而非50000 | 课次仍被 45 条子记录引用，无法删除 |
 
@@ -329,17 +329,9 @@
 
 ## 5. 发现的真实缺陷
 
-### P1 — HTTP 500（代码缺陷）
+### P1 — HTTP 500（代码缺陷，随本次实跑 fail500 动态判定）
 
-| 接口 | 期望 | 实际 | 根因线索 |
-|---|---|---|---|
-| DELETE /api/admin/courses/cohorts/{id} | 404 或成功 | **HTTP 500 code=50000** | `name 'NotFoundError' is not defined`（未导入异常类） |
-| DELETE /api/admin/courses/modules/{id} | 404 或成功 | **HTTP 500 code=50000** | 同上 |
-| DELETE /api/admin/courses/series/{id} | 404 或成功 | **HTTP 500 code=50000** | 同上 |
-| DELETE /api/admin/courses/sessions/{id} | 404 或成功 | **HTTP 500 code=50000** | 同上 |
-| GET /api/recommend/next | 200 | **HTTP 500 code=50000** | `Unknown column 'H.answers_json'`（SQL 引用了不存在的列） |
-| GET /api/mindmap/me/{series_id} | 200 | **HTTP 500 code=50000** | `Unknown column 'H.answers_json'`（同一 SQL） |
-| POST /api/admin/courses/series（series_code 重复） | 409 | **HTTP 500 code=50000** | `name 'ConflictError' is not defined`（未导入异常类；应 409） |
+- **本次实跑 HTTP 500 缺陷 = 0**。历史 6 个 HTTP 500（NotFoundError）已修复：2026-09-05 定向深探（独立 HTTP 实测）确认 DELETE courses/cohorts->404 40400、module->404、series->404、session->404、GET /api/recommend/next->200 code=0、GET /api/mindmap/me/1->200 code=0、POST series 重复码->422 校验拦截（均非 500）。历史根因（未导入 NotFoundError/ConflictError、SQL 引用 H.answers_json）留档。）
 
 ### P1 — DELETE /api/admin/courses/series 假删除（数据完整性）
 
@@ -386,12 +378,9 @@
 
 - 总执行 162 项：正常 157（96.9%），HTTP 500 缺陷 0，DEBUG 降级观察 4，其他 1
 - 契约缺口：前端引用但后端缺失 14 项 ｜ 后端存在但前端未用 99 项
-- **验收结论：不通过**（功能主链路可用，但存在 6 个 HTTP 500 真实缺陷 + 5 个前端引用缺失端点 + DEBUG 鉴权降级部署风险）
-
-- **阻断项（必须先修）**：
-  1. DELETE /api/admin/courses/{cohorts|modules|series|sessions} 500 `NotFoundError` 未定义；且 series DELETE 假删除（响应成功实际未删）
-  2. GET /api/recommend/next、GET /api/mindmap/me/{series_id} 500 `H.answers_json` 列不存在；POST series 重复 code 500 `ConflictError` 未定义
-  3. 前端引用的 5 个端点后端 404：`/api/admin/courses/materials/redirect-upload`、`/api/admin/questions`、`/api/admin/questions/batch-import`、`/api/admin/questions/papers/compose`、`/api/admin/questions/tags`
-  4. 对外部署前必须关闭 DEBUG 鉴权降级
+- **验收结论：HTTP 500 阻断项已清零**（历史 6 个 500 缺陷经 2026-09-05 复跑 + 定向深探确认已修复）。剩余阻断/待办（非 500）：
+  1. series DELETE 假删除（响应 200 但仅软下线 off_sale，记录仍在表）——需复核是否按 C5 软删契约落地
+  2. DEBUG 鉴权降级部署风险（对外部署必须 DEBUG=False）
+  3. 前端引用的 14 个端点后端缺失（见 §2/§4 missing_in_backend）
 - **非阻塞待办**：响应壳逐域补齐（P2）、POST series 状态码统一 201（P2）、错误码类型统一为字符串（P2）、mcp/health-scan 异步化或超时策略（P3）、清理注册测试产生的 itest-newuser 用户与 itest-series 系列（2629~2632）
 

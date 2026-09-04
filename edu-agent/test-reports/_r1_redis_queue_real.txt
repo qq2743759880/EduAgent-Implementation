@@ -1,0 +1,88 @@
+﻿.\.venv\Scripts\python.exe : WARNING:eduguard:[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线
+At line:15 char:1161
++ ... edu-agent'; .\.venv\Scripts\python.exe test-reports\_r1_redis_queue_r ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING:eduguar...RET，仅限本地开发，禁止上线:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING:eduguard:[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线
+Python: 3.11.15 (main, Jul 23 2026, 14:42:43) [MSC v.1944 64 bit (AMD64)]
+项目根: e:\stu\project\stu\EduAgent实施手册\edu-agent
+Redis : redis://127.0.0.1:6379/0
+时间   : 2026-09-05 02:23:00
+
+======================================================================
+TEST 1: 真实 Redis 连通性
+======================================================================
+
+[PASS] Redis.ping()
+    PING -> True; server redis_version=6.2.24
+自定义命名空间测试守护实例 queue_key=accept:r1:queue:1788546180 global_limit=4 user_max=2
+======================================================================
+TEST 2: 队列顺序特征（串行 enqueue -> 单消费者 BLPOP）
+======================================================================
+    入队顺序 enq_order   = [0, 1, 2, 3, 4, 5, 6, 7]
+    出队顺序 deq_order   = [7, 6, 5, 4, 3, 2, 1, 0]
+
+[FAIL] FIFO(先入先出) enq序==deq序
+    enq=[0, 1, 2, 3, 4, 5, 6, 7] deq=[7, 6, 5, 4, 3, 2, 1, 0] -> 匹配=False
+    消费后 LLEN(accept:r1:queue:1788546180) = 0（应=0）
+======================================================================
+TEST 3: 队列削峰真实链路（12 任务 / 4 worker / global_limit=4）
+======================================================================
+    enqueue 后 LLEN(accept:r1:queue:1788546180)=12, TYPE=b'list'（应=12 / list）
+    4 worker 消费完成，耗时 1.593s
+    处理任务数 total_processed      = 12
+    无丢失/无重复 检查 ……
+        processed_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+[PASS] 12 任务全部执行（无丢失）
+    total_processed=12, 目标=12, 集合一致=True
+
+[PASS] 无重复任务
+    去重后 12，原始 12
+
+[PASS] 任意时刻并行执行数 ≤ global_limit(4)
+    哨兵记录峰值并行 = 4（<=4）
+
+[PASS] await_queue 队列空+超时返回 None（友好降级不抛错）
+    4 个 worker 超时各返回 1 次 None，empty_none=[True, True, True, True]
+    消费后全局并发计数 accept:r1:global_concurrent = 0（应=0，释放干净）
+
+[PASS] 队列 key 清理（BLPOP 排空 + DEL 后不存在）
+    消费后 LLEN=0; DEL 后 exists=0
+======================================================================
+TEST 4: 真实运行服务使用 Redis 的证据（登录限流键）
+======================================================================
+    清理后 rl 键初始值 before = None
+    6 次登录 HTTP status = [401, 401, 401, 401, 401, 401]
+    真实限流键 rl:ip:127.0.0.1:/api/auth/login 值 after=b'6', ttl=58
+
+[PASS] 运行中后端真实写 Redis 限流键（rl:ip:*）
+    rl:ip:127.0.0.1:/api/auth/login 计数=6（初始 0）; 状态码 [401, 401, 401, 401, 401, 401]; TTL=58s
+======================================================================
+清理 accept:r1:* 残留键
+======================================================================
+    删除 accept:r1:* 键 13 个
+
+======================================================================
+SUMMARY
+======================================================================
+  [PASS] Redis.ping()
+        PING -> True; server redis_version=6.2.24
+  [FAIL] FIFO(先入先出) enq序==deq序
+        enq=[0, 1, 2, 3, 4, 5, 6, 7] deq=[7, 6, 5, 4, 3, 2, 1, 0] -> 匹配=False
+  [PASS] 12 任务全部执行（无丢失）
+        total_processed=12, 目标=12, 集合一致=True
+  [PASS] 无重复任务
+        去重后 12，原始 12
+  [PASS] 任意时刻并行执行数 ≤ global_limit(4)
+        哨兵记录峰值并行 = 4（<=4）
+  [PASS] await_queue 队列空+超时返回 None（友好降级不抛错）
+        4 个 worker 超时各返回 1 次 None，empty_none=[True, True, True, True]
+  [PASS] 队列 key 清理（BLPOP 排空 + DEL 后不存在）
+        消费后 LLEN=0; DEL 后 exists=0
+  [PASS] 运行中后端真实写 Redis 限流键（rl:ip:*）
+        rl:ip:127.0.0.1:/api/auth/login 计数=6（初始 0）; 状态码 [401, 401, 401, 401, 401, 401]; TTL=58s
+
+总计 8 项，PASS 7，FAIL 1

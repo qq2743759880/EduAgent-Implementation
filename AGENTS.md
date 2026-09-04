@@ -46,7 +46,7 @@
 
 - task103/104 降级项：cohort `accessible:true` 路径、chat SSE 登录态真实分页/历史——均已由后续批判批/Season2 实证覆盖（见 critique-backlog-tracker.md）。
 
-- ⚠️ **环境依赖登记（实现完成，运行验证待真实环境，非代码缺口）**：R1-③(Redis队列削峰)、O1-②③(OTLP 真实后端/跨实例聚合)、C1-③(冻结区监测)、C2-②(TOOL_DEFERRED 灰度)；task29 批判② LLM **非流式** P95(端到端 14.8~19.7s，已 2026-09-05 独立实证收口＝推理模型 deepseek-v4-flash reasoning_tokens 物理下限 + strong 402 余额不足，突破需换非推理模型，见 critique-backlog-tracker.md task29 批判②)；**流式** L1 端到端 P95 6.4s 已达标（用户裁定以流式为准）。可复跑：`edu-agent/scripts/_perf_chat_nonstream.py`、`_perf_fast_vs_strong.py`。
+- ⚠️ **环境依赖登记（实现完成，运行验证待真实环境，非代码缺口）**：~~R1-③(Redis队列削峰)~~ **已 2026-09-05 真 Redis 实证闭环**（见 `test-reports/critique-R1-3-redis-accept.md`：子 agent 真 Redis 集成 12 任务/4 worker 无丢失+并行≤limit+空队超时降级；并发现/修复 P0 FIFO 语义缺陷——`guard.py` enqueue lpush→rpush，复验 enq==deq [0..7]，registered 进 tracker）；O1-②③(OTLP 真实后端/跨实例聚合)、C1-③(冻结区监测)、C2-②(TOOL_DEFERRED 灰度) 仍待真实窗口；task39 限流/缓存/锁真 Redis 已闭环（`critique-task39-redis-accept.md`：限流 42900、缓存 322.6ms→5.3ms、锁最大同时持有=1）；task29 批判② LLM **非流式** P95(端到端 14.8~19.7s，已 2026-09-05 独立实证收口＝推理模型 deepseek-v4-flash reasoning_tokens 物理下限 + strong 402 余额不足，突破需换非推理模型，见 critique-backlog-tracker.md task29 批判②)；**流式** L1 端到端 P95 6.4s 已达标（用户裁定以流式为准）。可复跑：`edu-agent/scripts/_perf_chat_nonstream.py`、`_perf_fast_vs_strong.py`。
 
 - 前端真实 API 引用以 `test-reports/_frontend_real_api.txt`（93 条）为准，旧的 `_frontend_api.txt` 已过时
 

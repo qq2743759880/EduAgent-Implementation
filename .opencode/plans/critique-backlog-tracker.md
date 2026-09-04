@@ -215,3 +215,15 @@
 - [x] **W4 回归门禁落地**（C2/C4 共性）：（✅ 4a9bacc）新增 `scripts/gate-w4-critique.mjs`（纯 node）：grep `page_meta`=0 + `respbar`=注释，去注释/字符串后代码清洗串判定（防恒 PASS 负向自检 `--with-src` 可打破）；实测 `GATE_RESULT=OK`；已接入 `run_regression.ps1` 末尾 `W4_GATE`（缺 node 跳过不中断）。
 
 - [x] **C6 迭代二 PBI-ITER2-TYPES deadline**：（✅ 4a9bacc）排期落盘 `.ai-hub/plans/tasks/W2-优化修改方案.md` §W2-C6 PBI 排期登记，deadline=2026-09-30（迭代二、不早于 W4 回归门禁通过后启动）。
+
+## Redis 队列削峰 FIFO 语义缺陷（2026-09-05 R1-③ 独立验收发现，属新增批判——已修复闭环）
+
+- [x] **R1-③ 队列削峰 FIFO 语义缺陷（P0）**：`app/ai/guard.py` 的 `ConcurrencyGuard.enqueue()` 与 `TokenBudgetGuard.enqueue_token()` 用 **LPUSH**（头插）+ 消费侧 `await_queue()/await_token()` 用 **BLPOP**（头弹）——同一 list 端操作组合 = **LIFO**（后进先出），违背队列削峰先入先出语义。突发高峰下最新请求插队优先，最老请求持续被饿死直至 `QUEUE_POP_TIMEOUT` 超时。
+  - 修复措施：`enqueue()`（guard.py:251）与 `enqueue_token()`（guard.py:710）由 `lpush` 改为 **`rpush`**（尾插），消费侧保持 `blpop`（头弹）→ 单 list 即 FIFO；同步更新模块 docstring 与注释（LPUSH+BLPOP → RPUSH+BLPOP）。对比：`app/core/queue.py` 已是 rpush+blpop（正确 FIFO）；`app/rerank_service/queue_adapter.py` 是 lpush+brpop（头插尾弹=FIFO，本为正误，无需改）。
+  - 落点任务：R1-③（独立验收驱动）
+  - 验收指标：真实 Redis 集成测试入队 12 任务后消费顺序 `enq==deq`（修复前实测 deq=[7..0]=LIFO，修复后 deq=[0..7]=FIFO）；12 任务无丢失、并行峰值 ≤ limit、空队超时返回 None。**已 2026-09-05 独立实证闭环**：子 agent 真 Redis 测试脚本 `test-reports/_r1_redis_queue_real.py` 修复前 7PASS/1FAIL（FIFO FAIL），修复后 8 PASS（含 live 服务登录限流键 rl:ip:* 计数 0→6 证据：线上确走 Redis 非内存降级）。报告 `test-reports/critique-R1-3-redis-accept.md`。
+
+## task39 真 Redis 验收 + 缓存互斥锁 token 缺陷（2026-09-05 独立实证，已闭环）
+
+- [x] **task39 限流/缓存/分布式锁真 Redis 验收（真实 HTTP + 真实 Redis）**：限流规则 `60s/10` 第 10 个放行、**第 11 个拒**（HTTP 429 + `{code:"42900"}`），删 key 后即时恢复且计数归 1 → 证明走真实 Redis 分布式计数非降级；缓存 `get_or_load` miss 322.6ms→hit 5.3ms、真实 HTTP GET /api/series/1 首次写 `course:series:detail:1`(TTL≈322s) 二次命中；分布式锁 SETNX+随机token+EX10+Lua释放 30 并发仅 1 成功、30×5 轮最大同时持有=1、持锁期他人 acquire=False。报告 `edu-agent/test-reports/critique-task39-redis-accept.md` / 脚本 `_t39_redis_real.py`。
+- [x] **task39 批判③——缓存击穿互斥锁 token 恒为 "1"（P2 潜在缺陷，已修复）**：`app/core/cache.py` 互斥锁 `set(mutex_key,"1",nx=True,...)` 用常量 "1" 作锁值，Lua 释放注释自称"校验 token 防误删"但 token 恒定 → 比较恒真，防误删形同虚设。慢 loader 超锁（loader 耗时 > mutex_timeout=10s）后他人抢锁重建，旧持有者延迟释放会 `GET==“1”` 误删他人已重获的锁，导致多余重建。修复：锁值改用 `uuid4().hex` 唯一随机 token，Lua 释放比对 `mutex_token`；真实 Redis 实证：A(AAA) 释放同 token→删；B 抢锁(BBB) 后 A 延迟释放(AAA)→del=0 且 B 锁完好；B 释放→删。`tests/test_core.py` cache 相关 32 用例全绿。

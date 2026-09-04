@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+from uuid import uuid4
 from typing import Any, Awaitable, Callable
 
 from loguru import logger
@@ -100,7 +101,9 @@ async def _read_or_rebuild(r, key, loader, ttl, actual_ttl, null_ttl, mutex_time
 
     # 2. 缓存未命中 → 加互斥锁后重建
     mutex_key = f"{key}:mutex"
-    lock_acquired = await r.set(mutex_key, "1", nx=True, ex=mutex_timeout)
+    # 唯一随机 token 作为锁值：释放时用 Lua 比对，超锁后他人抢锁时旧持有者不会误删他人锁（task39 批判③）
+    mutex_token = uuid4().hex
+    lock_acquired = await r.set(mutex_key, mutex_token, nx=True, ex=mutex_timeout)
 
     if lock_acquired:
         # 抢到锁 → 执行 loader 重建
@@ -114,10 +117,10 @@ async def _read_or_rebuild(r, key, loader, ttl, actual_ttl, null_ttl, mutex_time
                 await r.set(key, json.dumps(data, ensure_ascii=False, default=str), ex=actual_ttl)
             return data
         finally:
-            # Lua 释放锁（校验 token 防误删）
+            # Lua 释放锁（比对唯一 token，防止误删他人已重获的锁）
             await r.eval(
                 "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
-                1, mutex_key, "1",
+                1, mutex_key, mutex_token,
             )
     else:
         # 没抢到锁 → 短轮询等待重建完成

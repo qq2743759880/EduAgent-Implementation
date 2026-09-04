@@ -4,7 +4,7 @@ task26 Redis 防过载：LLM 全局并发闸 + 单用户会话并发 + 队列削
 对齐 tech-source-audit §四（Redis 多角色：队列削峰 / 大 key 治理）：
 - 全局 LLM 并发闸：上限 LLM_GLOBAL_CONCURRENCY(8)。进程内信号量（快） + Redis 分布式原子计数
   （Lua INCR/DECR 带上限）双闸；任一闸满 → 请求进队列。
-- 队列削峰：`chat:queue` Redis list（LPUSH + BLPOP），BLPOP 阻塞上限 QUEUE_POP_TIMEOUT(10s)，
+- 队列削峰：`chat:queue` Redis list（RPUSH + BLPOP），BLPOP 阻塞上限 QUEUE_POP_TIMEOUT(10s)，
   超时返回友好提示而非无限堆积。
 - 单用户会话并发：`chat:concurrent:{user_id}` INCR/DECR，第 3 个并发被拒（≤ USER_MAX_CONCURRENT）。
 - ZSET 分片：单分片容量 ZSET_SHARD_SIZE(50)，按 member 哈希分桶写 `{key}:{idx}`，避免大 key。
@@ -243,12 +243,12 @@ class ConcurrencyGuard:
             return self._gate_inflight
 
     # ──────────────────────────────────────────────
-    # 队列削峰（LPUSH + BLPOP(timeout=10)）
+    # 队列削峰（RPUSH + BLPOP(timeout=10)：尾插 + 头弹 = FIFO）
     # ──────────────────────────────────────────────
     async def enqueue(self, payload: Any) -> None:
         if self._redis is not None:
             try:
-                await self._redis.lpush(self.queue_key, json.dumps(payload, ensure_ascii=False, default=str))
+                await self._redis.rpush(self.queue_key, json.dumps(payload, ensure_ascii=False, default=str))
                 return
             except Exception:
                 pass
@@ -707,7 +707,7 @@ class TokenBudgetGuard(ConcurrencyGuard):
         if self._redis is not None:
             try:
                 key = f"{settings.QUEUE_KEY}:{priority}"
-                await self._redis.lpush(key, json.dumps(payload, ensure_ascii=False, default=str))
+                await self._redis.rpush(key, json.dumps(payload, ensure_ascii=False, default=str))
                 return
             except Exception:
                 pass
