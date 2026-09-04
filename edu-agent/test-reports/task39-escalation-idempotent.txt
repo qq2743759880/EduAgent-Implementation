@@ -2,10 +2,10 @@
 task39 GWT② 72h escalation 幂等 + 并发安全复测
 ========================================================================
 === 依赖预检 ===
-  [OK] mysql    localhost:3306  (20ms)
+  [OK] mysql    localhost:3306  (17ms)
   全部依赖在线。
 
-造单: refund_request.id=22570（applied_at = now-100h，hours=72 → 天然超时）
+造单: refund_request.id=22610（applied_at = now-100h，hours=72 → 天然超时）
 
 ■ T1 顺序连跑 3 次 escalate_refunds_older_than(refund_id)
   第 1 次: {'scanned': 1, 'escalated': 1, 'skipped': 0}  → 工单=1 告警=1
@@ -24,10 +24,10 @@ task39 GWT② 72h escalation 幂等 + 并发安全复测
   [PASS] T3 全局扫描不重复建单 — 工单=1 告警=1
 
 ■ T4 建单字段正确性（§6.4 / task28 GWT③）
-  工单: {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39579EF748'}
+  工单: {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39B164B30D'}
   告警: {'alert_type': 'refund_anomaly', 'alert_source': 'scheduled_job', 'alert_status': 'pending', 'risk_level': 'high'}
-  [PASS] T4 工单 priority=high / status=open / source=system_auto — {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39579EF748'}
+  [PASS] T4 工单 priority=high / status=open / source=system_auto — {'priority_level': 'high', 'ticket_status': 'open', 'ticket_source': 'system_auto', 'ticket_type': 'refund', 'title': '退款审批超时(72) — T39B164B30D'}
   [PASS] T4 告警 refund_anomaly / scheduled_job / pending — {'alert_type': 'refund_anomaly', 'alert_source': 'scheduled_job', 'alert_status': 'pending', 'risk_level': 'high'}
-  [PASS] T4 工单标题含超时阈值 72h — 退款审批超时(72) — T39579EF748
+  [PASS] T4 工单标题含超时阈值 72h — 退款审批超时(72) — T39B164B30D
 
-清理完成：refund_request.id=22570 及其工单/告警已软删（yn=0）
+清理完成：refund_request.id=22610 及其工单/告警已软删（yn=0）
