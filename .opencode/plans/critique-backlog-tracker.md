@@ -244,3 +244,8 @@
   - 验收指标：`retry_after=5→wait=5`；`=999 cap=30→30`；缺头回退指数；`call_chat_with_retry` 首调 429(ra=7)→重试前 sleep(7)。
 - [ ] **支付回调验签/金额校验缺真实渠道实现（登记缺口，待真实渠道接入）**：`mock_notify` 仅校验 mock 渠道；`settle_payment` 用记录内金额，未验「第三方回调金额 vs payable_amount」。支付宝/微信规范要求验签（RSA/SHA256）+验商户号+验金额。当前真实渠道回调未接线，属「接入前置需求」非既有缺陷；接入时必须补 `verify_signature()+verify_amount()` 闸门。落点：真实支付渠道接入任务。
 - [ ] **对账状态漂移检测缺失（增强项，入 backlog）**：`run_reconcile` 未检测「payment_record=paid 但 order 非 paid」漂移（资金安全最值得关注残差）。建议后续补状态漂移 SQL。本次未实施（避免扩大对账变更面）。
+
+## critique Round5 领域复查（checkpoint 持久化 + 队列削峰，2026-09-05）
+
+- [x] **复查结论（无缺陷需修复）**：领域 A 队列削峰 `guard.py` 已 RPUSH+BLPOP 真 FIFO（critique R1-③ 修复闭环）；领域 B checkpoint `app/ai/checkpoint_redis.py` 已含 task39 GWT④ 并发加固（连接锁 + 按 thread_id 分片锁 + 读-改-写整段持锁 + 锁表上限 4096），同线程并发 resume 不丢不覆盖。回归实证：`tests/test_contract_task24/26 + test_contract_task_g1_token_bucket` 共 **29 passed / 1 skipped**（含真实 Redis durable 恢复路径）。
+- [ ] **登记注意点（跨实例一致性命中，非代码缺陷）**：`PlainRedisSaver` 的并发锁是**进程内** `asyncio.Lock`，`_loaded_threads` 亦为实例本地；两个 saver 实例（多进程）若**同一 thread_id** 并发写同一 Redis key，呈 last-writer-wins（可能后落盘的旧快照覆盖新快照）。与既已登记的 artifact 跨实例限制同类；单线程单进程语义下无影响。落点：多实例共享 thread 场景单独立项，本次不实施（避免为未出现场景空转）。
