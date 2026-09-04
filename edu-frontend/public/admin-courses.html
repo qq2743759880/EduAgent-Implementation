@@ -14,6 +14,7 @@
     · 无 institution_name / cohort_count（后端未返回，不做 MOCK）
   - 行内「班次」→ 跳 /admin/courses/{seriesId}（task57 详情）
   AUDIT LOG:
+    [2026-09-04 C2fe+C5fe] C2fe：分页改读外层 triple {total,page,page_size}（弃分页兼容冗余字段，对齐 React 侧 & C-B 契约）；C5fe：新增回收站 Tab（include_deleted=true 拉已软删 + 行内「恢复」调 POST /series/{id}/restore，series_id 取自行数据非路径正则）
     [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-23 v1 R1] 初稿提交（FilterBar 关键词/交付/状态/排序 + DataTable + DropdownMenu 编辑/班次/上下架/删除 + 新建系列 Dialog + 删除 ConfirmDialog「下架优先于删除」+ 三态 + 响应式）→ SUBMITTED
     [2026-08-23 v2 R2] 占位待用户审核反馈
@@ -157,6 +158,11 @@
   .em-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .em-toast.ok{background:#0e7a4d}
   .em-toast.err{background:#e23b5a}
+  /* C5 · 回收站 Tab（正式列表 / 已软删系列） */
+  .vtabs{display:flex;gap:8px;margin:2px 0 14px;flex-wrap:wrap}
+  .vtab{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font:inherit;font-weight:600;font-size:0.8125rem;color:var(--muted);cursor:pointer;transition:.15s}
+  .vtab:hover{border-color:var(--primary);color:var(--primary)}
+  .vtab.active{background:var(--primary);border-color:var(--primary);color:#fff}
 </style>
 
 
@@ -277,6 +283,12 @@
     <button class="btn btn-primary" data-open="series-form" id="btn-create">
       ＋ 新建系列
     </button>
+  </div>
+
+  <!-- C5 · 视图 Tab：正式列表 / 回收站（include_deleted=true） -->
+  <div class="vtabs" id="viewTabs">
+    <button class="vtab active" data-view="list" onclick="switchView('list')">正式列表</button>
+    <button class="vtab" data-view="bin" onclick="switchView('bin')">回收站</button>
   </div>
 
   <!-- 筛选栏 -->
@@ -623,6 +635,7 @@ function saveSeries(){
   }
 }
 var __page = 1, REAL_PAGE_SIZE = 20, __kwTimer = null;
+var activeView = "list"; // C5 回收站：list=正式列表 / bin=已软删系列
 function onKwInput(){ clearTimeout(__kwTimer); __kwTimer = setTimeout(applyFilter, 350); }
 function buildSeriesQuery(){
   var p = ["page=" + __page, "page_size=" + REAL_PAGE_SIZE];
@@ -634,14 +647,18 @@ function buildSeriesQuery(){
   if(ss) p.push("sale_status=" + encodeURIComponent(ss));
   var sort = document.getElementById("f-sort").value;
   if(sort && sort !== "default") p.push("sort=" + encodeURIComponent(sort));
+  if(activeView === "bin") p.push("include_deleted=true"); // C5 回收站：拉已软删(yn=0)系列
   return p.join("&");
 }
 function showEmpty(b){ var el=document.getElementById("state-empty"); if(el) el.classList.toggle("hidden", !b); }
 function showError(b){ var el=document.getElementById("state-error"); if(el) el.classList.toggle("hidden", !b); }
-function renderPagerReal(pm){
+function renderPagerReal(d){
   var p = document.getElementById("pager"); if(!p) return;
-  var tp = (pm && pm.total_pages) ? pm.total_pages : 1;
-  var cur = (pm && pm.page) ? pm.page : __page;
+  /* C2：读外层分页 triple {total,page,page_size}，弃分页兼容冗余字段 */
+  var total = (d && typeof d.total === "number") ? d.total : 0;
+  var ps = (d && typeof d.page_size === "number" && d.page_size > 0) ? d.page_size : REAL_PAGE_SIZE;
+  var tp = Math.max(1, Math.ceil(total / ps));
+  var cur = (d && typeof d.page === "number") ? d.page : __page;
   if(tp <= 1){ p.innerHTML = ""; return; }
   var h = '<button ' + (cur<=1?'disabled':'') + ' onclick="gotoPage(' + (cur-1) + ')">‹</button>';
   for(var i=1;i<=tp;i++) h += '<button class="' + (i===cur?'cur':'') + '" onclick="gotoPage(' + i + ')">' + i + '</button>';
@@ -652,17 +669,24 @@ function gotoPage(n){ if(n<1) n=1; __page=n; loadSeries(); if(window.scrollTo) w
 function loadSeries(){
   if(!window.EAPI) return;
   EAPI.get("/api/admin/courses/series?" + buildSeriesQuery()).then(function(d){
-    var items=(d&&d.items)?d.items:[]; window.__rows={}; items.forEach(function(s){ window.__rows[s.id]=s; });
+    var items=(d&&d.items)?d.items:[];
+    window.__rows={}; if(activeView==="bin") window.__binRows={};
+    items.forEach(function(s){ window.__rows[s.id]=s; if(activeView==="bin") window.__binRows[s.id]=s; });
     var body=document.getElementById("tbl-body");
-    body.innerHTML = items.map(rowHtml).join("");
+    body.innerHTML = items.map(activeView==="bin"?rowHtmlBin:rowHtml).join("");
     body.classList.remove("hidden");
     var pg=document.getElementById("pager"); if(pg) pg.classList.remove("hidden");
+    var et=document.querySelector("#state-empty .st-ico + div b"), ep=document.querySelector("#state-empty p");
+    if(et) et.textContent = activeView==="bin" ? "回收站为空" : "暂无系列";
+    if(ep) ep.textContent = activeView==="bin" ? "已下架的系列会出现在这里，可一键恢复" : "点击右上角「新建系列」开始搭建课程";
     showEmpty(!items.length); showError(false);
     var tc=document.getElementById("total-count");
-    if(tc) tc.textContent = (d&&d.page_meta&&typeof d.page_meta.total==="number") ? d.page_meta.total : items.length;
-    renderPagerReal(d&&d.page_meta);
+    if(tc) tc.textContent = (d && typeof d.total === "number") ? d.total : items.length;
+    renderPagerReal(d);
     var sub=document.querySelector(".page-head .sub");
-    if(sub && sub.textContent.indexOf("⚠")===0) sub.textContent="系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series";
+    if(sub && sub.textContent.indexOf("⚠")===0) sub.textContent = activeView==="bin"
+      ? "回收站 · 已软删系列 · include_deleted=true · 恢复=POST /api/admin/courses/series/{id}/restore"
+      : "系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series";
   }).catch(function(err){
     var body=document.getElementById("tbl-body"); if(body) body.innerHTML="";
     showError(true); showEmpty(false);
@@ -691,6 +715,41 @@ function rowHtml(s){
         : '<button class="dd-item" onclick="openOff('+s.id+')"><span class="ic">▼</span>下架</button>')
     +'<button class="dd-item danger" onclick="openDel('+s.id+')"><span class="ic">🗑</span>删除</button>'
     +'</div></div></div></td></tr>';
+}
+/* ---- C5 · 回收站 Tab ---- */
+function switchView(v){
+  activeView = (v === "bin") ? "bin" : "list";
+  document.querySelectorAll("#viewTabs .vtab").forEach(function(b){ b.classList.toggle("active", b.dataset.view === activeView); });
+  __page = 1;
+  loadSeries();
+  var btn = document.getElementById("btn-create");
+  if(btn) btn.style.display = (activeView === "bin") ? "none" : "";
+}
+/* 回收站行渲染：只暴露「恢复」，不暴露硬删（hard=true UI 不可达） */
+function rowHtmlBin(s){
+  var dmMap={online_live:["直播","b-live"],online_recorded:["录播","b-rec"],offline_face_to_face:["面授","b-offline"]};
+  var dm=dmMap[s.delivery_mode]||[s.delivery_mode||"—","b-live"];
+  var badge = '<span class="badge badge-mut" style="outline:1px dashed var(--line)"><span class="pd"></span>已下架</span>';
+  return '<tr class="series-row"><td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--muted-ink),var(--muted))">🗑</div><div class="min"><div class="nm">'+esc(s.series_name||"—")+'</div><div class="cd">'+esc(s.series_code||"")+'</div></div></div></td>'
+    +'<td><span class="b-dm '+dm[1]+'">'+dm[0]+'</span></td>'
+    +'<td>'+badge+'</td>'
+    +'<td class="c-meta">'+esc((s.created_at||"").slice(0,10))+'</td>'
+    +'<td><div class="cell-actions" style="justify-content:flex-end">'
+    +'<button class="btn btn-primary btn-mini" onclick="doRestore('+s.id+')"><span class="ic">♻</span>恢复</button>'
+    +'</div></td></tr>';
+}
+/* 恢复系列：series_id 取自行数据(非路径正则)；成功后刷新当前视图（切 Tab 亦自动重拉） */
+function doRestore(id){
+  var s = (window.__binRows && window.__binRows[id]) || null;
+  var name = s ? (s.series_name || s.series_code || ("系列 #" + id)) : ("系列 #" + id);
+  if(!confirm("确认恢复系列「" + name + "」？恢复后 sale_status 将置为「草稿」，可再上架。")) return;
+  EAPI.post("/api/admin/courses/series/" + id + "/restore").then(function(){
+    toast("已恢复「" + name + "」", "ok");
+    closeAll();
+    loadSeries();
+  }).catch(function(e){
+    toast(errMsg(e), "err");
+  });
 }
 function refreshList(){ loadSeries(); }
 function resetFilter(){

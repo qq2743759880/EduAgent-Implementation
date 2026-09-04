@@ -442,7 +442,7 @@
   <!-- Campus（成功态内容容器，演示器会切换其 innerHTML） -->
   <div id="contentArea"></div>
 
-  <!-- Pagination（v4：从左到右水平排列，page_meta 驱动） -->
+  <!-- Pagination（v4：从左到右水平排列，外层分页 triple total/page/page_size 驱动） -->
   <nav class="pagination" id="pagination" aria-label="分页">
     <button class="pg-btn" id="pgPrev" aria-label="上一页">‹</button>
     <span id="pgPages"></span>
@@ -571,9 +571,9 @@ function fetchPage(){
   }
   EAPI.get("/api/series?"+buildQuery()).then(function(d){
     const items = (d && d.items) ? d.items : (Array.isArray(d) ? d : []);
-    const pm = (d && d.page_meta) ? d.page_meta : null;
-    const total = pm && typeof pm.total==="number" ? pm.total : items.length;
-    const tPages = pm && typeof pm.total_pages==="number" ? pm.total_pages : Math.max(1, Math.ceil(total/PAGE_SIZE));
+    /* C2：后端只保留外层分页 triple {total,page,page_size,items}，弃分页兼容冗余字段 */
+    const total = (d && typeof d.total==="number") ? d.total : items.length;
+    const tPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     totalCount = total; totalPages = tPages;
     renderSuccess(items, total, tPages);
   }).catch(function(){
