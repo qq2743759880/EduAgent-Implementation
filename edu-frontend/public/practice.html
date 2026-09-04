@@ -143,9 +143,7 @@ a{color:inherit;text-decoration:none}
 .q-typebar button{border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);font-size:12px;font-weight:800;padding:6px 14px;color:var(--ink-strong);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
 .q-typebar button:hover{background:var(--candy-bg)}
 .q-typebar button.on{background:var(--candy-orange);color:var(--ht-fff);border-color:var(--candy-orange-deep)}
-  /* 演示题型条：填空(blank)对齐登录态 FILL:false，标为「迭代二」占位（critique C6） */
-  .q-typebar button.iter2{border-style:dashed;background:var(--candy-bg)}
-.q-body{padding:22px 20px 24px}
+  .q-body{padding:22px 20px 24px}
 .q-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-muted);margin-bottom:12px}
 .q-meta .no{font-weight:800;color:var(--ink)}
 .q-stem{font-size:17px;font-weight:800;line-height:1.5;margin-bottom:18px}
@@ -326,10 +324,6 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   .wb-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
   .wb-filter .pill{border:2px solid var(--ink);border-radius:999px;background:var(--ht-fff);font-size:12px;font-weight:800;padding:6px 14px;color:var(--ink-strong);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
   .wb-filter .pill.on{background:var(--candy-green);color:var(--ht-fff);border-color:var(--candy-green-deep)}
-  /* 迭代二暂未开放题型：显式可点击 → 点击/悬停弹出说明（critique C6），不再静默置灰 */
-  .wb-filter .pill.iter2{background:var(--candy-bg);border-style:dashed;cursor:pointer}
-  .wb-filter .pill.iter2:hover{background:var(--candy-orange);color:var(--ht-fff);border-color:var(--candy-orange-deep)}
-  .iter2-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:500;background:var(--candy-orange-deep);color:var(--ht-fff);font-size:13px;font-weight:700;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px -4px var(--htc-31-31-31-035);max-width:90vw;text-align:center}
   .wb-count{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-muted)}
   .pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:12px 14px;border-top:2px solid var(--htc-31-31-31-008)}
   .pager .info{font-size:12px;font-weight:800;color:var(--ink-muted)}
@@ -347,6 +341,25 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   .rev-mast{font-size:12px;font-weight:800;margin-top:10px;color:var(--candy-purple)}
   .rev-note{font-size:12px;font-weight:700;color:var(--ink-muted);margin:12px 0 0}
   .rev-empty{text-align:center;padding:40px 20px;color:var(--ink-muted);font-size:0.8125rem}
+  /* ===== 迭代二三题型真实作答（critique C6-PBI-ITER2-TYPES）===== */
+  .fill-blanks{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+  .fill-row{display:flex;align-items:center;gap:10px}
+  .fill-row .no{font-size:12px;font-weight:800;color:var(--ink-muted);min-width:54px;flex-shrink:0}
+  .drag-list{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+  .drag-item{display:flex;align-items:center;gap:8px;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:700;background:var(--ht-fff);box-shadow:var(--shadow-s)}
+  .drag-item .grip{color:var(--ink-faint);font-size:14px;user-select:none}
+  .drag-item .idx{min-width:24px;text-align:center;color:var(--ink-muted);font-size:12px;font-weight:800}
+  .drag-item .lbl{flex:1;min-width:0}
+  .drag-item .mv{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:2px solid var(--ink);border-radius:9px;background:var(--candy-bg);font-size:13px;font-weight:800;box-shadow:0 2px 0 var(--htc-31-31-31-015)}
+  .drag-item .mv:hover:not(:disabled){background:var(--candy-purple-soft);color:var(--candy-purple)}
+  .drag-item .mv:disabled{opacity:.35;cursor:not-allowed}
+  .match-grid{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+  .match-item{display:flex;align-items:center;gap:10px;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;background:var(--ht-fff);box-shadow:var(--shadow-s);font-size:14px;font-weight:700;flex-wrap:wrap}
+  .match-item .tag{font-size:11px;font-weight:800;color:var(--ink-muted);min-width:26px}
+  .match-item select{border:2px solid var(--ink);border-radius:9px;font-size:13px;font-weight:700;padding:5px 8px;background:var(--ht-fff);font-family:inherit;margin-left:auto;max-width:190px;color:var(--ink-strong)}
+  .match-item select:focus{outline:3px solid var(--candy-blue);outline-offset:2px}
+  .type-chip.drag{background:var(--candy-yellow);color:var(--ink)}
+  .type-chip.match{background:var(--candy-pink);color:var(--ink)}
   /* 单词本真实容器 */
   .vocab-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
   .vocab-toolbar select{border:2px solid var(--ink);border-radius:10px;font-size:13px;font-weight:800;padding:6px 10px;background:var(--ht-fff);font-family:inherit}
@@ -591,7 +604,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <div class="q-typebar" role="tablist" aria-label="题型演示">
           <button class="on" type="button" role="tab" aria-selected="true" data-type="single">① 单选</button>
           <button type="button" role="tab" aria-selected="false" data-type="multi">② 多选</button>
-          <button type="button" role="tab" aria-selected="false" data-type="blank" data-iter2="填空" class="iter2" title="填空题型暂未开放，已登记迭代二">③ 填空 · 迭代二</button>
+          <button type="button" role="tab" aria-selected="false" data-type="blank">③ 填空</button>
           <button type="button" role="tab" aria-selected="false" data-type="judge">④ 判断</button>
         </div>
         <div class="q-body" id="qBody">
@@ -730,16 +743,16 @@ for i, v in enumerate(nums):
         <div id="vocabProg"></div>
       </div>
 
-      <!-- ⑥ 专项练习 · 题型选择（登录态注入）：SINGLE/MULTI/JUDGE 支持，其余标注迭代二 -->
+      <!-- ⑥ 专项练习 · 题型选择（登录态注入）：六题型（含 FILL/DRAG_SORT/MATCH，critique C6-PBI-ITER2-TYPES） -->
       <div id="topic-real" class="hid">
         <div class="sec-h" style="margin-top:26px">专项练习 <span class="tag">按题型刷题</span></div>
         <div class="wb-filter" role="group" aria-label="专项题型选择">
           <button type="button" class="pill" data-ttype="SINGLE">单选</button>
           <button type="button" class="pill" data-ttype="MULTI">多选</button>
           <button type="button" class="pill" data-ttype="JUDGE">判断</button>
-          <button type="button" class="pill iter2" data-ttype="FILL" data-iter2="填空" title="该题型（填空）暂未开放，已登记迭代二">填空 · 迭代二</button>
-          <button type="button" class="pill iter2" data-ttype="DRAG_SORT" data-iter2="拖拽排序" title="该题型（拖拽排序）暂未开放，已登记迭代二">拖拽排序 · 迭代二</button>
-          <button type="button" class="pill iter2" data-ttype="MATCH" data-iter2="连线匹配" title="该题型（连线匹配）暂未开放，已登记迭代二">连线匹配 · 迭代二</button>
+          <button type="button" class="pill" data-ttype="FILL">填空</button>
+          <button type="button" class="pill" data-ttype="DRAG_SORT">拖拽排序</button>
+          <button type="button" class="pill" data-ttype="MATCH">连线匹配</button>
         </div>
         <p class="demo-note">选择题型后自动进入下方复习会话，逐一判分并回写错题本。</p>
       </div>
@@ -811,23 +824,11 @@ stateBtns.forEach(b => b.addEventListener('click', () => {
 /* ===== 题型切换 ===== */
 const qTypes = document.querySelectorAll('.q-typebar button');
 qTypes.forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.iter2) { showIter2(b.dataset.iter2); return; }   // 填空=迭代二占位（critique C6），不切演示题
   qTypes.forEach(x => { x.classList.remove('on'); x.setAttribute('aria-selected','false'); });
   b.classList.add('on'); b.setAttribute('aria-selected','true');
   document.querySelectorAll('.quiz-item').forEach(el => el.classList.add('hid'));
   document.getElementById('qi-' + b.dataset.type).classList.remove('hid');
 }));
-
-/* ===== 迭代二题型显式说明（critique C6）：不再静默置灰，点击/悬停给出去向 ===== */
-let iter2Timer = null;
-function showIter2(name) {
-  let t = document.getElementById('iter2-toast');
-  if (!t) { t = document.createElement('div'); t.id = 'iter2-toast'; t.className = 'iter2-toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
-  t.textContent = '该题型（' + name + '）暂未开放，已登记迭代二。';
-  t.style.display = 'block';
-  if (iter2Timer) clearTimeout(iter2Timer);
-  iter2Timer = setTimeout(function () { t.style.display = 'none'; }, 2600);
-}
 
 /* ===== 填空：提交判分 ===== */
 const blankSubmit = document.getElementById('qi-blank-submit');
@@ -886,8 +887,8 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
   var $$ = function (id) { return document.getElementById(id); };
   var SUP = { SINGLE: '单选', MULTI: '多选', JUDGE: '判断', FILL: '填空', DRAG_SORT: '拖拽排序', MATCH: '连线匹配' };
   var SUPKEY = { SINGLE: 'single', MULTI: 'multi', JUDGE: 'judge', FILL: 'blank', DRAG_SORT: 'drag', MATCH: 'match' };
-  // 首期复习仅支持三类，其余置灰"迭代二"
-  var SUP_REVIEW = { SINGLE: true, MULTI: true, JUDGE: true, FILL: false, DRAG_SORT: false, MATCH: false };
+  // 六题型全部可复习（critique C6-PBI-ITER2-TYPES：FILL/DRAG_SORT/MATCH 已真实支持，不再置灰）
+  var SUP_REVIEW = { SINGLE: true, MULTI: true, JUDGE: true, FILL: true, DRAG_SORT: true, MATCH: true };
 
   var WB = { status: 'ACTIVE', page: 1, size: 10 };   // 错题本
   var RV = { type: null, idx: 0, total: 5, run: false, busy: false, chosen: null, q: null }; // 复习会话
@@ -1026,6 +1027,47 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
           '<div class="rev-empty">加载题目失败，请检查网络后重试' + (e && e.message ? '：' + e.message : '') + '</div>';
       });
   }
+  /* ---- 迭代二三题型渲染辅助（critique C6-PBI-ITER2-TYPES）---- */
+  function fillBlankCount(q) {
+    // 空位数策略：优先服务端 items 数；否则数题干连下划线占位符；一律>=1
+    if (q.items && q.items.length) return q.items.length;
+    var runs = (q.title || '').match(/_+/g) || [];
+    var n = runs.filter(function (x) { return x.length >= 2; }).length; // 只计 ≥2 连下划线，避免单_误计
+    return Math.max(1, n || 1);
+  }
+  function renderFill(q) {
+    var count = fillBlankCount(q);
+    var rows = [];
+    for (var i = 0; i < count; i++) {
+      rows.push('<div class="fill-row"><span class="no">第 ' + (i + 1) + ' 空</span>' +
+        '<input class="blank-input" type="text" data-fill="' + i + '" placeholder="填写答案" aria-label="第 ' + (i + 1) + ' 空答案"></div>');
+    }
+    if (count === 1) rows[0] = rows[0].replace('<span class="no">第 1 空</span>', '');
+    return '<div class="fill-blanks" role="group" aria-label="填空（' + count + ' 空）">' + rows.join('') + '</div>';
+  }
+  function renderDrag(q) {
+    var items = q.items || [];
+    if (!items.length) return '<div class="rev-empty">该排序题暂无可用条目。</div>';
+    return '<div class="drag-list" role="group" aria-label="拖拽排序（用 ↑↓ 调整顺序）">' + items.map(function (it, i) {
+      return '<div class="drag-item" data-iid="' + esc(it.item_id) + '">' +
+        '<span class="grip">☰</span><span class="idx">' + (i + 1) + '</span>' +
+        '<span class="lbl">' + esc(it.label) + '</span>' +
+        '<button type="button" class="mv" data-mv="up" aria-label="上移">↑</button>' +
+        '<button type="button" class="mv" data-mv="down" aria-label="下移">↓</button></div>';
+    }).join('') + '</div>';
+  }
+  function renderMatch(q) {
+    var pairs = q.pairs || [];
+    if (!pairs.length) return '<div class="rev-empty">该连线题暂无可用配对项。</div>';
+    var opts = '<option value="">选择右侧项…</option>' + pairs.map(function (p) {
+      return '<option value="' + esc(p.right_id) + '">' + esc(p.right_text || p.right_id) + '</option>';
+    }).join('');
+    var rows = pairs.map(function (p) {
+      return '<div class="match-item"><span class="tag">' + esc(p.left_id) + '</span>' + esc(p.left_text) +
+        '<select data-match="' + esc(p.left_id) + '" aria-label="为左侧项 ' + esc(p.left_text) + ' 选择配对">' + opts + '</select></div>';
+    }).join('');
+    return '<div class="match-grid" role="group" aria-label="连线匹配（每项选择右侧配对）">' + rows + '</div>';
+  }
   function renderQuestion(q) {
     var body = $$('rvBody');
     var meta = '<span class="no">第 ' + RV.idx + ' 题 / ' + RV.total + '</span>' +
@@ -1046,13 +1088,18 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
       input = '<div class="judge-wrap" role="group" aria-label="判断">' +
         '<button class="judge-opt rv-judge" type="button" data-judge="true"><span class="emoj">✅</span> 正确</button>' +
         '<button class="judge-opt rv-judge" type="button" data-judge="false"><span class="emoj">❌</span> 错误</button></div>';
+    } else if (t === 'FILL') {
+      input = renderFill(q);
+    } else if (t === 'DRAG_SORT') {
+      input = renderDrag(q);
+    } else if (t === 'MATCH') {
+      input = renderMatch(q);
     } else {
-      input = '<div class="rev-empty">题型 ' + typeLabel(t) + ' 暂不支持，首期复习支持单选/多选/判断，其余迭代二。</div>';
+      input = '<div class="rev-empty">未知题型 ' + typeLabel(t) + '，暂无法作答。</div>';
     }
-    var submitBtn = (t === 'SINGLE' || t === 'JUDGE')
+    var submitBtn = (t === 'SINGLE' || t === 'JUDGE' || t === 'FILL' || t === 'DRAG_SORT' || t === 'MATCH')
       ? '<button class="submit rv-submit" type="button">提交答案</button>'
       : (t === 'MULTI' ? '<button class="submit rv-submit" type="button">提交所选（' + (q.choices || []).length + ' 项可选）</button>' : '');
-    if (t !== 'SINGLE' && t !== 'MULTI' && t !== 'JUDGE') submitBtn = '';
     body.innerHTML = meta + stem + input +
       '<div style="display:flex;gap:10px;align-items:center;margin-top:6px">' + submitBtn +
       '<button class="redo rv-next" type="button" style="display:none">下一题 →</button></div>' +
@@ -1090,6 +1137,25 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
           o.classList.toggle('correct');
         });
       });
+    } else if (t === 'DRAG_SORT') {
+      // ↑↓ 交换排序：交互清晰，非真正 HTML5 drag（其答案 = 屏幕显示序 item_id 数组）
+      var dlist = document.querySelector('#rvBody .drag-list');
+      if (dlist) {
+        function refreshIdx() {
+          Array.prototype.forEach.call(dlist.children, function (it, i) { it.querySelector('.idx').textContent = (i + 1); });
+        }
+        Array.prototype.forEach.call(dlist.querySelectorAll('.drag-item .mv'), function (btn) {
+          btn.addEventListener('click', function () {
+            if (RV.busy) return;
+            var row = btn.closest('.drag-item');
+            var arr = Array.prototype.map.call(dlist.children, function (x) { return x; });
+            var i = arr.indexOf(row);
+            if (btn.dataset.mv === 'up' && i > 0) { dlist.insertBefore(row, arr[i - 1]); }
+            else if (btn.dataset.mv === 'down' && i < arr.length - 1) { dlist.insertBefore(arr[i + 1], row); }
+            refreshIdx();
+          });
+        });
+      }
     }
     var sbtn = document.querySelector('#rvBody .rv-submit');
     if (sbtn) sbtn.addEventListener('click', function () { doSubmit(); });
@@ -1104,6 +1170,19 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
       var ks = Array.prototype.map.call(document.querySelectorAll('#rvBody .rv-multi.correct'), function (o) { return o.dataset.key; });
       return ks;
     }
+    if (t === 'FILL') {
+      // 每空一个.trim() 字符串；与后端判分逐空 strip().lower() 对齐（schemas.py）
+      return Array.prototype.map.call(document.querySelectorAll('#rvBody .fill-blanks input[data-fill]'), function (i) { return (i.value || '').trim(); });
+    }
+    if (t === 'DRAG_SORT') {
+      // 屏幕显示序的 item_id 数组
+      return Array.prototype.map.call(document.querySelectorAll('#rvBody .drag-item'), function (it) { return it.dataset.iid; });
+    }
+    if (t === 'MATCH') {
+      return Array.prototype.map.call(document.querySelectorAll('#rvBody .match-item select[data-match]'), function (s) {
+        return { left_id: s.dataset.match, right_id: s.value };
+      });
+    }
     return null;
   }
   function doSubmit() {
@@ -1115,6 +1194,15 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
       if (ans === null || ans === undefined) { alert('请先选择答案'); return; }
     }
     if (t === 'MULTI' && !(ans && ans.length)) { alert('请至少选择一项'); return; }
+    if (t === 'FILL') {
+      if (!(ans && ans.length)) { alert('请先填写答案'); return; }
+      if (ans.some(function (v) { return !v; })) { alert('请填写所有空格'); return; }
+    }
+    if (t === 'DRAG_SORT' && !(ans && ans.length)) { alert('请先排列条目'); return; }
+    if (t === 'MATCH') {
+      if (!(ans && ans.length)) { alert('请先为左侧项选择配对'); return; }
+      if (ans.some(function (m) { return !m.right_id; })) { alert('请为每一项选择右侧配对'); return; }
+    }
     var btn = document.querySelector('#rvBody .rv-submit');
     if (btn) { btn.disabled = true; btn.classList.add('gray'); }
     RV.busy = true; // 防重复提交
@@ -1285,7 +1373,6 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
   function bindTopicControls() {
     document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (b.dataset.iter2) { if (window.showIter2) showIter2(b.dataset.iter2); return; }  // 迭代二占位：显式说明（critique C6）
         document.querySelectorAll('#topic-real .pill[data-ttype]').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
         startReview({ type: b.dataset.ttype });
