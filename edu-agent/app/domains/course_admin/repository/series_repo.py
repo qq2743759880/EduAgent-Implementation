@@ -5,9 +5,24 @@
 """
 from __future__ import annotations
 
+import json
 from typing import Optional
 
 from app.database import fetch_all, fetch_one, execute_write
+
+
+# series 表 JSON 列：asyncmy 对 MySQL JSON/TEXT 存 list 会拒绝（Argument 'val' has incorrect type），
+# 写侧必须序列化，读侧由 service._parse_json_columns 反序列化（读写对称）。
+_JSON_COLUMNS = ("target_learner_identity_codes", "target_learning_goal_codes", "target_grade_codes")
+
+
+def _json_or_null(val):
+    """JSON 列写侧安全序列化：None → NULL；list/非 str → json.dumps；已 str 保持原样。"""
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return val
+    return json.dumps(val, ensure_ascii=False)
 
 
 _SORT_MAP = {
@@ -99,8 +114,10 @@ class SeriesAdminRepo:
             (
                 data["institution_id"], data["delivery_mode"], data["series_code"],
                 data["series_name"], data.get("description"), data.get("cover_url"),
-                data.get("target_learner_identity_codes"), data.get("target_learning_goal_codes"),
-                data.get("target_grade_codes"), data.get("sale_status", "draft"),
+                _json_or_null(data.get("target_learner_identity_codes")),
+                _json_or_null(data.get("target_learning_goal_codes")),
+                _json_or_null(data.get("target_grade_codes")),
+                data.get("sale_status", "draft"),
                 data["created_by"],
             ),
         )
@@ -111,7 +128,8 @@ class SeriesAdminRepo:
         args = []
         for key, val in data.items():
             set_clauses.append(f"{key} = %s")
-            args.append(val)
+            # JSON 列写侧序列化（不破坏其它普通字段类型）
+            args.append(_json_or_null(val) if key in _JSON_COLUMNS else val)
         if not set_clauses:
             return 0
         set_clauses.append("updated_at = NOW()")
