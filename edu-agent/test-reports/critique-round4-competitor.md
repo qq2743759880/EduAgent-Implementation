@@ -37,6 +37,9 @@ if _cents(r["amount"]) != _cents(r["payable_amount"]) and r["order_status"] not 
 | 真实不一致 | amount=`0.20`, payable=`0.15` | ✓ 检出 | ✓ 仍检出 |
 | 退款豁免 | refunded 单差异 | ✓ 豁免 | ✓ 仍豁免 |
 
+### 真实契约校准（2026-09-05 环境完整后复跑）
+- **STATUS_DRIFT 白名单并入 `completed`**：首次上真实 DB（54,564 笔 paid 支付）复验时，新增状态漂移检测把 `order_status=completed`（已结课，合法已收款态）误判为漂移。真实枚举为 `pending/paid/completed/partial_refunded/refunded/cancelled/closed`，合法已收款态含 `completed`。校准 `_ORDER_OK_AFTER_PAID={paid,completed,partial_refunded,refunded}` 后，`TestGWT4Reconcile::test_reconcile_no_duplicate` 对 54,564 行**0 误报**通过（提交 `c9cbda0`）。
+
 ---
 
 ## 二、LLM 重试退避 —— 尊重 `Retry-After` 响应头（对标 OpenAI/Anthropic 官方 SDK）
