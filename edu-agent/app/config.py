@@ -242,6 +242,7 @@ class Settings(BaseSettings):
     }
     ANCHOR_ROUND: int = 3                    # 锚定闸门轮数（闸门前字节零改动）
     COMPACTION_LLM_SELECT: bool = True       # LLM 动态选片段总开关（未注入 llm 时回退规则）
+    FREEZE_ZONE_MAX_RATIO: float = 0.5       # C1-③ 冻结区 token 占比阈值；占比>此值触发告警+建议降 ANCHOR_ROUND
     # ============================================================
     # 【task-C1 新增段结束】
     # ============================================================

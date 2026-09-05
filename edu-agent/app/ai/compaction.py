@@ -357,6 +357,71 @@ class BudgetAllocator:
             "valid": valid,
         }
 
+    @classmethod
+    def freeze_zone(
+        cls,
+        messages: Sequence[Any],
+        *,
+        anchor_round: int | None = None,
+        threshold: int | None = None,
+    ) -> dict:
+        """冻结区 token 占比监测（task-C1-③）。
+
+        冻结区 = 锚定闸门前内容（System 可缓存前缀 + 前 anchor_round 个含用户问题的轮次），
+        该区在 compaction 中字节零改动（保护前缀缓存）。此处量化其占整条消息流的 token 比例。
+
+        Returns:
+            dict {gate_idx, anchor_round, frozen_tokens, total_tokens, frozen_ratio}
+              frozen_ratio = frozen_tokens / total_tokens（≈1 表示几乎全被冻结、压缩收敛能力低）
+        """
+        ar = int(anchor_round if anchor_round is not None else settings.ANCHOR_ROUND)
+        gate_idx = anchor_gate(messages, ar)
+        frozen_tokens = sum(_msg_tokens(m) for m in messages[:gate_idx])
+        total = sum(_msg_tokens(m) for m in messages)
+        return {
+            "gate_idx": gate_idx,
+            "anchor_round": ar,
+            "frozen_tokens": frozen_tokens,
+            "total_tokens": total,
+            "frozen_ratio": round(frozen_tokens / total, 4) if total else 0.0,
+        }
+
+
+def freeze_zone_check(
+    messages: Sequence[Any],
+    *,
+    anchor_round: int | None = None,
+    max_ratio: float | None = None,
+) -> dict:
+    """冻结区占比超阈值 → 告警 + 建议降 ANCHOR_ROUND（task-C1-③ 降级路径）。
+
+    纯函数 + loguru 告警日志；不抛异常、不阻断主流程。调用方按返回的
+    `new_anchor_round`（≤ 当前值）决定是否实际降锚。
+
+    Returns:
+        dict {frozen_tokens, total_tokens, frozen_ratio, max_ratio, over_threshold,
+              action, new_anchor_round}
+          over_threshold=True → action="downgrade"（占比超阈值），new_anchor_round = max(1, anchor_round-1)。
+    """
+    fz = BudgetAllocator.freeze_zone(messages, anchor_round=anchor_round)
+    ar = fz["anchor_round"]
+    limit = float(max_ratio if max_ratio is not None else settings.FREEZE_ZONE_MAX_RATIO)
+    over = fz["frozen_ratio"] > limit
+    new_ar = max(1, ar - 1) if over else ar
+    out = {
+        **fz,
+        "max_ratio": limit,
+        "over_threshold": over,
+        "action": "downgrade" if over else "ok",
+        "new_anchor_round": new_ar,
+    }
+    if over:
+        logger.warning(
+            f"[freeze_zone] 冻结区 token 占比 {fz['frozen_ratio']:.1%} 超阈值 {limit:.0%}，"
+            f"降 ANCHOR_ROUND {ar}→{new_ar}（保前缀缓存可命中）"
+        )
+    return out
+
 
 def anchor_gate(messages: Sequence[Any], anchor_round: int = 3) -> int:
     """锚定闸门：返回受保护前缀的切片上界（exclusive）。

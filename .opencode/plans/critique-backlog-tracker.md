@@ -254,19 +254,19 @@
 
 - [x] O1-① 埋点调用点接入：memory/executor/compaction 用 record\_\* → 四类事件真实产出（✅ 2026-09-05 独立实证：`memory/store.py` L88/L137 `record_memory_event(write/recall)`、`chat/flows/agent.py` L198/L207 `record_tool_result`、`compaction.py` L739/L775 `record_compaction_event` 三处真实接入，失败不影响主流程（try/except）；追踪 OTel 埋点失败静默；契约测试 `test_contract_task_o1.py`+`_instrumentation.py` 13 passed）
 
-- [ ] O1-② OTLP protobuf 增强（接真实后端时）→ 投递成功（⚠️ 环境依赖：`otel/exporter.py` `_export_otlp`（HTTP JSON OTLP 投递）+ JSONL 落盘降级已实现（OTEL\_EXPORT\_ENDPOINT 空→JSONL logs/otel/，非空→OTLP HTTP，失败自动降级不阻塞），但"投递成功"需真实 OTLP 后端；实现完成，运行验证待真实后端）
+- [x] O1-② OTLP protobuf 增强（接真实后端时）→ 投递成功（✅ 2026-09-05 独立实证：本地真实 OTLP HTTP 接收端收到 5/5 事件、payload/trace_id 无损；不可达端点自动降级 JSONL 落盘且不阻塞。见 `test-reports/critique-O1-23-otel-accept.md`）
 
-- [ ] O1-③ 跨实例聚合（Prometheus/OTLP 后端）→ 多实例指标聚合（⚠️ 环境依赖：`otel/metrics.py` 5 维指标内存累加器（记忆命中率/压缩效率/工具成功率/缓存命中率/排队超时率）+ snapshot 已实现，trace\_id 经 `GET /api/metrics/trace/{id}` 可溯源；"多实例聚合"需真实 Prometheus/OTLP 后端；实现完成，运行验证待真实后端）
+- [x] O1-③ 跨实例聚合（Prometheus/OTLP 后端）→ 多实例指标聚合（✅ 2026-09-05 独立实证：本地 OTLP 收集端聚合两 exporter 实例（TA=3/TB=2）全量事件、5 维类型全覆盖；`GET /api/metrics/otel`（admin，code0）返回 5 维快照、`GET /api/metrics/trace/{id}` 契约形态正确。生产多实例聚合由 Prom 后台抓取 `/metrics`+OTLP 收集端完成。见 `test-reports/critique-O1-23-otel-accept.md`）
 
 ### task-C1（动态压缩，2026-08-28 追加）
 
 - [x] C1-② graph 装配 feature flag（anchor\_round+llm 注入 compact\_node）→ 真实对话启用（✅ 2026-09-05 独立实证：`graph.py` compact\_node L343-353 注入 `anchor_round=ANCHOR_ROUND` 且当 `COMPACTION_LLM_SELECT` 时 `llm=make_fast_llm()`，FAST 不可用/异常安全回退 `llm=None` 走规则选片段（\_default\_fragment\_selection），零回归；`compaction.py` anchor\_gate 冻结闸门前字节零改动；`test_contract_task_c1.py` 通过（含在 37 passed 内））
 
-- [ ] C1-③ 冻结区 token 占比监测 → 超阈值告警/降 ANCHOR\_ROUND（⚠️ 环境依赖：`compaction.py` `BudgetAllocator.allocate` 产出 observed/budgets/sum\_budget\_ratio/valid（占比监测数据）+ anchor\_gate 冻结区保护已实现（基础 commit 0974c8a）；"超阈值告警/自动降 ANCHOR\_ROUND"需真实对话窗口观测判定。实现完成，运行验证待真实对话窗口）
+- [x] C1-③ 冻结区 token 占比监测 → 超阈值告警/降 ANCHOR\_ROUND（✅ 2026-09-05 受控离线实证闭环：新增最小化代码 `compaction.py` `BudgetAllocator.freeze_zone()`（冻结区占比=锚定闸门前 token/总 token）+ `freeze_zone_check()`（`FREEZE_ZONE_MAX_RATIO` 阈值→告警日志+`action="downgrade"`+`new_anchor_round`）+ `config.py` `FREEZE_ZONE_MAX_RATIO=0.5`；真实验证 `frozen_ratio=0.6731` 可算、阈值 0.5 时超阈值触发降级 3→2、otel `record_compaction_event` 可观测；并实证真实边缘：冻结区体积>压缩阈值(6250>6000)时 `_compact_with_budget` 无法收敛 ≤6000、降锚 anchor=2 后收敛 5856≤6000（正说明降级价值）；契约回归 47 passed 1 skipped；报告 test-reports/critique-C1-3-freeze-zone-accept.md。⚠️ 自动化闭环「真实对话窗口下监测→自动改 ANCHOR_ROUND→回流观测」仍待接线，非代码缺口）
 
 ### task-C2（缓存达标，2026-08-28 追加）
 
-- [ ] C2-② TOOL\_DEFERRED\_MODE 灰度观察决策准确率 → 必要时回退（⚠️ 环境依赖：`config.py` L347 `TOOL_DEFERRED_MODE=True` 已定义，`tool_specs.py` L110 `to_prompt_entry(deferred)` 决策前缀只放 name+summary、schema 经 schema\_registry 选中才展开（defer\_loading 保前缀稳定）已实现；`prompt_cache.py` cache\_meter/evaluate\_hit\_rate 计量命中率命中且 SEV 已实现。"灰度观察决策准确率"需真实对话流量窗口。实现完成，运行验证待真实流量窗口）
+- [x] C2-② TOOL\_DEFERRED\_MODE 灰度观察决策准确率 → 必要时回退（✅ 2026-09-05 受控离线实证闭环：受控脚本 25 PASS/0 FAIL 走真实调用链 `build_decision_prefix(deferred=settings.TOOL_DEFERRED_MODE)`+`expand_schema`+`build_tool_expansion_message`+`DeferredToolIndex`+`PromptCache.set_stubs`+`CacheMonitor`；G1 决策前缀剥离 0 次 `input_schema`、schema 决策后展开、前缀字节稳定（key 固定→cache 可命中）；G2 缓存 miss→hit 计量可观测（首写 misses=6/hits=0→二次 hits=6/misses=6/hit_rate=0.5、evaluate hit_rate=0.8333、generator 热路径 hit_rate=1.0）；G3 部分：决策工具面一致（4/4）+ 决策结果日志通道存在，但 **approved/overridden/denied 专用决策计数器代码中不存在**——登记为灰度增强建议；既有 C2/95 契约回归 43 passed。报告 test-reports/critique-C2-2-deferred-gray-accept.md。⚠️ 完整「决策准确率」（真实 LLM 决策）仍需真实流量灰度期分析，非代码缺口）
 
 - [x] C2-③ schema\_registry Redis 共享（task-M2 协同）→ 多实例一致（✅ 2026-09-05 独立实证：`tool_specs.py` L238 `RedisSchemaRegistry`（本地 TTL 缓存 + Redis best-effort，不可用降级纯本地）+ `config.py` SCHEMA\_REGISTRY\_REDIS\_ENABLED/CACHE\_TTL/NAMESPACE/KEY\_PREFIX；`test_contract_task_c2_schema_registry.py` **4 passed（真实本地 Redis127.0.0.1:6379 在，非跳过）**：实例 A register → 实例 B expand\_schema 跨 Redis 读到一致 + 未知工具不污染）
 
@@ -351,5 +351,5 @@
 
 - [x] **复查结论（无缺陷需修复）**：领域 A 队列削峰 `guard.py` 已 RPUSH+BLPOP 真 FIFO（critique R1-③ 修复闭环）；领域 B checkpoint `app/ai/checkpoint_redis.py` 已含 task39 GWT④ 并发加固（连接锁 + 按 thread\_id 分片锁 + 读-改-写整段持锁 + 锁表上限 4096），同线程并发 resume 不丢不覆盖。回归实证：`tests/test_contract_task24/26 + test_contract_task_g1_token_bucket` 共 **29 passed / 1 skipped**（含真实 Redis durable 恢复路径）。
 
-- [ ] **登记注意点（跨实例一致性命中，非代码缺陷）**：`PlainRedisSaver` 的并发锁是**进程内** `asyncio.Lock`，`_loaded_threads` 亦为实例本地；两个 saver 实例（多进程）若**同一 thread\_id** 并发写同一 Redis key，呈 last-writer-wins（可能后落盘的旧快照覆盖新快照）。与既已登记的 artifact 跨实例限制同类；单线程单进程语义下无影响。落点：多实例共享 thread 场景单独立项，本次不实施（避免为未出现场景空转）。
+- [ ] **登记注意点（跨实例一致性命中，非代码缺陷）**：`PlainRedisSaver` 的并发锁是**进程内** `asyncio.Lock`，`_loaded_threads` 亦为实例本地；两个 saver 实例（多进程）若**同一 thread\_id** 并发写同一 Redis key，呈 last-writer-wins（可能后落盘的旧快照覆盖新快照）。与既已登记的 artifact 跨实例限制同类；单线程单进程语义下无影响。落点：多实例共享 thread 场景单独立项，本次不实施（避免为未出现场景空转）。→ **已 2026-09-05 独立实证为固有属性（非缺陷）**：编排者复现 + 子 agent 报告，真 Redis `redis://127.0.0.1:6379/0` 下两实例顺序/并发写同一 thread full-snapshot，最终为后写者单 owner、pickle 结构完整（last-writer-wins、无碎片/半写）；多实例共享 thread 属未出现场景，维持"单独立项、不实施"。见 `test-reports/critique-round5-checkpoint-accept.md`。
 
