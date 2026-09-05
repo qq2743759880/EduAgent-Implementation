@@ -238,8 +238,10 @@ class PaymentReconcileRepo:
         order_amounts: dict[int, float] = {}
         payment_count_per_order: dict[int, int] = {}
         total_amount = 0.0
-        # 支付已入账但订单应处于 paid / 退款态（partial_refunded/refunded）——其余状态视为状态漂移
-        _ORDER_OK_AFTER_PAID = {"paid", "partial_refunded", "refunded"}
+        # 资金已入账（payment=paid）时订单应处于已收款后的进程态：
+        # paid / completed（已结课）/ partial_refunded / refunded——其余（pending/cancelled/closed）
+        # 视为状态漂移（真实契约优先：completed 是合法已收款态，见真实 DB 分布校准）。
+        _ORDER_OK_AFTER_PAID = {"paid", "completed", "partial_refunded", "refunded"}
         for r in paid:
             oid = int(r["order_id"])
             amt = float(r["amount"])
