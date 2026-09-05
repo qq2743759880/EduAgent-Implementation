@@ -11,6 +11,8 @@
     [2026-08-21 v2 R2] 可视口比例批判性修复：App 壳(flex:1 确定高度) + spacer(flex:0 0 auto 去 sticky)
      + .main/.side 等高内滚(min-height:0) + 侧栏宽度 clamp + 断点(940/760/440/矮窗560) + 100dvh → 加入 R3
     [2026-08-21 v2 R1] 会话列表窗口新增（侧栏+抽屉+高亮/删除/新建/点选切换）→ 并入 R3
+    [2026-09-05 md-fix] 流式/历史接入 EduMD 极简 Markdown 渲染（先 HTML 转义防 XSS）+ 120ms 节流
+      + start/retrieval→首 token 思考中动效 + .md-* 排版 CSS；发送改为追加不清空历史
 -->
 <html lang="zh-CN" data-theme="light"><head>
 <meta charset="UTF-8">
@@ -124,6 +126,18 @@ textarea{font-family:inherit}
 .msg.user .bubb b{color:var(--ht-fff)}
 .bubb a{color:var(--candy-blue);font-weight:700;text-decoration:none}
 .bubb code{background:var(--htc-31-31-31-007);border-radius:6px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+/* ===== Markdown 排版（EduMD 渲染的 AI 回答）：段落/标题/列表/代码块 ===== */
+.bubb p{margin:0 0 .55em;line-height:1.6}
+.bubb p:last-child,.bubb ul.md-list:last-child,.bubb ol.md-list:last-child,.bubb pre.md-pre:last-child,.bubb h3.md-h:last-child,.bubb h4.md-h:last-child,.bubb h5.md-h:last-child,.bubb h6.md-h:last-child{margin-bottom:0}
+.bubb h3.md-h,.bubb h4.md-h,.bubb h5.md-h,.bubb h6.md-h{margin:.75em 0 .35em;line-height:1.4;letter-spacing:-.01em;color:var(--ink)}
+.bubb h3.md-h{font-size:1.12em}.bubb h4.md-h{font-size:1.05em}.bubb h5.md-h{font-size:1em}.bubb h6.md-h{font-size:.95em;color:var(--ink-muted)}
+.bubb ul.md-list,.bubb ol.md-list{margin:.3em 0 .6em;padding-left:1.5em}
+.bubb ul.md-list li,.bubb ol.md-list li{margin:.15em 0}
+.bubb ul.md-list li::marker{color:var(--candy-green)}
+.bubb ol.md-list li::marker{color:var(--candy-purple);font-weight:800}
+.bubb pre.md-pre{background:var(--htc-24-24-24-006);border:2px solid var(--htc-31-31-31-014);border-radius:12px;padding:10px 12px;margin:.55em 0;overflow-x:auto;line-height:1.55;max-width:100%;font-family:ui-monospace,Consolas,monospace}
+.bubb pre.md-pre code{background:none;border:none;border-radius:0;padding:0;font-size:12px;color:var(--ink)}
+.bubb .md-err{margin-top:.6em;font-size:12px;font-weight:800;color:var(--candy-red)}
 .msg .meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.625rem;color:var(--ink-faint);font-weight:600}
 .msg.user .meta{justify-content:flex-end}
 .meta .refs{display:inline-flex;align-items:center;gap:4px;color:var(--candy-blue);font-weight:700}
@@ -134,6 +148,8 @@ textarea{font-family:inherit}
 .think{display:inline-flex;align-items:center;gap:7px;background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-004);color:var(--candy-green-deep);font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px}
 .spinner{width:15px;height:15px;border-radius:50%;border:2.5px solid var(--htc-88-204-2-035);border-top-color:var(--candy-green);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.think .txt{animation:thinkPulse 1.2s ease-in-out infinite}
+@keyframes thinkPulse{0%,100%{opacity:1}50%{opacity:.45}}
 
 /* ===== 输入区（flex:0 0 auto 常驻 .main 卡片底部，长聊随窗口比例自适应）===== */
 .composer{flex:0 0 auto;background:var(--white);padding-top:10px;border-top:2px dashed var(--htc-124-58-237-028)}
@@ -601,6 +617,64 @@ if (!__logon) { renderSides(); draw("history"); }
 </script>
 <script src="/edu-api.js"></script>
 <script>
+/* EduMD：极简 Markdown→HTML（AI 回答渲染用，离线零依赖，~55 行手写）
+   规则：先整体 HTML 转义（& < > "）再做 Markdown 转换 → 标签/属性注入全部失效（防 XSS）；
+   支持 #~#### 标题、无序(-*•)/有序(1. 1、1))列表、```围栏代码块（流式未闭合也按代码块渲染）、
+   行内 code（反引号）、**加粗**、*斜体*、[文字](链接)（仅放行 http(s)/站内相对/#，其余替换为 #）、
+   空行分段 + 段内单换行转 <br> */
+(function (global) {
+  function mdToHtml(src) {
+    var s = String(src == null ? "" : src).replace(/\r\n?/g, "\n")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    var blocks = [];
+    s = s.replace(/```[\w-]*\n?([\s\S]*?)(?:```|$)/g, function (m, code) {
+      blocks.push('<pre class="md-pre"><code>' + code.replace(/\n+$/, "") + "</code></pre>");
+      return "\u0000B" + (blocks.length - 1) + "\u0000";
+    });
+    function inline(x) {
+      var codes = [];
+      x = x.replace(/`([^`\n]+)`/g, function (m, c) {
+        codes.push("<code>" + c + "</code>");
+        return "\u0000C" + (codes.length - 1) + "\u0000";
+      });
+      x = x.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
+        var href = /^(https?:\/\/|\/|#)/i.test(u) ? u : "#";
+        return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + t + "</a>";
+      });
+      x = x.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+      x = x.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>");
+      return x.replace(/\u0000C(\d+)\u0000/g, function (m, i) { return codes[+i]; });
+    }
+    var lines = s.split("\n"), out = [], i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      var bm = line.match(/^\u0000B(\d+)\u0000\s*$/);
+      if (bm) { out.push(blocks[+bm[1]]); i++; continue; }
+      var h = line.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { var lv = h[1].length + 2; out.push('<h' + lv + ' class="md-h">' + inline(h[2]) + "</h" + lv + ">"); i++; continue; }
+      var isUl = /^\s*[-*•]\s+/.test(line), isOl = /^\s*\d+[.、)]\s+/.test(line);
+      if (isUl || isOl) {
+        var tag = isUl ? "ul" : "ol";
+        var re = isUl ? /^\s*[-*•]\s+(.*)$/ : /^\s*\d+[.、)]\s+(.*)$/;
+        var items = [];
+        while (i < lines.length) { var lm = lines[i].match(re); if (!lm) break; items.push("<li>" + inline(lm[1]) + "</li>"); i++; }
+        out.push('<' + tag + ' class="md-list">' + items.join("") + "</" + tag + ">");
+        continue;
+      }
+      if (!line.trim()) { i++; continue; }
+      var para = [line]; i++;
+      while (i < lines.length && lines[i].trim() &&
+             !/^\u0000B\d+\u0000/.test(lines[i]) && !/^(#{1,4})\s/.test(lines[i]) &&
+             !/^\s*([-*•]|\d+[.、)])\s+/.test(lines[i])) { para.push(lines[i]); i++; }
+      out.push("<p>" + para.map(inline).join("<br>") + "</p>");
+    }
+    return out.join("").replace(/\u0000B(\d+)\u0000/g, function (m, i) { return blocks[+i]; });
+  }
+  global.EduMD = { toHtml: mdToHtml };
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
 /* admin 角色显示管理后台入口 */
 (function () {
   if (!window.EAPI) return;
@@ -672,31 +746,74 @@ if (!__logon) { renderSides(); draw("history"); }
     if (!list || !list.length) return emptyHtml();
     return list.map(function (m) {
       var isUser = m.role === "user" || m.role === "human";
-      return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="bubb">' + esc(m.content || m.text || "") + '</div></div>';
+      /* AI 消息走 EduMD Markdown 渲染；用户消息纯文本转义 + 换行 */
+      var body = isUser ? esc(m.content || m.text || "").replace(/\n/g, "<br>") : md(m.content || m.text || "");
+      return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="bubb">' + body + '</div></div>';
     }).join("");
   }
 
   function emptyHtml() { return '<div class="empty" style="text-align:center;color:var(--ink-faint);padding:60px 0">开始和 EduAgent 对话吧 ✨</div>'; }
   function emptyState() { stage.innerHTML = emptyHtml(); }
   function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+  /* EduMD 未加载（脚本被拦等）时静默降级为纯文本转义 */
+  var md = (window.EduMD && window.EduMD.toHtml) ? window.EduMD.toHtml : esc;
 
-  /* ---- 发送：SSE 流式 ---- */
+  /* ---- 发送：SSE 流式（EduMD Markdown 渲染 + 120ms 节流；start/retrieval→首 token 思考中动效）---- */
   var input = $("composerInput"), send = $("sendBtn");
+  var THINK_HTML = '<span class="think"><span class="spinner"></span><span class="txt">🧠 检索知识库并思考中…</span></span>';
+  var CURSOR_HTML = '<span class="cursor"></span>';
+  function nearBottom() { return stage.scrollHeight - stage.scrollTop - stage.clientHeight < 90; }
+  function scrollStage(force) { if (force || nearBottom()) stage.scrollTop = stage.scrollHeight; }
   function doSend() {
     var text = (input.value || "").trim();
     if (!text) return;
     var sid = activeId;
-    stage.innerHTML = historyHtml([]) + '<div class="msg user"><div class="bubb">' + esc(text) + '</div></div><div class="msg ai"><div class="bubb" id="aiResp">…</div></div>';
+    /* 追加新气泡（不再清空既有历史；移除空态/错误态占位） */
+    var ph = stage.querySelector(".empty,.error-st"); if (ph) ph.parentNode.removeChild(ph);
+    stage.insertAdjacentHTML("beforeend",
+      '<div class="msg user"><div class="bubb">' + esc(text).replace(/\n/g, "<br>") + '</div></div>' +
+      '<div class="msg ai"><div class="bubb" id="aiResp">' + THINK_HTML + '</div></div>');
+    scrollStage(true);
     input.value = "";
+    var acc = "", gotToken = false, gotDone = false, renderTimer = null;
+    function renderStream(final) {
+      var el = $("aiResp"); if (!el || !acc) return;
+      var htmlOut = md(acc);
+      if (!final) {
+        /* 闪烁 cursor 尽量挂在最后一个块级元素内，避免独占一行 */
+        if (/<\/(p|h[3-6]|li)>$/.test(htmlOut)) htmlOut = htmlOut.replace(/<\/(p|h[3-6]|li)>$/, CURSOR_HTML + "</$1>");
+        else htmlOut += CURSOR_HTML;
+      }
+      el.innerHTML = htmlOut;
+      scrollStage(false);
+    }
+    function scheduleRender() { /* 节流：120ms 内多次 token 合并为一次 innerHTML 重排 */
+      if (renderTimer) return;
+      renderTimer = setTimeout(function () { renderTimer = null; renderStream(false); }, 120);
+    }
+    function failStream(msg) {
+      if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+      var el = $("aiResp"); if (!el) return;
+      el.innerHTML = (acc ? md(acc) : "") +
+        '<div class="md-err">⚠ 回答中断：' + esc(msg || "未知错误") + (acc ? "（已保留已生成部分）" : "") + '</div>';
+      var t = $("toast"), tm = $("toastMsg");
+      if (t) { if (tm) tm.textContent = "AI 响应中断：" + (msg || "未知错误"); t.style.display = ""; }
+      scrollStage(false);
+    }
     fetch(EAPI.BASE + "/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
       body: JSON.stringify({ query: text, session_id: sid || null, stream: true }),
     }).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
       var reader = resp.body.getReader(), dec = new TextDecoder(), buf = "", evt = "";
       function pump() {
         return reader.read().then(function (r) {
-          if (r.done) return;
+          if (r.done) {
+            if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+            if (!gotDone) { if (acc) renderStream(true); else failStream("连接提前结束"); }
+            return;
+          }
           buf += dec.decode(r.value, { stream: true });
           var lines = buf.split("\n"); buf = lines.pop();
           lines.forEach(function (line) {
@@ -705,21 +822,33 @@ if (!__logon) { renderSides(); draw("history"); }
             if (line.startsWith("event:")) { evt = line.slice(6).trim(); return; }
             if (!line.startsWith("data:")) return;
             var payload = line.slice(5).trim();
-            var el = $("aiResp"); if (!el) return;
-            if (evt === "token") { try { var j = JSON.parse(payload); el.textContent += j.delta || ""; } catch (e) {} }
+            if (evt === "token") {
+              /* 契约实测：token 事件 JSON 的 delta 字段累加（task104） */
+              try { var j = JSON.parse(payload); if (j.delta) { acc += j.delta; gotToken = true; scheduleRender(); } } catch (e) {}
+            }
+            else if (evt === "start" || evt === "retrieval") {
+              /* start→retrieval→首 token 的检索空窗：思考中动效（首 token 到达后被内容整体替换） */
+              if (!gotToken) { var th = $("aiResp"); if (th) th.innerHTML = THINK_HTML; }
+            }
             else if (evt === "done") {
               /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
                  流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则刷新列表使会话入列表 */
+              gotDone = true;
               try { var d = JSON.parse(payload); if (!sid && d && d.data && d.data.session_id) loadSessions(); } catch (e) {}
+              if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+              if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
+              else renderStream(true);
             }
-            else if (evt === "error") { try { var er = JSON.parse(payload); el.textContent = "（回答失败：" + (er.message || "未知错误") + "）"; } catch (e) {} }
+            else if (evt === "error") {
+              try { var er = JSON.parse(payload); failStream(er.message || "未知错误"); } catch (e) { failStream("未知错误"); }
+            }
           });
           return pump();
         });
       }
       return pump();
     }).catch(function (e) {
-      var el = $("aiResp"); if (el) el.textContent = "（网络错误：" + e.message + "）";
+      failStream(e && e.message ? e.message : "网络错误");
     });
   }
   send.addEventListener("click", doSend);

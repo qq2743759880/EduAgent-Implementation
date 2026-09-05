@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的优惠券 · EduAgent</title>
+<!--
+  ============================================================
+  我的优惠券页（fe-html 糖果色静态页）
+  接口契约（curl 实测 2026-09-05，user000001）：
+    GET /api/coupons?status=unused|used|expired&page=1&page_size=20
+      → data: {total, page, page_size, items:[
+        {coupon_id, coupon_template_id, coupon_name, coupon_type(cash|discount|trial|gift),
+         face_value, min_spend, status(unused|used|expired),
+         valid_from, valid_to, received_at, used_at, order_no}]}
+    face_value 语义（market/service.py _template_from_row）：
+      cash → discount_amount（元）；discount → discount_rate（0.8=8折）；trial/gift → 0
+  未登录（无 token）→ EAPI.buildLoginUrl 跳登录；
+  认证/跳转依赖共享客户端 /edu-api.js（EAPI）。
+  ============================================================
+-->
+<style>
+/* ===== 糖果色 tokens（对齐 me.html，禁硬编码业务 hex）===== */
+:root{
+  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
+  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
+  --candy-silver:#e5e7eb;
+  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff; --candy-blue-soft:#e3f5ff;
+  --candy-bg:#fff9f0;
+  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
+  --candy-purple-deep:#5b21b6; --candy-orange-deep:#c74000; --candy-red-deep:#d63e3e; --candy-blue-deep:#0f86b8;
+  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
+  --gray-300:#cfcfcf; --white:#fff; --ht-fff:#fff; --ht-eee:#eee;
+  --border-chip:rgba(31,31,31,.15); --line:#e5e7eb;
+  --htc-31-31-31-014:rgba(31,31,31,.14); --htc-31-31-31-018:rgba(31,31,31,.18);
+  --htc-31-31-31-045:rgba(31,31,31,.45); --htc-255-200-0-022:rgba(255,200,0,.22);
+  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
+  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{min-height:100dvh}
+body{min-height:100dvh;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+/* ===== 全局导航（对齐 me.html gnav，含移动端抽屉）===== */
+.gnav-toggle{display:none;position:fixed;top:12px;right:12px;z-index:140;width:44px;height:44px;border:2px solid var(--ink);background:var(--white);border-radius:12px;font-size:.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+.gnav-overlay{position:fixed;inset:0;z-index:120;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+.gnav-overlay.open{opacity:1;visibility:visible}
+.glayout{display:block;max-width:1180px;margin:0 auto;padding:0}
+.gnav{position:sticky;top:0;z-index:130;display:flex;flex-direction:row;align-items:center;gap:12px;width:auto;max-height:none;overflow:visible;background:var(--white);border:0;border-bottom:2px solid var(--border-chip);border-radius:0;box-shadow:0 2px 0 var(--htc-31-31-31-014);padding:10px 18px}
+.gnav-brand{display:flex;align-items:center;gap:8px;min-width:0;padding:0;margin:0;text-decoration:none;color:var(--ink)}
+.gnav-logo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--candy-green);color:var(--ht-fff);font-size:.75rem;font-weight:900;line-height:1}
+.gnav-name{font-size:.9375rem;font-weight:900;color:var(--ink);white-space:nowrap}
+.gnav-cap{font-size:.6875rem;font-weight:900;color:var(--ink-faint);letter-spacing:.08em;white-space:nowrap}
+.gnav-list{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+.gnav-list::-webkit-scrollbar{display:none}
+.gnav-item{display:inline-flex;align-items:center;justify-content:center;width:auto;min-height:40px;white-space:nowrap;font-size:.8125rem;font-weight:800;color:var(--ink);padding:0 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+.gnav-item:hover{background:var(--candy-purple-soft);color:var(--candy-purple)}
+.gnav-item.active{background:var(--candy-green);color:var(--ht-fff);border-color:var(--ink);box-shadow:0 3px 0 var(--candy-green-deep)}
+.gnav-foot{margin-left:auto;margin-top:0;border:0;padding:0;font-size:.6875rem;color:var(--ink-faint);font-weight:700;white-space:nowrap}
+@media(max-width:767px){
+  .gnav-toggle{display:grid}
+  .glayout{padding:0}
+  .gnav{position:fixed;right:0;left:auto;top:0;bottom:0;z-index:130;width:min(320px,88vw);height:100dvh;align-items:stretch;flex-direction:column;gap:8px;padding:16px;transform:translateX(100%);transition:transform .24s ease;box-shadow:var(--shadow-3d);border-left:2px solid var(--border-chip);border-bottom:0}
+  .gnav.open{transform:translateX(0)}
+  .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip)}
+  .gnav-cap{padding-top:4px}
+  .gnav-list{flex-direction:column;align-items:stretch;overflow-y:auto}
+  .gnav-item{justify-content:flex-start;width:100%;min-height:44px}
+  .gnav-foot{margin:0;padding-top:8px;border-top:2px solid var(--border-chip)}
+}
+
+/* ===== 页面主体 ===== */
+.page{max-width:860px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:16px}
+.page-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.page-head .mascot{display:grid;place-items:center;width:52px;height:52px;border:3px solid var(--ink);border-radius:16px;background:var(--candy-purple-soft);font-size:26px;box-shadow:0 3px 0 var(--htc-31-31-31-018)}
+.page-head h1{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--ink)}
+.page-head .sub{font-size:12.5px;color:var(--ink-faint);font-weight:600;margin-top:2px}
+
+/* ===== 状态 tab ===== */
+.tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tab{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);background:var(--white);color:var(--ink);font-weight:800;font-size:13.5px;border-radius:999px;padding:8px 16px;box-shadow:0 2px 0 var(--htc-31-31-31-018);transition:transform .08s,background .12s,color .12s}
+.tab:hover{transform:translateY(-1px)}
+.tab.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-purple-deep)}
+.tab .cnt{font-size:12px;font-weight:900;background:var(--candy-yellow);color:var(--ink);border-radius:999px;padding:1px 8px}
+.tab.on .cnt{background:var(--ht-fff);color:var(--candy-purple)}
+
+/* ===== 券卡片 ===== */
+.cp-list{display:flex;flex-direction:column;gap:12px}
+.cp-card{position:relative;display:flex;align-items:stretch;gap:0;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);overflow:hidden}
+.cp-card.dim{filter:grayscale(.85);opacity:.75}
+.cp-left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:128px;padding:16px 14px;border-right:3px dashed var(--ink);background:var(--candy-purple-soft);flex-shrink:0}
+.cp-card[data-type="cash"] .cp-left{background:var(--candy-green-soft)}
+.cp-card[data-type="discount"] .cp-left{background:var(--candy-orange-soft)}
+.cp-card[data-type="trial"] .cp-left,.cp-card[data-type="gift"] .cp-left{background:var(--candy-blue-soft)}
+.cp-val{font-size:24px;font-weight:900;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:center;line-height:1.15}
+.cp-min{font-size:11.5px;font-weight:800;color:var(--ink-strong);text-align:center}
+.cp-body{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;flex:1;padding:14px 16px}
+.cp-name{font-size:15px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-meta{font-size:12px;color:var(--ink-faint);font-weight:600}
+.cp-meta b{color:var(--ink-strong);font-weight:800}
+.cp-status{position:absolute;top:10px;right:10px;font-size:11px;font-weight:900;border:2px solid var(--ink);border-radius:999px;padding:2px 10px}
+.cp-status.unused{background:var(--candy-green);color:var(--ht-fff)}
+.cp-status.used{background:var(--candy-silver);color:var(--ink)}
+.cp-status.expired{background:var(--candy-red);color:var(--ht-fff)}
+
+/* ===== 空态 / 错误态 / 分页 ===== */
+.state{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:var(--white);border:3px dashed var(--border-chip);border-radius:var(--radius-lg);padding:36px 20px}
+.state .st-emoji{font-size:40px}
+.state h3{font-size:16px;font-weight:900;color:var(--ink)}
+.state p{font-size:13px;color:var(--ink-faint);font-weight:600}
+.state .btn{display:inline-flex;align-items:center;gap:6px;border:3px solid var(--ink);background:var(--candy-green);color:var(--ht-fff);font-weight:900;font-size:13.5px;border-radius:12px;padding:9px 20px;box-shadow:0 3px 0 var(--candy-green-deep);text-decoration:none}
+.state .btn:active{transform:translateY(1px);box-shadow:none}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.pager button{border:2px solid var(--ink);background:var(--white);border-radius:12px;padding:7px 16px;font-weight:800;font-size:13px;box-shadow:0 2px 0 var(--htc-31-31-31-018)}
+.pager button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.pager .pg-info{font-size:13px;color:var(--ink-faint);font-weight:700}
+
+/* ===== 加载骨架 ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{border:3px solid var(--gray-300);border-radius:var(--radius-lg);padding:16px;display:flex;gap:14px}
+.sk-line{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--ht-eee) 25%,#f7f1e6 50%,var(--ht-eee) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w60{width:60%}.sk-line.w90{width:90%}.sk-line.w40{width:40%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+</style>
+</head>
+<body>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">EduAgent</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>错题/单词本</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item active" href="me.html" aria-current="page"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+
+<div class="page">
+  <header class="page-head">
+    <span class="mascot" aria-hidden="true">🎟️</span>
+    <div>
+      <h1>我的优惠券</h1>
+      <p class="sub">可使用 / 已使用 / 已过期 · GET /api/coupons（真实数据）</p>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="优惠券状态">
+    <button class="tab on" role="tab" aria-selected="true" data-status="unused" id="tabUnused">可使用</button>
+    <button class="tab" role="tab" aria-selected="false" data-status="used" id="tabUsed">已使用</button>
+    <button class="tab" role="tab" aria-selected="false" data-status="expired" id="tabExpired">已过期</button>
+  </div>
+
+  <!-- 主内容区：JS 在 #cpStage 内渲染 列表 / 空态 / 错误态 / 骨架 -->
+  <div id="cpStage" aria-live="polite"></div>
+
+  <div class="pager" id="cpPager" style="display:none">
+    <button type="button" id="pgPrev">‹ 上一页</button>
+    <span class="pg-info" id="pgInfo"></span>
+    <button type="button" id="pgNext">下一页 ›</button>
+  </div>
+</div>
+</div>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 我的优惠券：GET /api/coupons 真实数据 ===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) { location.replace(EAPI.buildLoginUrl("/coupons.html")); return; }
+
+  var PAGE_SIZE = 20;
+  var stage = document.getElementById("cpStage");
+  var pager = document.getElementById("cpPager");
+  var pgInfo = document.getElementById("pgInfo");
+  var pgPrev = document.getElementById("pgPrev");
+  var pgNext = document.getElementById("pgNext");
+  var curStatus = "unused";
+  var curPage = 1;
+  var totalPages = 1;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function showSkeleton() {
+    stage.innerHTML = "";
+    var box = el("div", "sk");
+    for (var i = 0; i < 3; i++) {
+      var c = el("div", "sk-card");
+      c.appendChild(el("div", "sk-line w40"));
+      var r = el("div", "");
+      r.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center";
+      r.appendChild(el("div", "sk-line w90"));
+      r.appendChild(el("div", "sk-line w60"));
+      c.appendChild(r);
+      box.appendChild(c);
+    }
+    stage.appendChild(box);
+    pager.style.display = "none";
+  }
+  function showError(retry) {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    s.appendChild(el("div", "st-emoji", "😵"));
+    s.appendChild(el("h3", "", "优惠券加载失败"));
+    s.appendChild(el("p", "", "网络开小差了，请稍后重试"));
+    var b = el("button", "btn", "🔄 重试");
+    b.addEventListener("click", retry);
+    s.appendChild(b);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+  function showEmpty() {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    var label = curStatus === "unused" ? "可使用" : curStatus === "used" ? "已使用" : "已过期";
+    s.appendChild(el("div", "st-emoji", "🎟️"));
+    s.appendChild(el("h3", "", "暂无" + label + "的优惠券"));
+    s.appendChild(el("p", "", "去课程中心逛逛，领取新券再回来吧"));
+    var a = el("a", "btn", "🛒 去课程中心");
+    a.href = "courses.html";
+    s.appendChild(a);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+
+  /* face_value 语义：cash=金额(元)；discount=折扣率(0.8→8折)；trial/gift=兑换类 */
+  function faceText(c) {
+    var v = Number(c.face_value) || 0;
+    if (c.coupon_type === "discount") {
+      var zhe = Math.round(v * 1000) / 100; // 0.85 → 8.5
+      return (zhe % 1 === 0 ? zhe.toFixed(0) : zhe.toFixed(1)) + "折";
+    }
+    if (c.coupon_type === "trial") return "试用";
+    if (c.coupon_type === "gift") return "赠券";
+    return "¥" + v.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  }
+  function minText(c) {
+    var m = Number(c.min_spend) || 0;
+    return m > 0 ? "满 ¥" + m.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) + " 可用" : "无门槛";
+  }
+  function d10(s) { return s ? String(s).slice(0, 10) : ""; }
+
+  var STATUS_LABEL = { unused: "可使用", used: "已使用", expired: "已过期" };
+  var TYPE_LABEL = { cash: "现金券", discount: "折扣券", trial: "试用券", gift: "赠券" };
+
+  function renderList(data) {
+    stage.innerHTML = "";
+    var list = el("div", "cp-list");
+    (data.items || []).forEach(function (c) {
+      var card = el("article", "cp-card" + (c.status === "unused" ? "" : " dim"));
+      card.setAttribute("data-type", c.coupon_type || "cash");
+
+      var left = el("div", "cp-left");
+      left.appendChild(el("div", "cp-val", faceText(c)));
+      left.appendChild(el("div", "cp-min", minText(c)));
+
+      var body = el("div", "cp-body");
+      body.appendChild(el("div", "cp-name", c.coupon_name || "未命名优惠券"));
+      var m1 = el("div", "cp-meta");
+      m1.appendChild(document.createTextNode("类型 " + (TYPE_LABEL[c.coupon_type] || c.coupon_type || "—") + " · 有效期 " + d10(c.valid_from) + " ~ " + d10(c.valid_to)));
+      body.appendChild(m1);
+      var m2 = el("div", "cp-meta");
+      if (c.status === "used") {
+        m2.appendChild(document.createTextNode("使用于 " + (d10(c.used_at) || "—") + (c.order_no ? " · 订单 " + c.order_no : "")));
+      } else {
+        m2.appendChild(document.createTextNode("领取于 " + (d10(c.received_at) || "—")));
+      }
+      body.appendChild(m2);
+
+      card.appendChild(left);
+      card.appendChild(body);
+      card.appendChild(el("span", "cp-status " + c.status, STATUS_LABEL[c.status] || c.status));
+      list.appendChild(card);
+    });
+    stage.appendChild(list);
+  }
+
+  function updatePager(total) {
+    totalPages = Math.max(1, Math.ceil((total || 0) / PAGE_SIZE));
+    pager.style.display = totalPages > 1 ? "flex" : "none";
+    pgPrev.disabled = curPage <= 1;
+    pgNext.disabled = curPage >= totalPages;
+    pgInfo.textContent = "第 " + curPage + " / " + totalPages + " 页 · 共 " + (total || 0) + " 张";
+  }
+  function setTabBadge(status, total) {
+    var btn = document.querySelector('.tab[data-status="' + status + '"]');
+    if (!btn) return;
+    var old = btn.querySelector(".cnt");
+    if (old) old.remove();
+    var s = el("span", "cnt", String(total));
+    btn.appendChild(s);
+  }
+
+  function load(status, page) {
+    curStatus = status;
+    curPage = page;
+    showSkeleton();
+    EAPI.get("/api/coupons?status=" + encodeURIComponent(status) + "&page=" + page + "&page_size=" + PAGE_SIZE)
+      .then(function (data) {
+        if (!data) { showError(function () { load(status, page); }); return; }
+        setTabBadge(status, data.total);
+        if (!data.items || !data.items.length) { showEmpty(); updatePager(data.total); return; }
+        renderList(data);
+        updatePager(data.total);
+      })
+      .catch(function () { showError(function () { load(status, page); }); });
+  }
+
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (b) {
+        b.classList.remove("on");
+        b.setAttribute("aria-selected", "false");
+      });
+      btn.classList.add("on");
+      btn.setAttribute("aria-selected", "true");
+      load(btn.getAttribute("data-status"), 1);
+    });
+  });
+  pgPrev.addEventListener("click", function () { if (curPage > 1) load(curStatus, curPage - 1); });
+  pgNext.addEventListener("click", function () { if (curPage < totalPages) load(curStatus, curPage + 1); });
+
+  load("unused", 1);
+})();
+</script>
+<script>
+/* admin 角色显示管理后台入口（对齐 me.html） */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

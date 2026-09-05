@@ -4130,6 +4130,13 @@ a{text-decoration:none;color:inherit}
   .em-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-weight:800;font-size:14px;padding:11px 20px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:95}
   .em-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
+<style>
+  /* ===== 学员档案表单（真实 profile 契约）===== */
+  .pf-goals{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+  .pf-goal{border:2px solid var(--ink);background:var(--ht-fff);color:var(--ink);font-weight:800;font-size:13px;border-radius:999px;padding:7px 14px;cursor:pointer;transition:transform .08s,background .12s}
+  .pf-goal.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-purple-deep)}
+  .pf-goal:active{transform:translateY(1px)}
+</style>
 </head>
 <body data-st="ok" class="on">
 
@@ -4196,36 +4203,35 @@ a{text-decoration:none;color:inherit}
         <div><div class="ttl" id="nav-sec">功能入口</div><div class="sub">我的订单 / 优惠券 / 收藏 / 班次 / 退款 / 工单 / 错题本（J20）</div></div>
       </div>
       <div class="nav-card">
-        <a class="nav-item yellow" href="practice.html" style=""><span class="n-ico" aria-hidden="true">📝</span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc" style="">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="me.html" style=""><span class="n-ico" aria-hidden="true">⭐</span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html" style=""><span class="n-ico" aria-hidden="true">📚</span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后 · J14/J15/J16</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="me.html" style=""><span class="n-ico" aria-hidden="true">🧾</span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">查看 / 支付 / 管理订单 · J6 去支付</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <a class="nav-item green" href="me.html" style=""><span class="n-ico" aria-hidden="true">🎟️</span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">失效 / 可用的购课优惠券</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        
-        
-        <a class="nav-item orange" href="me.html" style=""><span class="n-ico" aria-hidden="true">↩️</span><span class="n-label"><span class="n-title">退款记录</span><span class="n-desc">退款申请状态与进度</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <a class="nav-item pink" href="me.html" style=""><span class="n-ico" aria-hidden="true">🎫</span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单 / 人工申诉跟进</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item yellow" href="practice.html"><span class="n-ico" aria-hidden="true">📝</span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="favorites.html"><span class="n-ico" aria-hidden="true">⭐</span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html"><span class="n-ico" aria-hidden="true">📚</span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后 · J14/J15/J16</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="/orders"><span class="n-ico" aria-hidden="true">🧾</span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">查看 / 支付 / 管理订单 · J6 去支付</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item green" href="coupons.html"><span class="n-ico" aria-hidden="true">🎟️</span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">失效 / 可用的购课优惠券</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+
+
+        <a class="nav-item orange" href="refund.html"><span class="n-ico" aria-hidden="true">↩️</span><span class="n-label"><span class="n-title">退款记录</span><span class="n-desc">退款申请状态与进度</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item pink" href="/tickets"><span class="n-ico" aria-hidden="true">🎫</span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单 / 人工申诉跟进</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
         
       </div>
     </section>
 
-    <!-- 学员档案表单（GET student-profile + PUT /me/profile）-->
+    <!-- 学员档案表单（真实 GET/PUT /api/users/me/profile，字段对齐后端 UserProfile 契约）-->
     <section class="section" aria-labelledby="profile-sec">
       <div class="s-title">
         <span class="ico green" aria-hidden="true">📝</span>
-        <div><div class="ttl" id="profile-sec">学员档案</div><div class="sub">身份 / 目标 / 学历 / 年级 / 学校 / 行业 / 岗位 / 工作年限</div></div>
+        <div><div class="ttl" id="profile-sec">学员档案</div><div class="sub">昵称 / 年级 / 学校 / 学习风格 / 每周可学时长 / 学习目标 · 保存走 PUT /api/users/me/profile</div></div>
       </div>
-      <form class="form-card" onsubmit="event.preventDefault(); alert('已保存（HTML 演示）');">
+      <form class="form-card" id="pfForm" novalidate>
         <div class="form-grid">
-          <div class="field"><label>学习身份 <span class="req">*</span></label><select><option>在校学生</option><option>在职工作者</option><option>自由职业者</option><option>其他</option></select></div>
-          <div class="field"><label>学习目标 <span class="req">*</span></label><select><option>编程/技术发展</option><option>升学备考</option><option>职业转型</option><option>兴趣拓展</option></select></div>
-          <div class="field"><label>最高学历</label><select><option>小学</option><option>初中</option><option>高中</option><option>大专</option><option selected="">本科</option><option>硕士及以上</option></select></div>
-          <div class="field"><label>当前年级</label><select><option>一年级</option><option>二年级</option><option>三年级</option><option>四年级</option><option>五年级</option><option>六年级</option><option>初中</option><option>高中一年级</option><option>高中二年级</option><option>高中三年级</option><option selected="">已毕业</option></select></div>
-          <div class="field"><label>所在学校</label><input type="text" value="市第一中学" placeholder="请输入学校名称"></div>
-          <div class="field"><label>所在行业</label><input type="text" value="软件与信息技术" placeholder="请输入所在行业"></div>
-          <div class="field"><label>当前岗位</label><input type="text" value="前端开发工程师" placeholder="请输入岗位"></div>
-          <div class="field"><label>工作年限</label><select><option>0 年</option><option selected="">1-3 年</option><option>3-5 年</option><option>5-10 年</option><option>10 年以上</option></select></div>
+          <div class="field"><label>昵称 <span class="req">*</span></label><input type="text" id="pf-nickname" maxlength="64" placeholder="你的昵称"></div>
+          <div class="field"><label>年级</label><select id="pf-grade_code"></select></div>
+          <div class="field"><label>所在学校</label><input type="text" id="pf-school_name" maxlength="128" placeholder="请输入学校名称"></div>
+          <div class="field"><label>学习风格</label><select id="pf-study_style"><option value="">未设置</option><option value="visual">视觉型（看图表 / 文字）</option><option value="auditory">听觉型（听课 / 播客）</option><option value="kinesthetic">动手型（边做边学）</option><option value="mixed">混合型</option></select></div>
+          <div class="field"><label>每周可学小时数 <span class="req">*</span></label><input type="number" id="pf-weekly" min="0" max="168" step="1" placeholder="0-168 的整数"></div>
+          <div class="field" style="grid-column:1/-1"><label>学习目标（可多选）</label><div class="pf-goals" id="pf-goals"></div><span class="f-hint">点选标签切换选中，保存为 learning_goals 数组</span></div>
         </div>
+        <div class="em-err" id="pfErr"></div>
         <div class="form-actions">
-          <span class="f-hint" style="margin-right:auto">保存成功后会同步到学习推荐与个人档案</span>
-          <button class="save-btn" type="submit">💾 保存档案</button>
+          <span class="f-hint" style="margin-right:auto">保存后自动重新读取验证 · 同步到学习推荐与个人档案</span>
+          <button class="save-btn" type="submit" id="pfSave">💾 保存档案</button>
         </div>
       </form>
     </section>
@@ -4307,6 +4313,132 @@ a{text-decoration:none;color:inherit}
       if (pts.level_no) set("st-level", "Lv." + pts.level_no + (pts.level_title ? " · " + pts.level_title : ""));
     }
   });
+})();
+</script>
+<script>
+/* ===== 学员档案：GET 回填 + PUT 真实保存（对齐 /api/users/me/profile 契约，user_profile 表）=====
+ * 可写字段：nickname / grade_code / school_name / study_style(visual|auditory|kinesthetic|mixed)
+ *          / weekly_available_hours(0-168) / learning_goals[]
+ * 后端为部分更新（None 不改）：仅提交与加载值不同的字段；study_style 空=不提交（无法置空，契约限制）
+ */
+(function () {
+  if (!window.EAPI) return;
+  var form = document.getElementById("pfForm");
+  if (!form) return;
+  var errBox = document.getElementById("pfErr");
+  var toastEl = document.getElementById("emToast");
+  var saveBtn = document.getElementById("pfSave");
+  var original = null;
+
+  var GOAL_PRESETS = ["编程入门", "数学", "英语", "升学备考", "职业转型", "兴趣拓展"];
+  var GRADE_OPTIONS = [
+    ["primary_1", "小学一年级"], ["primary_2", "小学二年级"], ["primary_3", "小学三年级"],
+    ["primary_4", "小学四年级"], ["primary_5", "小学五年级"], ["primary_6", "小学六年级"],
+    ["junior_middle_1", "初中一年级"], ["junior_middle_2", "初中二年级"], ["junior_middle_3", "初中三年级"],
+    ["senior_high_1", "高中一年级"], ["senior_high_2", "高中二年级"], ["senior_high_3", "高中三年级"],
+    ["junior_college", "专科"], ["undergraduate", "本科"], ["postgraduate", "研究生及以上"]
+  ];
+
+  function showToast(msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+  function showErr(msg) { if (errBox) { errBox.textContent = msg; errBox.classList.add("show"); } }
+  function clearErr() { if (errBox) { errBox.textContent = ""; errBox.classList.remove("show"); } }
+
+  function buildGradeSelect(current) {
+    var sel = document.getElementById("pf-grade_code");
+    var opts = GRADE_OPTIONS.slice();
+    var codes = opts.map(function (o) { return o[0]; });
+    if (current && codes.indexOf(current) === -1) opts.push([current, current + "（当前值）"]);
+    sel.innerHTML = "";
+    var empty = document.createElement("option");
+    empty.value = ""; empty.textContent = "未设置";
+    sel.appendChild(empty);
+    opts.forEach(function (o) {
+      var op = document.createElement("option");
+      op.value = o[0]; op.textContent = o[1];
+      sel.appendChild(op);
+    });
+    sel.value = current || "";
+  }
+
+  function renderGoals(selected) {
+    var box = document.getElementById("pf-goals");
+    var on = {};
+    (selected || []).forEach(function (g) { on[g] = true; });
+    var list = GOAL_PRESETS.slice();
+    (selected || []).forEach(function (g) { if (list.indexOf(g) === -1) list.push(g); });
+    box.innerHTML = "";
+    list.forEach(function (g) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pf-goal" + (on[g] ? " on" : "");
+      b.textContent = g;
+      b.addEventListener("click", function () { b.classList.toggle("on"); });
+      box.appendChild(b);
+    });
+  }
+
+  function fill(p) {
+    original = p || {};
+    document.getElementById("pf-nickname").value = p.nickname || "";
+    buildGradeSelect(p.grade_code || "");
+    document.getElementById("pf-school_name").value = p.school_name || "";
+    document.getElementById("pf-study_style").value = p.study_style || "";
+    document.getElementById("pf-weekly").value = p.weekly_available_hours != null ? p.weekly_available_hours : "";
+    renderGoals(p.learning_goals || []);
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    clearErr();
+    if (!EAPI.store.getToken()) { showErr("请先登录后再保存档案"); return; }
+    if (!original) { showErr("档案尚未加载完成，请稍候再保存"); return; }
+    var payload = {};
+    var nick = document.getElementById("pf-nickname").value.trim();
+    if (!nick) { showErr("昵称不能为空"); return; }
+    if (nick !== (original.nickname || "")) payload.nickname = nick;
+    var grade = document.getElementById("pf-grade_code").value;
+    if (grade !== (original.grade_code || "")) payload.grade_code = grade;
+    var school = document.getElementById("pf-school_name").value.trim();
+    if (school !== (original.school_name || "")) payload.school_name = school;
+    var style = document.getElementById("pf-study_style").value;
+    if (style && style !== (original.study_style || "")) payload.study_style = style;
+    var wkRaw = document.getElementById("pf-weekly").value.trim();
+    if (wkRaw === "") { showErr("请填写每周可学小时数（0-168）"); return; }
+    var wk = Number(wkRaw);
+    if (!Number.isInteger(wk) || wk < 0 || wk > 168) { showErr("每周可学小时数需为 0-168 的整数"); return; }
+    if (wk !== original.weekly_available_hours) payload.weekly_available_hours = wk;
+    var goals = Array.prototype.slice.call(document.querySelectorAll("#pf-goals .pf-goal.on"))
+      .map(function (b) { return b.textContent; });
+    if (JSON.stringify(goals) !== JSON.stringify(original.learning_goals || [])) payload.learning_goals = goals;
+
+    if (Object.keys(payload).length === 0) { showToast("没有需要保存的修改"); return; }
+
+    saveBtn.disabled = true;
+    EAPI.put("/api/users/me/profile", payload).then(function () {
+      showToast("已保存");
+      // 保存后重新 GET 验证持久化并回填
+      return EAPI.get("/api/users/me/profile").then(function (p) {
+        fill(p);
+        var goalEl = document.getElementById("me-goal");
+        if (goalEl && (p.learning_goals || []).length) goalEl.textContent = p.learning_goals.join(" / ");
+      });
+    }).catch(function (err) {
+      var d = err && err.body;
+      var msgs = [];
+      if (Array.isArray(d && d.detail)) msgs = d.detail.map(function (x) { return x.msg || JSON.stringify(x); });
+      else if (d && d.message && d.code !== 0) msgs = [d.message];
+      showErr("保存失败：" + (msgs.join("；") || (err && err.message) || "未知错误"));
+    }).then(function () { saveBtn.disabled = false; });
+  });
+
+  // 打开页面：GET profile 回填表单（未登录保持静态演示不报错）
+  if (EAPI.store.getToken()) {
+    EAPI.get("/api/users/me/profile").then(fill).catch(function () {});
+  }
 })();
 </script>
 

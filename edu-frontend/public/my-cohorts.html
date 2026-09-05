@@ -413,6 +413,12 @@ select,input{font-family:inherit}
             </div>
           </article>
         </div>
+        <!-- B5：学习中空态（仅该 Tab 无数据且有其他数据时显示） -->
+        <div class="empty" id="tab-empty-active" style="display:none" role="status">
+          <div class="icon" aria-hidden="true">🌱</div>
+          <div class="t">暂无进行中的班次</div>
+          <p class="d">报名并开课后，进行中的班次会出现在这里</p>
+        </div>
       </div>
 
       <!-- 已完成 completed -->
@@ -450,6 +456,12 @@ select,input{font-family:inherit}
             </div>
           </article>
         </div>
+        <!-- B5：已完成空态 -->
+        <div class="empty" id="tab-empty-completed" style="display:none" role="status">
+          <div class="icon" aria-hidden="true">🎓</div>
+          <div class="t">还没有完成过班次</div>
+          <p class="d">结课的班次会沉淀在这里</p>
+        </div>
       </div>
 
       <!-- 已退款 refunded（灰色态） -->
@@ -483,6 +495,12 @@ select,input{font-family:inherit}
               </div>
             </div>
           </article>
+        </div>
+        <!-- B5：已退款空态 -->
+        <div class="empty" id="tab-empty-refunded" style="display:none" role="status">
+          <div class="icon" aria-hidden="true">💸</div>
+          <div class="t">暂无退款班次</div>
+          <p class="d">退款相关的班次记录会展示在这里</p>
         </div>
       </div>
     </div>
@@ -562,12 +580,15 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
 </script>
 <script>
 /* task105：我的班次接 /api/enrollments/me/cohorts，选择器对齐真实 DOM(.cohort-card)，按 enroll_status 过滤三 Tab。
- * 空态「去选课」→ courses.html；错误态「重试」→ 真实重载。无 token 保留演示数据。 */
+ * 空态「去选课」→ courses.html；错误态「重试」→ 真实重载。无 token 保留演示数据。
+ * B5：三 Tab 各自分空态（#tab-empty-{active,completed,refunded}）；默认 Tab（学习中）为 0 条而其他 Tab 有数据时，
+ * 自动切到第一个有数据的 Tab（enroll_status 枚举实测：active/completed/cancelled/refunded，cancelled 归入已退款 Tab）。 */
 (function () {
   if (!window.EAPI || !EAPI.store.getToken()) return;
 
   var DL = { online_live:"在线直播", online_recorded:"在线录播", offline_face_to_face:"线下面授" };
   var STATUS_BADGE = { active:"学习中", completed:"已完成", cancelled:"已退款", refunded:"已退款" };
+  var TABS = ["active", "completed", "refunded"];
 
   function cardHtml(c) {
     var ratio = Math.round(c.overall_ratio || 0);
@@ -605,6 +626,19 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
   var retry = document.querySelector("#panel-error .btn");
   if (retry) retry.addEventListener("click", function () { location.reload(); });
 
+  /* B5：程序化切 Tab（复刻全局 activate 的选中态，但不抢焦点，避免加载完成后页面跳动） */
+  function selectTab(k) {
+    TABS.forEach(function (kk) {
+      var b = document.getElementById("tabbtn-" + kk), p = document.getElementById("tab-" + kk);
+      if (!b || !p) return;
+      var on = kk === k;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.setAttribute("tabindex", on ? "0" : "-1");
+      p.classList.toggle("active", on);
+    });
+  }
+
   EAPI.get("/api/enrollments/me/cohorts?page=1&page_size=10").then(function (d) {
     var items = Array.isArray(d) ? d : (d && d.items ? d.items : []);
     if (!items.length) { showPanel("empty"); return; }
@@ -615,13 +649,20 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
       else if (st === "active") by.active.push(c);
       else by.refunded.push(c); // cancelled / refunded
     });
-    ["active", "completed", "refunded"].forEach(function (k) {
+    TABS.forEach(function (k) {
       var p = document.getElementById("tab-" + k), g = p ? p.querySelector(".grid") : null;
       if (g) g.innerHTML = by[k].map(cardHtml).join("");
       var tb = document.getElementById("tabbtn-" + k), cnt = tb ? tb.querySelector(".cnt") : null;
       if (cnt) cnt.textContent = by[k].length;
+      var te = document.getElementById("tab-empty-" + k);
+      if (te) te.style.display = by[k].length ? "none" : "";
     });
     showPanel("success");
+    /* B5：默认 Tab（学习中）为 0 条而其他 Tab 有数据 → 自动切到第一个有数据的 Tab */
+    if (!by.active.length) {
+      var firstWithData = TABS.filter(function (k) { return by[k].length > 0; })[0];
+      if (firstWithData) selectTab(firstWithData);
+    }
   }).catch(function () { showPanel("error"); });
 })();
 </script>

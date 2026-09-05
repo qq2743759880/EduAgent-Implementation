@@ -128,17 +128,18 @@ async def daily_plan(user_id: int, *, level_code: str | None = None,
                      new_quota: int = 20, review_quota: int = 60) -> DailyPlan:
     target_level = level_code or await _guess_user_target_level(user_id)
 
-    # 复习卡：due_at <= NOW() AND mastery in NEW/LEARNING/REVIEW
+    # 复习卡：due_at <= NOW() AND mastery in NEW/LEARNING/REVIEW（必须限定 target_level，
+    # 否则跨等级返回用户已有其他 level 的到期卡，level_code 过滤失效）
     due_rows = await fetch_all(
         "SELECT C.id AS card_id, C.mastery_status, C.ease_factor, C.interval_days, C.repetition, C.due_at, "
         " V.id AS entry_id, V.word, V.level_code, V.phonetic_us, V.meaning_cn, V.example_en, V.example_cn,"
         " V.topic_tag, V.image_hint, V.audio_us, V.subject_code"
         " FROM user_vocab_card C JOIN vocab_entry V ON V.id = C.vocab_entry_id "
         " WHERE C.user_id=%s AND C.due_at <= NOW() AND C.mastery_status IN ('NEW','LEARNING','REVIEW') "
-        " AND V.yn=1 "
+        " AND V.yn=1 AND V.level_code=%s "
         " ORDER BY (CASE C.mastery_status WHEN 'LEARNING' THEN 1 WHEN 'REVIEW' THEN 2 ELSE 3 END), C.due_at ASC "
         " LIMIT %s",
-        (user_id, int(review_quota)),
+        (user_id, target_level, int(review_quota)),
     )
 
     # 如果该 level 还没卡，先塞一些新卡

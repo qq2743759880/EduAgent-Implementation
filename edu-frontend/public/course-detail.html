@@ -784,8 +784,17 @@ renderBody();
 })();
 </script>
 <script>
-/* ===== 对接真实后端（course-detail：EAPI.pageId 取参 + 详情 + 班次）=====
- * 已知坑修复：不再用路径正则取 id（静态服务下永远匹配不到、恒回退 1001），改用 ?id=。 */
+/* ===== 对接真实后端（course-detail：EAPI.pageId 取参 + 详情 + 班次 + 券/下单/评价）=====
+ * 已知坑修复：不再用路径正则取 id（静态服务下永远匹配不到、恒回退 1001），改用 ?id=。
+ * 2026-09-05 契约⑦⑧ + 评价域真实化（curl 实测契约为准）：
+ *   1) 领券弹窗：GET /api/coupons?series_id=（真实可领模板）+ POST /api/trade/coupon/receive（幂等，
+ *      body {coupon_template_id}）；未登录弹窗内提示「请先登录后领券」。
+ *   2) 下单：POST /api/trade/order —— 必须带 Idempotency-Key 请求头（EAPI.post 不支持自定义头 → 原生 fetch），
+ *      body {series_id, cohort_id, coupon_id}；coupon_id = 领券记录 id（GET /api/coupons?status=unused 的 coupon_id，
+ *      非 coupon_template_id）；金额服务端重算（券面额 > 订单总额时折扣封顶，实付可为 0）。
+ *   3) 评价：GET /api/courses/{sid}/reviews（分页 {total,page,page_size,items}，items 含 nickname/rating/content/
+ *      created_at）；POST body {rating:1~5 必填, content 可选}；未报名 40300 / 重复评价 409 —— 后端 message 原样透传。
+ * 静态 demo（SERIES/COHORTS/COUPONS/REVIEWS mock + 本地价格演示）保留为骨架与降级底座（未登录静默降级不报错）。 */
 (function () {
   if (!window.EAPI) return;
   var sid = EAPI.pageId("id");
@@ -797,6 +806,391 @@ renderBody();
   }
   if (!sid) { showEmpty(); return; }
 
+  /* ---------- 真实数据状态与工具 ---------- */
+  var REAL = { sid: sid, bestCoupon: null, couponBusy: false, reviewBusy: false, reviewRating: 5 };
+  function hasToken() { return !!(EAPI.store && EAPI.store.getToken()); }
+  function loginRedirect() { window.location.href = EAPI.buildLoginUrl(location.pathname + location.search); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  }
+  function fmtMoney(v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) n = 0;
+    return "¥" + n.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  }
+  function fmtCouponAmt(v) { /* 券面额紧凑显示：10000 → ¥1万，避免撑破券左侧金额格 */
+    var n = parseFloat(v);
+    if (isNaN(n)) n = 0;
+    if (n >= 10000 && n % 10000 === 0) return "¥" + (n / 10000) + "万";
+    return "¥" + n.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  }
+  function fmtDay(s) { return String(s == null ? "" : s).replace("T", " ").slice(0, 10); }
+
+  /* ---------- 通用弹窗（评价表单 / 下单结果，复用 .overlay/.dialog 既有样式类）---------- */
+  var realOverlay = null;
+  function ensureRealOverlay() {
+    if (realOverlay && realOverlay.parentNode) return realOverlay;
+    realOverlay = document.createElement("div");
+    realOverlay.className = "overlay";
+    realOverlay.setAttribute("role", "dialog");
+    realOverlay.setAttribute("aria-modal", "true");
+    realOverlay.innerHTML =
+      '<div class="dialog">' +
+      '<div class="dialog-head"><h3 id="realDlgTitle">提示</h3><button class="dialog-x" type="button" aria-label="关闭">×</button></div>' +
+      '<div class="coupon-list" id="realDlgBody"></div>' +
+      '<div class="dialog-foot" id="realDlgFoot"></div>' +
+      '</div>';
+    document.body.appendChild(realOverlay);
+    realOverlay.querySelector(".dialog-x").addEventListener("click", closeRealDialog);
+    realOverlay.addEventListener("click", function (e) { if (e.target === realOverlay) closeRealDialog(); });
+    return realOverlay;
+  }
+  function openRealDialog(title, bodyHtml, footHtml) {
+    var ov = ensureRealOverlay();
+    var t = ov.querySelector("#realDlgTitle"); if (t) t.textContent = title;
+    var b = ov.querySelector("#realDlgBody"); if (b) b.innerHTML = bodyHtml;
+    var f = ov.querySelector("#realDlgFoot"); if (f) f.innerHTML = footHtml || "";
+    ov.classList.add("open");
+    return ov;
+  }
+  function closeRealDialog() { if (realOverlay) realOverlay.classList.remove("open"); }
+
+  /* ---------- ② 价格与下单：我的可用券（unused 里选面额最大的 cash 券，下单自动携带）---------- */
+  function loadMyCoupons() {
+    if (!hasToken()) return;
+    EAPI.get("/api/coupons?page=1&page_size=20&status=unused").then(function (data) {
+      var items = (data && data.items) || [];
+      var cash = items.filter(function (c) { return c.coupon_type === "cash"; });
+      var pool = cash.length ? cash : items;
+      pool.sort(function (a, b) { return (parseFloat(b.face_value) || 0) - (parseFloat(a.face_value) || 0); });
+      REAL.bestCoupon = pool[0] || null;
+      renderMyCouponEntry();
+    }).catch(function () { /* 静默降级：入口显示暂无可用券 */ });
+  }
+  function renderMyCouponEntry() {
+    var anchor = document.getElementById("couponOpen");
+    var host = anchor ? anchor.parentNode : null;
+    if (!host) return;
+    var el = document.getElementById("myCouponEntry");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "myCouponEntry";
+      el.className = "summary";
+      host.insertBefore(el, anchor.nextSibling);
+    }
+    if (REAL.bestCoupon) {
+      var amt = REAL.bestCoupon.coupon_type === "discount" ? "折扣券" : "-" + fmtMoney(REAL.bestCoupon.face_value);
+      var cond = (parseFloat(REAL.bestCoupon.min_spend) || 0) > 0 ? "满" + fmtMoney(REAL.bestCoupon.min_spend) + "可用" : "无门槛";
+      el.innerHTML =
+        '<div class="row"><span>🎟️ 我的可用券</span><span>' + cond + " · 下单自动抵扣</span></div>" +
+        '<div class="row total"><span>' + esc(REAL.bestCoupon.coupon_name) + "</span><span>" + amt + "</span></div>" +
+        '<div class="row"><span>已自动选用面额最大一张</span><span>实付以服务端重算为准</span></div>';
+    } else {
+      el.innerHTML = '<div class="row"><span>🎟️ 我的可用券</span><span>暂无可用 · 点上方「领券」领取</span></div>';
+    }
+  }
+
+  /* ---------- ① 领券弹窗真实化（覆盖静态 bindCoupon，renderBody 重渲时生效）---------- */
+  function loadCouponDialog() {
+    var box = document.getElementById("couponList");
+    if (!box) return;
+    box.innerHTML = '<div class="state-fill" style="border:none"><div class="spinner"></div><div class="d">正在加载可领券…</div></div>';
+    Promise.allSettled([
+      EAPI.get("/api/coupons?series_id=" + REAL.sid),
+      EAPI.get("/api/coupons?page=1&page_size=100"),
+    ]).then(function (rs) {
+      var tpls = (rs[0].status === "fulfilled" && Array.isArray(rs[0].value)) ? rs[0].value : null;
+      if (!tpls) {
+        box.innerHTML = '<div class="state-fill" style="border:none"><div class="t">优惠券加载失败</div><div class="d">请稍后重试</div></div>';
+        return;
+      }
+      var mine = (rs[1].status === "fulfilled" && rs[1].value && rs[1].value.items) ? rs[1].value.items : [];
+      renderCouponDialog(tpls, mine);
+    });
+  }
+  function renderCouponDialog(tpls, mine) {
+    var box = document.getElementById("couponList");
+    if (!box) return;
+    var gotIds = {};
+    mine.forEach(function (c) { gotIds[c.coupon_template_id] = true; });
+    if (!tpls.length) {
+      box.innerHTML = '<div class="state-fill" style="border:none"><div class="t">暂无可领优惠券</div><div class="d">本系列当前没有可领取的券，敬请期待</div></div>';
+      return;
+    }
+    box.innerHTML = tpls.map(function (c) {
+      var got = !!gotIds[c.coupon_template_id];
+      var amt = c.coupon_type === "discount" ? ((parseFloat(c.face_value) || 0) + " 折") : fmtCouponAmt(c.face_value);
+      var cond = (parseFloat(c.min_spend) || 0) > 0 ? "满" + fmtMoney(c.min_spend) + "可用" : "无门槛";
+      return '<div class="coupon' + (got ? " received" : "") + '">' +
+        '<div class="amount"><span class="num">' + esc(amt) + '</span><span class="cond">' + esc(cond) + "</span></div>" +
+        '<div class="body">' +
+        '<span class="name">' + esc(c.coupon_name) + "</span>" +
+        '<span class="desc">有效期 ' + esc(fmtDay(c.valid_from)) + " ~ " + esc(fmtDay(c.valid_to)) + " · 已领 " + (c.received_count || 0) + "/" + (c.total_count || 0) + "</span>" +
+        '<span class="get"><button class="g-btn" type="button" data-tpl="' + (c.coupon_template_id || 0) + '"' + (got ? " disabled" : "") + ">" + (got ? "已领取" : "立即领取") + "</button></span>" +
+        "</div></div>";
+    }).join("");
+    box.querySelectorAll("button[data-tpl]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (REAL.couponBusy) return;
+        REAL.couponBusy = true;
+        var old = b.textContent;
+        b.disabled = true; b.textContent = "领取中…";
+        EAPI.post("/api/trade/coupon/receive", { coupon_template_id: parseInt(b.getAttribute("data-tpl"), 10) })
+          .then(function () {
+            REAL.couponBusy = false;
+            loadCouponDialog(); /* 刷新列表：received_count+1（服务端数据）+ 已领取态 */
+            loadMyCoupons();    /* 新领的券可能成为「我的可用券」自动选用项 */
+          })
+          .catch(function (e) {
+            REAL.couponBusy = false;
+            b.disabled = false; b.textContent = old;
+            showCouponDlgErr(e && e.message ? e.message : "领取失败，请稍后重试");
+          });
+      });
+    });
+  }
+  function showCouponDlgErr(msg) {
+    var box = document.getElementById("couponList");
+    if (!box) return;
+    var err = document.getElementById("couponDlgErr");
+    if (!err) {
+      err = document.createElement("div");
+      err.id = "couponDlgErr";
+      err.style.cssText = "border:2px dashed var(--candy-red);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--candy-red);background:var(--ht-fff)";
+      box.insertBefore(err, box.firstChild);
+    }
+    err.textContent = "⚠ " + msg;
+  }
+  window.bindCoupon = function () { /* 覆盖静态 demo 绑定（全局函数，renderBody 重渲即生效） */
+    var btn = document.getElementById("couponOpen");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      if (!hasToken()) {
+        var box = document.getElementById("couponList");
+        if (box) {
+          box.innerHTML = '<div class="state-fill" style="border:none"><div class="t">请先登录后领券</div><div class="d">登录后可领取本系列优惠券，下单自动抵扣</div><button class="btn" id="couponLoginBtn" type="button">去登录</button></div>';
+          var lb = document.getElementById("couponLoginBtn");
+          if (lb) lb.addEventListener("click", loginRedirect);
+        }
+        openCoupon(true);
+        return;
+      }
+      openCoupon(true);
+      loadCouponDialog();
+    });
+  };
+
+  /* ---------- ② 下单真实化（POST /api/trade/order，Idempotency-Key 头必须 → 原生 fetch）---------- */
+  function createOrder(payload) {
+    var headers = {
+      "Content-Type": "application/json",
+      "Idempotency-Key": "enroll-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10),
+    };
+    var tk = EAPI.store.getToken();
+    if (tk) headers.Authorization = "Bearer " + tk;
+    return fetch((EAPI.BASE || "http://127.0.0.1:8000") + "/api/trade/order", {
+      method: "POST", headers: headers, body: JSON.stringify(payload),
+    }).then(function (resp) {
+      return resp.text().then(function (text) {
+        var json = null;
+        try { json = text ? JSON.parse(text) : null; } catch (e) {}
+        if (resp.status === 401) { loginRedirect(); throw new Error("登录已过期，请重新登录"); }
+        if (!resp.ok || (json && json.code !== 0)) throw new Error((json && json.message) || ("HTTP " + resp.status));
+        return json ? json.data : null;
+      });
+    });
+  }
+  function dlgRow(k, v) {
+    return '<div style="display:flex;justify-content:space-between;gap:12px;font-size:0.8125rem"><span style="color:var(--ink-muted)">' + k + '</span><span style="font-weight:700;text-align:right;word-break:break-all">' + v + "</span></div>";
+  }
+  function showOrderResult(order, errMsg) {
+    if (errMsg) {
+      var ov = openRealDialog("😖 下单失败",
+        '<div class="state-fill" style="border:none"><div class="t">下单失败</div><div class="d">' + esc(errMsg) + "</div></div>",
+        '<button class="btn-star" type="button">知道了</button>');
+      var eb = ov.querySelector("#realDlgFoot button");
+      if (eb) eb.addEventListener("click", closeRealDialog);
+      return;
+    }
+    var pay = (order && order.pay_amount != null) ? order.pay_amount : 0;
+    var disc = (order && order.discount_amount) || 0;
+    var ov = openRealDialog("🎉 报名成功",
+      '<div style="display:grid;gap:8px;padding:2px">' +
+      dlgRow("订单号", esc(order.order_no)) +
+      dlgRow("课程", esc(order.series_title || "")) +
+      dlgRow("订单金额", fmtMoney(order.order_amount)) +
+      (disc > 0 ? dlgRow("券优惠", "-" + fmtMoney(disc)) : "") +
+      dlgRow("实付", '<b style="color:var(--candy-orange);font-size:16px">' + fmtMoney(pay) + (pay === 0 ? "（券后全额抵扣）" : "") + "</b>") +
+      '</div><p style="font-size:11px;color:var(--ink-muted);margin-top:10px">订单状态：' + esc(order.status || "pending") + "（金额为服务端重算结果，实付可能为 0）</p>",
+      '<button class="btn-star" type="button">完成</button>');
+    var fb = ov.querySelector("#realDlgFoot button");
+    if (fb) fb.addEventListener("click", closeRealDialog);
+  }
+  window.bindEnroll = function () { /* 覆盖静态 demo 绑定：真实下单（金额以服务端返回为准） */
+    var btn = document.getElementById("enrollBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      if (!hasToken()) { loginRedirect(); return; }
+      var cohort = (typeof cohortById === "function") ? cohortById(selected) : null;
+      if (!cohort) return;
+      var payload = {
+        series_id: (typeof SERIES !== "undefined" && SERIES.id) ? SERIES.id : parseInt(REAL.sid, 10),
+        cohort_id: cohort.id,
+      };
+      var price = parseFloat(cohort.sale_price) || 0;
+      if (REAL.bestCoupon && price >= (parseFloat(REAL.bestCoupon.min_spend) || 0)) {
+        payload.coupon_id = REAL.bestCoupon.coupon_id; /* 领券记录 id（coupon_receive_record.id） */
+      }
+      var label = btn.innerHTML;
+      btn.disabled = true; btn.textContent = "下单中…";
+      createOrder(payload).then(function (order) {
+        btn.disabled = false; btn.innerHTML = label;
+        showOrderResult(order);
+        loadMyCoupons(); /* 券已核销 → 刷新「我的可用券」 */
+      }).catch(function (e) {
+        btn.disabled = false; btn.innerHTML = label;
+        showOrderResult(null, (e && e.message) || "下单失败，请稍后重试");
+      });
+    });
+  };
+
+  /* ---------- ③ 评价区真实化 ---------- */
+  function reviewCtaHtml(total, avg) {
+    return '<div class="review-cta"><span class="sum">共 ' + total + " 条评价 · 平均 " + avg + ' 分</span><button class="w-btn" id="writeReviewBtn" type="button">✍️ 写评价</button></div>';
+  }
+  function bindWriteBtn() {
+    var b = document.getElementById("writeReviewBtn");
+    if (b) b.addEventListener("click", openReviewForm);
+  }
+  function renderReviewPanel(data) {
+    var panel = document.querySelector("[data-panel=review]");
+    if (!panel) return;
+    var items = (data && data.items) || [];
+    var total = (data && typeof data.total === "number") ? data.total : items.length;
+    var avg = items.length ? (items.reduce(function (a, r) { return a + (r.rating || 0); }, 0) / items.length).toFixed(1) : "0.0";
+    var list = items.map(function (r) {
+      var who = r.nickname || (r.user_id ? "学员" + r.user_id : "匿名学员");
+      var stars = Math.max(0, Math.min(5, r.rating || 0));
+      return '<div class="review">' +
+        '<div class="row"><span class="ava">' + esc(who.charAt(0)) + '</span><span class="who">' + esc(who) + "</span>" +
+        '<span class="stars">' + "★".repeat(stars) + "☆".repeat(5 - stars) + "</span></div>" +
+        '<p class="txt">' + esc(r.content || "（未填写文字评价）") + "</p>" +
+        '<div class="meta">' + esc(fmtDay(r.created_at)) + "</div>" +
+        "</div>";
+    }).join("");
+    panel.innerHTML =
+      (list || '<div class="state-fill" style="border:none"><div class="t">暂无评价</div><div class="d">报名学习后，成为第一个评价者吧</div></div>') +
+      reviewCtaHtml(total, avg);
+    bindWriteBtn();
+    var tabBtn = document.querySelector('#tablist .tab[data-tab="review"]');
+    if (tabBtn) tabBtn.textContent = "⭐ 课程评价 (" + total + ")";
+  }
+  function loadReviews() {
+    var panel = document.querySelector("[data-panel=review]");
+    if (!panel || REAL.reviewBusy) return;
+    REAL.reviewBusy = true;
+    panel.innerHTML = '<div class="state-fill" style="border:none"><div class="spinner"></div><div class="d">正在加载真实评价…</div></div>';
+    function failLogin() { /* 未登录读不到：静默降级为登录提示（不强制跳转） */
+      REAL.reviewBusy = false;
+      panel.innerHTML =
+        '<div class="state-fill"><div class="t">登录后查看课程评价</div><div class="d">评价数据需登录后获取</div><button class="btn" id="rvLoginBtn" type="button">去登录</button></div>' +
+        reviewCtaHtml(0, "0.0");
+      bindWriteBtn();
+      var lb = document.getElementById("rvLoginBtn");
+      if (lb) lb.addEventListener("click", loginRedirect);
+    }
+    function failMsg(msg) {
+      REAL.reviewBusy = false;
+      panel.innerHTML = '<div class="state-fill"><div class="t">评价加载失败</div><div class="d">' + esc(msg) + "</div></div>" + reviewCtaHtml(0, "0.0");
+      bindWriteBtn();
+    }
+    if (hasToken()) {
+      EAPI.get("/api/courses/" + REAL.sid + "/reviews?page=1&page_size=20").then(function (data) {
+        REAL.reviewBusy = false;
+        renderReviewPanel(data);
+      }).catch(function (e) { failMsg((e && e.message) || "请稍后重试"); });
+      return;
+    }
+    /* 未登录：裸 fetch 尝试（DEBUG 虚拟管理员可读；生产 401 → 登录提示，绝不经 EAPI 触发跳转） */
+    fetch((EAPI.BASE || "http://127.0.0.1:8000") + "/api/courses/" + REAL.sid + "/reviews?page=1&page_size=20")
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (j) {
+        REAL.reviewBusy = false;
+        if (j && j.code === 0) renderReviewPanel(j.data);
+        else failMsg((j && j.message) || "请稍后重试");
+      })
+      .catch(function () { failLogin(); });
+  }
+  function renderStarPick() {
+    var host = document.getElementById("starPick");
+    if (!host) return;
+    var html = "";
+    for (var i = 1; i <= 5; i++) {
+      var on = i <= REAL.reviewRating;
+      html += '<button type="button" data-star="' + i + '" aria-label="' + i + ' 星" style="width:40px;height:40px;border:3px solid var(--ink);border-radius:12px;background:' +
+        (on ? "var(--candy-yellow)" : "var(--ht-fff)") + ";color:" + (on ? "var(--ink)" : "var(--htc-31-31-31-025)") + ";font-size:20px;box-shadow:0 3px 0 " +
+        (on ? "var(--candy-yellow)" : "var(--htc-31-31-31-014)") + '">★</button>';
+    }
+    host.innerHTML = html;
+    host.querySelectorAll("button[data-star]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        REAL.reviewRating = parseInt(b.getAttribute("data-star"), 10);
+        renderStarPick();
+      });
+    });
+  }
+  function openReviewForm() {
+    if (!hasToken()) { loginRedirect(); return; }
+    REAL.reviewRating = 5;
+    var name = (typeof SERIES !== "undefined" && SERIES.series_name) || "本课程";
+    openRealDialog("✍️ 写评价",
+      '<div style="display:grid;gap:10px;padding:2px">' +
+      '<div style="font-size:12px;color:var(--ink-muted)">给「' + esc(name) + '」打分（报名后才可提交，见后端校验）</div>' +
+      '<div id="starPick" style="display:flex;gap:6px"></div>' +
+      '<textarea id="reviewContent" maxlength="2000" placeholder="分享你的学习体验（可选，最多 2000 字）" style="border:3px solid var(--ink);border-radius:12px;padding:10px 12px;font-size:0.8125rem;min-height:96px;resize:vertical;background:var(--candy-bg);font-family:inherit"></textarea>' +
+      '<div id="reviewErr" style="display:none;font-size:12px;font-weight:700;color:var(--candy-red)"></div>' +
+      "</div>",
+      '<button class="btn-star" id="reviewSubmit" type="button">提交评价</button>');
+    renderStarPick();
+    var sb = document.getElementById("reviewSubmit");
+    if (sb) sb.addEventListener("click", submitReview);
+  }
+  function submitReview() {
+    if (REAL.reviewBusy) return;
+    REAL.reviewBusy = true;
+    var btn = document.getElementById("reviewSubmit");
+    var ta = document.getElementById("reviewContent");
+    var err = document.getElementById("reviewErr");
+    if (err) err.style.display = "none";
+    var content = ta ? String(ta.value || "").trim() : "";
+    if (btn) { btn.disabled = true; btn.textContent = "提交中…"; }
+    EAPI.post("/api/courses/" + REAL.sid + "/reviews", { rating: REAL.reviewRating, content: content || null })
+      .then(function () {
+        REAL.reviewBusy = false;
+        closeRealDialog();
+        loadReviews(); /* 成功后刷新评价列表 */
+      })
+      .catch(function (e) { /* 未购课 40300 / 重复 409 等：后端 message 透传展示 */
+        REAL.reviewBusy = false;
+        if (btn) { btn.disabled = false; btn.textContent = "提交评价"; }
+        if (err) { err.textContent = "⚠ " + ((e && e.message) || "提交失败，请稍后重试"); err.style.display = "block"; }
+      });
+  }
+  /* 评价 tab 点击 → 加载真实评价（document 级委托，renderBody 重渲不丢） */
+  document.addEventListener("click", function (e) {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest('#tablist .tab[data-tab="review"]')) loadReviews();
+  });
+
+  /* 登录态同步静态 demo 的 authed（仅影响提示文案/工具条，真实逻辑一律以 hasToken() 为准） */
+  if (hasToken() && typeof authed !== "undefined") {
+    authed = true;
+    try { if (typeof syncToolbar === "function") syncToolbar("auth", "in"); } catch (e) {}
+  }
+
+  /* ---------- 既有 series/cohorts 真实注入（逻辑不动）+ 渲染后追加我的可用券 ---------- */
   Promise.allSettled([
     EAPI.get("/api/series/" + sid),
     EAPI.get("/api/series/" + sid + "/cohorts"),
@@ -829,6 +1223,7 @@ renderBody();
       if (seatable.length) selected = seatable[0].id; else if (COHORTS[0]) selected = COHORTS[0].id;
     }
     try { if (typeof renderBody === "function") renderBody(); } catch (e) {}
+    loadMyCoupons(); /* 登录态：渲染「我的可用券」入口（未登录静默跳过） */
   }).catch(function(){ showEmpty(); });
 })();
 </script>

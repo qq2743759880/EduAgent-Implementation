@@ -509,13 +509,11 @@ body[data-show="empty-log"] .log-empty{display:flex}
             </div>
           </div>
         </div>
-        <!-- 分页 C2 -->
-        <div class="pager" aria-label="积分流水分页">
+        <!-- 分页 C2（task-fix：由 API logs_total 动态渲染，见下方 logPager 脚本） -->
+        <div class="pager" id="logPager" aria-label="积分流水分页">
           <button class="pager-btn" disabled="" aria-label="上一页">‹</button>
           <button class="pager-btn on" aria-current="page">1</button>
-          <button class="pager-btn" aria-label="第 2 页">2</button>
           <button class="pager-btn" aria-label="下一页">›</button>
-          <span class="total">共 6 条</span>
         </div>
       </div>
 
@@ -815,15 +813,44 @@ body[data-show="empty-log"] .log-empty{display:flex}
   if (wkBtn) { wkBtn.classList.add("on"); wkBtn.setAttribute("aria-selected", "true"); }
   var daily = document.getElementById("scope-daily"); if (daily) { daily.classList.remove("on"); daily.setAttribute("aria-selected", "false"); }
 
+  /* ===== 积分流水分页（task-fix：API 驱动，总条数用 logs_total，翻页带 page 重查）===== */
+  var LOG_PAGE_SIZE = 10, logCurPage = 1, logTotalPages = 1;
+  function renderLogPager(total, page) {
+    var pager = document.getElementById("logPager");
+    if (!pager) return;
+    var t = Number(total || 0);
+    logTotalPages = Math.max(1, Math.ceil(t / LOG_PAGE_SIZE));
+    logCurPage = Math.max(1, Math.min(Number(page || 1), logTotalPages));
+    var html = '<button class="pager-btn" data-nav="prev" aria-label="上一页"' + (logCurPage <= 1 ? ' disabled' : '') + '>‹</button>';
+    for (var i = 1; i <= logTotalPages; i++) {
+      html += '<button class="pager-btn' + (i === logCurPage ? ' on' : '') + '" data-page="' + i + '" aria-current="' + (i === logCurPage ? 'page' : 'false') + '" aria-label="第 ' + i + ' 页">' + i + '</button>';
+    }
+    html += '<button class="pager-btn" data-nav="next" aria-label="下一页"' + (logCurPage >= logTotalPages ? ' disabled' : '') + '>›</button>';
+    html += '<span class="total">共 ' + t + ' 条</span>';
+    pager.innerHTML = html;
+    Array.prototype.forEach.call(pager.querySelectorAll(".pager-btn[data-page]"), function (b) {
+      b.addEventListener("click", function () { loadLogPage(parseInt(b.dataset.page, 10)); });
+    });
+    var prev = pager.querySelector('[data-nav="prev"]');
+    var next = pager.querySelector('[data-nav="next"]');
+    if (prev) prev.addEventListener("click", function () { if (logCurPage > 1) loadLogPage(logCurPage - 1); });
+    if (next) next.addEventListener("click", function () { if (logCurPage < logTotalPages) loadLogPage(logCurPage + 1); });
+  }
+  function loadLogPage(page) {
+    EAPI.get("/api/gamification/me/points?page=" + (page || 1) + "&page_size=" + LOG_PAGE_SIZE).then(function (p) {
+      renderPoints(p);
+      renderLogPager(p && p.logs_total, page || 1);
+    }).catch(function () {});
+  }
+
   Promise.allSettled([
     EAPI.get("/api/gamification/me/badges"),
-    EAPI.get("/api/gamification/me/points"),
     EAPI.get("/api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=10"),
   ]).then(function (r) {
     renderBadges(r[0].status === "fulfilled" ? r[0].value : null);
-    renderPoints(r[1].status === "fulfilled" ? r[1].value : null);
-    renderRank("WEEKLY", "POINTS", r[2].status === "fulfilled" ? r[2].value : null);
+    renderRank("WEEKLY", "POINTS", r[1].status === "fulfilled" ? r[1].value : null);
     bindRank();
+    loadLogPage(1);
   }).catch(function () {});
 })();
 </script>

@@ -338,7 +338,7 @@ I = eˣ sinx − (eˣ cosx + I)
       <span class="total">共 18 条</span>
     </div>
   </div>
-<div class="state" data-st="1" style="width: 815.333px; height: 1104.13px; transform: matrix(1, 0, 0, 1, 12.6666, -1190.67);"><span class="st-emoji">🔍</span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误。（壳 code=COMMUNITY_POST_NOT_FOUND / 网络断）</p><button class="back-list">← 返回列表</button></div></div>
+<div class="state" data-st="1" style="width: 815.333px; height: 1104.13px; transform: matrix(1, 0, 0, 1, 12.6666, -1190.67);"><span class="st-emoji">🔍</span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list">← 返回列表</button></div></div>
 
 <!--
   DATA: mock PostDetail + CommentItem（snake_case，与契约⑬ 一致）
@@ -475,7 +475,7 @@ I = eˣ sinx − (eˣ cosx + I)
     var st=document.createElement('div');
     st.className='state';
     st.innerHTML='<span class="st-emoji">🔍</span><h3>帖子不存在</h3>'
-      +'<p>这个帖子可能已被删除或链接有误。（壳 code=COMMUNITY_POST_NOT_FOUND / 网络断）</p>'
+      +'<p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p>'
       +'<button class="back-list">← 返回列表</button>';
     page.appendChild(st);
     st.dataset.st='1';

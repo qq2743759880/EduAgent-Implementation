@@ -532,9 +532,12 @@ task118 仅改本页，不重定义全局 $ / renderSides。 */
 
   function load() {
     var kw = (document.getElementById("kw") || {}).value || "";
+    var sortSel = document.getElementById("sort");
+    var sort = sortSel ? String(sortSel.value || "").trim() : "";
     var url = "/api/community/posts?page=1&page_size=10";
     if (currentBoard) url += "&board_code=" + encodeURIComponent(currentBoard);
     if (kw) url += "&keyword=" + encodeURIComponent(kw);
+    if (sort) url += "&sort=" + encodeURIComponent(sort);
     EAPI.get(url).then(function (d) {
       var data = d && d.items ? d : { items: [], total: 0 };
       renderPosts(data.items);
@@ -613,6 +616,8 @@ task118 仅改本页，不重定义全局 $ / renderSides。 */
   }
   ["postNewDesktop", "fab"].forEach(function (id) { var b = document.getElementById(id); if (b) b.addEventListener("click", openNew); });
   var go = document.getElementById("go"); if (go) go.addEventListener("click", load);
+  var sortSelEl = document.getElementById("sort"); if (sortSelEl) sortSelEl.addEventListener("change", load);
+  var kwEl = document.getElementById("kw"); if (kwEl) kwEl.addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
 
   load();
 })();
