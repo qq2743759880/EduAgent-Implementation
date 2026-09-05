@@ -1257,7 +1257,9 @@ async def health_check_server(server_id: int) -> dict:
                 timeout=timeout_s + 8.0,
             )
             init_resp, _, ping_resp = resps[0], resps[1], resps[2]
-            if init_resp and init_resp.get("result") and ping_resp and ping_resp.get("result"):
+            # MCP 规范 ping 的 result 是空对象 {} —— 必须判 is not None，truthy 检查会把规范兼容的 server 误判为不健康
+            if (init_resp and init_resp.get("result") is not None
+                    and ping_resp and ping_resp.get("result") is not None):
                 ok = True
             else:
                 def _short(x):

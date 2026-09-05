@@ -10,9 +10,12 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import shutil
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Optional
 
 from app.common.error_codes import (
@@ -23,8 +26,10 @@ from app.common.error_codes import (
     SESSION_NO_CONFLICT,
     SERIES_CODE_CONFLICT,
     SERIES_IN_USE,
+    VALIDATION,
     VIDEO_CODE_CONFLICT,
 )
+from app.config import settings
 from app.common.exceptions import AppException, ConflictError, NotFoundError
 from app.core.cache import invalidate
 from app.common.logging import logger
@@ -433,39 +438,164 @@ async def get_chapter_admin(chapter_id: int) -> ChapterResponseAdmin:
 
 
 # ═══════════════════════════════════════════
-# 视频 + 分片上传（标准占位实现，task13 细化）
+# 视频 + 分片上传（本地磁盘真实现）
+# ponytail: 无转码管线（无 ffmpeg），transcode_status 直接落 completed；
+#           文件按原样存储为可播 mp4/webm。接入 ffmpeg 后在 finalize 处替换。
 # ═══════════════════════════════════════════
 
+async def list_session_assets(session_id: int) -> list[dict]:
+    """课次资源列表；material_category=video 的资源附带其 session_video 记录。"""
+    session = await _session_repo.get_by_id(int(session_id))
+    if not session:
+        raise NotFoundError("课次", str(session_id))
+    assets = await _asset_repo.list_by_session(int(session_id))
+    out: list[dict] = []
+    for a in assets:
+        row = dict(a)
+        if row.get("material_category") == "video":
+            row["videos"] = await _video_repo.list_by_asset(int(row["id"]))
+        out.append(row)
+    return out
+
+
+_VIDEO_EXT_WHITELIST = {".mp4": "video/mp4", ".mov": "video/quicktime", ".m4v": "video/x-m4v",
+                        ".webm": "video/webm", ".mkv": "video/x-matroska"}
+_MAX_CHUNK_COUNT = 10000
+
+
+def _video_media_root() -> Path:
+    """媒体根目录：settings.DATA_DIR/media（挂载于 /media）。"""
+    root = Path(settings.DATA_DIR) / "media"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _upload_tmp_dir(upload_id: str) -> Path:
+    d = Path(settings.DATA_DIR) / "uploads" / "tmp" / upload_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 async def init_chunked_upload(session_id: int, file_name: str, file_size: int, chunk_count: int) -> dict:
-    """分片上传初始化占位。返回模拟 upload_id 和策略信息。"""
+    """分片上传初始化：建临时目录 + 落 manifest（finalize 依赖它建库，重启安全）。"""
+    ext = Path(file_name or "").suffix.lower()
+    if ext not in _VIDEO_EXT_WHITELIST:
+        raise AppException(VALIDATION, f"不支持的文件类型 {ext or '(无扩展名)'}（仅 {'/'.join(sorted(_VIDEO_EXT_WHITELIST))}）")
+    if file_size <= 0:
+        raise AppException(VALIDATION, "file_size 必须大于 0")
+    if not (1 <= int(chunk_count) <= _MAX_CHUNK_COUNT):
+        raise AppException(VALIDATION, f"chunk_count 必须在 1~{_MAX_CHUNK_COUNT}")
+    session = await _session_repo.get_by_id(int(session_id))
+    if not session:
+        raise NotFoundError("课次", str(session_id))
+
     upload_id = f"chunk_{uuid.uuid4().hex[:16]}"
     chunk_size = max(1, file_size // max(chunk_count, 1))
+    manifest = {
+        "upload_id": upload_id, "session_id": int(session_id),
+        "file_name": file_name, "file_size": int(file_size), "chunk_count": int(chunk_count),
+    }
+    tmp = _upload_tmp_dir(upload_id)
+    await asyncio.to_thread(lambda: (tmp / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8"))
     return {
         "upload_id": upload_id,
         "chunk_size": chunk_size,
-        "upload_urls": [],
-        "strategy": "local_fallback",
+        "upload_urls": [f"/api/admin/courses/videos/upload-chunk/{upload_id}/{i}" for i in range(int(chunk_count))],
+        "strategy": "local_disk",
     }
 
 
-async def finalize_chunked_upload(upload_id: str) -> dict:
-    """分片上传完成占位。返回模拟 asset_id 和 video_id。"""
-    logger.info(f"finalize_chunked_upload called with upload_id={upload_id}")
+async def upload_chunk(upload_id: str, chunk_index: int, data: bytes) -> dict:
+    """接收单个分片并落盘（原始字节，octet-stream）。"""
+    manifest_path = _upload_tmp_dir(upload_id) / "manifest.json"
+    if not manifest_path.exists():
+        raise NotFoundError("上传会话", upload_id)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not (0 <= int(chunk_index) < int(manifest["chunk_count"])):
+        raise AppException(VALIDATION, f"chunk_index 越界（0~{manifest['chunk_count'] - 1}）")
+    out = _upload_tmp_dir(upload_id) / f"chunk_{int(chunk_index):06d}"
+    await asyncio.to_thread(out.write_bytes, data)
+    return {"upload_id": upload_id, "chunk_index": int(chunk_index), "received_bytes": len(data)}
+
+
+async def finalize_chunked_upload(upload_id: str, uploader_user_id: int = 0) -> dict:
+    """按序合并分片 → 存盘 → 建 session_asset + session_video（真实 video_id）。"""
+    tmp = _upload_tmp_dir(upload_id)
+    manifest_path = tmp / "manifest.json"
+    if not manifest_path.exists():
+        raise NotFoundError("上传会话", upload_id)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    ext = Path(manifest["file_name"]).suffix.lower()
+    count = int(manifest["chunk_count"])
+
+    parts = [tmp / f"chunk_{i:06d}" for i in range(count)]
+    missing = [str(p) for p in parts if not p.exists()]
+    if missing:
+        raise AppException(VALIDATION, f"缺少 {len(missing)} 个分片，无法 finalize（如 chunk_000000）")
+
+    video_code = f"VID-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
+    media_dir = _video_media_root() / "videos"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    final_path = media_dir / f"{video_code}{ext}"
+
+    def _assemble() -> int:
+        total = 0
+        with open(final_path, "wb") as w:
+            for p in parts:
+                w.write(p.read_bytes())
+                total += p.stat().st_size
+        return total
+
+    written = await asyncio.to_thread(_assemble)
+
+    asset_id = await _asset_repo.insert({
+        "session_id": int(manifest["session_id"]),
+        "asset_code": f"ASSET-{uuid.uuid4().hex[:10].upper()}",
+        "asset_name": manifest["file_name"],
+        "file_type": _VIDEO_EXT_WHITELIST[ext],
+        "material_category": "video",
+        "sort_no": 0,
+        "access_scope": "enrolled_only",
+        "file_url": f"/media/videos/{final_path.name}",
+        "file_size": written,
+        "uploader_user_id": int(uploader_user_id),  # FK → sys_user.id，由 router 传入
+    })
+    video_id = await _video_repo.insert({
+        "asset_id": asset_id,
+        "video_code": video_code,
+        "video_title": Path(manifest["file_name"]).stem,
+        "duration_seconds": 0,
+        "bitrate_kbps": 0,
+        "transcode_status": "completed",  # ponytail: 无转码管线，原样可播即 completed
+        "review_status": "pending",
+    })
+
+    await asyncio.to_thread(lambda: shutil.rmtree(tmp, ignore_errors=True))
+
     return {
         "upload_id": upload_id,
-        "asset_id": 0,
-        "video_id": 0,
-        "transcode_status": "pending",
+        "asset_id": asset_id,
+        "video_id": video_id,
+        "transcode_status": "completed",
+        "file_url": f"/media/videos/{final_path.name}",
+        "file_size": written,
+        "session_id": int(manifest["session_id"]),
     }
 
 
 async def bind_video_to_session(session_id: int, video_id: int, sort_no: int = 0) -> dict:
-    """绑定视频到课次占位。返回绑定确认。"""
-    logger.info(f"bind_video_to_session: session_id={session_id}, video_id={video_id}, sort_no={sort_no}")
+    """绑定视频到课次：更新其 asset 的归属课次与排序（finalize 已建 asset，此处修正归属/排序）。"""
+    video = await _video_repo.get_by_id(int(video_id))
+    if not video:
+        raise NotFoundError("视频", str(video_id))
+    session = await _session_repo.get_by_id(int(session_id))
+    if not session:
+        raise NotFoundError("课次", str(session_id))
+    await _asset_repo.update(int(video["asset_id"]), {"session_id": int(session_id), "sort_no": int(sort_no)})
     return {
-        "session_id": session_id,
-        "video_id": video_id,
-        "sort_no": sort_no,
+        "session_id": int(session_id),
+        "video_id": int(video_id),
+        "sort_no": int(sort_no),
         "bound": True,
     }
 

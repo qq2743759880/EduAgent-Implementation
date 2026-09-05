@@ -329,450 +329,196 @@
   <nav class="crumb">
     <a href="admin-courses.html">课程管理</a>
     <span class="sep">/</span>
-    <span>零基础 Python 入门营</span>
+    <span id="crumbSeries">系列详情</span>
     <span class="sep">/</span>
-    <span class="cur">系列详情</span>
+    <span class="cur">管理</span>
   </nav>
 
   <div class="page-head">
     <div>
-      <h1>零基础 Python 入门营</h1>
-      <div class="sub">系列详情 · /admin/courses/[seriesId] · 四级 CRUD + 视频分片上传</div>
+      <h1 id="pageTitle">系列详情</h1>
+      <div class="sub" id="pageSub">四级 CRUD + 视频分片上传 · 数据加载中…</div>
     </div>
   </div>
 
   <!-- ========== 系列信息卡（可编辑） ========== -->
-  <div class="series-card">
+  <div class="series-card" id="seriesCard" style="display:none">
     <div class="si-left">
-      <div class="si-ico">PY</div>
+      <div class="si-ico" id="siIco">CO</div>
       <div class="si-info">
-        <h2>零基础 Python 入门营</h2>
-        <div class="si-tags">
-          <code>PY-001</code>
-          <span class="b-dm b-live">直播</span>
-          <span class="b-dm b-offline">面授</span>
-          <span class="badge badge-on"><i class="pd"></i>在售</span>
-          <span>机构 #1 · 目标：入门/编程/成人</span>
-        </div>
-        <div class="si-desc">覆盖 Python 基础语法、模块、面向对象，配 6 讲直播 + 2 次面授答疑。</div>
+        <h2 id="siName">—</h2>
+        <div class="si-tags" id="siTags"></div>
+        <div class="si-desc" id="siDesc"></div>
       </div>
     </div>
     <div class="si-actions">
-      <button class="btn btn-ghost btn-mini">编辑系列</button>
-      <button class="btn btn-primary btn-mini">＋ 新增班次</button>
+      <button class="btn btn-ghost btn-mini" id="editSeriesBtn">编辑系列</button>
+      <button class="btn btn-primary btn-mini" id="addCohortBtn">＋ 新增班次</button>
     </div>
   </div>
 
   <!-- ========== 班次 DataTable（选中 ➝ 下方模块管理） ========== -->
-  <div class="card">
+  <div class="card" id="cohortCard" style="display:none">
     <div class="card-h">
-      <h3>班次 <span class="cnt">共 2 个</span></h3>
-      <div class="muted" style="font-size:12px">选中班次后，下方面板展开其模块与课次管理</div>
+      <h3>班次 <span class="cnt" id="cohortCnt">共 0 个</span></h3>
+      <div class="muted" style="font-size:12px">点击行选中班次，下方面板展开其模块与课次管理</div>
     </div>
     <div class="card-b" style="padding:0">
       <table>
         <thead>
-          <tr><th>班次</th><th>售价</th><th>容量（已报）</th><th>起止</th><th>状态</th><th>操作</th></tr>
+          <tr><th>班次</th><th>售价</th><th>容量（已报）</th><th>起止</th><th>状态</th><th style="text-align:right">操作</th></tr>
         </thead>
-        <tbody>
-          <tr class="row-hover row-click sel" data-seat="1">
-            <td><span class="cell-strong">2026 暑期 A 班</span><br><span class="nb">COH-2026A</span></td>
-            <td>¥399</td>
-            <td><b>18</b>/60</td>
-            <td>03-01 ~ 04-30</td>
-            <td><span class="badge badge-on"><i class="pd"></i>在售</span></td>
-            <td class="cell-actions">
-              <button class="btn btn-ghost btn-mini" data-open="mdl-cohort-edit">编辑</button>
-              <div class="dd">
-                <button class="dd-btn" data-dd>•••</button>
-                <div class="dd-menu">
-                  <button class="dd-item">查看班次</button>
-                  <button class="dd-item danger" data-open="mdl-del-cohort">删除班次（软删）</button>
-                </div>
-              </div>
-            </td>
-          </tr>
-          <tr class="row-hover row-click" data-seat="2">
-            <td><span class="cell-strong">2026 秋季 B 班</span><br><span class="nb">COH-2026B</span></td>
-            <td>¥359</td>
-            <td><b>2</b>/60</td>
-            <td>09-01 ~ 10-31</td>
-            <td><span class="badge badge-mut"><i class="pd"></i>草稿</span></td>
-            <td class="cell-actions">
-              <button class="btn btn-ghost btn-mini" data-open="mdl-cohort-edit">编辑</button>
-              <div class="dd">
-                <button class="dd-btn" data-dd>•••</button>
-                <div class="dd-menu">
-                  <button class="dd-item">查看班次</button>
-                  <button class="dd-item danger" data-open="mdl-del-cohort">删除班次（软删）</button>
-                </div>
-              </div>
-            </td>
-          </tr>
+        <tbody id="cohortBody">
+          <tr><td colspan="6" class="box-pad">加载班次中…</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- ========== 模块 Accordion（选中班次「2026 暑期 A 班」） ========== -->
-  <div class="card">
+  <!-- ========== 模块 Accordion（选中班次） ========== -->
+  <div class="card" id="moduleCard" style="display:none">
     <div class="card-h">
-      <h3>模块与课次 · 绑班次「2026 暑期 A 班」 <span class="cnt">共 2 模块 / 6 课次</span></h3>
-      <button class="btn btn-primary btn-mini" data-open="mdl-module">＋ 新增模块</button>
+      <h3>模块与课次 · <span id="moduleCohortName">—</span> <span class="cnt" id="moduleCnt"></span></h3>
+      <button class="btn btn-primary btn-mini" id="addModuleBtn">＋ 新增模块</button>
     </div>
-    <div class="card-b" style="padding-top:14px">
-
-      <!-- 模块一 -->
-      <div class="module-panel" data-mp="1">
-        <div class="mp-h">
-          <div class="tl">
-            <span class="chev open">▸</span>
-            <span class="mn">第一阶段 · Python 基础语法</span>
-            <span class="badge badge-mut">stage_no 1</span>
-            <span class="mt">4 课次 / 12 学时</span>
-          </div>
-          <div class="cell-actions">
-            <button class="btn btn-ghost btn-mini">＋ 新增课次</button>
-            <button class="btn btn-ghost btn-mini" data-open="mdl-module-edit">编辑</button>
-            <button class="btn btn-danger btn-mini" data-open="mdl-del-module">删除</button>
-          </div>
-        </div>
-        <div class="mp-b">
-          <table>
-            <thead>
-              <tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th>操作</th></tr>
-            </thead>
-            <tbody>
-              <tr class="row-hover">
-                <td class="nb">#1</td>
-                <td><span class="cell-strong">第 1 讲 · 变量与类型</span></td>
-                <td>03-01</td>
-                <td><span class="badge badge-primary"><i class="pd"></i>进行中</span></td>
-                <td>
-                  <div class="res-4">
-                    <button data-open="mdl-video">▶ 视频</button>
-                    <button>课件</button><button>作业</button><button>考试</button>
-                  </div>
-                </td>
-                <td class="cell-actions">
-                  <button class="btn btn-ghost btn-mini" data-open="mdl-session-edit">编辑</button>
-                  <button class="btn btn-danger btn-mini" data-open="mdl-del-session">删除</button>
-                </td>
-              </tr>
-              <!-- 已绑定视频 + 转码中（默认场景） -->
-              <tr class="row-hover">
-                <td class="nb">#2</td>
-                <td><span class="cell-strong">第 2 讲 · 流程控制</span></td>
-                <td>03-03</td>
-                <td><span class="badge badge-primary"><i class="pd"></i>进行中</span></td>
-                <td>
-                  <div class="res-4">
-                    <button class="video" data-open="mdl-video">▶ 视频</button>
-                    <button>课件</button><button>作业</button><button>考试</button>
-                  </div>
-                  <div class="muted" style="font-size:11px;margin-top:5px">已绑 · 转码中</div>
-                </td>
-                <td class="cell-actions">
-                  <button class="btn btn-ghost btn-mini" data-open="mdl-session-edit">编辑</button>
-                  <button class="btn btn-danger btn-mini" data-open="mdl-del-session">删除</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 模块二（折叠态） -->
-      <div class="module-panel" data-mp="2">
-        <div class="mp-h">
-          <div class="tl">
-            <span class="chev">▸</span>
-            <span class="mn">第二阶段 · 面向对象</span>
-            <span class="badge badge-mut">stage_no 2</span>
-            <span class="mt">2 课次 / 6 学时</span>
-          </div>
-          <div class="cell-actions">
-            <button class="btn btn-ghost btn-mini">＋ 新增课次</button>
-            <button class="btn btn-ghost btn-mini" data-open="mdl-module-edit">编辑</button>
-            <button class="btn btn-danger btn-mini" data-open="mdl-del-module">删除</button>
-          </div>
-        </div>
-        <div class="mp-b" style="display:none">
-          <table>
-            <thead><tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th>操作</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
+    <div class="card-b" style="padding-top:14px" id="moduleWrap">
+      <div class="box-pad">加载模块中…</div>
     </div>
   </div>
 
-  <!-- ========== 视频上传 Stepper + 转码轮询徽章 + Timeline + 章节（默认展示「第 2 讲」转码中） ========== -->
-  <div class="card" id="video-panel">
+  <!-- ========== 视频上传 Stepper + 转码轮询 + 章节（选中课次后打开） ========== -->
+  <div class="card" id="video-panel" style="display:none">
     <div class="card-h">
-      <h3>视频上传 · 第 2 讲 流程控制 <span class="badge badge-warn" id="tc-badge"><i class="pd"></i>转码中</span></h3>
-      <button class="btn btn-ghost btn-mini" data-close-panel>关闭</button>
+      <h3 id="vpTitle">视频管理 · — <span class="badge badge-mut" id="tc-badge" style="display:none"><i class="pd"></i>—</span></h3>
+      <button class="btn btn-ghost btn-mini" id="vpClose">关闭</button>
     </div>
     <div class="card-b">
+      <!-- 已绑视频列表 -->
+      <div id="videoList" style="margin-bottom:14px"></div>
 
-      <!-- Stepper：init-chunked → 分片上传 → finalize-chunked → bind-session -->
-      <div class="stepper" id="stepper">
-        <span class="stp done"><span class="dot">✓</span>init-chunked</span>
-        <span class="stp-conn done"></span>
-        <span class="stp done"><span class="dot">✓</span>分片上传</span>
-        <span class="stp-conn done"></span>
-        <span class="stp done"><span class="dot">✓</span>finalize</span>
-        <span class="stp-conn done"></span>
-        <span class="stp cur"><span class="dot">4</span>转码中（轮询）</span>
+      <!-- Stepper -->
+      <div class="stepper" id="stepper" style="display:none">
+        <span class="stp" id="stp0"><span class="dot">1</span>init-chunked</span>
+        <span class="stp-conn" id="stpC0"></span>
+        <span class="stp" id="stp1"><span class="dot">2</span>分片上传</span>
+        <span class="stp-conn" id="stpC1"></span>
+        <span class="stp" id="stp2"><span class="dot">3</span>finalize</span>
+        <span class="stp-conn" id="stpC2"></span>
+        <span class="stp" id="stp3"><span class="dot">4</span>绑定/转码</span>
       </div>
 
-      <!-- 上传拖区（仅未上传态显示；当前已转码中态用 meta 展示） -->
+      <!-- 上传区 -->
       <div id="upzone">
-        <div class="up-drop" id="up-z">点击或拖拽视频文件到此处（.mp4/.mov）</div>
+        <input type="file" id="videoFile" accept=".mp4,.mov,.m4v,.webm,.mkv" style="display:none">
+        <div class="up-drop" id="up-z">点击或拖拽视频文件到此处（.mp4/.mov/.m4v/.webm/.mkv，自动 5MB 分片）</div>
         <div class="up-prog" id="up-pg" style="display:none"><i style="width:0%"></i></div>
-        <div class="up-meta" id="up-mt" style="display:none"><span>lesson2.mp4 · 42.3MB · 3 分片</span><span>42%</span></div>
+        <div class="up-meta" id="up-mt" style="display:none"><span id="upMetaL">—</span><span id="upMetaR">0%</span></div>
+        <div class="muted" id="upErr" style="display:none;color:var(--red-ink);font-size:12px;margin-top:6px"></div>
       </div>
 
-      <!-- 转码轮询结果徽章矩阵（下拉演示用） -->
-      <div id="tc-matrix" style="margin-top:14px">
-        <div class="muted" style="font-size:12px;margin-bottom:8px">转码状态轮询（3s refetchInterval，终态停）· 各状态徽章：</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span class="badge badge-warn"><i class="pd"></i>pending 等待转码</span>
-          <span class="badge badge-primary"><i class="pd"></i>in_progress 转码中</span>
-          <span class="badge badge-on"><i class="pd"></i>completed 已完成</span>
-          <span class="badge badge-red"><i class="pd"></i>failed 失败</span>
-          <span class="badge badge-on"><i class="pd"></i>审核通过 approved</span>
-          <span class="badge badge-mut"><i class="pd"></i>审核待审 pending</span>
-        </div>
+      <!-- 转码 Timeline 轨迹 -->
+      <div id="timelineWrap" style="margin-top:16px;display:none">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">上传/转码轨迹：</div>
+        <div class="tl" id="timeline"></div>
       </div>
 
-      <!-- Timeline 转码轨迹 -->
-      <div style="margin-top:16px">
-        <div class="muted" style="font-size:12px;margin-bottom:8px">转码 Timeline 轨迹：</div>
-        <div class="tl" id="timeline">
-          <div class="tl-item ok"><span class="tt">分片上传</span><span class="td">3/3 分片完成 · upload_id=UP-8821</span></div>
-          <div class="tl-item ok"><span class="tt">finalize</span><span class="td">资产注册 · video_id=9001</span></div>
-          <div class="tl-item ok"><span class="tt">bind-session</span><span class="td">绑定到课次 #2 · sort_no=0</span></div>
-          <div class="tl-item cur"><span class="tt">转码中</span><span class="td">in_progress → pending/completed/failed 轮询中…</span></div>
-        </div>
-      </div>
-
-      <!-- 章节管理（契约缺口占位） -->
-      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <!-- 章节管理（真实 CRUD：GET/POST/PATCH/DELETE /chapters） -->
+      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px;display:none" id="chapterSec">
         <div class="muted" style="font-size:12px;margin-bottom:8px">
-          章节管理（start_second / end_second ↔ session_video_chapter）
-          <span class="gap-tag">契约缺口：后端章节 CRUD 端点未注册，保存/新增待接线（存量展示）</span>
+          章节管理（session_video_chapter）· 视频 <b id="chapVideoId">—</b>
         </div>
-        <div id="chapter-list">
-          <div class="chapter-row">
-            <span class="ch-no">CH-1</span><span>开篇 · 环境安装</span>
-            <span class="ch-sec"><span class="seg">开始</span><input value="0">&nbsp;<span class="seg">结束</span><input value="128">
-            <button class="btn btn-ghost btn-mini" disabled>保存</button><button class="btn btn-danger btn-mini" disabled>删除</button></span>
-          </div>
-          <div class="chapter-row">
-            <span class="ch-no">CH-2</span><span>变量入门</span>
-            <span class="ch-sec"><span class="seg">开始</span><input value="128">&nbsp;<span class="seg">结束</span><input value="356">
-            <button class="btn btn-ghost btn-mini" disabled>保存</button><button class="btn btn-danger btn-mini" disabled>删除</button></span>
-          </div>
-          <div class="chapter-row">
-            <span class="ch-no">＋</span><span>新增章节</span>
-            <span class="ch-sec">
-              <button class="btn btn-ghost btn-mini" disabled>添加章节（待端点）</button>
-            </span>
-          </div>
+        <div id="chapter-list"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;font-size:12px">
+          <label>章名<input id="chTitle" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;margin-left:4px" placeholder="如：环境安装"></label>
+          <label>开始(秒)<input id="chStart" type="number" min="0" value="0" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <label>结束(秒)<input id="chEnd" type="number" min="1" value="60" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <button class="btn btn-primary btn-mini" id="chAddBtn">＋ 添加章节</button>
         </div>
       </div>
-
-    </div>
-  </div>
-
-  <!-- ========== Dialog 汇总（演示见下方） ========== -->
-
-  <!-- 新增/编辑班次 -->
-  <div class="scrim" id="mdl-cohort-edit">
-    <div class="modal">
-      <div class="mh"><h3>编辑班次 · COH-2026A</h3><button class="m-close" data-close>×</button></div>
-      <div class="mb">
-        <div class="mf">
-          <div class="mff full"><label>班次名称</label><input value="2026 暑期 A 班"></div>
-          <div class="mff"><label>班次编码（创建后不可改）</label><input value="COH-2026A" disabled></div>
-          <div class="mff"><label>售价（元）</label><input type="number" value="399"></div>
-          <div class="mff"><label>容量</label><input type="number" value="60"></div>
-          <div class="mff"><label>开课日期</label><input type="date" value="2026-03-01"></div>
-          <div class="mff"><label>结课日期</label><input type="date" value="2026-04-30"></div>
-          <div class="mff full"><label>负责人 teacher_id</label><input type="number" value="5"></div>
-        </div>
-        <div class="field-tip" style="margin-top:8px">创建班次必填 institution_id + head_teacher_id；冲突报业务码 <b>40902</b>（institution_id+cohort_code 重复）。</div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>保存修改</button></div>
-    </div>
-  </div>
-
-  <!-- 新增模块 -->
-  <div class="scrim" id="mdl-module">
-    <div class="modal">
-      <div class="mh"><h3>新增模块</h3><button class="m-close" data-close>×</button></div>
-      <div class="mb">
-        <div class="mf">
-          <div class="mff full"><label>模块名称（归属选中班次 cohort_id）</label><input placeholder="如：Python 基础语法"></div>
-          <div class="mff"><label>模块编码</label><input placeholder="MOD-01"></div>
-          <div class="mff"><label>阶段 stage_no（唯一）</label><input type="number" value="3"></div>
-          <div class="mff"><label>课次数</label><input type="number" value="4"></div>
-          <div class="mff"><label>总学时</label><input type="number" step="0.5" value="12"></div>
-          <div class="mff"><label>开始日期</label><input type="date"></div>
-          <div class="mff"><label>结束日期</label><input type="date"></div>
-        </div>
-        <div class="field-tip" style="margin-top:8px">Module 归属 <b>cohort_id</b>；冲突报业务码 <b>40903</b>（cohort_id+stage_no 重复）。</div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>创建模块</button></div>
-    </div>
-  </div>
-
-  <!-- 新增课次 -->
-  <div class="scrim" id="mdl-module-edit" style="display:none"></div>
-  <div class="scrim" id="mdl-session-edit">
-    <div class="modal">
-      <div class="mh"><h3>新增课次</h3><button class="m-close" data-close>×</button></div>
-      <div class="mb">
-        <div class="mf">
-          <div class="mff full"><label>课次标题（归属 series_cohort_course_id=模块ID）</label><input placeholder="如：第 3 讲 函数入门"></div>
-          <div class="mff"><label>课次序号 session_no（唯一）</label><input type="number" value="3"></div>
-          <div class="mff"><label>教学状态</label><select><option>scheduled 未开始</option><option>in_progress 进行中</option><option>completed 已完成</option><option>cancelled 已取消</option></select></div>
-          <div class="mff"><label>授课日期</label><input type="date"></div>
-          <div class="mff"><label>开始时间</label><input type="time"></div>
-          <div class="mff"><label>结束时间</label><input type="time"></div>
-          <div class="mff full"><label>考勤必设 checkin_required</label>
-            <select><option value="0">0（无需签到）</option><option value="1">1（必签）</option></select>
-          </div>
-        </div>
-        <div class="field-tip" style="margin-top:8px">Session 归属 <b>series_cohort_course_id</b>（当前 schema 即 module 物理 ID）；冲突报业务码 <b>40904</b>（module+session_no 重复）。</div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>创建课次</button></div>
-    </div>
-  </div>
-
-  <!-- 删除确认 ×3（ConfirmDialog） -->
-  <div class="scrim confirm" id="mdl-del-cohort">
-    <div class="modal">
-      <div class="mb">
-        <div class="c-msg">
-          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
-          <div><b>删除班次「2026 暑期 A 班」？</b><p>软删（yn=0），将级联不可见。此操作可恢复吗？按软删语义：数据保留、页内/用户端不再展示。删除模块/课次同理软删。</p></div>
-        </div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
-    </div>
-  </div>
-  <div class="scrim confirm" id="mdl-del-module">
-    <div class="modal">
-      <div class="mb">
-        <div class="c-msg">
-          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
-          <div><b>删除模块「第一 阶段」？</b><p>软删（yn=0），将级联其下 2 个课次并解绑关联视频。数据保留、不再展示。</p></div>
-        </div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
-    </div>
-  </div>
-  <div class="scrim confirm" id="mdl-del-session">
-    <div class="modal">
-      <div class="mb">
-        <div class="c-msg">
-          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
-          <div><b>删除课次「第 2 讲 流程控制」？</b><p>软删（yn=0），关联视频自动解绑。数据保留、不再展示。</p></div>
-        </div>
-      </div>
-      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
-    </div>
-  </div>
-
-  <!-- ===== 演示控制器（多态切换） ===== -->
-  <div class="demo-ctrl">
-    <b>演示状态</b>
-    <div class="row">
-      <button data-v="loading" id="v-loading">加载</button>
-      <button data-v="success" id="v-success" class="on">成功（转码中）</button>
-      <button data-v="tc-completed" id="v-tc-completed">转码完成</button>
-      <button data-v="tc-failed" id="v-tc-failed">转码失败</button>
-      <button data-v="empty" id="v-empty">空班次</button>
     </div>
   </div>
 </div>
-</div><!-- /.glayout -->
 
-<script>
-  // 演示控制：切换多态
-  var views = { loading:null, success:null, 'tc-completed':null, 'tc-failed':null, empty:null };
-  function applyView(v){
-    document.querySelectorAll('.demo-ctrl button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
-    var seriesCard = document.querySelector('.series-card');
-    var cohortCard = document.querySelector('.card');
-    var moduleCard = document.querySelectorAll('.card')[1];
-    var videoPanel = document.getElementById('video-panel');
-    var badge = document.getElementById('tc-badge');
-    var zone = document.getElementById('up-z'); var pg=document.getElementById('up-pg'); var mt=document.getElementById('up-mt');
-    var timeline = document.getElementById('timeline');
-    if(v==='loading'){
-      seriesCard.style.display='none';cohortCard.style.display='none';moduleCard.style.display='none';videoPanel.style.display='none';
-      // 骨架屏占位插到最前
-      var sk=document.createElement('div');sk.className='card';sk.id='sk-only';
-      sk.innerHTML='<div class="card-h"><div class="sk skline" style="width:120px;height:18px"></div></div><div class="card-b"><div class="sk" style="padding:8px 12px"><div class="skline" style="background:var(--muted-bg)"></div></div><table><tr class="skrow"><td><div class="sk skline" style="width:60%"></div></td><td><div class="sk skline" style="width:30%"></div></td><td><div class="sk skline" style="width:40%"></div></td></tr></table></div>';
-      document.querySelector('.page-head').after(sk);
-    }else{
-      // 恢复班次行可见（修复：从「空班次」切回后被永久隐藏）+ 移除骨架屏与空态占位
-      cohortCard.querySelectorAll('tbody tr[data-seat]').forEach(function(r){r.style.display='';});
-      var skOnly=document.getElementById('sk-only'); if(skOnly)skOnly.remove();
-      var er=document.getElementById('empty-row'); if(er&&er.parentNode)er.parentNode.removeChild(er);
-      seriesCard.style.display='';cohortCard.style.display='';moduleCard.style.display='';videoPanel.style.display='';
-    }
-    if(v==='success'||v==='tc-completed'||v==='tc-failed'){videoPanel.style.display='';}
-    if(v==='tc-completed'){
-      badge.className='badge badge-on';badge.innerHTML='<i class="pd"></i>转码完成';
-      document.querySelectorAll('#timeline .tl-item')[3].className='tl-item ok';
-      document.querySelectorAll('#timeline .tl-item')[3].querySelector('.td').textContent='completed · 播放就绪 · 审核通过 approved';
-      document.querySelectorAll('#stepper .stp')[3].className='stp done';
-      document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">✓</span>已完成';
-    }else if(v==='tc-failed'){
-      badge.className='badge badge-red';badge.innerHTML='<i class="pd"></i>转码失败';
-      document.querySelectorAll('#timeline .tl-item')[3].className='tl-item ok';
-      document.querySelectorAll('#timeline .tl-item')[3].querySelector('.td').textContent='failed · 请重新上传或联系运维';
-      document.querySelectorAll('#stepper .stp')[3].className='stp cur';document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">4</span>失败';
-    }else if(v==='success'){
-      badge.className='badge badge-warn';badge.innerHTML='<i class="pd"></i>转码中';
-      var tl4=document.querySelectorAll('#timeline .tl-item')[3];tl4.className='tl-item cur';
-      tl4.querySelector('.td').textContent='in_progress → pending/completed/failed 轮询中…';
-      document.querySelectorAll('#stepper .stp')[3].className='stp cur';document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">4</span>转码中（轮询）';
-    }
-    if(v==='empty'){
-      // 简单空态：只隐藏班次数据行，保留模块+视频面板占位（与上方案尔 else 分支协同，避免从其它态切回时空显）
-      moduleCard.style.display='none';videoPanel.style.display='none';
-      cohortCard.querySelectorAll('tbody tr[data-seat]').forEach(function(r){r.style.display='none';});
-      if(!document.getElementById('empty-row')){
-        var empt=document.createElement('tr');empt.id='empty-row';empt.innerHTML='<td colspan="6"><div class="state"><div class="st-ico">∅</div>暂无班次<br><span style="font-size:12px">点击「新增班次」开始搭建</span></div></td>';
-        cohortCard.querySelector('tbody').appendChild(empt);
-      }
-    }else{var er=document.getElementById('empty-row'); if(er&&er.parentNode)er.parentNode.removeChild(er);}
-  }
-  document.querySelectorAll('.demo-ctrl button').forEach(b=>b.addEventListener('click',()=>applyView(b.dataset.v)));
+<!-- ===== 弹窗：编辑系列 ===== -->
+<div class="scrim" id="mdl-series">
+  <div class="modal">
+    <div class="mh"><h3>编辑系列</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>系列名称</label><input id="seName"></div>
+      <div class="mff"><label>售卖状态</label><select id="seStatus"><option value="draft">draft 草稿</option><option value="on_sale">on_sale 在售</option><option value="off_sale">off_sale 下架</option></select></div>
+      <div class="mff"><label>交付方式</label><select id="seMode"><option value="online_recorded">online_recorded 录播</option><option value="online_live">online_live 直播</option><option value="offline_face_to_face">offline_face_to_face 面授</option></select></div>
+      <div class="mff full"><label>描述</label><input id="seDesc"></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="seSave">保存修改</button></div>
+  </div>
+</div>
 
-  // 通用交互：modal 开合 / dropdown / 关闭面板 / row 选中切换
-  document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{var s=document.getElementById(b.dataset.open);if(s)s.classList.add('show');}));
-  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.scrim').classList.remove('show')));
-  document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('click',e=>{if(e.target===s)s.classList.remove('show');}));
-  document.querySelectorAll('[data-dd]').forEach(b=>b.addEventListener('click',e=>{var dd=b.closest('.dd');dd.classList.toggle('open');e.stopPropagation();}));
-  document.addEventListener('click',()=>document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open')));
-  document.querySelectorAll('[data-close-panel]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('video-panel').style.display='none';}));
-  document.querySelectorAll('[data-seat]').forEach(r=>r.addEventListener('click',()=>{
-    document.querySelectorAll('[data-seat]').forEach(x=>x.classList.remove('sel'));
-    r.classList.add('sel');
-  }));
-  // stepper 上传演示（拖区点击 → 显示进度动画）
-  var zo=document.getElementById('up-z');
-  zo.addEventListener('click',()=>{ document.getElementById('up-pg').style.display='';document.getElementById('up-mt').style.display='';
-    var bar=document.querySelector('#up-pg i');var p=0;var t=setInterval(()=>{p+=11;if(p>=100){clearInterval(t);}bar.style.width=(p>100?100:p)+'%';document.querySelector('#up-mt span:last-child').textContent=p+'%';},120);
-  });
-</script>
+<!-- ===== 弹窗：新增/编辑班次 ===== -->
+<div class="scrim" id="mdl-cohort">
+  <div class="modal">
+    <div class="mh"><h3 id="coMdlTitle">新增班次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>班次编码（唯一）</label><input id="coCode" placeholder="COH-2026C"></div>
+      <div class="mff"><label>班次名称</label><input id="coName" placeholder="2026 秋季 C 班"></div>
+      <div class="mff"><label>负责人 head_teacher_id</label><input id="coTeacher" type="number" value="16"></div>
+      <div class="mff"><label>售价（元）</label><input id="coPrice" type="number" step="0.01" value="399"></div>
+      <div class="mff"><label>容量</label><input id="coCap" type="number" value="60"></div>
+      <div class="mff"><label>已报人数</label><input id="coCur" type="number" value="0"></div>
+      <div class="mff"><label>开课日期</label><input id="coStart" type="date"></div>
+      <div class="mff"><label>结课日期</label><input id="coEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">创建必填 institution_id（默认取系列）+ head_teacher_id；编码冲突报 40902。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="coSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑模块 ===== -->
+<div class="scrim" id="mdl-module">
+  <div class="modal">
+    <div class="mh"><h3 id="moMdlTitle">新增模块</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>模块编码</label><input id="moCode" placeholder="MOD-01"></div>
+      <div class="mff"><label>模块名称</label><input id="moName" placeholder="Python 基础语法"></div>
+      <div class="mff"><label>阶段 stage_no（唯一）</label><input id="moStage" type="number" value="1"></div>
+      <div class="mff"><label>课次数</label><input id="moLessons" type="number" value="4"></div>
+      <div class="mff"><label>总学时</label><input id="moHours" type="number" step="0.5" value="12"></div>
+      <div class="mff"><label>开始日期</label><input id="moStart" type="date"></div>
+      <div class="mff"><label>结束日期</label><input id="moEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">Module 归属当前选中班次 cohort_id；冲突报 40903（cohort_id+stage_no）。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="moSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑课次 ===== -->
+<div class="scrim" id="mdl-session">
+  <div class="modal">
+    <div class="mh"><h3 id="seMdlTitle">新增课次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>课次序号 session_no（唯一）</label><input id="ssNo" type="number" value="1"></div>
+      <div class="mff"><label>教学状态</label><select id="ssStatus"><option value="scheduled">scheduled 未开始</option><option value="in_progress">in_progress 进行中</option><option value="completed">completed 已完成</option><option value="cancelled">cancelled 已取消</option></select></div>
+      <div class="mff full"><label>课次标题</label><input id="ssTitle" placeholder="第 1 讲 · 变量与类型"></div>
+      <div class="mff"><label>授课日期</label><input id="ssDate" type="date"></div>
+      <div class="mff"><label>签到 checkin_required</label><select id="ssCheckin"><option value="0">0 无需签到</option><option value="1">1 必签</option></select></div>
+      <div class="mff"><label>开始时间</label><input id="ssStart" type="time"></div>
+      <div class="mff"><label>结束时间</label><input id="ssEnd" type="time"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">Session 归属模块（series_cohort_course_id）；冲突报 40904（module+session_no）。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="ssSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 通用确认 ===== -->
+<div class="scrim confirm" id="mdl-confirm">
+  <div class="modal">
+    <div class="mb"><div class="c-msg">
+      <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+      <div id="cfMsg"><b>确认删除？</b><p>软删后不再展示。</p></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="cfOk">确认删除（软删）</button></div>
+  </div>
+</div>
+
 <script>
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
@@ -781,9 +527,384 @@
 <script src="/edu-guard.js"></script>
 <script>eduGuard.requireAdmin();</script>
 <script>
+/* ===== 对接真实后端（course_admin 四级 CRUD + 视频分片上传 + 章节 CRUD，契约 = app/domains/course_admin/router.py）===== */
 window.bootAdmin=function(){
-if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&s.series_name)t.textContent=s.series_name;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 课程系列加载失败："+(err&&err.message||"未知错误");});};
+if(!window.EAPI)return;
+var $=function(id){return document.getElementById(id)};
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+if(!EAPI.store.getToken()){$("pageSub").textContent="⚠ 请用 admin 账号登录后刷新本页";return;}
+EAPI.TIMEOUT_MS=120000;
+
+var S={id:EAPI.pageId("id"),series:null,cohorts:[],cohortId:null,modules:[],sessions:{},moduleId:null,sessionId:null,videos:[],videoId:null,uploading:false,poll:null,editCohort:null,editModule:null,editSession:null,editVideo:null};
+
+function sub(t){$("pageSub").textContent=t}
+function badge(txt,cls){return '<span class="badge '+(cls||"badge-mut")+'"><i class="pd"></i>'+esc(txt)+'</span>'}
+var DM={online_live:"直播",online_recorded:"录播",offline_face_to_face:"面授"};
+var SS={scheduled:["未开始","badge-mut"],in_progress:["进行中","badge-primary"],completed:["已完成","badge-on"],cancelled:["已取消","badge-red"]};
+
+/* ── 系列 ── */
+function loadSeries(){
+  if(!S.id){$("pageTitle").textContent="未指定系列 id";sub("请从 课程管理 列表进入：admin-course-detail.html?id=<系列ID>");return;}
+  return EAPI.get("/api/admin/courses/series/"+S.id).then(function(s){
+    S.series=s;
+    $("crumbSeries").textContent=s.series_name||("系列 #"+S.id);
+    $("pageTitle").textContent=s.series_name||("系列 #"+S.id);
+    $("seriesCard").style.display="";$("cohortCard").style.display="";
+    $("siName").textContent=s.series_name||"—";
+    $("siIco").textContent=(s.series_name||"CO").slice(0,2).toUpperCase();
+    $("siTags").innerHTML='<code>'+esc(s.series_code||"—")+'</code>'
+      +'<span class="b-dm">'+esc(DM[s.delivery_mode]||s.delivery_mode||"—")+'</span>'
+      +badge(s.sale_status==="on_sale"?"在售":(s.sale_status==="off_sale"?"已下架":"草稿"),s.sale_status==="on_sale"?"badge-on":"badge-mut")
+      +'<span>机构 #'+esc(s.institution_id)+'</span>';
+    $("siDesc").textContent=s.description||"—（无描述）";
+  }).catch(function(e){sub("⚠ 系列加载失败："+((e&&e.message)||""));});
+}
+$("editSeriesBtn").onclick=function(){
+  var s=S.series;if(!s)return;
+  $("seName").value=s.series_name||"";$("seStatus").value=s.sale_status||"draft";
+  $("seMode").value=s.delivery_mode||"online_recorded";$("seDesc").value=s.description||"";
+  openMdl("mdl-series");
+};
+$("seSave").onclick=function(){
+  var btn=$("seSave");btn.disabled=true;
+  EAPI.patch("/api/admin/courses/series/"+S.id,{
+    series_name:$("seName").value.trim(),sale_status:$("seStatus").value,
+    delivery_mode:$("seMode").value,description:$("seDesc").value.trim()
+  }).then(function(){closeMdl("mdl-series");loadSeries();})
+    .catch(function(e){alert("保存失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 班次 ── */
+function loadCohorts(){
+  return EAPI.get("/api/admin/courses/series/"+S.id+"/cohorts").then(function(list){
+    S.cohorts=list||[];
+    $("cohortCnt").textContent="共 "+S.cohorts.length+" 个";
+    var body=$("cohortBody");
+    if(!S.cohorts.length){body.innerHTML='<tr><td colspan="6" class="box-pad"><div class="st-ico">∅</div>暂无班次 — 点击「＋ 新增班次」开始搭建</td></tr>';return;}
+    body.innerHTML=S.cohorts.map(function(c){
+      return '<tr class="row-hover row-click'+(c.id===S.cohortId?" sel":"")+'" data-cohort="'+c.id+'">'
+        +'<td><span class="cell-strong">'+esc(c.cohort_name||"—")+'</span><br><span class="nb">'+esc(c.cohort_code||"")+'</span></td>'
+        +'<td>¥'+esc(c.sale_price!=null?c.sale_price:"—")+'</td>'
+        +'<td><b>'+esc(c.current_student_count||0)+'</b>/'+esc(c.max_student_count||"—")+'</td>'
+        +'<td>'+esc(String(c.start_date||"").slice(0,10))+' ~ '+esc(String(c.end_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(c.yn?"启用":"已停用",c.yn?"badge-on":"badge-mut")+'</td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-coedit="'+c.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-codel="'+c.id+'">删除</button></td></tr>';
+    }).join("");
+    body.querySelectorAll("[data-cohort]").forEach(function(r){r.onclick=function(ev){
+      if(ev.target.closest("button"))return;selectCohort(+r.getAttribute("data-cohort"));};});
+    body.querySelectorAll("[data-coedit]").forEach(function(b){b.onclick=function(){openCohortMdl(+b.getAttribute("data-coedit"))};});
+    body.querySelectorAll("[data-codel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该班次？（软删 yn=0，模块/课次级联不可见）",function(){
+      return EAPI.del("/api/admin/courses/cohorts/"+b.getAttribute("data-codel")).then(function(){
+        if(S.cohortId===+b.getAttribute("data-codel")){S.cohortId=null;S.modules=[];renderModules();}
+        loadCohorts();});});};});
+    if(!S.cohortId&&S.cohorts.length)selectCohort(S.cohorts[0].id);
+  }).catch(function(e){$("cohortBody").innerHTML='<tr><td colspan="6" class="box-pad">⚠ 班次加载失败：'+esc((e&&e.message)||"")+'</td></tr>';});
+}
+function selectCohort(id){
+  S.cohortId=id;
+  var c=S.cohorts.filter(function(x){return x.id===id})[0];
+  $("moduleCard").style.display="";$("moduleCohortName").textContent=c?c.cohort_name:("班次 #"+id);
+  $("video-panel").style.display="none";
+  renderModules();
+  EAPI.get("/api/admin/courses/cohorts/"+id+"/modules").then(function(list){
+    S.modules=list||[];
+    return Promise.all(S.modules.map(function(m){
+      return EAPI.get("/api/admin/courses/modules/"+m.id+"/sessions").then(function(ss){S.sessions[m.id]=ss||[];});
+    }));
+  }).then(function(){renderModules();}).catch(function(e){
+    $("moduleWrap").innerHTML='<div class="box-pad">⚠ 模块加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("addCohortBtn").onclick=function(){openCohortMdl(null)};
+function openCohortMdl(id){
+  S.editCohort=id?S.cohorts.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editCohort;
+  $("coMdlTitle").textContent=e?("编辑班次 · "+e.cohort_code):"新增班次";
+  $("coCode").value=e?e.cohort_code:"";$("coCode").disabled=!!e;
+  $("coName").value=e?e.cohort_name:"";$("coTeacher").value=e?e.head_teacher_id:"";
+  $("coPrice").value=e?e.sale_price:"";$("coCap").value=e?e.max_student_count:60;
+  $("coCur").value=e?(e.current_student_count||0):0;
+  $("coStart").value=e?String(e.start_date||"").slice(0,10):"";$("coEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-cohort");
+}
+$("coSave").onclick=function(){
+  var e=S.editCohort,btn=$("coSave");btn.disabled=true;
+  var payload={cohort_code:$("coCode").value.trim(),cohort_name:$("coName").value.trim(),
+    head_teacher_id:+$("coTeacher").value||0,sale_price:+$("coPrice").value||0,
+    max_student_count:+$("coCap").value||1,current_student_count:+$("coCur").value||0,
+    start_date:$("coStart").value,end_date:$("coEnd").value||null};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/cohorts/"+e.id,payload);}
+  else{
+    if(!S.series){btn.disabled=false;return;}
+    payload.institution_id=S.series.institution_id;payload.series_id=S.id;
+    p=EAPI.post("/api/admin/courses/cohorts",payload);
+  }
+  p.then(function(){closeMdl("mdl-cohort");loadCohorts();})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 模块 + 课次 ── */
+function renderModules(){
+  var w=$("moduleWrap");
+  $("moduleCnt").textContent="共 "+S.modules.length+" 模块 / "+S.modules.reduce(function(a,m){return a+((S.sessions[m.id]||[]).length)},0)+" 课次";
+  if(!S.modules.length){w.innerHTML='<div class="box-pad">∅ 当前班次暂无模块 — 点击「＋ 新增模块」</div>';return;}
+  w.innerHTML=S.modules.map(function(m){
+    var ss=S.sessions[m.id]||[];
+    var rows=ss.map(function(x){
+      var st=SS[x.teaching_status]||[x.teaching_status,"badge-mut"];
+      return '<tr class="row-hover">'
+        +'<td class="nb">#'+esc(x.session_no)+'</td>'
+        +'<td><span class="cell-strong">'+esc(x.session_title||"—")+'</span></td>'
+        +'<td>'+esc(String(x.teaching_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(st[0],st[1])+'</td>'
+        +'<td><div class="res-4"><button class="video" data-vid="'+x.id+'">▶ 视频</button></div></td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssedit="'+x.id+'" data-mid="'+m.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-ssdel="'+x.id+'">删除</button></td></tr>';
+    }).join("");
+    return '<div class="module-panel"><div class="mp-h"><div class="tl">'
+      +'<span class="chev">▸</span><span class="mn">'+esc(m.module_name||"—")+'</span>'
+      +'<span class="badge badge-mut">stage_no '+esc(m.stage_no)+'</span>'
+      +'<span class="mt">'+ss.length+' 课次 / '+esc(m.total_hours||0)+' 学时</span></div>'
+      +'<div class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssadd="'+m.id+'">＋ 新增课次</button>'
+      +'<button class="btn btn-ghost btn-mini" data-moedit="'+m.id+'">编辑</button>'
+      +'<button class="btn btn-danger btn-mini" data-model="'+m.id+'">删除</button></div></div>'
+      +'<div class="mp-b"><table><thead><tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th style="text-align:right">操作</th></tr></thead>'
+      +'<tbody>'+(rows||'<tr><td colspan="6" class="box-pad">∅ 暂无课次</td></tr>')+'</tbody></table></div></div>';
+  }).join("");
+  w.querySelectorAll(".mp-h").forEach(function(h){h.addEventListener("click",function(ev){
+    if(ev.target.closest("button"))return;
+    var b=h.parentNode.querySelector(".mp-b");b.style.display=b.style.display==="none"?"":"none";
+    h.querySelector(".chev").classList.toggle("open");});});
+  w.querySelectorAll("[data-ssadd]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-ssadd"),null)};});
+  w.querySelectorAll("[data-moedit]").forEach(function(b){b.onclick=function(){openModuleMdl(+b.getAttribute("data-moedit"))};});
+  w.querySelectorAll("[data-model]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该模块？（软删，其下课次级联不可见）",function(){
+    return EAPI.del("/api/admin/courses/modules/"+b.getAttribute("data-model")).then(function(){selectCohort(S.cohortId);});});};});
+  w.querySelectorAll("[data-vid]").forEach(function(b){b.onclick=function(){openVideoPanel(+b.getAttribute("data-vid"))};});
+  w.querySelectorAll("[data-ssedit]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-mid"),+b.getAttribute("data-ssedit"))};});
+  w.querySelectorAll("[data-ssdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该课次？（软删）",function(){
+    return EAPI.del("/api/admin/courses/sessions/"+b.getAttribute("data-ssdel")).then(function(){selectCohort(S.cohortId);});});};});
+}
+$("addModuleBtn").onclick=function(){openModuleMdl(null)};
+function openModuleMdl(id){
+  S.editModule=id?S.modules.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editModule;
+  $("moMdlTitle").textContent=e?("编辑模块 · "+e.module_name):"新增模块";
+  $("moCode").value=e?e.module_code:"";$("moCode").disabled=!!e;
+  $("moName").value=e?e.module_name:"";$("moStage").value=e?e.stage_no:(S.modules.length+1);
+  $("moLessons").value=e?e.lesson_count:4;$("moHours").value=e?e.total_hours:12;
+  $("moStart").value=e?String(e.start_date||"").slice(0,10):"";$("moEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-module");
+}
+$("moSave").onclick=function(){
+  var e=S.editModule,btn=$("moSave");btn.disabled=true;
+  var payload={module_code:$("moCode").value.trim(),module_name:$("moName").value.trim(),
+    stage_no:+$("moStage").value||1,lesson_count:+$("moLessons").value||1,
+    total_hours:+$("moHours").value||0,start_date:$("moStart").value,end_date:$("moEnd").value};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/modules/"+e.id,payload);}
+  else{if(!S.cohortId){btn.disabled=false;alert("请先选中班次");return;}payload.cohort_id=S.cohortId;
+    p=EAPI.post("/api/admin/courses/modules",payload);}
+  p.then(function(){closeMdl("mdl-module");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 课次弹窗 ── */
+function openSessionMdl(moduleId,sessionId){
+  S.moduleId=moduleId;S.editSession=sessionId?findSession(sessionId):null;
+  var e=S.editSession;
+  $("seMdlTitle").textContent=e?("编辑课次 · "+e.session_title):"新增课次";
+  $("ssNo").value=e?e.session_no:((S.sessions[moduleId]||[]).length+1);
+  $("ssTitle").value=e?e.session_title:"";$("ssStatus").value=e?e.teaching_status:"scheduled";
+  $("ssDate").value=e?String(e.teaching_date||"").slice(0,10):"";
+  $("ssCheckin").value=e?String(e.checkin_required||0):"0";
+  $("ssStart").value=e?(e.start_time||""):"";$("ssEnd").value=e?(e.end_time||""):"";
+  openMdl("mdl-session");
+}
+function findSession(sid){
+  for(var i=0;i<S.modules.length;i++){var arr=S.sessions[S.modules[i].id]||[];
+    for(var k=0;k<arr.length;k++)if(arr[k].id===sid)return arr[k];}
+  return null;
+}
+$("ssSave").onclick=function(){
+  var e=S.editSession,btn=$("ssSave");btn.disabled=true;
+  var payload={session_no:+$("ssNo").value||1,session_title:$("ssTitle").value.trim(),
+    teaching_status:$("ssStatus").value,checkin_required:+$("ssCheckin").value,
+    teaching_date:$("ssDate").value,start_time:$("ssStart").value||null,end_time:$("ssEnd").value||null};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/sessions/"+e.id,payload);}
+  else{payload.series_cohort_course_id=S.moduleId;p=EAPI.post("/api/admin/courses/sessions",payload);}
+  p.then(function(){closeMdl("mdl-session");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 视频面板：资源列表 + 分片上传 + 转码轮询 + 章节 ── */
+function openVideoPanel(sessionId){
+  S.sessionId=sessionId;
+  $("video-panel").style.display="";
+  $("vpTitle").firstChild.textContent="视频管理 · 课次 #"+sessionId+" ";
+  $("stepper").style.display="none";$("timelineWrap").style.display="none";
+  $("chapterSec").style.display="none";$("tc-badge").style.display="none";
+  EAPI.get("/api/admin/courses/sessions/"+sessionId+"/assets").then(function(list){
+    S.videos=[];
+    (list||[]).forEach(function(a){(a.videos||[]).forEach(function(v){v.file_url=a.file_url;v.asset_name=a.asset_name;S.videos.push(v);});});
+    renderVideos();
+  }).catch(function(e){$("videoList").innerHTML='<div class="muted" style="font-size:12px">⚠ 资源加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("vpClose").onclick=function(){$("video-panel").style.display="none";if(S.poll){clearInterval(S.poll);S.poll=null;}};
+function renderVideos(){
+  var w=$("videoList");
+  if(!S.videos.length){w.innerHTML='<div class="muted" style="font-size:12px">该课次还没有视频 — 下方上传后自动注册并绑定。</div>';return;}
+  w.innerHTML=S.videos.map(function(v){
+    var tcMap={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+    var t=tcMap[v.transcode_status]||[v.transcode_status,"badge-mut"];
+    return '<div style="display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap">'
+      +'<b style="font-size:13px">'+esc(v.video_title||v.video_code)+'</b>'
+      +'<span class="nb">'+esc(v.video_code)+'</span>'+badge(t[0],t[1])+badge("审核 "+(v.review_status||"pending"),"badge-mut")
+      +(v.file_url?'<a href="'+esc(v.file_url)+'" target="_blank" style="font-size:12px;color:var(--primary);margin-left:auto">预览/下载</a>':'')
+      +'<button class="btn btn-ghost btn-mini" data-chap="'+v.id+'">章节管理</button></div>';
+  }).join("");
+  w.querySelectorAll("[data-chap]").forEach(function(b){b.onclick=function(){openChapters(+b.getAttribute("data-chap"))};});
+  if(S.videos.length&&!S.videoId)openChapters(S.videos[0].id);
+}
+
+/* 分片上传（真实：init → PUT chunks → finalize → transcode poll） */
+var CHUNK=5*1024*1024;
+var drop=$("up-z");
+$("up-z").onclick=function(){$("videoFile").click();};
+["dragover","dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev,function(e){e.preventDefault();
+    drop.classList.toggle("hover",ev==="dragover");
+    if(ev==="drop"&&e.dataTransfer&&e.dataTransfer.files.length)startUpload(e.dataTransfer.files[0]);});
+});
+$("videoFile").onchange=function(){if(this.files.length)startUpload(this.files[0]);this.value="";};
+function setStep(i,cls){$("stp"+i).className="stp "+cls;
+  if(i>0)$("stpC"+(i-1)).className="stp-conn "+(cls==="done"?"done":"");}
+function tlAdd(title,detail,cls){
+  $("timelineWrap").style.display="";
+  var d=document.createElement("div");d.className="tl-item "+(cls||"ok");
+  d.innerHTML='<span class="tt">'+esc(title)+'</span><span class="td">'+esc(detail)+'</span>';
+  $("timeline").appendChild(d);
+}
+function upErr(m){var e=$("upErr");e.textContent="✕ "+m;e.style.display="block";}
+function startUpload(file){
+  if(S.uploading)return;
+  $("upErr").style.display="none";
+  if(!S.sessionId){upErr("请先从课次列表打开视频面板");return;}
+  var ext=(file.name.lastIndexOf(".")>=0?file.name.slice(file.name.lastIndexOf(".")).toLowerCase():"");
+  if([".mp4",".mov",".m4v",".webm",".mkv"].indexOf(ext)<0){upErr("不支持的文件类型 "+ext);return;}
+  S.uploading=true;
+  $("stepper").style.display="";$("timeline").innerHTML="";
+  setStep(0,"cur");
+  var count=Math.max(1,Math.ceil(file.size/CHUNK));
+  EAPI.post("/api/admin/courses/videos/init-chunked?session_id="+S.sessionId
+      +"&file_name="+encodeURIComponent(file.name)+"&file_size="+file.size+"&chunk_count="+count,{})
+  .then(function(r){
+    setStep(0,"done");setStep(1,"cur");
+    tlAdd("init-chunked","upload_id="+r.upload_id+" · "+count+" 分片 · "+(r.chunk_size/1024/1024).toFixed(1)+"MB/片");
+    var up=$("up-pg"),mt=$("up-mt");up.style.display="";mt.style.display="";
+    $("upMetaL").textContent=file.name+" · "+(file.size/1024/1024).toFixed(1)+"MB · "+count+" 分片";
+    var sent=0;
+    function putChunk(i){
+      if(i>=count)return finalize();
+      var startB=i*CHUNK,endB=Math.min(file.size,(i+1)*CHUNK);
+      var blob=file.slice(startB,endB);
+      var xhr=new XMLHttpRequest();
+      xhr.open("PUT",EAPI.BASE+"/api/admin/courses/videos/upload-chunk/"+r.upload_id+"/"+i);
+      xhr.setRequestHeader("Authorization","Bearer "+(EAPI.store.getToken()||""));
+      xhr.setRequestHeader("Content-Type","application/octet-stream");
+      xhr.upload.onprogress=function(ev){if(ev.lengthComputable){
+        var pct=Math.round((sent+ev.loaded)/file.size*100);
+        up.firstElementChild.style.width=pct+"%";$("upMetaR").textContent=pct+"%";}};
+      xhr.onload=function(){
+        if(xhr.status>=200&&xhr.status<300){sent+=endB-startB;putChunk(i+1);}
+        else upErr("分片 "+i+" 上传失败：HTTP "+xhr.status);
+      };
+      xhr.onerror=function(){upErr("网络错误：分片 "+i+" 上传失败");};
+      xhr.send(blob);
+    }
+    function finalize(){
+      setStep(1,"done");setStep(2,"cur");
+      EAPI.post("/api/admin/courses/videos/finalize-chunked?upload_id="+r.upload_id,{})
+      .then(function(f){
+        setStep(2,"done");setStep(3,"cur");
+        tlAdd("finalize","video_id="+f.video_id+" · "+(f.file_size/1024/1024).toFixed(1)+"MB · "+f.file_url);
+        return EAPI.post("/api/admin/courses/videos/bind-session?session_id="+S.sessionId+"&video_id="+f.video_id+"&sort_no=0",{})
+        .then(function(){
+          tlAdd("bind-session","绑定到课次 #"+S.sessionId);
+          up.style.display="none";mt.style.display="none";
+          S.videoId=f.video_id;openVideoPanel(S.sessionId);pollTranscode(f.video_id);
+        });
+      }).catch(function(e){upErr("finalize 失败："+((e&&e.message)||""));S.uploading=false;});
+    }
+    putChunk(0);
+  }).catch(function(e){upErr("init 失败："+((e&&e.message)||""));S.uploading=false;});
+}
+function pollTranscode(videoId){
+  if(S.poll)clearInterval(S.poll);
+  var b=$("tc-badge");b.style.display="";
+  b.className="badge badge-warn";b.innerHTML='<i class="pd"></i>转码中';
+  S.poll=setInterval(function(){
+    EAPI.get("/api/admin/courses/videos/"+videoId+"/transcode-status").then(function(st){
+      var map={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+      var m=map[st.transcode_status]||[st.transcode_status,"badge-mut"];
+      b.className=m[1];b.innerHTML='<i class="pd"></i>'+m[0];
+      if(st.transcode_status==="completed"||st.transcode_status==="failed"){
+        clearInterval(S.poll);S.poll=null;setStep(3,"done");S.uploading=false;
+        tlAdd("转码",st.transcode_status+" · review "+st.review_status,st.transcode_status==="completed"?"ok":"bad");
+      }
+    }).catch(function(){});
+  },3000);
+}
+
+/* 章节 CRUD */
+function openChapters(videoId){
+  S.videoId=videoId;
+  $("chapterSec").style.display="";
+  $("chapVideoId").textContent="video_id="+videoId;
+  EAPI.get("/api/admin/courses/videos/"+videoId+"/chapters").then(function(list){
+    renderChapters(list||[]);
+  }).catch(function(e){$("chapter-list").innerHTML='<div class="muted" style="font-size:12px">⚠ 章节加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+function renderChapters(list){
+  var w=$("chapter-list");
+  if(!list.length){w.innerHTML='<div class="muted" style="font-size:12px;padding:8px 0">∅ 暂无章节 — 下方添加</div>';return;}
+  w.innerHTML=list.map(function(c){
+    return '<div class="chapter-row"><span class="ch-no">CH-'+esc(c.chapter_no)+'</span><span>'+esc(c.chapter_title||"")+'</span>'
+      +'<span class="ch-sec"><span class="nb">'+esc(c.start_second)+'s ~ '+esc(c.end_second)+'s</span>'
+      +'<button class="btn btn-danger btn-mini" data-chdel="'+c.id+'">删除</button></span></div>';
+  }).join("");
+  w.querySelectorAll("[data-chdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该章节？（物理删除）",function(){
+    return EAPI.del("/api/admin/courses/chapters/"+b.getAttribute("data-chdel")).then(function(){openChapters(S.videoId);});});};});
+}
+$("chAddBtn").onclick=function(){
+  if(!S.videoId){alert("请先选择视频");return;}
+  var btn=$("chAddBtn");btn.disabled=true;
+  EAPI.post("/api/admin/courses/chapters",{
+    video_id:S.videoId,chapter_title:$("chTitle").value.trim()||("章节 "+new Date().toLocaleTimeString()),
+    start_second:+$("chStart").value||0,end_second:+$("chEnd").value||1
+  }).then(function(){openChapters(S.videoId);$("chTitle").value="";})
+    .catch(function(e){alert("添加失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 通用弹窗/确认 ── */
+function openMdl(id){$(id).classList.add("show")}
+function closeMdl(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){b.closest(".scrim").classList.remove("show")})});
+document.querySelectorAll(".scrim").forEach(function(s){s.addEventListener("click",function(e){if(e.target===s)s.classList.remove("show")})});
+function confirmDel(msg,fn){
+  $("cfMsg").innerHTML='<b>'+esc(msg)+'</b>';
+  openMdl("mdl-confirm");
+  $("cfOk").onclick=function(){fn().catch(function(e){alert("删除失败："+((e&&e.message)||""));}).then(function(){closeMdl("mdl-confirm");});};
+}
+
+loadSeries().then(loadCohorts);
+};
 </script>
 </body>
 </html>

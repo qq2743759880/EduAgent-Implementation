@@ -35,7 +35,7 @@ SKIP_EXACT_PATHS = {
     "/", "/health", "/health/detail", "/metrics",
     "/docs", "/redoc", "/openapi.json", "/favicon.ico",
 }
-SKIP_PATH_PREFIXES = ("/api/auth/",)
+SKIP_PATH_PREFIXES = ("/api/auth/", "/media/")
 
 
 def _is_public_path(path: str) -> bool:

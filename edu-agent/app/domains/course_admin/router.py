@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth import CurrentUser, get_current_user, require_role
 from app.auth.schemas import UserRole
@@ -206,6 +206,12 @@ async def admin_delete_session(session_id: int, me: CurrentUser = Depends(get_cu
     return ok(data=None, message="课次已删除")
 
 
+@router.get("/sessions/{session_id}/assets", summary="管理端·课次资源列表（含视频信息，供视频面板）")
+async def admin_list_session_assets(session_id: int, me: CurrentUser = Depends(get_current_user)):
+    result = await svc.list_session_assets(session_id)
+    return ok(data=result)
+
+
 # ═══════════════════════════════════════════
 # 视频章节 Video Chapter CRUD（5 端点，P1-2 task57 gap 接线）
 # ═══════════════════════════════════════════
@@ -242,10 +248,10 @@ async def admin_delete_chapter(chapter_id: int, me: CurrentUser = Depends(get_cu
 
 
 # ═══════════════════════════════════════════
-# 视频 + 分片上传（占位，task13 完整实现）
+# 视频 + 分片上传（本地磁盘真实现：init → PUT 分片 → finalize 建库 → bind 排序）
 # ═══════════════════════════════════════════
 
-@router.post("/videos/init-chunked", summary="管理端·分片上传 init（占位）")
+@router.post("/videos/init-chunked", summary="管理端·分片上传 init")
 async def admin_init_chunked_upload(
     session_id: int, file_name: str, file_size: int, chunk_count: int,
     me: CurrentUser = Depends(get_current_user),
@@ -254,15 +260,28 @@ async def admin_init_chunked_upload(
     return ok(data=result)
 
 
-@router.post("/videos/finalize-chunked", summary="管理端·分片上传 finalize（占位）")
-async def admin_finalize_chunked_upload(
-    upload_id: str, me: CurrentUser = Depends(get_current_user),
+@router.put("/videos/upload-chunk/{upload_id}/{chunk_index}", summary="管理端·分片上传单分片 PUT（octet-stream）")
+async def admin_upload_chunk(
+    upload_id: str, chunk_index: int,
+    request: Request,
+    me: CurrentUser = Depends(get_current_user),
 ):
-    result = await svc.finalize_chunked_upload(upload_id)
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=400, detail="chunk body 为空")
+    result = await svc.upload_chunk(upload_id, chunk_index, data)
     return ok(data=result)
 
 
-@router.post("/videos/bind-session", summary="管理端·绑定视频到课次（占位）")
+@router.post("/videos/finalize-chunked", summary="管理端·分片上传 finalize（合并落盘+建 asset/video）")
+async def admin_finalize_chunked_upload(
+    upload_id: str, me: CurrentUser = Depends(get_current_user),
+):
+    result = await svc.finalize_chunked_upload(upload_id, uploader_user_id=int(me.user_id))
+    return ok(data=result)
+
+
+@router.post("/videos/bind-session", summary="管理端·绑定视频到课次（修正归属/排序）")
 async def admin_bind_video(
     session_id: int, video_id: int, sort_no: int = 0,
     me: CurrentUser = Depends(get_current_user),
@@ -271,7 +290,7 @@ async def admin_bind_video(
     return ok(data=result)
 
 
-@router.get("/videos/{video_id}/transcode-status", summary="管理端·转码状态轮询（占位）")
+@router.get("/videos/{video_id}/transcode-status", summary="管理端·转码状态轮询")
 async def admin_get_transcode_status(
     video_id: int, me: CurrentUser = Depends(get_current_user),
 ):

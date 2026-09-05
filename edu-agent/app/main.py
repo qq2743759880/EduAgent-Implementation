@@ -202,6 +202,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ── 媒体静态服务：课程视频等上传文件（DATA_DIR/media → /media，AuthMiddleware 白名单放行） ──
+from pathlib import Path as _MediaPath  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_MEDIA_ROOT = _MediaPath(settings.DATA_DIR) / "media"
+_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_MEDIA_ROOT)), name="media")
+
 
 # ── 中间件（顺序：SecurityHeaders → CORS → RateLimit → AdminAuth → Idempotency → CircuitGuard → Trace → RespWrap） ──
 # 注册顺序 = 请求执行顺序的逆序（最后注册=最外层，最先注册=最内层靠路由）
