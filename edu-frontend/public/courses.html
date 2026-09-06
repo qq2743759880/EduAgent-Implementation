@@ -585,20 +585,20 @@ let storedState="success";
 
 /* ---- 卡片渲染（糖果渐变 + 学科 emoji + 斜线图案；价格「¥X 起」+ XP 徽章 + 进度环）---- */
 const TONES=["t1","t2","t3","t4","t5"], PATTERNS=["p1","p2","p3","p4","p5"];
-function coverClass(id){ const i=id-1001; return `cover--${TONES[i%5]} cover--${PATTERNS[Math.floor(i/5)%5]}`; }
+/* task03 回归修复：非负模取色——末页存在小 id（实测 id=1/2/3），原 i%5 产生负索引 → cover--undefined 封面丢样式 */
+function coverClass(id){ const i=id-1001; const t=((i%5)+5)%5, p=((Math.floor(i/5)%5)+5)%5; return `cover--${TONES[t]} cover--${PATTERNS[p]}`; }
 function cardHtml(s){
   const url = `course-detail.html?id=${s.id}`;
   const price = (s.min_price!==null && s.min_price!==undefined) ? s.min_price : null;
   const cov = coverSrc(s);   // task103：真实非假域名封面才用图，否则首字母色块占位
   const coverImg = cov ? `<img class="cov" src="${cov}" alt="${s.series_name}封面" loading="lazy" onerror="this.remove()" />` : "";
   const emoji = SUB_EMOJI[s.sub_category] || CAT_EMOJI[(s.category_names||[])[0]] || "📚";
-  const pct = (s.id*7)%100; // 学习进度环（装饰性社交证明）
-  // 元信息：真实列表项无 cohort_count/learners/xp，用可用字段动态拼装
+  // 元信息：真实列表项无 cohort_count/learners/xp/进度字段（curl 实测 2026-09-06），
+  // 不渲染假进度环/假"人学过"——mock 百分比属数据欺骗，task03 移除
   const metas = [];
   if (s.cohort_count != null) metas.push(`<span>${s.cohort_count} 个班次</span>`);
   else if (s.delivery_mode) metas.push(`<span>${DM[s.delivery_mode]||"在线课程"}</span>`);
   if (s.learners != null) metas.push(`<span class="dot"></span><span class="hot">🔥 ${(s.learners/1000>=1)?((s.learners/1000).toFixed(1)+"k"):s.learners} 人学过</span>`);
-  metas.push(`<span class="dot"></span><span class="ring-wrap"><span class="ring" style="--p:${pct}"><b>${pct}%</b></span>进度</span>`);
   return `
   <a class="card-link" href="${url}" aria-label="${s.series_name}">
   <article class="card" tabindex="0">
@@ -607,7 +607,7 @@ function cardHtml(s){
       ${coverImg}
       <h3 class="cover-title">${s.series_name.replace(/·(直播|录播|面授)$/,"")}</h3>
       <span class="delivery">${DM[s.delivery_mode]||"在线课程"}</span>
-      <span class="xp-badge">+${s.xp||0} XP</span>
+      ${s.xp!=null ? `<span class="xp-badge">+${s.xp} XP</span>` : ""}
       <span class="subject-emoji">${emoji}</span>
       <span class="code">${s.series_code}</span>
     </div>
