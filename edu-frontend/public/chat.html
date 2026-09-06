@@ -686,7 +686,20 @@ if (!__logon) { renderSides(); draw("history"); }
 })();
 </script>
 <script>
-/* ===== 对接真实后端（chat）===== */
+/* ===== 对接真实后端（chat · task07 补全）=====
+   curl 实测契约（2026-09-06，学生 token，详见 test-reports/task07-completion-report-reshape-a.md）：
+   - GET    /api/chat/sessions?limit=50 → data: ChatSession[] 扁平数组（session_id/title/message_count/last_message_at）
+   - POST   /api/chat/sessions {}       → data: ChatSession（title 默认「新会话 xxxxxx」）
+   - GET    /api/chat/sessions/{id}/history?limit=N（1..500，>500→422）→ data: ChatMessage[] 按 created_at ASC，
+              仅 limit 截断、无 page/offset；GET /sessions/{id} 无详情端点（405）——漂移已登记报告
+   - DELETE /api/chat/sessions/{id}     → data:{ok:true}（软删）；404 code:"CHAT_SESSION_NOT_FOUND"（字符串码）
+   task07 改动（SSE 主解析逻辑未动）：
+   ①历史 limit=500 + 按 message_count 诚实截断横幅（ASC→最早 N 条）
+   ②会话列表/历史加载失败渲染诚实错误态（原 .catch 静默吞 → 登录态残留静态 demo 假数据）
+   ③流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效复用
+   ④done→keepView 只刷侧栏（原 loadSessions() 整页刷新会把视图弹回列表头部并重载历史）
+   ⑤offline/读取中断降级提示；会话标题 esc 转义（原直接 innerHTML 注入）
+   ⑥隐藏静态 ctxTag「通用编程入门班 第3讲」假上下文徽标 */
 (function () {
   if (!window.EAPI) return;
   var token = EAPI.store.getToken();
@@ -694,10 +707,17 @@ if (!__logon) { renderSides(); draw("history"); }
   var $ = function (id) { return document.getElementById(id); };
   var stage = $("stage");
   var sessions = [], activeId = null;
+  var HISTORY_LIMIT = 500; /* 实测上限 500，超限 422；契约无 page/offset */
+  var streaming = false;
+  var notifyStreamFail = null; /* doSend 内 failStream 的外露槽：offline 监听复用（作用域桥接） */
+
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+  /* EduMD 未加载（脚本被拦等）时静默降级为纯文本转义 */
+  var md = (window.EduMD && window.EduMD.toHtml) ? window.EduMD.toHtml : esc;
 
   function fmt(ts) {
     if (!ts) return "刚刚";
-    var d = new Date(ts.replace(" ", "T"));
+    var d = new Date(String(ts).replace(" ", "T"));
     if (isNaN(d)) return "最近";
     var h = d.getHours().toString().padStart(2, "0"), m = d.getMinutes().toString().padStart(2, "0");
     var today = new Date();
@@ -705,58 +725,98 @@ if (!__logon) { renderSides(); draw("history"); }
     return (d.getMonth() + 1) + "-" + d.getDate();
   }
 
-  function loadSessions() {
-    return EAPI.get("/api/chat/sessions").then(function (list) {
-      sessions = (list || []).map(function (s) {
-        return { id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at) };
+  /* ---- 诚实错误态（会话/历史加载失败；替换原静默吞错导致的 demo 假数据残留）---- */
+  function errState(title, msg, retry) {
+    stage.innerHTML = '<div class="error-st"><div class="ic">😵</div><div class="t">' + esc(title) + '</div>'
+      + '<div class="d">' + esc(msg || "") + '</div>'
+      + (retry ? '<button class="btn btn-ghost" id="stageRetry">↻ 重试</button>' : "") + '</div>';
+    var rb = $("stageRetry");
+    if (rb && retry) rb.addEventListener("click", retry);
+  }
+
+  /* keepView=true：只刷新侧栏，不切换会话/不重载历史（done 后刷列表用，防视图弹跳） */
+  function loadSessions(opts) {
+    var keepView = !!(opts && opts.keepView);
+    return EAPI.get("/api/chat/sessions?limit=50").then(function (list) {
+      sessions = (Array.isArray(list) ? list : []).map(function (s) {
+        return { id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 };
       });
-      renderSides();
-      if (sessions.length) { activeId = sessions[0].id; loadHistory(activeId); }
+      if (keepView) { renderSides(); return; }
+      var alive = sessions.some(function (s) { return s.id === activeId; });
+      if (!alive) activeId = sessions.length ? sessions[0].id : null;
+      if (activeId) { renderSides(); loadHistory(activeId); }
       else emptyState();
-    }).catch(function () {});
+    }).catch(function (e) {
+      sessions = []; renderSides();
+      errState("会话列表加载失败", (e && e.message) || "网络错误", function () { loadSessions(); });
+    });
   }
 
   function renderSides() {
-    var html = sessions.map(function (s, i) {
-      return '<button class="sess ' + (s.id === activeId ? "on" : "") + '" data-id="' + s.id + '"><span class="ic">💬</span><span class="si"><span class="t">' + s.title + '</span><span class="d">' + s.date + '</span></span><span class="del" data-del="' + s.id + '" title="删除会话">🗑</span></button>';
+    var html = sessions.map(function (s) {
+      return '<button class="sess ' + (s.id === activeId ? "on" : "") + '" data-id="' + s.id + '"><span class="ic">💬</span><span class="si"><span class="t">' + esc(s.title) + '</span><span class="d">' + s.date + '</span></span><span class="del" data-del="' + s.id + '" title="删除会话">🗑</span></button>';
     }).join("");
     ["sideList", "drawerList"].forEach(function (id) { if ($(id)) $(id).innerHTML = html; });
     ["sideList", "drawerList"].forEach(function (id) {
       if (!$(id)) return;
       $(id).querySelectorAll(".sess").forEach(function (b) {
-        b.addEventListener("click", function () { activeId = b.dataset.id; renderSides(); loadHistory(activeId); });
+        b.addEventListener("click", function () { if (streaming) return; activeId = b.dataset.id; renderSides(); loadHistory(activeId); });
       });
       $(id).querySelectorAll(".del").forEach(function (b) {
         b.addEventListener("click", function (e) {
           e.stopPropagation();
-          EAPI.del("/api/chat/sessions/" + b.dataset.del).then(function () { loadSessions(); }).catch(function () {});
+          if (b.dataset.del === activeId && streaming) return; /* 流式中禁删当前会话（防渲染目标丢失） */
+          delSession(b.dataset.del);
         });
       });
     });
   }
 
+  /* ---- 历史消息：?limit=500（实测契约，无分页参数）；超 message_count 截断诚实横幅 ---- */
   function loadHistory(sid) {
-    EAPI.get("/api/chat/sessions/" + sid + "/history").then(function (msgs) {
-      var list = (msgs && msgs.messages) || msgs || [];
-      stage.innerHTML = historyHtml(list);
-    }).catch(function () {});
+    var sess = null;
+    for (var i = 0; i < sessions.length; i++) if (sessions[i].id === sid) sess = sessions[i];
+    stage.innerHTML = '<div style="display:flex;justify-content:center;padding:24px 0"><span class="think"><span class="spinner"></span><span class="txt">加载历史消息…</span></span></div>';
+    EAPI.get("/api/chat/sessions/" + sid + "/history?limit=" + HISTORY_LIMIT).then(function (msgs) {
+      if (activeId !== sid) return; /* 用户已切走：丢弃过期渲染（快速切换竞态防护） */
+      var list = Array.isArray(msgs) ? msgs : [];
+      var html = list.map(historyBubble).join("");
+      if (sess && sess.count > list.length) {
+        html += '<div class="degrade" style="margin:4px 0 0"><span class="ic">⚠️</span><span><b>历史较长：</b>接口仅支持 limit 截断（无分页参数），已加载最早 ' + list.length + ' 条 / 共 ' + sess.count + ' 条。</span></div>';
+      }
+      stage.innerHTML = html || emptyHtml();
+      stage.scrollTop = stage.scrollHeight; /* ASC 列表末尾 = 最新消息 */
+    }).catch(function (e) {
+      if (activeId !== sid) return;
+      errState("历史消息加载失败", (e && e.message) || "网络错误", function () { loadHistory(sid); });
+    });
   }
 
-  function historyHtml(list) {
-    if (!list || !list.length) return emptyHtml();
-    return list.map(function (m) {
-      var isUser = m.role === "user" || m.role === "human";
-      /* AI 消息走 EduMD Markdown 渲染；用户消息纯文本转义 + 换行 */
-      var body = isUser ? esc(m.content || m.text || "").replace(/\n/g, "<br>") : md(m.content || m.text || "");
-      return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="bubb">' + body + '</div></div>';
-    }).join("");
+  function historyBubble(m) {
+    var isUser = m.role === "user" || m.role === "human";
+    /* AI 消息走 EduMD Markdown 渲染；用户消息纯文本转义 + 换行 */
+    var body = isUser ? esc(m.content || m.text || "").replace(/\n/g, "<br>") : md(m.content || m.text || "");
+    var meta = '<span>' + fmt(m.created_at) + '</span>';
+    var refs = (m.rag_final_count != null) ? m.rag_final_count : m.rag_retrieved_count;
+    if (!isUser && refs != null) meta += '<span class="refs">🔎 ' + refs + ' 篇引用</span>';
+    return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="avatar">' + (isUser ? "😊" : "🤖") + '</div>'
+      + '<div class="box"><div class="bubb">' + body + '</div><div class="meta">' + meta + '</div></div></div>';
   }
 
   function emptyHtml() { return '<div class="empty" style="text-align:center;color:var(--ink-faint);padding:60px 0">开始和 EduAgent 对话吧 ✨</div>'; }
-  function emptyState() { stage.innerHTML = emptyHtml(); }
-  function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
-  /* EduMD 未加载（脚本被拦等）时静默降级为纯文本转义 */
-  var md = (window.EduMD && window.EduMD.toHtml) ? window.EduMD.toHtml : esc;
+  function emptyState() { activeId = null; renderSides(); stage.innerHTML = emptyHtml(); }
+
+  /* ---- 删除会话（DELETE /api/chat/sessions/{id}，实测软删 data:{ok:true}；失败 toast 由 EAPI 钩子提示）---- */
+  function delSession(id) {
+    EAPI.del("/api/chat/sessions/" + id).then(function () {
+      sessions = sessions.filter(function (s) { return s.id !== id; });
+      if (activeId === id) {
+        activeId = sessions.length ? sessions[0].id : null;
+        if (activeId) { renderSides(); loadHistory(activeId); }
+        else emptyState();
+      } else renderSides();
+    }).catch(function () { /* 403 跨用户 / 404 已删 → EAPI 全局钩子 toast */ });
+  }
 
   /* ---- 发送：SSE 流式（EduMD Markdown 渲染 + 120ms 节流；start/retrieval→首 token 思考中动效）---- */
   var input = $("composerInput"), send = $("sendBtn");
@@ -764,9 +824,26 @@ if (!__logon) { renderSides(); draw("history"); }
   var CURSOR_HTML = '<span class="cursor"></span>';
   function nearBottom() { return stage.scrollHeight - stage.scrollTop - stage.clientHeight < 90; }
   function scrollStage(force) { if (force || nearBottom()) stage.scrollTop = stage.scrollHeight; }
+  /* task07③：流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效 + 按钮状态 */
+  function setStreaming(on) {
+    streaming = on;
+    var qh = $("queueHint");
+    if (qh) qh.style.display = on ? "" : "none";
+    send.disabled = on;
+    send.classList.toggle("stop", on);
+    send.innerHTML = on ? '<span class="play-ic">■</span>' : '<span class="play-ic">➤</span>';
+  }
   function doSend() {
     var text = (input.value || "").trim();
     if (!text) return;
+    if (streaming) return;                        /* 流式中禁止并发发送 */
+    /* task07④：断网诚实降级——不发请求，保留输入 */
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      var to = $("toast"), tom = $("toastMsg");
+      if (to) { if (tom) tom.textContent = "当前设备已断网，请检查网络连接后重试"; to.style.display = ""; }
+      input.focus();
+      return;
+    }
     var sid = activeId;
     /* 追加新气泡（不再清空既有历史；移除空态/错误态占位） */
     var ph = stage.querySelector(".empty,.error-st"); if (ph) ph.parentNode.removeChild(ph);
@@ -775,6 +852,7 @@ if (!__logon) { renderSides(); draw("history"); }
       '<div class="msg ai"><div class="bubb" id="aiResp">' + THINK_HTML + '</div></div>');
     scrollStage(true);
     input.value = "";
+    setStreaming(true);
     var acc = "", gotToken = false, gotDone = false, renderTimer = null;
     function renderStream(final) {
       var el = $("aiResp"); if (!el || !acc) return;
@@ -793,6 +871,7 @@ if (!__logon) { renderSides(); draw("history"); }
     }
     function failStream(msg) {
       if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+      setStreaming(false);
       var el = $("aiResp"); if (!el) return;
       el.innerHTML = (acc ? md(acc) : "") +
         '<div class="md-err">⚠ 回答中断：' + esc(msg || "未知错误") + (acc ? "（已保留已生成部分）" : "") + '</div>';
@@ -800,6 +879,7 @@ if (!__logon) { renderSides(); draw("history"); }
       if (t) { if (tm) tm.textContent = "AI 响应中断：" + (msg || "未知错误"); t.style.display = ""; }
       scrollStage(false);
     }
+    notifyStreamFail = failStream; /* offline 监听复用（流式中断降级） */
     fetch(EAPI.BASE + "/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
@@ -811,6 +891,7 @@ if (!__logon) { renderSides(); draw("history"); }
         return reader.read().then(function (r) {
           if (r.done) {
             if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+            setStreaming(false);
             if (!gotDone) { if (acc) renderStream(true); else failStream("连接提前结束"); }
             return;
           }
@@ -832,14 +913,22 @@ if (!__logon) { renderSides(); draw("history"); }
             }
             else if (evt === "done") {
               /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
-                 流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则刷新列表使会话入列表 */
+                 流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则立即收编 session_id 并只刷侧栏 */
               gotDone = true;
-              try { var d = JSON.parse(payload); if (!sid && d && d.data && d.data.session_id) loadSessions(); } catch (e) {}
+              setStreaming(false);
+              try {
+                var d = JSON.parse(payload);
+                if (!sid && d && d.data && d.data.session_id) {
+                  activeId = d.data.session_id;      /* 防连续发送再开新会话 */
+                  loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
+                }
+              } catch (e) {}
               if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
               if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
               else renderStream(true);
             }
             else if (evt === "error") {
+              /* task07③：error 事件诚实展示——保留已渲染内容 + 行内中断提示 + toast，不清空舞台 */
               try { var er = JSON.parse(payload); failStream(er.message || "未知错误"); } catch (e) { failStream("未知错误"); }
             }
           });
@@ -853,16 +942,23 @@ if (!__logon) { renderSides(); draw("history"); }
   }
   send.addEventListener("click", doSend);
   input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+  /* task07④：网络断开（流式中掉线）→ 诚实中断提示，不打断已渲染内容 */
+  window.addEventListener("offline", function () {
+    if (streaming && notifyStreamFail) notifyStreamFail("网络连接已断开（offline）");
+  });
 
-  /* ---- task104：新建会话接真实 API（POST /api/chat/sessions，body 可空）---- */
+  /* ---- task07①：新建会话（POST /api/chat/sessions，curl 实测 title 默认「新会话 xxxxxx」）---- */
   function createSession() {
+    var btns = ["newSession", "sideNew", "drawerNew"].map(function (id) { return $(id); }).filter(Boolean);
+    btns.forEach(function (b) { b.disabled = true; });   /* 防重复创建 */
     return EAPI.post("/api/chat/sessions", {}).then(function (s) {
       if (!s || !s.session_id) return;
-      sessions.unshift({ id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at) });
+      sessions.unshift({ id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 });
       activeId = s.session_id;
       renderSides();
-      loadHistory(activeId);
-    }).catch(function () {});
+      stage.innerHTML = emptyHtml();
+    }).catch(function () { /* 失败由 EAPI 全局钩子 toast 诚实提示 */ })
+      .finally(function () { btns.forEach(function (b) { b.disabled = false; }); });
   }
   ["newSession", "sideNew", "drawerNew"].forEach(function (id) {
     var el = $(id); if (el) el.addEventListener("click", function (e) { e.preventDefault(); createSession(); });
@@ -874,6 +970,9 @@ if (!__logon) { renderSides(); draw("history"); }
     var dr = $("drawer"); if (dr) dr.classList.add("open");
     var sc = $("scrim"); if (sc) sc.classList.add("open");
   });
+
+  /* task07⑥：chat 契约无「课程上下文」字段，隐藏静态假上下文徽标（诚实展示） */
+  var ctxTag = $("ctxTag"); if (ctxTag) ctxTag.style.display = "none";
 
   loadSessions();
 })();

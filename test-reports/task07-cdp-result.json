@@ -1,0 +1,77 @@
+{
+ "results": [
+  {
+   "name": "backend-login",
+   "ok": true,
+   "detail": "student token ok"
+  },
+  {
+   "name": "real-sessions-rendered",
+   "ok": true,
+   "detail": "count=15 ids=s_45c95a0feff9,s_7a8ff2d46491,s_277ef21c6990"
+  },
+  {
+   "name": "demo-data-replaced",
+   "ok": true,
+   "detail": "stage 无演示假消息"
+  },
+  {
+   "name": "fake-ctx-hidden",
+   "ok": true,
+   "detail": "静态假上下文徽标已隐藏"
+  },
+  {
+   "name": "session-switch-history",
+   "ok": true,
+   "detail": "first=s_45c95a0feff9 msgs=2"
+  },
+  {
+   "name": "create-session",
+   "ok": true,
+   "detail": "list 15->16 A=s_1527019598a6 empty=true"
+  },
+  {
+   "name": "streaming-state-honest",
+   "ok": true,
+   "detail": "{\"q\":true,\"disabled\":true}"
+  },
+  {
+   "name": "sse-stream-completed",
+   "ok": true,
+   "detail": "len=1 sample=二"
+  },
+  {
+   "name": "done-keepview",
+   "ok": true,
+   "detail": "list=16 active kept=true content kept=true"
+  },
+  {
+   "name": "delete-session",
+   "ok": true,
+   "detail": "list 16->15 A removed=true"
+  },
+  {
+   "name": "offline-degrade",
+   "ok": true,
+   "detail": "{\"show\":true,\"msg\":\"AI 响应中断：网络连接已断开（offline）\"} partialKept=23"
+  },
+  {
+   "name": "history-error-state",
+   "ok": true,
+   "detail": "error-st 渲染: Failed to fetch"
+  },
+  {
+   "name": "error-retry-recovers",
+   "ok": true,
+   "detail": "retry=retry recovered=true"
+  },
+  {
+   "name": "console-no-js-errors",
+   "ok": true,
+   "detail": "total=1 real=0 "
+  }
+ ],
+ "consoleErrors": [
+  "[EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3000/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3000/edu-api.js:296:17)\n    at loadHistory (http://127.0."
+ ]
+}
