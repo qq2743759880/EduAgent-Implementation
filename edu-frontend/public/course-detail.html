@@ -351,9 +351,9 @@ select,input{font-family:inherit}
 
   <!-- 面包屑 -->
   <nav class="breadcrumb" aria-label="面包屑">
-    <a href="#">课程中心</a><span class="sep">/</span>
-    <a href="#">编程</a><span class="sep">/</span>
-    <span class="cur">通用编程入门班</span>
+    <a href="courses.html">课程中心</a><span class="sep">/</span>
+    <a href="courses.html" id="crumbCat">全部课程</a><span class="sep">/</span>
+    <span class="cur" id="crumbSeries">加载中…</span>
   </nav>
 
   <!-- 主内容区（状态演示会切换其 innerHTML）-->
@@ -421,50 +421,9 @@ const COHORTS = [
   {id:503,cohort_code:"C203",cohort_name:"通用编程入门班·寒假三班",sale_price:"2799.00",max_student_count:60,current_student_count:15,yn:1,start_date:"2027-01-11",end_date:"2027-03-07",teacher:"赵艺"}
 ];
 
-// 每班模块 → 课次（module 挂 cohort；stage_no 升序 → session_no 升序）
-const MODULES = {
-  501:[
-    {id:9001,module_name:"模块一 · Python 基础",lesson_count:4,total_hours:12,stage_no:1,sessions:[
-      {id:801,session_no:1,session_title:"变量与类型",teaching_date:"07-06",start_time:"09:00",teaching_status:"completed"},
-      {id:802,session_no:2,session_title:"流程控制 · 分支",teaching_date:"07-13",start_time:"09:00",teaching_status:"in_progress"},
-      {id:803,session_no:3,session_title:"流程控制 · 循环",teaching_date:"07-20",start_time:"09:00",teaching_status:"scheduled"},
-      {id:804,session_no:4,session_title:"函数基础",teaching_date:"07-27",start_time:"09:00",teaching_status:"scheduled"}
-    ]},
-    {id:9002,module_name:"模块二 · 数据结构",lesson_count:4,total_hours:12,stage_no:2,sessions:[
-      {id:805,session_no:1,session_title:"列表与元组",teaching_date:"08-03",start_time:"09:00",teaching_status:"scheduled"},
-      {id:806,session_no:2,session_title:"字典与集合",teaching_date:"08-10",start_time:"09:00",teaching_status:"scheduled"},
-      {id:807,session_no:3,session_title:"字符串处理",teaching_date:"08-17",start_time:"09:00",teaching_status:"scheduled"},
-      {id:808,session_no:4,session_title:"文件与异常",teaching_date:"08-24",start_time:"09:00",teaching_status:"scheduled"}
-    ]},
-    {id:9003,module_name:"模块三 · 项目实战",lesson_count:4,total_hours:12,stage_no:3,sessions:[
-      {id:809,session_no:1,session_title:"综合实战 · 小游戏",teaching_date:"08-31",start_time:"09:00",teaching_status:"scheduled"},
-      {id:810,session_no:2,session_title:"综合实战 · 数据处理",teaching_date:"09-07",start_time:"09:00",teaching_status:"scheduled"},
-      {id:811,session_no:3,session_title:"结课项目 · 1",teaching_date:"09-14",start_time:"09:00",teaching_status:"scheduled"},
-      {id:812,session_no:4,session_title:"结课项目 · 2",teaching_date:"09-21",start_time:"09:00",teaching_status:"scheduled"}
-    ]}
-  ],
-  502:[ {id:9004,module_name:"模块一 · 开学预习",lesson_count:2,total_hours:6,stage_no:1,sessions:[{id:813,session_no:1,session_title:"环境搭建",teaching_date:"09-07",start_time:"09:00",teaching_status:"scheduled"}]} ],
-  503:[
-    {id:9005,module_name:"模块一 · Python 基础",lesson_count:4,total_hours:12,stage_no:1,sessions:[
-      {id:814,session_no:1,session_title:"变量与类型",teaching_date:"01-11",start_time:"09:00",teaching_status:"scheduled"},
-      {id:815,session_no:2,session_title:"流程控制 · 分支",teaching_date:"01-18",start_time:"09:00",teaching_status:"scheduled"},
-      {id:816,session_no:3,session_title:"流程控制 · 循环",teaching_date:"01-25",start_time:"09:00",teaching_status:"scheduled"},
-      {id:817,session_no:4,session_title:"函数基础",teaching_date:"02-01",start_time:"09:00",teaching_status:"scheduled"}
-    ]},
-    {id:9006,module_name:"模块二 · 数据结构",lesson_count:4,total_hours:12,stage_no:2,sessions:[
-      {id:818,session_no:1,session_title:"列表与元组",teaching_date:"02-08",start_time:"09:00",teaching_status:"scheduled"},
-      {id:819,session_no:2,session_title:"字典与集合",teaching_date:"02-15",start_time:"09:00",teaching_status:"scheduled"},
-      {id:820,session_no:3,session_title:"字符串处理",teaching_date:"02-22",start_time:"09:00",teaching_status:"scheduled"},
-      {id:821,session_no:4,session_title:"文件与异常",teaching_date:"03-01",start_time:"09:00",teaching_status:"scheduled"}
-    ]},
-    {id:9007,module_name:"模块三 · 项目实战",lesson_count:4,total_hours:12,stage_no:3,sessions:[
-      {id:822,session_no:1,session_title:"综合实战 · 小游戏",teaching_date:"03-08",start_time:"09:00",teaching_status:"scheduled"},
-      {id:823,session_no:2,session_title:"综合实战 · 数据处理",teaching_date:"03-15",start_time:"09:00",teaching_status:"scheduled"},
-      {id:824,session_no:3,session_title:"结课项目 · 1",teaching_date:"03-22",start_time:"09:00",teaching_status:"scheduled"},
-      {id:825,session_no:4,session_title:"结课项目 · 2",teaching_date:"03-29",start_time:"09:00",teaching_status:"scheduled"}
-    ]}
-  ]
-};
+// 每班模块 → 课次：task04 移除 mock 大纲（501~503 假数据与真实班次 id 存在碰撞风险，
+// 且真实大纲走 /api/study/courses/{sid}/outline 属学习页语境）→ 本页大纲 Tab 走诚实空态
+const MODULES = {};
 
 // 可用券（契约⑦ GET /api/coupons?series_id= 形状示意；后端 task16 未就绪）
 let COUPONS = [
@@ -472,11 +431,9 @@ let COUPONS = [
   {id:2,coupon_name:"开学季满减券",discount_amount:100,min_amount:1000,received:false},
   {id:3,coupon_name:"老学员续费券",discount_amount:200,min_amount:2000,received:true}
 ];
-// 评价（只读展示，React 阶段接详情字段）
-const REVIEWS = [
-  {who:"米粒子",stars:5,txt:"课程节奏很适合零基础，AI 学习伴侣在我卡住时给了提示，游戏化的打卡让我坚持了下来！",date:"2026-08-12"},
-  {who:"程序员小明",stars:4,txt:"直播互动好，助教答疑很快。希望项目实战能再多讲两节。",date:"2026-08-05"}
-];
+// 评价：task04 置空 mock（"米粒子/程序员小明"假评价属 MOCK 数据违规）——初始渲染诚实空态，
+// 点击评价 Tab 由接线脚本 loadReviews() 拉取真实 GET /api/courses/{sid}/reviews
+const REVIEWS = [];
 
 let state="success", authed=false;   // 未登录默认（演示收藏/报名登录校验）
 // 默认选中「有席位 + 价格最低」班次（消除"最低价"与选中价不一致的认知冲突）
@@ -512,7 +469,9 @@ document.getElementById("couponOverlay").addEventListener("click",e=>{ if(e.targ
 /* ---------- 购买面板 ---------- */
 function cohortById(id){ return COHORTS.find(c=>c.id===id); }
 function summaryHtml(){
-  const c=cohortById(selected), price=parseFloat(c.sale_price);
+  const c=cohortById(selected);
+  if(!c) return '<div class="row"><span>班次</span><span>暂无可报名班次</span></div>'; /* task04：无班次/选中失效守卫 */
+  const price=parseFloat(c.sale_price);
   const coupon = [...COUPONS].filter(x=>collected.has(x.id)&& price>=x.min_amount).sort((a,b)=>b.discount_amount-a.discount_amount)[0];
   const pay = coupon ? price - coupon.discount_amount : price;
   const row = (k,v)=>`<div class="row"><span>${k}</span><span>${v}</span></div>`;
@@ -521,7 +480,9 @@ function summaryHtml(){
     row("实付", `<b style="color:var(--candy-orange);font-weight:800">¥${pay.toLocaleString("zh-CN")}</b>`);
 }
 function ctaText(){
-  const c=cohortById(selected), price=parseFloat(c.sale_price);
+  const c=cohortById(selected);
+  if(!c) return "暂不可报名"; /* task04：无班次守卫 */
+  const price=parseFloat(c.sale_price);
   const coupon=[...COUPONS].filter(x=>collected.has(x.id)&&price>=x.min_amount).sort((a,b)=>b.discount_amount-a.discount_amount)[0];
   const pay = coupon ? price - coupon.discount_amount : price;
   return `立即报名 ¥${pay.toLocaleString("zh-CN")}${coupon?` <s style="font-size:12px;opacity:.8;font-weight:600">¥${price.toLocaleString("zh-CN")}</s>`:""}`;
@@ -570,7 +531,7 @@ function moduleHtml(m){
 }
 function syllabusHtml(cohortId){
   const mods = MODULES[cohortId] || [];
-  if(!mods.length) return `<div class="state-fill" style="border:none"><div class="t">该班次暂无课程大纲</div><div class="d">课表正在编排中，请稍后再来</div></div>`;
+  if(!mods.length) return `<div class="state-fill" style="border:none"><div class="t">课表暂未在此页展示</div><div class="d">报名后可在「去学习」进入学习页查看完整课表与进度</div></div>`;
   return `<div class="tree">${mods.map(moduleHtml).join("")}</div>`;
 }
 
@@ -593,7 +554,7 @@ function mindmapHtml(){
   const m = MODULES[selected]||[];
   return `<div class="mindmap">
     <div class="mind-placeholder">🎯 学习路径思维导图（React 阶段复用 echarts 图谱绘制）</div>
-    <div class="mm d0"><div class="col"><div class="mm-node">通用编程入门班</div></div></div>
+    <div class="mm d0"><div class="col"><div class="mm-node">${(SERIES.series_name||"课程系列").replace(/</g,"&lt;")}</div></div></div>
     <div class="mm d1" style="margin-top:14px">
       ${m.map(x=>`<div class="col"><div class="mm-node">阶段${x.stage_no} · ${x.module_name.replace(/^模块[一二三] · /,"")}</div></div>`).join("")}
     </div>
@@ -622,10 +583,10 @@ function heroHtml(){
     <div class="buy">
       <div class="price-min">班次价格 <b><span style="font-size:20px">¥</span>${parseFloat(SERIES.min_price).toLocaleString("zh-CN")}</b><span class="qi"> 起</span>${priceMax?` <span style="font-size:12px;color:var(--ink-muted)">~ ¥${priceMax}</span>`:""}</div>
       <div class="cohorts" id="cohortList">
-        ${COHORTS.map(cohortHtml).join("")}
+        ${(COHORTS.length?COHORTS.map(cohortHtml).join(""):'<div class="state-fill" style="border:none;padding:18px 10px"><div class="t">暂无可报名班次</div><div class="d">本系列班次已满员或尚未开放，可先浏览其它课程</div></div>')}
       </div>
       <div class="cta-row">
-        <button class="btn cta" id="enrollBtn" ${fullCls}>${ctaText()}</button>
+        <button class="btn cta" id="enrollBtn" ${c?"":"disabled"} ${fullCls}>${ctaText()}</button>
         <button class="fav" id="favBtn" aria-pressed="${favorited}" aria-label="收藏课程" title="收藏">${favorited?"♥":"♡"}</button>
       </div>
       <button class="btn" id="couponOpen" style="width:100%;padding:11px;background:var(--ht-fff);color:var(--ink);box-shadow:0 4px 0 var(--htc-31-31-31-014)">🎟️ 领券</button>
@@ -648,6 +609,7 @@ function tabsHtml(){
 }
 function cohortDetailHtml(){
   const c=cohortById(selected);
+  if(!c) return '<div class="state-fill" style="border:none"><div class="t">暂无可报名班次</div><div class="d">本系列班次已满员或尚未开放</div></div>'; /* task04：无班次守卫 */
   const DL = SERIES.delivery_mode==="online_live"?"在线直播":SERIES.delivery_mode==="online_recorded"?"在线录播":"线下面授";
   const rows=[
     ["班次","名称",c.cohort_name],["编码",c.cohort_code],
@@ -659,7 +621,7 @@ function cohortDetailHtml(){
     <div class="lvl-children open">
       <div style="padding:10px 22px 16px">
         <div style="display:grid;grid-template-columns:90px 1fr;gap:10px;font-size:0.8125rem">
-          ${rows.map(r=>`<><div style="color:var(--ink-muted)">${r[0]}</div><div style="font-weight:600">${r[1]}</div></>`).join("")}
+          ${rows.map(r=>`<div style="color:var(--ink-muted)">${r[0]}</div><div style="font-weight:600">${r[1]}</div>`).join("")}
         </div>
       </div>
     </div></div></div>`;
@@ -732,7 +694,7 @@ function bindLearn(){
         EAPI.get("/api/study/courses/" + sid + "/outline").then(function(o){
           var first = "";
           if (o && o.modules) {
-            for (var i=0;i<o.modules.length;i++){ var ss=(o.modules[i].sessions)||[]; if(ss.length){ first=ss[0].id; break; } }
+            for (var i=0;i<o.modules.length;i++){ var ss=(o.modules[i].sessions)||[]; if(ss.length){ first=ss[0].id || ss[0].session_id || ""; break; } } /* task04：实测 outline 字段为 session_id */
           }
           go(cohortId, first);
         }).catch(function(){ go(cohortId, ""); });
@@ -806,8 +768,17 @@ renderBody();
   }
   if (!sid) { showEmpty(); return; }
 
+  /* task04：有 EAPI 且 id 有效 → 立即收敛为 loading 态，覆盖主脚本的 mock 初渲
+   * （消除假课程名/假班次闪现），并清空 mock 班次与选中态——
+   * 此后任何失败路径（网络/404/空班次）都只会呈现诚实空态，不再回落 mock 数据 */
+  try { if (typeof applyState === "function") applyState("loading"); } catch (e) {}
+  try {
+    if (typeof COHORTS !== "undefined") COHORTS.length = 0;
+    if (typeof selected !== "undefined") selected = 0;
+  } catch (e) {}
+
   /* ---------- 真实数据状态与工具 ---------- */
-  var REAL = { sid: sid, bestCoupon: null, couponBusy: false, reviewBusy: false, reviewRating: 5 };
+  var REAL = { sid: sid, bestCoupon: null, couponBusy: false, reviewBusy: false, reviewRating: 5, favBusy: false };
   function hasToken() { return !!(EAPI.store && EAPI.store.getToken()); }
   function loginRedirect() { window.location.href = EAPI.buildLoginUrl(location.pathname + location.search); }
   function esc(s) {
@@ -1184,6 +1155,61 @@ renderBody();
     if (e.target.closest('#tablist .tab[data-tab="review"]')) loadReviews();
   });
 
+  /* ---------- ④ 收藏真实化（task04：原静态 bindFav 为本地翻转+alert 的假交互）----------
+   * curl 实测（2026-09-06，student token）：
+   *   POST /api/favorites {series_id, favorite_source?} → 200，幂等（重复收藏返回同一 favorite_id，不重复落库）
+   *   GET  /api/favorites → 分页壳 items[].series_id/favorite_id（用于已收藏回显）
+   *   DELETE /api/favorites/{id} 返回 deleted:true 但复查列表记录仍在（实测假删除）→ 取消路径不做假交互，
+   *   已收藏态再次点击给出诚实提示。 */
+  window.bindFav = function () {
+    var btn = document.getElementById("favBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      if (!hasToken()) { loginRedirect(); return; }
+      if (REAL.favBusy) return;
+      if (favorited) {
+        openRealDialog("❤️ 已收藏",
+          '<div class="state-fill" style="border:none"><div class="t">该课程已在收藏中</div><div class="d">可在「个人中心」查看收藏；取消收藏功能暂未开放</div></div>',
+          '<button class="btn-star" type="button">知道了</button>');
+        var kb = document.querySelector("#realDlgFoot button");
+        if (kb) kb.addEventListener("click", closeRealDialog);
+        return;
+      }
+      REAL.favBusy = true;
+      EAPI.post("/api/favorites", { series_id: parseInt(REAL.sid, 10) || SERIES.id, favorite_source: "series_detail" })
+        .then(function () {
+          REAL.favBusy = false;
+          favorited = true;
+          btn.setAttribute("aria-pressed", "true");
+          btn.innerHTML = "♥";
+          openRealDialog("🎉 收藏成功",
+            '<div class="state-fill" style="border:none"><div class="t">已加入收藏</div><div class="d">可在「个人中心」查看收藏的课程</div></div>',
+            '<button class="btn-star" type="button">知道了</button>');
+          var kb2 = document.querySelector("#realDlgFoot button");
+          if (kb2) kb2.addEventListener("click", closeRealDialog);
+        })
+        .catch(function (e) {
+          REAL.favBusy = false;
+          openRealDialog("😖 收藏失败",
+            '<div class="state-fill" style="border:none"><div class="t">收藏失败</div><div class="d">' + esc((e && e.message) || "请稍后重试") + "</div></div>",
+            '<button class="btn-star" type="button">知道了</button>');
+          var kb3 = document.querySelector("#realDlgFoot button");
+          if (kb3) kb3.addEventListener("click", closeRealDialog);
+        });
+    });
+  };
+  function loadFavState() { /* 已收藏回显（前 50 条内匹配；更早分页外的旧收藏有漏判可能，登记为已知限制） */
+    if (!hasToken()) return;
+    EAPI.get("/api/favorites?page=1&page_size=50").then(function (data) {
+      var items = (data && data.items) || [];
+      var hit = items.some(function (f) { return f && f.series_id != null && String(f.series_id) === String(REAL.sid); });
+      if (!hit) return;
+      favorited = true;
+      var btn = document.getElementById("favBtn");
+      if (btn) { btn.setAttribute("aria-pressed", "true"); btn.innerHTML = "♥"; }
+    }).catch(function () {});
+  }
+
   /* 登录态同步静态 demo 的 authed（仅影响提示文案/工具条，真实逻辑一律以 hasToken() 为准） */
   if (hasToken() && typeof authed !== "undefined") {
     authed = true;
@@ -1212,18 +1238,38 @@ renderBody();
     }
     var t = document.querySelector("h1.title,.title");
     if (t) t.textContent = s.series_name || s.name;
+    /* task04：面包屑真实回填（原硬编码"编程/通用编程入门班"对其它课程是错误信息） */
+    try {
+      var crumbCur = document.querySelector(".breadcrumb .cur");
+      if (crumbCur) crumbCur.textContent = s.series_name || s.name || "";
+      var crumbCat = document.getElementById("crumbCat");
+      var firstCat = (s.categories && s.categories.length && s.categories[0].category_name) || (s.category_names && s.category_names[0]) || "";
+      if (crumbCat && firstCat) crumbCat.textContent = firstCat;
+    } catch (e) {}
 
     var items = cohorts && cohorts.items ? cohorts.items : (Array.isArray(cohorts) ? cohorts : []);
     if (items.length && typeof COHORTS !== "undefined") {
-      COHORTS = items.map(function (c) {
+      /* task04 P0 修复：原 COHORTS = items.map(...) 对 const 赋值抛 TypeError，
+       * 异常被下方 .catch(showEmpty) 吞掉 → 真实存在的课程（如 id=1）被误报"课程不存在"空态
+       * （hero 连同 h1 被顶掉，即"h1 空缺"缺陷根因）。改为 const 兼容的原地替换。 */
+      var mapped = items.map(function (c) {
         return { id: c.id, cohort_code: c.cohort_code, cohort_name: c.cohort_name, sale_price: c.sale_price || "0", max_student_count: c.max_student_count || 0, current_student_count: c.current_student_count || 0, yn: c.yn != null ? c.yn : 1, start_date: c.start_date || "", end_date: c.end_date || "", teacher: c.head_teacher_id ? ("教师"+c.head_teacher_id) : "" };
       });
-      // 默认选中「有席位 + 价格最低」班次，保持与「最低价」展示一致
-      var seatable = COHORTS.filter(function(c){ return c.current_student_count < c.max_student_count; }).sort(function(a,b){ return parseFloat(a.sale_price)-parseFloat(b.sale_price); });
-      if (seatable.length) selected = seatable[0].id; else if (COHORTS[0]) selected = COHORTS[0].id;
+      COHORTS.splice(0, COHORTS.length);
+      for (var _ci = 0; _ci < mapped.length; _ci++) COHORTS.push(mapped[_ci]);
     }
-    try { if (typeof renderBody === "function") renderBody(); } catch (e) {}
+    /* task04：班次选中重算不再依赖 items 非空——空/失败路径同样收敛（selected=0 → 各渲染函数走无班次守卫） */
+    if (typeof COHORTS !== "undefined") {
+      var seatable = COHORTS.filter(function(c){ return c.current_student_count < c.max_student_count; }).sort(function(a,b){ return parseFloat(a.sale_price)-parseFloat(b.sale_price); });
+      if (seatable.length) selected = seatable[0].id; else if (COHORTS[0]) selected = COHORTS[0].id; else selected = 0;
+    }
+    /* task04：先切回 success 态再重渲（本接线在开工处已收敛为 loading 态，直接 renderBody 会短路渲染 loading） */
+    try {
+      if (typeof applyState === "function") applyState("success");
+      else if (typeof renderBody === "function") renderBody();
+    } catch (e) {}
     loadMyCoupons(); /* 登录态：渲染「我的可用券」入口（未登录静默跳过） */
+    loadFavState();  /* task04：登录态回显已收藏心形 */
   }).catch(function(){ showEmpty(); });
 })();
 </script>
