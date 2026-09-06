@@ -7,14 +7,15 @@
     + 积分流水分页（C2，delta±色 + 余额 + point_type 文案映射 + 空态）
     + 排行榜（双 tablist：时间范围 日/周/月/总 × 维度 积分/时长/徽章数，APG Tabs；前三奖牌 + is_myself 高亮 + 我的排名 + source 实时）
     + 五态(success/loading/empty/error) + 桌面/移动响应式
-  > 数据形状对齐契约⑬：
-    GET /api/gamification/me/badges           → 壳 data: {total, unlocked_count, next_milestone, items:[BadgeItem]}
-    GET /api/gamification/me/points?page&page_size → 壳 data: {total_points, level_no, level_title, level_progress_pct, logs_total, recent_logs:[PointLogItem]}
-    GET /api/gamification/rankings?scope&dimension&top_n → 壳 data: {scope, dimension, snapshot_date, top:[RankingRow], my_rank, source}
-  > 徽章墙/积分/排行均真实 API（无 MOCK）；排行数据来自 ZSET（task15 已验证 4 周期 key + 积分实时累计）
+  > 数据形状对齐契约⑬（2026-09-06 curl 实测校准，contracts/reshape-a.json 冻结 hash 30aeddbe）：
+    GET /api/gamification/me/badges           → 壳 data: {total, unlocked_count, next_milestone("下一目标：…"), items:[{badge_code,badge_name,badge_desc,category,icon_emoji,rarity(COMMON/RARE/EPIC/LEGENDARY),trigger_rule,rule_value,reward_points,unlocked,unlocked_at,progress_current,progress_required,progress_pct}]}
+    GET /api/gamification/me/points?page&page_size → 壳 data: {user_id, total_points, level_no, level_title, level_min, next_level_min, level_progress_pct, logs_total, recent_logs:[{log_id,point_type,delta,balance_after,note,created_at}]}（实测 user000001：total_points=314, logs_total=15）
+    GET /api/gamification/rankings?scope&dimension&top_n → 壳 data: {scope, dimension, snapshot_date, top:[{rank_no,user_id,user_name,metric_value,level_no,is_myself,badge_count}], my_rank(可为 null 或不在 top 内), source:"ZSET"}
+  > 徽章墙/积分/排行均真实 API（task09 清零 MOCK 行/演示控制器；未登录诚实登录引导，无演示兜底数据）；排行来自 ZSET（task15 已验证 4 周期 key）
   FR 编号: 前端页面清单 /achievements（task53）
   AUDIT LOG:
     [2026-08-22 v1 R1] 初稿提交（徽章墙已解锁/未解锁+进度 + 积分总览/流水/分页 + 排行双 tab + 空/载/错态 + @container 响应式）→ SUBMITTED
+    [2026-09-06 task09 reshape-a] 清零全部演示数据行（徽章 8 卡/积分 Lv.5·2,330/流水 6 条/排行 6 行/我的排名#1）与演示控制器（data-st 演示态、task122「演示数据」角标、respbar 残留脚本）；三区块独立状态机（loading/ok/empty/error+重试）；未登录诚实登录引导；字段按 curl 实测回填
 -->
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
@@ -42,8 +43,7 @@ body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;cont
 button{font-family:inherit;cursor:pointer}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:16px}
 
-/* 演示控制工具条（respbar）样式已移除：开发工具残留 */
-.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
+/* ===== 区块状态机（task09：data-st 挂在各 section 由真实数据驱动，无演示控制器）===== */
 
 /* ===== Hero 成就横幅 ===== */
 .hero{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--candy-purple) 0%,var(--candy-blue) 55%,var(--candy-green) 100%);color:var(--ht-fff);box-shadow:var(--shadow-3d);padding:26px 24px}
@@ -168,17 +168,19 @@ button{font-family:inherit;cursor:pointer}
 .retry{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-red);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-red-deep)}
 .retry:active{transform:translateY(1px);box-shadow:none}
 
-/* ===== 演示态控制（HTML 专属）===== */
+/* ===== 区块状态机（task09：loading/ok/empty/error 全部由脚本按真实数据切换）===== */
+[hidden]{display:none!important}
+.show-load,.show-empty,.show-err{display:none}
 [data-st="loading"] .show-ok{display:none}
 [data-st="loading"] .show-load{display:flex}
 [data-st="empty"] .show-ok{display:none}
 [data-st="empty"] .show-empty{display:flex}
 [data-st="error"] .show-ok{display:none}
 [data-st="error"] .show-err{display:flex}
-.show-load,.show-empty,.show-err{display:none}
-[data-st="privacy"] .rank-body{display:none}
-body[data-show="empty-log"] .log-ok{display:none}
-body[data-show="empty-log"] .log-empty{display:flex}
+/* 积分流水空态（新用户无流水时诚实提示，不造演示流水） */
+.log-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:30px 16px;text-align:center}
+.log-empty .e-emo{font-size:30px}
+.log-empty p{font-size:13px;color:var(--ink-muted);font-weight:700;line-height:1.6;max-width:300px}
 
 /* ===== 响应式断点（@container 以 body 宽度驱动）===== */
 @container app (max-width:820px){
@@ -271,10 +273,10 @@ body[data-show="empty-log"] .log-empty{display:flex}
   }
 </style>
 </head>
-<body data-st="ok" data-show="" class="on">
-  <!-- 演示控制工具条（respbar）已移除：属 HTML 效果图审核残留；无 token 演示态由脚本保底渲染，保留默认成功态 -->
+<body class="on">
+  <!-- task09：全部演示兜底数据与演示控制器已清零；未登录显示登录引导，登录后三区块走真实 gamification API -->
 
-<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+  <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
 <div class="glayout">
 <header class="gnav" id="gnav" aria-label="主导航">
@@ -300,8 +302,16 @@ body[data-show="empty-log"] .log-empty{display:flex}
       <p>徽章记录你的每一步成长，积分见证每一次坚持，排行榜上看看你超越了谁。</p>
     </section>
 
+    <!-- task09：未登录诚实引导（无演示数据兜底） -->
+    <div class="state" id="loginGate" role="status" hidden>
+      <span class="st-emoji" aria-hidden="true">🔑</span>
+      <h3>登录后查看我的成就</h3>
+      <p>徽章、积分与排行榜随你的学习实时更新，登录后即刻同步。</p>
+      <a class="retry" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">🚀 去登录</a>
+    </div>
+
     <!-- ========== 排行榜（ZSET） ========== -->
-    <section class="section" aria-labelledby="rank-sec" style="">
+    <section class="section" id="secRank" aria-labelledby="rank-sec" data-st="loading" style="">
       <div class="s-title" style="">
         <span class="ico green" aria-hidden="true">🏅</span>
         <div>
@@ -314,13 +324,13 @@ body[data-show="empty-log"] .log-empty{display:flex}
       <div class="rank-card show-ok">
         <div class="rank-head" style="">
           <span class="rh-ttl">学习排行榜</span>
-          <span class="rh-meta">快照日期：2026-08-22 · 每日更新</span>
+          <span class="rh-meta" id="rankMeta">快照加载中…</span>
         </div>
-        <!-- 时间范围 tab -->
+        <!-- 时间范围 tab（task09：默认周榜对齐脚本初始拉取口径） -->
         <div class="rank-span">
           <div class="tabgroup" role="tablist" aria-label="排行时间范围">
-            <button class="tab on" role="tab" aria-selected="true" id="scope-daily">日榜</button>
-            <button class="tab" role="tab" aria-selected="false" id="scope-weekly">周榜</button>
+            <button class="tab" role="tab" aria-selected="false" id="scope-daily">日榜</button>
+            <button class="tab on" role="tab" aria-selected="true" id="scope-weekly">周榜</button>
             <button class="tab" role="tab" aria-selected="false" id="scope-monthly">月榜</button>
             <button class="tab" role="tab" aria-selected="false" id="scope-all">总榜</button>
           </div>
@@ -340,48 +350,15 @@ body[data-show="empty-log"] .log-empty{display:flex}
           </div>
         </div>
 
-        <!-- tabpanel 排行列表 -->
-        <div class="rank-body" role="tabpanel">
-          <div class="rank-row mine">
-            <span class="rank-no gold" aria-label="第 1 名">👑</span>
-            <div class="r-name" style="">Adm02Test
-              <span class="r-me">我</span>
-            </div>
-            <span class="r-val">12,850<span class="r-unit">分</span></span>
-          </div>
-          <div class="rank-row">
-            <span class="rank-no silver" aria-label="第 2 名">🥈</span>
-            <div class="r-name">小豆芽</div>
-            <span class="r-val">9,876<span class="r-unit">分</span></span>
-          </div>
-          <div class="rank-row">
-            <span class="rank-no bronze" aria-label="第 3 名">🥉</span>
-            <div class="r-name">勤奋小海豚</div>
-            <span class="r-val">8,420<span class="r-unit">分</span></span>
-          </div>
-          <div class="rank-row">
-            <div class="rank-lg-nm">4</div>
-            <div class="r-name">阳光学习员</div>
-            <span class="r-val">7,155<span class="r-unit">分</span></span>
-          </div>
-          <div class="rank-row">
-            <div class="rank-lg-nm">5</div>
-            <div class="r-name">早起鸟</div>
-            <span class="r-val">6,990<span class="r-unit">分</span></span>
-          </div>
-          <div class="rank-row">
-            <div class="rank-lg-nm">6</div>
-            <div class="r-name">持之以恒</div>
-            <span class="r-val">6,200<span class="r-unit">分</span></span>
-          </div>
-        </div>
+        <!-- tabpanel 排行列表（task09：由 /api/gamification/rankings 真实渲染，无演示行） -->
+        <div class="rank-body" role="tabpanel"></div>
 
         <!-- 我的排名 -->
         <div class="myrank">
           <span class="mr-lbl">📍 我的排名：</span>
-          <span class="mr-val">第 1 名</span>
-          <span class="mr-lbl" style="margin-left:12px">12,850 分 ·</span>
-          <span class="r-live">实时</span>
+          <span class="mr-val" id="myRankVal">…</span>
+          <span class="mr-lbl" id="myRankMetric" style="margin-left:12px" hidden></span>
+          <span class="r-live" id="rankLiveBadge" hidden>实时</span>
         </div>
       </div>
 
@@ -406,11 +383,11 @@ body[data-show="empty-log"] .log-empty{display:flex}
         <span class="st-emoji" aria-hidden="true">😵</span>
         <h3>排行榜加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry">🔄 重试</button>
+        <button class="retry" type="button">🔄 重试</button>
       </div>
     </section>
 <!-- ========== 积分总览 + 流水 ========== -->
-    <section class="section" aria-labelledby="points-sec" style="">
+    <section class="section" id="secPoints" aria-labelledby="points-sec" data-st="loading" style="">
       <div class="s-title">
         <span class="ico blue" aria-hidden="true">💸</span>
         <div>
@@ -419,106 +396,29 @@ body[data-show="empty-log"] .log-empty{display:flex}
         </div>
       </div>
 
-      <!-- 积分总览（成功态） -->
+      <!-- 积分总览（成功态；数值由 /api/gamification/me/points 真实渲染） -->
       <div class="points-card show-ok">
         <div class="points-left">
-          <span class="lv-pill">🏅 Lv.5 · 进阶学咖</span>
-          <div class="total-pts">2,330</div>
+          <span class="lv-pill">🏅 …</span>
+          <div class="total-pts">—</div>
           <div class="total-label">当前积分</div>
         </div>
         <div class="points-right">
-          <div class="lv-range">
-            <span>Lv.5（<b>2,000</b> 分）</span>
-            <span>下一级 Lv.6（<b>3,000</b> 分）</span>
+          <div class="lv-range"></div>
+          <div class="lv-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <i style="width:0%"></i>
           </div>
-          <div class="lv-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33">
-            <i style="width:33%"></i>
-          </div>
-          <div class="lv-note">距下一级还差 33%</div>
+          <div class="lv-note"></div>
         </div>
       </div>
 
-      <!-- 积分流水（成功态） -->
+      <!-- 积分流水（成功态；流水由 recent_logs 真实渲染，无演示流水） -->
       <div class="log-card show-ok">
-        <div class="log-head">积分流水 <span style="color:var(--ink-faint);font-weight:600">共 6 条</span></div>
-        <div class="log-list">
-          <div class="log-item">
-            <span class="log-ico up" aria-hidden="true">⬆️</span>
-            <div class="log-mid">
-              <div class="lg-title">发布回帖</div>
-              <div class="lg-meta">在《高数进阶》下回帖 · 2026-08-21 09:12</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta up">+2</div>
-              <div class="lg-bal">余额 2,330</div>
-            </div>
-          </div>
-          <div class="log-item">
-            <span class="log-ico up" aria-hidden="true">⬆️</span>
-            <div class="log-mid">
-              <div class="lg-title">练习满分</div>
-              <div class="lg-meta">英语·时态练习 全对 · 2026-08-21 08:30</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta up">+10</div>
-              <div class="lg-bal">余额 2,328</div>
-            </div>
-          </div>
-          <div class="log-item">
-            <span class="log-ico up" aria-hidden="true">⬆️</span>
-            <div class="log-mid">
-              <div class="lg-title">徽章奖励</div>
-              <div class="lg-meta">解锁「坚持到底」 · 2026-08-20 22:45</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta up">+30</div>
-              <div class="lg-bal">余额 2,318</div>
-            </div>
-          </div>
-          <div class="log-item">
-            <span class="log-ico up" aria-hidden="true">⬆️</span>
-            <div class="log-mid">
-              <div class="lg-title">每日登录</div>
-              <div class="lg-meta">连续第 7 天 · 2026-08-20 08:00</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta up">+5</div>
-              <div class="lg-bal">余额 2,288</div>
-            </div>
-          </div>
-          <div class="log-item">
-            <span class="log-ico down" aria-hidden="true">⬇️</span>
-            <div class="log-mid">
-              <div class="lg-title">学习时长</div>
-              <div class="lg-meta">时长结算 · 2026-08-19 23:59</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta down">−0</div>
-              <div class="lg-bal">余额 2,283</div>
-            </div>
-          </div>
-          <div class="log-item">
-            <span class="log-ico up" aria-hidden="true">⬆️</span>
-            <div class="log-mid">
-              <div class="lg-title">发布帖子</div>
-              <div class="lg-meta">新帖《雅思阅读提速技巧》 · 2026-08-18 15:20</div>
-            </div>
-            <div class="log-amt">
-              <div class="lg-delta up">+5</div>
-              <div class="lg-bal">余额 2,283</div>
-            </div>
-          </div>
-        </div>
-        <!-- 分页 C2（task-fix：由 API logs_total 动态渲染，见下方 logPager 脚本） -->
-        <div class="pager" id="logPager" aria-label="积分流水分页">
-          <button class="pager-btn" disabled="" aria-label="上一页">‹</button>
-          <button class="pager-btn on" aria-current="page">1</button>
-          <button class="pager-btn" aria-label="下一页">›</button>
-        </div>
+        <div class="log-head" id="logHead">积分流水</div>
+        <div class="log-list"></div>
+        <!-- 分页 C2（由 logs_total 驱动，单页时隐藏） -->
+        <div class="pager" id="logPager" aria-label="积分流水分页" hidden></div>
       </div>
-
-      <!-- 积分流水空态 -->
-      
 
       <!-- 积分加载/错误态 -->
       <div class="sk show-load" role="status" aria-busy="true">
@@ -530,113 +430,27 @@ body[data-show="empty-log"] .log-empty{display:flex}
         <span class="st-emoji" aria-hidden="true">😵</span>
         <h3>积分加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry">🔄 重试</button>
+        <button class="retry" type="button">🔄 重试</button>
       </div>
     </section>
 
     <!-- ========== 徽章墙 ========== -->
-    <section class="section" aria-labelledby="badge-sec" style="">
+    <section class="section" id="secBadges" aria-labelledby="badge-sec" data-st="loading" style="">
       <div class="s-title">
         <span class="ico" aria-hidden="true">🎖️</span>
         <div>
           <div class="ttl" id="badge-sec">徽章</div>
-          <div class="sub show-ok">已解锁 3 / 8 枚 · 学习 / 成就 / 社交三类</div>
+          <div class="sub show-ok">学习 / 成就 / 社交三类</div>
         </div>
       </div>
 
-      <!-- 成功态真实数据 -->
+      <!-- 成功态（task09：由 /api/gamification/me/badges 真实渲染，已得/未得状态诚实） -->
       <div class="show-ok">
         <div class="badge-head">
-          <span class="badge-count">🎖 已解锁 <b>3</b> / 8 枚</span>
-          <span class="badge-next">✨ 下一枚：第一次点赞互动</span>
+          <span class="badge-count" id="badgeCount">🎖 已解锁统计加载中…</span>
+          <span class="badge-next" id="badgeNext" hidden></span>
         </div>
-        <div class="badge-grid">
-          <!-- 已解锁 LEGENDARY -->
-          <div class="badge-card unlocked">
-            <span class="b-lock" hidden=""></span>
-            <div class="b-emoji">😍</div>
-            <div class="b-name">社区之星</div>
-            <span class="b-rarity legendary">传说</span>
-            <p class="b-desc">在社区互动中累计点赞 50 次</p>
-            <div class="b-reward">+50 积分 · 已解锁</div>
-          </div>
-          <!-- 已解锁 EPIC -->
-          <div class="badge-card unlocked">
-            <div class="b-emoji">🌱</div>
-            <div class="b-name">坚持到底</div>
-            <span class="b-rarity epic">史诗</span>
-            <p class="b-desc">连续学习 7 天</p>
-            <div class="b-reward">+30 积分 · 已解锁</div>
-          </div>
-          <!-- 已解锁 COMMON -->
-          <div class="badge-card unlocked">
-            <div class="b-emoji">📚</div>
-            <div class="b-name">初学乍练</div>
-            <span class="b-rarity common">普通</span>
-            <p class="b-desc">完成第一门课程学习</p>
-            <div class="b-reward">+5 积分 · 已解锁</div>
-          </div>
-          <!-- 未解锁（置灰 + 进度） -->
-          <div class="badge-card locked">
-            <span class="b-lock" aria-hidden="true">🔒</span>
-            <div class="b-emoji">💬</div>
-            <div class="b-name">互动达人</div>
-            <span class="b-rarity rare">稀有</span>
-            <p class="b-desc">累计发布 10 条有效回帖</p>
-            <div class="b-prog">
-              <div class="b-prog-row"><span>解锁进度</span><span>3/10</span></div>
-              <div class="b-bar"><i style="width:30%"></i></div>
-            </div>
-          </div>
-          <!-- 未解锁 -->
-          <div class="badge-card locked">
-            <span class="b-lock" aria-hidden="true">🔒</span>
-            <div class="b-emoji">🧠</div>
-            <div class="b-name">满分学霸</div>
-            <span class="b-rarity epic">史诗</span>
-            <p class="b-desc">练习获得一次全对满分</p>
-            <div class="b-prog">
-              <div class="b-prog-row"><span>解锁进度</span><span>6/10</span></div>
-              <div class="b-bar"><i style="width:60%"></i></div>
-            </div>
-          </div>
-          <!-- 未解锁 -->
-          <div class="badge-card locked">
-            <span class="b-lock" aria-hidden="true">🔒</span>
-            <div class="b-emoji">🔥</div>
-            <div class="b-name">连胜王者</div>
-            <span class="b-rarity legendary">传说</span>
-            <p class="b-desc">连续登录 30 天</p>
-            <div class="b-prog">
-              <div class="b-prog-row"><span>解锁进度</span><span>12/30</span></div>
-              <div class="b-bar"><i style="width:40%"></i></div>
-            </div>
-          </div>
-          <!-- 未解锁 -->
-          <div class="badge-card locked">
-            <span class="b-lock" aria-hidden="true">🔒</span>
-            <div class="b-emoji">🤝</div>
-            <div class="b-name">社区贡献</div>
-            <span class="b-rarity rare">稀有</span>
-            <p class="b-desc">发布第一篇优质帖子</p>
-            <div class="b-prog">
-              <div class="b-prog-row"><span>解锁进度</span><span>1/5</span></div>
-              <div class="b-bar"><i style="width:20%"></i></div>
-            </div>
-          </div>
-          <!-- 未解锁 -->
-          <div class="badge-card locked">
-            <span class="b-lock" aria-hidden="true">🔒</span>
-            <div class="b-emoji">⏱️</div>
-            <div class="b-name">时间管理</div>
-            <span class="b-rarity common">普通</span>
-            <p class="b-desc">累计学习时长达到 100 小时</p>
-            <div class="b-prog">
-              <div class="b-prog-row"><span>解锁进度</span><span>45/100</span></div>
-              <div class="b-bar"><i style="width:45%"></i></div>
-            </div>
-          </div>
-        </div>
+        <div class="badge-grid"></div>
       </div>
 
       <!-- 加载态（徽章骨架） -->
@@ -667,16 +481,12 @@ body[data-show="empty-log"] .log-empty{display:flex}
         <span class="st-emoji" aria-hidden="true">😵</span>
         <h3>徽章加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry">🔄 重试</button>
+        <button class="retry" type="button">🔄 重试</button>
       </div>
     </section>
 
       </div>
 </div><!-- /.glayout -->
-
-  <script>
-  /* 演示控制绑定已随 respbar 一并移除（开发工具残留）；body data-st 保持默认 "ok" 成功态 */
-  </script>
 
 <script>
 /* 全局导航抽屉（移动端） */
@@ -695,15 +505,35 @@ body[data-show="empty-log"] .log-empty{display:flex}
 })();
 </script>
 <script>
-/* task105：徽章墙 / 积分流水 / 排行榜接真实 API。无 token 保留演示数据。
- * 选择器对齐真实 DOM：.badge-grid/.badge-card、.total-pts、.log-list、.rank-body。 */
+/* task09（reshape-a）：徽章墙 / 积分总览+流水分页 / 排行榜全量接真实 API，演示兜底数据清零。
+ * 状态机：三区块独立 data-st（loading/ok/empty/error+重试），未登录诚实登录引导。
+ * 字段口径 = 2026-09-06 curl 实测（见文件头注释），非页面注释。
+ * 教训遵守：无 MOCK、无 alert、参数不走正则 match（scope/dimension 从 tab 状态读取）。 */
 (function () {
-  if (!window.EAPI || !EAPI.store.getToken()) return;
+  if (!window.EAPI) return;
+
+  var SECTION_IDS = ["secRank", "secPoints", "secBadges"];
+  function setSt(id, st) { var el = document.getElementById(id); if (el) el.setAttribute("data-st", st); }
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  function fmt(n) { return Number(n || 0).toLocaleString("zh-CN"); }
+
+  /* ===== 未登录：隐藏三区块 + 诚实登录引导（无演示数据兜底）===== */
+  if (!EAPI.store.getToken()) {
+    SECTION_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) el.hidden = true; });
+    var gate = document.getElementById("loginGate");
+    if (gate) gate.hidden = false;
+    var btn = document.getElementById("loginGateBtn");
+    if (btn && EAPI.buildLoginUrl) btn.setAttribute("href", EAPI.buildLoginUrl("/achievements.html"));
+    return;
+  }
 
   var POINT_LABEL = { LIKE_GAIN:"获得点赞", POST_CREATE:"发布动态", BADGE_BONUS:"徽章奖励", COMMENT_CREATE:"社区回帖", STUDY_GAIN:"学习积分", EXAM_GAIN:"测验积分", HOMEWORK_GAIN:"作业积分", SIGN_IN_GAIN:"每日签到" };
+  var SCOPE_LABEL = { DAILY:"日榜", WEEKLY:"周榜", MONTHLY:"月榜", ALL_TIME:"总榜" };
+  var DIM_UNIT = { POINTS:"分", STUDY_MIN:"分钟", BADGE_COUNT:"枚" };
 
+  /* ===== 徽章墙 ===== */
   function badgeCard(bd) {
-    var r = (bd.rarity || "").toLowerCase();
+    var r = String(bd.rarity || "").toLowerCase();
     var rl = { common:"普通", rare:"稀有", epic:"史诗", legendary:"传说" }[r] || "普通";
     var unlocked = !!bd.unlocked;
     var cur = Math.round(bd.progress_current || 0), req = Math.round(bd.progress_required || 0);
@@ -712,108 +542,76 @@ body[data-show="empty-log"] .log-empty{display:flex}
       ? '<div class="b-reward">+' + (bd.reward_points || 0) + ' 积分 · 已解锁</div>'
       : '<div class="b-prog"><div class="b-prog-row"><span>解锁进度</span><span>' + cur + '/' + req + '</span></div><div class="b-bar"><i style="width:' + prog + '%"></i></div></div>';
     return '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
-      + (unlocked ? '<span class="b-lock" hidden=""></span>' : '<span class="b-lock" aria-hidden="true">🔒</span>')
-      + '<div class="b-emoji">' + (bd.icon_emoji || "🎖️") + '</div>'
-      + '<div class="b-name">' + (bd.badge_name || "") + '</div>'
+      + (unlocked ? '<span class="b-lock" hidden></span>' : '<span class="b-lock" aria-hidden="true">🔒</span>')
+      + '<div class="b-emoji">' + esc(bd.icon_emoji || "🎖️") + '</div>'
+      + '<div class="b-name">' + esc(bd.badge_name || "") + '</div>'
       + '<span class="b-rarity ' + r + '">' + rl + '</span>'
-      + '<p class="b-desc">' + (bd.badge_desc || "") + '</p>' + bodyBody + '</div>';
+      + '<p class="b-desc">' + esc(bd.badge_desc || "") + '</p>' + bodyBody + '</div>';
   }
 
   function renderBadges(b) {
-    if (!b) return;
-    var grid = document.querySelector(".badge-grid");
-    if (grid && b.items) grid.innerHTML = b.items.map(badgeCard).join("");
-    var cnt = document.querySelector(".badge-count");
-    if (cnt) cnt.innerHTML = "🎖 已解锁 <b>" + (b.unlocked_count || 0) + "</b> / " + (b.total || (b.items && b.items.length) || 0) + " 枚";
-    var nx = document.querySelector(".badge-next");
-    if (nx) nx.textContent = b.next_milestone ? "✨ " + String(b.next_milestone).replace(/^下一目标：/, "") : "";
+    if (!b) { setSt("secBadges", "error"); return; }
+    var items = b.items || [];
+    if (!items.length || !b.total) { setSt("secBadges", "empty"); return; } // 新用户可能无徽章：诚实空态
+    var grid = document.querySelector("#secBadges .badge-grid");
+    if (grid) grid.innerHTML = items.map(badgeCard).join("");
+    var cnt = document.getElementById("badgeCount");
+    if (cnt) cnt.innerHTML = "🎖 已解锁 <b>" + (b.unlocked_count || 0) + "</b> / " + (b.total || items.length) + " 枚";
+    var nx = document.getElementById("badgeNext");
+    if (nx) {
+      if (b.next_milestone) { nx.textContent = "✨ " + b.next_milestone; nx.hidden = false; }
+      else { nx.textContent = ""; nx.hidden = true; }
+    }
+    setSt("secBadges", "ok");
+  }
+
+  function loadBadges() {
+    setSt("secBadges", "loading");
+    return EAPI.get("/api/gamification/me/badges")
+      .then(function (b) { renderBadges(b); })
+      .catch(function () { setSt("secBadges", "error"); });
+  }
+
+  /* ===== 积分总览 + 流水 ===== */
+  function logRow(l) {
+    var delta = Number(l.delta || 0);
+    var up = delta >= 0;
+    var lbl = POINT_LABEL[l.point_type] || l.point_type || "积分变化";
+    return '<div class="log-item"><span class="log-ico ' + (up ? 'up' : 'down') + '" aria-hidden="true">' + (up ? '⬆️' : '⬇️') + '</span>'
+      + '<div class="log-mid"><div class="lg-title">' + esc(lbl) + (l.note ? ' · ' + esc(l.note) : '') + '</div>'
+      + '<div class="lg-meta">' + esc(String(l.created_at || "").replace("T", " ")) + '</div></div>'
+      + '<div class="log-amt"><div class="lg-delta ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '') + delta + '</div>'
+      + '<div class="lg-bal">余额 ' + fmt(l.balance_after) + '</div></div></div>';
   }
 
   function renderPoints(p) {
-    if (!p) return;
-    var tot = document.querySelector(".total-pts");
-    if (tot) tot.textContent = Number(p.total_points || 0).toLocaleString("zh-CN");
-    var pill = document.querySelector(".lv-pill");
+    if (!p) { setSt("secPoints", "error"); return; }
+    var tot = document.querySelector("#secPoints .total-pts");
+    if (tot) tot.textContent = fmt(p.total_points);
+    var pill = document.querySelector("#secPoints .lv-pill");
     if (pill) pill.textContent = "🏅 Lv." + (p.level_no || 0) + " · " + (p.level_title || "");
-    var range = document.querySelector(".lv-range");
-    if (range) range.innerHTML = "<span>Lv." + (p.level_no || 0) + "（<b>" + Number(p.level_min || 0).toLocaleString("zh-CN") + "</b> 分）</span><span>下一级 Lv." + ((p.level_no || 0) + 1) + "（<b>" + Number(p.next_level_min || 0).toLocaleString("zh-CN") + "</b> 分）</span>";
+    var isMax = p.next_level_min == null;
     var pc = Math.min(100, Math.round(p.level_progress_pct || 0));
-    var prog = document.querySelector(".lv-prog");
+    var range = document.querySelector("#secPoints .lv-range");
+    if (range) range.innerHTML = isMax
+      ? '<span>Lv.' + (p.level_no || 0) + '（<b>' + fmt(p.level_min) + '</b> 分）</span><span>🏆 满级</span>'
+      : '<span>Lv.' + (p.level_no || 0) + '（<b>' + fmt(p.level_min) + '</b> 分）</span><span>下一级 Lv.' + ((p.level_no || 0) + 1) + '（<b>' + fmt(p.next_level_min) + '</b> 分）</span>';
+    var prog = document.querySelector("#secPoints .lv-prog");
     if (prog) { prog.setAttribute("aria-valuenow", String(pc)); var i = prog.querySelector("i"); if (i) i.style.width = pc + "%"; }
-    var note = document.querySelector(".lv-note");
-    if (note) note.textContent = "距下一级还差 " + (100 - pc) + "%";
+    var note = document.querySelector("#secPoints .lv-note");
+    if (note) note.innerHTML = isMax ? '<span class="lv-max">🏆 已达最高等级</span>' : "距下一级还差 " + (100 - pc) + "%";
 
     var logs = p.recent_logs || [];
-    var list = document.querySelector(".log-list");
-    if (list) list.innerHTML = logs.map(function (l) {
-      var up = (l.delta || 0) >= 0;
-      var lbl = POINT_LABEL[l.point_type] || l.point_type || "积分变化";
-      return '<div class="log-item"><span class="log-ico ' + (up ? 'up' : 'down') + '" aria-hidden="true">' + (up ? '⬆️' : '⬇️') + '</span>'
-        + '<div class="log-mid"><div class="lg-title">' + lbl + (l.note ? " · " + l.note : "") + '</div><div class="lg-meta">' + String(l.created_at || "").replace("T", " ") + '</div></div>'
-        + '<div class="log-amt"><div class="lg-delta ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '') + l.delta + '</div><div class="lg-bal">余额 ' + l.balance_after + '</div></div></div>';
-    }).join("");
-    var head = document.querySelector(".log-head");
-    if (head) head.innerHTML = "积分流水 <span style=\"color:var(--ink-faint);font-weight:600\">共 " + (p.logs_total || logs.length) + " 条</span>";
+    var list = document.querySelector("#secPoints .log-list");
+    var hasLogs = logs.length > 0;
+    if (list) list.innerHTML = hasLogs ? logs.map(logRow).join("")
+      : '<div class="log-empty"><span class="e-emo">🪙</span><p>暂无积分流水；学习、发帖、解锁徽章都能获得积分。</p></div>';
+    var head = document.getElementById("logHead");
+    if (head) head.innerHTML = '积分流水 <span style="color:var(--ink-faint);font-weight:600">共 ' + (p.logs_total != null ? p.logs_total : logs.length) + ' 条</span>';
+    setSt("secPoints", "ok");
   }
 
-  function renderRank(scope, dim, d) {
-    var data = d || {};
-    var top = data.top || [];
-    var body = document.querySelector(".rank-body");
-    var unit = dim === "STUDY_MIN" ? "分钟" : (dim === "BADGE_COUNT" ? "枚" : "分");
-    if (body) body.innerHTML = top.map(function (r, i) {
-      var medal = i === 0 ? "👑" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : null));
-      var noHtml = medal
-        ? '<span class="rank-no ' + (i === 0 ? 'gold' : (i === 1 ? 'silver' : 'bronze')) + '" aria-label="第 ' + r.rank_no + ' 名">' + medal + '</span>'
-        : '<div class="rank-no">' + (r.rank_no || (i + 1)) + '</div>';
-      return '<div class="rank-row ' + (r.is_myself ? 'mine' : '') + '">' + noHtml
-        + '<div class="r-name">' + (r.user_name || "用户" + (r.user_id || "")) + (r.is_myself ? '<span class="r-me">我</span>' : '') + '</div>'
-        + '<span class="r-val">' + Number(r.metric_value || 0).toLocaleString("zh-CN") + '<span class="r-unit">' + unit + '</span></span>'
-        + (data.source === "LIVE_CALC" ? '<span class="r-live">实时</span>' : '') + '</div>';
-    }).join("");
-    var mr = document.querySelector(".mr-val");
-    var myr = data.my_rank;
-    if (mr) mr.textContent = myr ? "第 " + myr.rank_no + " 名" : "未上榜";
-    var mrp = document.querySelector(".myrank .r-live"); // 保留实时角标不覆盖
-    var snap = document.querySelector(".rh-meta");
-    if (snap) snap.textContent = "快照日期：" + (data.snapshot_date || "") + " · " + scope + " 榜";
-  }
-
-  function curScope() {
-    var el = document.querySelector(".rank-span .tabgroup .tab.on");
-    return ({ "scope-daily": "DAILY", "scope-weekly": "WEEKLY", "scope-monthly": "MONTHLY", "scope-all": "ALL_TIME" }[el ? el.id : ""] || "WEEKLY");
-  }
-  function curDim() {
-    var cells = document.querySelectorAll(".rank-dim .tabgroup .tab");
-    var on = null; for (var i = 0; i < cells.length; i++) if (cells[i].classList.contains("on")) { on = i; break; }
-    return on === 1 ? "STUDY_MIN" : (on === 2 ? "BADGE_COUNT" : "POINTS");
-  }
-  function loadRank() {
-    var scope = curScope(), dim = curDim();
-    EAPI.get("/api/gamification/rankings?scope=" + scope + "&dimension=" + dim + "&top_n=10").then(function (d) { renderRank(scope, dim, d); }).catch(function () {});
-  }
-  function bindRank() {
-    var scopes = document.querySelectorAll(".rank-span .tab");
-    Array.prototype.forEach.call(scopes, function (btn) {
-      btn.addEventListener("click", function () {
-        scopes.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-selected", "false"); });
-        btn.classList.add("on"); btn.setAttribute("aria-selected", "true"); loadRank();
-      });
-    });
-    var dims = document.querySelectorAll(".rank-dim .tab");
-    Array.prototype.forEach.call(dims, function (btn) {
-      btn.addEventListener("click", function () {
-        dims.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-selected", "false"); });
-        btn.classList.add("on"); btn.setAttribute("aria-selected", "true"); loadRank();
-      });
-    });
-  }
-
-  var wkBtn = document.getElementById("scope-weekly"); // 默认周榜(按 spec WEEKLY)
-  if (wkBtn) { wkBtn.classList.add("on"); wkBtn.setAttribute("aria-selected", "true"); }
-  var daily = document.getElementById("scope-daily"); if (daily) { daily.classList.remove("on"); daily.setAttribute("aria-selected", "false"); }
-
-  /* ===== 积分流水分页（task-fix：API 驱动，总条数用 logs_total，翻页带 page 重查）===== */
+  /* ===== 积分流水分页（logs_total 驱动，翻页带 page 重查；单页隐藏分页）===== */
   var LOG_PAGE_SIZE = 10, logCurPage = 1, logTotalPages = 1;
   function renderLogPager(total, page) {
     var pager = document.getElementById("logPager");
@@ -821,6 +619,8 @@ body[data-show="empty-log"] .log-empty{display:flex}
     var t = Number(total || 0);
     logTotalPages = Math.max(1, Math.ceil(t / LOG_PAGE_SIZE));
     logCurPage = Math.max(1, Math.min(Number(page || 1), logTotalPages));
+    if (t <= LOG_PAGE_SIZE) { pager.hidden = true; pager.innerHTML = ""; return; }
+    pager.hidden = false;
     var html = '<button class="pager-btn" data-nav="prev" aria-label="上一页"' + (logCurPage <= 1 ? ' disabled' : '') + '>‹</button>';
     for (var i = 1; i <= logTotalPages; i++) {
       html += '<button class="pager-btn' + (i === logCurPage ? ' on' : '') + '" data-page="' + i + '" aria-current="' + (i === logCurPage ? 'page' : 'false') + '" aria-label="第 ' + i + ' 页">' + i + '</button>';
@@ -829,33 +629,101 @@ body[data-show="empty-log"] .log-empty{display:flex}
     html += '<span class="total">共 ' + t + ' 条</span>';
     pager.innerHTML = html;
     Array.prototype.forEach.call(pager.querySelectorAll(".pager-btn[data-page]"), function (b) {
-      b.addEventListener("click", function () { loadLogPage(parseInt(b.dataset.page, 10)); });
+      b.addEventListener("click", function () { loadLogPage(parseInt(b.getAttribute("data-page"), 10)); });
     });
     var prev = pager.querySelector('[data-nav="prev"]');
     var next = pager.querySelector('[data-nav="next"]');
     if (prev) prev.addEventListener("click", function () { if (logCurPage > 1) loadLogPage(logCurPage - 1); });
     if (next) next.addEventListener("click", function () { if (logCurPage < logTotalPages) loadLogPage(logCurPage + 1); });
   }
+
   function loadLogPage(page) {
-    EAPI.get("/api/gamification/me/points?page=" + (page || 1) + "&page_size=" + LOG_PAGE_SIZE).then(function (p) {
-      renderPoints(p);
-      renderLogPager(p && p.logs_total, page || 1);
-    }).catch(function () {});
+    setSt("secPoints", "loading");
+    var pager = document.getElementById("logPager");
+    return EAPI.get("/api/gamification/me/points?page=" + (page || 1) + "&page_size=" + LOG_PAGE_SIZE)
+      .then(function (p) {
+        renderPoints(p);
+        renderLogPager(p && p.logs_total, page || 1);
+      })
+      .catch(function () { setSt("secPoints", "error"); if (pager) { pager.hidden = true; pager.innerHTML = ""; } });
   }
 
-  Promise.allSettled([
-    EAPI.get("/api/gamification/me/badges"),
-    EAPI.get("/api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=10"),
-  ]).then(function (r) {
-    renderBadges(r[0].status === "fulfilled" ? r[0].value : null);
-    renderRank("WEEKLY", "POINTS", r[1].status === "fulfilled" ? r[1].value : null);
-    bindRank();
+  /* ===== 排行榜 ===== */
+  function renderRank(scope, dim, d) {
+    if (!d) { setSt("secRank", "error"); return; }
+    var top = d.top || [];
+    var meta = document.getElementById("rankMeta");
+    if (meta) meta.textContent = "快照日期：" + (d.snapshot_date || "—") + " · " + (SCOPE_LABEL[scope] || scope);
+    var liveBadge = document.getElementById("rankLiveBadge");
+    if (liveBadge) liveBadge.hidden = d.source !== "LIVE_CALC";
+    if (!top.length) { setSt("secRank", "empty"); return; }
+    var unit = DIM_UNIT[dim] || "分";
+    var body = document.querySelector("#secRank .rank-body");
+    if (body) body.innerHTML = top.map(function (r, i) {
+      var medal = i === 0 ? "👑" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : null));
+      var noHtml = medal
+        ? '<span class="rank-no ' + (i === 0 ? 'gold' : (i === 1 ? 'silver' : 'bronze')) + '" aria-label="第 ' + (r.rank_no || i + 1) + ' 名">' + medal + '</span>'
+        : '<div class="rank-no">' + (r.rank_no || i + 1) + '</div>';
+      return '<div class="rank-row ' + (r.is_myself ? 'mine' : '') + '">' + noHtml
+        + '<div class="r-name">' + esc(r.user_name || "用户" + (r.user_id || "")) + (r.is_myself ? '<span class="r-me">我</span>' : '') + '</div>'
+        + '<span class="r-val">' + fmt(r.metric_value) + '<span class="r-unit">' + unit + '</span></span></div>';
+    }).join("");
+    var mr = document.getElementById("myRankVal");
+    var my = d.my_rank;
+    if (mr) mr.textContent = my ? "第 " + my.rank_no + " 名" : "未上榜";
+    var mm = document.getElementById("myRankMetric");
+    if (mm) {
+      if (my) { mm.textContent = fmt(my.metric_value) + " " + unit; mm.hidden = false; }
+      else { mm.textContent = ""; mm.hidden = true; }
+    }
+    setSt("secRank", "ok");
+  }
+
+  function curScope() {
+    var el = document.querySelector("#secRank .rank-span .tabgroup .tab.on");
+    return ({ "scope-daily": "DAILY", "scope-weekly": "WEEKLY", "scope-monthly": "MONTHLY", "scope-all": "ALL_TIME" }[el ? el.id : ""] || "WEEKLY");
+  }
+  function curDim() {
+    var cells = document.querySelectorAll("#secRank .rank-dim .tabgroup .tab");
+    var on = null; for (var i = 0; i < cells.length; i++) if (cells[i].classList.contains("on")) { on = i; break; }
+    return on === 1 ? "STUDY_MIN" : (on === 2 ? "BADGE_COUNT" : "POINTS");
+  }
+  function loadRank() {
+    var scope = curScope(), dim = curDim();
+    setSt("secRank", "loading");
+    return EAPI.get("/api/gamification/rankings?scope=" + scope + "&dimension=" + dim + "&top_n=10")
+      .then(function (d) { renderRank(scope, dim, d); })
+      .catch(function () { setSt("secRank", "error"); });
+  }
+  function bindRank() {
+    function bindGroup(groupSel) {
+      var btns = document.querySelectorAll(groupSel);
+      Array.prototype.forEach.call(btns, function (btn) {
+        btn.addEventListener("click", function () {
+          Array.prototype.forEach.call(btns, function (x) { x.classList.remove("on"); x.setAttribute("aria-selected", "false"); });
+          btn.classList.add("on"); btn.setAttribute("aria-selected", "true"); loadRank();
+        });
+      });
+    }
+    bindGroup("#secRank .rank-span .tab");
+    bindGroup("#secRank .rank-dim .tab");
+  }
+
+  /* ===== 错误态重试（按区块各自重查真实接口）===== */
+  function bindRetry(secId, fn) {
+    var sec = document.getElementById(secId);
+    if (!sec) return;
+    var btn = sec.querySelector(".show-err .retry");
+    if (btn) btn.addEventListener("click", fn);
+  }
+  bindRetry("secRank", loadRank);
+  bindRetry("secPoints", function () { loadLogPage(1); });
+  bindRetry("secBadges", loadBadges);
+
+  bindRank();
+  Promise.allSettled([loadBadges(), loadRank()]).then(function () {
     loadLogPage(1);
-  }).catch(function () {});
+  });
 })();
-</script>
-<script>
-/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
-(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
 </script>
 </body></html>
