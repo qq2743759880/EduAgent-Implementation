@@ -1,0 +1,119 @@
+{
+ "results": [
+  {
+   "name": "list-real-render",
+   "ok": true,
+   "detail": "cards=10"
+  },
+  {
+   "name": "pager-visible-p1",
+   "ok": true,
+   "detail": "total=\"共 97 条\""
+  },
+  {
+   "name": "mine-total-wired",
+   "ok": true,
+   "detail": "mine_total_posts=\"47\"（原静态假值 3 已被真实字段替换）"
+  },
+  {
+   "name": "pager-next-p2",
+   "ok": true,
+   "detail": "p1 first=48 p2 first=16 on=2"
+  },
+  {
+   "name": "pager-prev-back",
+   "ok": true,
+   "detail": "on=1"
+  },
+  {
+   "name": "chip-filter-en",
+   "ok": true,
+   "detail": "tags=英语,英语,英语,英语,英语 page=1"
+  },
+  {
+   "name": "search-empty-state",
+   "ok": true,
+   "detail": "empty=true pagerHidden=true"
+  },
+  {
+   "name": "list-error-state",
+   "ok": true,
+   "detail": "错误态 role=alert 渲染"
+  },
+  {
+   "name": "list-error-retry",
+   "ok": true,
+   "detail": "retry=clicked recovered=true"
+  },
+  {
+   "name": "list-like-toggle",
+   "ok": true,
+   "detail": "{\"on\":false,\"n\":7,\"ap\":\"false\"} -> {\"on\":true,\"n\":3,\"ap\":\"true\"}"
+  },
+  {
+   "name": "list-like-restore",
+   "ok": true,
+   "detail": "restored {\"on\":false,\"ap\":\"false\"}"
+  },
+  {
+   "name": "detail-render",
+   "ok": true,
+   "detail": "title=\"task08 契约实测帖 20260906\" body=true"
+  },
+  {
+   "name": "cmt-total-from-endpoint",
+   "ok": true,
+   "detail": "total=\"14 条\" expect=14 pager={\"on\":\"1\",\"all\":\"prev|1|2|next\"}（漂移D2：不采信 comment_count）"
+  },
+  {
+   "name": "cmt-pagesize-10",
+   "ok": true,
+   "detail": "page1 items=10"
+  },
+  {
+   "name": "cmt-pager-p2",
+   "ok": true,
+   "detail": "page2 items=4 expect=4 on=2"
+  },
+  {
+   "name": "cmt-like-toggle",
+   "ok": true,
+   "detail": "{\"on\":true,\"n\":1,\"ap\":\"true\"}"
+  },
+  {
+   "name": "cmt-like-restore",
+   "ok": true,
+   "detail": "{\"on\":false,\"n\":0}"
+  },
+  {
+   "name": "post-like-toggle",
+   "ok": true,
+   "detail": "{\"on\":true,\"n\":1}"
+  },
+  {
+   "name": "post-like-restore",
+   "ok": true,
+   "detail": "{\"on\":false,\"n\":0}"
+  },
+  {
+   "name": "cmt-ui-post-lastpage",
+   "ok": true,
+   "detail": "{\"total\":\"15 条\",\"on\":\"2\",\"last\":true,\"flash\":\"评论成功（+2 积分）\"} expect total=15 条 pg=2"
+  },
+  {
+   "name": "detail-404-state",
+   "ok": true,
+   "detail": "notFound=true cta=true"
+  },
+  {
+   "name": "console-no-js-errors",
+   "ok": true,
+   "detail": "total=3 real=0 "
+  }
+ ],
+ "consoleErrors": [
+  "[EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3000/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3000/edu-api.js:296:17)\n    at load (http://127.0.0.1:300",
+  "[EAPI] 帖子不存在 Error: 帖子不存在\n    at apiError (http://127.0.0.1:3000/edu-api.js:120:17)\n    at http://127.0.0.1:3000/edu-api.js:138:15",
+  "[EAPI] 帖子不存在 Error: 帖子不存在\n    at apiError (http://127.0.0.1:3000/edu-api.js:120:17)\n    at http://127.0.0.1:3000/edu-api.js:138:15"
+ ]
+}

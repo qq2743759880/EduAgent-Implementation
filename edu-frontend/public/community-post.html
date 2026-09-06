@@ -519,17 +519,23 @@ buildComments();
 </script>
 <script>
 /* ===== 对接真实后端（community-post 详情 + 帖子点赞/收藏 + 评论发布/点赞 + 未登录跳转 + 行内错误反馈）=====
-   task118 实测契约：
-   - GET  /posts/{id}            → PostDetail（含 content_md, like_count, favorite_count, mine_react_like, mine_react_favorite, comment_count）
-   - POST /posts/{id}/like|favorite → ReactToggleResp{active, total_count}
-   - GET  /posts/{id}/comments   → items[CommentItem{comment_id, author_name, content_md, like_count, mine_liked, created_at}]
+   task118 实测 + task08 复测契约（2026-09-06，详见 test-reports/task08-completion-report-reshape-a.md）：
+   - GET  /posts/{id}            → PostDetail（含 content_md, like_count, favorite_count, mine_react_like, mine_react_favorite, comment_count, view_count）
+   - POST /posts/{id}/like|favorite → ReactToggleResp{target_type,target_id,react_type,active,total_count,points_awarded}
+   - GET  /posts/{id}/comments?page&page_size → {total,page,page_size,items[CommentItem{comment_id,author_name,content_md,like_count,mine_liked,parent_id,created_at}]}
    - POST /posts/{id}/comments   → body{content_md}；resp{comment_id, created_at, points}
-   - POST /comments/{id}/like    → ReactToggleResp{active, total_count}
+   - POST /comments/{id}/like    → ReactToggleResp；锁定帖评论 → 403 code:"40310" 帖子已锁定；坏 id → 404 code:"40410"/"40411"
+   task08 增量：
+   ①取参统一 EAPI.pageId("post_id")（禁 match）
+   ②真实 loading 骨架（原静态 visibility:hidden → 白屏不诚实）
+   ③404 → 「帖子不存在」状态 + 返回列表 CTA（GWT③）；其他错误 → 可重试错误态
+   ④评论真实分页（page_size=10 + prev/页码/next），评论数以评论端点 total 为准
+     （漂移 D2：post.comment_count 含软删评论，与端点 total 不一致，如帖 74 count=2/total=0）
+   ⑤评论发布成功跳末页（排序 parent 优先+created_at ASC，新评论在尾部）
    无 post_id → 效果图预览保留 demo；有 post_id → 必须登录（查询/互动均需 token），无 token 跳登录 */
 (function () {
   if (!window.EAPI) return;
-  var q = new URLSearchParams(location.search);
-  var pid = q.get("post_id");
+  var pid = EAPI.pageId("post_id");
   if (!pid) return;                  // 无 post_id = 效果图预览，保留 demo 态
   window.__REAL_COMMUNITY__ = true;  // 通知 demo IIFE 停止模拟，防双绑
   if (!EAPI.store.getToken()) {      // 后端所有查询/互动都要求鉴权，未登录直接跳登录
@@ -544,6 +550,8 @@ buildComments();
   var cmtTotal = document.getElementById("cmtTotal"), metaCmt = document.getElementById("metaCmt"), pointsHint = document.getElementById("pointsHint");
   var bodyCard = document.getElementById("bodyCard"), mdBody = document.getElementById("mdBody");
   var badges = document.getElementById("badges"), actions = document.getElementById("actions"), postTitle = document.getElementById("postTitle"), postMeta = document.getElementById("postMeta");
+  var page = document.getElementById("page");
+  var PAGE_SIZE = 10, curPage = 1, lastCmtTotal = 0, detailLoaded = false;
 
   function setOn(el, on) { el.classList.toggle("on", !!on); if (el.setAttribute) el.setAttribute("aria-pressed", on ? "true" : "false"); }
   function show(num, v) { if (num) num.textContent = v; }
@@ -559,39 +567,117 @@ buildComments();
     f.textContent = m; clearTimeout(flash.__t); if (m) flash.__t = setTimeout(function () { f.textContent = ""; }, 4000);
   }
 
-  /* ---- 帖子详情渲染 ---- */
-  EAPI.get("/api/community/posts/" + pid).then(function (p) {
-    if (!p) return;
-    if (postTitle && p.title) { postTitle.textContent = p.title; postTitle.style.visibility = "visible"; }
-    if (postMeta) { var who = postMeta.querySelector(".who"); if (who && p.author_name) who.textContent = p.author_name; if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "").replace("T", " ").slice(0, 16); postMeta.style.visibility = "visible"; }
-    if (mdBody && p.content_md) mdBody.innerHTML = esc(p.content_md).replace(/\n/g, "<br>");
-    if (bodyCard) bodyCard.style.visibility = "visible";
-    if (badges) { badges.style.visibility = "visible"; var tg = badges.querySelector(".board-tag"); if (tg) { tg.className = "board-tag " + ({ en: "en", english: "en", math: "math", prog: "prog", programming: "prog", gen: "gen", general: "gen" }[p.board_code] || "gen"); tg.textContent = BOARD[p.board_code] || p.board_code || ""; } }
-    if (actions) { actions.style.visibility = "visible"; actions.style.display = "flex"; }
-    var cm = document.getElementById("comments"); if (cm) cm.style.visibility = "visible";
-    show(likeCnt, p.like_count); show(metaLike, p.like_count); show(favCnt, p.favorite_count); show(metaFav, p.favorite_count);
-    setOn(likeBtn, !!p.mine_react_like); setOn(favBtn, !!p.mine_react_favorite);
-    setTotal(p.comment_count || 0);
-    if (p.is_locked) { if (cmtInput) { cmtInput.disabled = true; cmtInput.placeholder = "本帖已锁定，无法评论"; } if (cmtSubmit) cmtSubmit.disabled = true; if (actions) actions.style.display = "none"; }
-  }).catch(function (e) { flash("帖子加载失败：" + ((e && e.message) || "网络错误")); });
+  /* ---- task08②：loading 骨架 / 状态节点（复用 demo .sk/.state 样式）---- */
+  var skEl = null;
+  function showSkeleton() {
+    if (skEl) return;
+    skEl = document.createElement("div");
+    skEl.className = "sk"; skEl.dataset.sk = "1";
+    skEl.innerHTML = '<div class="sk-card"><div class="sk-h"></div><div class="sk-line w90"></div><div class="sk-line w70"></div><div class="sk-line w40"></div></div>'
+      + '<div class="sk-card"><div class="sk-h"></div><div class="sk-line w60"></div><div class="sk-line w90"></div><div class="sk-line w25"></div></div>';
+    page.appendChild(skEl);
+  }
+  function hideSkeleton() { if (skEl && skEl.parentNode) skEl.parentNode.removeChild(skEl); skEl = null; }
+  function clearStates() { page.querySelectorAll("[data-st]").forEach(function (n) { n.parentNode.removeChild(n); }); }
+  function renderErrorState(notFound, msg) {
+    var st = document.createElement("div");
+    st.className = "state"; st.dataset.st = "1";
+    st.innerHTML = notFound
+      ? '<span class="st-emoji">🔍</span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list" id="backListBtn">← 返回列表</button>'
+      : '<span class="st-emoji">😵</span><h3>帖子加载失败</h3><p>' + esc(msg || "网络开小差了，请稍后重试。") + '</p><button class="retry" id="retryLoadBtn">🔄 重试</button>';
+    page.appendChild(st);
+    var bl = document.getElementById("backListBtn");
+    if (bl) bl.addEventListener("click", function () { location.href = "/community.html"; });
+    var rb = document.getElementById("retryLoadBtn");
+    if (rb) rb.addEventListener("click", function () { loadAll(); });
+  }
 
-  /* ---- 评论列表渲染（实测字段 comment_id/author_name/content_md/like_count/mine_liked/created_at）---- */
+  /* ---- 帖子详情渲染（task08③：404 诚实空态/错误态；②先骨架后揭示）---- */
+  function loadAll() {
+    clearStates(); showSkeleton();
+    EAPI.get("/api/community/posts/" + pid).then(function (p) {
+      if (!p) { hideSkeleton(); renderErrorState(true); return; }
+      detailLoaded = true;
+      hideSkeleton();
+      if (postTitle && p.title) { postTitle.textContent = p.title; postTitle.style.visibility = "visible"; }
+      if (postMeta) {
+        var who = postMeta.querySelector(".who"); if (who && p.author_name) who.textContent = p.author_name;
+        if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "").replace("T", " ").slice(0, 16);
+        if (postMeta.children[4]) postMeta.children[4].textContent = "👁 " + (p.view_count || 0);
+        postMeta.style.visibility = "visible";
+      }
+      if (mdBody && p.content_md) mdBody.innerHTML = esc(p.content_md).replace(/\n/g, "<br>");
+      if (bodyCard) bodyCard.style.visibility = "visible";
+      if (badges) { badges.style.visibility = "visible"; badges.innerHTML = ""; var bc = document.createElement("span"); bc.className = "board-tag " + ({ en: "en", english: "en", math: "math", prog: "prog", programming: "prog", gen: "gen", general: "gen" }[p.board_code] || "gen"); bc.textContent = BOARD[p.board_code] || p.board_code || ""; badges.appendChild(bc); if (p.is_pinned) { var pin = document.createElement("span"); pin.className = "pin"; pin.textContent = "📌 置顶"; badges.appendChild(pin); } if (p.is_locked) { var lk = document.createElement("span"); lk.className = "lock"; lk.textContent = "🔒 锁定"; badges.appendChild(lk); } }
+      if (actions) { actions.style.visibility = "visible"; actions.style.display = "flex"; }
+      var cm = document.getElementById("comments"); if (cm) cm.style.visibility = "visible";
+      show(likeCnt, p.like_count); show(metaLike, p.like_count); show(favCnt, p.favorite_count); show(metaFav, p.favorite_count);
+      setOn(likeBtn, !!p.mine_react_like); setOn(favBtn, !!p.mine_react_favorite);
+      setTotal(0); /* 先归零，评论数以评论端点 total 为准（漂移 D2） */
+      if (p.is_locked) { if (cmtInput) { cmtInput.disabled = true; cmtInput.placeholder = "本帖已锁定，无法评论"; } if (cmtSubmit) cmtSubmit.disabled = true; if (actions) actions.style.display = "none"; }
+      loadComments(1);
+    }).catch(function (e) {
+      hideSkeleton();
+      renderErrorState(e && e.status === 404, e && e.message);
+    });
+  }
+
+  /* ---- 评论列表（task08④：真实分页；计数以端点 total 为准）---- */
   function renderComments(items) {
     if (!items || !items.length) { cList.innerHTML = '<div class="state"><span class="st-emoji">🛋️</span><h3>暂无评论</h3><p>还没有人评论，来抢沙发吧～</p></div>'; return; }
     cList.innerHTML = items.map(function (c) {
       return '<div class="c-item" data-cid="' + c.comment_id + '"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + esc((c.created_at || "").replace("T", " ").slice(0, 16)) + '</span><button type="button" class="c-like' + (c.mine_liked ? " on" : "") + '" data-cid="' + c.comment_id + '" aria-pressed="' + (c.mine_liked ? "true" : "false") + '">👍 <b>' + c.like_count + '</b></button></div><div class="c-body"><div class="md"><p>' + esc(c.content_md) + '</p></div></div></div>';
     }).join("");
   }
-  EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20").then(function (d) {
-    renderComments(d && d.items ? d.items : []);
-  }).catch(function () {});
+  function renderCmtPager(total) {
+    var pager = document.getElementById("pager");
+    if (!pager) return;
+    if (!total) { pager.style.visibility = "hidden"; pager.innerHTML = ""; return; }
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (curPage > pages) curPage = pages;
+    var start = Math.max(1, Math.min(curPage - 2, pages - 4));
+    var end = Math.min(pages, start + 4);
+    if (end - start + 1 < 5) start = Math.max(1, end - 4);
+    var html = '<button type="button" class="pager-btn" data-pg="prev"' + (curPage <= 1 ? " disabled" : "") + '>‹</button>';
+    for (var i = start; i <= end; i++) html += '<button type="button" class="pager-btn' + (i === curPage ? " on" : "") + '" data-pg="' + i + '">' + i + '</button>';
+    html += '<button type="button" class="pager-btn" data-pg="next"' + (curPage >= pages ? " disabled" : "") + '>›</button>';
+    html += '<span class="total">共 ' + total + ' 条</span>';
+    pager.innerHTML = html;
+    pager.style.visibility = "visible";
+    pager.querySelectorAll(".pager-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.dataset.pg, pages2 = Math.max(1, Math.ceil(lastCmtTotal / PAGE_SIZE));
+        if (v === "prev") { if (curPage > 1) loadComments(curPage - 1); }
+        else if (v === "next") { if (curPage < pages2) loadComments(curPage + 1); }
+        else { var p2 = parseInt(v, 10); if (p2 && p2 !== curPage) loadComments(p2); }
+      });
+    });
+  }
+  function loadComments(p) {
+    curPage = p;
+    return EAPI.get("/api/community/posts/" + pid + "/comments?page=" + curPage + "&page_size=" + PAGE_SIZE).then(function (d) {
+      lastCmtTotal = (d && d.total != null) ? d.total : 0;
+      renderComments(d && d.items ? d.items : []);
+      renderCmtPager(lastCmtTotal);
+      setTotal(lastCmtTotal);
+    }).catch(function (e) {
+      cList.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>评论加载失败</h3><p>' + esc((e && e.message) || "网络错误") + '</p><button class="retry" id="cRetryBtn">🔄 重试</button></div>';
+      renderCmtPager(0);
+      var rb = document.getElementById("cRetryBtn");
+      if (rb) rb.addEventListener("click", function () { loadComments(curPage); });
+    });
+  }
+  loadAll();
 
-  /* ---- 通用反应（帖子点赞/收藏：乐观更新 + 失败回滚 + 双击防抖）---- */
+  /* ---- 通用反应（帖子点赞/收藏：乐观更新 + 失败回滚 + 双击防抖）----
+     漂移 D1：初始 like_count/favorite_count 为帖子行计数（含软删 react，如帖 74 like_count=5 实际在线 0），
+     toggle 后以响应 total_count（在线真值）回填 —— 数字可能回落，属后端数据一致性待变更单 */
   function bindReact(btn, cnt, meta, url) {
     var busy = false;
     btn.addEventListener("click", function (e) {
       e.preventDefault(); e.stopPropagation();
       if (busy) return;                 // 双击防抖
+      if (!EAPI.store.getToken()) { try { location.href = EAPI.buildLoginUrl(location.href); } catch (e2) {} return; }
       var wasOn = btn.classList.contains("on");
       var old = parseInt(cnt.textContent, 10) || 0;
       var next = old + (wasOn ? -1 : 1); if (next < 0) next = 0;
@@ -607,21 +693,18 @@ buildComments();
   bindReact(likeBtn, likeCnt, metaLike, "/api/community/posts/" + pid + "/like");
   bindReact(favBtn, favCnt, metaFav, "/api/community/posts/" + pid + "/favorite");
 
-  /* ---- 发评论（POST /posts/{id}/comments，成功后重载列表 + 更新计数）---- */
+  /* ---- 发评论（POST /posts/{id}/comments；成功跳末页——排序 parent 优先+时间 ASC，新评论在尾部）---- */
   cmtSubmit.addEventListener("click", function () {
     var t = (cmtInput.value || "").trim();
     if (!t) { cmtInput.focus(); flash("评论不能为空"); return; }
     if (cmtSubmit.disabled) return;     // 防抖
     cmtSubmit.disabled = true; flash("");
-    EAPI.post("/api/community/posts/" + pid + "/comments", { content_md: t }).then(function () {
+    EAPI.post("/api/community/posts/" + pid + "/comments", { content_md: t }).then(function (resp) {
       cmtInput.value = "";
-      return EAPI.get("/api/community/posts/" + pid + "/comments?page=1&page_size=20");
-    }).then(function (d) {
-      renderComments(d && d.items ? d.items : []);
-      setTotal(d && d.total != null ? d.total : 0);
-      hint();
+      var lastPage = Math.max(1, Math.ceil((lastCmtTotal + 1) / PAGE_SIZE));
+      return loadComments(lastPage).then(function () { hint(); if (resp && resp.points) flash("评论成功（+" + resp.points + " 积分）"); });
     }).catch(function (e) { flash("发布失败：" + ((e && e.message) || "网络错误")); })
-      .finally(function () { cmtSubmit.disabled = false; });
+      .finally(function () { cmtSubmit.disabled = cmtInput.disabled; }); /* 锁定帖输入禁用则保持禁用 */
   });
 
   /* ---- 评论点赞（POST /comments/{id}/like，事件委托 + 乐观更新 + 失败回滚）---- */

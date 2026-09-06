@@ -447,10 +447,16 @@ input,select{font-family:inherit}
 <script>
 /* ===== 对接真实后端（community 帖子列表 + 版块筛选 + 列表点赞 + 发帖弹窗）=====
    - 版块筛选：GET /posts?board_code=xxx（curl 实测参数名 board_code；值 english/math/programming/general）
-   - 列表点赞：POST /posts/{id}/like（实测返回 {active,total_count}；/posts 列表不返回 is_liked → localStorage 回补高亮，task118 风险预案）
-   - 发帖：POST /posts（实测字段 content_md 而非 content；tags 数组；成功后列表头部插入）
+   - 列表点赞：POST /posts/{id}/like（实测返回 {active,total_count}；/posts 列表不返回 is_liked → localStorage 回补高亮，task118 风险预案；
+     task08 实测列表返回 mine_react_like → 优先后端字段，刷新可持续）
+   - 发帖：POST /posts（实测字段 content_md 而非 content；tags 数组；成功后回第 1 页真实重载）
    - 未登录点互动按钮 → EAPI.buildLoginUrl 跳登录，不发请求（实测未带 token 点赞仍返回 200，故必须前端先拦）
-task118 仅改本页，不重定义全局 $ / renderSides。 */
+task08 增量（详见 test-reports/task08-completion-report-reshape-a.md）：
+   ①真实分页（实测裸分页壳 {total,page,page_size,items,mine_total_posts}，page_size=10，prev/页码/next）
+   ②三态齐全：loading 骨架 / empty / error+重试（原 .catch 静默吞→列表空白不诚实）
+   ③mine_total_posts 接「我的帖子」徽标（原静态假值 3）
+   ④发帖成功回第 1 页真实重载（移除 prependPost 伪造卡片）
+task118/task08 仅改本页，不重定义全局 $ / renderSides。 */
 (function () {
   if (!window.EAPI) return;
   var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
@@ -522,36 +528,71 @@ task118 仅改本页，不重定义全局 $ / renderSides。 */
       .finally(function () { delete btn.dataset.busy; });
   }
 
-  function prependPost(post) {
-    var m = BOARD[post.board_code] || ["", ""];
-    var tags = (post.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
-    var card = '<article class="post" tabindex="0" data-post="' + post.post_id + '"><div class="p-top"><span class="board-tag ' + m[1] + '">' + esc(m[0]) + '</span></div><h3>' + esc(post.title) + '</h3><p class="p-sum">' + esc(post.summary || "") + '</p><div class="p-tags">' + tags + '</div><div class="p-meta"><span class="who">' + esc(post.author_name) + '</span><span class="sep-dot">·</span><span>刚刚</span><span class="sep-dot">·</span><span>👁 0</span><span class="sep-dot">·</span><span class="cmt">💬 <i>0</i></span><span class="sep-dot">·</span><button type="button" class="like-btn" data-post="' + post.post_id + '" aria-pressed="false">👍 <i>0</i></button></div></article>';
-    boards.insertAdjacentHTML("afterbegin", card);
-    bindBoards();
-  }
+  /* task08：prependPost 已移除——发帖成功改为回第 1 页真实重载（0 计数伪造卡片属 MOCK，且 HOT 排序下位置失真） */
 
   function load() {
+    /* task08：三态齐全——loading 骨架 → success/empty；失败渲染错误态+重试（原 .catch 静默吞） */
+    boards.innerHTML = (function(){ var s=""; for (var i=0;i<4;i++) s+='<div class="sk-card"><div class="sk-h"></div><div class="sk-line w90"></div><div class="sk-line w70"></div><div class="sk-line w40"></div></div>';
+      return '<div class="sk" role="status"><span class="visually-hidden">正在加载帖子…</span>'+s+'</div>'; })();
     var kw = (document.getElementById("kw") || {}).value || "";
     var sortSel = document.getElementById("sort");
     var sort = sortSel ? String(sortSel.value || "").trim() : "";
-    var url = "/api/community/posts?page=1&page_size=10";
+    var url = "/api/community/posts?page=" + curPage + "&page_size=" + PAGE_SIZE;
     if (currentBoard) url += "&board_code=" + encodeURIComponent(currentBoard);
     if (kw) url += "&keyword=" + encodeURIComponent(kw);
     if (sort) url += "&sort=" + encodeURIComponent(sort);
     EAPI.get(url).then(function (d) {
       var data = d && d.items ? d : { items: [], total: 0 };
+      lastTotal = data.total || 0;
       renderPosts(data.items);
-      if (totalEl) totalEl.textContent = "共 " + (data.total || 0) + " 条";
-    }).catch(function () {});
+      renderPager(lastTotal);
+      var mineEl = document.querySelector(".mine b");          /* 实测返回 mine_total_posts */
+      if (mineEl && data.mine_total_posts != null) mineEl.textContent = " " + data.mine_total_posts;
+    }).catch(function (e) {
+      lastTotal = 0;
+      var msg = (e && e.message) || "网络开小差了，请稍后重试。";
+      boards.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>帖子加载失败</h3>'
+        + '<p>' + esc(msg) + '</p><button type="button" class="retry" id="retryLoad">🔄 重试</button></div>';
+      var rb = document.getElementById("retryLoad");
+      if (rb) rb.addEventListener("click", function () { load(); });
+      renderPager(0);
+    });
   }
 
-  /* ---- 版块 chips 筛选（board_code 实测）---- */
+  /* ---- task08：真实分页（curl 实测裸分页壳 {total,page,page_size,items,mine_total_posts}）---- */
+  var PAGE_SIZE = 10, curPage = 1, lastTotal = 0;
+  function renderPager(total) {
+    var pager = document.getElementById("pager");
+    if (!pager) return;
+    if (!total) { pager.style.display = "none"; return; }
+    pager.style.display = "";
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var start = Math.max(1, Math.min(curPage - 2, pages - 4));
+    var end = Math.min(pages, start + 4);
+    if (end - start + 1 < 5) start = Math.max(1, end - 4);
+    var html = '<button type="button" class="pager-btn" data-pg="prev"' + (curPage <= 1 ? " disabled" : "") + '>‹</button>';
+    for (var i = start; i <= end; i++) html += '<button type="button" class="pager-btn' + (i === curPage ? " on" : "") + '" data-pg="' + i + '">' + i + '</button>';
+    html += '<button type="button" class="pager-btn" data-pg="next"' + (curPage >= pages ? " disabled" : "") + '>›</button>';
+    html += '<span class="total" id="total">共 ' + total + ' 条</span>';
+    pager.innerHTML = html;
+    if (totalEl) totalEl = document.getElementById("total");
+    pager.querySelectorAll(".pager-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.dataset.pg, pages2 = Math.max(1, Math.ceil(lastTotal / PAGE_SIZE));
+        if (v === "prev") { if (curPage > 1) { curPage--; load(); } }
+        else if (v === "next") { if (curPage < pages2) { curPage++; load(); } }
+        else { var p = parseInt(v, 10); if (p && p !== curPage) { curPage = p; load(); } }
+      });
+    });
+  }
+
+  /* ---- 版块 chips 筛选（board_code 实测）；切换筛选/排序/搜索都回到第 1 页 ---- */
   (function initChips() {
     var cEls = Array.prototype.slice.call(document.querySelectorAll("#chips .chip"));
     function activate(node) { cEls.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); }); node.classList.add("on"); node.setAttribute("aria-pressed", "true"); }
     cEls.forEach(function (c) { if (c.dataset.b === "all") activate(c); });   // 默认全部
     cEls.forEach(function (c) {
-      c.addEventListener("click", function () { activate(c); currentBoard = CODE[c.dataset.b] || ""; load(); });
+      c.addEventListener("click", function () { activate(c); currentBoard = CODE[c.dataset.b] || ""; curPage = 1; load(); });
     });
   })();
 
@@ -596,12 +637,10 @@ task118 仅改本页，不重定义全局 $ / renderSides。 */
       mSubmit.disabled = true; mErr.textContent = "";
       EAPI.post("/api/community/posts", { board_code: selBoard, title: title, content_md: content, tags: tags }).then(function (d) {
         modal.classList.remove("open");
-        if (d && d.post_id) {
-          prependPost({ post_id: d.post_id, board_code: selBoard, title: title, summary: content, tags: tags, author_name: "我", is_pinned: false });
-          var tot = parseInt((totalEl ? totalEl.textContent : "0").replace(/\D/g, ""), 10) || 0;
-          if (totalEl) totalEl.textContent = "共 " + (tot + 1) + " 条";
-        } else { load(); }
-        flashNote("发帖成功 ✨");
+        /* task08：发帖成功 → 回第 1 页真实重载（原 prependPost 用 0 计数伪造卡片，HOT 排序下位置也失真） */
+        curPage = 1;
+        load();
+        flashNote("发帖成功 ✨" + (d && d.points_awarded ? "（+" + d.points_awarded + " 积分）" : ""));
       }).catch(function (e) { mErr.textContent = "发布失败：" + ((e && e.message) || "网络错误"); }).finally(function () { mSubmit.disabled = false; });
     };
   }
@@ -615,9 +654,9 @@ task118 仅改本页，不重定义全局 $ / renderSides。 */
     modal.classList.add("open"); mTitle.focus();
   }
   ["postNewDesktop", "fab"].forEach(function (id) { var b = document.getElementById(id); if (b) b.addEventListener("click", openNew); });
-  var go = document.getElementById("go"); if (go) go.addEventListener("click", load);
-  var sortSelEl = document.getElementById("sort"); if (sortSelEl) sortSelEl.addEventListener("change", load);
-  var kwEl = document.getElementById("kw"); if (kwEl) kwEl.addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
+  var go = document.getElementById("go"); if (go) go.addEventListener("click", function () { curPage = 1; load(); });
+  var sortSelEl = document.getElementById("sort"); if (sortSelEl) sortSelEl.addEventListener("change", function () { curPage = 1; load(); });
+  var kwEl = document.getElementById("kw"); if (kwEl) kwEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { curPage = 1; load(); } });
 
   load();
 })();
