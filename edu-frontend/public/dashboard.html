@@ -4,17 +4,18 @@
   task43 效果图 · /dashboard 学习仪表盘
   > 欢迎条 + KPI 4卡 + 学习时长 7 日折线 + 学科掌握度柱状 + 学习结构饼图 +
     最近解锁徽章墙 + 排行榜 Top5/我的排名 + 积分卡
-  > 数据形状对齐契约（真实 API，无 MOCK）：
-    GET /api/progress/dashboard?days=14 → DashboardOut（outline_correct_rate/recent_days/latest_streak_days）
-    GET /api/progress/courses             → ProgressCourseItem[]（学科完成度按 series 归并）
-    GET /api/gamification/me/badges       → {total,unlocked_count,next_milestone,items[]}
-    GET /api/gamification/me/points       → {total_points,level_no,level_title,level_progress_pct,recent_logs[]}
-    GET /api/gamification/rankings?scope=&dimension=POINTS&top_n=N → {top[],my_rank,source:"ZSET"}
+  > 数据形状对齐契约（2026-09-06 curl 实测校准；真实 API，无 MOCK/演示兜底）：
+    GET /api/progress/dashboard?days=14 → {total_days,total_study_seconds,total_questions_attempted,total_questions_correct,overall_correct_rate,active_courses_count,latest_streak_days,recent_days[{stat_date,study_seconds,video_ticks,homework_submitted,exam_submitted,questions_attempted,questions_correct}]}（recent_days 新→旧）
+    GET /api/users/me/learning-summary → {total_watched_seconds(string),active_cohorts_count,homework_submitted,exam_submitted,exam_avg_score}
+    GET /api/gamification/me/badges    → {total,unlocked_count,next_milestone,items[{badge_name,icon_emoji,rarity,unlocked,unlocked_at}]}
+    GET /api/gamification/me/points?page&page_size → {total_points,level_no,level_title,level_min,next_level_min,level_progress_pct,logs_total,recent_logs[]}
+    GET /api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=5 → {top[],my_rank,snapshot_date,source}
   > 图表配色 §1.7 八色：单系列线/柱用 primary(indigo)；饼图取疏色序(1/3/5/7)禁相邻同系
-  > 契约缺口（禁 MOCK）：学科掌握度按毛坯分组归并 courses 完成度，score 为原型示例展示形状；React 消费真实端点
+  > 契约缺口（禁 MOCK）：①学科掌握度（需按学科归并的课程完成度端点不在冻结契约）②学习结构占比（无分类时长字段）→ 两面板诚实空态，React 批次接 C-A 后回填；推荐位无契约端点 → 诚实引导去课程中心
   AUDIT LOG:
     [2026-08-25 v1 R1] 初稿提交（P19 布局 + 四态 + 排行周期 + 响应式 + §1.7 色板）→ SUBMITTED
     [2026-08-25 v2 R2] 用户返工：①学科掌握度学科错误（K12 语文/数学/英语/物理/化学 → 平台真实 9 大学科 task44 CATS，编程置顶）②条形图颜色需随学科变换（垂直柱 → 水平条形，每学科独立 §1.7 图表色）→ SUBMITTED
+    [2026-09-06 task11 reshape-a] 清零演示兜底脚本（RANK 三周期假排行/假折线数据/假饼图）与全部静态假数据（KPI 42min/15道/3门/6天、9 行假掌握度、6 枚假徽章、假积分流水、假"小柚子"昵称）；KPI 4 卡对齐 DashboardOut 真实字段（含 active_courses_count/overall_correct_rate 派生）；最近学习=recent_days 真实 7 日折线；学习构成=learning-summary 真实字段；徽章/排行/积分接 gamification 真实端点；诚实空态/错误态/登录引导
 -->
 <html lang="zh-CN" class="" data-theme="light"><head>
 <meta charset="UTF-8">
@@ -299,7 +300,7 @@ button{font-family:inherit;cursor:pointer}
 </style>
 </head><body>
 
-<!-- respbar 演示工具条已移除（critique C4） -->
+<!-- task11：respbar 演示工具条已移除（critique C4）；演示兜底数据已清零（reshape-a），未登录显示诚实登录引导 -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -321,11 +322,11 @@ button{font-family:inherit;cursor:pointer}
 </header>
 <div class="page">
 
-  <!-- ===== 页面头部 ===== -->
+  <!-- ===== 页面头部（昵称来自 GET /api/users/me，task11 移除硬编码"小柚子"）===== -->
   <header class="head">
     <div>
       <span class="hello">✨ 今天也要和 EduAgent 一起进步呀</span>
-      <h1>你好，小柚子 👋</h1>
+      <h1>你好，<span id="helloName">同学</span> 👋</h1>
       <p class="sub">这里是你的学习仪表盘：随时查看学习时长、学科能力、积分与排行榜，让每一次努力都能被看见。</p>
     </div>
     <div class="acts">
@@ -334,44 +335,49 @@ button{font-family:inherit;cursor:pointer}
     </div>
   </header>
 
-  <!-- ===== KPI 4 卡（success 态）===== -->
-  <section class="v-success" data-sec="kpi">
+  <!-- ===== task11：未登录诚实引导（无演示数据兜底）===== -->
+  <section id="loginGate" hidden>
+    <div class="empty" style="min-height:220px"><span class="e-emo">🔑</span><p>登录后查看你的学习仪表盘：<br>学习时长、练习正确率、积分与排行榜实时同步。</p><a class="btn primary" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">去登录</a></div>
+  </section>
+
+  <!-- ===== KPI 4 卡（成功态；数值由 /api/progress/dashboard + /api/users/me/learning-summary 真实渲染）===== -->
+  <section class="v-success" data-sec="kpi" hidden>
     <div class="kpis">
       <div class="kpi">
-        <div class="top"><span class="lb">今日学习时长</span><span class="ic indigo">⏱️</span></div>
-        <div class="val" id="kpi-time">42<small> 分钟</small></div>
-        <div class="delta up" data-delta="kpi1">▲ 较昨日 +8 分钟</div>
-        <div class="dbar"><i style="width:68%;background:var(--indigo)"></i></div>
+        <div class="top"><span class="lb">累计学习时长</span><span class="ic indigo">⏱️</span></div>
+        <div class="val" id="kpi-time">—</div>
+        <div class="delta" id="delta1">—</div>
+        <div class="dbar"><i id="bar1" style="width:0%;background:var(--indigo)"></i></div>
       </div>
       <div class="kpi">
-        <div class="top"><span class="lb">今日练习题</span><span class="ic green">✍️</span></div>
-        <div class="val" id="kpi-q">15<small> 道</small></div>
-        <div class="delta up" data-delta="kpi2">▲ 正确率 82%</div>
-        <div class="dbar"><i style="width:55%;background:var(--candy-green)"></i></div>
+        <div class="top"><span class="lb">累计练习题</span><span class="ic green">✍️</span></div>
+        <div class="val" id="kpi-q">—</div>
+        <div class="delta" id="delta2">—</div>
+        <div class="dbar"><i id="bar2" style="width:0%;background:var(--candy-green)"></i></div>
       </div>
       <div class="kpi">
-        <div class="top"><span class="lb">进行中课程</span><span class="ic amber">📚</span></div>
-        <div class="val" id="kpi-course">3<small> 门</small></div>
-        <div class="delta" data-delta="kpi3">— 建议一次 focus 2 门</div>
-        <div class="dbar"><i style="width:40%;background:var(--candy-yellow)"></i></div>
+        <div class="top"><span class="lb">在学课程</span><span class="ic amber">📚</span></div>
+        <div class="val" id="kpi-course">—</div>
+        <div class="delta" id="delta3">— 建议一次专注 1~2 门</div>
+        <div class="dbar" hidden><i style="width:0%;background:var(--candy-yellow)"></i></div>
       </div>
       <div class="kpi">
         <div class="top"><span class="lb">连续打卡</span><span class="ic violet">🔥</span></div>
-        <div class="val" id="kpi-streak">6<small> 天</small></div>
-        <div class="delta up" data-delta="kpi4">▲ 近 7 天活跃 6 天</div>
-        <div class="dbar"><i style="width:86%;background:var(--chart-violet)"></i></div>
+        <div class="val" id="kpi-streak">—</div>
+        <div class="delta" id="delta4">—</div>
+        <div class="dbar"><i id="bar4" style="width:0%;background:var(--chart-violet)"></i></div>
       </div>
     </div>
   </section>
 
-  <!-- ===== 第 2 行：学习时长 7 日折线 + 学科掌握度柱状 ===== -->
-  <section class="row l2 v-success" data-sec="trend-mastery">
-    <!-- 折线：单系列 → primary 主色 -->
+  <!-- ===== 第 2 行：学习时长 7 日折线（最近学习）+ 学科掌握度 ===== -->
+  <section class="row l2 v-success" data-sec="trend-mastery" hidden>
+    <!-- 折线：单系列 → primary 主色；数据来自 /api/progress/dashboard recent_days（真实 7 日） -->
     <div class="panel">
       <div class="p-title"><span class="emo">📈</span>学习时长 · 近 7 天<span class="pill">分钟</span></div>
-      <div class="p-sub">统计每天学习时长（视频 + 练习），单位分钟；来自 /api/progress/dashboard.recent_days</div>
-      <div class="chart">
-        <svg class="trend-svg" viewBox="0 0 640 220" role="img" aria-label="近7天学习时长折线：昨天55、前天24…">
+      <div class="p-sub">统计每天学习时长，单位分钟；来自 /api/progress/dashboard.recent_days</div>
+      <div class="chart" id="trendChart">
+        <svg class="trend-svg" viewBox="0 0 640 220" role="img" aria-label="近7天学习时长折线">
           <defs>
             <linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stop-color="#4f46e5" stop-opacity="0.30"/>
@@ -387,114 +393,74 @@ button{font-family:inherit;cursor:pointer}
           <g id="trend-labels" fill="var(--ink-muted)" font-size="12" font-weight="700" text-anchor="middle"/>
         </svg>
       </div>
+      <div class="empty" id="trendEmpty" hidden><span class="e-emo">📈</span><p>开始学习后，这里会记录你每天的学习时长</p></div>
     </div>
-    <!-- 学科掌握度：9 大学科（task44 契约② CATS）水平条形，每学科独立 §1.7 图表色 -->
+    <!-- 学科掌握度：契约缺口（归并端点不在冻结契约）→ 诚实空态，React 批次接 C-A 后回填 -->
     <div class="panel">
       <div class="p-title"><span class="emo">📊</span>学科掌握度<span class="pill">%</span></div>
-      <div class="p-sub">按 9 大学科归并完成度；来自 /api/progress/courses</div>
-      <div class="mastery" id="mastery">
-        <div class="mrow c1"><span class="mname">💻 编程</span><div class="mtrack"><i class="mfill" style="width:82%"></i></div><span class="mval">82%</span></div>
-        <div class="mrow c2"><span class="mname">🖥️ 计算机系统</span><div class="mtrack"><i class="mfill" style="width:74%"></i></div><span class="mval">74%</span></div>
-        <div class="mrow c3"><span class="mname">📊 数据与AI</span><div class="mtrack"><i class="mfill" style="width:71%"></i></div><span class="mval">71%</span></div>
-        <div class="mrow c4"><span class="mname">🎮 图形与游戏</span><div class="mtrack"><i class="mfill" style="width:66%"></i></div><span class="mval">66%</span></div>
-        <div class="mrow c5"><span class="mname">📐 数学</span><div class="mtrack"><i class="mfill" style="width:62%"></i></div><span class="mval">62%</span></div>
-        <div class="mrow c6"><span class="mname">🌱 校园成长</span><div class="mtrack"><i class="mfill" style="width:55%"></i></div><span class="mval">55%</span></div>
-        <div class="mrow c7"><span class="mname">📈 管理与职场</span><div class="mtrack"><i class="mfill" style="width:48%"></i></div><span class="mval">48%</span></div>
-        <div class="mrow c8"><span class="mname">🎯 考研/考证/公考</span><div class="mtrack"><i class="mfill" style="width:42%"></i></div><span class="mval">42%</span></div>
-        <div class="mrow c9"><span class="mname">🏢 企业培训</span><div class="mtrack"><i class="mfill" style="width:38%"></i></div><span class="mval">38%</span></div>
-      </div>
+      <div class="p-sub">按学科归并课程完成度（契约缺口：归并端点未冻结，暂无真实数据）</div>
+      <div class="empty" style="margin-top:8px"><span class="e-emo">📊</span><p>学科掌握度待按新契约归并后接入，当前暂无数据</p></div>
     </div>
   </section>
 
   <!-- ===== 第 3 行：学习结构饼图 + 最近解锁徽章 + 排行榜/我的排名/积分 ===== -->
-  <section class="row l3b v-success" data-sec="structure-badge-rank">
-    <!-- 饼图：§1.7 疏色序 indigo/amber/sky/slate（禁相邻同系） -->
+  <section class="row l3b v-success" data-sec="structure-badge-rank" hidden>
+    <!-- 学习构成：来自 /api/users/me/learning-summary（无分类占比字段，不造假饼图；donut 仅作视觉保留） -->
     <div class="panel">
-      <div class="p-title"><span class="emo">🍩</span>本周学习结构<span class="pill">占比</span></div>
-      <div class="p-sub">视频 / 练习 / 测验 / 作业分布；派生自 recent_days 汇总</div>
-      <div class="donut" id="donut" style="--d0:#4f46e5;--d1:#f59e0b;--d2:#0ea5e9;--d3:#64748b"></div>
-      <div class="legend" id="structure-legend">
-        <div class="lg"><span class="sw" style="background:#4f46e5"></span>视频学习<span class="lv">58%</span></div>
-        <div class="lg"><span class="sw" style="background:#f59e0b"></span>课后练习<span class="lv">24%</span></div>
-        <div class="lg"><span class="sw" style="background:#0ea5e9"></span>在线测验<span class="lv">11%</span></div>
-        <div class="lg"><span class="sw" style="background:#64748b"></span>课后作业<span class="lv">7%</span></div>
-      </div>
+      <div class="p-title"><span class="emo">🍩</span>学习构成<span class="pill">累计</span></div>
+      <div class="p-sub">来自 /api/users/me/learning-summary；分类占比无真实字段，不虚构饼图</div>
+      <div class="donut" id="donut" hidden></div>
+      <div class="empty" id="structureEmpty" hidden><span class="e-emo">🍩</span><p>暂无学习构成数据</p></div>
+      <div class="legend" id="structure-legend"></div>
     </div>
     <!-- 排行榜 Top5 + 我的排名 + 积分卡 -->
     <div class="panel">
       <div class="p-title"><span class="emo">🏆</span>本周排行榜<span class="pill">ZSET</span></div>
       <div class="p-sub">来自 /api/gamification/rankings?dimension=POINTS</div>
+      <div class="empty" id="rankEmpty" hidden><span class="e-emo">🏆</span><p>暂无排行榜数据，快去学习抢榜首吧</p></div>
       <div class="ranklist" id="ranklist"></div>
-      <div class="myrank">
+      <div class="myrank" id="rankMy">
         <span class="face">🦊</span>
-        <div class="meta"><b>我的排名</b><span id="myrank-sub">总榜 12 名 · 超越 88% 学习者</span></div>
-        <span class="rank-big" id="myrank-big">#12</span>
+        <div class="meta"><b>我的排名</b><span id="myrank-sub">—</span></div>
+        <span class="rank-big" id="myrank-big">—</span>
       </div>
       <div class="points">
-        <div class="lvrow"><b>💰 积分 · 学习小达人 Lv.6</b><span id="points-lv">1280 分</span></div>
-        <div class="lvbar"><i style="width:72%"></i><span class="lvl" id="points-lvl">距 Lv.7 还需 320 分</span></div>
-        <div class="plogs" id="plogs">
-          <div class="plog"><span class="dot" style="background:#ffc800"></span>每日打卡 +20<span class="dst">+20</span></div>
-          <div class="plog"><span class="dot" style="background:#58cc02"></span>完成课后作业 +30<span class="dst">+30</span></div>
-          <div class="plog"><span class="dot" style="background:#1cb0f6"></span>测验满分 +50<span class="dst">+50</span></div>
-        </div>
+        <div class="lvrow"><b id="pointsTitle">💰 积分</b><span id="pointsTotal">— 分</span></div>
+        <div class="lvbar"><i id="pointsBar" style="width:0%"></i><span class="lvl" id="pointsLvl"></span></div>
+        <div class="plogs" id="plogs"></div>
       </div>
     </div>
   
 
 
-    <!-- 最近解锁徽章 -->
+    <!-- 最近解锁徽章（真实 /api/gamification/me/badges，按 unlocked_at 最近排序） -->
     <div class="panel badge-row-panel">
-      <div class="p-title"><span class="emo">🎖️</span>最近解锁徽章<span class="pill">3 / 12</span></div>
+      <div class="p-title"><span class="emo">🎖️</span>最近解锁徽章<span class="pill" id="badgePill">…</span></div>
       <div class="p-sub">来自 /api/gamification/me/badges：最近解锁</div>
-      <div class="badges badges-strip">
-        <div class="badge"><span class="medal">🔥</span><span class="nm">连续打卡</span><span class="rar legendary">传说</span></div>
-        <div class="badge"><span class="medal">💯</span><span class="nm">满分达人</span><span class="rar epic">史诗</span></div>
-        <div class="badge"><span class="medal">✍️</span><span class="nm">作业达人</span><span class="rar rare">稀有</span></div>
-        <div class="badge"><span class="medal">📚</span><span class="nm">阅读之星</span><span class="rar rare">稀有</span></div>
-        <div class="badge"><span class="medal">🧠</span><span class="nm">每周学霸</span><span class="rar epic">史诗</span></div>
-        <div class="badge"><span class="medal">🌟</span><span class="nm">成长新秀</span><span class="rar common">普通</span></div>
-      </div>
+      <div class="empty" id="badgesEmpty" hidden><span class="e-emo">🎖️</span><p>还差一点就解锁第一枚徽章啦，去课程中心开启学习吧</p></div>
+      <div class="badges badges-strip" id="badgesStrip"></div>
     </div>
 
   </section>
 
-  <!-- ===== 加载中（骨架态，整页切换）===== -->
-  <section class="v-loading" data-sec="kpi" hidden>
+  <!-- ===== 加载中（骨架态，整页切换；task11 由脚本驱动）===== -->
+  <section class="v-loading" data-sec="kpi">
     <div class="kpis"><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div><div class="sk-card"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%;height:26px"></div><div class="sk-line" style="width:70%"></div></div></div>
   </section>
-  <section class="row l2 v-loading" data-sec="trend-mastery" hidden>
+  <section class="row l2 v-loading" data-sec="trend-mastery">
     <div class="sk-card"><div class="sk-line" style="width:40%"></div><div class="sk-chart"></div></div>
     <div class="sk-card"><div class="sk-line" style="width:40%"></div><div class="sk-chart"></div></div>
   </section>
-  <section class="row l3b v-loading" data-sec="structure-badge-rank" hidden>
+  <section class="row l3b v-loading" data-sec="structure-badge-rank">
     <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
     <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
     <div class="sk-card"><div class="sk-line" style="width:45%"></div><div class="sk-chart"></div></div>
   </section>
 
-  <!-- ===== 空态：全部无数据（首屏新用户）===== -->
-  <section class="v-empty" data-sec="kpi" hidden>
-    <div class="empty"><span class="e-emo">🌱</span><p>还没有学习数据。<br>去课程中心选一门课，开启你的第一次学习吧。</p></div>
-  </section>
-  <section class="v-empty" data-sec="trend-mastery" hidden>
-    <div class="row l2">
-      <div class="empty"><span class="e-emo">📈</span><p>开始学习后，这里会记录你每天的学习时长</p></div>
-      <div class="empty"><span class="e-emo">📊</span><p>完成课程后，这里会展示你的学科掌握度</p></div>
-    </div>
-  </section>
-  <section class="v-empty" data-sec="structure-badge-rank" hidden>
-    <div class="row l3b">
-      <div class="empty"><span class="e-emo">🍩</span><p>暂无学习结构数据</p></div>
-      <div class="empty"><span class="e-emo">🎖️</span><p>还差一点就解锁第一枚徽章啦</p></div>
-      <div class="empty"><span class="e-emo">🏆</span><p>暂无排行榜数据</p></div>
-    </div>
-  </section>
-
-  <!-- ===== 错误态：数据加载失败 ===== -->
+  <!-- ===== 错误态：主数据（progress/dashboard + learning-summary）全部加载失败（task11 由脚本驱动+重试）===== -->
   <section class="v-error" data-sec-all hidden>
     <div class="row l2">
-      <div class="error" style="grid-column:1 / -1"><p>学习数据加载失败，请检查网络后重试</p><button class="retry" type="button">🔄 重试</button></div>
+      <div class="error" style="grid-column:1 / -1"><p>学习数据加载失败，请检查网络后重试</p><button class="retry" id="errRetry" type="button">🔄 重试</button></div>
     </div>
   </section>
 
@@ -502,96 +468,167 @@ button{font-family:inherit;cursor:pointer}
 </div><!-- /.glayout -->
 
 <script>
-/* ===== 效果图演示数据兜底渲染（respbar 工具条已移除，保留演示内容作未登录兜底）===== */
+/* task11（reshape-a）：学生仪表盘全量真实接线，演示兜底脚本已清零。
+ * 数据源（均 curl 实测，见文件头）：
+ *   GET /api/progress/dashboard?days=14 → KPI 4 卡 + 最近 7 日折线（recent_days 新→旧）
+ *   GET /api/users/me/learning-summary  → 学习构成（视频累计/作业/测验），无占比字段不造假饼图
+ *   GET /api/gamification/me/badges     → 最近解锁徽章（unlocked_at 排序）
+ *   GET /api/gamification/me/points     → 积分/等级/流水
+ *   GET /api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=5 → 周榜 Top5 + 我的排名
+ * 状态机：loading 骨架 → ok；主数据全失败 → v-error+重试；未登录 → 诚实登录引导（零 API 调用）。
+ * 教训遵守：无 MOCK/无 alert/取参不走正则 match；契约缺口（学科掌握度/学习结构占比/推荐位）诚实空态。 */
 (function () {
-  /* 排行周期数据：日 / 周 / 月（ZSET scope），仅值变化 */
-  var RANK = {
-    day:      { title:'本周排行榜' , rows:[['🥇','Sunny',1280],['🥈','Leo',1150],['🥉','Mia',1020],['4','Tom',980],['5','Ada',870]], mine:'#6', sub:'今日榜 6 名 · 超越 82% 学习者' },
-    week:     { title:'本周排行榜' , rows:[['🥇','Tom',6800],['🥈','Leo',6520],['🥉','Mia',6180],['4','Sunny',5880],['5','Ada',5340]], mine:'#12', sub:'总榜 12 名 · 超越 88% 学习者' },
-    month:    { title:'本月排行榜' , rows:[['🥇','Leo',15200],['🥈','Tom',14800],['🥉','Ada',13700],['4','Mia',13100],['5','Sunny',12600]], mine:'#18', sub:'月榜 18 名 · 超越 74% 学习者' }
-  };
-  var RANGE_ORDER = ['day','week','month'];
-  function renderRank(range) {
-    var d = RANK[range];
-    var box = document.getElementById('ranklist');
-    box.innerHTML = '';
-    d.rows.forEach(function (r, i) {
-      var row = document.createElement('div');
-      row.className = 'rankrow' + (i === 0 ? '' : '') + (i === 3 ? '' : '');
-      row.innerHTML =
-        '<span class="pos">' + r[0] + '</span>' +
-        '<span class="avatar">' + (i === 4 ? '🦊' : '🧑‍🎓') + '</span>' +
-        '<span class="who">' + r[1] + '<small>· Lv.6</small></span>' +
-        '<span class="val">' + r[2] + ' 分</span>';
-      box.appendChild(row);
-    });
-    document.getElementById('myrank-big').textContent = d.mine;
-    document.getElementById('myrank-sub').textContent = d.sub;
+  if (!window.EAPI) return;
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  function fmt(n) { return Number(n || 0).toLocaleString("zh-CN"); }
+  function show(id, on) { var el = $(id); if (el) el.hidden = !on; }
+  function hideLoading() { Array.prototype.forEach.call(document.querySelectorAll(".v-loading"), function (el) { el.hidden = true; }); }
+  function showSuccess() { Array.prototype.forEach.call(document.querySelectorAll(".v-success"), function (el) { el.hidden = false; }); }
+
+  /* ===== 未登录：诚实登录引导，不发起任何 API 调用 ===== */
+  if (!EAPI.store.getToken()) {
+    hideLoading();
+    Array.prototype.forEach.call(document.querySelectorAll(".v-success"), function (el) { el.hidden = true; });
+    show("loginGate", true);
+    var lb = $("loginGateBtn");
+    if (lb && EAPI.buildLoginUrl) lb.setAttribute("href", EAPI.buildLoginUrl("/dashboard.html"));
+    return;
   }
 
-  /* 学习时长 7 日折线：SVG path 生成（primary 主色，演示兜底，登录态由真实接口覆盖） */
-  (function trend() {
-    var data = [15, 38, 25, 46, 30, 52, 42]; // 最近 7 天 min（昨天最高）
-    var labels = ['08-19','08-20','08-21','08-22','08-23','08-24','今天'];
-    var n = data.length, W = 620, H = 200, L = 54, R = 620, T = 24, B = 188;
-    var max = Math.max.apply(null, data.concat([10]));
-    var px = function (i) { return L + (R - L) * i / (n - 1); };
-    var py = function (v) { return B - (B - T) * (v / max); };
-    var pts = data.map(function (v, i) { return [px(i), py(v)]; });
-    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
-    document.getElementById('trend-line').setAttribute('d', line);
-    document.getElementById('trend-area').setAttribute('d', line + ' L' + pts[n-1][0].toFixed(1) + ' ' + B + ' L' + pts[0][0].toFixed(1) + ' ' + B + ' Z');
-    var dots = '', labs = '', yaxis = '';
-    pts.forEach(function (p, i) {
-      dots += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" stroke="#fff" stroke-width="2"/>';
-      labs += '<text x="' + p[0].toFixed(1) + '" y="204">' + labels[i] + '</text>';
-    });
-    document.getElementById('trend-dots').innerHTML = dots;
-    for (var y = 0; y <= max; y += Math.ceil(max / 3)) {
-      var yy = py(y);
-      yaxis += '<text x="44" y="' + (yy + 4).toFixed(1) + '">' + y + '</text>';
-    }
-    document.getElementById('trend-y-axis').innerHTML = yaxis;
-    document.getElementById('trend-labels').innerHTML = labs;
-  })();
-
-  /* 学习结构饼图：conic-gradient（疏色序 indigo/amber/sky/slate，演示兜底） */
-  (function donut() {
-    var segs = [['视频学习',58,'#4f46e5'],['课后练习',24,'#f59e0b'],['在线测验',11,'#0ea5e9'],['课后作业',7,'#64748b']];
-    var total = segs.reduce(function (s, x) { return s + x[2]; }, 0);
-    var acc = 0, stops = [];
-    segs.forEach(function (x) { stops.push(x[2] + ' ' + acc + '% ' + (acc + x[1]) + '%'); acc += x[1]; });
-    document.getElementById('donut').style.background = 'conic-gradient(' + stops.join(',') + ')';
-    document.getElementById('donut').innerHTML = '<div class="center"><b>100%</b><span>本周已投入时间</span></div>';
-    var lg = document.getElementById('structure-legend');
-    lg.innerHTML = '';
-    segs.forEach(function (x) {
-      var d = document.createElement('div'); d.className = 'lg';
-      d.innerHTML = '<span class="sw" style="background:' + x[2] + '"></span>' + x[0] + '<span class="lv">' + x[1] + '%</span>';
-      lg.appendChild(d);
-    });
-  })();
-
-  renderRank('day');
-})();
-</script>
-<script src="/edu-api.js"></script>
-<script>
-/* task105：KPI 对齐 DashboardOut 真实字段（总学习时长/连续天数）+ recent_days 渲染趋势图。
- * 答题数(道)与在学课程(门)两卡：后端暂无对应字段（契约 C-A 后才有），本波次显示 "—"（严禁 undefined/NaN）。 */
-(function () {
-  if (!window.EAPI || !EAPI.store.getToken()) return;
+  /* users/me：昵称 + admin 入口（一次请求两用） */
   EAPI.get("/api/users/me").then(function (u) {
-    var adminEntry = document.getElementById("adminEntry");
-    if (adminEntry && u && (u.role === "admin" || u.role === "manager")) {
-      adminEntry.style.display = "";
-    }
+    if (u && u.nickname && $("helloName")) $("helloName").textContent = u.nickname;
+    var adminEntry = $("adminEntry");
+    if (adminEntry && u && (u.role === "admin" || u.role === "manager")) adminEntry.style.display = "";
   }).catch(function () {});
 
+  function setKpi(id, v, unit) { var el = $(id); if (el) el.innerHTML = v + "<small>" + unit + "</small>"; }
+
+  /* ===== KPI + 最近 7 日折线（progress/dashboard）===== */
+  function renderProgress(d) {
+    if (!d) return false;
+    var days = Array.isArray(d.recent_days) ? d.recent_days.slice() : []; // 新→旧
+    var last7 = days.slice(0, 7);
+    var min = Math.round((d.total_study_seconds || 0) / 60);
+    setKpi("kpi-time", min, " 分钟");
+    var w7 = last7.reduce(function (s, x) { return s + (x.study_seconds || 0); }, 0);
+    var d1 = $("delta1"); if (d1) d1.textContent = "近 7 天 " + Math.round(w7 / 60) + " 分钟";
+
+    var attempted = d.total_questions_attempted;
+    setKpi("kpi-q", attempted != null ? attempted : "—", " 道");
+    var rate = d.overall_correct_rate != null ? Math.round(d.overall_correct_rate * 100) : null;
+    var d2 = $("delta2");
+    if (d2) d2.textContent = rate != null ? "正确率 " + rate + "%" : "—";
+
+    setKpi("kpi-course", d.active_courses_count != null ? d.active_courses_count : "—", " 门");
+
+    if (d.latest_streak_days != null) setKpi("kpi-streak", d.latest_streak_days, " 天");
+    var act = last7.filter(function (x) { return (x.study_seconds || 0) > 0; }).length;
+    var d4 = $("delta4"); if (d4) d4.textContent = "近 7 天活跃 " + act + " 天";
+
+    /* 诚实比例条：今日分钟/近7天峰值、正确率、活跃天数占比 */
+    var secByDay = last7.map(function (x) { return x.study_seconds || 0; });
+    var maxDay = Math.max.apply(null, secByDay.concat([0]));
+    var b1 = $("bar1"); if (b1) b1.style.width = (maxDay ? Math.round((secByDay[0] || 0) / maxDay * 100) : 0) + "%";
+    var b2 = $("bar2"); if (b2) b2.style.width = (rate != null ? rate : 0) + "%";
+    var b4 = $("bar4"); if (b4) b4.style.width = Math.round(act / 7 * 100) + "%";
+
+    /* 最近学习 7 日折线（旧→新）；全 0 时诚实空态 */
+    var seq = last7.slice().reverse();
+    var vals = seq.map(function (x) { return Math.round((x.study_seconds || 0) / 60); });
+    var labs = seq.map(function (x) { return String(x.stat_date || "").slice(5); });
+    var totalMin = vals.reduce(function (s, v) { return s + v; }, 0);
+    if (totalMin > 0 && vals.length >= 2) drawTrend(vals, labs);
+    else { show("trendChart", false); show("trendEmpty", true); }
+    return true;
+  }
+
+  /* ===== 学习构成（learning-summary 真实字段；无占比不造假饼图）===== */
+  function renderSummary(s) {
+    if (!s) return false;
+    var lg = $("structure-legend");
+    if (!lg) return true;
+    var mins = Math.round(Number(s.total_watched_seconds || 0) / 60);
+    var rows = [
+      ["#4f46e5", "📺 视频观看累计", mins + " 分钟"],
+      ["#f59e0b", "📝 作业提交", (s.homework_submitted || 0) + " 次"],
+      ["#0ea5e9", "🧪 测验提交", (s.exam_submitted || 0) + " 次"],
+      ["#64748b", "🎯 测验均分", (s.exam_avg_score != null ? s.exam_avg_score : 0) + " 分"]
+    ];
+    lg.innerHTML = rows.map(function (r) {
+      return '<div class="lg"><span class="sw" style="background:' + r[0] + '"></span>' + esc(r[1]) + '<span class="lv">' + r[2] + '</span></div>';
+    }).join("");
+    var d3 = $("delta3");
+    if (d3 && s.active_cohorts_count != null) d3.textContent = "在学班次 " + s.active_cohorts_count + " 个";
+    return true;
+  }
+
+  /* ===== 最近解锁徽章（badges：仅已解锁，按 unlocked_at 最近取 6）===== */
+  var RARL = { COMMON: "普通", RARE: "稀有", EPIC: "史诗", LEGENDARY: "传说" };
+  function renderBadges(b) {
+    if (!b) return false;
+    var pill = $("badgePill");
+    if (pill) pill.textContent = (b.unlocked_count || 0) + " / " + (b.total || 0);
+    var unlocked = (b.items || []).filter(function (x) { return x.unlocked; })
+      .sort(function (a, c) { return String(c.unlocked_at || "").localeCompare(String(a.unlocked_at || "")); })
+      .slice(0, 6);
+    if (!unlocked.length) { show("badgesStrip", false); show("badgesEmpty", true); return true; }
+    var strip = $("badgesStrip");
+    if (strip) strip.innerHTML = unlocked.map(function (x) {
+      var r = String(x.rarity || "").toLowerCase();
+      return '<div class="badge"><span class="medal">' + esc(x.icon_emoji || "🎖️") + '</span><span class="nm">' + esc(x.badge_name || "") + '</span><span class="rar ' + r + '">' + (RARL[String(x.rarity || "").toUpperCase()] || "普通") + '</span></div>';
+    }).join("");
+    return true;
+  }
+
+  /* ===== 周榜 Top5 + 我的排名（rankings）===== */
+  function renderRank(d) {
+    if (!d) return false;
+    var top = d.top || [];
+    if (!top.length) { show("rankEmpty", true); show("ranklist", false); show("rankMy", false); return true; }
+    var list = $("ranklist");
+    if (list) list.innerHTML = top.map(function (r, i) {
+      var pos = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : String(r.rank_no || i + 1)));
+      var nm = String(r.user_name || "用户");
+      return '<div class="rankrow' + (r.is_myself ? " mine" : "") + '"><span class="pos">' + pos + '</span>'
+        + '<span class="avatar">' + esc(nm.charAt(0)) + '</span>'
+        + '<span class="who">' + esc(nm) + '<small>Lv.' + (r.level_no || 1) + '</small></span>'
+        + '<span class="val">' + fmt(r.metric_value) + ' 分</span></div>';
+    }).join("");
+    var my = d.my_rank;
+    if ($("myrank-big")) $("myrank-big").textContent = my ? "#" + my.rank_no : "未上榜";
+    if ($("myrank-sub")) $("myrank-sub").textContent = my ? ("我的积分 " + fmt(my.metric_value) + " 分 · 快照 " + (d.snapshot_date || "")) : "完成学习任务即可上榜";
+    return true;
+  }
+
+  /* ===== 积分卡 + 流水（points）===== */
+  var PL = { LIKE_GAIN: "获得点赞", POST_CREATE: "发布动态", BADGE_BONUS: "徽章奖励", COMMENT_CREATE: "社区回帖", STUDY_GAIN: "学习积分", EXAM_GAIN: "测验积分", HOMEWORK_GAIN: "作业积分", SIGN_IN_GAIN: "每日签到" };
+  var DOT = ["#ffc800", "#58cc02", "#1cb0f6"];
+  function renderPoints(p) {
+    if (!p) return false;
+    if ($("pointsTitle")) $("pointsTitle").textContent = "💰 积分 · " + (p.level_title || "Lv." + (p.level_no || 0)) + " Lv." + (p.level_no || 0);
+    if ($("pointsTotal")) $("pointsTotal").textContent = fmt(p.total_points) + " 分";
+    var pc = Math.min(100, Math.round(p.level_progress_pct || 0));
+    if ($("pointsBar")) $("pointsBar").style.width = pc + "%";
+    if ($("pointsLvl")) $("pointsLvl").textContent = p.next_level_min != null
+      ? "距 Lv." + ((p.level_no || 0) + 1) + " 还需 " + fmt(Math.max(0, p.next_level_min - (p.total_points || 0))) + " 分"
+      : "已达最高等级";
+    var logs = p.recent_logs || [];
+    var box = $("plogs");
+    if (box) box.innerHTML = logs.length ? logs.slice(0, 3).map(function (l, i) {
+      var lbl = PL[l.point_type] || l.point_type || "积分变化";
+      var delta = Number(l.delta || 0);
+      var sign = delta >= 0 ? "+" : "−";
+      var color = delta >= 0 ? "" : ' style="color:var(--destructive)"';
+      return '<div class="plog"><span class="dot" style="background:' + DOT[i % DOT.length] + '"></span>' + esc(lbl) + ' ' + sign + Math.abs(delta) + '<span class="dst"' + color + '>' + sign + Math.abs(delta) + '</span></div>';
+    }).join("") : '<div class="plog">暂无积分记录</div>';
+    return true;
+  }
+
+  /* ===== 7 日折线 SVG（primary 主色）===== */
   function drawTrend(data, labels) {
-    var el = document.getElementById("trend-line"), ar = document.getElementById("trend-area"),
-        dt = document.getElementById("trend-dots"), lb = document.getElementById("trend-labels"),
-        ya = document.getElementById("trend-y-axis");
+    var el = $("trend-line"), ar = $("trend-area"), dt = $("trend-dots"), lb = $("trend-labels"), ya = $("trend-y-axis");
     if (!el) return;
     var n = data.length; if (!n) return;
     var W = 620, H = 200, L = 54, R = 620, T = 24, B = 188;
@@ -601,7 +638,7 @@ button{font-family:inherit;cursor:pointer}
     var pts = data.map(function (v, i) { return [px(i), py(v)]; });
     var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
     el.setAttribute('d', line);
-    ar.setAttribute('d', line + ' L' + pts[n-1][0].toFixed(1) + ' ' + B + ' L' + pts[0][0].toFixed(1) + ' ' + B + ' Z');
+    ar.setAttribute('d', line + ' L' + pts[n - 1][0].toFixed(1) + ' ' + B + ' L' + pts[0][0].toFixed(1) + ' ' + B + ' Z');
     var dots = '', labs = '', yaxis = '';
     pts.forEach(function (p, i) {
       dots += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" stroke="#fff" stroke-width="2"/>';
@@ -615,27 +652,34 @@ button{font-family:inherit;cursor:pointer}
     lb.innerHTML = labs;
   }
 
-  EAPI.get("/api/progress/dashboard?days=14")
-    .then(function (d) {
-      if (!d) return;
-      var secs = d.total_study_seconds || 0, min = Math.round(secs / 60);
-      var el = document.getElementById("kpi-time");
-      if (el) el.innerHTML = min + "<small> 分钟</small>";
-      // 答题数卡：接真实字段 total_questions_attempted（编排者实测 GET /api/progress/dashboard 已返回）
-      var q = document.getElementById("kpi-q");
-      if (q) q.innerHTML = (d.total_questions_attempted != null ? d.total_questions_attempted : "—") + "<small> 道</small>";
-      var c = document.getElementById("kpi-course"); // 在学课程卡：后端暂无字段 → "—"
-      if (c) c.innerHTML = "—";
-      var s = document.getElementById("kpi-streak");
-      if (s && d.latest_streak_days != null) s.innerHTML = d.latest_streak_days + "<small> 天</small>";
-      // recent_days（新→旧）反转成 旧→新，按天渲染分钟趋势
-      var days = Array.isArray(d.recent_days) ? d.recent_days.slice() : [];
-      days.reverse();
-      var vals = days.map(function (x) { return Math.round((x.study_seconds || 0) / 60); });
-      var labs = days.map(function (x) { return String(x.stat_date || "").slice(5); });
-      if (vals.length >= 2) drawTrend(vals, labs);
-    })
-    .catch(function () { /* 保留演示值 */ });
+  /* ===== 汇合：任一面板失败各自诚实降级；主数据双失败 → v-error ===== */
+  var er = $("errRetry"); if (er) er.addEventListener("click", function () { location.reload(); });
+  Promise.allSettled([
+    EAPI.get("/api/progress/dashboard?days=14"),
+    EAPI.get("/api/users/me/learning-summary"),
+    EAPI.get("/api/gamification/me/badges"),
+    EAPI.get("/api/gamification/me/points?page=1&page_size=3"),
+    EAPI.get("/api/gamification/rankings?scope=WEEKLY&dimension=POINTS&top_n=5")
+  ]).then(function (rs) {
+    var okMain = 0;
+    if (rs[0].status === "fulfilled" && renderProgress(rs[0].value)) okMain++;
+    else { show("trendChart", false); var te = $("trendEmpty"); if (te) { te.hidden = false; te.querySelector("p").textContent = "学习数据加载失败，请刷新重试"; } }
+    if (rs[1].status === "fulfilled" && renderSummary(rs[1].value)) okMain++;
+    else show("structureEmpty", true);
+    if (rs[2].status === "fulfilled") renderBadges(rs[2].value);
+    else { show("badgesStrip", false); show("badgesEmpty", true); }
+    if (rs[3].status === "fulfilled") renderPoints(rs[3].value);
+    if (rs[4].status === "fulfilled") renderRank(rs[4].value);
+    else { show("rankEmpty", true); show("ranklist", false); show("rankMy", false); }
+
+    hideLoading();
+    if (okMain === 0) {
+      Array.prototype.forEach.call(document.querySelectorAll(".v-success"), function (el) { el.hidden = true; });
+      var ve = document.querySelector(".v-error"); if (ve) ve.hidden = false;
+    } else {
+      showSuccess();
+    }
+  });
 })();
 </script>
 <script>
