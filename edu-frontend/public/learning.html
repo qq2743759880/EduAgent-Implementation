@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <!--
   STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
-  task48 学习播放页效果图 · task119 对接 /api/study/*（courses/{id}/access | courses/{id}/outline |
-             sessions/{id} | sessions/{id}/complete）与 /api/progress/video/tick-batch（真实契约；旧 /api/learning 死路径已清零）
-  DIRECTION: 学中玩 · 糖果色卡通风 —— 视频区 16:9 + 右侧大纲 Accordion（✓已完成/▶当前/○未开始）
-             + Tabs（视频/作业/考试）+ 底部工具栏（AI 提问→/chat?context=session:{id} / 错题本→/practice）
-             + 转码占位（转码中/不可播 不白屏）+ 未报名 403 ErrorState 守卫。
+  task06 学习页全量接线（reshape-a，契约冻结 30aeddbe）· 承接 task103 入口/task119 半接线：
+    班次选择(GET /api/enrollments/me/cohorts) → 课次大纲(GET /api/study/courses/{id}/outline)
+    → 视频真实播放(GET /api/study/sessions/{id} → <video src=/media/...>)
+    → 完成态真实写入(POST /api/study/sessions/{id}/complete)
+    + 未报名/未登录诚实引导（403 守卫卡）。演示痕迹已清零（demo 控件/假计时器/静态题卡）。
   AUDIT LOG:
     [2026-08-20 R1] 初稿：视频播放态 + 大纲三部曲 + 三 Tabs + 底部工具栏 + 转码占位提示 → 状态: SUBMITTED
-    [2026-08-20 R2] 参考图返工：Tabs 对齐参考图——角色化图标（视频=播放 / 作业=文件 / 考试=警告三角），选中=橙框橙字、未选中置灰，待办量改右上角绿色角标（位置叠在 tab 上）；判定标签保持独立绿色胶囊；fix 考试 tab aria-labelledby 误指 p-exam → 统一 tab id；video-stage 内联色值去内联改 token 类（--video-stage），零硬编码 hex/字号 → 状态: REVISING
+    [2026-08-20 R2] 参考图返工：Tabs 对齐参考图 → 状态: REVISING
+    [2026-09-12 task06] 全量接线：清零 13 处演示痕迹；新增班次选择；真实 <video>（/media 本地视频实测 200）；完成态真实写库；播放打点因后端缺播放会话创建端点诚实降级（缺口 task06-G1）。
 -->
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学习播放 · 效果图（task48 契约⑪ 糖果色 candy-playful STYLE FROZEN）</title>
+<title>学习播放 · EduAgent（task06 真实接线：班次→课次→视频→进度）</title>
 <style>
 /* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码 hex）===== */
 :root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-035: rgba(0,0,0,0.35); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-072: rgba(0,0,0,0.72); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-025: rgba(124,58,237,0.25); --htc-124-58-237-050: rgba(124,58,237,0.5); --htc-20-20-20-082: rgba(20,20,20,0.82); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-028: rgba(255,255,255,0.28); --htc-255-255-255-030: rgba(255,255,255,0.3); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-080: rgba(255,255,255,0.8); --htc-255-255-255-085: rgba(255,255,255,0.85); --htc-255-75-75-040: rgba(255,75,75,0.4); --htc-255-77-0-040: rgba(255,77,0,0.4); --htc-31-31-31-004: rgba(31,31,31,0.04); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-008: rgba(31,31,31,0.08); --htc-31-31-31-010: rgba(31,31,31,0.1); --htc-31-31-31-012: rgba(31,31,31,0.12); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-015: rgba(31,31,31,0.15); --htc-31-31-31-016: rgba(31,31,31,0.16); --htc-31-31-31-028: rgba(31,31,31,0.28); --htc-31-31-31-030: rgba(31,31,31,0.3); --htc-31-31-31-055: rgba(31,31,31,0.55); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3); --htc-88-204-2-040: rgba(88,204,2,0.4);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-141414: #141414; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2b2b2b: #2b2b2b; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: #f5f9fe; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
@@ -224,11 +225,7 @@ a.session{text-decoration:none}
 .error-demo .d{font-size:13px;color:var(--ink-muted);margin-bottom:18px}
 .error-demo .d b{color:var(--ink-strong)}
 
-/* ===== 演示控件（仅原型，标注后端待联调）===== */
-.demos{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:2px dashed var(--border-chip)}
-.demo-lab{font-size:12px;font-weight:800;color:var(--ink-muted);align-self:center;margin-right:4px}
-.deb{padding:7px 12px;font-size:12px;font-weight:800;border-radius:10px;border:2px solid var(--ink);background:var(--ht-fff);box-shadow:0 3px 0 var(--border-chip)}
-.deb.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 3px 0 var(--htc-124-58-237-005)}
+/* ===== （task06：随 DOM 一并移除的死样式占位说明）===== */
 
 @media(prefers-reduced-motion:reduce){
   .series-head .mascot,.transcode .big{animation:none}
@@ -242,2558 +239,6 @@ a.session{text-decoration:none}
 .brandbar-back{font-size:0.8125rem;font-weight:700;color:var(--candy-blue);text-decoration:none;border:2px solid var(--border-chip);padding:6px 12px;border-radius:10px;transition:background .15s}
 .brandbar-back:hover{background:var(--candy-blue-soft)}
 </style>
-<style>.buttonsCard-bTXa5j {
-  padding: var(--spacer-4);
-  background: none;
-  align-items: center;
-  gap: 0;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g {
-  align-items: center;
-  gap: var(--spacer-4);
-  padding: var(--spacer-4) var(--spacer-8);
-  border-radius: var(--radius-4);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  background: none;
-  border: none;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g:hover {
-  background: var(--bg-bg-overlay-l2);
-}
-
-.actionButton-opZL8g:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.actionButton-opZL8g:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.icon-ObJEMt {
-  width: 16px;
-  height: 16px;
-  color: var(--icon-icon-default);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.title-GptGAg {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.shortcut-nbwTG4 {
-  color: var(--icon-icon-secondary);
-  flex-shrink: 0;
-  align-items: center;
-  gap: 2px;
-  display: flex;
-}
-
-.shortcutKey-EE6xrE {
-  font-family: var(--font-family-default);
-  color: var(--icon-icon-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 12px;
-}
-
-.divider-cFGVKQ {
-  box-sizing: content-box;
-  background-clip: content-box;
-  background-color: var(--border-border-neutral-l2);
-  flex-shrink: 0;
-  width: 1px;
-  height: 12px;
-  padding: 0 6px;
-}
-
-</style><style>.commentEditorCard-Un4Xaa {
-  width: 320px;
-  padding: var(--spacing-sm);
-  background: none;
-  flex-direction: column;
-  display: flex;
-}
-
-.textContainer-ZISwbW {
-  padding: var(--spacing-sm);
-  background: var(--bg-bg-overlay-l1);
-  border: 1px solid var(--border-border-neutral-l3);
-  border-radius: var(--radius-sm);
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding-right: 0;
-  display: flex;
-}
-
-.textarea-ggj4j6 {
-  padding: 0 var(--spacing-sm) 0 2px;
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  resize: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ht-56637726) transparent;
-  background: none;
-  border: none;
-  outline: none;
-  flex: 1;
-  max-height: 140px;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  overflow-y: auto;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar {
-  width: 6px;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-track {
-  background: none;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-thumb {
-  background: var(--ht-56637726);
-  border-radius: 3px;
-}
-
-.textarea-ggj4j6::placeholder {
-  color: var(--text-text-tertiary);
-}
-
-.actionBar-u_t8vc {
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--spacing-xs);
-  opacity: 0;
-  max-height: 0;
-  transition: max-height .2s ease-out, opacity .2s ease-out, margin-top .2s ease-out;
-  display: flex;
-  overflow: hidden;
-}
-
-.actionBarVisible-PxXsje {
-  opacity: 1;
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.actionBarNoExpandAnimation-FCra2J {
-  transition: opacity .2s ease-out;
-}
-
-.actionBarNoExpandAnimation-FCra2J.actionBarVisible-PxXsje {
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.cancelButton-Lu0me9 {
-  height: 24px;
-  padding: 0 var(--spacing-xs);
-  background: var(--bg-bg-overlay-l2);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.cancelButton-Lu0me9:hover, .cancelButton-Lu0me9:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.cancelButton-Lu0me9:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.cancelText-j1RS1q {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7 {
-  height: 24px;
-  padding: 0 var(--spacing-sm);
-  background: var(--bg-bg-invert);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:hover:not(:disabled) {
-  background: var(--bg-bg-invert-hover);
-}
-
-.submitButton-BqyEd7:active:not(:disabled) {
-  background: var(--bg-bg-invert-active);
-}
-
-.submitButton-BqyEd7:disabled {
-  background: var(--bg-bg-invert-disabled);
-  color: var(--text-text-disabled);
-  cursor: not-allowed;
-}
-
-.submitButton-BqyEd7:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.submitText-N58QRq {
-  font-family: var(--font-family-default);
-  color: var(--text-text-onaccent);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7:disabled .submitText-N58QRq {
-  color: var(--text-text-disabled);
-}
-
-.submitIcon-vyKSKQ {
-  width: 12px;
-  height: 12px;
-  color: var(--icon-icon-onaccent);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:disabled .submitIcon-vyKSKQ {
-  color: var(--text-text-disabled);
-}
-
-.limitWarning-Hocj0v {
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--status-warning-default);
-  user-select: none;
-  flex: 1;
-  display: flex;
-}
-
-.limitText-hBXEaq {
-  font-family: var(--font-family-default);
-  color: var(--status-warning-default);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.previewCommentCardContainer-HEkpU8 {
-  border-radius: var(--radius-8);
-  background: var(--bg-bg-menu);
-  border: 1px solid var(--border-border-neutral-l1);
-  transition: width .25s cubic-bezier(.4, 0, .2, 1), height .25s cubic-bezier(.4, 0, .2, 1);
-  display: inline-block;
-  overflow: hidden;
-  box-shadow: 0 2px 6px var(--ht-0003), 0 .5px var(--ht-ffffff0f), inset 0 .5px var(--ht-ffffff0f);
-}
-
-.previewCommentCardContent-ELaLah {
-  width: max-content;
-  position: relative;
-}
-
-.previewCommentCardFadeEnter-OMhMD9 {
-  opacity: 0;
-}
-
-.previewCommentCardFadeEnterActive-Eacuvn {
-  opacity: 1;
-  transition: opacity .2s ease-in;
-}
-
-.previewCommentCardFadeExit-ms9vgc {
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.previewCommentCardFadeExitActive-vyQTsd {
-  opacity: 0;
-  transition: opacity .15s ease-out;
-}
-
-.previewCommentCardSuccessCard-PWnm2o {
-  white-space: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  display: flex;
-}
-
-.previewCommentCardSuccessIcon-Oht9Ir {
-  width: 16px;
-  height: 16px;
-  color: var(--status-success-default);
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.previewCommentCardSuccessText-s40BWG {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  user-select: none;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.buttonsCard-bTXa5j {
-  padding: var(--spacer-4);
-  background: none;
-  align-items: center;
-  gap: 0;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g {
-  align-items: center;
-  gap: var(--spacer-4);
-  padding: var(--spacer-4) var(--spacer-8);
-  border-radius: var(--radius-4);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  background: none;
-  border: none;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g:hover {
-  background: var(--bg-bg-overlay-l2);
-}
-
-.actionButton-opZL8g:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.actionButton-opZL8g:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.icon-ObJEMt {
-  width: 16px;
-  height: 16px;
-  color: var(--icon-icon-default);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.title-GptGAg {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.shortcut-nbwTG4 {
-  color: var(--icon-icon-secondary);
-  flex-shrink: 0;
-  align-items: center;
-  gap: 2px;
-  display: flex;
-}
-
-.shortcutKey-EE6xrE {
-  font-family: var(--font-family-default);
-  color: var(--icon-icon-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 12px;
-}
-
-.divider-cFGVKQ {
-  box-sizing: content-box;
-  background-clip: content-box;
-  background-color: var(--border-border-neutral-l2);
-  flex-shrink: 0;
-  width: 1px;
-  height: 12px;
-  padding: 0 6px;
-}
-
-</style><style>.commentEditorCard-Un4Xaa {
-  width: 320px;
-  padding: var(--spacing-sm);
-  background: none;
-  flex-direction: column;
-  display: flex;
-}
-
-.textContainer-ZISwbW {
-  padding: var(--spacing-sm);
-  background: var(--bg-bg-overlay-l1);
-  border: 1px solid var(--border-border-neutral-l3);
-  border-radius: var(--radius-sm);
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding-right: 0;
-  display: flex;
-}
-
-.textarea-ggj4j6 {
-  padding: 0 var(--spacing-sm) 0 2px;
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  resize: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ht-56637726) transparent;
-  background: none;
-  border: none;
-  outline: none;
-  flex: 1;
-  max-height: 140px;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  overflow-y: auto;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar {
-  width: 6px;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-track {
-  background: none;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-thumb {
-  background: var(--ht-56637726);
-  border-radius: 3px;
-}
-
-.textarea-ggj4j6::placeholder {
-  color: var(--text-text-tertiary);
-}
-
-.actionBar-u_t8vc {
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--spacing-xs);
-  opacity: 0;
-  max-height: 0;
-  transition: max-height .2s ease-out, opacity .2s ease-out, margin-top .2s ease-out;
-  display: flex;
-  overflow: hidden;
-}
-
-.actionBarVisible-PxXsje {
-  opacity: 1;
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.actionBarNoExpandAnimation-FCra2J {
-  transition: opacity .2s ease-out;
-}
-
-.actionBarNoExpandAnimation-FCra2J.actionBarVisible-PxXsje {
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.cancelButton-Lu0me9 {
-  height: 24px;
-  padding: 0 var(--spacing-xs);
-  background: var(--bg-bg-overlay-l2);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.cancelButton-Lu0me9:hover, .cancelButton-Lu0me9:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.cancelButton-Lu0me9:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.cancelText-j1RS1q {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7 {
-  height: 24px;
-  padding: 0 var(--spacing-sm);
-  background: var(--bg-bg-invert);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:hover:not(:disabled) {
-  background: var(--bg-bg-invert-hover);
-}
-
-.submitButton-BqyEd7:active:not(:disabled) {
-  background: var(--bg-bg-invert-active);
-}
-
-.submitButton-BqyEd7:disabled {
-  background: var(--bg-bg-invert-disabled);
-  color: var(--text-text-disabled);
-  cursor: not-allowed;
-}
-
-.submitButton-BqyEd7:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.submitText-N58QRq {
-  font-family: var(--font-family-default);
-  color: var(--text-text-onaccent);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7:disabled .submitText-N58QRq {
-  color: var(--text-text-disabled);
-}
-
-.submitIcon-vyKSKQ {
-  width: 12px;
-  height: 12px;
-  color: var(--icon-icon-onaccent);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:disabled .submitIcon-vyKSKQ {
-  color: var(--text-text-disabled);
-}
-
-.limitWarning-Hocj0v {
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--status-warning-default);
-  user-select: none;
-  flex: 1;
-  display: flex;
-}
-
-.limitText-hBXEaq {
-  font-family: var(--font-family-default);
-  color: var(--status-warning-default);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.previewCommentCardContainer-HEkpU8 {
-  border-radius: var(--radius-8);
-  background: var(--bg-bg-menu);
-  border: 1px solid var(--border-border-neutral-l1);
-  transition: width .25s cubic-bezier(.4, 0, .2, 1), height .25s cubic-bezier(.4, 0, .2, 1);
-  display: inline-block;
-  overflow: hidden;
-  box-shadow: 0 2px 6px var(--ht-0003), 0 .5px var(--ht-ffffff0f), inset 0 .5px var(--ht-ffffff0f);
-}
-
-.previewCommentCardContent-ELaLah {
-  width: max-content;
-  position: relative;
-}
-
-.previewCommentCardFadeEnter-OMhMD9 {
-  opacity: 0;
-}
-
-.previewCommentCardFadeEnterActive-Eacuvn {
-  opacity: 1;
-  transition: opacity .2s ease-in;
-}
-
-.previewCommentCardFadeExit-ms9vgc {
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.previewCommentCardFadeExitActive-vyQTsd {
-  opacity: 0;
-  transition: opacity .15s ease-out;
-}
-
-.previewCommentCardSuccessCard-PWnm2o {
-  white-space: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  display: flex;
-}
-
-.previewCommentCardSuccessIcon-Oht9Ir {
-  width: 16px;
-  height: 16px;
-  color: var(--status-success-default);
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.previewCommentCardSuccessText-s40BWG {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  user-select: none;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.buttonsCard-bTXa5j {
-  padding: var(--spacer-4);
-  background: none;
-  align-items: center;
-  gap: 0;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g {
-  align-items: center;
-  gap: var(--spacer-4);
-  padding: var(--spacer-4) var(--spacer-8);
-  border-radius: var(--radius-4);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  background: none;
-  border: none;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g:hover {
-  background: var(--bg-bg-overlay-l2);
-}
-
-.actionButton-opZL8g:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.actionButton-opZL8g:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.icon-ObJEMt {
-  width: 16px;
-  height: 16px;
-  color: var(--icon-icon-default);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.title-GptGAg {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.shortcut-nbwTG4 {
-  color: var(--icon-icon-secondary);
-  flex-shrink: 0;
-  align-items: center;
-  gap: 2px;
-  display: flex;
-}
-
-.shortcutKey-EE6xrE {
-  font-family: var(--font-family-default);
-  color: var(--icon-icon-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 12px;
-}
-
-.divider-cFGVKQ {
-  box-sizing: content-box;
-  background-clip: content-box;
-  background-color: var(--border-border-neutral-l2);
-  flex-shrink: 0;
-  width: 1px;
-  height: 12px;
-  padding: 0 6px;
-}
-
-</style><style>.commentEditorCard-Un4Xaa {
-  width: 320px;
-  padding: var(--spacing-sm);
-  background: none;
-  flex-direction: column;
-  display: flex;
-}
-
-.textContainer-ZISwbW {
-  padding: var(--spacing-sm);
-  background: var(--bg-bg-overlay-l1);
-  border: 1px solid var(--border-border-neutral-l3);
-  border-radius: var(--radius-sm);
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding-right: 0;
-  display: flex;
-}
-
-.textarea-ggj4j6 {
-  padding: 0 var(--spacing-sm) 0 2px;
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  resize: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ht-56637726) transparent;
-  background: none;
-  border: none;
-  outline: none;
-  flex: 1;
-  max-height: 140px;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  overflow-y: auto;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar {
-  width: 6px;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-track {
-  background: none;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-thumb {
-  background: var(--ht-56637726);
-  border-radius: 3px;
-}
-
-.textarea-ggj4j6::placeholder {
-  color: var(--text-text-tertiary);
-}
-
-.actionBar-u_t8vc {
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--spacing-xs);
-  opacity: 0;
-  max-height: 0;
-  transition: max-height .2s ease-out, opacity .2s ease-out, margin-top .2s ease-out;
-  display: flex;
-  overflow: hidden;
-}
-
-.actionBarVisible-PxXsje {
-  opacity: 1;
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.actionBarNoExpandAnimation-FCra2J {
-  transition: opacity .2s ease-out;
-}
-
-.actionBarNoExpandAnimation-FCra2J.actionBarVisible-PxXsje {
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.cancelButton-Lu0me9 {
-  height: 24px;
-  padding: 0 var(--spacing-xs);
-  background: var(--bg-bg-overlay-l2);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.cancelButton-Lu0me9:hover, .cancelButton-Lu0me9:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.cancelButton-Lu0me9:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.cancelText-j1RS1q {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7 {
-  height: 24px;
-  padding: 0 var(--spacing-sm);
-  background: var(--bg-bg-invert);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:hover:not(:disabled) {
-  background: var(--bg-bg-invert-hover);
-}
-
-.submitButton-BqyEd7:active:not(:disabled) {
-  background: var(--bg-bg-invert-active);
-}
-
-.submitButton-BqyEd7:disabled {
-  background: var(--bg-bg-invert-disabled);
-  color: var(--text-text-disabled);
-  cursor: not-allowed;
-}
-
-.submitButton-BqyEd7:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.submitText-N58QRq {
-  font-family: var(--font-family-default);
-  color: var(--text-text-onaccent);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7:disabled .submitText-N58QRq {
-  color: var(--text-text-disabled);
-}
-
-.submitIcon-vyKSKQ {
-  width: 12px;
-  height: 12px;
-  color: var(--icon-icon-onaccent);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:disabled .submitIcon-vyKSKQ {
-  color: var(--text-text-disabled);
-}
-
-.limitWarning-Hocj0v {
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--status-warning-default);
-  user-select: none;
-  flex: 1;
-  display: flex;
-}
-
-.limitText-hBXEaq {
-  font-family: var(--font-family-default);
-  color: var(--status-warning-default);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.previewCommentCardContainer-HEkpU8 {
-  border-radius: var(--radius-8);
-  background: var(--bg-bg-menu);
-  border: 1px solid var(--border-border-neutral-l1);
-  transition: width .25s cubic-bezier(.4, 0, .2, 1), height .25s cubic-bezier(.4, 0, .2, 1);
-  display: inline-block;
-  overflow: hidden;
-  box-shadow: 0 2px 6px var(--ht-0003), 0 .5px var(--ht-ffffff0f), inset 0 .5px var(--ht-ffffff0f);
-}
-
-.previewCommentCardContent-ELaLah {
-  width: max-content;
-  position: relative;
-}
-
-.previewCommentCardFadeEnter-OMhMD9 {
-  opacity: 0;
-}
-
-.previewCommentCardFadeEnterActive-Eacuvn {
-  opacity: 1;
-  transition: opacity .2s ease-in;
-}
-
-.previewCommentCardFadeExit-ms9vgc {
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.previewCommentCardFadeExitActive-vyQTsd {
-  opacity: 0;
-  transition: opacity .15s ease-out;
-}
-
-.previewCommentCardSuccessCard-PWnm2o {
-  white-space: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  display: flex;
-}
-
-.previewCommentCardSuccessIcon-Oht9Ir {
-  width: 16px;
-  height: 16px;
-  color: var(--status-success-default);
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.previewCommentCardSuccessText-s40BWG {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  user-select: none;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.buttonsCard-bTXa5j {
-  padding: var(--spacer-4);
-  background: none;
-  align-items: center;
-  gap: 0;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g {
-  align-items: center;
-  gap: var(--spacer-4);
-  padding: var(--spacer-4) var(--spacer-8);
-  border-radius: var(--radius-4);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  background: none;
-  border: none;
-  display: inline-flex;
-}
-
-.actionButton-opZL8g:hover {
-  background: var(--bg-bg-overlay-l2);
-}
-
-.actionButton-opZL8g:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.actionButton-opZL8g:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.icon-ObJEMt {
-  width: 16px;
-  height: 16px;
-  color: var(--icon-icon-default);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.title-GptGAg {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.shortcut-nbwTG4 {
-  color: var(--icon-icon-secondary);
-  flex-shrink: 0;
-  align-items: center;
-  gap: 2px;
-  display: flex;
-}
-
-.shortcutKey-EE6xrE {
-  font-family: var(--font-family-default);
-  color: var(--icon-icon-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 12px;
-}
-
-.divider-cFGVKQ {
-  box-sizing: content-box;
-  background-clip: content-box;
-  background-color: var(--border-border-neutral-l2);
-  flex-shrink: 0;
-  width: 1px;
-  height: 12px;
-  padding: 0 6px;
-}
-
-</style><style>.commentEditorCard-Un4Xaa {
-  width: 320px;
-  padding: var(--spacing-sm);
-  background: none;
-  flex-direction: column;
-  display: flex;
-}
-
-.textContainer-ZISwbW {
-  padding: var(--spacing-sm);
-  background: var(--bg-bg-overlay-l1);
-  border: 1px solid var(--border-border-neutral-l3);
-  border-radius: var(--radius-sm);
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding-right: 0;
-  display: flex;
-}
-
-.textarea-ggj4j6 {
-  padding: 0 var(--spacing-sm) 0 2px;
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  resize: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ht-56637726) transparent;
-  background: none;
-  border: none;
-  outline: none;
-  flex: 1;
-  max-height: 140px;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  overflow-y: auto;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar {
-  width: 6px;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-track {
-  background: none;
-}
-
-.textarea-ggj4j6::-webkit-scrollbar-thumb {
-  background: var(--ht-56637726);
-  border-radius: 3px;
-}
-
-.textarea-ggj4j6::placeholder {
-  color: var(--text-text-tertiary);
-}
-
-.actionBar-u_t8vc {
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--spacing-xs);
-  opacity: 0;
-  max-height: 0;
-  transition: max-height .2s ease-out, opacity .2s ease-out, margin-top .2s ease-out;
-  display: flex;
-  overflow: hidden;
-}
-
-.actionBarVisible-PxXsje {
-  opacity: 1;
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.actionBarNoExpandAnimation-FCra2J {
-  transition: opacity .2s ease-out;
-}
-
-.actionBarNoExpandAnimation-FCra2J.actionBarVisible-PxXsje {
-  max-height: 32px;
-  margin-top: var(--spacing-sm);
-}
-
-.cancelButton-Lu0me9 {
-  height: 24px;
-  padding: 0 var(--spacing-xs);
-  background: var(--bg-bg-overlay-l2);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.cancelButton-Lu0me9:hover, .cancelButton-Lu0me9:active {
-  background: var(--bg-bg-overlay-l3);
-}
-
-.cancelButton-Lu0me9:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.cancelText-j1RS1q {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7 {
-  height: 24px;
-  padding: 0 var(--spacing-sm);
-  background: var(--bg-bg-invert);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:hover:not(:disabled) {
-  background: var(--bg-bg-invert-hover);
-}
-
-.submitButton-BqyEd7:active:not(:disabled) {
-  background: var(--bg-bg-invert-active);
-}
-
-.submitButton-BqyEd7:disabled {
-  background: var(--bg-bg-invert-disabled);
-  color: var(--text-text-disabled);
-  cursor: not-allowed;
-}
-
-.submitButton-BqyEd7:focus-visible {
-  outline: 2px solid var(--status-primary-default);
-  outline-offset: 1px;
-}
-
-.submitText-N58QRq {
-  font-family: var(--font-family-default);
-  color: var(--text-text-onaccent);
-  white-space: nowrap;
-  padding: 0 var(--spacing-xs);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-}
-
-.submitButton-BqyEd7:disabled .submitText-N58QRq {
-  color: var(--text-text-disabled);
-}
-
-.submitIcon-vyKSKQ {
-  width: 12px;
-  height: 12px;
-  color: var(--icon-icon-onaccent);
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.submitButton-BqyEd7:disabled .submitIcon-vyKSKQ {
-  color: var(--text-text-disabled);
-}
-
-.limitWarning-Hocj0v {
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--status-warning-default);
-  user-select: none;
-  flex: 1;
-  display: flex;
-}
-
-.limitText-hBXEaq {
-  font-family: var(--font-family-default);
-  color: var(--status-warning-default);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style>.previewCommentCardContainer-HEkpU8 {
-  border-radius: var(--radius-8);
-  background: var(--bg-bg-menu);
-  border: 1px solid var(--border-border-neutral-l1);
-  transition: width .25s cubic-bezier(.4, 0, .2, 1), height .25s cubic-bezier(.4, 0, .2, 1);
-  display: inline-block;
-  overflow: hidden;
-  box-shadow: 0 2px 6px var(--ht-0003), 0 .5px var(--ht-ffffff0f), inset 0 .5px var(--ht-ffffff0f);
-}
-
-.previewCommentCardContent-ELaLah {
-  width: max-content;
-  position: relative;
-}
-
-.previewCommentCardFadeEnter-OMhMD9 {
-  opacity: 0;
-}
-
-.previewCommentCardFadeEnterActive-Eacuvn {
-  opacity: 1;
-  transition: opacity .2s ease-in;
-}
-
-.previewCommentCardFadeExit-ms9vgc {
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.previewCommentCardFadeExitActive-vyQTsd {
-  opacity: 0;
-  transition: opacity .15s ease-out;
-}
-
-.previewCommentCardSuccessCard-PWnm2o {
-  white-space: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  display: flex;
-}
-
-.previewCommentCardSuccessIcon-Oht9Ir {
-  width: 16px;
-  height: 16px;
-  color: var(--status-success-default);
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.previewCommentCardSuccessText-s40BWG {
-  font-family: var(--font-family-default);
-  color: var(--text-text-default);
-  user-select: none;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
-
-</style><style id="solo-lite-theme-variables">:root {
-  --workspace-gap-width: 4px;
-  --header-height: 48px;
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 20px;
-  --radius-full: 9999px;
-  --radius-2: 2px;
-  --radius-4: 4px;
-  --radius-6: 6px;
-  --radius-8: 8px;
-  --radius-12: 12px;
-  --radius-16: 16px;
-  --radius-20: 20px;
-  --radius-24: 24px;
-  --radius-32: 32px;
-  --radius-radius-2xs-4: 4px;
-  --radius-radius-xs-6: 6px;
-  --radius-radius-sm-8: 8px;
-  --radius-radius-md-12: 12px;
-  --radius-radius-lg-16: 16px;
-  --radius-radius-xl-20: 20px;
-  --radius-radius-2xl-24: 24px;
-  --radius-radius-3xl-32: 32px;
-  --radius-radius-full: 9999px;
-
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-xxl: 32px;
-
-  --spacer-0: 0px;
-  --spacer-2: 2px;
-  --spacer-4: 4px;
-  --spacer-6: 6px;
-  --spacer-8: 8px;
-  --spacer-12: 12px;
-  --spacer-16: 16px;
-  --spacer-20: 20px;
-  --spacer-24: 24px;
-  --spacer-32: 32px;
-  --spacer-40: 40px;
-  --spacer-48: 48px;
-  --spacer-64: 64px;
-
-  --font-size-xs: 10px;
-  --font-size-sm: 11px;
-  --font-size-md: 12px;
-  --font-size-regular: 13px;
-  --font-size-base: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-xxl: 24px;
-
-  --font-family-default:
-    'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'PingFang SC', 'Microsoft YaHei',
-    'Hiragino Sans GB', Roboto, sans-serif;
-  --font-family-heading:
-    'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'PingFang SC', 'Microsoft YaHei',
-    'Hiragino Sans GB', Roboto, sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
-  --font-weight-default: 400;
-  --font-weight-code: 450;
-  --font-weight-medium: 500;
-  --font-weight-strong: 600;
-
-  --chat-body-md: 13px/20px var(--font-family-default);
-  --chat-body-md-strong: 500 13px/20px var(--font-family-default);
-  --chat-body-base: 14px/22px var(--font-family-default);
-  --chat-body-base-strong: 500 14px/22px var(--font-family-default);
-  --chat-spacer-2xs: 2px;
-  --chat-spacer-xs: 4px;
-  --chat-spacer-sm: 8px;
-  --chat-spacer-md: 12px;
-  --chat-spacer-lg: 16px;
-  --chat-spacer-xl: 20px;
-  --chat-radius-xs: 4px;
-  --chat-radius-sm: 8px;
-  --chat-radius-md: 12px;
-  --chat-radius-lg: 16px;
-  --chat-list-item-height: 28px;
-
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
-
-  /* ===== Z-Index Layer System ===== */
-  --z-base: 0;
-  --z-above: 1;
-  --z-above-2: 2;
-
-  --z-sticky: 10;
-  --z-local-overlay: 100;
-
-  --z-dropdown: 1000;
-  --z-popover: 1010;
-
-  --z-modal-backdrop: 1090;
-  --z-modal: 1100;
-  --z-drawer: 1120;
-  --z-confirm: 1150;
-
-  --z-notification: 1200;
-  --z-tooltip: 1300;
-
-  --z-fullscreen: 1400;
-
-  /* 仅限基础设施 / 调试工具，业务组件禁止直接使用 */
-  --z-max: 9999;
-  /* GTM 是全窗口阻塞式系统弹窗，必须覆盖 IDE / Solo Lite 内所有业务浮层 */
-  --z-gtm-modal: 2147483647;
-
-  /* ===== Permission Mode Select ===== */
-  --permission-trigger-height: 32px;
-  --permission-trigger-radius: 8px;
-  --permission-trigger-padding: 2px 8px;
-  --permission-trigger-font-size: 14px;
-  --permission-trigger-bg: transparent;
-  --permission-trigger-gap: 4px;
-  --permission-trigger-icon-size: 16px;
-  --permission-settings-card-radius: 8px;
-  --permission-settings-icon-radius: 6px;
-  --permission-settings-action-radius: 8px;
-  --permission-settings-mode-desc-font-size: 11px;
-  --permission-settings-mode-desc-line-height: 16px;
-  --permission-settings-card-title-font-weight: var(--font-weight-default);
-}
-
-[data-theme='light'], .vs.solo-lite {
-  --shadow-elevation-50: 0 1px 2px -1px var(--htc-24- 24- 24- 0.08);
-  --shadow-elevation-100: 0 3px 9px 0 var(--htc-24- 24- 24- 0.06);
-  --shadow-elevation-100-float: 0 -3px 9px 0 var(--htc-24- 24- 24- 0.06);
-  --shadow-elevation-200: 0 6px 24px -1px var(--htc-24- 24- 24- 0.06);
-  --shadow-elevation-200-reverse: 0 -6px 24px -1px var(--htc-24- 24- 24- 0.06);
-  --shadow-elevation-300: 0 2px 8px -1px var(--htc-24- 24- 24- 0.02), 0 10px 24px -1px var(--htc-24- 24- 24- 0.06);
-
-  --shadow-elevation-100-tooltip: var(--shadow-elevation-100);
-  --shadow-elevation-200-menu-panel: var(--shadow-elevation-200);
-  --shadow-elevation-300-modal-panel: var(--shadow-elevation-300);
-
-  /* 输入框阴影颜色 */
-  --shadow-chat-input: 0 3px 8px 0 var(--htc-24- 24- 24- 0.04), 0 6px 24px -1px var(--htc-24- 24- 24- 0.06);
-  --shadow-chat-input-focused: 0 4px 12px 0 var(--htc-24- 24- 24- 0.04), 0 6px 32px -1px var(--htc-24- 24- 24- 0.06);
-
-  --bg-bg-base-default: #ffffff;
-  --bg-bg-base-secondary: #f5f5f5;
-  --bg-bg-base-tertiary: #e5e5e5;
-  --bg-bg-menu: #ffffff;
-  --bg-bg-tooltip: #fafafa;
-  --bg-bg-input: #ffffff;
-  --bg-bg-overlay-l1: rgba(115, 115, 115, 0.08);
-  --bg-bg-overlay-l2: rgba(115, 115, 115, 0.12);
-  --bg-bg-overlay-l3: rgba(115, 115, 115, 0.16);
-  --bg-bg-overlay-l4: rgba(115, 115, 115, 0.20);
-  --bg-bg-white: #ffffff;
-  --bg-bg-brand: #4b3fe3;
-  --bg-bg-brand-hover: #6a6fff;
-  --bg-bg-brand-active: #3f31c6;
-  --bg-bg-brand-disabled: rgba(75, 63, 227, 0.22);
-  --bg-bg-brand-popup: rgba(170, 183, 255, 0.36);
-  /* brand-sub 兼容（品牌色已统一，sub 映射为主品牌色） */
-  --bg-bg-brand-sub: var(--bg-bg-brand);
-  --bg-bg-brand-hover-sub: var(--bg-bg-brand-hover);
-  --bg-bg-brand-disabled-sub: var(--bg-bg-brand-disabled);
-  --bg-bg-brand-popup-sub: var(--bg-bg-brand-popup);
-  --bg-bg-invert: #262626;
-  --bg-bg-invert-hover: #404040;
-  --bg-bg-invert-active: #171717;
-  --bg-bg-invert-disabled: rgba(115, 115, 115, 0.20);
-  --bg-bg-marketplace-banner-overlay-start: rgba(82, 130, 193, 0);
-  --bg-bg-marketplace-banner-overlay-end: rgba(82, 130, 193, 0.8);
-  --bg-bg-marketplace-banner-control: rgba(0, 0, 0, 0.25);
-  --bg-bg-card: #fafafa;
-  --bg-bg-card-hover: #ffffff;
-  --bg-bg-marketplace-banner-plugin-tag: #e5f3ff;
-  --bg-bg-marketplace-banner-preview-mask-start: rgba(255, 255, 255, 0.9);
-  --bg-bg-marketplace-banner-preview-mask-end: rgba(255, 255, 255, 0.54);
-  --shadow-marketplace-banner-preview-card: 0px 6px 12px -1px var(--htc-0- 0- 0- 0.18), 0px 10px 24px -1px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-small: 0px 2.8023247718811035px 5.604649543762207px -0.4670540988445282px var(--htc-0- 0- 0- 0.18), 0px 4.670541763305664px 11.209299087524414px -0.4670540988445282px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-large: 0px 4.55377721786499px 9.10755443572998px -0.758962869644165px var(--htc-0- 0- 0- 0.18), 0px 7.589629650115967px 18.21510887145996px -0.758962869644165px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-input: 0px 0px 24px -1px var(--htc-24- 24- 24- 0.06), 0px -12px 8px -1px var(--htc-24- 24- 24- 0.02);
-  --chat-bg-card: var(--bg-bg-card);
-  --chat-bg-card-hover: var(--bg-bg-base-default);
-  --special-bgtabsoverlay: rgba(255, 255, 255, 0.12);
-  --special-tabsoverlay: rgba(193, 195, 205, 0.12);
-  --text-text-default: #171717;
-  --text-text-default-hover: #262626;
-  --text-text-default-active: #262626;
-  --text-text-secondary: #404040;
-  --text-text-secondary-hover: #171717;
-  --text-text-secondary-active: #171717;
-  --text-text-tertiary: #737373;
-  --text-text-disabled: #a1a1a1;
-  --text-text-brand: #4b3fe3;
-  --text-text-brand-hover: #6a6fff;
-  --text-text-brand-sub: var(--text-text-brand);
-  --text-text-brand-hover-sub: var(--text-text-brand-hover);
-  --text-text-onbrand: #171717;
-  --text-text-onaccent: #ffffff;
-  --text-text-marketplace-banner-on-light: #0a0a0a;
-  --text-text-marketplace-banner-plugin-tag: #054c8f;
-  --icon-icon-default: #262626;
-  --icon-icon-default-hover: #171717;
-  --icon-icon-default-active: #171717;
-  --icon-icon-secondary: #404040;
-  --icon-icon-secondary-hover: #262626;
-  --icon-icon-secondary-active: #262626;
-  --icon-icon-tertiary: #737373;
-  --icon-icon-disabled: #a1a1a1;
-  --icon-icon-brand: #4b3fe3;
-  --icon-icon-brand-hover: #6a6fff;
-  --icon-icon-brand-sub: var(--icon-icon-brand);
-  --icon-icon-brand-hover-sub: var(--icon-icon-brand-hover);
-  --icon-icon-onbrand: #0a0a0a;
-  --icon-icon-onaccent: #ffffff;
-  --icon-icon-white: #ffffff;
-  --border-border-neutral-l1: rgba(115, 115, 115, 0.12);
-  --border-border-neutral-l2: rgba(115, 115, 115, 0.18);
-  --border-border-neutral-l3: rgba(115, 115, 115, 0.36);
-  --border-border-brand: #4b3fe3;
-  --border-border-brand-sub: var(--border-border-brand);
-  --border-border-contrast: #000000;
-  --status-primary-default: #2f74ff;
-  --status-primary-hover: #4c88ff;
-  --status-primary-active: #1759dd;
-  --status-primary-surface-l1: rgba(47, 116, 255, 0.12);
-  --status-primary-surface-l2: rgba(47, 116, 255, 0.18);
-  --status-primary-surface-l3: rgba(47, 116, 255, 0.36);
-  --status-success-default: #15a877;
-  --status-success-hover: #2fb287;
-  --status-success-active: #1e8b56;
-  --status-success-surface-l1: rgba(64, 176, 139, 0.12);
-  --status-success-surface-l2: rgba(64, 176, 139, 0.18);
-  --status-success-surface-l3: rgba(64, 176, 139, 0.36);
-  --status-alert-default: #fea900;
-  --status-alert-hover: #ffb700;
-  --status-alert-active: #e59100;
-  --status-alert-surface-l1: rgba(254, 169, 0, 0.14);
-  --status-alert-surface-l2: rgba(254, 169, 0, 0.20);
-  --status-alert-surface-l3: rgba(254, 169, 0, 0.36);
-  --status-warning-default: #e27900;
-  --status-warning-hover: #f39a35;
-  --status-warning-active: #c46f11;
-  --status-warning-surface-l1: rgba(226, 121, 0, 0.12);
-  --status-warning-surface-l2: rgba(226, 121, 0, 0.16);
-  --status-warning-surface-l3: rgba(226, 121, 0, 0.36);
-  --status-error-default: #e8463a;
-  --status-error-hover: #ea574c;
-  --status-error-active: #c9382f;
-  --status-error-surface-l1: rgba(232, 70, 58, 0.12);
-  --status-error-surface-l2: rgba(232, 70, 58, 0.16);
-  --status-error-surface-l3: rgba(232, 70, 58, 0.36);
-  --accent-accent-teal: #00b983;
-  --accent-accent-coral: #ff6b45;
-  --accent-accent-amber: #f2a90c;
-  --accent-accent-lime: #5fc000;
-  --accent-accent-cyan: #00b6f5;
-  --accent-accent-blue: #3f85ff;
-  --accent-accent-magenta: #f53cff;
-  --accent-accent-violet: #9570ff;
-  --accent-accent-slate: #747e94;
-  --code-code-text: #17181a;
-  --code-code-doc: #8393a3;
-  --code-code-link: #2f74ff;
-  --code-code-number: #e54595;
-  --code-code-action: #5f36b2;
-  --code-code-instruction: #b15ef2;
-  --code-code-function: #ff5d4d;
-  --code-code-constant: #175ce6;
-  --code-code-parameter: #4da621;
-  --code-code-attribute: #c99100;
-  --code-code-tag: #e24864;
-  --code-code-terminal: #17181a;
-  --code-code-contrast: #17181a;
-  --code-code-editor: #17181a;
-  --special-white: #ffffff;
-  --special-black: #000000;
-  --viz-viz-series-amber: #edaa45;
-  --viz-viz-series-coral: #f87454;
-  --viz-viz-series-indigo: #b6a3ff;
-  --viz-viz-series-lime: #a6ea39;
-  --viz-viz-series-magenta: #fb9dd7;
-  --viz-viz-series-mint: #1dc981;
-  --viz-viz-series-sky: #22a5f7;
-  --viz-viz-series-slate: #859ead;
-  --viz-viz-series-teal: #59e8e8;
-  --viz-viz-series-violet: #b655fc;
-  --viz-viz-ui-bg-chart: #ffffff;
-  --viz-viz-ui-bg-tooltip: #fafafa;
-  --viz-viz-ui-chart-axis: rgba(115, 115, 115, 0.18);
-  --viz-viz-ui-chart-subtitle: #404040;
-  --viz-viz-ui-chart-tick: #404040;
-  --viz-viz-ui-chart-title: #171717;
-  --viz-viz-ui-legend-label: #404040;
-  --viz-viz-ui-legend-value: #171717;
-  --brand-blue-100: #e5f3ff;
-  --brand-blue-200: #cce6ff;
-  --brand-blue-300: #b2daff;
-  --brand-blue-400: #99ceff;
-  --brand-blue-500: #80c1ff;
-  --brand-blue-600: #64b4ff;
-  --brand-blue-700: #3792e6;
-  --brand-blue-800: #1071cb;
-  --brand-blue-900: #054c8f;
-  --brand-blue-1000: #00284d;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-purple-100: #e8e5ff;
-  --brand-purple-200: #d2ccff;
-  --brand-purple-300: #bbb2ff;
-  --brand-purple-400: #a599ff;
-  --brand-purple-500: #8e80ff;
-  --brand-purple-600: #7864ff;
-  --brand-purple-700: #4c37e6;
-  --brand-purple-800: #2610cb;
-  --brand-purple-900: #15058f;
-  --brand-purple-1000: #09004d;
-  --brand-red-100: #ffe5e5;
-  --brand-red-200: #ffcccc;
-  --brand-red-300: #ffb2b2;
-  --brand-red-400: #ff9999;
-  --brand-red-500: #ff8080;
-  --brand-red-600: #ff6464;
-  --brand-red-700: #e63737;
-  --brand-red-800: #cb1010;
-  --brand-red-900: #8f0505;
-  --brand-red-1000: #4d0000;
-  --brand-yellow-100: #fff6e5;
-  --brand-yellow-200: #ffeccc;
-  --brand-yellow-300: #ffe3b2;
-  --brand-yellow-400: #ffda99;
-  --brand-yellow-500: #ffd080;
-  --brand-yellow-600: #ffc864;
-  --brand-yellow-700: #e6a637;
-  --brand-yellow-800: #cb8710;
-  --brand-yellow-900: #8f5c05;
-  --brand-yellow-1000: #4d3000;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-neutral-grey-100: #f2f2f2;
-  --brand-neutral-grey-200: #e3e3e3;
-  --brand-neutral-grey-300: #d6d6d6;
-  --brand-neutral-grey-400: #c7c7c7;
-  --brand-neutral-grey-500: #bababa;
-  --brand-neutral-grey-600: #ababab;
-  --brand-neutral-grey-700: #8a8a8a;
-  --brand-neutral-grey-800: #686868;
-  --brand-neutral-grey-900: #474747;
-  --brand-neutral-grey-1000: #262626;
-  --brand-brand-50: #f2f7ff;
-  --brand-brand-100: #e5eaff;
-  --brand-brand-200: #cfd8ff;
-  --brand-brand-300: #aab7ff;
-  --brand-brand-400: #8894ff;
-  --brand-brand-500: #6a6fff;
-  --brand-brand-600: #4b3fe3;
-  --brand-brand-700: #3f31c6;
-  --brand-brand-800: #2c2290;
-  --brand-brand-900: #1a1759;
-  --brand-brand-950: #010109;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-
-  --body-body-xs: 10px/1.5 var(--font-family-default);
-  --body-body-sm: 11px/1.5 var(--font-family-default);
-  --body-body-sm-strong: 600 11px/1.5 var(--font-family-default);
-  --body-body-md: 12px/1.5 var(--font-family-default);
-  --body-body-md-strong: 600 12px/1.5 var(--font-family-default);
-  --body-body-base: 14px/1.5 var(--font-family-default);
-  --body-body-base-strong: 600 14px/1.5 var(--font-family-default);
-  --heading-heading-3xs: 600 10px/1.4 var(--font-family-heading);
-  --heading-heading-2xs: 600 11px/1.4 var(--font-family-heading);
-  --heading-heading-xs: 600 12px/1.4 var(--font-family-heading);
-  --heading-heading-sm: 600 13px/1.4 var(--font-family-heading);
-  --heading-heading-md: 600 14px/1.4 var(--font-family-heading);
-  --heading-heading-lg: 600 16px/1.4 var(--font-family-heading);
-  --heading-heading-xl: 600 20px/1.4 var(--font-family-heading);
-  --heading-heading-2xl: 600 24px/1.4 var(--font-family-heading);
-  --heading-heading-3xl: 600 32px/1.4 var(--font-family-heading);
-
-  --bg-bg-overlay-l0: rgba(86, 99, 119, 0.03);
-  --bg-primary-item: rgba(86, 99, 119, 0.15);
-  --bg-primary-item-hover: rgba(86, 99, 119, 0.22);
-  --border-primary-item: rgba(77, 107, 153, 0.09);
-  --border-primary-item-hover: rgba(77, 107, 153, 0.15);
-  --bg-bg-menu-old: #f8f9fa;
-  /* 首页输入框边框颜色（纯色，用于内凹圆弧等需要精确边框的场景） */
-  --homepage-input-border-color: #dfe3eb;
-
-  --welcome-logo-bg: var(--bg-bg-brand, var(--ht-0fdc78));
-  --welcome-logo-color: #000000;
-
-  --user-message-bg-solid: #E3F8ED;
-  --user-message-bg-solid-transparent: rgba(227, 248, 237, 0);
-  --user-message-bg-solid-sub: #E9E6FF;
-  --user-message-bg-solid-sub-transparent: rgba(233, 230, 255, 0);
-  --sheet-text-color: #000000;
-  --slash-mention-bg: rgba(63, 133, 255, 0.15);
-  --builtin-slash-mention-bg: rgba(149, 112, 255, 0.15);
-
-  --gradient-golden: linear-gradient(180deg, var(--ht-c0a115) 0%, var(--ht-dfbd27) 100%);
-  --special-bggoldoverlay: rgba(210, 181, 19, 0.12);
-  --query-tag-bg-grey: var(--bg-bg-overlay-l2);
-  --query-tag-text-grey: var(--text-text-default);
-  --query-tag-height: 20px;
-  --query-tag-padding: 0px 4px;
-  --query-tag-gap: 2px;
-  --query-tag-radius: 0px;
-  --query-tag-icon-slot-size: 20px;
-  --query-tag-icon-size: 16px;
-  --query-tag-font-size: 14px;
-  --query-tag-font-weight: 500;
-  --query-tag-letter-spacing: -0.02em;
-  --query-tag-bg-neutral: transparent;
-  --query-tag-text-neutral: var(--text-text-secondary);
-  --query-tag-bg-brand: transparent;
-  --query-tag-text-brand: var(--status-primary-default);
-  --query-tag-text-command: var(--text-text-brand);
-  --query-tag-text-design: var(--brand-brand-800);
-  --query-tag-text-lark-sheet: #26c914;
-  --query-tag-text-lark-bitable: var(--accent-accent-violet);
-  --query-tag-icon-pdf: #cb1010;
-  --query-tag-icon-zip: var(--icon-icon-default);
-  --query-tag-icon-json: #cb8710;
-  --query-tag-icon-html: #c63b18;
-  --query-tag-icon-video: #3f85ff;
-  --query-tag-bg-blue: rgba(128, 193, 255, 0.18);
-
-  --bg-bg-brand-old: #0fdc78;
-  --gradient-brand: linear-gradient(90deg, var(--ht-0ac27b) 0%, var(--ht-0ecd70) 36%, var(--ht-06c179) 72%, var(--ht-63c5b1) 100%);
-  --text-text-preformat-foreground: #a31515;
-}
-
-[data-theme='dark'], .vs-dark.solo-lite {
-  --shadow-elevation-50: 0 1px 2px -1px var(--htc-0- 0- 0- 0.45);
-  --shadow-elevation-100: 0 3px 9px 0 var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-100-float: 0 -3px 9px 0 var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-200: 0 6px 24px -1px var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-200-reverse: 0 -6px 24px -1px var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-300: 0 2px 8px -1px var(--htc-0- 0- 0- 0.18), 0 10px 24px -1px var(--htc-0- 0- 0- 0.30);
-  --shadow-elevation-100-tooltip: var(--shadow-elevation-100);
-  --shadow-elevation-200-menu-panel: var(--shadow-elevation-200);
-  --shadow-elevation-300-modal-panel: var(--shadow-elevation-300);
-
-  /* 输入框阴影颜色 */
-  --shadow-chat-input: 0 3px 8px 0 var(--htc-24- 24- 24- 0.08), 0 6px 24px -1px var(--htc-24- 24- 24- 0.12);
-  --shadow-chat-input-focused: 0 4px 12px 0 var(--htc-24- 24- 24- 0.08), 0 6px 32px -1px var(--htc-24- 24- 24- 0.12);
-
-  --bg-bg-base-default: #171717;
-  --bg-bg-base-secondary: #262626;
-  --bg-bg-base-tertiary: #404040;
-  --bg-bg-menu: #171717;
-  --bg-bg-tooltip: #171717;
-  --bg-bg-input: #171717;
-  --bg-bg-overlay-l1: rgba(212, 212, 212, 0.04);
-  --bg-bg-overlay-l2: rgba(212, 212, 212, 0.06);
-  --bg-bg-overlay-l3: rgba(212, 212, 212, 0.08);
-  --bg-bg-overlay-l4: rgba(212, 212, 212, 0.12);
-  --bg-bg-white: #ffffff;
-  --bg-bg-brand: #4b3fe3;
-  --bg-bg-brand-hover: #6a6fff;
-  --bg-bg-brand-active: #3f31c6;
-  --bg-bg-brand-disabled: rgba(75, 63, 227, 0.35);
-  --bg-bg-brand-popup: rgba(106, 111, 255, 0.15);
-  --bg-bg-brand-sub: var(--bg-bg-brand);
-  --bg-bg-brand-hover-sub: var(--bg-bg-brand-hover);
-  --bg-bg-brand-disabled-sub: var(--bg-bg-brand-disabled);
-  --bg-bg-brand-popup-sub: var(--bg-bg-brand-popup);
-  --bg-bg-invert: #e5e5e5;
-  --bg-bg-invert-hover: #f5f5f5;
-  --bg-bg-invert-active: #e5e5e5;
-  --bg-bg-invert-disabled: rgba(212, 212, 212, 0.06);
-  --bg-bg-marketplace-banner-overlay-start: rgba(82, 130, 193, 0);
-  --bg-bg-marketplace-banner-overlay-end: rgba(82, 130, 193, 0.8);
-  --bg-bg-marketplace-banner-control: rgba(0, 0, 0, 0.25);
-  --bg-bg-card: #202020;
-  --bg-bg-card-hover: #171717;
-  --bg-bg-marketplace-banner-plugin-tag: #e5f3ff;
-  --bg-bg-marketplace-banner-preview-mask-start: rgba(255, 255, 255, 0.9);
-  --bg-bg-marketplace-banner-preview-mask-end: rgba(255, 255, 255, 0.54);
-  --shadow-marketplace-banner-preview-card: 0px 6px 12px -1px var(--htc-0- 0- 0- 0.18), 0px 10px 24px -1px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-small: 0px 2.8023247718811035px 5.604649543762207px -0.4670540988445282px var(--htc-0- 0- 0- 0.18), 0px 4.670541763305664px 11.209299087524414px -0.4670540988445282px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-large: 0px 4.55377721786499px 9.10755443572998px -0.758962869644165px var(--htc-0- 0- 0- 0.18), 0px 7.589629650115967px 18.21510887145996px -0.758962869644165px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-input: 0px 0px 24px -1px var(--htc-24- 24- 24- 0.06), 0px -12px 8px -1px var(--htc-24- 24- 24- 0.02);
-  --chat-bg-card: #202020;
-  --chat-bg-card-hover: var(--bg-bg-base-default);
-  --special-bgtabsoverlay: rgba(0, 0, 0, 0.20);
-  --special-tabsoverlay: rgba(13, 14, 15, 0.18);
-  --text-text-default: #e5e5e5;
-  --text-text-default-hover: #fafafa;
-  --text-text-default-active: #fafafa;
-  --text-text-secondary: #a1a1a1;
-  --text-text-secondary-hover: #e5e5e5;
-  --text-text-secondary-active: #e5e5e5;
-  --text-text-tertiary: #737373;
-  --text-text-disabled: #525252;
-  --text-text-brand: #6a6fff;
-  --text-text-brand-hover: #4b3fe3;
-  --text-text-brand-sub: var(--text-text-brand);
-  --text-text-brand-hover-sub: var(--text-text-brand-hover);
-  --text-text-onbrand: #171717;
-  --text-text-onaccent: #171717;
-  --text-text-marketplace-banner-on-light: #0a0a0a;
-  --text-text-marketplace-banner-plugin-tag: #054c8f;
-  --icon-icon-default: #e5e5e5;
-  --icon-icon-default-hover: #fafafa;
-  --icon-icon-default-active: #fafafa;
-  --icon-icon-secondary: #a1a1a1;
-  --icon-icon-secondary-hover: #e5e5e5;
-  --icon-icon-secondary-active: #e5e5e5;
-  --icon-icon-tertiary: #737373;
-  --icon-icon-disabled: #525252;
-  --icon-icon-brand: #6a6fff;
-  --icon-icon-brand-hover: #4b3fe3;
-  --icon-icon-brand-sub: var(--icon-icon-brand);
-  --icon-icon-brand-hover-sub: var(--icon-icon-brand-hover);
-  --icon-icon-onbrand: #0a0a0a;
-  --icon-icon-onaccent: #0A0A0A;
-  --icon-icon-white: #ffffff;
-  --border-border-neutral-l1: rgba(229, 229, 229, 0.10);
-  --border-border-neutral-l2: rgba(229, 229, 229, 0.16);
-  --border-border-neutral-l3: rgba(229, 229, 229, 0.20);
-  --border-border-brand: #6a6fff;
-  --border-border-brand-sub: var(--border-border-brand);
-  --border-border-contrast: #ffffff;
-  --status-primary-default: #387bff;
-  --status-primary-hover: #4c88ff;
-  --status-primary-active: #1759dd;
-  --status-primary-surface-l1: rgba(53, 121, 255, 0.18);
-  --status-primary-surface-l2: rgba(53, 121, 255, 0.28);
-  --status-primary-surface-l3: rgba(53, 121, 255, 0.36);
-  --status-success-default: #33c192;
-  --status-success-hover: #5ed4ad;
-  --status-success-active: #27b082;
-  --status-success-surface-l1: rgba(0, 165, 110, 0.18);
-  --status-success-surface-l2: rgba(0, 165, 110, 0.28);
-  --status-success-surface-l3: rgba(0, 165, 110, 0.36);
-  --status-alert-default: #d29d00;
-  --status-alert-hover: #dfb949;
-  --status-alert-active: #ab8820;
-  --status-alert-surface-l1: rgba(210, 157, 0, 0.16);
-  --status-alert-surface-l2: rgba(210, 157, 0, 0.28);
-  --status-alert-surface-l3: rgba(210, 157, 0, 0.36);
-  --status-warning-default: #d27e24;
-  --status-warning-hover: #d78b28;
-  --status-warning-active: #b46510;
-  --status-warning-surface-l1: rgba(210, 126, 36, 0.16);
-  --status-warning-surface-l2: rgba(210, 126, 36, 0.28);
-  --status-warning-surface-l3: rgba(210, 126, 36, 0.36);
-  --status-error-default: #f65a5a;
-  --status-error-hover: #f86262;
-  --status-error-active: #b33636;
-  --status-error-surface-l1: rgba(246, 70, 70, 0.18);
-  --status-error-surface-l2: rgba(246, 70, 70, 0.28);
-  --status-error-surface-l3: rgba(246, 70, 70, 0.36);
-  --accent-accent-teal: #2dd288;
-  --accent-accent-coral: #ff9392;
-  --accent-accent-amber: #dcb364;
-  --accent-accent-lime: #8acb3a;
-  --accent-accent-cyan: #04cbe5;
-  --accent-accent-blue: #7bb8ff;
-  --accent-accent-magenta: #ec93ff;
-  --accent-accent-violet: #bfa5ff;
-  --accent-accent-slate: #afb9cf;
-  --code-code-text: #e0e3ee;
-  --code-code-doc: #7f838c;
-  --code-code-link: #3c7eff;
-  --code-code-number: #f48cca;
-  --code-code-action: #b38cff;
-  --code-code-instruction: #f0d8ff;
-  --code-code-function: #f29d79;
-  --code-code-constant: #80bbff;
-  --code-code-parameter: #82d99f;
-  --code-code-attribute: #ded47e;
-  --code-code-tag: #f2858c;
-  --code-code-terminal: #e0e3ee;
-  --code-code-contrast: #e0e3ee;
-  --code-code-editor: #e0e3ee;
-  --special-white: #ffffff;
-  --special-black: #000000;
-  --viz-viz-series-amber: #edaa45;
-  --viz-viz-series-coral: #f87454;
-  --viz-viz-series-indigo: #b6a3ff;
-  --viz-viz-series-lime: #a6ea39;
-  --viz-viz-series-magenta: #fb9dd7;
-  --viz-viz-series-mint: #1dc981;
-  --viz-viz-series-sky: #22a5f7;
-  --viz-viz-series-slate: #859ead;
-  --viz-viz-series-teal: #78f2f2;
-  --viz-viz-series-violet: #b655fc;
-  --viz-viz-ui-bg-chart: #171717;
-  --viz-viz-ui-bg-tooltip: #0a0a0a;
-  --viz-viz-ui-chart-axis: rgba(229, 229, 229, 0.16);
-  --viz-viz-ui-chart-subtitle: #737373;
-  --viz-viz-ui-chart-tick: #737373;
-  --viz-viz-ui-chart-title: #e5e5e5;
-  --viz-viz-ui-legend-label: #737373;
-  --viz-viz-ui-legend-value: #e5e5e5;
-  --brand-blue-100: #e5f3ff;
-  --brand-blue-200: #cce6ff;
-  --brand-blue-300: #b2daff;
-  --brand-blue-400: #99ceff;
-  --brand-blue-500: #80c1ff;
-  --brand-blue-600: #64b4ff;
-  --brand-blue-700: #3792e6;
-  --brand-blue-800: #1071cb;
-  --brand-blue-900: #054c8f;
-  --brand-blue-1000: #00284d;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-purple-100: #e8e5ff;
-  --brand-purple-200: #d2ccff;
-  --brand-purple-300: #bbb2ff;
-  --brand-purple-400: #a599ff;
-  --brand-purple-500: #8e80ff;
-  --brand-purple-600: #7864ff;
-  --brand-purple-700: #4c37e6;
-  --brand-purple-800: #2610cb;
-  --brand-purple-900: #15058f;
-  --brand-purple-1000: #09004d;
-  --brand-red-100: #ffe5e5;
-  --brand-red-200: #ffcccc;
-  --brand-red-300: #ffb2b2;
-  --brand-red-400: #ff9999;
-  --brand-red-500: #ff8080;
-  --brand-red-600: #ff6464;
-  --brand-red-700: #e63737;
-  --brand-red-800: #cb1010;
-  --brand-red-900: #8f0505;
-  --brand-red-1000: #4d0000;
-  --brand-yellow-100: #fff6e5;
-  --brand-yellow-200: #ffeccc;
-  --brand-yellow-300: #ffe3b2;
-  --brand-yellow-400: #ffda99;
-  --brand-yellow-500: #ffd080;
-  --brand-yellow-600: #ffc864;
-  --brand-yellow-700: #e6a637;
-  --brand-yellow-800: #cb8710;
-  --brand-yellow-900: #8f5c05;
-  --brand-yellow-1000: #4d3000;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-neutral-grey-100: #f2f2f2;
-  --brand-neutral-grey-200: #e3e3e3;
-  --brand-neutral-grey-300: #d6d6d6;
-  --brand-neutral-grey-400: #c7c7c7;
-  --brand-neutral-grey-500: #bababa;
-  --brand-neutral-grey-600: #ababab;
-  --brand-neutral-grey-700: #8a8a8a;
-  --brand-neutral-grey-800: #686868;
-  --brand-neutral-grey-900: #474747;
-  --brand-neutral-grey-1000: #262626;
-  --brand-brand-50: #f2f7ff;
-  --brand-brand-100: #e5eaff;
-  --brand-brand-200: #cfd8ff;
-  --brand-brand-300: #aab7ff;
-  --brand-brand-400: #8894ff;
-  --brand-brand-500: #6a6fff;
-  --brand-brand-600: #4b3fe3;
-  --brand-brand-700: #3f31c6;
-  --brand-brand-800: #2c2290;
-  --brand-brand-900: #1a1759;
-  --brand-brand-950: #010109;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-
-  --body-body-xs: 10px/1.5 var(--font-family-default);
-  --body-body-sm: 11px/1.5 var(--font-family-default);
-  --body-body-sm-strong: 600 11px/1.5 var(--font-family-default);
-  --body-body-md: 12px/1.5 var(--font-family-default);
-  --body-body-md-strong: 600 12px/1.5 var(--font-family-default);
-  --body-body-base: 14px/1.5 var(--font-family-default);
-  --body-body-base-strong: 600 14px/1.5 var(--font-family-default);
-  --heading-heading-3xs: 600 10px/1.4 var(--font-family-heading);
-  --heading-heading-2xs: 600 11px/1.4 var(--font-family-heading);
-  --heading-heading-xs: 600 12px/1.4 var(--font-family-heading);
-  --heading-heading-sm: 600 13px/1.4 var(--font-family-heading);
-  --heading-heading-md: 600 14px/1.4 var(--font-family-heading);
-  --heading-heading-lg: 600 16px/1.4 var(--font-family-heading);
-  --heading-heading-xl: 600 20px/1.4 var(--font-family-heading);
-  --heading-heading-2xl: 600 24px/1.4 var(--font-family-heading);
-  --heading-heading-3xl: 600 32px/1.4 var(--font-family-heading);
-
-  --bg-bg-overlay-l0: rgba(224, 226, 242, 0.03);
-  --bg-primary-item: rgba(224, 226, 242, 0.08);
-  --bg-primary-item-hover: rgba(224, 226, 242, 0.12);
-  --border-primary-item: rgba(224, 226, 242, 0.06);
-  --border-primary-item-hover: rgba(224, 226, 242, 0.1);
-  /* 首页输入框边框颜色（纯色，用于内凹圆弧等需要精确边框的场景） */
-  --homepage-input-border-color: #343538;
-
-  --welcome-logo-bg: #000000;
-  --welcome-logo-color: var(--bg-bg-brand, var(--ht-0fdc78));
-
-  --user-message-bg-solid: #1D352A;
-  --user-message-bg-solid-transparent: rgba(29, 53, 42, 0);
-  --user-message-bg-solid-sub: #2B2A38;
-  --user-message-bg-solid-sub-transparent: rgba(43, 42, 56, 0);
-  --sheet-text-color: #ffffff;
-  --slash-mention-bg: rgba(63, 133, 255, 0.15);
-  --builtin-slash-mention-bg: rgba(149, 112, 255, 0.15);
-
-  --gradient-golden: linear-gradient(180deg, var(--ht-dab444) 0%, var(--ht-ffea8e) 100%);
-  --special-bggoldoverlay: rgba(139, 128, 65, 0.12);
-  --query-tag-bg-grey: var(--bg-bg-overlay-l2);
-  --query-tag-text-grey: var(--text-text-default);
-  --query-tag-height: 20px;
-  --query-tag-padding: 0px 4px;
-  --query-tag-gap: 2px;
-  --query-tag-radius: 0px;
-  --query-tag-icon-slot-size: 20px;
-  --query-tag-icon-size: 16px;
-  --query-tag-font-size: 14px;
-  --query-tag-font-weight: 500;
-  --query-tag-letter-spacing: -0.02em;
-  --query-tag-bg-neutral: transparent;
-  --query-tag-text-neutral: var(--text-text-secondary);
-  --query-tag-bg-brand: transparent;
-  --query-tag-text-brand: var(--status-primary-default);
-  --query-tag-text-command: var(--text-text-brand);
-  --query-tag-text-design: var(--text-text-brand);
-  --query-tag-text-lark-sheet: #26c914;
-  --query-tag-text-lark-bitable: var(--accent-accent-violet);
-  --query-tag-icon-pdf: #cb1010;
-  --query-tag-icon-zip: var(--icon-icon-default);
-  --query-tag-icon-json: #cb8710;
-  --query-tag-icon-html: #c63b18;
-  --query-tag-icon-video: #3f85ff;
-  --query-tag-bg-blue: rgba(128, 193, 255, 0.14);
-
-  --bg-bg-brand-old: #32f08c;
-  --gradient-brand: linear-gradient(90deg, var(--ht-3ee1a3) 0%, var(--ht-32f08c) 36%, var(--ht-60f2bd) 71.63%, var(--ht-a0fde7) 100%);
-  --text-text-preformat-foreground: #d7ba7d;
-}
-
-[data-theme='dark-blue'], .vs-dark.solo-lite {
-  --shadow-elevation-50: 0 1px 2px -1px var(--htc-0- 0- 0- 0.45);
-  --shadow-elevation-100: 0 3px 9px 0 var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-100-float: 0 -3px 9px 0 var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-200: 0 6px 24px -1px var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-200-reverse: 0 -6px 24px -1px var(--htc-0- 0- 0- 0.25);
-  --shadow-elevation-300: 0 2px 8px -1px var(--htc-0- 0- 0- 0.18), 0 10px 24px -1px var(--htc-0- 0- 0- 0.30);
-  --shadow-elevation-100-tooltip: var(--shadow-elevation-100);
-  --shadow-elevation-200-menu-panel: var(--shadow-elevation-200);
-  --shadow-elevation-300-modal-panel: var(--shadow-elevation-300);
-
-  /* 输入框阴影颜色 */
-  --shadow-chat-input: 0 3px 8px 0 var(--htc-24- 24- 24- 0.08), 0 6px 24px -1px var(--htc-24- 24- 24- 0.12);
-  --shadow-chat-input-focused: 0 4px 12px 0 var(--htc-24- 24- 24- 0.08), 0 6px 32px -1px var(--htc-24- 24- 24- 0.12);
-
-  --bg-bg-base-default: #171717;
-  --bg-bg-base-secondary: #262626;
-  --bg-bg-base-tertiary: #404040;
-  --bg-bg-menu: #171717;
-  --bg-bg-tooltip: #171717;
-  --bg-bg-input: #171717;
-  --bg-bg-overlay-l1: rgba(212, 212, 212, 0.04);
-  --bg-bg-overlay-l2: rgba(212, 212, 212, 0.06);
-  --bg-bg-overlay-l3: rgba(212, 212, 212, 0.08);
-  --bg-bg-overlay-l4: rgba(212, 212, 212, 0.12);
-  --bg-bg-white: #ffffff;
-  --bg-bg-brand: #4b3fe3;
-  --bg-bg-brand-hover: #6a6fff;
-  --bg-bg-brand-active: #3f31c6;
-  --bg-bg-brand-disabled: rgba(75, 63, 227, 0.35);
-  --bg-bg-brand-popup: rgba(106, 111, 255, 0.15);
-  --bg-bg-brand-sub: var(--bg-bg-brand);
-  --bg-bg-brand-hover-sub: var(--bg-bg-brand-hover);
-  --bg-bg-brand-disabled-sub: var(--bg-bg-brand-disabled);
-  --bg-bg-brand-popup-sub: var(--bg-bg-brand-popup);
-  --bg-bg-invert: #e5e5e5;
-  --bg-bg-invert-hover: #f5f5f5;
-  --bg-bg-invert-active: #e5e5e5;
-  --bg-bg-invert-disabled: rgba(212, 212, 212, 0.06);
-  --bg-bg-marketplace-banner-overlay-start: rgba(82, 130, 193, 0);
-  --bg-bg-marketplace-banner-overlay-end: rgba(82, 130, 193, 0.8);
-  --bg-bg-marketplace-banner-control: rgba(0, 0, 0, 0.25);
-  --bg-bg-card: #202020;
-  --bg-bg-card-hover: #171717;
-  --bg-bg-marketplace-banner-plugin-tag: #e5f3ff;
-  --bg-bg-marketplace-banner-preview-mask-start: rgba(255, 255, 255, 0.9);
-  --bg-bg-marketplace-banner-preview-mask-end: rgba(255, 255, 255, 0.54);
-  --shadow-marketplace-banner-preview-card: 0px 6px 12px -1px var(--htc-0- 0- 0- 0.18), 0px 10px 24px -1px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-small: 0px 2.8023247718811035px 5.604649543762207px -0.4670540988445282px var(--htc-0- 0- 0- 0.18), 0px 4.670541763305664px 11.209299087524414px -0.4670540988445282px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-card-large: 0px 4.55377721786499px 9.10755443572998px -0.758962869644165px var(--htc-0- 0- 0- 0.18), 0px 7.589629650115967px 18.21510887145996px -0.758962869644165px var(--htc-0- 0- 0- 0.2);
-  --shadow-marketplace-banner-preview-input: 0px 0px 24px -1px var(--htc-24- 24- 24- 0.06), 0px -12px 8px -1px var(--htc-24- 24- 24- 0.02);
-  --chat-bg-card: var(--bg-bg-card);
-  --chat-bg-card-hover: var(--bg-bg-base-default);
-  --special-bgtabsoverlay: rgba(0, 0, 0, 0.20);
-  --special-tabsoverlay: rgba(13, 14, 15, 0.18);
-  --text-text-default: #e5e5e5;
-  --text-text-default-hover: #fafafa;
-  --text-text-default-active: #fafafa;
-  --text-text-secondary: #a1a1a1;
-  --text-text-secondary-hover: #e5e5e5;
-  --text-text-secondary-active: #e5e5e5;
-  --text-text-tertiary: #737373;
-  --text-text-disabled: #525252;
-  --text-text-brand: #6a6fff;
-  --text-text-brand-hover: #4b3fe3;
-  --text-text-brand-sub: var(--text-text-brand);
-  --text-text-brand-hover-sub: var(--text-text-brand-hover);
-  --text-text-onbrand: #171717;
-  --text-text-onaccent: #171717;
-  --text-text-marketplace-banner-on-light: #0a0a0a;
-  --text-text-marketplace-banner-plugin-tag: #054c8f;
-  --icon-icon-default: #e5e5e5;
-  --icon-icon-default-hover: #fafafa;
-  --icon-icon-default-active: #fafafa;
-  --icon-icon-secondary: #a1a1a1;
-  --icon-icon-secondary-hover: #e5e5e5;
-  --icon-icon-secondary-active: #e5e5e5;
-  --icon-icon-tertiary: #737373;
-  --icon-icon-disabled: #525252;
-  --icon-icon-brand: #6a6fff;
-  --icon-icon-brand-hover: #4b3fe3;
-  --icon-icon-brand-sub: var(--icon-icon-brand);
-  --icon-icon-brand-hover-sub: var(--icon-icon-brand-hover);
-  --icon-icon-onbrand: #0a0a0a;
-  --icon-icon-onaccent: #0A0A0A;
-  --icon-icon-white: #ffffff;
-  --border-border-neutral-l1: rgba(229, 229, 229, 0.10);
-  --border-border-neutral-l2: rgba(229, 229, 229, 0.16);
-  --border-border-neutral-l3: rgba(229, 229, 229, 0.20);
-  --border-border-brand: #6a6fff;
-  --border-border-brand-sub: var(--border-border-brand);
-  --border-border-contrast: #ffffff;
-  --status-primary-default: #387bff;
-  --status-primary-hover: #4c88ff;
-  --status-primary-active: #1759dd;
-  --status-primary-surface-l1: rgba(53, 121, 255, 0.18);
-  --status-primary-surface-l2: rgba(53, 121, 255, 0.28);
-  --status-primary-surface-l3: rgba(53, 121, 255, 0.36);
-  --status-success-default: #33c192;
-  --status-success-hover: #5ed4ad;
-  --status-success-active: #27b082;
-  --status-success-surface-l1: rgba(0, 165, 110, 0.18);
-  --status-success-surface-l2: rgba(0, 165, 110, 0.28);
-  --status-success-surface-l3: rgba(0, 165, 110, 0.36);
-  --status-alert-default: #d29d00;
-  --status-alert-hover: #dfb949;
-  --status-alert-active: #ab8820;
-  --status-alert-surface-l1: rgba(210, 157, 0, 0.16);
-  --status-alert-surface-l2: rgba(210, 157, 0, 0.28);
-  --status-alert-surface-l3: rgba(210, 157, 0, 0.36);
-  --status-warning-default: #d27e24;
-  --status-warning-hover: #d78b28;
-  --status-warning-active: #b46510;
-  --status-warning-surface-l1: rgba(210, 126, 36, 0.16);
-  --status-warning-surface-l2: rgba(210, 126, 36, 0.28);
-  --status-warning-surface-l3: rgba(210, 126, 36, 0.36);
-  --status-error-default: #f65a5a;
-  --status-error-hover: #f86262;
-  --status-error-active: #b33636;
-  --status-error-surface-l1: rgba(246, 70, 70, 0.18);
-  --status-error-surface-l2: rgba(246, 70, 70, 0.28);
-  --status-error-surface-l3: rgba(246, 70, 70, 0.36);
-  --accent-accent-teal: #2dd288;
-  --accent-accent-coral: #ff9392;
-  --accent-accent-amber: #dcb364;
-  --accent-accent-lime: #8acb3a;
-  --accent-accent-cyan: #04cbe5;
-  --accent-accent-blue: #7bb8ff;
-  --accent-accent-magenta: #ec93ff;
-  --accent-accent-violet: #bfa5ff;
-  --accent-accent-slate: #afb9cf;
-  --code-code-text: #e0e3ee;
-  --code-code-doc: #7f838c;
-  --code-code-link: #3c7eff;
-  --code-code-number: #f48cca;
-  --code-code-action: #b38cff;
-  --code-code-instruction: #f0d8ff;
-  --code-code-function: #f29d79;
-  --code-code-constant: #80bbff;
-  --code-code-parameter: #82d99f;
-  --code-code-attribute: #ded47e;
-  --code-code-tag: #f2858c;
-  --code-code-terminal: #e0e3ee;
-  --code-code-contrast: #e0e3ee;
-  --code-code-editor: #e0e3ee;
-  --special-white: #ffffff;
-  --special-black: #000000;
-  --viz-viz-series-amber: #edaa45;
-  --viz-viz-series-coral: #f87454;
-  --viz-viz-series-indigo: #b6a3ff;
-  --viz-viz-series-lime: #a6ea39;
-  --viz-viz-series-magenta: #fb9dd7;
-  --viz-viz-series-mint: #1dc981;
-  --viz-viz-series-sky: #22a5f7;
-  --viz-viz-series-slate: #859ead;
-  --viz-viz-series-teal: #78f2f2;
-  --viz-viz-series-violet: #b655fc;
-  --viz-viz-ui-bg-chart: #171717;
-  --viz-viz-ui-bg-tooltip: #0a0a0a;
-  --viz-viz-ui-chart-axis: rgba(229, 229, 229, 0.16);
-  --viz-viz-ui-chart-subtitle: #737373;
-  --viz-viz-ui-chart-tick: #737373;
-  --viz-viz-ui-chart-title: #e5e5e5;
-  --viz-viz-ui-legend-label: #737373;
-  --viz-viz-ui-legend-value: #e5e5e5;
-  --brand-blue-100: #e5f3ff;
-  --brand-blue-200: #cce6ff;
-  --brand-blue-300: #b2daff;
-  --brand-blue-400: #99ceff;
-  --brand-blue-500: #80c1ff;
-  --brand-blue-600: #64b4ff;
-  --brand-blue-700: #3792e6;
-  --brand-blue-800: #1071cb;
-  --brand-blue-900: #054c8f;
-  --brand-blue-1000: #00284d;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-purple-100: #e8e5ff;
-  --brand-purple-200: #d2ccff;
-  --brand-purple-300: #bbb2ff;
-  --brand-purple-400: #a599ff;
-  --brand-purple-500: #8e80ff;
-  --brand-purple-600: #7864ff;
-  --brand-purple-700: #4c37e6;
-  --brand-purple-800: #2610cb;
-  --brand-purple-900: #15058f;
-  --brand-purple-1000: #09004d;
-  --brand-red-100: #ffe5e5;
-  --brand-red-200: #ffcccc;
-  --brand-red-300: #ffb2b2;
-  --brand-red-400: #ff9999;
-  --brand-red-500: #ff8080;
-  --brand-red-600: #ff6464;
-  --brand-red-700: #e63737;
-  --brand-red-800: #cb1010;
-  --brand-red-900: #8f0505;
-  --brand-red-1000: #4d0000;
-  --brand-yellow-100: #fff6e5;
-  --brand-yellow-200: #ffeccc;
-  --brand-yellow-300: #ffe3b2;
-  --brand-yellow-400: #ffda99;
-  --brand-yellow-500: #ffd080;
-  --brand-yellow-600: #ffc864;
-  --brand-yellow-700: #e6a637;
-  --brand-yellow-800: #cb8710;
-  --brand-yellow-900: #8f5c05;
-  --brand-yellow-1000: #4d3000;
-  --brand-blue-grey-100: #f1eff4;
-  --brand-blue-grey-200: #e0e1e6;
-  --brand-blue-grey-300: #cfd3d8;
-  --brand-blue-grey-400: #bfc5ca;
-  --brand-blue-grey-500: #b0b5ba;
-  --brand-blue-grey-600: #a0a6ab;
-  --brand-blue-grey-700: #80898e;
-  --brand-blue-grey-800: #5e696e;
-  --brand-blue-grey-900: #404a4f;
-  --brand-blue-grey-1000: #21262b;
-  --brand-green-grey-100: #f1f4f4;
-  --brand-green-grey-200: #e0e6e6;
-  --brand-green-grey-300: #cfd8d8;
-  --brand-green-grey-400: #bfcaca;
-  --brand-green-grey-500: #b0baba;
-  --brand-green-grey-600: #a0abab;
-  --brand-green-grey-700: #808e8e;
-  --brand-green-grey-800: #5e6e6e;
-  --brand-green-grey-900: #404f4f;
-  --brand-green-grey-1000: #212b2b;
-  --brand-neutral-grey-100: #f2f2f2;
-  --brand-neutral-grey-200: #e3e3e3;
-  --brand-neutral-grey-300: #d6d6d6;
-  --brand-neutral-grey-400: #c7c7c7;
-  --brand-neutral-grey-500: #bababa;
-  --brand-neutral-grey-600: #ababab;
-  --brand-neutral-grey-700: #8a8a8a;
-  --brand-neutral-grey-800: #686868;
-  --brand-neutral-grey-900: #474747;
-  --brand-neutral-grey-1000: #262626;
-  --brand-brand-50: #f2f7ff;
-  --brand-brand-100: #e5eaff;
-  --brand-brand-200: #cfd8ff;
-  --brand-brand-300: #aab7ff;
-  --brand-brand-400: #8894ff;
-  --brand-brand-500: #6a6fff;
-  --brand-brand-600: #4b3fe3;
-  --brand-brand-700: #3f31c6;
-  --brand-brand-800: #2c2290;
-  --brand-brand-900: #1a1759;
-  --brand-brand-950: #010109;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-  --brand-brand-grey-50: #fafafa;
-  --brand-brand-grey-100: #f5f5f5;
-  --brand-brand-grey-200: #e5e5e5;
-  --brand-brand-grey-300: #d4d4d4;
-  --brand-brand-grey-400: #a1a1a1;
-  --brand-brand-grey-500: #737373;
-  --brand-brand-grey-600: #525252;
-  --brand-brand-grey-700: #404040;
-  --brand-brand-grey-800: #262626;
-  --brand-brand-grey-900: #171717;
-  --brand-brand-grey-950: #0a0a0a;
-
-  --body-body-xs: 10px/1.5 var(--font-family-default);
-  --body-body-sm: 11px/1.5 var(--font-family-default);
-  --body-body-sm-strong: 600 11px/1.5 var(--font-family-default);
-  --body-body-md: 12px/1.5 var(--font-family-default);
-  --body-body-md-strong: 600 12px/1.5 var(--font-family-default);
-  --body-body-base: 14px/1.5 var(--font-family-default);
-  --body-body-base-strong: 600 14px/1.5 var(--font-family-default);
-  --heading-heading-3xs: 600 10px/1.4 var(--font-family-heading);
-  --heading-heading-2xs: 600 11px/1.4 var(--font-family-heading);
-  --heading-heading-xs: 600 12px/1.4 var(--font-family-heading);
-  --heading-heading-sm: 600 13px/1.4 var(--font-family-heading);
-  --heading-heading-md: 600 14px/1.4 var(--font-family-heading);
-  --heading-heading-lg: 600 16px/1.4 var(--font-family-heading);
-  --heading-heading-xl: 600 20px/1.4 var(--font-family-heading);
-  --heading-heading-2xl: 600 24px/1.4 var(--font-family-heading);
-  --heading-heading-3xl: 600 32px/1.4 var(--font-family-heading);
-
-  --bg-bg-overlay-l0: rgba(176, 192, 244, 0.03);
-  --bg-primary-item: rgba(176, 192, 244, 0.09);
-  --bg-primary-item-hover: rgba(176, 192, 244, 0.13);
-  --border-primary-item: rgba(176, 192, 244, 0.06);
-  --border-primary-item-hover: rgba(176, 192, 244, 0.1);
-  /* 首页输入框边框颜色（纯色，用于内凹圆弧等需要精确边框的场景） */
-  --homepage-input-border-color: #343538;
-
-  --user-message-bg-solid: #1D352A;
-  --user-message-bg-solid-transparent: rgba(29, 53, 42, 0);
-  --user-message-bg-solid-sub: #2B2A38;
-  --user-message-bg-solid-sub-transparent: rgba(43, 42, 56, 0);
-  --sheet-text-color: #ffffff;
-  --slash-mention-bg: rgba(63, 133, 255, 0.15);
-  --builtin-slash-mention-bg: rgba(149, 112, 255, 0.15);
-
-  --gradient-golden: linear-gradient(180deg, var(--ht-dab444) 0%, var(--ht-ffea8e) 100%);
-  --special-bggoldoverlay: rgba(139, 128, 65, 0.12);
-  --query-tag-bg-grey: var(--bg-bg-overlay-l2);
-  --query-tag-text-grey: var(--text-text-default);
-  --query-tag-height: 20px;
-  --query-tag-padding: 0px 4px;
-  --query-tag-gap: 2px;
-  --query-tag-radius: 0px;
-  --query-tag-icon-slot-size: 20px;
-  --query-tag-icon-size: 16px;
-  --query-tag-font-size: 14px;
-  --query-tag-font-weight: 500;
-  --query-tag-letter-spacing: -0.02em;
-  --query-tag-bg-neutral: transparent;
-  --query-tag-text-neutral: var(--text-text-secondary);
-  --query-tag-bg-brand: transparent;
-  --query-tag-text-brand: var(--status-primary-default);
-  --query-tag-text-command: var(--text-text-brand);
-  --query-tag-text-design: var(--text-text-brand);
-  --query-tag-text-lark-sheet: #26c914;
-  --query-tag-text-lark-bitable: var(--accent-accent-violet);
-  --query-tag-icon-pdf: #cb1010;
-  --query-tag-icon-zip: var(--icon-icon-default);
-  --query-tag-icon-json: #cb8710;
-  --query-tag-icon-html: #c63b18;
-  --query-tag-icon-video: #3f85ff;
-  --query-tag-bg-blue: rgba(128, 193, 255, 0.14);
-
-  --bg-bg-brand-old: #32f08c;
-  --gradient-brand: linear-gradient(90deg, var(--ht-3ee1a3) 0%, var(--ht-32f08c) 36%, var(--ht-60f2bd) 71.63%, var(--ht-a0fde7) 100%);
-}
-</style><style id="trae-panel-enter-style">
-        @keyframes trae-panel-enter {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <style id="aihub-topnav-fix">
   .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
   .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
@@ -2891,7 +336,6 @@ a.session{text-decoration:none}
   <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
 </header>
 <div class="page">
-<div class="page">
 
   <!-- ===== 品牌条 + 返回入口（learning 例外：替代全量侧边栏）===== -->
   <header class="brandbar" role="banner">
@@ -2902,205 +346,110 @@ a.session{text-decoration:none}
     <a href="dashboard.html" class="brandbar-back">← 返回仪表盘</a>
   </header>
 
-  <!-- ===== Breadcrumb ===== -->
+  <!-- ===== Breadcrumb（真实数据由 task06 JS 回填）===== -->
   <nav class="breadcrumb" aria-label="面包屑">
     <a href="my-cohorts.html">我的班次</a><span class="sep">›</span>
-    <a href="courses.html">Academy · 零基础起步</a><span class="sep">›</span>
-    <span class="cur">第 3 章 · 30 分钟带你入门</span>
+    <a href="courses.html" id="bcSeries">课程中心</a><span class="sep">›</span>
+    <span class="cur" id="bcSession">加载中…</span>
   </nav>
 
-  <!-- ===== 课程头部 ===== -->
+  <!-- ===== 课程头部（真实数据回填：系列名/课次名/模块/时长/整体进度）===== -->
   <header class="series-head">
     <div class="mascot" aria-hidden="true">🦉</div>
     <div class="tt">
-      <div class="series">Academy · 零基础起步</div>
-      <h1>第 3 章 · 30 分钟带你入门</h1>
-      <div class="session-meta">
-        <span>讲师 <b>桃子老师</b></span>
-        <span>视频 <b>21:36</b></span>
-        <span>更新于 <b>07-28</b></span>
-        <div class="badges">
-          <span class="chip green">✅ 已学 45%</span>
-          <span class="chip purple">专项课</span>
-        </div>
-      </div>
+      <div class="series" id="seriesName">加载中…</div>
+      <h1 id="sessionHeading">加载中…</h1>
+      <div class="session-meta" id="sessionMeta"></div>
     </div>
   </header>
 
+  <!-- ===== 班次选择（task06：无入口参数时列出我的报名班次，真实数据）===== -->
+  <section class="syllabus-card" id="cohortPicker" aria-label="选择班次" hidden>
+    <div class="syl-head"><span class="ic">🎓</span> 选择要继续学习的班次 <span class="cnt" id="cohortCnt"></span></div>
+    <div id="cohortList" style="padding:6px 16px 14px"></div>
+  </section>
+
   <!-- ===== 主布局：播放区 + 大纲 ===== -->
-  <div class="layout">
+  <div class="layout" id="learnLayout" hidden>
 
-    <!-- ========== 左：播放卡 ========== -->
-    <section class="player-card" aria-label="视频播放区" style="width: 795.552px; height: 667.25px;">
+    <!-- ========== 左：播放卡（真实 <video> 由 task06 JS 按课次详情注入）========== -->
+    <section class="player-card" aria-label="视频播放区">
 
-      <!-- 计算：转码完成态（正常播放） -->
+      <!-- 转码中/不可播占位（transcode_status !== completed 时显示，不白屏） -->
       <div class="video-stage">
-        <!-- 转码中/不可播占位（transcode_status !== completed 时显示，不白屏） -->
-        <div class="transcode" id="transcodeBox" hidden="">
+        <div class="transcode" id="transcodeBox" hidden>
           <div class="big" id="tcIcon">🎬</div>
-          <div class="t" id="tcTitle">转码中，请稍候</div>
-          <div class="d" id="tcDesc">高清版正在生成，预计 1~3 分钟完成。可先学习大纲中的其它课时或下方的文字作业。</div>
+          <div class="t" id="tcTitle">加载中，请稍候</div>
+          <div class="d" id="tcDesc">正在获取本课次视频信息。</div>
           <span class="spinner" aria-hidden="true"></span>
         </div>
-        <!-- 播放垫底渐变（token 类，禁内联色值，不依赖网络图防白屏） -->
-        <div class="thumb"></div>
-        <div class="dim" aria-hidden="true"></div>
-        <span class="ch-badge">正播放 · 章节 <b id="curCh">02 / 05</b> 基础概念</span>
-        <button class="play-btn" id="playBtn" aria-label="播放视频"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></button>
-        <div class="video-controls">
-          <div class="scrub"><span class="buf"></span><span class="played" id="playedBar" style="width: 96.8%;"></span><span class="knob"></span></div>
-          <div class="vc-row">
-            <span class="time"><span id="curTime">20:55</span> / 21:36</span>
-            <span class="vc-ic speed">1.0×</span>
-            <div class="right">
-              <span class="vc-ic" title="章节跳转（session_video_chapter）">⏮</span>
-              <span class="vc-ic" title="上一章">◀</span>
-              <span class="vc-ic" title="下一章">▶</span>
-              <span class="vc-ic" title="全屏">⛶</span>
-            </div>
-          </div>
-        </div>
+        <span class="ch-badge" id="chBadge" hidden>正播放 · <b id="curCh"></b></span>
       </div>
 
       <div class="player-meta">
-        <h2 class="session-title">这一课你将学会：基础概念与部件认识</h2>
+        <h2 class="session-title" id="sessionSub">加载中…</h2>
         <div class="prog-row">
-          <span class="or-spin"><span class="spinner" aria-hidden="true"></span> 15s 打点学习中</span>
-          
-          <span class="done-flag" style="width: 200.208px; height: 30px; transform: matrix(1, 0, 0, 1, -3.05176e-05, 0.666666);">🎉 判定：观看 ≥90% 或作业提交</span>
+          <span class="or-spin" id="tickNotice" hidden><span class="spinner" aria-hidden="true"></span> <span id="tickNoticeText">播放打点已缓冲</span></span>
+          <span class="done-flag" id="doneFlag">⏳ 等待课次数据…</span>
         </div>
       </div>
 
-      <!-- ===== Tabs：视频 / 作业 / 考试（对齐参考图：播放/文件/警告三角图标 + 绿色角标）===== -->
-      <div class="tabs" id="tabs" role="tablist" aria-label="学习任务" style="width: 715.552px; height: 49.3333px; transform: matrix(1, 0, 0, 1, 0, -33.3333);">
+      <!-- ===== Tabs：视频 / 作业 / 考试（角标由 task06 JS 按真实资源数回填）===== -->
+      <div class="tabs" id="tabs" role="tablist" aria-label="学习任务">
         <button class="tab on" id="tab-video" role="tab" aria-selected="true" aria-controls="p-video" aria-labelledby="tab-video" tabindex="0"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg> 视频</button>
-        <button class="tab" id="tab-hw" role="tab" aria-selected="false" aria-controls="p-hw" aria-labelledby="tab-hw" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a2 2 0 0 0 2 2h4"></path><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"></path></svg> 作业 <span class="cnt">1</span></button>
-        <button class="tab" id="tab-exam" role="tab" aria-selected="false" aria-controls="p-exam" aria-labelledby="tab-exam" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 1.5 21h21z"></path><path d="M12 10.5v4"></path><path d="M12 18h.01"></path></svg> 考试 <span class="cnt">1</span></button>
+        <button class="tab" id="tab-hw" role="tab" aria-selected="false" aria-controls="p-hw" aria-labelledby="tab-hw" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a2 2 0 0 0 2 2h4"></path><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"></path></svg> 作业<span class="cnt" id="hwCnt" hidden>0</span></button>
+        <button class="tab" id="tab-exam" role="tab" aria-selected="false" aria-controls="p-exam" aria-labelledby="tab-exam" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 1.5 21h21z"></path><path d="M12 10.5v4"></path><path d="M12 18h.01"></path></svg> 考试<span class="cnt" id="examCnt" hidden>0</span></button>
       </div>
 
-      <!-- 视频 tab -->
-      <div class="tab-panel active" id="p-video" role="tabpanel" aria-labelledby="tab-video" style="">
-        <h3 style="width: 720.219px; height: 27.3229px; transform: matrix(1, 0, 0, 1, 0.666689, -40.6563);">📒 课程简介</h3>
-        <p class="intro-p" style="width: 701.552px; height: 39.5px; transform: matrix(1, 0, 0, 1, 6.66663, -55.9896);">本节课带你先建立整体认知：部件的命名、连接方式与四步排查法。完成视频后将解锁作业，作业通过可进入考试，全部完成即结课。</p>
+      <!-- 视频 tab：真实契约无课程简介字段 → 诚实占位（不伪造文案） -->
+      <div class="tab-panel active" id="p-video" role="tabpanel" aria-labelledby="tab-video">
+        <h3>📒 课程简介</h3>
+        <p class="intro-p" id="introText">正在加载课次信息…</p>
       </div>
 
-      <!-- 作业 tab -->
+      <!-- 作业 tab：本页无作业提交契约落点 → 诚实列出课次文字资源（task06 实测） -->
       <div class="tab-panel" id="p-hw" role="tabpanel" aria-labelledby="tab-hw">
-        <h3>📝 本节作业</h3>
-        <div class="hw-card">
-          <div class="hw-head">
-            <span class="ic">✍️</span>
-            <span class="t">单选择题 · 第 1 题</span>
-            <span class="meta"><span class="chip orange">待提交</span></span>
-          </div>
-          <p class="q1-text">高频使用的工具，下列哪个部件属于「输入设备」？</p>
-          <div class="opt">
-            <label><input type="radio" name="q1" value="A"><span>键盘、鼠标、摄像头</span></label>
-            <label><input type="radio" name="q1" value="B"><span>显示器、音箱、打印机</span></label>
-            <label><input type="radio" name="q1" value="C"><span>CPU、内存、硬盘</span></label>
-            <label><input type="radio" name="q1" value="D"><span>路由器、交换机、网卡</span></label>
-          </div>
-          <button class="btn btn-primary">提交判断</button>
-        </div>
-
-        <!-- 判分结果（session_homework_submission 落库后展示，analysis_text 解析可见） -->
-        <div class="result">
-          <div class="score-row">
-            <span class="score-big">90 分</span>
-            <span class="stars" aria-label="评分 4.5">★★★★☆</span>
-            <span class="chip green">已通过</span>
-          </div>
-          <div class="analysis"><b>逐题解析：</b>B 是输出设备，C/D 属于主机/网络部件。你做对了输入设备的判断，第 3 题对「部件连接」理解需加强。</div>
-        </div>
+        <h3>📝 本节资源</h3>
+        <p class="intro-p" id="hwPlaceholder">正在加载课次资源…</p>
       </div>
 
-      <!-- 考试 tab -->
+      <!-- 考试 tab：真实契约无考试落点 → 诚实空态（不伪造题卡/计时器） -->
       <div class="tab-panel" id="p-exam" role="tabpanel" aria-labelledby="tab-exam">
         <h3>📐 本节考试</h3>
-        <div class="exam-bar">
-          <span class="exam-timer"><span class="tt">剩余时间</span> <span id="examClock">14:32</span></span>
-          <span class="exam-prog">已作答 2 / 5 题</span>
-          <button class="btn btn-orange" style="margin-left:auto">交卷</button>
-        </div>
-        <div class="q-card">
-          <div class="q-no">单选题 · 1 / 5</div>
-          <div class="q-text">哪类设备用于长期存储数据？</div>
-          <div class="opt">
-            <label><input type="radio" name="e1" value="A"><span>内存条</span></label>
-            <label><input type="radio" name="e1" value="B"><span>固态硬盘（SSD）</span></label>
-            <label><input type="radio" name="e1" value="C"><span>CPU 缓存</span></label>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:space-between">
-          <button class="btn btn-ghost">上一题</button>
-          <button class="btn btn-ghost">下一题</button>
-        </div>
+        <p class="intro-p" id="examPlaceholder">正在加载课次考试信息…</p>
       </div>
 
     </section>
 
-    <!-- ========== 右：大纲 Accordion ========== -->
-    <aside class="syllabus-card" aria-label="课程大纲" style="width: 277.781px; height: 667.333px; transform: matrix(1, 0, 0, 1, 57.3332, 0);">
-      <div class="syl-head"><span class="ic">📚</span> 课程大纲 <span class="cnt">45% 已学 · 4/9 完成</span></div>
-      <!-- 章 1：完成 -->
-      <div class="lvl-row"><span class="ch done">✓</span> 第 1 章 · 认识零件</div>
-      <!-- 章 2：完成 -->
-      <div class="lvl-row"><span class="ch done">✓</span> 第 2 章 · 快速上手</div>
-      <!-- 章 3：当前，可展开 -->
-      <div class="acc" open="">
-        <button class="acc-head" aria-expanded="true">
-          <span class="acc-ind">▶</span> 第 3 章 · 30 分钟入门 <span class="syl-cnt">2/5</span>
-        </button>
-        <div class="acc-body">
-          <a class="session done" href="#"><span class="st done">✓</span><span class="nm">3.1 课前准备与工具</span><span class="dur">06:12</span></a>
-          <a class="session done" href="#"><span class="st done">✓</span><span class="nm">3.2 基础概念梳理</span><span class="dur">11:40</span></a>
-          <a class="session cur" href="#" aria-current="page"><span class="st cur">▶</span><span class="nm">3.3 本课核心 · 入门实操</span><span class="dur">21:36</span></a>
-          <a class="session todo" href="#"><span class="st todo">○</span><span class="nm">3.4 进阶练习</span><span class="dur">08:50</span></a>
-          <a class="session todo" href="#" style="font-size: 13px;"><span class="st todo">○</span><span class="nm">3.5 本章测评</span><span class="dur">10:00</span></a>
-        </div>
-      </div>
-      <!-- 章 4/5：未开始 -->
-      <div class="lvl-row"><span class="ch todo">○</span> 第 4 章 · 排障实战</div>
-      <div class="lvl-row"><span class="ch todo">○</span> 第 5 章 · 综合拓展</div>
+    <!-- ========== 右：大纲 Accordion（真实大纲由 task06 JS 渲染）========== -->
+    <aside class="syllabus-card" aria-label="课程大纲">
+      <div class="syl-head"><span class="ic">📚</span> 课程大纲 <span class="cnt" id="sylCnt">加载中…</span></div>
+      <div id="sylBody" style="padding:4px 0 10px"><p class="intro-p" style="padding:10px 16px">正在加载学习大纲…</p></div>
     </aside>
 
   </div><!-- /layout -->
 
-  <!-- ===== 未报名 403 守卫演示（enrolled 守卫不吞错）===== -->
-  <section class="error-demo" aria-label="未报名访问 enrolled_only 课次">
+  <!-- ===== 未报名/无权限 403 守卫（enrolled_only 守卫不吞错，默认隐藏，task06 JS 按真实 access 结果显示）===== -->
+  <section class="error-demo" id="accessGuard" aria-label="未报名访问提示" hidden>
     <div class="ic">🔒</div>
-    <div class="code">403 · 未报名</div>
-    <div class="t">本课为报名专属内容</div>
-    <div class="d">仅已报名该班次的学员可观看该 。请先报名本系列后返回继续学习。</div>
-    <button class="btn btn-primary">去报名 / 返回课程中心</button>
+    <div class="code" id="guardCode">403 · 未报名</div>
+    <div class="t" id="guardTitle">本课为报名专属内容</div>
+    <div class="d" id="guardDesc">仅已报名该班次的学员可观看该课次。请先报名本系列后返回继续学习。</div>
+    <a class="btn btn-primary" id="guardCta" href="courses.html">去报名 / 返回课程中心</a>
   </section>
-
-  <!-- ===== 演示控件（仅原型示意，标注待联调）===== -->
-  <div class="demos" role="group" aria-label="原型演示切换">
-    <span class="demo-lab">原型演示：</span>
-    <button class="deb on" id="d-play" data-demo="play">▶ 正常播放</button>
-    <button class="deb" id="d-chip" data-demo="chip">🎥 章节跳转高亮</button>
-    <button class="deb" id="d-trans" data-demo="trans">⏳ 转码中占位</button>
-    <button class="deb" id="d-bad" data-demo="bad">🚫 不可播占位</button>
-    <button class="deb" id="d-jump" data-demo="jump">⚡ 12:04 / 播放 56%</button>
-    <span class="demo-lab" style="margin-left:6px">(task21/23 未上线，React 阶段写真实接口待联调，禁 MOCK)</span>
-  </div>
 
 </div><!-- /page -->
 
-<!-- ===== 底部工具栏 ===== -->
+<!-- ===== 底部工具栏（真实跳转：chat / practice；chat.html 无 context 参数，不伪造）===== -->
 <div class="toolbar">
   <div class="toolbar-inner">
-    <button class="ai" style="width: 521.552px; height: 39.9896px; transform: matrix(1, 0, 0, 1, 0, 0.343769);">
+    <a class="ai" href="chat.html">
       <span class="ic">🧠</span>
       <span style="display:flex;flex-direction:column;gap:1px">
         <span>AI 提问 · 本课答疑</span>
-        
       </span>
-    </button>
-    
-    
-  <button class="btn btn-ghost" style="width: 353.104px; height: 40.6667px; transform: matrix(1, 0, 0, 1, -6.10351e-05, 0)">📒 错题本 → /practice</button></div>
+    </a>
+  <a class="btn btn-ghost" href="practice.html">📒 错题本 → /practice</a></div>
 </div>
 
 <script>
@@ -3125,33 +474,8 @@ a.session{text-decoration:none}
   });
   sel(0);
 })();
-
-/* ===== 演示切换 ===== */
-(function(){
-  var d=document,qs=function(s){return d.querySelector(s)};
-  var playBtn=qs('#playBtn'),bar=qs('#playedBar'),curTime=qs('#curTime'),ch=qs('#curCh'),box=qs('#transcodeBox'),tcIcon=qs('#tcIcon'),tcTitle=qs('#tcTitle'),tcDesc=qs('#tcDesc');
-  function setTime(sec,total){var m=Math.floor(sec/60).toString().padStart(2,'0'),s=Math.floor(sec%60).toString().padStart(2,'0');curTime.textContent=m+':'+s;bar.style.width=(sec/total*100).toFixed(1)+'%';}
-  var minus=setInterval(function(){var t=parseInt(curTime.textContent.split(':')[0])*60+parseInt(curTime.textContent.split(':')[1]);if(t<1250){setTime(t+15,1296);}else{clearInterval(minus);}},1500);
-  /* 演示按钮 */
-  Array.prototype.slice.call(document.querySelectorAll('.deb')).forEach(function(b){
-    b.addEventListener('click',function(){
-      Array.prototype.slice.call(document.querySelectorAll('.deb')).forEach(function(x){x.classList.remove('on')});
-      b.classList.add('on');
-      var m=b.getAttribute('data-demo'),is=function(){return m==='chip'};
-      ch.textContent=is()?'01 / 05 · 准备':'02 / 05 · 基础概念';
-      tcIcon.className='big';playBtn.style.display='grid';
-      box.hidden=true;box.querySelector('.spinner').style.display='inline-block';
-      if(m==='play'){setTime(445,1296);playBtn.style.display='grid';}
-      if(m==='jump'){setTime(724,1296);playBtn.style.display='grid';}
-      if(m==='chip'){setTime(724,1296);playBtn.style.display='grid';}
-      if(m==='trans'){box.hidden=false;tcIcon.textContent='🎬';tcTitle.textContent='转码中，请稍候';tcDesc.textContent='高清版正在生成，预计 1~3 分钟完成。可先学习大纲中的其它课时或下方的文字作业。';box.querySelector('.spinner').style.display='inline-block';playBtn.style.display='none';}
-      if(m==='bad'){box.hidden=false;tcIcon.className='big warn';tcIcon.textContent='📵';tcTitle.textContent='暂不可播';tcDesc.textContent='该课次视频处理失败或已下架，请联系助教。下方文字作业与考试仍可正常进行。';box.querySelector('.spinner').style.display='none';playBtn.style.display='none';}
-    });
-  });
-  })();
 </script>
 
-</div></div>
 <script src="/edu-api.js"></script>
 <script>
 /* admin 角色显示管理后台入口 */
@@ -3182,72 +506,115 @@ a.session{text-decoration:none}
 })();
 </script>
 <script>
-/* task119：learning 学习动线真实接入（仅学习页，非全局）
- * 契约（curl 实测，task103 沿用）：
- *   GET  /api/study/courses/{series_id}/access   → {accessible, cohort_id, reason}
- *   GET  /api/study/courses/{series_id}/outline  → StudyOutline{series_title,overall_ratio,total_sessions,completed_sessions,modules[{module_title,sessions[{session_id,session_title,session_no,duration_minutes,watch_ratio,homework_done,transcode_status}]}]}
- *   GET  /api/study/sessions/{session_id}        → StudySessionDetail{...video{...transcode_status,video_url},assets[]}
- *   POST /api/progress/video/tick-batch          → VideoTickBatchIn{play_session_id,session_id,ticks[]≤200}
- *   POST /api/study/sessions/{session_id}/complete → {session_id, completed}
- * 边界三态：转码中（pending/in_progress→占位）/ 无报名（access.accessible=false→403 守卫）/
- *          access 403（session detail err.status===403→守卫）。
- * 无 token → 本块整体跳过，保留演示态；有 token → 全部真实数据。
- * 不重定义全局 $ / renderSides；只读不覆盖 task103 的 LEARNING_ENTRY。 */
+/* task06：learning 学习页全量接线（承接 task103 入口参数 + task119 半接线；契约冻结 reshape-a 30aeddbe）
+ * 契约（curl 实测 2026-09-12，证据见 test-reports/task06-completion-report-reshape-a.md）：
+ *   GET  /api/enrollments/me/cohorts              → [{cohort_id,cohort_name,series_id,series_name,overall_ratio,session_done,session_total,...}]
+ *   GET  /api/study/courses/{series_id}/access    → {accessible,cohort_id,reason}（未报名 accessible=false）
+ *   GET  /api/study/courses/{series_id}/outline   → {series_title,overall_ratio,total_sessions,completed_sessions,modules[...]}
+ *   GET  /api/study/sessions/{session_id}         → {session_title,module_name,series_id,assets[],video{video_url,transcode_status,...}}
+ *     （未报名 enrolled_only → HTTP 403 code=40330）
+ *   POST /api/study/sessions/{session_id}/complete → {session_id,completed}
+ *   GET  /api/progress/dashboard                  → 学习看板（渲染在 dashboard.html，本页不复读）
+ * 缺口 task06-G1（诚实降级，不臆造）：POST /api/progress/video/tick-batch 要求已存在的
+ *   session_video_play.id 作为 play_session_id，冻结契约无「创建播放会话」端点（实测 400010
+ *   play_session not found）→ 本页不伪造 ID 上报打点，改为诚实状态提示；可真实写库路径为
+ *   complete（实测 completed:true）。
+ * 三态：加载中（spinner 文案）/ 空态（未报名→引导报名；无资源→诚实空态）/ 错误（守卫卡）。
+ * 不重定义全局 $ / renderSides；不覆盖 task103 的 window.LEARNING_ENTRY。 */
 (function () {
   if (!window.EAPI) return;
   var E = EAPI;
-  if (!E.store.getToken()) return; // 无 token 保留演示态
   var $ = function (s) { return document.querySelector(s); };
   var $all = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
 
-  var state = {
-    series_id: 0, cohort_id: 0, session_id: 0,
-    outline: null, play_session_id: 0, tickBuf: [], flushtimer: null, sending: false
-  };
+  var state = { series_id: 0, cohort_id: 0, session_id: 0, outline: null };
 
-  // ---- 参数：EAPI.pageId 统一读 ?name=（task102；禁正则在查参上）----
-  state.series_id = parseInt(E.pageId("series_id"), 10) || 0;
-  state.cohort_id = parseInt(E.pageId("cohort_id"), 10) || 0;
-  state.session_id = parseInt(E.pageId("session_id"), 10) || 0;
-  if (!state.series_id && !state.cohort_id && !state.session_id) return; // 无入口参数 → 保留演示态
-
-  function netType() { try { var c = navigator.connection; return (c && c.effectiveType) ? c.effectiveType.toUpperCase() : "WIFI"; } catch (e) { return "WIFI"; } }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function intParam(v) { var n = parseInt(v, 10); return isNaN(n) || n <= 0 ? 0 : n; }
 
-  function showAccess(ok, reason) {
-    var guard = $(".error-demo");
-    if (guard) guard.style.display = ok ? "none" : "";
-    if (guard && !ok && reason) {
-      var t = guard.querySelector(".t"), d = guard.querySelector(".d");
-      if (t) t.textContent = "本课为报名专属内容";
-      if (d) d.textContent = reason || "仅已报名该班次的学员可观看该课次。";
-    }
-    var demos = $(".demos");
-    if (demos) demos.style.display = ok ? "none" : "none"; // 真实模式始终隐藏原型演示控件
+  function showGuard(opts) {
+    var g = $("#accessGuard");
+    if (!g) return;
+    g.hidden = false;
+    $("#guardCode").textContent = (opts && opts.code) || "403 · 未报名";
+    $("#guardTitle").textContent = (opts && opts.title) || "本课为报名专属内容";
+    $("#guardDesc").textContent = (opts && opts.desc) || "仅已报名该班次的学员可观看该课次。请先报名本系列后返回继续学习。";
+    var cta = $("#guardCta");
+    cta.textContent = (opts && opts.ctaText) || "去报名 / 返回课程中心";
+    cta.href = (opts && opts.ctaHref) || "courses.html";
+    $("#learnLayout").hidden = true;
+    $("#cohortPicker").hidden = true;
+  }
+  function hideGuard() { var g = $("#accessGuard"); if (g) g.hidden = true; }
+
+  function setTickNotice() {
+    // task06-G1 诚实状态：打点端点需要已存在的播放会话 ID，契约无创建端点 → 不伪造上报
+    var n = $("#tickNotice");
+    if (!n) return;
+    var sp = n.querySelector(".spinner");
+    if (sp) sp.style.display = "none";
+    n.hidden = false;
+    $("#tickNoticeText").textContent = "播放打点暂不上报（后端缺播放会话创建端点·缺口 task06-G1）";
+  }
+
+  /* ---- 班次选择（task06 新增：无入口参数时的学习入口）---- */
+  function renderCohortPicker() {
+    $("#learnLayout").hidden = true;
+    E.get("/api/enrollments/me/cohorts").then(function (list) {
+      var arr = Array.isArray(list) ? list : [];
+      var picker = $("#cohortPicker"), listEl = $("#cohortList");
+      if (!picker || !listEl) return;
+      $("#bcSession").textContent = "选择班次";
+      if (!arr.length) {
+        picker.hidden = true;
+        showGuard({ code: "空态 · 未报名", title: "暂无报名中的班次", desc: "报名后即可在这里进入学习：班次 → 课次 → 视频 → 完成态。", ctaText: "去课程中心选课报名", ctaHref: "courses.html" });
+        return;
+      }
+      picker.hidden = false;
+      $("#cohortCnt").textContent = arr.length + " 个报名班次";
+      listEl.innerHTML = arr.map(function (c) {
+        var ratio = Math.round(Number(c.overall_ratio) || 0);
+        return '<div class="hw-card"><div class="hw-head"><span class="ic">🎓</span>' +
+          '<span class="t">' + esc(c.cohort_name) + '</span>' +
+          '<span class="meta"><span class="chip purple">' + esc(c.series_name || ("系列 #" + c.series_id)) + '</span>' +
+          '<span class="chip green">✅ 已学 ' + ratio + '%</span></span></div>' +
+          '<p class="intro-p">课次进度 ' + (Number(c.session_done) || 0) + ' / ' + (Number(c.session_total) || 0) + ' · 整体 ' + ratio + '%</p>' +
+          '<button type="button" class="btn btn-primary" data-series="' + c.series_id + '" data-cohort="' + c.cohort_id + '">▶ 继续学习</button></div>';
+      }).join("");
+      $all("#cohortList button[data-series]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          start(intParam(b.getAttribute("data-series")), intParam(b.getAttribute("data-cohort")));
+        });
+      });
+    }).catch(function (e) {
+      console.warn("[learning] cohorts failed", e && e.message);
+      showGuard({ code: "加载失败", title: "班次列表获取失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    });
   }
 
   /* ---- 侧栏大纲渲染（模块→课次树 + watch_ratio 进度 + 当前课次高亮）---- */
   function renderOutline(o) {
-    var aside = $(".syllabus-card");
-    if (!aside) return;
-    var head = $(".syl-head");
-    if (head) {
-      var cnt = head.querySelector(".cnt");
-      if (cnt) cnt.textContent = o.overall_ratio + "% 已学 · " + o.completed_sessions + "/" + o.total_sessions + " 完成";
-    }
-    var curSid = state.session_id, curModOwner = false;
+    state.outline = o;
+    var head = $("#sylCnt");
+    if (head) head.textContent = o.overall_ratio + "% 已学 · " + o.completed_sessions + "/" + o.total_sessions + " 完成";
+    var bcS = $("#bcSeries");
+    if (bcS) { bcS.textContent = o.series_title || "课程中心"; bcS.href = "course-detail.html?id=" + state.series_id; }
+    var sn = $("#seriesName");
+    if (sn) sn.textContent = o.series_title || "";
+    var curSid = state.session_id;
     var html = "";
     (o.modules || []).forEach(function (m) {
-      var modHasCur = (m.sessions || []).some(function (s) { return s.session_id === curSid; });
-      if (modHasCur) curModOwner = true;
-      var doneCnt = (m.sessions || []).filter(function (s) { return s.watch_ratio >= 80 && s.homework_done; }).length;
-      html += '<div class="acc"' + (modHasCur ? ' open=""' : "") + ">";
-      html += '<button type="button" class="acc-head" aria-expanded="' + (modHasCur ? "true" : "false") + '"><span class="acc-ind">' + (modHasCur ? "▼" : "▶") + "</span> " + esc(m.module_title) + ' <span class="syl-cnt">' + doneCnt + "/" + (m.sessions || []).length + "</span></button>";
+      var sess = m.sessions || [];
+      var modHasCur = sess.some(function (s) { return s.session_id === curSid; });
+      var doneCnt = sess.filter(function (s) { return s.watch_ratio >= 80 && s.homework_done; }).length;
+      html += '<div class="acc"' + (modHasCur ? " open" : "") + '>';
+      html += '<button type="button" class="acc-head" aria-expanded="' + (modHasCur ? "true" : "false") + '"><span class="acc-ind">' + (modHasCur ? "▼" : "▶") + "</span> " + esc(m.module_title) + ' <span class="syl-cnt">' + doneCnt + "/" + sess.length + "</span></button>";
       html += '<div class="acc-body">';
-      (m.sessions || []).forEach(function (s) {
+      sess.forEach(function (s) {
         var isCur = s.session_id === curSid;
-        var cls = isCur ? "cur" : (s.watch_ratio >= 80 && s.homework_done ? "done" : "todo");
-        var st = isCur ? "▶" : (s.watch_ratio >= 80 && s.homework_done ? "✓" : "○");
+        var done = s.watch_ratio >= 80 && s.homework_done;
+        var cls = isCur ? "cur" : (done ? "done" : "todo");
+        var st = isCur ? "▶" : (done ? "✓" : "○");
         html += '<a class="session ' + cls + '"' + (isCur ? ' aria-current="page"' : "") +
           ' href="learning.html?cohort_id=' + state.cohort_id + '&series_id=' + state.series_id + '&session_id=' + s.session_id + '">' +
           '<span class="st ' + cls + '">' + st + "</span><span class=\"nm\">" + esc(s.session_title) + "</span>" +
@@ -3255,216 +622,209 @@ a.session{text-decoration:none}
       });
       html += "</div></div>";
     });
-    var body = aside.querySelector(".acc-body, .lvl-row");
-    if (body) { // 整块替换章节区（保留 syl-head）
-      var wrap = document.createElement("div");
-      wrap.innerHTML = html;
-      $all(".lvl-row", aside).forEach(function (n) { n.remove(); });
-      $all(".acc", aside).forEach(function (n) { n.remove(); });
-      aside.appendChild(wrap);
-    }
-    return o;
-  }
-
-  /* ---- 课次详情渲染：视频（转码/不可播/可播）+ 资源入口 ---- */
-  function renderSession(d) {
-    state.session_id = d.session_id; state.series_id = d.series_id || state.series_id;
-    if (state.cohort_id) { var a = $("a.breadcrumb .cur, .series-head h1"); if (a) a.textContent = d.session_title; }
-    var h1 = $(".series-head h1");
-    if (h1) h1.textContent = d.session_title;
-    var sname = $(".series-head .tt .series");
-    if (sname && state.outline) sname.textContent = state.outline.series_title;
-    var st = $(".player-meta .session-title");
-    if (st) st.textContent = "这一课你将学会：" + d.session_title;
-
-    // --- 视频区：按 transcode_status 三态 ---
-    var vs = $(".video-stage"), box = $("#transcodeBox"), pb = $("#playBtn");
-    var video = vs && vs.querySelector("video.real-video");
-    if (video) { video.remove(); video = null; }
-    var v = d.video;
-    if (v && v.transcode_status === "completed" && v.video_url) {
-      if (box) box.hidden = true;
-      if (vs) {
-        var vdo = document.createElement("video");
-        vdo.className = "real-video";
-        vdo.controls = true; vdo.preload = "metadata";
-        vdo.style.cssText = "width:100%;aspect-ratio:16/9;display:block;background:#000;";
-        vdo.src = v.video_url;
-        vs.insertBefore(vdo, vs.firstChild);
-        $all(".thumb,.dim", vs).forEach(function (n) { n.remove(); });
-        if (pb) pb.style.display = "none";
-        var ch = $("#curCh");
-        if (ch) ch.textContent = "正播放 · " + d.session_title;
-        wirePlayback(vdo, v.duration_seconds || 0);
-      }
-    } else if (v && (v.transcode_status === "pending" || v.transcode_status === "in_progress")) {
-      if (box) { box.hidden = false; } // 转码中
-      if (pb) pb.style.display = "none";
-    } else if (v && v.transcode_status === "failed") {
-      if (box) { box.hidden = false; var ic = $("#tcIcon"), t2 = $("#tcTitle"), t3 = $("#tcDesc"); if (ic) { ic.textContent = "📵"; } if (t2) t2.textContent = "暂不可播"; if (t3) t3.textContent = "该课次视频处理失败或已下架，请联系助教。下方文字资源仍可查看。"; }
-      if (pb) pb.style.display = "none";
-    } else {
-      if (box) box.hidden = false; // 无视频 → 占位
-      if (pb) pb.style.display = "none";
-    }
-
-    // --- 资源入口（作业/讲义/参考资料）按 material_category ---
-    var panel = $("#p-hw");
-    if (panel) {
-      var assets = (d.assets || []).filter(function (a) { return a.material_category !== "video"; });
-      var catLabel = { handout: "讲义", exercise: "作业练习", reference: "参考资料", image: "图片" };
-      if (assets.length) {
-        panel.innerHTML = '<h3>📝 本节资源</h3>' + assets.map(function (a) {
-          return '<div class="hw-card"><div class="hw-head"><span class="ic">📎</span><span class="t">' + esc(a.asset_name) + "</span><span class=\"meta\"><span class=\"chip orange\">" + (catLabel[a.material_category] || a.material_category) + "</span></span></div><a class=\"btn btn-primary\" href=\"" + esc(a.file_url) + '" target="_blank" rel="noopener">打开资源</a></div>';
-        }).join("");
-      } else {
-        panel.innerHTML = '<h3>📝 本节资源</h3><p class="intro-p">本节暂无文字资源。</p>';
-      }
-    }
-    var exPanel = $("#p-exam");
-    if (exPanel) exPanel.querySelector("h3") && exPanel.classList.forEach(function () {});
-    // 考试 tab：真实契约无考试落点 → 诚实空态（不伪造）
-    if (exPanel) exPanel.innerHTML = '<h3>📐 本节考试</h3><p class="intro-p">本节暂无考试安排。</p>';
-
-    // --- 完成态 + 标记完成按钮 ---
-    renderComplete(d);
-  }
-
-  function renderComplete(d) {
-    var prog = $(".player-meta .prog-row");
-    if (!prog) return;
-    var flag = prog.querySelector(".done-flag");
-    var isDone = (d.video && d.video.transcode_status === "completed");
-    // 从大纲取当前课次完成度
-    var cur = findOutlineSession(state.session_id);
-    var done = cur ? (cur.watch_ratio >= 80) : isDone;
-    if (flag) { flag.textContent = done ? "🎉 判定：观看 ≥80% 或作业提交（已完成）" : "⏳ 观看进度 " + (cur ? Math.round(cur.watch_ratio) : 0) + "% 后标记完成"; }
-    var btn = $("#realCompleteBtn");
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.id = "realCompleteBtn";
-      btn.type = "button";
-      btn.className = "btn btn-primary";
-      btn.style.marginLeft = "auto";
-      btn.textContent = "标记完成";
-      prog.appendChild(btn);
-    }
-    btn.onclick = function () {
-      E.post("/api/study/sessions/" + state.session_id + "/complete").then(function (r) {
-        if (flag) flag.textContent = "🎉 已标记完成";
-        refreshOutline(); // 完成后刷新大纲树状态
-      }).catch(function (err) { console.warn("[learning] complete failed", err && err.message); });
-    };
+    var body = $("#sylBody");
+    if (body) body.innerHTML = html || '<p class="intro-p" style="padding:10px 16px">大纲暂无可见课次（未报名或课程无内容）。</p>';
   }
 
   function findOutlineSession(sid) {
     if (!state.outline) return null;
     for (var i = 0; i < state.outline.modules.length; i++) {
-      for (var j = 0; j < state.outline.modules[i].sessions.length; j++) {
-        if (state.outline.modules[i].sessions[j].session_id === sid) return state.outline.modules[i].sessions[j];
+      var sess = state.outline.modules[i].sessions || [];
+      for (var j = 0; j < sess.length; j++) {
+        if (sess[j].session_id === sid) return sess[j];
       }
     }
     return null;
   }
 
+  /* ---- 课次详情渲染：视频三态（可播/转码中/不可播）+ 资源 + 完成态 ---- */
+  function renderSession(d) {
+    state.session_id = d.session_id;
+    if (d.series_id) state.series_id = parseInt(d.series_id, 10);
+    $("#bcSession").textContent = d.session_title;
+    $("#sessionHeading").textContent = d.session_title;
+    $("#sessionSub").textContent = (d.module_name ? d.module_name + " · " : "") + "第 " + (d.session_no || "-") + " 课";
+    var meta = $("#sessionMeta");
+    if (meta) {
+      var cur = findOutlineSession(d.session_id);
+      var ratio = cur ? Math.round(cur.watch_ratio) : 0;
+      meta.innerHTML = '<span>模块 <b>' + esc(d.module_name || "-") + "</b></span>" +
+        '<span>课次状态 <b>' + esc(d.teaching_status || "-") + "</b></span>" +
+        '<span class="badges"><span class="chip green">✅ 本课观看 ' + ratio + "%</span></span>";
+    }
+
+    // --- 视频区：按 transcode_status 三态（真实 <video>，/media 或合法 URL 才可播）---
+    var vs = $(".video-stage"), box = $("#transcodeBox"), badge = $("#chBadge");
+    var old = vs && vs.querySelector("video.real-video");
+    if (old) { old.remove(); old = null; }
+    if (badge) badge.hidden = true;
+    var v = d.video;
+    // 可播判定：仅本地 /media 真实文件（实测 GET /media/videos/xxx 200 且字节一致）。
+    // seed http(s) 外链假域名为不可达地址 → 归入"外部地址暂不可播"，不渲染必失败的 <video>。
+    var playable = !!(v && v.transcode_status === "completed" && v.video_url &&
+      v.video_url.charAt(0) === "/" && !/^\/\//.test(v.video_url));
+    if (playable) {
+      if (box) box.hidden = true;
+      var vdo = document.createElement("video");
+      vdo.className = "real-video";
+      vdo.controls = true; vdo.preload = "metadata";
+      vdo.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;";
+      vdo.src = v.video_url;
+      vs.insertBefore(vdo, vs.firstChild);
+      if (badge) { badge.hidden = false; $("#curCh").textContent = v.video_title || d.session_title; }
+    } else if (v && (v.transcode_status === "pending" || v.transcode_status === "in_progress")) {
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "🎬"; $("#tcIcon").className = "big"; $("#tcTitle").textContent = "转码中，请稍候"; $("#tcDesc").textContent = "高清版正在生成，完成后即可播放。可先学习大纲中的其它课时。"; }
+    } else if (v && v.transcode_status === "failed") {
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "📵"; $("#tcIcon").className = "big warn"; $("#tcTitle").textContent = "暂不可播"; $("#tcDesc").textContent = "该课次视频处理失败或已下架，请联系助教。下方资源仍可查看。"; }
+    } else {
+      // 含 seed 外链假域名与无视频两种情况 → 诚实占位
+      var ext = v && v.video_url && /^https?:/.test(v.video_url);
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "📵"; $("#tcIcon").className = "big warn"; $("#tcTitle").textContent = "暂不可播"; $("#tcDesc").textContent = ext ? "本课次视频为外部存储地址，暂不可本地播放。可查看下方文字资源或学习大纲其它课时。" : "本课次暂无可播放的视频资源。可查看下方文字资源或学习大纲其它课时。"; }
+    }
+
+    // --- 资源（作业 tab）：material_category 过滤，非视频资源可打开 ---
+    var panel = $("#p-hw");
+    var assets = (d.assets || []).filter(function (a) { return a.material_category !== "video"; });
+    var hwCount = assets.length;
+    var hwBadge = $("#hwCnt");
+    if (hwBadge) { if (hwCount) { hwBadge.hidden = false; hwBadge.textContent = hwCount; } else { hwBadge.hidden = true; } }
+    if (panel) {
+      var catLabel = { handout: "讲义", exercise: "作业练习", reference: "参考资料", image: "图片" };
+      panel.innerHTML = "<h3>📝 本节资源</h3>" + (assets.length ? assets.map(function (a) {
+        var local = a.file_url && a.file_url.charAt(0) === "/";
+        return '<div class="hw-card"><div class="hw-head"><span class="ic">📎</span><span class="t">' + esc(a.asset_name) + '</span><span class="meta"><span class="chip orange">' + esc(catLabel[a.material_category] || a.material_category) + "</span></span></div>" +
+          (local ? '<a class="btn btn-primary" href="' + esc(a.file_url) + '" target="_blank" rel="noopener">打开资源</a>'
+                : '<p class="intro-p">资源为外部地址，暂不可本地打开。</p>');
+      }).join("") : '<p class="intro-p">本节暂无文字资源。</p>');
+    }
+    // 考试 tab：真实契约无考试落点 → 诚实空态（不伪造题卡）
+    var exPanel = $("#p-exam");
+    if (exPanel) exPanel.innerHTML = "<h3>📐 本节考试</h3><p class=\"intro-p\">本节暂无考试安排。</p>";
+    var exBadge = $("#examCnt");
+    if (exBadge) exBadge.hidden = true;
+
+    // 课程简介：真实契约 StudySessionDetail 无简介字段 → 诚实说明（不伪造文案）
+    var intro = $("#introText");
+    if (intro) intro.textContent = "本课次暂无文字简介（接口未提供简介字段）。视频播放见上方，本节资源见「作业」标签页。";
+
+    setTickNotice();
+    renderComplete(d);
+  }
+
+  /* ---- 完成态：POST /api/study/sessions/{id}/complete 真实写库（实测 completed:true）---- */
+  function renderComplete(d) {
+    var flag = $("#doneFlag");
+    if (!flag) return;
+    var cur = findOutlineSession(state.session_id);
+    var ratio = cur ? Math.round(cur.watch_ratio) : 0;
+    var done = cur ? (cur.watch_ratio >= 80 && cur.homework_done) : false;
+    flag.textContent = done ? "🎉 本课已完成" : "⏳ 观看进度 " + ratio + "%（完成判定：观看 ≥80% 且作业完成）";
+    var old = $("#realCompleteBtn");
+    if (old) old.remove();
+    var btn = document.createElement("button");
+    btn.id = "realCompleteBtn";
+    btn.type = "button";
+    btn.className = "btn btn-primary";
+    btn.style.marginLeft = "auto";
+    btn.textContent = "标记完成（真实写入）";
+    flag.parentNode.appendChild(btn);
+    btn.onclick = function () {
+      btn.disabled = true;
+      E.post("/api/study/sessions/" + state.session_id + "/complete").then(function (r) {
+        flag.textContent = (r && r.completed) ? "🎉 已标记完成（后端真实写入 completed=true）"
+          : "⚠️ 后端返回未完成：该课次暂无学习记录（播放会话未建立·缺口 task06-G1）";
+        refreshOutline();
+      }).catch(function (err) {
+        btn.disabled = false;
+        flag.textContent = "❌ 标记完成失败：" + ((err && err.message) || "未知错误");
+        console.warn("[learning] complete failed", err && err.message);
+      });
+    };
+  }
+
   function refreshOutline() {
     if (!state.series_id) return;
     E.get("/api/study/courses/" + state.series_id + "/outline").then(function (o) {
-      state.outline = o; renderOutline(o); renderComplete({});
-      // 重新刷新当前课次完成标签
-      var cur = findOutlineSession(state.session_id);
-      var flag = $(".player-meta .prog-row .done-flag");
-      if (flag) flag.textContent = cur && cur.watch_ratio >= 80 ? "🎉 判定：观看 ≥80% 或作业提交（已完成）" : "⏳ 观看进度 " + (cur ? Math.round(cur.watch_ratio) : 0) + "%";
+      renderOutline(o);
+      // 完成态反馈文案不在此覆盖（refreshOutline 由完成/刷新触发，避免冲掉用户可见结果）
     }).catch(function (e) { console.warn("[learning] outline refresh failed", e && e.message); });
   }
 
-  /* ---- 播放打点：timeupdate 每 30s 攒 TICK → tick-batch ≤200；失败静默重试≤2 后 console.warn ---- */
-  function wirePlayback(vdo, duration) {
-    var lastTickPos = -1;
-    function pushTick(type) {
-      var pos = Math.max(0, Math.floor(vdo.currentTime || 0));
-      if (type === "PLAY") { lastTickPos = pos; }              // 建立基线
-      else if (type === "TICK") { if (pos - lastTickPos < 30) return; lastTickPos = pos; } // 每 ≥30s 攒一条
-      function tsLocal() { var d = new Date(), p = function (n, l) { l = l || 2; return ("0" + n).slice(-l); }; return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); }
-      state.tickBuf.push({ event_type: type, position_seconds: pos, playback_rate: vdo.playbackRate || 1, network_type: netType(), event_time: tsLocal() });
-      if (state.tickBuf.length >= 200) flushTicks();
-    }
-    vdo.addEventListener("play", function () { pushTick("PLAY"); });
-    vdo.addEventListener("timeupdate", function () { pushTick("TICK"); });
-    if (!state.flushtimer) state.flushtimer = setInterval(flushTicks, 30000);
-  }
-
-  function flushTicks() {
-    if (state.sending) return;
-    if (!state.session_id || !state.tickBuf.length) return;
-    var batch = state.tickBuf.splice(0, Math.min(200, state.tickBuf.length));
-    state.sending = true;
-    var tries = 0;
-    (function attempt() {
-      /* play_session_id：后端需已存在的 session_video_play.id（无创建端点，缺口见完工报告）。
-       * 客户端先取一个自增占位；后端 400010（play_session not found）即按"失败静默重试≤2 次后 console.warn"处理。 */
-      if (!state.play_session_id) state.play_session_id = Math.floor(Date.now() / 1000) % 1000000 + 1;
-      tries++;
-      E.post("/api/progress/video/tick-batch", { play_session_id: state.play_session_id, session_id: state.session_id, ticks: batch })
-        .then(function () { state.sending = false; })
-        .catch(function (err) {
-          if (tries <= 2) { setTimeout(attempt, 500); return; }
-          state.sending = false;
-          console.warn("[learning] tick-batch failed (≤" + tries + " 次重试后丢弃)", err && err.message);
-        });
-    })();
-  }
-
-  /* ---- 离开页面 flush 剩余打点（尽力而为，异步请求可能被浏览器截断）---- */
-  window.addEventListener("beforeunload", function () { try { flushTicks(); } catch (e) {} });
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") { try { flushTicks(); } catch (e) {} } });
-
-  /* ---- 启动：解析 series → access → outline → session ---- */
-  function start(sid) {
-    state.series_id = sid;
-    showAccess(true);
-    E.get("/api/study/courses/" + sid + "/access").then(function (acc) {
-      if (acc && acc.cohort_id) state.cohort_id = parseInt(acc.cohort_id, 10);
-      renderCoHortEntry();
-      if (acc && acc.accessible === false) { showAccess(false, acc.reason); return; }
-      showAccess(true);
-      E.get("/api/study/courses/" + sid + "/outline").then(function (o) { state.outline = o; var sname = $(".series-head .tt .series"); if (sname) sname.textContent = o.series_title; renderOutline(o); if (state.session_id) loadSession(state.session_id); else pickFirst(o); })
-        .catch(function (e) { console.warn("[learning] outline failed", e && e.message); showAccess(false, e && e.message); });
-    }).catch(function (accErr) {
-      console.warn("[learning] access failed", accErr && accErr.message);
-      showAccess(false, (accErr && accErr.body && accErr.body.message) || "无法校验班次访问权限");
-    });
-  }
-  function renderCoHortEntry() { var bc = $(".breadcrumb"); if (bc && state.cohort_id) { var a = bc.querySelector("a"); if (a) a.href = "my-cohorts.html"; } }
-
   function loadSession(sid) {
     E.get("/api/study/sessions/" + sid).then(renderSession).catch(function (err) {
-      if (err && err.status === 403) { showAccess(false, (err.body && err.body.message) || "仅报名该班次的学员可访问本课次内容"); return; }
+      if (err && (err.status === 403 || (err.body && err.body.code === "40330"))) {
+        showGuard({ desc: (err.body && err.body.message) || "仅报名该班次的学员可访问本课次内容。" });
+        return;
+      }
       console.warn("[learning] session detail failed", err && err.message);
-      showAccess(false, (err && err.message) || "课次加载失败");
+      showGuard({ code: "加载失败", title: "课次加载失败", desc: (err && err.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
     });
   }
-  function pickFirst(o) { if (o && o.modules && o.modules.length && o.modules[0].sessions && o.modules[0].sessions.length) loadSession(o.modules[0].sessions[0].session_id); }
 
-  if (state.series_id) { start(state.series_id); return; }
-  // 无 series_id → 按 cohort 找 series（GET /api/enrollments/me/cohorts）
+  function pickFirst(o) {
+    if (o && o.modules && o.modules.length && o.modules[0].sessions && o.modules[0].sessions.length) {
+      loadSession(o.modules[0].sessions[0].session_id);
+    } else {
+      $("#sylBody").innerHTML = '<p class="intro-p" style="padding:10px 16px">大纲暂无可见课次。</p>';
+    }
+  }
+
+  function start(sid, cid) {
+    state.series_id = sid;
+    if (cid) state.cohort_id = cid;
+    $("#cohortPicker").hidden = true;
+    $("#learnLayout").hidden = false;
+    E.get("/api/study/courses/" + sid + "/access").then(function (acc) {
+      if (acc && acc.cohort_id && !state.cohort_id) state.cohort_id = parseInt(acc.cohort_id, 10) || 0;
+      if (acc && acc.accessible === false) {
+        showGuard({ desc: acc.reason || "仅已报名该班次的学员可观看该课次。" });
+        return;
+      }
+      hideGuard();
+      E.get("/api/study/courses/" + sid + "/outline").then(function (o) {
+        renderOutline(o);
+        if (state.session_id) loadSession(state.session_id); else pickFirst(o);
+      }).catch(function (e) {
+        console.warn("[learning] outline failed", e && e.message);
+        showGuard({ code: "加载失败", title: "大纲加载失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+      });
+    }).catch(function (accErr) {
+      console.warn("[learning] access failed", accErr && accErr.message);
+      showGuard({ code: "校验失败", title: "无法校验班次访问权限", desc: (accErr && accErr.body && accErr.body.message) || (accErr && accErr.message) || "请重新登录后重试。", ctaText: "返回登录", ctaHref: "login-register.html" });
+    });
+  }
+
+  /* ---- 启动：入口参数 → 班次选择/直达课次；无 token → 诚实登录引导 ---- */
+  if (!E.store.getToken()) {
+    showGuard({ code: "请先登录", title: "登录后开始学习", desc: "学习页需要登录态：班次 → 课次 → 视频 → 完成态全链路均基于真实报名数据。", ctaText: "去登录 / 注册", ctaHref: E.buildLoginUrl("/learning.html") });
+    return;
+  }
+  state.series_id = intParam(E.pageId("series_id"));
+  state.cohort_id = intParam(E.pageId("cohort_id"));
+  state.session_id = intParam(E.pageId("session_id"));
+  if (state.series_id) { start(state.series_id, state.cohort_id); return; }
   if (state.cohort_id) {
     E.get("/api/enrollments/me/cohorts").then(function (list) {
       var arr = Array.isArray(list) ? list : [];
       var it = arr.filter(function (x) { return String(x.cohort_id) === String(state.cohort_id); })[0];
-      if (it && it.series_id) start(parseInt(it.series_id, 10));
-      else { showAccess(false, "未找到该班次的报名信息"); }
-    }).catch(function (e) { console.warn("[learning] enrollments failed", e && e.message); showAccess(false, "未找到该班次的报名信息"); });
+      if (it && it.series_id) start(parseInt(it.series_id, 10), state.cohort_id);
+      else showGuard({ code: "空态 · 未报名", title: "未找到该班次的报名信息", desc: "当前账号未报名该班次或报名已失效。", ctaText: "去课程中心选课报名", ctaHref: "courses.html" });
+    }).catch(function (e) { console.warn("[learning] enrollments failed", e && e.message); renderCohortPicker(); });
     return;
   }
   if (state.session_id) {
-    // 只有 session_id：从 session 详情反查 series_id 后走完整链路
-    E.get("/api/study/sessions/" + state.session_id).then(function (d) { if (d && d.series_id) start(parseInt(d.series_id, 10)); }).catch(function (e) { console.warn("[learning] no series context", e && e.message); });
+    // 只有 session_id：从课次详情反查 series_id 后走完整链路
+    E.get("/api/study/sessions/" + state.session_id).then(function (d) {
+      if (d && d.series_id) start(parseInt(d.series_id, 10), 0);
+      else showGuard({ code: "加载失败", title: "课次不存在", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    }).catch(function (e) {
+      if (e && (e.status === 403 || (e.body && e.body.code === "40330"))) { showGuard({ desc: (e.body && e.body.message) || "该课次为报名专属内容。" }); return; }
+      console.warn("[learning] no series context", e && e.message);
+      showGuard({ code: "加载失败", title: "课次加载失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    });
+    return;
   }
+  renderCohortPicker();
 })();
-</script>
-<script>
-/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
-(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
 </script>
 </body></html>
