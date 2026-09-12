@@ -353,3 +353,59 @@
 
 - [ ] **登记注意点（跨实例一致性命中，非代码缺陷）**：`PlainRedisSaver` 的并发锁是**进程内** `asyncio.Lock`，`_loaded_threads` 亦为实例本地；两个 saver 实例（多进程）若**同一 thread\_id** 并发写同一 Redis key，呈 last-writer-wins（可能后落盘的旧快照覆盖新快照）。与既已登记的 artifact 跨实例限制同类；单线程单进程语义下无影响。落点：多实例共享 thread 场景单独立项，本次不实施（避免为未出现场景空转）。→ **已 2026-09-05 独立实证为固有属性（非缺陷）**：编排者复现 + 子 agent 报告，真 Redis `redis://127.0.0.1:6379/0` 下两实例顺序/并发写同一 thread full-snapshot，最终为后写者单 owner、pickle 结构完整（last-writer-wins、无碎片/半写）；多实例共享 thread 属未出现场景，维持"单独立项、不实施"。见 `test-reports/critique-round5-checkpoint-accept.md`。
 
+
+## reshape-a 强制批判登记(2026-09-06,审查包 v2 同日产出,竞品 URL 已机验)
+- [ ] **R1 双前端结构性重复(对标 Refine/react-admin)**:React 路由与 fe-html 静态页双轨,HTML 原型→人工接线流程性重复。落点:B 阶段首任务(admin 域采用 Refine 或 react-admin;fe-html 冻结只修不增)。验收:admin 页接线代码量<静态页 1/3。https://github.com/refinedev/refine / https://github.com/marmelab/react-admin(2026-09-06)
+- [ ] **R2 存储五件套收敛(对标 pgvector)**:Milvus-on-VMware 本周三断链;Mongo 演示线 0 调用、Neo4j 已退役。落点:A-task18(五件套健康检查单+一键拉起)/C 阶段(向量迁 pgvector,单库化)。验收:检查单<1 分钟;检索 P95 ±20% 召回不降。https://github.com/pgvector/pgvector / https://supabase.com/blog/openai-embeddings-postgres-vector(2026-09-06)
+- [ ] **R3 自研客户端冻结(对标 TanStack Query)**:EduAPI 静态页客户端手写 single-flight refresh 已踩 2 坑;B 阶段 React 全量 TanStack Query,queryClient 单例。落点:B 阶段。验收:页内手写轮询/竞态=0。https://github.com/TanStack/query / https://axios-http.com/docs/interceptors(2026-09-06)
+- [ ] **R4 health-scan 后台任务化+复用 sessions 池(对标 MCP spec/langchain-mcp-adapters)**:同步全量扫描最坏 75s 阻塞,健康检查逐次 spawn 子进程不复用池。落点:B 阶段(接口变更走变更单)。验收:单台 health P95<500ms,扫描期间 50 并发不排队。https://modelcontextprotocol.io/specification / https://github.com/langchain-ai/langchain-mcp-adapters(2026-09-06)
+
+## 用户终审批判登记(2026-09-12,A 批收口复核,P1-7~P2-15)
+- [ ] **P1-7 测试数据污染无清理环节**:帖 88/89/90(锁定)/post 97+15 评/订单 6-260906172441-86dcaa(pending)/task06 视频 3MB/task14 user1 status 复原但流程无留痕。落点:热修波 H2 清理脚本(dry-run→执行)+task123 种子清理登记。竞品:CI fixture/事务回滚。
+- [ ] **P1-8 DEBUG 虚拟管理员只是 WARN 非硬门禁**:落点:热修波 H1 后端启动硬约束(DEBUG=true 且非本机绑定→拒绝启动)+check-demo ⑧ 升 FAIL 语义。竞品:Django DEBUG 生产拒启。
+- [ ] **P1-9 manager 守卫与路由权限矛盾**:edu-guard 按 {admin,manager} 放行,user_admin 域实为 ADMIN-only→manager 进页必 403。落点:热修波 H2 页面诚实降级;B 批做"后端下发 permission 真相源"。反向修正 task109 GWT③。
+- [ ] **P1-10 admin-dashboard 一半占位**:聚合端点缺(task70-91 未立项)。落点:a2 变更单 #3 批准后立项 B 前置任务。
+- [ ] **P2-11 四任务真实探活缺位被标 PASS**(task16/17/06/18):落点:演示机全绿后统一复验(并入复验门清单 w4-reverify-checklist)。
+- [ ] **P2-12 任务书基于过时审计**(task16 前提已不存在):流程改进——编排者任务书今后只给目标态,现状由执行 agent 开工前 grep/curl 核实,不再断言现状。
+- [ ] **P2-13 restore-40901/hard-40908 分支未实测**:落点:热修波 H1 补 pytest 契约用例(可构造)。
+- [ ] **P2-14 回收站 rst/jsnn 测试残留系列**:落点:热修波 H2 清理脚本(演示观感风险)。
+- [ ] **P2-15 DONE 口径混淆**:修正为两轴——代码侧 DONE(task19 达成)/演示侧 DONE(复验门未过,不得进 B 实施)。复验门=VM+Docker 拉起→check-demo 8/8→L6 RAG 链路→P2-11 四项复验。
+
+## 架构口径修正(2026-09-12,用户裁定)
+- **C16 的"存储退役/收敛"提案否决**:Milvus/MongoDB 部署于 VM 内 Docker,属项目正式架构,check-demo 已将其列为一等公民健康项,保持现状。措辞从"退役/收敛"改为"维持现状;性能优化另议(需用户发起)"。
+- **Neo4j 事实澄清**(非提案,是现状):业务域(app/domains)对 neo4j/mongo 的调用均为零(grep 实证,2026-09-12)——Neo4j 自 task35(61989bb)起已被 MySQL 图替代,代码里只剩 lifespan 连接初始化;Mongo 同样仅初始化无业务调用。是否让业务域真正使用之,或清理无效初始化连接,待用户后续裁定,不在本阶段动。
+
+## 程序违规补登(2026-09-12,用户终审要求)
+### 一、子 agent 平台失败登记表(平台=ZCode 内置 Agent 工具 general-purpose,全程未换外部平台)
+| 次序 | 时间(近似) | 目标任务 | 失败原因(原文摘要) | 切换动作 |
+|---|---|---|---|---|
+| 1 | 09-06 16:16 | A波(task02-04)+B0/B1a 首派 | 已达到 5 小时使用上限(限额 18:41 重置) | 等重置后同平台重派→成功 |
+| 2 | 09-12 ~17:0x | 第三波 task06+10 | Model request failed | 同波重派 |
+| 3 | 09-12 ~17:0x | 第三波 task16+17 | captcha verify failed | 同波重派→成功 |
+| 4 | 09-12 ~17:0x | 第三波 task13 原型 | Model request failed | 同波重派→成功 |
+| 5 | 09-12 ~18:4x | 第三波 task06+10 重派 | captcha verify failed | 再重派→成功 |
+| 6 | 09-12 ~19:3x | 第四波 H1(后端热修) | Agent cancelled before return | 重派 |
+| 7 | 09-12 ~19:3x | 第四波 H2(守卫+清理) | captcha verify failed | 重派 |
+| 8 | 09-12 ~19:4x | H1 重派 | Model request failed | 重派 |
+| 9 | 09-12 ~19:4x | H1+H2 合并重派 | Model request failed | **N=1 降级:编排者自代(0e39d45/41b5996),登记待独立复审** |
+| 10 | 09-12 ~20:0x | H2a 首派 | Agent cancelled(但实际已完成并提交 ed31f4d,cancel 未返回结果) | 误判未做→后核实已完成 |
+更正:此前口头"4 次失败"少计,实际 10 次事件/6 次失败落空。H1b/H1c/H2b 为编排者自代——**独立复审未完成前,B 批前置不视为清**。
+### 二、P2-11 live 复验明确清单(演示侧 DONE 复验门)
+- 已 live 覆盖:check-demo 全项(含 task18 本身)、L6 RAG 三步、task06 视频 /media 200+字节数一致、task13 回收站过滤语义。
+- 未 live 覆盖(复验门剩余):①task16 资源入口真实点击 ②task17 四页(favorites/practice/my-cohorts/refund)登录态 live 浏览 ③task06 视频浏览器内"视觉可播" ④task04 收藏写路径 live。
+### 三、流程规则(P2-12,已采纳+补副作用条款)
+编排者任务书今后只写目标态,现状由执行 agent 开工前 curl/grep 自证;**自证后若现状与目标态差距过大(需扩范围),先停下上报,不得自行扩大范围**——写入后续所有开工单硬性守则。
+### 四、Neo4j 列入 PRD(用户指令)
+新增待完成项 N1:让 Neo4j 真正用起来(现状:业务域零调用,仅 lifespan 初始化;候选场景=知识图谱学习路径/先修链,与 mindmap 域合并调研)。归 B 批前置调研任务,用户发令后拆解。
+### 五、Mimosa deadline
+完整安全扫描(scanner_enobufs 两次未成)deadline=2026-09-14;到期未成则降级为 per-file 扫描+人工审计敏感路径(auth/database/mcp executor)。
+
+## L2 三步实验结果(2026-09-12 19:2x,回应终审 §2.3)
+| 状态 | 采样 | 结果 |
+|---|---|---|
+| ③ Redis UP + 后端重启 | 30 次 | min 11ms / p50 14ms / **p95 38ms** / max 95ms |
+| ② 运行中停 Redis(后端不重启) | 首击+10 次 | **首击 2.08s(单次连接超时),随后自愈 8ms**(mark_redis_down 熔断生效,无需重启) |
+| ① Redis DOWN + 后端带降级启动 | 8 次 | 7-89ms,快(未复现 2.04s) |
+**更正与未决**:①我此前"Redis 降级每请求 2s+必须重启后端"的归因被实验**推翻**——三态均未复现 2.04s 恒定慢。②2.04s 仅在 14:01 启动的那个长驻进程上观察到(当时三存储全断启动,后 VM 恢复),进程已销毁未复现——登记为**未复现异常**:疑似陈旧连接池不自愈,证据不足;列入 B 批"存储连接池健康检查+自愈"修复项(用户判断正确:若无自愈即 bug)。③T19-2 的 8.1s/16.3s 归因同样存疑(当时亦为 Redis-down 长驻进程),建议 B 批在干净环境复测后再定 N+1 与否。
+## check-demo ⑧ 语义澄清(回应终审 §2.1)
+⑧ 输出 [PASS](无 token 被 401 拒=DEBUG 安全);若返回 200 则记红且阻止 exit 0(H1b 门禁上线后,生产形态将直接拒启)。"8/8"口径=8 项全 PASS,无 WARN 态出现。1.7s vs task18 报告 15.8s:前者=环境恢复态,后者=环境断链态(socket 超时所致),不可比,已在两份报告标注环境前提。
