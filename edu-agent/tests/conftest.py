@@ -33,6 +33,20 @@ def _isolate_secrets(monkeypatch: pytest.MonkeyPatch):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _isolate_redis_outage_window():
+    """H1a：每个测试前后清零 Redis 故障快断窗（进程级全局状态，防止测试间串扰）。
+
+    某些用例（限流中间件故障注入等）会 mark_redis_down；不隔离会波及后续
+    走 redis_run 门/cache 的用例（门在窗内毫秒级快断，改变其注入路径）。
+    """
+    from app.core import redis_outage
+
+    redis_outage.reset_for_test()
+    yield
+    redis_outage.reset_for_test()
+
+
 # ════════════════════════════════════════════════════════════════
 # task37 GWT③：live-backend 集成测试「标注 expected」机制
 # ────────────────────────────────────────────────────────────────

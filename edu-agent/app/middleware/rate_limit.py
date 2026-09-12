@@ -99,6 +99,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         window_sec, max_requests = _get_limit_for_path(path)
+
+        # H1a（T19-2/L2）：已知 Redis 故障（快断窗/降级保持窗）内直接降级放行
+        # （先于 get_redis——连客户端都不必取）。实测 Redis 宕机时单次 incr ~2.03s
+        # 才失败（redis-py 重试退避），曾让全站每个 /api/* 请求固定 +2s（series
+        # 详情 8~16s 根因之一）。窗口语义见 app/core/redis_outage.py：
+        # 窗内毫秒级放行；后台探测自愈（成功清窗恢复限流），请求路径零等待。
+        from app.core.redis_outage import ensure_probe, mark_redis_down, mark_redis_up, redis_degrade_active
+
+        if redis_degrade_active():
+            ensure_probe()  # 后台探测自愈（探测成本不占用请求路径）
+            try:
+                from app.monitoring.metrics import record_degraded
+                record_degraded("redis", "rate_limit_bypass:outage_window")
+            except Exception:  # noqa: BLE001
+                pass
+            return await call_next(request)
+
         client_ip = _get_client_ip(request)
         user_id = _get_user_id(request)
 
@@ -128,22 +145,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             current = max(ip_current, uid_current)
             remaining = max(0, max_requests - current)
-
-            if current > max_requests:
-                logger.warning(
-                    f"[RATE_LIMIT] {client_ip} {path} "
-                    f"超过限制 {current}/{max_requests}（{window_sec}s）"
-                )
-                return JSONResponse(
-                    status_code=429,
-                    content={
-                        "code": "42900",
-                        "message": f"请求过于频繁，请 {window_sec} 秒后再试",
-                        "data": None,
-                    },
-                    headers={"Retry-After": str(window_sec)},
-                )
         except Exception as exc:
+            # 连接级失败 → 顺延进程级快断窗（下个请求起毫秒级放行）
+            from redis.exceptions import ConnectionError as _RConn, TimeoutError as _RTimeout
+
+            if isinstance(exc, (_RConn, _RTimeout, ConnectionError, TimeoutError)):
+                mark_redis_down()
             logger.warning(f"[RATE_LIMIT] Redis 异常，降级放行: {exc}")
             # task39 GWT②：§6.4 Redis 行「限流放行」的可观测面
             try:
@@ -152,6 +159,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             except Exception:  # noqa: BLE001
                 pass
             return await call_next(request)
+        else:
+            # 限流计数成功 → Redis 可用，清除故障窗（自愈）
+            mark_redis_up()
+
+        if current > max_requests:
+            logger.warning(
+                f"[RATE_LIMIT] {client_ip} {path} "
+                f"超过限制 {current}/{max_requests}（{window_sec}s）"
+            )
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "code": "42900",
+                    "message": f"请求过于频繁，请 {window_sec} 秒后再试",
+                    "data": None,
+                },
+                headers={"Retry-After": str(window_sec)},
+            )
 
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(max_requests)

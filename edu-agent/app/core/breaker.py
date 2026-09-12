@@ -107,6 +107,14 @@ class CircuitBreaker:
 
     async def _sync_from_redis(self):
         """从 Redis Hash 同步状态到本地缓存（Redis 不可达时静默跳过，仅用本地状态）。"""
+        # H1a（T19-2/L2）：已知 Redis 故障（快断窗/降级保持窗）内不做网络同步——
+        # hgetall 单次实测 ~2.03s 才失败，会让每个 breaker.call 白付 2s。
+        # 退化本地状态（本方法文档语义即允许）。
+        from app.core.redis_outage import redis_degrade_active
+
+        if redis_degrade_active():
+            self._last_sync = time.time()
+            return
         try:
             r = await self._get_redis()
             if r is None:
@@ -128,6 +136,12 @@ class CircuitBreaker:
 
     async def _sync_to_redis(self):
         """将本地状态同步到 Redis Hash（Redis 不可达时静默跳过）。"""
+        # H1a：故障（快断窗/降级保持窗）内同样跳过（hset 单次实测 ~2.03s，纯浪费——
+        # 后台探测自愈后下次成功即回写）
+        from app.core.redis_outage import redis_degrade_active
+
+        if redis_degrade_active():
+            return
         try:
             r = await self._get_redis()
             if r is None:

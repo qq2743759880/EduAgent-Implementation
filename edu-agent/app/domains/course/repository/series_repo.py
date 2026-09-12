@@ -135,6 +135,28 @@ class SeriesRepo:
             (series_id,),
         )
 
+    async def get_series_detail_row(self, series_id: int) -> Optional[dict]:
+        """系列详情聚合行（H1a 查询合并，T19-2/L2）。
+
+        原 get_series_detail 装载需 3 条 SQL（get_series + get_price_range +
+        count_cohorts）串行往返；合并为单条：主行 + 三个标量子查询（同一
+        series_cohort yn=1 范围，语义与原三查逐一等价）：
+        - sale_status='on_sale' 过滤不变（None → 404 语义由 service 层保持）；
+        - MIN/MAX 空集 → NULL（原 price 行存在但值为 NULL → SeriesDetail None，等价）；
+        - COUNT(*) 空集 → 0（原 count_cohorts 同值）。
+        分类列表仍为独立一条（list 返回多行，不宜 JSON 聚合硬拼）→ 详情装载 4 条 SQL → 2 条。
+
+        响应契约零变化：组装仍由 service 层 SeriesDetail 模型完成，字段与形状不变。
+        """
+        return await fetch_one(
+            "SELECT s.*, "
+            "  (SELECT MIN(c.sale_price) FROM series_cohort c WHERE c.series_id = s.id AND c.yn = 1) AS min_price, "
+            "  (SELECT MAX(c.sale_price) FROM series_cohort c WHERE c.series_id = s.id AND c.yn = 1) AS max_price, "
+            "  (SELECT COUNT(*) FROM series_cohort c WHERE c.series_id = s.id AND c.yn = 1) AS cohort_count "
+            "FROM series s WHERE s.id = %s AND s.sale_status = 'on_sale' LIMIT 1",
+            (series_id,),
+        )
+
     async def get_price_range(self, series_id: int) -> Optional[dict]:
         """系列下班次价格区间（yn=1）。"""
         return await fetch_one(

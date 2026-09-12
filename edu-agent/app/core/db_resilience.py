@@ -20,6 +20,7 @@ import asyncio
 from typing import Any, Awaitable, Callable
 
 from app.core.breaker import BreakerConfig, CircuitBreaker, CircuitOpenError
+from app.core.redis_outage import ensure_probe, mark_redis_up, redis_degrade_active
 from app.monitoring import metrics
 
 
@@ -108,8 +109,37 @@ async def redis_run(op_name: str, coro_fn: Callable[[], Awaitable[Any]]) -> Any:
 
     用法：
         val = await redis_run("cache_get", lambda: get_redis().get(key))
+
+    H1a 快断门（T19-2/L2）：Redis 宕机时 redis-py 单次操作实测 ~2.03s 才失败
+    （客户端重试退避主导，见 app/core/redis_outage.py 模块注释）。故在本层加
+    进程级故障窗：
+    - 窗口激活（由限流中间件 mark_redis_down 置位，30s 内）→ 不触网络，毫秒级抛
+      DependencyUnavailableError（调用方按既有降级路径直通 DB/放行）；
+    - 操作成功 → mark_redis_up 立即自愈。
+    说明：本函数不主动 mark_redis_down——限流中间件是每请求第一个 Redis 触点，
+    由它登记故障窗即可；单测里注入的假失败不应改变全局窗状态（保持
+    test_breaker_db_resilience 原语义）。Redis 正常时窗口恒不激活，行为不变。
     """
-    return await _run_with_breaker(redis_breaker, "redis", op_name, coro_fn)
+    if redis_degrade_active():
+        # 已知宕机（快断窗/降级保持窗）内：毫秒级快断（不触网络、不进熔断器统计，
+        # 避免探针成本）；同时调度后台探测自愈，探测成本不占用请求路径。
+        ensure_probe()
+        metrics.record_degraded("redis", f"{op_name}:outage_fastfail")
+        raise DependencyUnavailableError(
+            f"redis 故障快断窗内（{op_name}）毫秒级快速失败"
+        ) from None
+    try:
+        result = await _run_with_breaker(redis_breaker, "redis", op_name, coro_fn)
+    except DependencyUnavailableError:
+        # 熔断器自身 OPEN（非新观测故障）→ 原样上抛，不改写故障窗
+        raise
+    except Exception:
+        # 非窗口登记路径：异常原样上抛（故障窗登记职责在限流中间件）
+        raise
+    else:
+        # 成功 → 立即清除故障窗（自愈，无需等冷却到期）
+        mark_redis_up()
+        return result
 
 
 def get_neo4j_breaker() -> CircuitBreaker:

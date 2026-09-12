@@ -122,19 +122,17 @@ async def get_series_detail(series_id: int) -> SeriesDetail:
     读缓存命中直回（MySQL 主库 QPS 不随并发线性增长，GWT①）；写后精确 DEL（GWT②）。
     """
     async def _load() -> dict:
-        row = await _series_repo.get_series(series_id)
+        # H1a 查询合并（T19-2/L2）：主行 + 价格区间 + 班次数 → 单条标量子查询聚合 SQL
+        # （原 3 条串行往返；分类列表仍独立 1 条）→ 详情装载 4 → 2 条 SQL。
+        # 字段语义逐一等价（MIN/MAX 空集→NULL→None、COUNT 空集→0），响应形状零变化。
+        row = await _series_repo.get_series_detail_row(series_id)
         if row is None:
             raise AppException(NOT_FOUND, "系列不存在或已下架")
-        price = await _series_repo.get_price_range(series_id)
         categories = await _series_repo.list_categories(series_id)
-        cohort_count = await _series_repo.count_cohorts(series_id)
         row = _parse_json_columns(row)
         return SeriesDetail(
             **row,
-            min_price=price["min_price"] if price else None,
-            max_price=price["max_price"] if price else None,
             categories=categories,
-            cohort_count=cohort_count,
         ).model_dump(mode="json")
 
     data = await get_or_load(f"course:series:detail:{series_id}", _load, ttl=300)
