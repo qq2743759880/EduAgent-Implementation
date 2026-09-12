@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>task60 原型 · 管理端用户 /admin/users</title>
+<title>管理端用户 /admin/users</title>
 <!--
-  task60 HTML 原型（审核稿）
+  task60 HTML 原型（审核稿）→ 2026-09-12 task14 起为真实接线页（见 AUDIT LOG task14 条目）
   - P17 风格 candy-playful frozen（复用 task58 admin-questions 同源样式）
   - 契约为权威：后端 app/admin/user_admin/router.py + schemas.py（task14 契约⑤ 用户域）+ task15 契约⑬ 响应壳
     列表  GET /api/admin/users?keyword&role_code&status&yn&page&page_size
@@ -18,9 +18,14 @@
     GWT③ 对「唯一可用 admin」本人的 禁用(status=0/yn=0) 或 降级(target_role!=admin) → 前端 disabled + 提示；后端仍拒绝兜底
     判定基线：排除该用户后，有效 admin（role=admin 且 status=1 且 yn=1）计数 >= 1 才允许 禁用/降级
   - 角色枚举：admin/manager/teacher/student（_ALLOWED_ROLES）
-  - 演示用示例行仅作 UI 形态展示；学习详情 6 指标字段为 snake_case 契约预览，端点未注册 → 缺口头条声明，不写 MOCK 假数据
   AUDIT LOG:
     [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-09-12 task14 reshape-a] 全量真实接线（curl 实测 2026-09-12，端点均 200）：列表 GET /api/admin/users
+      （keyword/role_code/status/page/page_size，{total,page,page_size,items} 壳，keyword 防抖 400ms，窗口化分页支持十万级 total）；
+      详情弹窗=列表项 AdminUserItem 真实字段渲染（GET /{id}/learning 未注册→缺口诚实披露，删除原型 6 指标假数据）；
+      启停=行内按钮二次确认弹窗 → POST /{id}/status；编辑弹窗 role/status diff → POST /{id}/role + /{id}/status（40303 红线后端权威，
+      前端以 metrics.role_breakdown.admin 尽力提示）；manager 过守卫后本域 403 40300 在错误态诚实展示。
+      删除演示控制器/演示 USERS/假学习指标/假动态时间线（禁 MOCK）；删除 alert()（禁 alert）。
     [2026-08-24 v1 R1] 初稿提交（用户 DataTable + FilterBar 搜索防抖400ms/角色/状态组合查询/分页 + 编辑Dialog(RoleSelect+状态切换+reason)
       + 学习详情Dialog(6 StatCard+最近动态,缺口标注) + 最后admin红线禁用演示 + 演示控制器多态）→ SUBMITTED
 -->
@@ -346,7 +351,7 @@
       <tbody id="u-body"></tbody>
     </table>
     <div class="box-pad hidden" id="u-empty"><div class="ic">🔍</div>未匹配到用户（组合查询为空/调整筛选）</div>
-    <div class="box-pad hidden" id="u-error"><div class="ic">⚠️</div>查询失败：演示空/错误态，见右下控制器</div>
+    <div class="box-pad hidden" id="u-error"><div class="ic">⚠️</div>用户列表加载失败</div>
     <div class="tbl-foot">
       <span class="cnt" id="u-count">共 0 条</span>
       <span class="pager" id="u-pager"></span>
@@ -354,25 +359,44 @@
   </div>
 </div>
 
-<!-- 学习详情 Dialog（GWT②：6 指标 + 最近动态；GET /{id}/learning 契约缺口见缺口头条） -->
+<!-- 用户详情 Dialog（task14：真实字段渲染自列表项 AdminUserItem；学习 6 指标为契约缺口，诚实披露不写 MOCK） -->
 <div class="mask" id="learn-mask"></div>
 <div class="dialog" id="learn-dlg" style="width:600px">
   <div class="dlg-h">
     <button class="close-x" data-close>✕</button>
-    <h3>学习详情</h3>
+    <h3>用户详情</h3>
     <div class="sub" id="learn-sub">—</div>
   </div>
   <div class="dlg-b">
-    <div class="gap-note" id="learn-gap">
+    <div class="stat6" id="learn-fields"></div>
+    <div class="gap-note" id="learn-gap" style="margin-top:14px">
       <span>⚠️</span>
-      <span><b>契约缺口 · 实披露</b>：<code>GET /api/admin/users/{id}/learning</code> 后端当前<b>未注册</b>（user_admin router 现无 learning 端点）。
-      下方按 task60 契约字段绘制 6 指标面板 + 最近动态 UI 形态（值为<b>字段预览，非真实聚合</b>，不写 MOCK）；端点接线后由后端返回真实数据渲染。</span>
+      <span><b>契约缺口 · 实披露</b>：<code>GET /api/admin/users/{id}/learning</code> 后端当前<b>未注册</b>（user_admin router 现无 learning 端点，
+      已实测 404）。学习 6 指标面板待端点就绪后接线，本页不伪造数据。</span>
     </div>
-    <div class="stat6" id="learn-cards"></div>
-    <div class="sub-t">最近动态 <span class="raw">recent_activities[]</span></div>
-    <div class="timeline" id="learn-tl"></div>
   </div>
   <div class="dlg-foot"><button class="btn btn-ghost" data-close>关闭</button></div>
+</div>
+
+<!-- 启停二次确认 Dialog（task14 GWT：启停带二次确认 → POST /api/admin/users/{id}/status） -->
+<div class="mask" id="st-mask"></div>
+<div class="dialog" id="st-dlg" style="width:460px">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3 id="st-title">确认操作</h3>
+    <div class="sub" id="st-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <p id="st-msg" style="margin:0;font-size:0.875rem;color:var(--ink)">—</p>
+    <div class="field" style="margin-top:10px">
+      <label>变更原因（可选，reason ≤255）</label>
+      <textarea id="st-reason" placeholder="操作留痕，选填"></textarea>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" data-close>取消</button>
+    <button class="btn btn-primary" id="st-confirm">确认</button>
+  </div>
 </div>
 
 <!-- 编辑用户 Dialog（RoleSelect + 状态切换 + reason；红线禁用） -->
@@ -386,7 +410,7 @@
   <div class="dlg-b">
     <div class="row">
       <div class="field">
-        <label>角色 <span class="muted">→ POST /api/admin/users/{id}/role</span></label>
+        <label>角色 <span class="muted">→ POST /api/admin/users/{id}/role（实测 200）</span></label>
         <select id="e-role">
           <option value="student">学生 · student</option>
           <option value="teacher">教师 · teacher</option>
@@ -397,7 +421,7 @@
     </div>
     <div class="row">
       <div class="field">
-        <label>状态 <span class="muted">→ POST /api/admin/users/{id}/status</span></label>
+        <label>状态 <span class="muted">→ POST /api/admin/users/{id}/status（实测 200）</span></label>
         <span class="seg" id="e-status-seg">
           <button data-st="1">启用</button><button data-st="0">禁用</button>
         </span>
@@ -419,207 +443,236 @@
     <button class="btn btn-primary" id="e-save" onclick="saveEdit()">保存变更</button>
   </div>
 </div>
-
-<!-- 演示控制器 -->
-<div class="demo-ctrl">
-  <b>演示控制器</b>
-  <div class="grp">列表态</div>
-  <div class="row">
-    <button data-demo="list" data-v="success" class="on">正常</button>
-    <button data-demo="list" data-v="loading">加载</button>
-    <button data-demo="list" data-v="empty">空态</button>
-    <button data-demo="list" data-v="error">错误</button>
-  </div>
-  <div class="grp">最后 admin 红线</div>
-  <div class="row">
-    <button data-demo="redline" data-v="on">红线 ON</button>
-    <button data-demo="redline" data-v="off" class="on">红线 OFF</button>
-  </div>
-  <div class="grp">学习详情 6 指标</div>
-  <div class="row">
-    <button data-demo="learn" data-v="preview" class="on">字段预览</button>
-    <button data-demo="learn" data-v="gap">缺口说明</button>
-  </div>
-</div>
 </div><!-- /.glayout -->
 
 <script>
-/* ================= 演示数据（仅 UI 形态，非后端契约束缚） ================= */
+/* ===== task14 真实接线（reshape-a，curl 实测 2026-09-12）=====
+ * 契约权威：edu-agent/app/admin/user_admin/router.py + schemas.py
+ *   列表   GET /api/admin/users?keyword&role_code&status&yn&page&page_size → {total,page,page_size,items[AdminUserItem]}
+ *          AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,created_at,updated_at,last_login_at}
+ *   状态   POST /api/admin/users/{id}/status  body{status:0|1,yn?,reason?} → {updated,user_id,status,yn}（实测 200）
+ *   角色   POST /api/admin/users/{id}/role   body{target_role,reason?}    → {updated,user_id,target_role}（实测 200）
+ *   缺口   GET /api/admin/users/{id}/learning 未注册（实测 404）→ 详情对话框诚实披露，无 MOCK
+ *   红线   40303「至少保留 1 名可用管理员账号」由后端权威兜底（实测：active_admins(不含本人)<1 才拒绝）；
+ *          前端以 metrics.role_breakdown.admin 做尽力而为提示，不据此放行/拦截真实操作
+ *   角色门 user_admin 路由 require_role([ADMIN])：manager 过守卫后访问本域将得 403 40300（实测），列表错误态诚实展示
+ * 守卫三段由 edu-guard.requireAdmin 承担（无 token 跳登录 → auth/me 校验 role∈{admin,manager} → 失败跳登录），
+ * 守卫通过后才调 window.bootAdmin()；页面自身不做参数正则提取（无 URL 取参需求）。
+ */
 const ROLE_LABEL={admin:"管理员",manager:"教务",teacher:"教师",student:"学生"};
 const AVATAR_GRAD=["linear-gradient(135deg,var(--primary-deep),var(--candy-purple))",
   "linear-gradient(135deg,var(--primary),var(--candy-blue))","linear-gradient(135deg,var(--candy-green),var(--candy-green))",
   "linear-gradient(135deg,var(--candy-orange),var(--candy-pink))","linear-gradient(135deg,var(--candy-purple),var(--candy-pink))"];
-const USERS=[
-  {id:1001,key:"admin-001",nm:"陈管理",ph:"138****0001",role:"admin",st:1,reg:"2026-03-01",last:"2026-08-23 09:12",active:true},
-  {id:1002,key:"mg-002",nm:"教务小王",ph:"139****0012",role:"manager",st:1,reg:"2026-03-05",last:"2026-08-21 17:40",active:true},
-  {id:1003,key:"tea-003",nm:"李老师",ph:"137****0033",role:"teacher",st:1,reg:"2026-03-08",last:"2026-08-22 14:20",active:true},
-  {id:1004,key:"std-004",nm:"张三",ph:"138****0044",role:"student",st:1,reg:"2026-04-12",last:"2026-08-23 20:01",active:true},
-  {id:1005,key:"std-005",nm:"王小明",ph:"136****0055",role:"student",st:1,reg:"2026-04-20",last:"2026-08-20 11:30",active:true},
-  {id:1006,key:"std-006",nm:"赵强",ph:"135****0066",role:"student",st:0,reg:"2026-05-01",last:"2026-06-30 08:00",active:false},
-  {id:1007,key:"mg-007",nm:"教务老周",ph:"139****0077",role:"manager",st:1,reg:"2026-05-09",last:"2026-08-19 10:15",active:true},
-  {id:1008,key:"std-008",nm:"孙悦",ph:"137****0088",role:"student",st:1,reg:"2026-05-15",last:"2026-08-23 19:45",active:true},
-  {id:1009,key:"std-009",nm:"周子涵",ph:"136****0099",role:"student",st:1,reg:"2026-05-22",last:"2026-08-22 12:00",active:true},
-  {id:1010,key:"std-010",nm:"吴浩",ph:"135****0100",role:"student",st:0,reg:"2026-06-02",last:"2026-07-15 09:20",active:false},
-  {id:1011,key:"std-011",nm:"郑晓",ph:"138****0111",role:"student",st:1,reg:"2026-06-10",last:"2026-08-23 16:25",active:true},
-  {id:1012,key:"std-012",nm:"钱多多",ph:"139****0122",role:"student",st:1,reg:"2026-06-18",last:"2026-08-21 22:10",active:true}
-];
-/* 学习详情 6 指标字段预览（snake_case 契约；真实数据待 GET /{id}/learning 接线） */
-const LEARN_PREVIEW={
-  active_cohorts_count:{lbl:"报名班次",val:2,unit:"班"},
-  avg_progress_pct:{lbl:"平均进度",val:68,unit:"%"},
-  total_watched_seconds:{lbl:"累计观看",val:3840,unit:"秒 64 分"},
-  homework_accuracy_pct:{lbl:"作业正确率",val:85,unit:"%"},
-  exam_avg_score:{lbl:"考试均分",val:88,unit:"分"},
-  favorite_count:{lbl:"收藏",val:5,unit:"件"}
-};
-const RECENT_ACT=[{t:"08-23",d:"完成《Python 基础 · 第 3 章》课次 · 提交作业 判题 90 分"},{t:"08-22",d:"观看视频《循环结构》1300 秒"}, {t:"08-21",d:"报名班次：Python 入门班 2 期"},{t:"08-18",d:"考试《第 1 单元测评》均分 88"}];
-
-/* ================= 状态 ================= */
-let listView="success", redlineOn=false, learnView="preview";
-let uPage=1, uKw="", uRole="", uSt="";
 const PAGE_SIZE=10;
+let uPage=1, uKw="", uRole="", uSt="", uLoading=false;
+let adminTotalHint=null; // metrics.role_breakdown.admin（尽力而为红线提示）
+let rowsCache=[];        // 当前页真实 items（详情/编辑弹窗取数）
 
-/* ================= 防抖 400ms 搜索 ================= */
+/* ---- 防抖 400ms 搜索（lesson9：不用正则 match 提参） ---- */
 let debTimer=null;
 document.getElementById("f-kw").addEventListener("input",function(){
   const pulse=document.getElementById("deb-pulse");
-  pulse.classList.add("show");
+  if(pulse) pulse.classList.add("show");
   clearTimeout(debTimer);
-  debTimer=setTimeout(()=>{ uKw=this.value.trim(); pulse.classList.remove("show"); renderList(); },400);
+  const val=this.value;
+  debTimer=setTimeout(function(){ uKw=val.trim(); if(pulse) pulse.classList.remove("show"); uPage=1; loadUsers(); },400);
 });
 function resetFilter(){
   document.getElementById("f-kw").value=""; document.getElementById("f-role").value="";
-  document.getElementById("f-status").value=""; uKw="";uRole="";uSt=""; uPage=1; renderList();
+  document.getElementById("f-status").value=""; uKw="";uRole="";uSt=""; uPage=1; loadUsers();
 }
-document.getElementById("f-role").addEventListener("change",e=>{uRole=e.target.value;uPage=1;renderList();});
-document.getElementById("f-status").addEventListener("change",e=>{uSt=e.target.value;uPage=1;renderList();});
+document.getElementById("f-role").addEventListener("change",function(e){uRole=e.target.value;uPage=1;loadUsers();});
+document.getElementById("f-status").addEventListener("change",function(e){uSt=e.target.value;uPage=1;loadUsers();});
 
-/* ================= 最后 admin 判定 ================= */
-function activeAdmins(){ return USERS.filter(u=>u.role==="admin"&&u.st===1).length; }
-function isLastAdmin(u){ return u.role==="admin"&&u.st===1 && activeAdmins()<=1; }
-function guardDisabled(u){ return redlineOn && isLastAdmin(u); }
-
-/* ================= 列表渲染 ================= */
-function filtered(){
-  return USERS.filter(u=>
-    (!uKw || (u.nm.includes(uKw)||u.key.includes(uKw)||u.ph.includes(uKw))) &&
-    (!uRole || u.role===uRole) && (!uSt || u.st===+uSt));
-}
-function roleBadge(role){ const m={admin:"badge-role-admin",manager:"badge-role-tea",teacher:"badge-role-tea",student:"badge-role-std"}[role];
-  return `<span class="badge ${m}"><span class="pd"></span>${ROLE_LABEL[role]||role}</span>`; }
+/* ---- 列表渲染 ---- */
+function esc(t){var x=document.createElement("div");x.textContent=t==null?"":String(t);return x.innerHTML;}
+function roleBadge(r){ return '<span class="badge '+(r==='admin'?'badge-role-admin':'badge-role-'+(r==='teacher'||r==='manager'?'tea':'std'))+'"><span class="pd"></span>'+(ROLE_LABEL[r]||esc(r||"—"))+'</span>'; }
 function statusBadge(st){ return st? '<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-off"><span class="pd"></span>禁用</span>'; }
+function fmtDT(s){ return s? esc(String(s).slice(0,16).replace("T"," ")) : "—"; }
 function uRow(u,i){
-  const guard=guardDisabled(u);
-  return `<tr class="hov">
-    <td><div class="prim-cell">
-      <span class="av" style="background:${AVATAR_GRAD[i%AVATAR_GRAD.length]}">${u.nm.slice(0,1)}</span>
-      <div><div class="nm">${u.nm}${guard?' <span class="badge badge-warn"><span class="pd"></span>最后admin</span>':''}</div>
-      <div class="cd">${u.key} · UID ${u.id}</div></div></div></td>
-    <td class="nb">${u.ph}</td>
-    <td>${roleBadge(u.role)}</td>
-    <td>${statusBadge(u.st)}</td>
-    <td class="nb">${u.reg}</td>
-    <td class="nb">${u.last}</td>
-    <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end">
-      <button class="link-btn" onclick="openLearn('${u.id}','${u.nm}')">查看</button>
-      <button class="btn btn-ghost btn-mini" onclick="openEdit(${u.id})">编辑</button>
-    </div></td></tr>`;
+  const nm=u.real_name||u.username||("UID "+u.user_id);
+  const ini=(nm||"?").slice(0,1).toUpperCase();
+  return '<tr class="hov">'
+    +'<td><div class="prim-cell"><span class="av" style="background:'+AVATAR_GRAD[i%AVATAR_GRAD.length]+'">'+esc(ini)+'</span>'
+    +'<div><div class="nm">'+esc(nm)+'</div><div class="cd">'+esc(u.username||"—")+' · UID '+u.user_id+'</div></div></div></td>'
+    +'<td class="nb">'+esc(u.phone||"—")+'</td>'
+    +'<td>'+roleBadge(u.role_code)+'</td>'
+    +'<td>'+statusBadge(u.status)+'</td>'
+    +'<td class="nb">'+fmtDT(u.created_at)+'</td>'
+    +'<td class="nb">'+fmtDT(u.last_login_at)+'</td>'
+    +'<td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end">'
+    +'<button class="link-btn" data-view="'+u.user_id+'">查看</button>'
+    +'<button class="btn btn-ghost btn-mini" data-edit="'+u.user_id+'">编辑</button>'
+    +'<button class="btn btn-ghost btn-mini" data-toggle="'+u.user_id+'" style="'+(u.status?'color:var(--candy-red);border-color:var(--candy-red)':'')+'">'+(u.status?'禁用':'启用')+'</button>'
+    +'</div></td></tr>';
 }
 function skelRows(){
   var html="";
   for(var i=0;i<5;i++){
-    html+='<tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td>'+
-      '<td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td>'+
-      '<td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td>'+
-      '<td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>';
+    html+='<tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td>'
+      +'<td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td>'
+      +'<td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td>'
+      +'<td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>';
   }
   return html;
 }
-function renderList(){
-  const body=document.getElementById("u-body");
-  document.getElementById("u-empty").classList.add("hidden");
-  document.getElementById("u-error").classList.add("hidden");
-  if(listView==="loading"){ body.innerHTML=skelRows(); foot(0,1); return; }
-  if(listView==="empty"){ document.getElementById("u-empty").classList.remove("hidden"); body.innerHTML=""; foot(0,1); return; }
-  if(listView==="error"){ document.getElementById("u-error").classList.remove("hidden"); body.innerHTML=""; foot(0,1); return; }
-  const list=filtered();
-  const totalPg=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
-  if(uPage>totalPg)uPage=totalPg;
-  body.innerHTML=list.slice((uPage-1)*PAGE_SIZE,uPage*PAGE_SIZE).map(uRow).join("");
-  foot(list.length,totalPg);
-  document.getElementById("head-total").textContent=USERS.length;
+function setListState(view,errMsg){
+  var body=document.getElementById("u-body");
+  document.getElementById("u-empty").classList.toggle("hidden",view!=="empty");
+  var errBox=document.getElementById("u-error");
+  errBox.classList.toggle("hidden",view!=="error");
+  if(view==="error") errBox.innerHTML='<div class="ic">⚠️</div>用户列表加载失败：'+esc(errMsg||"后端不可用");
+  body.innerHTML=(view==="loading")?skelRows():"";
 }
-function foot(total,totalPg){
-  document.getElementById("u-count").textContent="共 "+total+" 条";
-  document.getElementById("u-pager").innerHTML =
-    `<button ${uPage<=1?'disabled':''} onclick="go(${Math.max(1,uPage-1)})">‹</button>`+
-    Array.from({length:totalPg},(_,i)=>`<button class="${i+1===uPage?'cur':''}" onclick="go(${i+1})">${i+1}</button>`).join("")+
-    `<button ${uPage>=totalPg?'disabled':''} onclick="go(${Math.min(totalPg,uPage+1)})">›</button>`;
+/* 窗口化分页（total 可达 10 万级，只渲染 当前±2 + 首末页） */
+function pagerHTML(total,page,pageSize){
+  const totalPg=Math.max(1,Math.ceil(total/pageSize));
+  if(page>totalPg) page=totalPg;
+  const btn=(p,label,cur,dis)=>'<button data-upg="'+p+'" class="'+(cur?'cur':'')+'"'+(dis?' disabled':'')+'>'+(label||p)+'</button>';
+  let html=btn(Math.max(1,page-1),"‹",false,page<=1);
+  const win=[];
+  for(let p=1;p<=totalPg;p++){ if(p===1||p===totalPg||Math.abs(p-page)<=2) win.push(p); }
+  let prev=0;
+  win.forEach(function(p){ if(prev&&p-prev>1) html+='<span class="nb">…</span>'; html+=btn(p,null,p===page,false); prev=p; });
+  html+=btn(Math.min(totalPg,page+1),"›",false,page>=totalPg);
+  return html;
 }
-function go(p){ uPage=p; renderList(); }
+function foot(total,page,pageSize){
+  document.getElementById("u-count").textContent="共 "+Number(total).toLocaleString("en-US")+" 条 · 第 "+page+" 页";
+  document.getElementById("u-pager").innerHTML=pagerHTML(total,page,pageSize);
+}
+function findRow(id){ for(var i=0;i<rowsCache.length;i++){ if(rowsCache[i].user_id===id) return rowsCache[i]; } return null; }
 
-/* ================= 学习详情 Dialog（GWT②） ================= */
-function openLearn(id,nm){
-  document.getElementById("learn-sub").textContent="用户："+nm+"（UID "+id+"） · 数据源 GET /api/admin/users/"+id+"/learning";
-  const cards=document.getElementById("learn-cards");
-  const tl=document.getElementById("learn-tl");
-  if(learnView==="gap"){
-    document.getElementById("learn-gap").classList.remove("hidden");
-    cards.innerHTML=`<div class="box-pad" style="grid-column:span 3;padding:24px"><div class="ic">🔌</div>6 指标面板已设计 · 端点未注册（缺口头条见上）</div>`;
-    tl.innerHTML="";
-  }else{
-    document.getElementById("learn-gap").classList.add("hidden");
-    cards.innerHTML=Object.entries(LEARN_PREVIEW).map(([k,v])=>`<div class="sc6">
-      <div class="lbl">${v.lbl}</div><div class="val">${v.val}<small> ${v.unit}</small></div>
-      <div class="src">${k}</div></div>`).join("");
-    tl.innerHTML=RECENT_ACT.map(a=>`<div class="tl"><span class="t">${a.t}</span><span class="d">${a.d}</span></div>`).join("");
-  }
+/* ---- 真实列表加载（GET /api/admin/users） ---- */
+function loadUsers(){
+  if(!window.EAPI) return;
+  uLoading=true;
+  setListState("loading");
+  var url="/api/admin/users?page="+uPage+"&page_size="+PAGE_SIZE;
+  if(uKw) url+="&keyword="+encodeURIComponent(uKw);
+  if(uRole) url+="&role_code="+encodeURIComponent(uRole);
+  if(uSt!=="") url+="&status="+encodeURIComponent(uSt);
+  return EAPI.get(url).then(function(d){
+    uLoading=false;
+    if(!d){ setListState("error","空响应"); return; }
+    var items=d.items||[], total=d.total||0, page=d.page||uPage, ps=d.page_size||PAGE_SIZE;
+    rowsCache=items;
+    if(uPage>1 && !items.length && total>0){ uPage=Math.max(1,Math.ceil(total/ps)); return loadUsers(); } // 越页回退
+    if(!items.length){ setListState("empty"); foot(total,page,ps); return; }
+    var body=document.getElementById("u-body");
+    body.innerHTML=items.map(uRow).join("");
+    document.getElementById("head-total").textContent=Number(total).toLocaleString("en-US");
+    foot(total,page,ps);
+  }).catch(function(err){
+    uLoading=false;
+    setListState("error",(err&&err.message?err.message+"（HTTP "+(err.status||"—")+"）":"后端不可用"));
+  });
+}
+function goPage(p){ uPage=p; loadUsers(); }
+document.getElementById("u-pager").addEventListener("click",function(e){
+  var b=e.target.closest("[data-upg]"); if(b&&!b.disabled) goPage(+b.getAttribute("data-upg"));
+});
+
+/* ---- 用户详情（真实字段；learning 端点缺口诚实披露） ---- */
+function openDetail(id){
+  var u=findRow(id); if(!u) return;
+  document.getElementById("learn-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · 数据源 GET /api/admin/users 列表项";
+  var fields=[["user_id",u.user_id],["username",u.username||"—"],["real_name",u.real_name||"—"],["phone",u.phone||"—"],
+    ["email",u.email||"—"],["role_code",ROLE_LABEL[u.role_code]||u.role_code],["status",u.status?"启用":"禁用"],["yn",u.yn],
+    ["created_at",u.created_at||"—"],["updated_at",u.updated_at||"—"],["last_login_at",u.last_login_at||"—"]];
+  document.getElementById("learn-fields").innerHTML=fields.map(function(f){
+    return '<div class="sc6"><div class="lbl">'+f[0]+'</div><div class="val" style="font-size:14px;word-break:break-all">'+esc(f[1])+'</div></div>';
+  }).join("");
   showModal("learn");
 }
-/* ================= 编辑用户 Dialog（RoleSelect + 状态 + reason + 红线） ================= */
-let editing=null;
+
+/* ---- 启停（二次确认 → POST /{id}/status；后端 40303 红线权威兜底） ---- */
+let stTarget=null;
+function openToggle(id){
+  var u=findRow(id); if(!u) return;
+  stTarget=u;
+  var to=u.status?0:1;
+  document.getElementById("st-title").textContent=to?"确认启用该账号？":"确认禁用该账号？";
+  document.getElementById("st-sub").textContent=u.username||("UID "+u.user_id);
+  document.getElementById("st-msg").innerHTML=(to?"启用后该用户可正常登录使用。":"禁用后该用户将<b>无法登录</b>。")
+    +' 该操作将提交 <code>POST /api/admin/users/'+u.user_id+'/status</code>（body {"status":'+to+'}）。';
+  document.getElementById("st-reason").value="";
+  document.getElementById("st-confirm").textContent=to?"确认启用":"确认禁用";
+  showModal("st");
+}
+document.getElementById("st-confirm").addEventListener("click",function(){
+  if(!stTarget) return;
+  var u=stTarget, to=u.status?0:1;
+  var btn=this; btn.disabled=true;
+  var body={status:to};
+  var r=document.getElementById("st-reason").value.trim(); if(r) body.reason=r;
+  EAPI.post("/api/admin/users/"+u.user_id+"/status", body).then(function(){
+    toast(to?"已启用（user_id="+u.user_id+"）":"已禁用（user_id="+u.user_id+"）");
+    closeAll(); stTarget=null; loadUsers();
+  }).catch(function(err){
+    toast("操作失败："+((err&&err.message)||"未知错误")+(err&&err.body&&err.body.code===40303?"（红线：至少保留 1 名可用管理员）":""));
+    btn.disabled=false;
+  });
+});
+
+/* ---- 编辑 Dialog（role/status 变更 → 真实 POST；红线尽力提示 + 后端权威） ---- */
+let editing=null, editOrig=null;
 function openEdit(id){
-  editing=USERS.find(u=>u.id===id);
-  const guard=guardDisabled(editing);
-  document.getElementById("edit-sub").textContent="用户："+editing.nm+"（UID "+editing.id+"） · role/status 权限校验 + 业务码 40303";
-  const rsel=document.getElementById("e-role");
-  rsel.value=editing.role;
+  var u=findRow(id); if(!u) return;
+  editing=u;
+  editOrig={role:u.role_code,status:u.status};
+  document.getElementById("edit-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · role/status 变更将真实提交";
+  var rsel=document.getElementById("e-role");
+  rsel.value=u.role_code;
   document.getElementById("e-reason").value="";
-  // 状态 seg
-  const seg=document.getElementById("e-status-seg");
-  [...seg.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",+b.dataset.st===editing.st));
-  // 红线：唯一可用 admin → 禁用禁用/降级 + 提示
-  document.getElementById("e-redline").classList.toggle("hidden",!guard);
-  rsel.disabled=guard;                          // 降级禁用
-  seg.querySelector('button[data-st="0"]').disabled=guard;  // 禁用禁用
-  document.getElementById("e-save").disabled=guard;
+  var seg=document.getElementById("e-status-seg");
+  seg.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on",+b.getAttribute("data-st")===u.status); });
+  // 红线尽力提示：目标为 admin 且 全库可用 admin（metrics）≤1
+  var redline=(u.role_code==="admin"&&adminTotalHint!=null&&adminTotalHint<=1);
+  document.getElementById("e-redline").classList.toggle("hidden",!redline);
+  rsel.disabled=redline;
+  seg.querySelector('button[data-st="0"]').disabled=redline;
+  document.getElementById("e-save").disabled=false;
   showModal("edit");
 }
-document.getElementById("e-status-seg").addEventListener("click",e=>{
+document.getElementById("e-status-seg").addEventListener("click",function(e){
   const b=e.target.closest("button"); if(!b||b.disabled)return;
-  [...b.parentElement.querySelectorAll("button")].forEach(x=>x.classList.toggle("on",x===b));
+  b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
 });
 function saveEdit(){
-  if(editing===null)return;
-  toast("已提交角色/状态变更请求（原型演示）");
-  closeAll();
+  if(!editing) return;
+  var u=editing;
+  var newRole=document.getElementById("e-role").value;
+  var segBtn=document.querySelector("#e-status-seg button.on");
+  var newStatus=segBtn?+segBtn.getAttribute("data-st"):u.status;
+  var reason=document.getElementById("e-reason").value.trim();
+  var pRole=(newRole!==u.role_code)?EAPI.post("/api/admin/users/"+u.user_id+"/role",{target_role:newRole,reason:reason||undefined}):Promise.resolve(null);
+  var pStatus=(newStatus!==u.status)?EAPI.post("/api/admin/users/"+u.user_id+"/status",{status:newStatus,reason:reason||undefined}):Promise.resolve(null);
+  document.getElementById("e-save").disabled=true;
+  Promise.all([pRole,pStatus]).then(function(){
+    toast("变更已提交（role="+(newRole!==u.role_code?newRole:"未变")+"，status="+(newStatus!==u.status?newStatus:"未变")+"）");
+    closeAll(); loadUsers();
+  }).catch(function(err){
+    toast("保存失败："+((err&&err.message)||"未知错误")+(err&&err.body&&err.body.code===40303?"（红线：至少保留 1 名可用管理员）":""));
+    document.getElementById("e-save").disabled=false;
+  });
 }
-/* ================= modal toast ================= */
+/* ---- modal toast ---- */
 function showModal(id){ document.getElementById(id+"-mask").classList.add("show"); document.getElementById(id).classList.add("show"); }
 function closeAll(){
-  document.querySelectorAll(".mask.show").forEach(x=>x.classList.remove("show"));
-  document.querySelectorAll(".dialog.show").forEach(x=>x.classList.remove("show"));
+  document.querySelectorAll(".mask.show").forEach(function(x){x.classList.remove("show");});
+  document.querySelectorAll(".dialog.show").forEach(function(x){x.classList.remove("show");});
 }
 document.addEventListener("click",function(e){
   if(e.target.classList && e.target.classList.contains("mask")) closeAll();
   const c=e.target.closest("[data-close]"); if(c) closeAll();
-  const d=e.target.closest("[data-demo]"); if(d){ const k=d.dataset.demo,v=d.dataset.v;
-    if(k==="list"){listView=v;uPage=1;} if(k==="redline"){redlineOn=(v==="on");} if(k==="learn"){learnView=v;}
-    document.querySelectorAll('[data-demo="'+k+'"]').forEach(x=>x.classList.toggle("on",x.dataset.v===v));
-    renderList(); }
+  const v=e.target.closest("[data-view]"); if(v){ openDetail(+v.getAttribute("data-view")); return; }
+  const ed=e.target.closest("[data-edit]"); if(ed){ openEdit(+ed.getAttribute("data-edit")); return; }
+  const tg=e.target.closest("[data-toggle]"); if(tg){ openToggle(+tg.getAttribute("data-toggle")); return; }
 });
-function toast(msg){ const t=document.createElement("div"); t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.2)"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),1800); }
-renderList();
+function toast(msg){ const t=document.createElement("div"); t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.2)"; t.textContent=msg; document.body.appendChild(t); setTimeout(function(){t.remove();},2200); }
+/* 初始：骨架屏（真实数据由守卫通过后的 bootAdmin 注入） */
+setListState("loading");
 </script>
 <script>
 /* 全局导航抽屉（移动端） */
@@ -630,14 +683,18 @@ renderList();
 <script>eduGuard.requireAdmin();</script>
 <script>
 window.bootAdmin=function(){
-if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
-var roleBadge=function(r){return'<span class="chip">'+esc(r||"—")+'</span>'};
-var stBadge=function(st){return st===1?'<span class="badge badge-ok"><i class="pd"></i>启用</span>':'<span class="badge badge-off"><i class="pd"></i>停用</span>'};
-EAPI.get("/api/admin/users?page=1&page_size=20").then(function(d){var items=d&&d.items?d.items:[];var body=document.querySelector("tbody");if(!body)return;if(!items.length){body.innerHTML="";var se=document.querySelector(".state,.state-empty");if(se)se.classList.remove("hidden");return;}var row=function(u){return '<tr><td><b>'+esc(u.real_name||u.username||"—")+'</b>'+(u.username?'<div class="muted note-sm">'+esc(u.username)+' · UID '+esc(u.user_id||"")+'</div>':'')+'</td><td>'+esc(u.phone||"—")+'</td><td>'+roleBadge(u.role_code)+'</td><td>'+stBadge(u.status)+'</td><td class="c-meta">'+esc((u.created_at||"").slice(0,10))+'</td><td class="c-meta">'+esc((u.last_login_at||"—").slice(0,10))+'</td><td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button class="dd-btn" onclick="alert(\'操作接线：POST /api/admin/users/'+u.user_id+'/role · status（task117）\')">操作 ▾</button></div></td></tr>'};
-body.innerHTML=items.map(row).join("");
-var se=document.querySelector(".state,.state-empty");if(se)se.classList.add("hidden");
-}).catch(function(err){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 用户列表加载失败："+(err&&err.message||"后端不可用")+"（task122 toast）";}});};
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()){
+    var t=document.querySelector(".page-head .sub");
+    if(t && t.textContent.indexOf("admin 账号")<0) t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    return; // 守卫第一段已跳登录，此处静默不发请求
+  }
+  // 红线提示数据（尽力而为）：metrics.role_breakdown.admin；后端 40303 永远权威
+  if(EAPI.get) EAPI.get("/api/admin/users/dashboard/metrics").then(function(m){
+    if(m&&m.role_breakdown) adminTotalHint=m.role_breakdown.admin||0;
+  }).catch(function(){ /* 红线提示数据缺失不阻塞列表 */ });
+  loadUsers();
+};
 </script>
 </body>
 </html>
