@@ -14,7 +14,7 @@
  *   便于 React 宿主(B3)与 scratch 测试替换;默认行为与 edu-api 等价。
  */
 
-import { tokenStore, type TokenStore } from "./auth-store.js";
+import { tokenStore, type TokenStore } from "./auth-store";
 
 const DEFAULT_BASE = "http://127.0.0.1:8000";
 const REFRESH_PATH = "/api/auth/refresh";

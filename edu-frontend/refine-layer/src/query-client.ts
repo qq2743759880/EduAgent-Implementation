@@ -6,7 +6,7 @@
  */
 
 import { QueryClient } from "@tanstack/react-query";
-import { ApiError } from "./http.js";
+import { ApiError } from "./http";
 
 /** 按项目约定构造 QueryClient(与 edu 后端契约对齐的默认项) */
 export function createEduQueryClient(): QueryClient {

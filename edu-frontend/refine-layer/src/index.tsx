@@ -11,15 +11,15 @@
 
 import { Refine, type AuthProvider, type ResourceProps, type RouterProvider } from "@refinedev/core";
 import type { ReactNode } from "react";
-import { eduDataProvider } from "./data-provider.js";
-import { getEduQueryClient } from "./query-client.js";
+import { eduDataProvider } from "./data-provider";
+import { getEduQueryClient } from "./query-client";
 
-export { createEduQueryClient, getEduQueryClient } from "./query-client.js";
-export { ApiError, configureHttp, http, getBaseURL, onError } from "./http.js";
-export type { HttpConfig } from "./http.js";
-export { createTokenStore, tokenStore, TOKEN_KEY, REFRESH_KEY } from "./auth-store.js";
-export type { TokenStore } from "./auth-store.js";
-export { eduDataProvider } from "./data-provider.js";
+export { createEduQueryClient, getEduQueryClient } from "./query-client";
+export { ApiError, configureHttp, http, getBaseURL, onError } from "./http";
+export type { HttpConfig } from "./http";
+export { createTokenStore, tokenStore, TOKEN_KEY, REFRESH_KEY } from "./auth-store";
+export type { TokenStore } from "./auth-store";
+export { eduDataProvider } from "./data-provider";
 
 export interface EduRefineProviderProps {
   children: ReactNode;
