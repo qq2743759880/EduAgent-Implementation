@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 
 from app.auth import CurrentUser, UserRole, get_current_user, require_role
@@ -396,10 +396,50 @@ async def p8_raw_rpc(server_id: int, payload: MCPRawRpcReq):
 
 
 @router.post("/health-scan", response_model=dict,
-             summary="P8-15【调试】对所有 yn=1 的 MCP Server 做批量健康扫描")
-async def p8_health_scan():
+             summary="P8-15【调试】同步批量健康扫描（Deprecated：30 天兼容窗，请迁移 "
+                     "POST /api/mcp/health-scan-async；removal 预计 2026-10-12）")
+async def p8_health_scan(response: Response):
+    # B1 兼容窗（contracts/reshape-b.json）：行为与响应 schema 不变，仅追加弃用提示头
+    response.headers["Deprecation"] = "true"
+    response.headers["Sunset"] = "Mon, 12 Oct 2026 00:00:00 GMT"
+    response.headers["Link"] = '</api/mcp/health-scan-async>; rel="successor-version"'
     result = await executor.scan_all_servers_health()
     return ok(MCPHealthScanResp.model_validate(result))
+
+
+# ============================================================
+# 7A+. B1 健康扫描异步化（contracts/reshape-b.json 冻结契约）
+#   · POST /health-scan-async → 202 {job_id}（同参重复 POST 幂等返回同一 job_id）
+#   · GET  /health-scan/{job_id} → {status: running|done, result}；未知 job → 404/40450
+# ============================================================
+@router.post("/health-scan-async", status_code=202, response_model=dict,
+             summary="B1【调试】异步批量健康扫描：202 受理即返 job_id；同参重复 POST 幂等复用在跑 job")
+async def p8_health_scan_async():
+    result = await executor.health_scan_async_start()
+    data = {
+        "job_id": result["job_id"],
+        "status": result["status"],
+        "created_ms": result["created_ms"],
+        "scanned_total": result["scanned_total"],
+    }
+    message = "already_running" if result.get("already_running") else "accepted"
+    return ok(data, message=message)
+
+
+@router.get("/health-scan/{job_id}", response_model=dict,
+            summary="B1【调试】查询异步健康扫描 job：running|done + result；未知/过期 job → 404 code=40450")
+async def p8_health_scan_status(job_id: str):
+    snap = await executor.health_scan_job_status(job_id)
+    if snap is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "40450",
+                    "message": f"扫描任务不存在或已过期：{job_id}（结果不可得，请重新发起扫描）"},
+        )
+    if snap.get("status") == "done" and snap.get("result") is not None:
+        # result 与现行同步端点 MCPHealthScanResp 完全同构（消费方字段零学习成本）
+        snap["result"] = MCPHealthScanResp.model_validate(snap["result"]).model_dump(mode="json")
+    return ok(snap)
 
 
 # ============================================================

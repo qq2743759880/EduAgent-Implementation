@@ -357,6 +357,8 @@ class MCPSessionItem(BaseModel):
     idle_gc_ttl_s: int = 180
     call_count: int = 0
     state: str = Field(default="active", description="active | closing | closed")
+    hc: bool = Field(default=False, description="B1：健康检查专用会话（与调试会话隔离）")
+    hc_busy: bool = Field(default=False, description="B1：健康检查交换中（GC 豁免窗口）")
     last_error: Optional[str] = None
 
 

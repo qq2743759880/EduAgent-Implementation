@@ -374,6 +374,10 @@ class Settings(BaseSettings):
     # ============================================================
     USE_MCP_TOOL_CALLING: bool = True     # 总开关：False 时聊天流程跳过 MCP 工具调用
     MCP_TOOL_MAX_TRIES: int = 1           # 单轮最多触发几次工具（避免反复调用）
+    # B1（reshape-b）：stdio 单台健康检查复用 sessions 池长连会话（池内仅发一条 ping）。
+    # False = 回滚开关：退回一次性 spawn 全握手旧路径（行为与 B1 前完全一致）。
+    MCP_HC_USE_POOL: bool = True
+    MCP_HC_SESSION_TTL_S: int = 600       # hc 专用会话空闲 TTL（秒），session_create 内钳制 30~1800
 
     # ============================================================
     # 【task-T1 新增段 · 工具调用闭环（换参→换工具→熔断→人工指南）】※ 本段为 task-T1 专属，

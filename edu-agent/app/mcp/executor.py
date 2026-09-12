@@ -1246,26 +1246,32 @@ async def health_check_server(server_id: int) -> dict:
         transport = server.get("transport")
         if transport == "stdio":
             timeout_s = max(2.0, int(server.get("connect_timeout_ms") or 5000) / 1000.0)
-            reqs = [
-                {"jsonrpc": "2.0", "method": "initialize",
-                 "params": {"protocolVersion": "2024-11-05", "clientInfo": {"name": "edu-agent-hc", "version": "1.0"}}},
-                {"jsonrpc": "2.0", "method": "notifications/initialized"},
-                {"jsonrpc": "2.0", "method": "ping"},
-            ]
-            resps = await asyncio.wait_for(
-                _stdio_exchange_async(dict(server), reqs, timeout_s),
-                timeout=timeout_s + 8.0,
-            )
-            init_resp, _, ping_resp = resps[0], resps[1], resps[2]
-            # MCP 规范 ping 的 result 是空对象 {} —— 必须判 is not None，truthy 检查会把规范兼容的 server 误判为不健康
-            if (init_resp and init_resp.get("result") is not None
-                    and ping_resp and ping_resp.get("result") is not None):
-                ok = True
-            else:
-                def _short(x):
-                    if x is None: return "None"
-                    return f"keys={sorted(list(x.keys()))[:8]} res={'T' if x.get('result') is not None else 'F'} err={'T' if x.get('error') is not None else 'F'}"
-                reason = f"stdio: init={_short(init_resp)} ping={_short(ping_resp)}"
+            concluded = False
+            if settings.MCP_HC_USE_POOL:
+                # B1：先池后 spawn —— 池内长连会话只发一条 ping（initialize 已在入池时完成）
+                ok, reason, concluded = await _stdio_health_via_pool(server, timeout_s)
+            if not concluded:
+                # B1 回滚开关（MCP_HC_USE_POOL=False）或池通道兜底：一次性 spawn 全握手（旧路径，行为不变）
+                reqs = [
+                    {"jsonrpc": "2.0", "method": "initialize",
+                     "params": {"protocolVersion": "2024-11-05", "clientInfo": {"name": "edu-agent-hc", "version": "1.0"}}},
+                    {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                    {"jsonrpc": "2.0", "method": "ping"},
+                ]
+                resps = await asyncio.wait_for(
+                    _stdio_exchange_async(dict(server), reqs, timeout_s),
+                    timeout=timeout_s + 8.0,
+                )
+                init_resp, _, ping_resp = resps[0], resps[1], resps[2]
+                # MCP 规范 ping 的 result 是空对象 {} —— 必须判 is not None，truthy 检查会把规范兼容的 server 误判为不健康
+                if (init_resp and init_resp.get("result") is not None
+                        and ping_resp and ping_resp.get("result") is not None):
+                    ok = True
+                else:
+                    def _short(x):
+                        if x is None: return "None"
+                        return f"keys={sorted(list(x.keys()))[:8]} res={'T' if x.get('result') is not None else 'F'} err={'T' if x.get('error') is not None else 'F'}"
+                    reason = f"stdio: init={_short(init_resp)} ping={_short(ping_resp)}"
         elif transport in ("sse", "http"):
             base_url = str(server.get("base_url") or "")
             if not base_url:
@@ -1472,6 +1478,8 @@ def _session_snapshot(session_id: str, s: dict) -> dict:
         "call_count": int(s.get("call_count") or 0),
         "state": state,
         "last_error": s.get("last_error"),
+        "hc": bool(s.get("hc")),          # B1：健康检查专用会话标记
+        "hc_busy": bool(s.get("hc_busy")),  # B1：健康检查交换中（GC 豁免窗口）
     }
 
 
@@ -1491,6 +1499,11 @@ async def session_pool_gc(force_all: bool = False) -> int:
             idle_too_long = last > 0 and (now_ms - last) > (ttl_s * 1000)
             need_kill = force_all or idle_too_long or over > 0
             if not need_kill:
+                continue
+            if s.get("hc_busy") and not force_all:
+                # B1：健康检查交换中的 hc 会话豁免（池化锁口径，防 GC 竞争误杀 mid-flight 会话）
+                if over > 0:
+                    over -= 1   # 名额让给下一个可回收会话，避免死循环式占用
                 continue
             if over > 0:
                 over -= 1
@@ -1515,8 +1528,13 @@ async def session_pool_gc(force_all: bool = False) -> int:
     return removed
 
 
-async def session_create(server_id: int, ttl_seconds: int, created_by_uid: int) -> dict:
-    """创建 stdio 长连接会话：initialize + initialized 成功后入池，返回 snapshot。"""
+async def session_create(server_id: int, ttl_seconds: int, created_by_uid: int,
+                         timeout_s_override: float | None = None) -> dict:
+    """创建 stdio 长连接会话：initialize + initialized 成功后入池，返回 snapshot。
+
+    timeout_s_override（B1）：hc 池化路径用它钳制建会话超时（默认 None=调试语义
+    (connect+call)/1000+5s 宽限公式不变）；防 hung server 把健康检查拖进分钟级。
+    """
     ttl_seconds = int(max(30, min(1800, int(ttl_seconds))))
     server = await fetch_one(
         "SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1",
@@ -1532,6 +1550,8 @@ async def session_create(server_id: int, ttl_seconds: int, created_by_uid: int) 
     connect_ms = int(server.get("connect_timeout_ms") or 5000)
     call_ms = int(server.get("call_timeout_ms") or 30_000)
     timeout_s = max(2.0, (connect_ms + call_ms) / 1000.0 + 5.0)
+    if timeout_s_override is not None:
+        timeout_s = max(2.0, float(timeout_s_override))
 
     run_command = server.get("run_command")
     if not run_command:
@@ -1738,6 +1758,156 @@ async def _stdio_exchange_via_session(session_id: str, requests: list[dict], tim
         out.append(results.get(rid))
     return out
 
+
+# ============================================================
+# B1（reshape-b）：健康检查专用池会话（server_id → hc_session 注册表）
+# ------------------------------------------------------------
+# 口径（contract-change-reshape-b-health-scan.md §2.3）：
+#   · hc 会话与调试会话不混用：内部注册表 _HC_SESSION_BY_SERVER 单独登记，
+#     池条目打 "hc" 标记，避免调试会话 GC/关闭波及健康检查；
+#   · 池化锁：_HC_SESSION_LOCK 守卫注册表，_SESSION_LOCK 守卫池本体，
+#     锁序恒为 _HC_SESSION_LOCK → _SESSION_LOCK（反向零依赖，防死锁）；
+#   · GC 竞争：池条目在交换期间带 "hc_busy" 标记（_SESSION_LOCK 内读写），
+#     session_pool_gc 对在检会话豁免（force_all 除外），防误杀 mid-flight 会话；
+#   · 同 server 并发检查：per-server 交换锁 _HC_XCHG_LOCKS 串行化 ping 帧
+#     （单条 stdio pipe 上并发读会互相偷帧，必须串行）。
+# ============================================================
+_HC_SESSION_BY_SERVER: dict[int, str] = {}
+_HC_SESSION_LOCK = asyncio.Lock()
+_HC_XCHG_LOCKS: dict[int, asyncio.Lock] = {}
+
+
+async def _hc_session_alive_locked(reg_sid: str) -> tuple[bool, dict | None]:
+    """在持 _HC_SESSION_LOCK 前提下查池内会话存活（内部再取 _SESSION_LOCK，锁序安全）。"""
+    async with _SESSION_LOCK:
+        s = _SESSION_POOL.get(reg_sid)
+        alive = (s is not None and s.get("proc") is not None
+                 and getattr(s["proc"], "returncode", None) is None)
+        return alive, s
+
+
+async def _hc_session_acquire(server: dict) -> tuple[str | None, str | None]:
+    """取/建该 server 的 hc 专用池会话。
+
+    返回 (session_id, create_error)：
+      (sid, None)      → 命中/新建成功（已置 hc_busy）；
+      (None, msg)      → 建池握手失败（spawn 失败/initialize 超时）——即完整握手证据，
+                         调用方可直接定论不健康（变更单 §2.3：不二次 spawn 双倍付费）；
+      (None, None)     → 参数非法等瞬时不可用，调用方回退一次性 spawn 兜底。
+    """
+    sid = int(server.get("id") or 0)
+    if sid <= 0:
+        return None, None
+    async with _HC_SESSION_LOCK:
+        reg_sid = _HC_SESSION_BY_SERVER.get(sid)
+        if reg_sid:
+            alive, s = await _hc_session_alive_locked(reg_sid)
+            if alive:
+                s["hc_busy"] = True
+                s["last_used_ms"] = int(time.time() * 1000)
+                return reg_sid, None
+            _HC_SESSION_BY_SERVER.pop(sid, None)   # 僵死/已死 → 摘注册表，重建
+    # 未命中：per-server 单飞行建会话（防同 server 并发重复 spawn；不持全局锁，不阻塞其他 server）
+    xchg_lock = _HC_XCHG_LOCKS.get(sid)
+    if xchg_lock is None:
+        xchg_lock = asyncio.Lock()
+        _HC_XCHG_LOCKS[sid] = xchg_lock
+    async with xchg_lock:
+        async with _HC_SESSION_LOCK:
+            reg_sid = _HC_SESSION_BY_SERVER.get(sid)
+            if reg_sid:
+                alive, s = await _hc_session_alive_locked(reg_sid)
+                if alive:
+                    s["hc_busy"] = True
+                    s["last_used_ms"] = int(time.time() * 1000)
+                    return reg_sid, None
+                _HC_SESSION_BY_SERVER.pop(sid, None)
+        # B1：建会话超时按健康检查口径钳制（connect_timeout/1000 + 2s 余量），
+        # 而非调试会话的 (connect+call)/1000+5s 宽限公式——防 hung server 把
+        # 健康检查拖进分钟级（首轮回归实测 challenge_dup 45s 教训）。
+        hc_timeout_s = max(2.0, int(server.get("connect_timeout_ms") or 5000) / 1000.0)
+        res = await session_create(
+            server_id=sid, ttl_seconds=settings.MCP_HC_SESSION_TTL_S, created_by_uid=0,
+            timeout_s_override=hc_timeout_s + 2.0,
+        )
+        if not res.get("ok"):
+            return None, str(res.get("message") or "session create failed")[:300]
+        new_sid = str((res.get("session") or {}).get("session_id") or "")
+        if not new_sid:
+            return None, "session create 返回缺少 session_id"
+        async with _HC_SESSION_LOCK:
+            async with _SESSION_LOCK:
+                s_new = _SESSION_POOL.get(new_sid)
+                if s_new is not None:
+                    s_new["hc"] = True
+                    s_new["hc_busy"] = True
+            _HC_SESSION_BY_SERVER[sid] = new_sid
+        return new_sid, None
+
+
+async def _hc_session_release(server_id: int, session_id: str, *, drop: bool = False) -> None:
+    """清 hc_busy；drop=True 时另摘注册表并关闭坏会话（幂等：重复调用/会话已被换均安全）。"""
+    if drop:
+        async with _HC_SESSION_LOCK:
+            if _HC_SESSION_BY_SERVER.get(server_id) == session_id:
+                _HC_SESSION_BY_SERVER.pop(server_id, None)
+    async with _SESSION_LOCK:
+        s = _SESSION_POOL.get(session_id)
+        if s is not None:
+            s["hc_busy"] = False
+    if drop:
+        await session_close(session_id)   # 杀进程+摘池（幂等，已不存在亦无害）
+
+
+async def _stdio_health_via_pool(server: dict, timeout_s: float) -> tuple[bool, str | None, bool]:
+    """stdio 单台健康检查走 sessions 池长连通道（只发一条 ping，initialize 已在入池时完成）。
+
+    返回 (ok, reason, concluded)：
+      concluded=True  → 池通道已给出健康结论，调用方直接采用
+                        （含建池握手失败=不健康定论，变更单 §2.3，不二次 spawn）；
+      concluded=False → 池通道基础设施故障（会话僵死/帧异常），调用方退一次性 spawn 兜底，
+                        保证池故障永远不会把健康 server 误报为不健康。
+    """
+    server_id = int(server.get("id") or 0)
+    session_id, create_err = await _hc_session_acquire(server)
+    if create_err:
+        # 建池握手失败（spawn 失败/initialize 超时）= 与旧路径同等证据强度 → 直接定论不健康，
+        # 不再二次 spawn（变更单 §2.3 流程，防 hung server 双倍付费）
+        return False, f"stdio hc handshake: {create_err}", True
+    if not session_id:
+        return False, None, False
+    xchg_lock = _HC_XCHG_LOCKS.get(server_id)
+    if xchg_lock is None:   # 防御：acquire 未命中路径也应有一把锁
+        xchg_lock = asyncio.Lock()
+        _HC_XCHG_LOCKS[server_id] = xchg_lock
+    try:
+        async with xchg_lock:   # 单条 stdio pipe 串行化：并发读会互偷帧
+            resps = await asyncio.wait_for(
+                _stdio_exchange_via_session(
+                    session_id, [{"jsonrpc": "2.0", "method": "ping"}], timeout_s,
+                ),
+                timeout=timeout_s + 2.0,
+            )
+    except Exception as exc:
+        await _hc_session_release(server_id, session_id, drop=True)
+        return False, None, False   # 池通道故障 → 本次退一次性 spawn 兜底
+    try:
+        ping_resp = resps[0] if resps else None
+        if ping_resp is not None and ping_resp.get("error"):
+            # server 在线但返回 JSON-RPC error → 结论=不健康（会话仍活着，保留）
+            await _hc_session_release(server_id, session_id)
+            return False, f"stdio pool ping error: {_short(ping_resp)}", True
+        if ping_resp is not None and ping_resp.get("result") is not None:
+            await _hc_session_release(server_id, session_id)
+            return True, None, True
+        # 无响应帧：会话可能僵死（半开管道）→ 弃会话，本次退一次性 spawn 兜底
+        await _hc_session_release(server_id, session_id, drop=True)
+        return False, None, False
+    except Exception:
+        await _hc_session_release(server_id, session_id, drop=True)
+        return False, None, False
+
+
 async def live_discover_tools(server_id: int) -> dict:
     """直接连接 Server 取 tools/list（不落库 mcp_tool，调试面板用）。同时支持 stdio / sse / http。"""
     t0 = time.perf_counter()
@@ -1925,8 +2095,12 @@ async def raw_rpc_call(server_id: int, method: str, params: dict | None = None,
             "latency_ms": cost, "session_id": used_session}
 
 
-async def scan_all_servers_health() -> dict:
-    """对所有 yn=1 的 MCP Server 批量做健康检查。"""
+async def scan_all_servers_health(progress_cb: Any = None) -> dict:
+    """对所有 yn=1 的 MCP Server 批量做健康检查。
+
+    progress_cb(done:int, total:int) 可选：B1 异步 job 用它回写进度（同步回调，
+    逐台完成后调用；旧同步端点不传，行为与 B1 前完全一致）。
+    """
     from app.database import fetch_all
     t0 = time.perf_counter()
     rows = await fetch_all(
@@ -1935,7 +2109,7 @@ async def scan_all_servers_health() -> dict:
     )
     items: list[dict] = []
     ok_c = 0
-    for r in rows:
+    for idx, r in enumerate(rows, start=1):
         sid = int(r["id"])
         try:
             hc = await health_check_server(sid)
@@ -1953,6 +2127,11 @@ async def scan_all_servers_health() -> dict:
             "reason": hc.get("reason"),
             "last_health_at": r.get("last_health_at"),
         })
+        if progress_cb is not None:
+            try:
+                progress_cb(idx, len(rows))
+            except Exception:
+                pass
     elapsed = int((time.perf_counter() - t0) * 1000)
     return {
         "scanned": len(items),
@@ -1961,3 +2140,101 @@ async def scan_all_servers_health() -> dict:
         "items": items,
         "elapsed_ms": elapsed,
     }
+
+
+# ============================================================
+# B1（reshape-b）：health-scan 异步 job 存储（进程内存 + TTL，single-flight 幂等）
+# 契约：contracts/reshape-b.json（冻结）
+#   · POST /api/mcp/health-scan-async → 202 {job_id}，同参重复 POST 幂等返回同一 job_id
+#   · GET /api/mcp/health-scan/{job_id} → {status: running|done, result}；未知 job → 404/40450
+# 单实例演示架构不引入 Redis（变更单 §2.2 备案：调试域 job 不值得跨实例持久化）。
+# ============================================================
+_HC_SCAN_JOBS: dict[str, dict] = {}          # job_id -> job dict（含 task 引用）
+_HC_SCAN_JOBS_LOCK = asyncio.Lock()          # job 表池化锁：幂等判定/GC/终态写入串行化
+_HC_SCAN_JOB_TTL_MS = 10 * 60 * 1000         # done job 保留 10 分钟，过期摘除（→ 40450）
+_HC_SCAN_JOB_MAX = 32                        # 防内存膨胀：超上限按完成时间最旧优先摘
+
+
+def _hc_scan_job_snapshot(job: dict) -> dict:
+    """job 只读快照（GET 轮询响应 data；契约字段 job_id/status/result 恒在）。"""
+    return {
+        "job_id": job["job_id"],
+        "status": job["status"],
+        "created_ms": job["created_ms"],
+        "finished_ms": job.get("finished_ms"),
+        "progress": {"scanned": int(job.get("scanned_done") or 0),
+                     "total": int(job.get("scanned_total") or 0)},
+        "result": job.get("result"),
+    }
+
+
+def _hc_scan_jobs_gc_locked(now_ms: int) -> int:
+    """摘除过期 done job + 超上限最旧优先（调用方须持 _HC_SCAN_JOBS_LOCK；纯内存操作）。"""
+    expired = [
+        jid for jid, j in _HC_SCAN_JOBS.items()
+        if j["status"] == "done" and j.get("finished_ms")
+        and (now_ms - int(j["finished_ms"])) > _HC_SCAN_JOB_TTL_MS
+    ]
+    for jid in expired:
+        _HC_SCAN_JOBS.pop(jid, None)
+    over = max(0, len(_HC_SCAN_JOBS) - _HC_SCAN_JOB_MAX)
+    if over > 0:
+        done_sorted = sorted(
+            (j for j in _HC_SCAN_JOBS.values() if j["status"] == "done"),
+            key=lambda j: int(j.get("finished_ms") or 0),
+        )
+        for j in done_sorted[:over]:
+            _HC_SCAN_JOBS.pop(j["job_id"], None)
+    return len(expired)
+
+
+async def _health_scan_job_runner(job: dict) -> None:
+    """后台扫描任务：串行逐台检查（与同步端点同引擎），逐台回写进度，终态写入持锁。"""
+    def _progress(done: int, total: int) -> None:
+        job["scanned_done"] = int(done)
+        job["scanned_total"] = int(total)
+
+    try:
+        result = await scan_all_servers_health(progress_cb=_progress)
+    except Exception as exc:
+        # 扫描器逐台吞错，理论上到不了这里；兜底成 done（绝不留永挂 running 的 job 毒化幂等）
+        logger.error(f"health-scan job={job['job_id']} runner 异常: {exc}")
+        result = {"scanned": 0, "ok_count": 0, "error_count": 0, "items": [], "elapsed_ms": 0}
+    job["result"] = result
+    async with _HC_SCAN_JOBS_LOCK:
+        job["status"] = "done"
+        job["finished_ms"] = int(time.time() * 1000)
+
+
+async def health_scan_async_start() -> dict:
+    """POST /health-scan-async 主体：202 受理；已有 running job → 幂等复用同一 job_id（用户签字①）。"""
+    async with _HC_SCAN_JOBS_LOCK:
+        _hc_scan_jobs_gc_locked(int(time.time() * 1000))
+        for j in _HC_SCAN_JOBS.values():
+            if j["status"] == "running":
+                return {"job_id": j["job_id"], "status": "running",
+                        "created_ms": j["created_ms"], "scanned_total": int(j.get("scanned_total") or 0),
+                        "already_running": True}
+        from app.database import fetch_one
+        cnt_row = await fetch_one("SELECT COUNT(*) AS c FROM mcp_server WHERE yn=1")
+        job_id = "hs-" + uuid.uuid4().hex[:12]
+        job = {
+            "job_id": job_id, "status": "running",
+            "created_ms": int(time.time() * 1000), "finished_ms": None,
+            "scanned_total": int((cnt_row or {}).get("c") or 0), "scanned_done": 0,
+            "result": None,
+        }
+        _HC_SCAN_JOBS[job_id] = job
+    job["task"] = asyncio.create_task(_health_scan_job_runner(job))
+    return {"job_id": job_id, "status": "running", "created_ms": job["created_ms"],
+            "scanned_total": job["scanned_total"], "already_running": False}
+
+
+async def health_scan_job_status(job_id: str) -> dict | None:
+    """GET /health-scan/{job_id} 主体：未知/已过期 job 返回 None（router 层转 404/40450）。"""
+    async with _HC_SCAN_JOBS_LOCK:
+        _hc_scan_jobs_gc_locked(int(time.time() * 1000))
+        job = _HC_SCAN_JOBS.get(str(job_id or ""))
+        if job is None:
+            return None
+        return _hc_scan_job_snapshot(job)
