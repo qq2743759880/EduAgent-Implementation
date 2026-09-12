@@ -7,13 +7,17 @@
 复跑：python test-reports/task13-lifecycle-probe.py
 """
 import json
+import os
 import sys
 import time
 
 import requests
 
 BASE = "http://127.0.0.1:8000"
-ACCOUNT, PASSWORD = "adm02test", "Test@123456"
+# 凭据不入库:从环境变量读取(测试账号见 AGENTS.md,本机演示环境)
+ACCOUNT, PASSWORD = os.environ.get("EDU_TEST_ACCOUNT", ""), os.environ.get("EDU_TEST_PASSWORD", "")
+if not (ACCOUNT and PASSWORD):
+    sys.exit("请先设置 EDU_TEST_ACCOUNT / EDU_TEST_PASSWORD 环境变量(值见 AGENTS.md 测试账号)")
 
 
 def show(tag, resp):

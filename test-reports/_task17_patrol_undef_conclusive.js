@@ -49,7 +49,7 @@ function checkPage(htmlPath, label, expectFail) {
 function resolveBaseline() {
   if (process.env.T17_REV) return process.env.T17_REV;
   try {
-    const h = execSync('git log --format=%H --grep="fix(reshape)/task17" -n 1', { cwd: PROJECT, encoding: 'utf8' }).trim();
+    const h = execFileSync('git', ['log', '--format=%H', '--grep=fix(reshape)/task17', '-n', '1'], { cwd: PROJECT, encoding: 'utf8' }).trim();
     if (h) return h + '~1';
   } catch (e) { /* 回退 HEAD~1 */ }
   return 'HEAD~1';
@@ -57,7 +57,8 @@ function resolveBaseline() {
 const REV = resolveBaseline();
 function headVersion(rel) {
   const out = path.join(REPORTS, '_t17_head_tmp.html');
-  execSync('git show ' + REV + ':' + rel + ' > "' + out + '"', { cwd: PROJECT });
+  const content = execFileSync('git', ['show', REV + ':' + rel], { cwd: PROJECT, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  fs.writeFileSync(out, content, 'utf8');
   return out;
 }
 
