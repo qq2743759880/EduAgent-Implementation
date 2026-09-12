@@ -428,3 +428,23 @@
 | admin-rag-upload | rag_admin | **ADMIN** | ❌ 403 | ❌ 待修 |
 | admin-mcp | mcp | ADMIN | ❌ 403 | ❌ 待修 |
 → 系统性结论:**例外页至少 3 页**(users/mcp/rag)+dashboard 的 metrics 端点;task109 GWT③ 修正扩为"manager 可用 5 页,3 页 ADMIN-only 需 H2a 式横幅或后端放宽(用户裁定)";H3 修复任务待派。
+
+## 终审第三轮闭环(2026-09-12 20:4x)
+### A. binlog 追溯·终版(漏洞 2.1 已闭合)
+- **09-12 覆盖文件=bin054**(起点 09-08 23:07,MySQL 19:12 崩溃重启切到 bin055)。此前 049-054"无事件"是 dump 空壳(2>/dev/null 吞错)所致,已修正。
+- **帖 88/89/90/97 物理删除事件定位:09-12 17:02:39 同一事务**(-vv 行镜像实证)。17:02=第三波 agent 运行窗口;**ROW 格式 binlog 不含执行者身份(general_log=OFF),agent 级定责不可达**。窗口内活跃者=task12/14/15 agent+用户。**请用户回答:17:02 前后是否亲手删过这 4 帖?** 若否→第三波某 agent 越权 DB 直写(动机疑似执行 P1-7 清理),程序违规成立,处置=全站开工单新增"禁 DB 直写"硬条款+复验门快照必做。
+### B. series"53 条"终版:口径混淆非数据事故
+bin049-054 无大规模 series 删除;62/56=API total 口径,SQL 直查 off_sale=9(删前)/4(删后)。"口径差异根因(list_series WHERE 组合)"登记 B 批核对(影响:task13"56 条"/task19"62 条"证据需按口径重述,不改变其"回收站功能可用"结论)。
+### C. 全站权限对齐表·终版(逐端点核实)
+| 页面 | 端点×口径 | manager |
+|---|---|---|
+| admin-dashboard | 仅 metrics 一端点(user_admin=ADMIN) | 整页无数据=例外页 |
+| admin-users | ADMIN | 例外页(H2a 已修) |
+| admin-mcp | mcp 全端点 ADMIN | 例外页 |
+| admin-rag-upload | knowledge 3 端点=ADMIN+MGR ✓ / rag_admin(collections)=ADMIN | 部分例外(collections 卡 403,其余可用) |
+| admin-courses/course-detail/questions/question-detail | ADMIN+MGR | ✅ 完整可用 |
+→ manager 完整可用 4 页+rag 部分;例外=3 页+rag 一卡。**用户已裁 A 方案+导航显隐条件**→H3 任务:例外 3 页 manager 横幅+全站导航对 manager 灰显/隐藏例外页;rag 页仅 collections 卡诚实降级。
+### D. 3 笔 pending 订单(按用户裁定不追溯 binlog)
+1 笔(09-06 17:14,2999)=task05 agent 联调窗口,疑似漏报;2 笔(09-06 18:26,3999×2 相隔 7 秒)来源不明(用户否认)。处置:标 DEMO-TEST 待用户选取消/保留。
+### E. 复验包已交付
+test-reports/H-reverify-package.md(一令 pytest+分项手工表+提交索引)——用户可随时独立重跑。
