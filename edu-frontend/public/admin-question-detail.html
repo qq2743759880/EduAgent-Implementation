@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>task59 原型 · 管理端题目解析编辑 /admin/questions/[id]</title>
+<title>管理端题目编辑 /admin/questions/[id]</title>
 <!--
   task59 HTML 原型（审核稿）
   - P16 风格 candy-playful frozen（复用 task56/57/58 同源样式 token）
@@ -21,7 +21,14 @@
     · 题干/解析均支持 Markdown/LaTeX → 预览与 user 端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，无 rehypeRaw）
     · 下一路由：/admin/questions/{id} tab → 返回 /admin/questions 列表
   - v0.2.0 灰系清理：本页重写时废弃历史遗留 text-slate-500 等 slate 灰系，一律改用 candy token（var(--muted) 等）
+  - task15 reshape-a（2026-09-12）：本页由纯原型转真实接线页。GET /questions/{id}（题干/选项/答案/解析/题型全量真实渲染，
+      bank 名经 GET /banks/{id} 补全）+ PATCH /questions/{id} 真实保存（stem/answer/analysis 必填校验，解析必修保留）；
+      题型下拉改为题型维表 GET /types 真实 28 项（value=type_id，objective_flag 派生只读徽章随题型联动）；
+      加载态=骨架屏（默认展示）、错误态重试走真实 reload；演示控制器与假数据（OPT_DATA 示例/演示题干）删除（禁 MOCK）。
   AUDIT LOG:
+    [2026-09-12 task15 reshape-a] 全量接线（curl 实测 2026-09-12：GET questions/{id} 200 / PATCH 200 / banks/{id} 200，
+      40400 题库不存在诚实降级为「题库 #id」）：删除演示控制器/demoType/demoFillMulti/demoEmptyAnalysis/假加载超时；
+      删除原型假题干/假选项/假解析；默认骨架 loading；保存接 PATCH 真实端点（42200 校验失败诚实 toast）。
     [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-24 v1 R1] 初稿提交（面包屑+只读题库/题号头+题型 Select 联动选项编辑器+题干 Markdown Textarea+
       选项编辑器四态联动(单选Radio/多选Checkbox/判断T·F/填空简答折叠)+答案 Textarea+★解析 analysis_text 必修 Textarea+
@@ -41,13 +48,6 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
   .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 100px}
-  /* 演示控制器 */
-  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
-  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
-  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
-  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:240px}
-  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
-  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
   /* header / breadcrumb */
   .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted);margin-bottom:12px}
   .crumb a{color:var(--primary);text-decoration:none}
@@ -321,30 +321,30 @@
 
   <!-- 只读头信息 + objective 派生徽章 -->
   <div class="ro-badges">
-    <span class="ro-pill">所属题库 <b id="ro-bank-id">Python 基础编程题库</b></span>
-    <span class="ro-pill">题号 <b id="ro-code">Q1001</b></span>
-    <span class="ro-pill">题目 ID <b id="ro-qid">#9001</b></span>
-    <span class="ro-pill">题型 <b id="ro-obj-label">单选题（客观）</b>
+    <span class="ro-pill">所属题库 <b id="ro-bank-id">加载中…</b></span>
+    <span class="ro-pill">题号 <b id="ro-code">—</b></span>
+    <span class="ro-pill">题目 ID <b id="ro-qid">—</b></span>
+    <span class="ro-pill">题型 <b id="ro-obj-label">加载中…</b>
       <span id="ro-obj-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span>
     </span>
   </div>
 
   <!-- 加载态：骨架屏（按题型区骨架，非 MOCK 数据） -->
-  <section id="view-loading" class="skq" hidden>
+  <section id="view-loading" class="skq">
     <div class="sk-card">
       <div class="sk-card-h"><span class="skld w60"></span></div>
       <div class="sk-row"><span class="skld w100"></span></div>
       <div class="sk-row"><span class="skld w100"></span></div>
       <div class="sk-row"><span class="skld w60"></span><span class="skld w30" style="margin-left:12px"></span></div>
       <div class="sk-row"><span class="skld w100"></span></div>
-      <p class="sk-note">GET /api/admin/questions/9001 加载中…（骨架占位）</p>
+      <p class="sk-note">GET /api/admin/questions/questions/{id} 加载中…（骨架占位）</p>
     </div>
   </section>
 
   <!-- 错误态：加载失败 + 重试 -->
   <section id="view-error" class="skq" hidden>
     <div class="sk-card">
-      <div class="sk-err"><b>题目加载失败</b><p>无法读取题目 9001 数据，请检查网络或稍后再试。</p><button class="btn btn-ghost" onclick="setQDState('loading');setTimeout(function(){setQDState('success')},900)">⟳ 重试</button></div>
+      <div class="sk-err"><b>题目加载失败</b><p id="qd-err-msg">无法读取题目数据，请检查网络或稍后再试。</p><button class="btn btn-ghost" onclick="window.reloadQuestion&&window.reloadQuestion()">⟳ 重试</button></div>
     </div>
   </section>
 
@@ -365,24 +365,20 @@
         <!-- 所属题库 / 题号 只读 -->
         <div class="fld">
           <label>所属题库 <span class="req">*</span></label>
-          <div class="ro"><b>Python 基础编程题库</b>（id=3）· institution_id=1</div>
+          <div class="ro"><b id="ro-bank-full">加载中…</b></div>
         </div>
         <div class="fld">
           <label>题号（question_code）<span class="req">*</span></label>
-          <div class="ro"><b>Q1001</b>（bank_id 内唯一，只读）</div>
+          <div class="ro"><b id="ro-code-full">—</b>（bank_id 内唯一，只读）</div>
         </div>
 
         <!-- 题型 Select（联动选项控件；切换已填数据不丢） -->
         <div class="fld">
           <label>题型 <span class="req">*</span></label>
           <select id="f-type" onchange="onTypeChange()">
-            <option value="single_choice" selected>单选题（single_choice）</option>
-            <option value="multi_choice">多选题（multi_choice）</option>
-            <option value="true_false">判断题（true_false）</option>
-            <option value="fill_blank">填空题（fill_blank）</option>
-            <option value="short_answer">简答题（short_answer）</option>
+            <option value="">加载题型维表…</option>
           </select>
-          <span class="field-note">options_json 结构按题型 schema 联动（契约④ dim_question_type）</span>
+          <span class="field-note">题型枚举来自 GET /types 题型维表（实测 28 项）；objective_flag 派生只读</span>
         </div>
         <div class="fld">
           <label>客观性 <span class="fld-tag">派生 · 只读</span></label>
@@ -393,12 +389,7 @@
         <!-- 题干 Textarea（Markdown 支持） -->
         <div class="fld full">
           <label>题干 stem <span class="req">*</span><span class="fld-tag">支持 Markdown / LaTeX</span></label>
-          <textarea id="f-stem" class="lg">下列 Python 代码的输出是？用 **print** 的结果说明理由。
-
-```python
-print("Hello, Python!")
-```
-它的作用是向控制台输出 `Hello, Python!`，可用于验证环境是否安装成功。</textarea>
+          <textarea id="f-stem" class="lg"></textarea>
           <span class="err" id="err-stem"></span>
         </div>
 
@@ -446,7 +437,7 @@ print("Hello, Python!")
         <!-- 答案 -->
         <div class="fld full">
           <label>答案 answer_text <span class="req">*</span></label>
-          <textarea id="f-answer" class="sm">B</textarea>
+          <textarea id="f-answer" class="sm"></textarea>
           <span class="field-note" id="answer-hint">单选/多选/判断：答案填选项标号（如 B / AB）；填空：填答案文本；简答：填参考要点</span>
           <span class="err" id="err-answer"></span>
         </div>
@@ -454,14 +445,7 @@ print("Hello, Python!")
         <!-- ★ 解析（必修） + Markdown 实时预览 -->
         <div class="fld full">
           <label><span class="req">★</span>解析 analysis_text <span class="fld-tag">必修 · 保存前校验非空 · Markdown 预览</span></label>
-          <textarea id="f-analysis" class="lg">`print` 是 Python 的内置函数，用于将内容输出到标准输出。
-
-**执行步骤：**
-1. 解释器把字符串字面量 `"Hello, Python!"` 解析为 str 对象
-2. 调用 `print` 把该对象打印到控制台并换行
-3. 因此控制台显示：`Hello, Python!`
-
-> 该题用于考察对内置函数 `print` 与字符串字面量的理解。</textarea>
+          <textarea id="f-analysis" class="lg"></textarea>
           <div class="md-pre" style="margin-top:2px">
             <div class="md-title">Markdown 实时预览（与用户端 QuizPanel 一致渲染）</div>
             <div class="md-body" id="analysis-preview"></div>
@@ -503,275 +487,33 @@ print("Hello, Python!")
   <!-- 观测点（契约对齐说明） -->
   <div class="observe">
     <b>观测点 · task59 契约对齐（契约④权威）</b>
-    <div class="ob">保存 <code>PATCH /api/admin/questions/{id}</code> 持久化 body：<code>{ question_type_id, stem, options_json, answer_text, analysis_text }</code></div>
+    <div class="ob">保存 <code>PATCH /api/admin/questions/{id}</code>（task15 已真实接线，curl 实测 200）持久化 body：<code>{ question_type_id, stem, options_json, answer_text, analysis_text }</code></div>
     <div class="ob">★ 解析必修：<code>analysis_text</code> 为空 → 前端拦截红框 + toast「解析为必填」；后端 <code>PATCH</code> 二次兜底（422 校验失败）</div>
     <div class="ob">题型切换联动选项控件：单选→RadioGroup / 多选→Checkbox / 判断→固定 T·F / 填空·简答→折叠无选项；<b>已填选项内容按 label 跨切换保留（不丢）</b></div>
     <div class="ob">预览 Tab 同时渲染题干+解析，与用户端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，LaTeX 用公式占位呈现）</div>
     <div class="ob"><code>objective_flag</code>：question 表 / PATCH schema 无该字段 → 派生自 dim_question_type（只读徽章随题型联动），PATCH 不提交；设计规范 P16「客观题开关」实披露收敛为只读派生</div>
-    <div class="ob">错误码：<code>40922</code> 题目编码唯一冲突（本页不改题号）；通用 <code>40000/40400/42200</code> 兜底</div>
+    <div class="ob">错误码（实测）：<code>40400</code> 题目不存在、<code>42200</code> 校验失败；本页不改题号（bank_id 内唯一只读）</div>
     <div class="ob">本页 v0.2.0 历史遗留 <code>text-slate-500</code> 灰系已废弃 → 全部改用 candy token（var(--muted) 等）；禁止内联色/任意字号/禁闭灰系</div>
   </div>
 </div>
 
-<!-- 演示控制器 -->
-<div class="demo-ctrl">
-  <b>演示 · 题型联动</b>
-  <div class="grp">切换题型（观察选项控件 + 客观性徽章联动）</div>
-  <div class="row">
-    <button class="on" data-t="single_choice" onclick="demoType('single_choice')">单选</button>
-    <button data-t="multi_choice" onclick="demoType('multi_choice')">多选</button>
-    <button data-t="true_false" onclick="demoType('true_false')">判断</button>
-    <button data-t="fill_blank" onclick="demoType('fill_blank')">填空</button>
-    <button data-t="short_answer" onclick="demoType('short_answer')">简答</button>
-  </div>
-  <div class="grp">交互三态（加载→成功/错误）</div>
-  <div class="row">
-    <button class="on" data-st="success" onclick="setQDState('success')">成功</button>
-    <button data-st="loading" onclick="setQDState('loading')">加载(骨架)</button>
-    <button data-st="error" onclick="setQDState('error')">错误(重试)</button>
-  </div>
-  <div class="grp">行为</div>
-  <div class="row">
-    <button onclick="demoFillMulti()">多选填 A·B→切单选</button>
-    <button onclick="demoEmptyAnalysis()">清空解析→保存(拦截)</button>
-    <button onclick="doSave(false)">保存(PATCH)</button>
-    <button onclick="doSave(true)">保存并继续</button>
-    <button onclick="switchPane('preview')">看预览</button>
-  </div>
-</div>
 </div><!-- /.glayout -->
 
 <script>
-/* ============ 状态 ============ */
-var TYPE_META = {
-  single_choice:{ name:"单选题", obj:true  },
-  multi_choice:{  name:"多选题", obj:true  },
-  true_false:{    name:"判断题", obj:true  },
-  fill_blank:{    name:"填空题", obj:false },
-  short_answer:{  name:"简答题", obj:false },
-};
-// 已填选项数据（按 label 归位，切题型保留）
-var OPT_DATA = {
-  A:"输出 Hello, Python! 到控制台",
-  B:"语法报错无法运行",
-  C:"输出 Python! 到控制台",
-  D:"无任何输出",
-};
-var curType = "single_choice";
-
-/* ============ 选项编辑器渲染 ============ */
-function labelsFor(type, n){
-  if(type==="true_false") return ["T","F"];
-  var base=["A","B","C","D","E","F","G","H"];
-  return base.slice(0,n);
-}
-function renderOpts(kind){
-  var el = document.getElementById(kind+"-body");
-  var opts = (kind==="single")? labelsFor("single",4) : labelsFor("multi",4);
-  el.innerHTML = opts.map(function(l){
-    return '<div class="opt-row" data-l="'+l+'">'+
-      '<div class="opt-ctrl">'+(kind==="single"
-        ? '<input type="radio" class="radio" name="opt-radio">'
-        : '<input type="checkbox" class="check">')+'</div>'+
-      '<div class="opt-body"><div class="opt-label">'+l+'</div>'+
-      '<input class="opt-input" placeholder="选项 '+l+' 内容…" value="'+(OPT_DATA[l]||"")+'"></div>'+
-      '<button class="opt-del" onclick="delOpt(this,'+'\''+kind+'\')">×</button>'+
-    '</div>';
-  }).join("");
-}
-function delOpt(btn,kind){
-  var row=btn.closest(".opt-row");
-  var label=row.getAttribute("data-l");
-  delete OPT_DATA[label];
-  row.remove();
-}
-function addOpt(kind){
-  var el=document.getElementById(kind+"-body");
-  var used=(kind==="single")?["A","B","C","D"]:["A","B","C","D"];
-  Array.prototype.forEach.call(el.querySelectorAll(".opt-row"),function(r){
-    var i=used.indexOf(r.getAttribute("data-l"));
-    if(i>=0) used.splice(i,1);
-  });
-  var L=["A","B","C","D","E","F","G","H"].find(function(x){ return used.indexOf(x)<0; });
-  if(!L){ alertMsg("已达 8 个选项上限"); return; }
-  OPT_DATA[L]="";
-  renderOpts(kind);
-}
-
-/* ============ 题型切换（联动 + 已填数据不丢） ============ */
-function collectOpts(){
-  ["single","multi"].forEach(function(k){
-    var el=document.getElementById(k+"-body");
-    if(!el) return;
-    Array.prototype.forEach.call(el.querySelectorAll(".opt-row"),function(r){
-      var l=r.getAttribute("data-l");
-      var inp=r.querySelector(".opt-input");
-      OPT_DATA[l]=inp?inp.value:"";
-    });
-  });
-}
-function applyTypeUI(type){
-  collectOpts();
-  curType=type;
-  var m=TYPE_META[type];
-  // 面包屑 + 题型显示
-  document.getElementById("cr-type").textContent=m.name;
-  // 选项控件显示
-  ["opt-single","opt-multi","opt-tf","opt-none"].forEach(function(id){ document.getElementById(id).classList.add("hidden"); });
-  if(type==="single_choice") document.getElementById("opt-single").classList.remove("hidden");
-  else if(type==="multi_choice") document.getElementById("opt-multi").classList.remove("hidden");
-  else if(type==="true_false") document.getElementById("opt-tf").classList.remove("hidden");
-  else document.getElementById("opt-none").classList.remove("hidden");
-  // 客观性派生徽章
-  var obj=m.obj;
-  var label=m.name+(obj?"（客观）":"（主观）");
-  var text=(obj?"客观 · 自动判题":"主观 · 人工批改");
-  var cls=(obj?"badge-obj":"badge-subj");
-  var el=document.getElementById("ro-obj-badge");
-  var eli=document.getElementById("obj-input-badge");
-  el.textContent=""; el.className="badge "+cls; el.innerHTML="<i class='pd'></i>"+text;
-  eli.textContent=""; eli.className="badge "+cls; eli.innerHTML="<i class='pd'></i>"+text;
-  document.getElementById("ro-obj-label").textContent=label;
-  // 答案提示
-  document.getElementById("answer-hint").textContent =
-    (type==="true_false"||type==="single_choice"||type==="multi_choice")
-      ? "单选/多选/判断：答案填选项标号（如 B / AB / 对）"
-      : "填空/简答：填答案文本（简答填参考要点）";
-  renderOpts("single"); renderOpts("multi");
-}
-function onTypeChange(){
-  var v=document.getElementById("f-type").value;
-  applyTypeUI(v);
-}
-
-/* ============ Markdown 预览渲染（模拟 MarkdownView，skipHtml 安全） ============ */
-function md2html(src){
-  var s=String(src||"");
-  // LaTeX 占位 → 公式桩
-  s=s.replace(/\$\$?([^$\n]+?)\$\$?/g,'<span class="math-stub"> Σ $1 </span>');
-  // 代码块
-  s=s.replace(/```(\w+)?\n([\s\S]*?)```/g, function(_,lang,c){ return "<pre>"+c.replace(/</g,"&lt;")+"</pre>"; });
-  // 行内代码
-  s=s.replace(/`([^`\n]+)`/g,function(_,c){ return "<code>"+c+"</code>"; });
-  // 引用
-  s=s.replace(/^\&gt;\s?(.+)$/gm,"<blockquote>$1</blockquote>");
-  // 粗体 / 斜体
-  s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
-  // 列表
-  var lines=s.split("\n"), html="", inU=false;
-  lines.forEach(function(l){
-    var m=l.match(/^\s*[-*]\s+(.+)$/);
-    if(m){ if(!inU){ html+="<ul>"; inU=true;} html+="<li>"+m[1]+"</li>"; }
-    else { if(inU){ html+="</ul>"; inU=false;} html+="<p>"+l+"</p>"; }
-  });
-  if(inU) html+="</ul>";
-  return html.replace(/\n/g,"");
-}
-function renderPreviews(){
-  document.getElementById("analysis-preview").innerHTML=md2html(document.getElementById("f-analysis").value);
-  document.getElementById("prev-stem").innerHTML=md2html(document.getElementById("f-stem").value);
-  document.getElementById("prev-analysis").innerHTML=md2html(document.getElementById("f-analysis").value);
-}
-
-/* ============ 预览选项（与 QuizPanel 一致） ============ */
-function renderPrevOptions(){
-  var type=curType, html="";
-  var el=document.getElementById("prev-options");
-  if(type==="true_false"){
-    html='<div class="qp-opt"><span class="qp-key">√</span><div class="qp-body">正确</div></div>'+
-         '<div class="qp-opt"><span class="qp-key">×</span><div class="qp-body">错误</div></div>';
-  } else if(type==="fill_blank"||type==="short_answer"){
-    el.innerHTML=""; return;
-  } else {
-    ["A","B","C","D"].forEach(function(l){
-      html+='<div class="qp-opt"><span class="qp-key">'+l+'</span><div class="qp-body">'+(OPT_DATA[l]||"选项 "+l)+'</div></div>';
-    });
-  }
-  el.innerHTML=html;
-}
-
-/* ============ Tabs ============ */
-function switchPane(p){
-  document.getElementById("pane-edit").classList.toggle("hidden",p!=="edit");
-  document.getElementById("pane-preview").classList.toggle("hidden",p!=="preview");
-  var t1=document.getElementById("tab-edit"), t2=document.getElementById("tab-preview");
-  t1.classList.toggle("on",p==="edit"); t2.classList.toggle("on",p==="preview");
-  if(p==="preview"){ renderPreviews(); renderPrevOptions(); }
-}
-
-/* ============ 保存（前端解析必修拦截 + 模拟 PATCH） ============ */
-function validateForm(){
-  var ok=true;
-  function mark(id,errId,cond,msg){
-    var f=document.getElementById(id), e=document.getElementById(errId);
-    var bad=document.getElementById(id).closest(".fld");
-    var pass=!cond;
-    if(pass){ bad.classList.remove("err"); if(e) e.textContent=""; }
-    else { bad.classList.add("err"); if(e) e.textContent=msg; ok=false; }
-  }
-  mark("f-stem","err-stem",!document.getElementById("f-stem").value.trim(),"题干为必填");
-  mark("f-answer","err-answer",!document.getElementById("f-answer").value.trim(),"答案为必填");
-  // ★ 解析必修
-  mark("f-analysis","err-analysis",!document.getElementById("f-analysis").value.trim(),"解析（analysis_text）为必填，请填写本题解析");
-  return ok;
-}
-function doSave(andContinue){
-  if(!validateForm()){ alertMsg("保存被拦截：存在必填项未填写（含解析必修）"); return; }
-  var type=curType, m=TYPE_META[type];
-  var body={ question_type_id: typeIdOf(type), stem: gv("f-stem"), answer_text: gv("f-answer"), analysis_text: gv("f-analysis") };
-  if(type==="single_choice"||type==="multi_choice"){ body.options_json=collectOptsJson(); }
-  var act=andContinue?"保存并继续⇢":"保存";
-  alertMsg("〔PATCH /questions/9001 200〕"+act+"成功 · 持久化 "+JSON.stringify(body.question_type_id)+" / "+m.name+"；analysis_text 已提交（"+body.analysis_text.length+" 字）");
-}
-function typeIdOf(code){ return {"single_choice":1,"multi_choice":2,"true_false":3,"fill_blank":4,"short_answer":5}[code]; }
-function collectOptsJson(){
-  var arr=[];
-  ["A","B","C","D"].forEach(function(l){ if((OPT_DATA[l]||"").trim()) arr.push({label:l,content:OPT_DATA[l].trim()}); });
-  return arr;
-}
-function gv(id){ return document.getElementById(id).value; }
-
-/* ============ 交互三态（loading/success/error） ============ */
-function setQDState(s){
-  var loading=document.getElementById("view-loading"), err=document.getElementById("view-error");
-  var head=document.getElementById("tabhead"), panes=document.querySelectorAll(".qd-pane");
-  var showLoad=(s==="loading"), showErr=(s==="error"), showOk=(s==="success");
-  loading.hidden=!showLoad; err.hidden=!showErr; head.hidden=!showOk;
-  Array.prototype.forEach.call(panes,function(p){ p.hidden=!showOk; if(showOk) p.classList.remove("hidden"); });
-  document.querySelectorAll(".demo-ctrl button[data-st]").forEach(function(b){
-    b.classList.toggle("on", b.getAttribute("data-st")===s);
-  });
-  if(s==="error") alertMsg("加载失败（模拟）→ 点击「重试」返回成功态");
-}
-function respLoad(){ setQDState("loading"); setTimeout(function(){ setQDState("success"); },900); }
-
-/* ============ 演示控件 ============ */
-function demoType(t){
-  document.getElementById("f-type").value=t;
-  document.querySelectorAll(".demo-ctrl button[data-t]").forEach(function(b){
-    b.classList.toggle("on", b.getAttribute("data-t")===t);
-  });
-  applyTypeUI(t);
-}
-function demoFillMulti(){
-  demoType("multi_choice");
-  OPT_DATA.A="输出 Hello, Python! 到控制台"; OPT_DATA.B="为后续交互式输入做准备";
-  renderOpts("multi");
-  alertMsg("已填 A·B 两项 → 切回单选：A/B 内容仍保留（按 label 不丢）");
-}
-function demoEmptyAnalysis(){
-  document.getElementById("f-analysis").value="";
-  renderPreviews();
-  doSave(false);
-}
-function doBack(){ window.location.href = "admin-questions.html"; }
-function alertMsg(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){d.remove();},3000); }
-
-/* 初始化 */
-applyTypeUI("single_choice");
-renderOpts("single");
-renderPreviews();
-renderPrevOptions();
+/* ===== pre-boot（task15 reshape-a）：默认骨架 loading；编辑/预览区在真实数据就绪前隐藏 =====
+ * 演示控制器/演示数据（TYPE_META 假枚举、OPT_DATA 示例、假题干/解析）已删除（禁 MOCK）。
+ * 真实数据由 edu-guard.requireAdmin 三段守卫通过后的 window.bootAdmin() 注入。 */
+(function(){
+  window.setQDState=function(st){ /* loading | success | error */
+    var loading=document.getElementById('view-loading'), err=document.getElementById('view-error');
+    var hd=document.getElementById('tabhead'), panes=document.querySelectorAll('.qd-pane');
+    if(loading) loading.hidden=(st!=='loading');
+    if(err) err.hidden=(st!=='error');
+    if(hd) hd.hidden=(st!=='success');
+    Array.prototype.forEach.call(panes,function(pn){ pn.hidden=(st!=='success'); });
+  };
+  setQDState('loading');
+})();
 </script>
 <script>
 /* 全局导航抽屉（移动端） */
@@ -781,9 +523,246 @@ renderPrevOptions();
 <script src="/edu-guard.js"></script>
 <script>eduGuard.requireAdmin();</script>
 <script>
+/* ===== task15 真实全量接线（reshape-a，curl 实测 2026-09-12）=====
+ * 读   GET  /api/admin/questions/questions/{id} → QuestionResponseAdmin{id,bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text,yn,...}
+ *      GET  /api/admin/questions/types        → 题型维表 28 项（type_code/type_name/objective_flag/sort_no）
+ *      GET  /api/admin/questions/banks/{id}   → 题库名（40400 → 诚实显示「题库 #id」）
+ * 改   PATCH /api/admin/questions/questions/{id} body{question_type_id,stem,options_json,answer_text,analysis_text}（实测 200）
+ * 守卫三段由 edu-guard.requireAdmin 承担；id 取参走 EAPI.pageId("id")（禁正则 match）。
+ */
 window.bootAdmin=function(){
-if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
-var m=EAPI.pageId("id");if(!m){var e=document.querySelector(".page-head h1,.title");if(e)e.textContent="未指定 id";return;}EAPI.get("/api/admin/questions/questions/"+m).then(function(q){if(!q)return;var t=document.querySelector("h1,.title");if(t&&q.question_code)t.textContent=q.question_code||t.textContent;var s=document.getElementById("f-stem");if(s&&q.stem) s.value=q.stem;}).catch(function(err){var t=document.querySelector(".page-head .sub,.toolbar-meta");if(t&&!t.textContent.includes("加载"))t.textContent="⚠ 题目加载失败："+(err&&err.message||"未知错误");});};
-</script>
-</body>
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()){
+    var t=document.querySelector(".page-head .sub");
+    if(t && t.textContent.indexOf("admin 账号")<0) t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    return;
+  }
+  var esc=function(v){ var d=document.createElement("div"); d.textContent=(v==null?"":String(v)); return d.innerHTML; };
+  var state={ qid:"", types:{}, typeOrder:[], q:null, bankLabel:"", optData:{}, curType:null, tfBusy:false };
+  var OPT_LABELS=["A","B","C","D","E","F","G","H"];
+
+  window.reloadQuestion=loadQuestion; // 错误态重试入口
+
+  /* ---- 类型维表 ---- */
+  function loadTypes(){
+    return EAPI.get("/api/admin/questions/types").then(function(d){
+      var items=(d&&d.items)||[];
+      items.forEach(function(t){ state.types[t.id]=t; });
+      state.typeOrder=items.slice().sort(function(a,b){ return (a.sort_no||0)-(b.sort_no||0); });
+      var sel=document.getElementById("f-type");
+      if(sel){ sel.innerHTML=state.typeOrder.map(function(t){ return '<option value="'+t.id+'">'+esc(t.type_name)+'（'+esc(t.type_code)+'）</option>'; }).join(""); }
+    }).catch(function(){ /* 维表失败不阻塞：详情仍可读，题型显示 #id */ });
+  }
+  function typeMeta(tId){ return state.types[tId]||null; }
+
+  /* ---- 选项编辑器（按题型联动；已填内容按 label 跨切换保留） ---- */
+  function optLabels(){
+    var used={}; Object.keys(state.optData).forEach(function(l){ used[l]=1; });
+    var labels=[];
+    OPT_LABELS.forEach(function(l){ if(state.optData.hasOwnProperty(l)||labels.length<4) labels.push(l); });
+    Object.keys(state.optData).forEach(function(l){ if(labels.indexOf(l)<0) labels.push(l); }); // 超出 A-H 的历史选项保留
+    return labels;
+  }
+  function renderOpts(kind){
+    var el=document.getElementById(kind+"-body"); if(!el) return;
+    el.innerHTML=optLabels().map(function(l){
+      return '<div class="opt-row" data-l="'+l+'">'
+        +'<div class="opt-ctrl">'+(kind==="single"?'<input type="radio" class="radio" name="opt-radio">':'<input type="checkbox" class="check">')+'</div>'
+        +'<div class="opt-body"><div class="opt-label">'+l+'</div>'
+        +'<input class="opt-input" data-ol="'+l+'" placeholder="选项 '+l+' 内容…" value="'+esc(state.optData[l]||"")+'"></div>'
+        +'<button class="opt-del" data-optdel="'+kind+'" data-ol="'+l+'">×</button>'
+        +'</div>';
+    }).join("");
+  }
+  window.addOpt=function(kind){
+    var next=null;
+    for(var i=0;i<OPT_LABELS.length;i++){ if(!state.optData.hasOwnProperty(OPT_LABELS[i])){ next=OPT_LABELS[i]; break; } }
+    if(!next){ toastStub("已达 8 个选项上限（A-H）"); return; }
+    state.optData[next]="";
+    renderOpts(kind);
+  };
+  window.delOpt=function(btn){
+    var l=btn.getAttribute("data-ol"), kind=btn.getAttribute("data-optdel");
+    delete state.optData[l];
+    renderOpts(kind);
+  };
+  function collectOpts(){
+    document.querySelectorAll(".opt-input[data-ol]").forEach(function(inp){
+      var l=inp.getAttribute("data-ol"); state.optData[l]=inp.value;
+    });
+  }
+  /* ---- 题型联动 ---- */
+  function applyTypeUI(tId){
+    collectOpts();
+    state.curType=tId;
+    var m=typeMeta(tId);
+    var mName=m?m.type_name:("题型 #"+tId);
+    var obj=m?!!m.objective_flag:false;
+    // 面包屑 + 只读徽章
+    var cr=document.getElementById("cr-type"); if(cr) cr.textContent=mName;
+    var text=obj?"客观 · 自动判题":"主观 · 人工批改";
+    ["ro-obj-badge","obj-input-badge"].forEach(function(id){
+      var el=document.getElementById(id); if(el){ el.textContent=""; el.className="badge "+(obj?"badge-obj":"badge-subj"); el.innerHTML="<i class='pd'></i>"+text; }
+    });
+    var rl=document.getElementById("ro-obj-label"); if(rl) rl.textContent=mName+"（"+(obj?"客观":"主观")+"）";
+    // 选项控件显示
+    ["opt-single","opt-multi","opt-tf","opt-none"].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add("hidden"); });
+    if(tId===1) { document.getElementById("opt-single").classList.remove("hidden"); renderOpts("single"); }
+    else if(tId===2){ document.getElementById("opt-multi").classList.remove("hidden"); renderOpts("multi"); }
+    else if(tId===3) document.getElementById("opt-tf").classList.remove("hidden");
+    else document.getElementById("opt-none").classList.remove("hidden");
+    var hint=document.getElementById("answer-hint");
+    if(hint) hint.textContent=(tId===1)?"单选：答案填选项标号（如 A）":(tId===2)?"多选：答案填连续字母（如 AB）":(tId===3)?"判断：答案填 正确 / 错误":(tId===undefined)?"":"填空：填答案文本；简答/论述等：填参考答案要点";
+  }
+  window.onTypeChange=function(){ var v=+document.getElementById("f-type").value; if(v) applyTypeUI(v); };
+
+  /* ---- 判断题 T/F 同步答案输入框 ---- */
+  document.getElementById("opt-tf").addEventListener("change", function(e){
+    var r=e.target.closest("input[type=radio]"); if(!r) return;
+    var label=r.parentElement.textContent.indexOf("正确")>=0?"正确":"错误";
+    document.getElementById("f-answer").value=label;
+  });
+
+  /* ---- Markdown 预览（与用户端 QuizPanel 一致的轻量渲染；LaTeX 以公式占位呈现） ---- */
+  function md2html(src){
+    var s=String(src||"");
+    s=s.replace(/\$\$?([^$\n]+?)\$\$?/g,'<span class="math-stub"> Σ $1 </span>');
+    s=s.replace(/```(\w+)?\n([\s\S]*?)```/g, function(_,lang,c){ return "<pre>"+c.replace(/</g,"&lt;")+"</pre>"; });
+    s=s.replace(/`([^`\n]+)`/g,function(_,c){ return "<code>"+c+"</code>"; });
+    s=s.replace(/^&gt;\s?(.+)$/gm,"<blockquote>$1</blockquote>");
+    s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+    var lines=s.split("\n"), html="", inU=false;
+    lines.forEach(function(l){
+      var m=l.match(/^\s*[-*]\s+(.+)$/);
+      if(m){ if(!inU){ html+="<ul>"; inU=true;} html+="<li>"+m[1]+"</li>"; }
+      else { if(inU){ html+="</ul>"; inU=false;} html+="<p>"+l+"</p>"; }
+    });
+    if(inU) html+="</ul>";
+    return html.replace(/\n/g,"");
+  }
+  function renderPreviews(){
+    document.getElementById("analysis-preview").innerHTML=md2html(document.getElementById("f-analysis").value);
+    document.getElementById("prev-stem").innerHTML=md2html(document.getElementById("f-stem").value);
+    document.getElementById("prev-analysis").innerHTML=md2html(document.getElementById("f-analysis").value);
+  }
+  function renderPrevOptions(){
+    var t=state.curType, el=document.getElementById("prev-options"), html="";
+    if(t===3){
+      html='<div class="qp-opt"><span class="qp-key">√</span><div class="qp-body">正确</div></div>'
+          +'<div class="qp-opt"><span class="qp-key">×</span><div class="qp-body">错误</div></div>';
+    } else if(t===1||t===2){
+      var labels=optLabels().filter(function(l){ return (state.optData[l]||"").trim(); });
+      html=labels.map(function(l){ return '<div class="qp-opt"><span class="qp-key">'+l+'</span><div class="qp-body">'+esc(state.optData[l])+'</div></div>'; }).join("");
+    }
+    el.innerHTML=html;
+  }
+
+  /* ---- Tabs ---- */
+  window.switchPane=function(pi){
+    document.getElementById("pane-edit").classList.toggle("hidden",pi!=="edit");
+    document.getElementById("pane-preview").classList.toggle("hidden",pi!=="preview");
+    document.getElementById("tab-edit").classList.toggle("on",pi==="edit");
+    document.getElementById("tab-preview").classList.toggle("on",pi==="preview");
+    if(pi==="preview"){ collectOpts(); renderPreviews(); renderPrevOptions(); }
+  };
+  // 题干/解析输入 → 实时预览（节流）
+  ["f-analysis"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){ renderPreviews(); });
+  });
+
+  /* ---- 校验（解析必修保留） ---- */
+  function markErr(id,errId,bad,msg){
+    var f=document.getElementById(id), e=document.getElementById(errId);
+    var fld=f.closest(".fld");
+    if(fld) fld.classList.toggle("err",bad);
+    if(e) e.textContent=bad?msg:"";
+    return !bad;
+  }
+  function validateForm(){
+    var ok=true;
+    ok=markErr("f-stem","err-stem",!document.getElementById("f-stem").value.trim(),"题干为必填")&&ok;
+    ok=markErr("f-answer","err-answer",!document.getElementById("f-answer").value.trim(),"答案为必填")&&ok;
+    ok=markErr("f-analysis","err-analysis",!document.getElementById("f-analysis").value.trim(),"解析（analysis_text）为必填，请填写本题解析")&&ok;
+    return ok;
+  }
+  function gv(id){ return document.getElementById(id).value; }
+
+  /* ---- 保存（真实 PATCH） ---- */
+  window.doSave=function(andContinue){
+    if(!state.q){ return; }
+    collectOpts();
+    if(!validateForm()){ toastStub("保存被拦截：存在必填项未填写（含解析必修）"); return; }
+    var tId=state.curType;
+    var body={ question_type_id:tId, stem:gv("f-stem"), answer_text:gv("f-answer"), analysis_text:gv("f-analysis") };
+    if(tId===1||tId===2){
+      body.options_json=OPT_LABELS.filter(function(l){ return (state.optData[l]||"").trim(); }).map(function(l){ return {label:l,content:state.optData[l].trim()}; });
+      if(!body.options_json.length){ toastStub("请填写至少一项选项内容"); return; }
+    } else { body.options_json=null; }
+    EAPI.patch("/api/admin/questions/questions/"+state.qid, body).then(function(updated){
+      if(updated) state.q=updated;
+      renderPreviews();
+      toastStub((andContinue?"保存并继续":"保存")+"成功（PATCH 200 · "+((typeMeta(tId)||{}).type_name||("题型 #"+tId))+" · analysis_text "+body.analysis_text.length+" 字）");
+    }).catch(function(err){
+      toastStub("保存失败："+((err&&err.message)||"未知错误")+"（HTTP "+((err&&err.status)||"—")+"）");
+    });
+  };
+  window.doBack=function(){ window.location.href="admin-questions.html"; };
+
+  /* ---- 真实加载：GET questions/{id}（+ banks/{id} 题库名） ---- */
+  function loadQuestion(){
+    setQDState("loading");
+    var id=EAPI.pageId("id");
+    if(!id){
+      var em0=document.getElementById("qd-err-msg");
+      if(em0) em0.textContent="URL 缺少 ?id= 参数（入口应为 admin-questions.html 列表行点击）。";
+      setQDState("error");
+      return;
+    }
+    state.qid=id;
+    return EAPI.get("/api/admin/questions/questions/"+id).then(function(q){
+      if(!q){ throw new Error("空响应"); }
+      state.q=q;
+      state.optData={};
+      (q.options_json||[]).forEach(function(o){ if(o&&o.label) state.optData[o.label]=o.content==null?"":String(o.content); });
+      // 填充只读头 + 面包屑
+      document.getElementById("cr-code").textContent=q.question_code||"";
+      document.getElementById("cr-bank").textContent=state.bankLabel||("题库 #"+q.bank_id);
+      document.getElementById("ro-bank-id").textContent=state.bankLabel||("题库 #"+q.bank_id);
+      document.getElementById("ro-code").textContent=q.question_code||"—";
+      document.getElementById("ro-qid").textContent="#"+q.id;
+      document.getElementById("ro-bank-full").textContent=(state.bankLabel||("题库 #"+q.bank_id))+"（bank_id="+q.bank_id+"）";
+      document.getElementById("ro-code-full").textContent=q.question_code||"—";
+      // 表单
+      var sel=document.getElementById("f-type");
+      if(sel&&state.types[q.question_type_id]) sel.value=String(q.question_type_id);
+      document.getElementById("f-stem").value=q.stem||"";
+      document.getElementById("f-answer").value=q.answer_text||"";
+      document.getElementById("f-analysis").value=q.analysis_text||"";
+      applyTypeUI(q.question_type_id);
+      if(q.question_type_id===3){ // 判断题答案回显到 T/F 单选
+        var want=(q.answer_text||"").indexOf("错")<0; // 默认正确
+        var boxes=document.querySelectorAll("#opt-tf input[type=radio]");
+        if(boxes.length>=2){ boxes[0].checked=want; boxes[1].checked=!want; }
+      }
+      renderPreviews(); renderPrevOptions();
+      setQDState("success");
+    }).catch(function(err){
+      var em=document.getElementById("qd-err-msg");
+      if(em) em.textContent="无法读取题目 "+state.qid+"："+((err&&err.message)||"未知错误")+"（HTTP "+((err&&err.status)||"—")+"）";
+      setQDState("error");
+    });
+  }
+  function loadBankLabel(bankId){
+    return EAPI.get("/api/admin/questions/banks/"+bankId).then(function(b){
+      state.bankLabel=(b&&b.bank_name)?b.bank_name:("题库 #"+bankId);
+    }).catch(function(){ state.bankLabel="题库 #"+bankId; }); // 40400 软删/不存在：诚实显示编号
+  }
+
+  /* ---- 入口 ---- */
+  loadTypes().then(function(){
+    var id=EAPI.pageId("id");
+    if(id) return EAPI.get("/api/admin/questions/questions/"+id).then(function(q){ if(q) return loadBankLabel(q.bank_id); }).catch(function(){});
+  }).then(function(){ return loadQuestion(); });
+};
+</script></body>
 </html>
