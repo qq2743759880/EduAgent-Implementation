@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B3-proto 原型 · 管理端用户管理 Refine 版 /admin/users（仅原型不接线）</title>
+<!--
+  B3-proto · admin-users Refine 版 HTML 原型（Gate A 送审件 · 仅原型不接线）
+  原型目的：为 B3-impl（admin-users Refine 版实施）送审【布局壳 + 权限口径可视化】——
+    Refine v5 headless 组合下的页面形态先于代码定稿；Gate A APPROVED 后才允许出 B3-impl 开工单。
+  权限口径（D-H3 决策：A 方案并入 B3，manager 权限对齐直接在 Refine 版实现）：
+    · 后端权威：user_admin 路由 require_role([ADMIN])——2026-09-12 curl 实测 manager(mgr01test)
+      GET /api/admin/users → HTTP 403 {"code":"40300","message":"角色无权限。当前角色=manager，允许角色=['admin']"}
+    · 前端口径：manager=整页例外——顶部只读横幅「该模块仅 ADMIN 可用」+导航例外灰显（H3-temp 过渡措施，
+      edu-guard.js 对 users/mcp/dashboard 三页链接 pointer-events:none+opacity+title）；ADMIN=全量
+    · GWT③ 签字口径：manager 完整可用 4 页（courses/course-detail/questions/question-detail）；
+      例外 4 处=users/mcp/dashboard 整页 + rag collections 卡；例外处理=导航灰显+横幅/诚实空态
+  契约权威（与现状页 admin-users.html 同源）：
+    列表 GET /api/admin/users?keyword&role_code&status&yn&page&page_size → {total,page,page_size,items[AdminUserItem]}
+    状态 POST /api/admin/users/{id}/status body{status:0|1,yn?,reason?} → {updated,user_id,status,yn}
+    角色 POST /api/admin/users/{id}/role  body{target_role,reason?}    → {updated,user_id,target_role}
+    红线 40303「至少保留 1 名可用管理员账号」后端权威兜底；前端以 metrics.role_breakdown.admin 尽力提示
+  交互态清单（ADMIN 视角全量）：正常列表（搜索防抖 400ms + 角色/状态筛选 + 窗口化分页）/ loading 骨架 /
+    空态 / 403 40300 错误态 / 启停二次确认弹窗 / 编辑 diff 弹窗（正常态 + 40303 红线提示态）。
+  数据：本页纯静态原型——零 script 标签（无 script src / fetch / XHR / 内联事件处理器），不发起任何真实请求；
+    示例行 = 2026-09-12 curl 实测 GET /api/admin/users 快照（adm02test/Test@123456，后端 127.0.0.1:8000，
+    全量 total=100034），字段与 AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,
+    created_at,updated_at,last_login_at} 逐字一致；页面显著标注「示例数据，实施后为真实数据」。
+  样式：复用 admin-users.html 糖果 token（:root 逐字同源）+ 同源组件类（filterbar/tbl/badge/dlg/sk/gnav），
+    不引入新视觉语言；仅新增"场景卡排版"类（scene/toc/diff/payload，颜色全部取自既有 token）。
+  C15 判据（入 B3-impl 开工单）：Refine 实施版代码行数 ≤214 行（admin-users.html 642/3），超=证伪回滚选型。
+  AUDIT LOG: DRAFT
+    [2026-09-12 B3-proto v1] 初稿（派发方案 reshape-b §四 B3-proto 专项）：
+    布局壳（gnav 顶栏 + 页头 + 筛选栏 + 表格 + 窗口化分页 + 弹窗形态）+ 权限口径可视化
+    （S1 manager 视角态 = 只读横幅 + 导航灰显示意；S2 ADMIN 视角态 = 全交互态 8 场景）→ 待 Gate A 送审
+-->
+<style>
+  :root{ --htc-0-0-0-0.18: rgba(0,0,0,0.18); --htc-25-28-38-0.42: rgba(25,28,38,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-5b647b: #5b647b; --ht-7c4bd6: #7c4bd6; --ht-a78bfa: #a78bfa; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff;
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-25-28-38-042: rgba(25, 28, 38, 0.042); --htc-0-0-0-018: rgba(0, 0, 0, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:30px 22px 110px}
+  code{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--muted-bg);border-radius:5px;padding:0 5px}
+  /* ===== 糖果 token 同源组件（与 admin-users.html 逐字同源）===== */
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:20px 0 12px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  .page-head .act{display:flex;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--muted-bg);border-radius:999px;padding:4px 10px}
+  .chip b{color:var(--primary)}
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:12px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:250px}
+  .fld select{width:150px}
+  .ft-note{width:100%;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .deb-pulse{font-weight:600;color:var(--candy-orange)}
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  .prim-cell{display:flex;align-items:center;gap:11px}
+  .prim-cell .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0;font-size:0.9375rem;font-weight:700}
+  .prim-cell .nm{font-weight:600;color:var(--ink)}
+  .prim-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted);font-size:12px}
+  .muted{color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-role-admin{background:var(--primary-soft);color:var(--primary-deep)} .badge-role-admin .pd{background:var(--primary)}
+  .badge-role-tea{background:var(--ht-f3edfe);color:var(--ht-7c4bd6)} .badge-role-tea .pd{background:var(--ht-a78bfa)}
+  .badge-role-std{background:var(--muted-bg);color:var(--muted-ink)} .badge-role-std .pd{background:var(--ht-5b647b)}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-off{background:var(--muted-bg);color:var(--muted-ink)} .badge-off .pd{background:var(--muted-ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .link-btn{border:none;background:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--primary);padding:4px 6px;border-radius:7px}
+  .tbl-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-top:1px solid var(--line)}
+  .tbl-foot .cnt{font-size:12px;color:var(--muted)}
+  .pager{display:flex;align-items:center;gap:6px}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted);font:inherit;font-size:12px}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  .box-pad{padding:46px 20px;text-align:center;color:var(--muted)}
+  .box-pad .ic{font-size:30px;margin-bottom:8px}
+  /* 弹窗形态（静态展示：不做 fixed 遮罩，弹窗卡片直接呈现在场景卡内） */
+  .dlg-h{padding:16px 18px 0}
+  .dlg-h h3{margin:0;font-size:17px}
+  .dlg-h .sub{color:var(--muted);font-size:12px;margin-top:3px}
+  .dlg-b{padding:14px 18px 18px}
+  .dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:4px 18px 16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+  .field label{font-size:11px;color:var(--muted);font-weight:600}
+  .field select,.field input,.field textarea{border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;height:36px;background:var(--ht-fff);color:var(--ink)}
+  .field textarea{height:64px;padding:8px 10px;resize:none}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{border:none;background:var(--ht-fff);padding:8px 16px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg button.on{background:var(--primary);color:var(--ht-fff)}
+  .seg button[disabled]{opacity:.45;cursor:not-allowed}
+  .redline{display:flex;align-items:flex-start;gap:8px;background:var(--red-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--red-ink);margin-top:12px}
+  .gap-note{display:flex;align-items:flex-start;gap:8px;background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--warn-ink);margin-bottom:10px}
+  .sk{display:inline-block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--card) 50%,var(--line) 75%);background-size:400% 100%;animation:uksh 1.2s infinite}
+  .skav{width:32px;height:32px;border-radius:50%}
+  .nm1{width:92px}.cd1{width:132px}.cell1{width:72px}.cell2{width:58px}.cell3{width:92px}.cell4{width:80px}
+  @keyframes uksh{0%{background-position:100% 0}100%{background-position:0 0}}
+  /* ===== 全局导航顶栏（candy-playful 统一，与 admin-users.html 同源）===== */
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .gnav{position:sticky;top:0;z-index:130;display:flex;flex-direction:row;align-items:center;gap:12px;width:auto;background:var(--card);border:0;border-bottom:2px solid var(--line);border-radius:0;box-shadow:0 2px 0 var(--htc-31-31-31-018);padding:10px 18px}
+  .gnav-brand{display:flex;align-items:center;gap:8px;min-width:0;text-decoration:none;color:var(--ink)}
+  .gnav-logo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--primary);color:var(--ht-fff);font-size:0.75rem;font-weight:900;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink);white-space:nowrap}
+  .gnav-cap{font-size:0.6875rem;font-weight:900;color:var(--muted);letter-spacing:.08em;white-space:nowrap}
+  .gnav-list{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex;align-items:center;justify-content:center;min-height:40px;white-space:nowrap;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:0 12px;border-radius:12px;border:2px solid transparent;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--primary-deep);color:var(--ht-fff);border-color:var(--line);box-shadow:none}
+  .gnav-foot{margin-left:auto;font-size:0.6875rem;color:var(--muted);font-weight:700;white-space:nowrap}
+  @media(max-width:767px){ .gnav{flex-wrap:wrap} .gnav-foot{margin-left:0} }
+  body.admin-html-page{background:#f2f3fa}
+  /* ===== B3-proto 原型专用排版（仅排版，不引入新视觉语言；颜色全部取自既有 token）===== */
+  .proto-note{display:flex;align-items:flex-start;gap:9px;border:1px dashed var(--candy-orange);background:var(--warn-bg);color:var(--warn-ink);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin-bottom:14px}
+  .proto-note p{margin:0;font-weight:400;color:inherit}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+  .toc a{font-size:12px;font-weight:700;color:var(--primary);text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+  .toc a:hover{border-color:var(--primary)}
+  .scene{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:22px;overflow:hidden}
+  .scene-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--ht-fafbff);border-bottom:1px solid var(--line);font-weight:700;font-size:13px}
+  .scene-h .sid{background:var(--primary-soft);color:var(--primary-deep);border-radius:6px;padding:1px 8px;font-family:ui-monospace,Consolas,monospace;font-size:11px;flex-shrink:0}
+  .scene-h .tag{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted)}
+  .scene-b{padding:14px}
+  .scene-b p{margin:6px 0}
+  /* manager 视角：只读横幅（形态对齐现状 adminOnlyBanner，颜色用 candy-red token） */
+  .banner-admin-only{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;background:var(--candy-red);color:var(--ht-fff);font-weight:700;font-size:0.875rem;padding:14px 16px;border-radius:10px;box-shadow:0 2px 10px var(--htc-0-0-0-018)}
+  .banner-admin-only .back{display:inline-block;padding:4px 14px;border-radius:999px;background:var(--ht-fff);color:var(--red-ink);font-weight:700;text-decoration:none}
+  /* manager 视角：导航灰显示意（与 H3-temp 过渡措施同口径：pointer-events:none + opacity + title） */
+  .nav-replica{display:flex;align-items:center;gap:4px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--ht-fafbff)}
+  .gnav-item.is-locked{pointer-events:none;opacity:.45;cursor:not-allowed}
+  .lock-chip{font-size:10px;background:var(--muted-bg);border-radius:5px;padding:1px 5px;color:var(--muted-ink);margin-left:5px}
+  /* 编辑 diff 弹窗的 diff 视图 */
+  .diff{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px;font-size:13px}
+  .diff-row{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+  .diff-row:last-child{border-bottom:none}
+  .diff-k{width:56px;color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0}
+  .diff-old{color:var(--muted);text-decoration:line-through}
+  .diff-arrow{color:var(--muted)}
+  .diff-new{color:var(--ok-ink);font-weight:700}
+  .diff-chg{background:var(--ok-bg)}
+  .diff-blocked{background:var(--red-bg)}
+  .diff-blocked .diff-new{color:var(--red-ink)}
+  .diff-none .diff-new{color:var(--muted);font-weight:400}
+  /* 403 原始载荷 */
+  .payload{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--red-bg);color:var(--red-ink);border-radius:10px;padding:10px 12px;word-break:break-all;margin-top:10px;text-align:left}
+  /* token 映射表 */
+  .map-tbl{width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
+  .map-tbl th{background:var(--ht-fafbff);color:var(--muted);text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--line)}
+  .map-tbl td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .map-tbl tr:last-child td{border-bottom:none}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px;border:1px solid var(--line)}
+</style>
+</head>
+<body class="admin-html-page">
+<div class="glayout">
+<header class="gnav" aria-label="管理端导航（ADMIN 正常态页面壳）">
+  <a class="gnav-brand" href="#s2"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="#s1"><span>仪表盘</span></a>
+    <a class="gnav-item" href="#s2"><span>课程管理</span></a>
+    <a class="gnav-item" href="#s2"><span>题库管理</span></a>
+    <a class="gnav-item active" href="#s2" aria-current="page"><span>用户管理</span></a>
+    <a class="gnav-item" href="#s1"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="#s1"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console · B3-proto 原型（静态）</div>
+</header>
+<div class="wrap">
+
+  <!-- 原型标注条：示例数据声明 -->
+  <div class="proto-note" role="note">
+    <span aria-hidden="true">🧪</span>
+    <div>
+      B3-proto 原型 · <u>示例数据，实施后为真实数据</u> —— 本页为纯静态原型，<b>零 script</b>（无 script src / fetch / XHR / 内联事件），
+      不发起任何真实请求；示例行为 2026-09-12 curl 实测 GET /api/admin/users 快照（adm02test，全量 total=100,034），
+      字段与 AdminUserItem 逐字一致。Gate A APPROVED 前禁止出 B3-impl 开工单（C15 判据：Refine 实施版 ≤214 行）。
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="场景索引">
+    <a href="#s0">S0 权限口径</a>
+    <a href="#s1">S1 manager 视角态</a>
+    <a href="#s2">S2 ADMIN 正常态</a>
+    <a href="#s3">S3 loading 骨架</a>
+    <a href="#s4">S4 空态</a>
+    <a href="#s5">S5 403 错误态</a>
+    <a href="#s6">S6 启停二次确认</a>
+    <a href="#s7">S7 编辑 diff + 40303 红线</a>
+    <a href="#s8">S8 C15 / token 映射</a>
+  </nav>
+
+  <!-- ===== S0 权限口径总览 ===== -->
+  <div class="scene" id="s0">
+    <div class="scene-h"><span class="sid">S0</span> 权限口径总览（D-H3：A 方案并入 B3）<span class="tag">后端权威 = require_role([ADMIN])</span></div>
+    <div class="scene-b">
+      <table class="map-tbl">
+        <thead><tr><th style="width:150px">维度</th><th>口径</th></tr></thead>
+        <tbody>
+          <tr><td><b>后端权威</b></td><td>user_admin 路由 <code>require_role([ADMIN])</code>。2026-09-12 curl 实测 manager(mgr01test) GET /api/admin/users → <b>HTTP 403</b> <code>{"code":"40300","message":"角色无权限。当前角色=manager，允许角色=['admin']"}</code></td></tr>
+          <tr><td><b>manager 前端</b></td><td>整页例外 = 顶部只读横幅「该模块仅 ADMIN 可用（当前角色 manager）」+ 返回仪表盘按钮（见 S1）；导航例外入口灰显（H3-temp 过渡措施，edu-guard.js，B3-impl 落地后由本页横幅口径取代）</td></tr>
+          <tr><td><b>ADMIN 前端</b></td><td>全量：列表 + 搜索（防抖 400ms）+ 角色/状态筛选 + 窗口化分页 + 启停二次确认 + 编辑 diff（见 S2~S7）</td></tr>
+          <tr><td><b>红线</b></td><td><code>40303</code>「至少保留 1 名可用管理员账号」后端权威兜底；前端以 <code>metrics.role_breakdown.admin</code> 尽力提示，不据此放行/拦截真实操作（见 S7-2）</td></tr>
+          <tr><td><b>rag 例外</b></td><td>manager 可大部分使用 RAG 页（导航<b>不灰显</b>）；collections 卡例外 = 卡内诚实空态/横幅，不整页拦截</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== S1 manager 视角态 ===== -->
+  <div class="scene" id="s1">
+    <div class="scene-h"><span class="sid">S1</span> manager 视角态：只读横幅 + 导航例外灰显示意<span class="tag">GWT③ 签字口径</span></div>
+    <div class="scene-b">
+      <div class="gap-note"><span>ℹ️</span><span>场景：manager（mgr01test）经守卫（role∈{admin,manager} 放行）后直接 URL 进入 admin-users。H3-temp 过渡措施已在导航层拦截常规入口；本横幅为直入兜底形态。实施版按 H2a/P1-9 口径在<b>请求前</b>拦截（复查 auth/me），不发必 403 的列表请求。</span></div>
+
+      <div class="banner-admin-only" role="alert">
+        <span>该模块仅 ADMIN 可用（后端权限口径 require_role([ADMIN])；当前角色 manager）</span>
+        <span class="back">返回仪表盘</span>
+      </div>
+
+      <p style="margin-top:14px;font-size:12px;color:var(--muted)">manager 登录时导航形态（H3-temp 灰显过渡态示意 —— users / mcp / dashboard 三项锁定；rag 不灰显；课程/题库完整可用）：</p>
+      <div class="nav-replica" aria-label="manager 视角导航灰显示意">
+        <a class="gnav-item is-locked" href="#s1" title="仅 ADMIN 可用"><span>仪表盘</span><span class="lock-chip">仅 ADMIN</span></a>
+        <a class="gnav-item" href="#s2"><span>课程管理</span></a>
+        <a class="gnav-item" href="#s2"><span>题库管理</span></a>
+        <a class="gnav-item is-locked" href="#s1" title="仅 ADMIN 可用"><span>用户管理</span><span class="lock-chip">仅 ADMIN</span></a>
+        <a class="gnav-item" href="#s1"><span>RAG知识库</span></a>
+        <a class="gnav-item is-locked" href="#s1" title="仅 ADMIN 可用"><span>MCP 工具</span><span class="lock-chip">仅 ADMIN</span></a>
+      </div>
+
+      <div class="tbl-card" style="margin-top:14px">
+        <div class="box-pad"><div class="ic">🚫</div><b style="color:var(--ink)">列表区置诚实空态（清骨架屏，不留误导性加载态）</b><p style="margin:6px 0 0">该模块仅 ADMIN 可用（后端权限口径）；当前登录角色 manager，无权读取用户列表</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S2 ADMIN 正常态：列表 + 搜索 + 角色筛选 + 窗口化分页 ===== -->
+  <div class="scene" id="s2">
+    <div class="scene-h"><span class="sid">S2</span> ADMIN 视角态 · 正常列表（搜索防抖 400ms + 角色/状态筛选 + 窗口化分页）<span class="tag">示例数据，实施后为真实数据</span></div>
+    <div class="scene-b">
+      <div class="page-head" style="margin-top:0">
+        <div>
+          <h1 style="font-size:20px">用户管理</h1>
+          <div class="sub">全量 <code>require_role(ADMIN)</code>；<b>最后 1 个可用 admin</b> 的 禁用/降级 前端禁用 + 后端拒绝（40303）</div>
+        </div>
+        <div class="act">
+          <span class="chip">列表 <code>GET /api/admin/users</code></span>
+          <span class="chip">总计 <b>100,034</b> 人</span>
+        </div>
+      </div>
+
+      <div class="filterbar">
+        <div class="fld">
+          <label>关键词</label>
+          <input class="search" placeholder="昵称 / 手机 / 账号（防抖 400ms）">
+        </div>
+        <div class="fld">
+          <label>角色</label>
+          <select>
+            <option>全部角色</option>
+            <option>管理员</option>
+            <option>教务</option>
+            <option>教师</option>
+            <option>学生</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>状态</label>
+          <select>
+            <option>全部状态</option>
+            <option>启用</option>
+            <option>禁用</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn-ghost btn-mini">重置</button>
+        </div>
+        <div class="ft-note">
+          <span class="deb-pulse">● 400ms 后查询</span>
+          <span>组合查询：<code>keyword</code>（username/real_name/account/mobile/email LIKE）+ <code>role_code</code> + <code>status</code>。</span>
+        </div>
+      </div>
+
+      <div class="tbl-card">
+        <table>
+          <thead><tr>
+            <th>用户</th><th>手机</th><th>角色</th><th>状态</th><th>注册时间</th><th>最近登录</th><th style="text-align:right">操作</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--primary-deep),var(--candy-purple))">S</span><div><div class="nm">Super Admin</div><div class="cd">adm02test · UID 100003</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-admin"><span class="pd"></span>管理员</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2026-08-18 00:00</td>
+              <td class="nb">—</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--primary),var(--candy-blue))">M</span><div><div class="nm">Manager</div><div class="cd">mgr01test · UID 100004</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-tea"><span class="pd"></span>教务</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2026-08-18 00:00</td>
+              <td class="nb">—</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--candy-green),var(--candy-green))">姚</span><div><div class="nm">姚敏浩</div><div class="cd">edu_user_001017 · UID 1017</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-admin"><span class="pd"></span>管理员</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2024-01-24 23:11</td>
+              <td class="nb">2026-07-07 20:28</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--candy-orange),var(--candy-pink))">杨</span><div><div class="nm">杨峰思</div><div class="cd">edu_user_000975 · UID 975</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-tea"><span class="pd"></span>教师</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2023-09-24 14:03</td>
+              <td class="nb">2024-11-07 16:14</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--candy-purple),var(--candy-pink))">蔡</span><div><div class="nm">蔡泽书</div><div class="cd">edu_user_000894 · UID 894</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-admin"><span class="pd"></span>管理员</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2023-09-22 04:11</td>
+              <td class="nb">2024-12-20 14:27</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--primary-deep),var(--candy-purple))">彭</span><div><div class="nm">彭佳晴</div><div class="cd">edu_user_000881 · UID 881</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-tea"><span class="pd"></span>教务</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2023-03-14 10:33</td>
+              <td class="nb">—</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--primary),var(--candy-blue))">1</span><div><div class="nm">—</div><div class="cd">123456 · UID 100038</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-std"><span class="pd"></span>学生</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2026-09-05 10:14</td>
+              <td class="nb">—</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+            <tr>
+              <td><div class="prim-cell"><span class="av" style="background:linear-gradient(135deg,var(--candy-green),var(--candy-green))">T</span><div><div class="nm">—</div><div class="cd">task06probe · UID 100039</div></div></div></td>
+              <td class="nb">—</td>
+              <td><span class="badge badge-role-std"><span class="pd"></span>学生</span></td>
+              <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+              <td class="nb">2026-09-12 10:35</td>
+              <td class="nb">—</td>
+              <td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end"><button type="button" class="link-btn">查看</button><button type="button" class="btn btn-ghost btn-mini">编辑</button><button type="button" class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)">禁用</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tbl-foot">
+          <span class="cnt">共 100,034 条 · 第 1 页 · 快照示例 8 行</span>
+          <span class="pager">
+            <button type="button" disabled>‹</button>
+            <button type="button" class="cur">1</button>
+            <button type="button">2</button>
+            <button type="button">3</button>
+            <span class="nb">…</span>
+            <button type="button">10004</button>
+            <button type="button">›</button>
+          </span>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px">行字段 = AdminUserItem{user_id, username, real_name, phone, email, role_code, status, yn, created_at, updated_at, last_login_at}（phone 列实测样本均为 null → 显示 —；email 在「查看」详情弹窗展示）。分页为窗口化（当前±2 + 首末页），支持十万级 total。</p>
+    </div>
+  </div>
+
+  <!-- ===== S3 loading 骨架态 ===== -->
+  <div class="scene" id="s3">
+    <div class="scene-h"><span class="sid">S3</span> ADMIN 视角态 · loading 骨架<span class="tag">请求在飞：setListState("loading")</span></div>
+    <div class="scene-b">
+      <div class="tbl-card">
+        <table>
+          <thead><tr>
+            <th>用户</th><th>手机</th><th>角色</th><th>状态</th><th>注册时间</th><th>最近登录</th><th style="text-align:right">操作</th>
+          </tr></thead>
+          <tbody>
+            <tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td><td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td><td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>
+            <tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td><td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td><td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>
+            <tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td><td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td><td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>
+            <tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td><td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td><td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>
+            <tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td><td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td><td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S4 空态 ===== -->
+  <div class="scene" id="s4">
+    <div class="scene-h"><span class="sid">S4</span> ADMIN 视角态 · 空态<span class="tag">组合查询为空：keyword=zzz_no_match → total=0</span></div>
+    <div class="scene-b">
+      <div class="tbl-card">
+        <div class="box-pad"><div class="ic">🔍</div>未匹配到用户（组合查询为空/调整筛选）</div>
+        <div class="tbl-foot">
+          <span class="cnt">共 0 条 · 第 1 页</span>
+          <span class="pager"><button type="button" disabled>‹</button><button type="button" class="cur">1</button><button type="button" disabled>›</button></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S5 403 错误态 ===== -->
+  <div class="scene" id="s5">
+    <div class="scene-h"><span class="sid">S5</span> ADMIN 视角态 · 403 错误态（40300 兜底展示形态）<span class="tag">2026-09-12 curl 实测载荷原文</span></div>
+    <div class="scene-b">
+      <div class="gap-note"><span>ℹ️</span><span>实施版按 H2a/P1-9 口径在<b>请求前</b>拦截：bootAdmin 复查 auth/me，role≠admin → 直接进 S1 横幅，<b>不发</b>必 403 的列表请求。本错误态仅为直连兜底展示形态（如权限口径变更/越权探测）。</span></div>
+      <div class="tbl-card">
+        <div class="box-pad">
+          <div class="ic">⚠️</div>
+          <b style="color:var(--ink)">用户列表加载失败：角色无权限。当前角色=manager，允许角色=['admin']（HTTP 403）</b>
+          <div class="payload">HTTP 403 · {"code":"40300","message":"角色无权限。当前角色=manager，允许角色=['admin']","data":null}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S6 启停二次确认弹窗 ===== -->
+  <div class="scene" id="s6">
+    <div class="scene-h"><span class="sid">S6</span> ADMIN 视角态 · 启停二次确认弹窗（静态形态）<span class="tag">POST /api/admin/users/{id}/status</span></div>
+    <div class="scene-b">
+      <p style="font-size:12px;color:var(--muted)">场景：对 mgr01test（UID 100004，当前启用）点行内「禁用」→ 二次确认弹窗。确认后提交 <code>POST /api/admin/users/100004/status</code>（body {"status":0, reason?}）→ 响应 {updated,user_id,status,yn} → toast + 刷新列表。</p>
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);max-width:560px">
+        <div class="dlg-h">
+          <h3>确认禁用该账号？</h3>
+          <div class="sub">mgr01test（UID 100004）</div>
+        </div>
+        <div class="dlg-b">
+          <p style="margin:0;font-size:0.875rem;color:var(--ink)">禁用后该用户将<b>无法登录</b>。 该操作将提交 <code>POST /api/admin/users/100004/status</code>（body {"status":0}）。</p>
+          <div class="field" style="margin-top:10px">
+            <label>变更原因（可选，reason ≤255）</label>
+            <textarea placeholder="操作留痕，选填"></textarea>
+          </div>
+        </div>
+        <div class="dlg-foot">
+          <button type="button" class="btn btn-ghost">取消</button>
+          <button type="button" class="btn btn-primary">确认禁用</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S7 编辑 diff 弹窗（正常态 + 40303 红线态）===== -->
+  <div class="scene" id="s7">
+    <div class="scene-h"><span class="sid">S7</span> ADMIN 视角态 · 编辑 diff 弹窗（Refine 版新增形态：提交前 diff 预览）<span class="tag">POST /{id}/role + /{id}/status</span></div>
+    <div class="scene-b">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px">
+        <!-- S7-1 正常态 -->
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)">
+          <div class="dlg-h">
+            <h3>编辑用户 <span class="chip" style="margin-left:6px">S7-1 正常态</span></h3>
+            <div class="sub">杨峰思（UID 975） · role/status 变更以 diff 预览，保存后真实提交</div>
+          </div>
+          <div class="dlg-b">
+            <div class="diff">
+              <div class="diff-row diff-chg"><span class="diff-k">角色</span><span class="diff-old">教师 teacher</span><span class="diff-arrow">→</span><span class="diff-new">教务 manager</span><span class="nb" style="margin-left:auto">POST /api/admin/users/975/role</span></div>
+              <div class="diff-row diff-none"><span class="diff-k">状态</span><span class="diff-new">启用 1（未变更）</span></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>变更原因（可选，reason ≤255）</label>
+                <textarea placeholder="操作留痕，选填"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="dlg-foot">
+            <button type="button" class="btn btn-ghost">取消</button>
+            <button type="button" class="btn btn-primary">保存变更</button>
+          </div>
+        </div>
+        <!-- S7-2 40303 红线态 -->
+        <div style="background:var(--card);border:1px solid var(--candy-red);border-radius:18px;box-shadow:var(--shadow)">
+          <div class="dlg-h">
+            <h3>编辑用户 <span class="chip" style="margin-left:6px">S7-2 40303 红线提示态</span></h3>
+            <div class="sub">Super Admin（UID 100003） · <b>演示假设</b>：设当前库仅剩 1 名可用 admin 时触发（2026-09-12 实测 metrics.role_breakdown.admin=5，红线不触发；此处为触发时形态，不做 MOCK 断言）</div>
+          </div>
+          <div class="dlg-b">
+            <div class="diff">
+              <div class="diff-row diff-blocked"><span class="diff-k">角色</span><span class="diff-old">管理员 admin</span><span class="diff-arrow">→</span><span class="diff-new">学生 student（已拦截）</span><span class="nb" style="margin-left:auto">POST /api/admin/users/100003/role</span></div>
+              <div class="diff-row diff-blocked"><span class="diff-k">状态</span><span class="diff-old">启用 1</span><span class="diff-arrow">→</span><span class="diff-new">禁用 0（已拦截）</span><span class="nb" style="margin-left:auto">POST /api/admin/users/100003/status</span></div>
+            </div>
+            <div class="redline">
+              <span>🚫</span>
+              <span><b>红线保护</b>：该用户是<b>唯一可用 admin</b>。禁用（status=0）或降级（≠admin）将导致无人能进入管理端——前端已禁用操作；后端同样拒绝（<code>40303</code>「至少保留 1 名可用管理员账号」，后端权威兜底：排除该用户后有效 admin 计数 &lt;1 即拒绝）。</span>
+            </div>
+          </div>
+          <div class="dlg-foot">
+            <button type="button" class="btn btn-ghost">取消</button>
+            <button type="button" class="btn btn-primary" disabled>保存变更</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== S8 C15 判据 + token 映射 + 接线清单 ===== -->
+  <div class="scene" id="s8">
+    <div class="scene-h"><span class="sid">S8</span> C15 判据 · 糖果 token 映射 · Gate A 后接线清单</div>
+    <div class="scene-b">
+      <div class="gap-note"><span>📏</span><span><b>C15 判据（入 B3-impl 开工单）</b>：Refine 实施版代码行数 <b>≤214 行</b>（= admin-users.html 642/3）；<b>超=证伪回滚选型</b>（react-admin 备选，按 B0 维护判据复核日 2027-03 联动评估）。</span></div>
+      <table class="map-tbl">
+        <thead><tr><th style="width:220px">原型元素</th><th>糖果 token（与 admin-users.html :root 逐字同源，未引入新视觉语言）</th></tr></thead>
+        <tbody>
+          <tr><td>页壳/卡片/表格</td><td><span class="sw" style="background:#f5f6fb"></span><code>--bg</code> <span class="sw" style="background:#ffffff"></span><code>--card</code> <span class="sw" style="background:#e7e9f2"></span><code>--line</code> <span class="sw" style="background:#2b2f3a"></span><code>--ink</code> <span class="sw" style="background:#7b8398"></span><code>--muted</code>；圆角 <code>--r:14px</code> + <code>--shadow</code></td></tr>
+          <tr><td>主按钮/激活态/分页当前页</td><td><span class="sw" style="background:#5b5bd6"></span><code>--primary</code> <span class="sw" style="background:#4338ca"></span><code>--primary-deep</code> <span class="sw" style="background:#eef0fd"></span><code>--primary-soft</code></td></tr>
+          <tr><td>角色徽章（admin/teacher·manager/student）</td><td><span class="sw" style="background:#eef0fd"></span><code>--primary-soft/--primary-deep</code> · <span class="sw" style="background:#f3edfe"></span><code>--ht-f3edfe/--ht-7c4bd6</code> · <span class="sw" style="background:#eef0f5"></span><code>--muted-bg/--muted-ink</code></td></tr>
+          <tr><td>启用/禁用徽章</td><td><span class="sw" style="background:#e6f9ef"></span><code>--ok-bg/--ok-ink</code> · <span class="sw" style="background:#eef0f5"></span><code>--muted-bg/--muted-ink</code></td></tr>
+          <tr><td>manager 横幅 / 403 错误态 / 40303 红线</td><td><span class="sw" style="background:#fb7185"></span><code>--candy-red</code>（横幅底）· <span class="sw" style="background:#fdeef1"></span><code>--red-bg/--red-ink</code>（payload/红线/diff 拦截行）</td></tr>
+          <tr><td>diff 变更行 / 原型标注条 / 防抖脉冲</td><td><span class="sw" style="background:#e6f9ef"></span><code>--ok-bg/--ok-ink</code>（变更行）· <span class="sw" style="background:#fff6e5"></span><code>--warn-bg/--warn-ink</code>（标注条）· <span class="sw" style="background:#fb923c"></span><code>--candy-orange</code>（脉冲）</td></tr>
+          <tr><td>头像渐变</td><td>沿用现状页 AVATAR_GRAD 四组（<code>--primary-deep→--candy-purple</code> / <code>--primary→--candy-blue</code> / <code>--candy-green</code> / <code>--candy-orange→--candy-pink</code> 循环）</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px"><b>Refine 映射（B3-impl 骨架，依赖 B2 共享 queryClient）</b>：页壳 → Refine headless List 壳；列表/筛选/分页 → useTable（dataProvider 对接 GET /api/admin/users）；启停/编辑 → 受控 Modal 组件；401 收敛 → B2 interceptor（single-flight 语义等价）。原型不依赖 B2 完成即可送审。</p>
+      <p style="font-size:12px;color:var(--muted)"><b>Gate A 后接线清单</b>：①守卫沿用 edu-guard.requireAdmin 三段 + window.bootAdmin 注入；②manager 请求前复查 auth/me（H2a/P1-9 口径）→ S1 横幅；③列表接 GET /api/admin/users（keyword 防抖 400ms / role_code / status / 窗口化分页）；④启停接 POST /{id}/status（二次确认 + 40303 toast 兜底）；⑤编辑 diff 接 POST /{id}/role + /{id}/status；⑥行数自证 ≤214（C15），超限即回滚上报。</p>
+    </div>
+  </div>
+
+</div><!-- /.wrap -->
+</div><!-- /.glayout -->
+</body>
+</html>
