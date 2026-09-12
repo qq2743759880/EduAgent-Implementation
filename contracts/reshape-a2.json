@@ -1,0 +1,34 @@
+{
+ "planId": "reshape-a2",
+ "draft": false,
+ "frozen_at": "2026-09-12",
+ "change_order": ".ai-hub/plans/contract-change-reshape-a2.md",
+ "user_signoff": "2026-09-12 三条全部签字同意(终审第三轮)",
+ "decouple": "a2 与数据事故(帖删除/订单来源)无因果,经用户建议(A)解耦,独立生效",
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/api/progress/video/start",
+   "body": {
+    "video_id": "int",
+    "cohort_id": "int"
+   },
+   "resp": {
+    "play_session_id": "int"
+   },
+   "priority": "P0",
+   "motivation": "G1:tick-batch 依赖已存在 play_session 但无创建端点(400010+DB 实证)"
+  },
+  {
+   "note": "sale_status 过滤语义澄清:status 参数无效;include_deleted=true=不过滤全量;回收站=sale_status=off_sale",
+   "priority": "P1",
+   "status": "已落 task13(f0ff367)"
+  },
+  {
+   "note": "管理端全局聚合端点(订单/营收/热门课程)归 B 批立项(task70-91 范畴)",
+   "priority": "P2"
+  }
+ ],
+ "amendments_prev": "POST /api/favorites 已在 reshape-b.json amendments 补登",
+ "hash_sha256": "c52eb424eef3b53ae7d550034437f08472e25342bd88fcec3ed7098d7d13c4f8"
+}

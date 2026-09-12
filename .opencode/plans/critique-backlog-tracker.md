@@ -448,3 +448,10 @@ bin049-054 无大规模 series 删除;62/56=API total 口径,SQL 直查 off_sale
 1 笔(09-06 17:14,2999)=task05 agent 联调窗口,疑似漏报;2 笔(09-06 18:26,3999×2 相隔 7 秒)来源不明(用户否认)。处置:标 DEMO-TEST 待用户选取消/保留。
 ### E. 复验包已交付
 test-reports/H-reverify-package.md(一令 pytest+分项手工表+提交索引)——用户可随时独立重跑。
+
+## B0 维护风险判据(终审要求入 tracker,2026-09-12)
+- [ ] **复核日 2027-03**:@refinedev/core 自 2026-09 起连续 6 个月零发版且出现阻塞级 issue 无人响应 → 触发备选预案评估(react-admin,见 tech-source-audit.md §5)。当前基线:core 5.0.12,pushed_at 2026-06-05。
+## a2 解耦裁定(2026-09-12)
+- a2 三条(video/start / sale_status 澄清 / 聚合端点)与数据事故(帖删除/订单来源)无因果 → **解耦,独立冻结**(contracts/reshape-a2.json)。数据事故处置(帖删除定责/3 笔单标种子)独立推进,不阻塞契约。
+## task109 GWT③ 修正·签字文本(待用户)
+「manager 完整可用 4 页(courses/course-detail/questions/question-detail);例外 4 处=users/mcp/dashboard 整页+rag collections 卡;例外处理=导航灰显+横幅/诚实空态」
