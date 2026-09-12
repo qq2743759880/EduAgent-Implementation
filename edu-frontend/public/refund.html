@@ -205,6 +205,14 @@
  */
 (function(){
   if(!window.EAPI) return;
+  /* task17 修复：本 IIFE 原直接调用 bootRefund 闭包内私有的 flash → ReferenceError: flash is not defined
+   *（非 student 角色 / auth/me 失败路径：提示未弹出且其后的跳转 setTimeout 永不注册，页面卡死）。
+   * 此处提供等价局部 toast（复用 #flash 元素与既有样式语义，非 alert），不改视觉。 */
+  var flash=function(t){ var m=document.getElementById("flash"); if(!m)return;
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#ef4444" : "#16a34a";
+    m.textContent = t; m.style.display="block";
+    clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
+  };
   var loginUrl;
   try{ loginUrl = EAPI.buildLoginUrl(location.pathname+location.search); }catch(e){ loginUrl="/login-register.html"; }
   if(!EAPI.store.getToken()){ location.replace(loginUrl); return; }

@@ -456,7 +456,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
 <div class="page">
 
   <nav class="breadcrumb" aria-label="面包屑">
-    <a href="#">个人中心</a><span class="sep">/</span>
+    <a href="me.html">个人中心</a><span class="sep">/</span>
     <span class="cur">复习中心</span>
   </nav>
 
@@ -535,7 +535,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">函数</td>
               <td class="err-date">08-14</td>
               <td class="acc lo">33%</td>
-              <td><button class="redo" type="button">重做</button></td>
+              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip blank">填空</span></td>
@@ -543,7 +543,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">网络协议</td>
               <td class="err-date">08-15</td>
               <td class="acc mid">50%</td>
-              <td><button class="redo" type="button">重做</button></td>
+              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip multi">多选</span></td>
@@ -551,7 +551,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">算法</td>
               <td class="err-date">08-15</td>
               <td class="acc hi">80%</td>
-              <td><button class="redo" type="button">重做</button></td>
+              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip judge">判断</span></td>
@@ -559,7 +559,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">数据结构</td>
               <td class="err-date">08-16</td>
               <td class="acc lo">0%</td>
-              <td><button class="redo" type="button">重做</button></td>
+              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
             </tr>
           </tbody>
         </table>
@@ -597,8 +597,8 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <div class="q-top">
           <span class="prog"><span id="qCur">3</span> / <span id="qTotal">23</span></span>
           <span class="bar" role="progressbar" id="qBar" aria-valuenow="13" aria-valuemin="0" aria-valuemax="100" aria-valuetext="第 3 题，共 23 题（13%）"><i id="qBarFill" style="width:13%" aria-hidden="true"></i></span>
-          <button class="quit" type="button" aria-label="结束复习">⏹ 结束复习</button>
-          <div class="nav"><button type="button" aria-label="上一题">上一题</button><button type="button" aria-label="下一题">下一题</button></div>
+          <button class="quit" type="button" aria-label="结束复习" disabled title="演示数据 · 登录后进入真实复习会话">⏹ 结束复习</button>
+          <div class="nav"><button type="button" aria-label="上一题" disabled title="演示数据 · 登录后进入真实复习会话">上一题</button><button type="button" aria-label="下一题" disabled title="演示数据 · 登录后进入真实复习会话">下一题</button></div>
         </div>
         <!-- R3 题型切换：四种题型各展示一次判分+解析 -->
         <div class="q-typebar" role="tablist" aria-label="题型演示">
@@ -1108,8 +1108,8 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
       '<div class="rev-expl hid rv-expl"></div>' +
       '<div class="rev-mast hid rv-mast"></div>';
 
-    // 绑定交互
-    bindQuestion(t);
+    // 绑定交互（task17 修复：原此处调用未定义的 bindQuestion(t) → ReferenceError，
+    // 中断下方选项/提交/下一题全部绑定，登录态真实复习会话首题即死 UI；实际绑定由后续分支完成）
 
     // 单选：点选项即定答案
     if (t === 'SINGLE') {
