@@ -1,0 +1,1420 @@
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
+/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
+DELIMITER /*!*/;
+# at 4
+#260912 19:12:16 server id 1  end_log_pos 124 CRC32 0x8e91d5dd 	Start: binlog v 4, server v 8.0.12 created 260912 19:12:16 at startup
+# Warning: this binlog is either in use or was not closed properly.
+ROLLBACK/*!*/;
+BINLOG '
+kDOlag8BAAAAeAAAAHwAAAABAAQAOC4wLjEyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAACQM6VqEwANAAgAAAAABAAEAAAAYAAEGggAAAAICAgCAAAACgoKKioAEjQA
+CgHd1ZGO
+'/*!*/;
+# at 124
+#260912 19:12:16 server id 1  end_log_pos 155 CRC32 0x6aeeb62f 	Previous-GTIDs
+# [empty]
+# at 155
+#260912 19:44:18 server id 1  end_log_pos 230 CRC32 0x8cb6bfc9 	Anonymous_GTID	last_committed=0	sequence_number=1	rbr_only=yes	original_committed_timestamp=1789213458185696	immediate_commit_timestamp=1789213458185696	transaction_length=419
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458185696 (2026-09-12 19:44:18.185696 中国标准时间)
+# immediate_commit_timestamp=1789213458185696 (2026-09-12 19:44:18.185696 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458185696*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 230
+#260912 19:44:18 server id 1  end_log_pos 314 CRC32 0x41554f3c 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+SET @@session.pseudo_thread_id=14/*!*/;
+SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
+SET @@session.sql_mode=1168113696/*!*/;
+SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
+/*!\C utf8mb4 *//*!*/;
+SET @@session.character_set_client=45,@@session.collation_connection=45,@@session.collation_server=255/*!*/;
+SET @@session.time_zone='SYSTEM'/*!*/;
+SET @@session.lc_time_names=0/*!*/;
+SET @@session.collation_database=DEFAULT/*!*/;
+/*!80005 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
+BEGIN
+/*!*/;
+# at 314
+#260912 19:44:18 server id 1  end_log_pos 400 CRC32 0x009bed3f 	Table_map: `edu`.`series` mapped to number 67
+# at 400
+#260912 19:44:18 server id 1  end_log_pos 543 CRC32 0xee332f2b 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAJABAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AD/tmwA=
+Ejulah4BAAAAjwAAAB8CAAAAAEMAAAAAAAEAAgAO///gA6AKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM0NTc5NzgfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM0NTc5NzgH
+b25fc2FsZaOGAQAAAAAAmbrZOxKZutk7EisvM+4=
+'/*!*/;
+# at 543
+#260912 19:44:18 server id 1  end_log_pos 574 CRC32 0x3aa6755c 	Xid = 24480
+COMMIT/*!*/;
+# at 574
+#260912 19:44:18 server id 1  end_log_pos 649 CRC32 0xffb6b7b5 	Anonymous_GTID	last_committed=1	sequence_number=2	rbr_only=yes	original_committed_timestamp=1789213458215943	immediate_commit_timestamp=1789213458215943	transaction_length=538
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458215943 (2026-09-12 19:44:18.215943 中国标准时间)
+# immediate_commit_timestamp=1789213458215943 (2026-09-12 19:44:18.215943 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458215943*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 649
+#260912 19:44:18 server id 1  end_log_pos 742 CRC32 0xdc5bb5fa 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 742
+#260912 19:44:18 server id 1  end_log_pos 828 CRC32 0x7e6ce229 	Table_map: `edu`.`series` mapped to number 67
+# at 828
+#260912 19:44:18 server id 1  end_log_pos 1081 CRC32 0xe9b608b0 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAADwDAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ACnibH4=
+Ejulah8BAAAA/QAAADkEAAAAAEMAAAAAAAEAAgAO/////+ADoAoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzQ1Nzk3OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzQ1Nzk3
+OAdvbl9zYWxlo4YBAAAAAACZutk7Epm62TsS4AOgCgAAAAAAAAEAAAAAAAAAC29ubGluZV9saXZl
+EABoMWMxNzg5MjEzNDU3OTc4HwBIMWPlhrLnqoHmtYvor5VoMWMxNzg5MjEzNDU3OTc4CG9mZl9z
+YWxlo4YBAAAAAACZutk7Epm62TsSsAi26Q==
+'/*!*/;
+# at 1081
+#260912 19:44:18 server id 1  end_log_pos 1112 CRC32 0x28336799 	Xid = 24486
+COMMIT/*!*/;
+# at 1112
+#260912 19:44:18 server id 1  end_log_pos 1187 CRC32 0xf26debf9 	Anonymous_GTID	last_committed=2	sequence_number=3	rbr_only=yes	original_committed_timestamp=1789213458307739	immediate_commit_timestamp=1789213458307739	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458307739 (2026-09-12 19:44:18.307739 中国标准时间)
+# immediate_commit_timestamp=1789213458307739 (2026-09-12 19:44:18.307739 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458307739*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 1187
+#260912 19:44:18 server id 1  end_log_pos 1280 CRC32 0xc43c286e 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 1280
+#260912 19:44:18 server id 1  end_log_pos 1366 CRC32 0x1af9a104 	Table_map: `edu`.`series` mapped to number 67
+# at 1366
+#260912 19:44:18 server id 1  end_log_pos 1617 CRC32 0x65806b3e 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAFYFAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AASh+Ro=
+Ejulah8BAAAA+wAAAFEGAAAAAEMAAAAAAAEAAgAO/////+ADoAoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzQ1Nzk3OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzQ1Nzk3
+OAhvZmZfc2FsZaOGAQAAAAAAmbrZOxKZutk7EuADoAoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2
+ZRAAaDFjMTc4OTIxMzQ1Nzk3OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzQ1Nzk3OAVkcmFm
+dKOGAQAAAAAAmbrZOxKZutk7Ej5rgGU=
+'/*!*/;
+# at 1617
+#260912 19:44:18 server id 1  end_log_pos 1648 CRC32 0xa91daf17 	Xid = 24495
+COMMIT/*!*/;
+# at 1648
+#260912 19:44:18 server id 1  end_log_pos 1723 CRC32 0xfca32713 	Anonymous_GTID	last_committed=3	sequence_number=4	rbr_only=yes	original_committed_timestamp=1789213458431911	immediate_commit_timestamp=1789213458431911	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458431911 (2026-09-12 19:44:18.431911 中国标准时间)
+# immediate_commit_timestamp=1789213458431911 (2026-09-12 19:44:18.431911 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458431911*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 1723
+#260912 19:44:18 server id 1  end_log_pos 1799 CRC32 0xe3ee12d5 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 1799
+#260912 19:44:18 server id 1  end_log_pos 1885 CRC32 0x6a62ef20 	Table_map: `edu`.`series` mapped to number 67
+# at 1885
+#260912 19:44:18 server id 1  end_log_pos 2026 CRC32 0x3ed743f6 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAF0HAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ACDvYmo=
+EjulaiABAAAAjQAAAOoHAAAAAEMAAAAAAAEAAgAO///gA6AKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM0NTc5NzgfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM0NTc5NzgF
+ZHJhZnSjhgEAAAAAAJm62TsSmbrZOxL2Q9c+
+'/*!*/;
+# at 2026
+#260912 19:44:18 server id 1  end_log_pos 2057 CRC32 0xe5f6d96a 	Xid = 24508
+COMMIT/*!*/;
+# at 2057
+#260912 19:44:18 server id 1  end_log_pos 2132 CRC32 0x7e27b258 	Anonymous_GTID	last_committed=4	sequence_number=5	rbr_only=yes	original_committed_timestamp=1789213458462566	immediate_commit_timestamp=1789213458462566	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458462566 (2026-09-12 19:44:18.462566 中国标准时间)
+# immediate_commit_timestamp=1789213458462566 (2026-09-12 19:44:18.462566 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458462566*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 2132
+#260912 19:44:18 server id 1  end_log_pos 2216 CRC32 0x9bff738b 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 2216
+#260912 19:44:18 server id 1  end_log_pos 2302 CRC32 0xf936505d 	Table_map: `edu`.`series` mapped to number 67
+# at 2302
+#260912 19:44:18 server id 1  end_log_pos 2443 CRC32 0x628d3093 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAP4IAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AF1QNvk=
+Ejulah4BAAAAjQAAAIsJAAAAAEMAAAAAAAEAAgAO///gA6EKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM0NTg0NDIfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM0NTg0NDIF
+ZHJhZnSjhgEAAAAAAJm62TsSmbrZOxKTMI1i
+'/*!*/;
+# at 2443
+#260912 19:44:18 server id 1  end_log_pos 2474 CRC32 0x3d43364f 	Xid = 24513
+COMMIT/*!*/;
+# at 2474
+#260912 19:44:18 server id 1  end_log_pos 2549 CRC32 0xd3ac8d1f 	Anonymous_GTID	last_committed=5	sequence_number=6	rbr_only=yes	original_committed_timestamp=1789213458507772	immediate_commit_timestamp=1789213458507772	transaction_length=435
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458507772 (2026-09-12 19:44:18.507772 中国标准时间)
+# immediate_commit_timestamp=1789213458507772 (2026-09-12 19:44:18.507772 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458507772*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 2549
+#260912 19:44:18 server id 1  end_log_pos 2633 CRC32 0x6c08e66e 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 2633
+#260912 19:44:18 server id 1  end_log_pos 2720 CRC32 0x5839becf 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 2720
+#260912 19:44:18 server id 1  end_log_pos 2878 CRC32 0x2fb98df4 	Write_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVwAAAKAKAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wDPvjlY
+Ejulah4BAAAAngAAAD4LAAAAAEoAAAAAAAEAAgAP//8IAN0eAAAAAAAAAQAAAAAAAAChCgAAAAAA
+AAEAAAAAAAAAEABoMWMxNzg5MjEzNDU4NDcwJQBIMWPnoazliKDlrojljavnj63mrKFoMWMxNzg5
+MjEzNDU4NDQygAAAA+cACgAAAAAAAAABIdUPn9UPmbrZOxKZutk7EvSNuS8=
+'/*!*/;
+# at 2878
+#260912 19:44:18 server id 1  end_log_pos 2909 CRC32 0x97a17ce4 	Xid = 24519
+COMMIT/*!*/;
+# at 2909
+#260912 19:44:18 server id 1  end_log_pos 2984 CRC32 0x3985b4b0 	Anonymous_GTID	last_committed=6	sequence_number=7	rbr_only=yes	original_committed_timestamp=1789213458598807	immediate_commit_timestamp=1789213458598807	transaction_length=568
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458598807 (2026-09-12 19:44:18.598807 中国标准时间)
+# immediate_commit_timestamp=1789213458598807 (2026-09-12 19:44:18.598807 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458598807*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 2984
+#260912 19:44:18 server id 1  end_log_pos 3077 CRC32 0x6d8bb51a 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 3077
+#260912 19:44:18 server id 1  end_log_pos 3164 CRC32 0xed11cb8b 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 3164
+#260912 19:44:18 server id 1  end_log_pos 3446 CRC32 0x27102a65 	Update_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVwAAAFwMAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wCLyxHt
+Ejulah8BAAAAGgEAAHYNAAAAAEoAAAAAAAEAAgAP/////wgA3R4AAAAAAAABAAAAAAAAAKEKAAAA
+AAAAAQAAAAAAAAAQAGgxYzE3ODkyMTM0NTg0NzAlAEgxY+ehrOWIoOWuiOWNq+ePreasoWgxYzE3
+ODkyMTM0NTg0NDKAAAAD5wAKAAAAAAAAAAEh1Q+f1Q+Zutk7Epm62TsSCADdHgAAAAAAAAEAAAAA
+AAAAoQoAAAAAAAABAAAAAAAAABAAaDFjMTc4OTIxMzQ1ODQ3MCUASDFj56Gs5Yig5a6I5Y2r54+t
+5qyhaDFjMTc4OTIxMzQ1ODQ0MoAAAAPnAAoAAAAAAAAAACHVD5/VD5m62TsSmbrZOxJlKhAn
+'/*!*/;
+# at 3446
+#260912 19:44:18 server id 1  end_log_pos 3477 CRC32 0xf849934a 	Xid = 24533
+COMMIT/*!*/;
+# at 3477
+#260912 19:44:18 server id 1  end_log_pos 3552 CRC32 0xee33a663 	Anonymous_GTID	last_committed=7	sequence_number=8	rbr_only=yes	original_committed_timestamp=1789213458654833	immediate_commit_timestamp=1789213458654833	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458654833 (2026-09-12 19:44:18.654833 中国标准时间)
+# immediate_commit_timestamp=1789213458654833 (2026-09-12 19:44:18.654833 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458654833*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 3552
+#260912 19:44:18 server id 1  end_log_pos 3645 CRC32 0xa73fe5a1 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 3645
+#260912 19:44:18 server id 1  end_log_pos 3731 CRC32 0xdb2a6cc7 	Table_map: `edu`.`series` mapped to number 67
+# at 3731
+#260912 19:44:18 server id 1  end_log_pos 3982 CRC32 0x28527cc1 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAJMOAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AMdsKts=
+Ejulah8BAAAA+wAAAI4PAAAAAEMAAAAAAAEAAgAO/////+ADoQoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzQ1ODQ0Mh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzQ1ODQ0
+MgVkcmFmdKOGAQAAAAAAmbrZOxKZutk7EuADoQoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2ZRAA
+aDFjMTc4OTIxMzQ1ODQ0Mh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzQ1ODQ0MghvZmZfc2Fs
+ZaOGAQAAAAAAmbrZOxKZutk7EsF8Uig=
+'/*!*/;
+# at 3982
+#260912 19:44:18 server id 1  end_log_pos 4013 CRC32 0xd9ba6e2f 	Xid = 24538
+COMMIT/*!*/;
+# at 4013
+#260912 19:44:18 server id 1  end_log_pos 4088 CRC32 0xedd66ce9 	Anonymous_GTID	last_committed=8	sequence_number=9	rbr_only=yes	original_committed_timestamp=1789213458690788	immediate_commit_timestamp=1789213458690788	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458690788 (2026-09-12 19:44:18.690788 中国标准时间)
+# immediate_commit_timestamp=1789213458690788 (2026-09-12 19:44:18.690788 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458690788*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 4088
+#260912 19:44:18 server id 1  end_log_pos 4172 CRC32 0x4d6c65e6 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 4172
+#260912 19:44:18 server id 1  end_log_pos 4258 CRC32 0xb6f71d1f 	Table_map: `edu`.`series` mapped to number 67
+# at 4258
+#260912 19:44:18 server id 1  end_log_pos 4399 CRC32 0xd79cd66f 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAAKIQAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AB8d97Y=
+Ejulah4BAAAAjQAAAC8RAAAAAEMAAAAAAAEAAgAO///gA6IKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM0NTg2NjQfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM0NTg2NjQF
+ZHJhZnSjhgEAAAAAAJm62TsSmbrZOxJv1pzX
+'/*!*/;
+# at 4399
+#260912 19:44:18 server id 1  end_log_pos 4430 CRC32 0xac748f31 	Xid = 24543
+COMMIT/*!*/;
+# at 4430
+#260912 19:44:18 server id 1  end_log_pos 4505 CRC32 0x2255b1a8 	Anonymous_GTID	last_committed=9	sequence_number=10	rbr_only=yes	original_committed_timestamp=1789213458721345	immediate_commit_timestamp=1789213458721345	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213458721345 (2026-09-12 19:44:18.721345 中国标准时间)
+# immediate_commit_timestamp=1789213458721345 (2026-09-12 19:44:18.721345 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213458721345*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 4505
+#260912 19:44:18 server id 1  end_log_pos 4581 CRC32 0x262757bd 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213458/*!*/;
+BEGIN
+/*!*/;
+# at 4581
+#260912 19:44:18 server id 1  end_log_pos 4667 CRC32 0xb8b498d9 	Table_map: `edu`.`series` mapped to number 67
+# at 4667
+#260912 19:44:18 server id 1  end_log_pos 4808 CRC32 0xb3b5684f 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+EjulahMBAAAAVgAAADsSAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ANmYtLg=
+EjulaiABAAAAjQAAAMgSAAAAAEMAAAAAAAEAAgAO///gA6IKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM0NTg2NjQfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM0NTg2NjQF
+ZHJhZnSjhgEAAAAAAJm62TsSmbrZOxJPaLWz
+'/*!*/;
+# at 4808
+#260912 19:44:18 server id 1  end_log_pos 4839 CRC32 0xa7d7c34d 	Xid = 24551
+COMMIT/*!*/;
+# at 4839
+#260912 19:47:48 server id 1  end_log_pos 4914 CRC32 0xe0f8422c 	Anonymous_GTID	last_committed=10	sequence_number=11	rbr_only=yes	original_committed_timestamp=1789213668975702	immediate_commit_timestamp=1789213668975702	transaction_length=419
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213668975702 (2026-09-12 19:47:48.975702 中国标准时间)
+# immediate_commit_timestamp=1789213668975702 (2026-09-12 19:47:48.975702 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213668975702*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 4914
+#260912 19:47:48 server id 1  end_log_pos 4998 CRC32 0x68716aa9 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213668/*!*/;
+BEGIN
+/*!*/;
+# at 4998
+#260912 19:47:48 server id 1  end_log_pos 5084 CRC32 0xc6864ce4 	Table_map: `edu`.`series` mapped to number 67
+# at 5084
+#260912 19:47:48 server id 1  end_log_pos 5227 CRC32 0xc4734415 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5DulahMBAAAAVgAAANwTAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AORMhsY=
+5Dulah4BAAAAjwAAAGsUAAAAAEMAAAAAAAEAAgAO///gA6MKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM2Njg4MzAfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM2Njg4MzAH
+b25fc2FsZaOGAQAAAAAAmbrZO/CZutk78BVEc8Q=
+'/*!*/;
+# at 5227
+#260912 19:47:48 server id 1  end_log_pos 5258 CRC32 0x283a8096 	Xid = 24560
+COMMIT/*!*/;
+# at 5258
+#260912 19:47:48 server id 1  end_log_pos 5333 CRC32 0x15a7ab3e 	Anonymous_GTID	last_committed=11	sequence_number=12	rbr_only=yes	original_committed_timestamp=1789213669005210	immediate_commit_timestamp=1789213669005210	transaction_length=538
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669005210 (2026-09-12 19:47:49.005210 中国标准时间)
+# immediate_commit_timestamp=1789213669005210 (2026-09-12 19:47:49.005210 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669005210*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 5333
+#260912 19:47:48 server id 1  end_log_pos 5426 CRC32 0x64fc55b9 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213668/*!*/;
+BEGIN
+/*!*/;
+# at 5426
+#260912 19:47:48 server id 1  end_log_pos 5512 CRC32 0x6847fb79 	Table_map: `edu`.`series` mapped to number 67
+# at 5512
+#260912 19:47:48 server id 1  end_log_pos 5765 CRC32 0x0e03b020 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5DulahMBAAAAVgAAAIgVAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AHn7R2g=
+5Dulah8BAAAA/QAAAIUWAAAAAEMAAAAAAAEAAgAO/////+ADowoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzY2ODgzMB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzY2ODgz
+MAdvbl9zYWxlo4YBAAAAAACZutk78Jm62Tvw4AOjCgAAAAAAAAEAAAAAAAAAC29ubGluZV9saXZl
+EABoMWMxNzg5MjEzNjY4ODMwHwBIMWPlhrLnqoHmtYvor5VoMWMxNzg5MjEzNjY4ODMwCG9mZl9z
+YWxlo4YBAAAAAACZutk78Jm62TvwILADDg==
+'/*!*/;
+# at 5765
+#260912 19:47:48 server id 1  end_log_pos 5796 CRC32 0x88f61102 	Xid = 24566
+COMMIT/*!*/;
+# at 5796
+#260912 19:47:49 server id 1  end_log_pos 5871 CRC32 0xff0f4a7f 	Anonymous_GTID	last_committed=12	sequence_number=13	rbr_only=yes	original_committed_timestamp=1789213669083436	immediate_commit_timestamp=1789213669083436	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669083436 (2026-09-12 19:47:49.083436 中国标准时间)
+# immediate_commit_timestamp=1789213669083436 (2026-09-12 19:47:49.083436 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669083436*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 5871
+#260912 19:47:49 server id 1  end_log_pos 5964 CRC32 0x10d232fb 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 5964
+#260912 19:47:49 server id 1  end_log_pos 6050 CRC32 0x7ec3daf0 	Table_map: `edu`.`series` mapped to number 67
+# at 6050
+#260912 19:47:49 server id 1  end_log_pos 6301 CRC32 0x2a2ec52e 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAKIXAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/APDaw34=
+5Tulah8BAAAA+wAAAJ0YAAAAAEMAAAAAAAEAAgAO/////+ADowoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzY2ODgzMB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzY2ODgz
+MAhvZmZfc2FsZaOGAQAAAAAAmbrZO/CZutk78OADowoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2
+ZRAAaDFjMTc4OTIxMzY2ODgzMB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzY2ODgzMAVkcmFm
+dKOGAQAAAAAAmbrZO/CZutk78S7FLio=
+'/*!*/;
+# at 6301
+#260912 19:47:49 server id 1  end_log_pos 6332 CRC32 0x56383f82 	Xid = 24575
+COMMIT/*!*/;
+# at 6332
+#260912 19:47:49 server id 1  end_log_pos 6407 CRC32 0x36966083 	Anonymous_GTID	last_committed=13	sequence_number=14	rbr_only=yes	original_committed_timestamp=1789213669161505	immediate_commit_timestamp=1789213669161505	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669161505 (2026-09-12 19:47:49.161505 中国标准时间)
+# immediate_commit_timestamp=1789213669161505 (2026-09-12 19:47:49.161505 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669161505*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 6407
+#260912 19:47:49 server id 1  end_log_pos 6483 CRC32 0x430df424 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 6483
+#260912 19:47:49 server id 1  end_log_pos 6569 CRC32 0xded13f8f 	Table_map: `edu`.`series` mapped to number 67
+# at 6569
+#260912 19:47:49 server id 1  end_log_pos 6710 CRC32 0xffa7c140 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAKkZAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AI8/0d4=
+5TulaiABAAAAjQAAADYaAAAAAEMAAAAAAAEAAgAO///gA6MKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM2Njg4MzAfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM2Njg4MzAF
+ZHJhZnSjhgEAAAAAAJm62TvwmbrZO/FAwaf/
+'/*!*/;
+# at 6710
+#260912 19:47:49 server id 1  end_log_pos 6741 CRC32 0xb853d350 	Xid = 24588
+COMMIT/*!*/;
+# at 6741
+#260912 19:47:49 server id 1  end_log_pos 6816 CRC32 0x4e3a3c18 	Anonymous_GTID	last_committed=14	sequence_number=15	rbr_only=yes	original_committed_timestamp=1789213669207386	immediate_commit_timestamp=1789213669207386	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669207386 (2026-09-12 19:47:49.207386 中国标准时间)
+# immediate_commit_timestamp=1789213669207386 (2026-09-12 19:47:49.207386 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669207386*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 6816
+#260912 19:47:49 server id 1  end_log_pos 6900 CRC32 0x4799e588 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 6900
+#260912 19:47:49 server id 1  end_log_pos 6986 CRC32 0x0cc656a3 	Table_map: `edu`.`series` mapped to number 67
+# at 6986
+#260912 19:47:49 server id 1  end_log_pos 7127 CRC32 0x92ce9acc 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAEobAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AKNWxgw=
+5Tulah4BAAAAjQAAANcbAAAAAEMAAAAAAAEAAgAO///gA6QKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM2NjkxNzAfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM2NjkxNzAF
+ZHJhZnSjhgEAAAAAAJm62TvxmbrZO/HMms6S
+'/*!*/;
+# at 7127
+#260912 19:47:49 server id 1  end_log_pos 7158 CRC32 0xb00d9cce 	Xid = 24593
+COMMIT/*!*/;
+# at 7158
+#260912 19:47:49 server id 1  end_log_pos 7233 CRC32 0x053b243e 	Anonymous_GTID	last_committed=15	sequence_number=16	rbr_only=yes	original_committed_timestamp=1789213669237376	immediate_commit_timestamp=1789213669237376	transaction_length=435
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669237376 (2026-09-12 19:47:49.237376 中国标准时间)
+# immediate_commit_timestamp=1789213669237376 (2026-09-12 19:47:49.237376 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669237376*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 7233
+#260912 19:47:49 server id 1  end_log_pos 7317 CRC32 0x85f597ff 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 7317
+#260912 19:47:49 server id 1  end_log_pos 7404 CRC32 0xad7681be 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 7404
+#260912 19:47:49 server id 1  end_log_pos 7562 CRC32 0x51d5eaf5 	Write_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVwAAAOwcAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wC+gXat
+5Tulah4BAAAAngAAAIodAAAAAEoAAAAAAAEAAgAP//8IAN4eAAAAAAAAAQAAAAAAAACkCgAAAAAA
+AAEAAAAAAAAAEABoMWMxNzg5MjEzNjY5MjEyJQBIMWPnoazliKDlrojljavnj63mrKFoMWMxNzg5
+MjEzNjY5MTcwgAAAA+cACgAAAAAAAAABIdUPn9UPmbrZO/GZutk78fXq1VE=
+'/*!*/;
+# at 7562
+#260912 19:47:49 server id 1  end_log_pos 7593 CRC32 0xa71835ff 	Xid = 24599
+COMMIT/*!*/;
+# at 7593
+#260912 19:47:49 server id 1  end_log_pos 7668 CRC32 0xf173adab 	Anonymous_GTID	last_committed=16	sequence_number=17	rbr_only=yes	original_committed_timestamp=1789213669329869	immediate_commit_timestamp=1789213669329869	transaction_length=568
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669329869 (2026-09-12 19:47:49.329869 中国标准时间)
+# immediate_commit_timestamp=1789213669329869 (2026-09-12 19:47:49.329869 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669329869*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 7668
+#260912 19:47:49 server id 1  end_log_pos 7761 CRC32 0x99400d54 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 7761
+#260912 19:47:49 server id 1  end_log_pos 7848 CRC32 0x57a5c7f5 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 7848
+#260912 19:47:49 server id 1  end_log_pos 8130 CRC32 0x576c84bf 	Update_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVwAAAKgeAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wD1x6VX
+5Tulah8BAAAAGgEAAMIfAAAAAEoAAAAAAAEAAgAP/////wgA3h4AAAAAAAABAAAAAAAAAKQKAAAA
+AAAAAQAAAAAAAAAQAGgxYzE3ODkyMTM2NjkyMTIlAEgxY+ehrOWIoOWuiOWNq+ePreasoWgxYzE3
+ODkyMTM2NjkxNzCAAAAD5wAKAAAAAAAAAAEh1Q+f1Q+Zutk78Zm62TvxCADeHgAAAAAAAAEAAAAA
+AAAApAoAAAAAAAABAAAAAAAAABAAaDFjMTc4OTIxMzY2OTIxMiUASDFj56Gs5Yig5a6I5Y2r54+t
+5qyhaDFjMTc4OTIxMzY2OTE3MIAAAAPnAAoAAAAAAAAAACHVD5/VD5m62TvxmbrZO/G/hGxX
+'/*!*/;
+# at 8130
+#260912 19:47:49 server id 1  end_log_pos 8161 CRC32 0x724c3d73 	Xid = 24613
+COMMIT/*!*/;
+# at 8161
+#260912 19:47:49 server id 1  end_log_pos 8236 CRC32 0x3e8a77fe 	Anonymous_GTID	last_committed=17	sequence_number=18	rbr_only=yes	original_committed_timestamp=1789213669376535	immediate_commit_timestamp=1789213669376535	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669376535 (2026-09-12 19:47:49.376535 中国标准时间)
+# immediate_commit_timestamp=1789213669376535 (2026-09-12 19:47:49.376535 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669376535*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 8236
+#260912 19:47:49 server id 1  end_log_pos 8329 CRC32 0x1c10d19d 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 8329
+#260912 19:47:49 server id 1  end_log_pos 8415 CRC32 0xf01b26ec 	Table_map: `edu`.`series` mapped to number 67
+# at 8415
+#260912 19:47:49 server id 1  end_log_pos 8666 CRC32 0x1d1e42bc 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAN8gAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AOwmG/A=
+5Tulah8BAAAA+wAAANohAAAAAEMAAAAAAAEAAgAO/////+ADpAoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzY2OTE3MB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzY2OTE3
+MAVkcmFmdKOGAQAAAAAAmbrZO/GZutk78eADpAoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2ZRAA
+aDFjMTc4OTIxMzY2OTE3MB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzY2OTE3MAhvZmZfc2Fs
+ZaOGAQAAAAAAmbrZO/GZutk78bxCHh0=
+'/*!*/;
+# at 8666
+#260912 19:47:49 server id 1  end_log_pos 8697 CRC32 0x0318ec1a 	Xid = 24618
+COMMIT/*!*/;
+# at 8697
+#260912 19:47:49 server id 1  end_log_pos 8772 CRC32 0xf246b916 	Anonymous_GTID	last_committed=18	sequence_number=19	rbr_only=yes	original_committed_timestamp=1789213669437658	immediate_commit_timestamp=1789213669437658	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669437658 (2026-09-12 19:47:49.437658 中国标准时间)
+# immediate_commit_timestamp=1789213669437658 (2026-09-12 19:47:49.437658 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669437658*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 8772
+#260912 19:47:49 server id 1  end_log_pos 8856 CRC32 0x621619e0 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 8856
+#260912 19:47:49 server id 1  end_log_pos 8942 CRC32 0xa823610a 	Table_map: `edu`.`series` mapped to number 67
+# at 8942
+#260912 19:47:49 server id 1  end_log_pos 9083 CRC32 0x30f8365e 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAO4iAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AAphI6g=
+5Tulah4BAAAAjQAAAHsjAAAAAEMAAAAAAAEAAgAO///gA6UKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM2NjkzODUfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM2NjkzODUF
+ZHJhZnSjhgEAAAAAAJm62TvxmbrZO/FeNvgw
+'/*!*/;
+# at 9083
+#260912 19:47:49 server id 1  end_log_pos 9114 CRC32 0xdb18fdc7 	Xid = 24623
+COMMIT/*!*/;
+# at 9114
+#260912 19:47:49 server id 1  end_log_pos 9189 CRC32 0xde07070b 	Anonymous_GTID	last_committed=19	sequence_number=20	rbr_only=yes	original_committed_timestamp=1789213669468521	immediate_commit_timestamp=1789213669468521	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213669468521 (2026-09-12 19:47:49.468521 中国标准时间)
+# immediate_commit_timestamp=1789213669468521 (2026-09-12 19:47:49.468521 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213669468521*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 9189
+#260912 19:47:49 server id 1  end_log_pos 9265 CRC32 0x44500a27 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213669/*!*/;
+BEGIN
+/*!*/;
+# at 9265
+#260912 19:47:49 server id 1  end_log_pos 9351 CRC32 0x68c8a0e2 	Table_map: `edu`.`series` mapped to number 67
+# at 9351
+#260912 19:47:49 server id 1  end_log_pos 9492 CRC32 0xf233eff9 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+5TulahMBAAAAVgAAAIckAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AOKgyGg=
+5TulaiABAAAAjQAAABQlAAAAAEMAAAAAAAEAAgAO///gA6UKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM2NjkzODUfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM2NjkzODUF
+ZHJhZnSjhgEAAAAAAJm62TvxmbrZO/H57zPy
+'/*!*/;
+# at 9492
+#260912 19:47:49 server id 1  end_log_pos 9523 CRC32 0x34e260fe 	Xid = 24631
+COMMIT/*!*/;
+# at 9523
+#260912 19:51:44 server id 1  end_log_pos 9598 CRC32 0xef68a30d 	Anonymous_GTID	last_committed=20	sequence_number=21	rbr_only=yes	original_committed_timestamp=1789213904280962	immediate_commit_timestamp=1789213904280962	transaction_length=419
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904280962 (2026-09-12 19:51:44.280962 中国标准时间)
+# immediate_commit_timestamp=1789213904280962 (2026-09-12 19:51:44.280962 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904280962*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 9598
+#260912 19:51:44 server id 1  end_log_pos 9682 CRC32 0xd2013f38 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 9682
+#260912 19:51:44 server id 1  end_log_pos 9768 CRC32 0x527e7e57 	Table_map: `edu`.`series` mapped to number 67
+# at 9768
+#260912 19:51:44 server id 1  end_log_pos 9911 CRC32 0x157c5ba9 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAACgmAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AFd+flI=
+0Dylah4BAAAAjwAAALcmAAAAAEMAAAAAAAEAAgAO///gA6YKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM5MDQxOTMfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM5MDQxOTMH
+b25fc2FsZaOGAQAAAAAAmbrZPOyZutk87KlbfBU=
+'/*!*/;
+# at 9911
+#260912 19:51:44 server id 1  end_log_pos 9942 CRC32 0xe75d54f0 	Xid = 24663
+COMMIT/*!*/;
+# at 9942
+#260912 19:51:44 server id 1  end_log_pos 10017 CRC32 0xe3afd107 	Anonymous_GTID	last_committed=21	sequence_number=22	rbr_only=yes	original_committed_timestamp=1789213904342427	immediate_commit_timestamp=1789213904342427	transaction_length=538
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904342427 (2026-09-12 19:51:44.342427 中国标准时间)
+# immediate_commit_timestamp=1789213904342427 (2026-09-12 19:51:44.342427 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904342427*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 10017
+#260912 19:51:44 server id 1  end_log_pos 10110 CRC32 0x9451ae73 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 10110
+#260912 19:51:44 server id 1  end_log_pos 10196 CRC32 0x4a05c545 	Table_map: `edu`.`series` mapped to number 67
+# at 10196
+#260912 19:51:44 server id 1  end_log_pos 10449 CRC32 0x27bc5aa8 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAANQnAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AEXFBUo=
+0Dylah8BAAAA/QAAANEoAAAAAEMAAAAAAAEAAgAO/////+ADpgoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzkwNDE5Mx8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzkwNDE5
+Mwdvbl9zYWxlo4YBAAAAAACZutk87Jm62Tzs4AOmCgAAAAAAAAEAAAAAAAAAC29ubGluZV9saXZl
+EABoMWMxNzg5MjEzOTA0MTkzHwBIMWPlhrLnqoHmtYvor5VoMWMxNzg5MjEzOTA0MTkzCG9mZl9z
+YWxlo4YBAAAAAACZutk87Jm62TzsqFq8Jw==
+'/*!*/;
+# at 10449
+#260912 19:51:44 server id 1  end_log_pos 10480 CRC32 0xb9dd77e6 	Xid = 24669
+COMMIT/*!*/;
+# at 10480
+#260912 19:51:44 server id 1  end_log_pos 10555 CRC32 0x0814b154 	Anonymous_GTID	last_committed=22	sequence_number=23	rbr_only=yes	original_committed_timestamp=1789213904448584	immediate_commit_timestamp=1789213904448584	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904448584 (2026-09-12 19:51:44.448584 中国标准时间)
+# immediate_commit_timestamp=1789213904448584 (2026-09-12 19:51:44.448584 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904448584*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 10555
+#260912 19:51:44 server id 1  end_log_pos 10648 CRC32 0xff5ad196 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 10648
+#260912 19:51:44 server id 1  end_log_pos 10734 CRC32 0x78545798 	Table_map: `edu`.`series` mapped to number 67
+# at 10734
+#260912 19:51:44 server id 1  end_log_pos 10985 CRC32 0x780284f3 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAAO4pAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AJhXVHg=
+0Dylah8BAAAA+wAAAOkqAAAAAEMAAAAAAAEAAgAO/////+ADpgoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzkwNDE5Mx8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzkwNDE5
+MwhvZmZfc2FsZaOGAQAAAAAAmbrZPOyZutk87OADpgoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2
+ZRAAaDFjMTc4OTIxMzkwNDE5Mx8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzkwNDE5MwVkcmFm
+dKOGAQAAAAAAmbrZPOyZutk87POEAng=
+'/*!*/;
+# at 10985
+#260912 19:51:44 server id 1  end_log_pos 11016 CRC32 0x86f51692 	Xid = 24678
+COMMIT/*!*/;
+# at 11016
+#260912 19:51:44 server id 1  end_log_pos 11091 CRC32 0x56562c2c 	Anonymous_GTID	last_committed=23	sequence_number=24	rbr_only=yes	original_committed_timestamp=1789213904524202	immediate_commit_timestamp=1789213904524202	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904524202 (2026-09-12 19:51:44.524202 中国标准时间)
+# immediate_commit_timestamp=1789213904524202 (2026-09-12 19:51:44.524202 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904524202*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 11091
+#260912 19:51:44 server id 1  end_log_pos 11167 CRC32 0x6762c9a5 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 11167
+#260912 19:51:44 server id 1  end_log_pos 11253 CRC32 0x35f2e0f6 	Table_map: `edu`.`series` mapped to number 67
+# at 11253
+#260912 19:51:44 server id 1  end_log_pos 11394 CRC32 0x43bfe8eb 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAAPUrAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/APbg8jU=
+0DylaiABAAAAjQAAAIIsAAAAAEMAAAAAAAEAAgAO///gA6YKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM5MDQxOTMfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM5MDQxOTMF
+ZHJhZnSjhgEAAAAAAJm62TzsmbrZPOzr6L9D
+'/*!*/;
+# at 11394
+#260912 19:51:44 server id 1  end_log_pos 11425 CRC32 0x2f9c47ff 	Xid = 24691
+COMMIT/*!*/;
+# at 11425
+#260912 19:51:44 server id 1  end_log_pos 11500 CRC32 0x972caee2 	Anonymous_GTID	last_committed=24	sequence_number=25	rbr_only=yes	original_committed_timestamp=1789213904571159	immediate_commit_timestamp=1789213904571159	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904571159 (2026-09-12 19:51:44.571159 中国标准时间)
+# immediate_commit_timestamp=1789213904571159 (2026-09-12 19:51:44.571159 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904571159*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 11500
+#260912 19:51:44 server id 1  end_log_pos 11584 CRC32 0x4142ae90 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 11584
+#260912 19:51:44 server id 1  end_log_pos 11670 CRC32 0x9afc2302 	Table_map: `edu`.`series` mapped to number 67
+# at 11670
+#260912 19:51:44 server id 1  end_log_pos 11811 CRC32 0x5f38472c 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAAJYtAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AAIj/Jo=
+0Dylah4BAAAAjQAAACMuAAAAAEMAAAAAAAEAAgAO///gA6cKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM5MDQ1MzMfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM5MDQ1MzMF
+ZHJhZnSjhgEAAAAAAJm62TzsmbrZPOwsRzhf
+'/*!*/;
+# at 11811
+#260912 19:51:44 server id 1  end_log_pos 11842 CRC32 0x6165abf2 	Xid = 24696
+COMMIT/*!*/;
+# at 11842
+#260912 19:51:44 server id 1  end_log_pos 11917 CRC32 0x9c53dfa2 	Anonymous_GTID	last_committed=25	sequence_number=26	rbr_only=yes	original_committed_timestamp=1789213904631182	immediate_commit_timestamp=1789213904631182	transaction_length=435
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904631182 (2026-09-12 19:51:44.631182 中国标准时间)
+# immediate_commit_timestamp=1789213904631182 (2026-09-12 19:51:44.631182 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904631182*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 11917
+#260912 19:51:44 server id 1  end_log_pos 12001 CRC32 0x76423f9d 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 12001
+#260912 19:51:44 server id 1  end_log_pos 12088 CRC32 0x9d616020 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 12088
+#260912 19:51:44 server id 1  end_log_pos 12246 CRC32 0x452394ba 	Write_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVwAAADgvAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wAgYGGd
+0Dylah4BAAAAngAAANYvAAAAAEoAAAAAAAEAAgAP//8IAN8eAAAAAAAAAQAAAAAAAACnCgAAAAAA
+AAEAAAAAAAAAEABoMWMxNzg5MjEzOTA0NTc2JQBIMWPnoazliKDlrojljavnj63mrKFoMWMxNzg5
+MjEzOTA0NTMzgAAAA+cACgAAAAAAAAABIdUPn9UPmbrZPOyZutk87LqUI0U=
+'/*!*/;
+# at 12246
+#260912 19:51:44 server id 1  end_log_pos 12277 CRC32 0x37f47a66 	Xid = 24702
+COMMIT/*!*/;
+# at 12277
+#260912 19:51:44 server id 1  end_log_pos 12352 CRC32 0xe18bce4a 	Anonymous_GTID	last_committed=26	sequence_number=27	rbr_only=yes	original_committed_timestamp=1789213904737513	immediate_commit_timestamp=1789213904737513	transaction_length=568
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904737513 (2026-09-12 19:51:44.737513 中国标准时间)
+# immediate_commit_timestamp=1789213904737513 (2026-09-12 19:51:44.737513 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904737513*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 12352
+#260912 19:51:44 server id 1  end_log_pos 12445 CRC32 0x93f8017b 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 12445
+#260912 19:51:44 server id 1  end_log_pos 12532 CRC32 0xbfc3d52f 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 12532
+#260912 19:51:44 server id 1  end_log_pos 12814 CRC32 0x4a20d17a 	Update_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVwAAAPQwAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wAv1cO/
+0Dylah8BAAAAGgEAAA4yAAAAAEoAAAAAAAEAAgAP/////wgA3x4AAAAAAAABAAAAAAAAAKcKAAAA
+AAAAAQAAAAAAAAAQAGgxYzE3ODkyMTM5MDQ1NzYlAEgxY+ehrOWIoOWuiOWNq+ePreasoWgxYzE3
+ODkyMTM5MDQ1MzOAAAAD5wAKAAAAAAAAAAEh1Q+f1Q+Zutk87Jm62TzsCADfHgAAAAAAAAEAAAAA
+AAAApwoAAAAAAAABAAAAAAAAABAAaDFjMTc4OTIxMzkwNDU3NiUASDFj56Gs5Yig5a6I5Y2r54+t
+5qyhaDFjMTc4OTIxMzkwNDUzM4AAAAPnAAoAAAAAAAAAACHVD5/VD5m62TzsmbrZPOx60SBK
+'/*!*/;
+# at 12814
+#260912 19:51:44 server id 1  end_log_pos 12845 CRC32 0xeeb095bc 	Xid = 24716
+COMMIT/*!*/;
+# at 12845
+#260912 19:51:44 server id 1  end_log_pos 12920 CRC32 0x2c90f103 	Anonymous_GTID	last_committed=27	sequence_number=28	rbr_only=yes	original_committed_timestamp=1789213904769427	immediate_commit_timestamp=1789213904769427	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904769427 (2026-09-12 19:51:44.769427 中国标准时间)
+# immediate_commit_timestamp=1789213904769427 (2026-09-12 19:51:44.769427 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904769427*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 12920
+#260912 19:51:44 server id 1  end_log_pos 13013 CRC32 0x50cce401 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 13013
+#260912 19:51:44 server id 1  end_log_pos 13099 CRC32 0x39d69f1c 	Table_map: `edu`.`series` mapped to number 67
+# at 13099
+#260912 19:51:44 server id 1  end_log_pos 13350 CRC32 0x51ec17fa 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAACszAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AByf1jk=
+0Dylah8BAAAA+wAAACY0AAAAAEMAAAAAAAEAAgAO/////+ADpwoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxMzkwNDUzMx8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzkwNDUz
+MwVkcmFmdKOGAQAAAAAAmbrZPOyZutk87OADpwoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2ZRAA
+aDFjMTc4OTIxMzkwNDUzMx8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxMzkwNDUzMwhvZmZfc2Fs
+ZaOGAQAAAAAAmbrZPOyZutk87PoX7FE=
+'/*!*/;
+# at 13350
+#260912 19:51:44 server id 1  end_log_pos 13381 CRC32 0x166fff84 	Xid = 24721
+COMMIT/*!*/;
+# at 13381
+#260912 19:51:44 server id 1  end_log_pos 13456 CRC32 0xd1f33ae8 	Anonymous_GTID	last_committed=28	sequence_number=29	rbr_only=yes	original_committed_timestamp=1789213904801135	immediate_commit_timestamp=1789213904801135	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904801135 (2026-09-12 19:51:44.801135 中国标准时间)
+# immediate_commit_timestamp=1789213904801135 (2026-09-12 19:51:44.801135 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904801135*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 13456
+#260912 19:51:44 server id 1  end_log_pos 13540 CRC32 0x5726bc15 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 13540
+#260912 19:51:44 server id 1  end_log_pos 13626 CRC32 0x54124ca7 	Table_map: `edu`.`series` mapped to number 67
+# at 13626
+#260912 19:51:44 server id 1  end_log_pos 13767 CRC32 0xb448dffc 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAADo1AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AKdMElQ=
+0Dylah4BAAAAjQAAAMc1AAAAAEMAAAAAAAEAAgAO///gA6gKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM5MDQ3NzkfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM5MDQ3NzkF
+ZHJhZnSjhgEAAAAAAJm62TzsmbrZPOz830i0
+'/*!*/;
+# at 13767
+#260912 19:51:44 server id 1  end_log_pos 13798 CRC32 0xf34a9df9 	Xid = 24726
+COMMIT/*!*/;
+# at 13798
+#260912 19:51:44 server id 1  end_log_pos 13873 CRC32 0x6d1feded 	Anonymous_GTID	last_committed=29	sequence_number=30	rbr_only=yes	original_committed_timestamp=1789213904862538	immediate_commit_timestamp=1789213904862538	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789213904862538 (2026-09-12 19:51:44.862538 中国标准时间)
+# immediate_commit_timestamp=1789213904862538 (2026-09-12 19:51:44.862538 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789213904862538*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 13873
+#260912 19:51:44 server id 1  end_log_pos 13949 CRC32 0x4649ea23 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789213904/*!*/;
+BEGIN
+/*!*/;
+# at 13949
+#260912 19:51:44 server id 1  end_log_pos 14035 CRC32 0x8cddbfb5 	Table_map: `edu`.`series` mapped to number 67
+# at 14035
+#260912 19:51:44 server id 1  end_log_pos 14176 CRC32 0xd1e7af0f 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+0DylahMBAAAAVgAAANM2AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ALW/3Yw=
+0DylaiABAAAAjQAAAGA3AAAAAEMAAAAAAAEAAgAO///gA6gKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTM5MDQ3NzkfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTM5MDQ3NzkF
+ZHJhZnSjhgEAAAAAAJm62TzsmbrZPOwPr+fR
+'/*!*/;
+# at 14176
+#260912 19:51:44 server id 1  end_log_pos 14207 CRC32 0x0b641fc9 	Xid = 24734
+COMMIT/*!*/;
+# at 14207
+#260912 19:53:35 server id 1  end_log_pos 14282 CRC32 0x70b60d76 	Anonymous_GTID	last_committed=30	sequence_number=31	rbr_only=yes	original_committed_timestamp=1789214015791359	immediate_commit_timestamp=1789214015791359	transaction_length=419
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214015791359 (2026-09-12 19:53:35.791359 中国标准时间)
+# immediate_commit_timestamp=1789214015791359 (2026-09-12 19:53:35.791359 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214015791359*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 14282
+#260912 19:53:35 server id 1  end_log_pos 14366 CRC32 0xc9f68396 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214015/*!*/;
+BEGIN
+/*!*/;
+# at 14366
+#260912 19:53:35 server id 1  end_log_pos 14452 CRC32 0x00c8965d 	Table_map: `edu`.`series` mapped to number 67
+# at 14452
+#260912 19:53:35 server id 1  end_log_pos 14595 CRC32 0xe21ac231 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+Pz2lahMBAAAAVgAAAHQ4AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AF2WyAA=
+Pz2lah4BAAAAjwAAAAM5AAAAAEMAAAAAAAEAAgAO///gA6kKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwMTU3NjYfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwMTU3NjYH
+b25fc2FsZaOGAQAAAAAAmbrZPWOZutk9YzHCGuI=
+'/*!*/;
+# at 14595
+#260912 19:53:35 server id 1  end_log_pos 14626 CRC32 0x8cc77ba6 	Xid = 24743
+COMMIT/*!*/;
+# at 14626
+#260912 19:53:35 server id 1  end_log_pos 14701 CRC32 0x43ae786f 	Anonymous_GTID	last_committed=31	sequence_number=32	rbr_only=yes	original_committed_timestamp=1789214015818826	immediate_commit_timestamp=1789214015818826	transaction_length=538
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214015818826 (2026-09-12 19:53:35.818826 中国标准时间)
+# immediate_commit_timestamp=1789214015818826 (2026-09-12 19:53:35.818826 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214015818826*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 14701
+#260912 19:53:35 server id 1  end_log_pos 14794 CRC32 0x8e87a5bb 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214015/*!*/;
+BEGIN
+/*!*/;
+# at 14794
+#260912 19:53:35 server id 1  end_log_pos 14880 CRC32 0xe18e4709 	Table_map: `edu`.`series` mapped to number 67
+# at 14880
+#260912 19:53:35 server id 1  end_log_pos 15133 CRC32 0xdcb8438c 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+Pz2lahMBAAAAVgAAACA6AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AAlHjuE=
+Pz2lah8BAAAA/QAAAB07AAAAAEMAAAAAAAEAAgAO/////+ADqQoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDAxNTc2Nh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDAxNTc2
+Ngdvbl9zYWxlo4YBAAAAAACZutk9Y5m62T1j4AOpCgAAAAAAAAEAAAAAAAAAC29ubGluZV9saXZl
+EABoMWMxNzg5MjE0MDE1NzY2HwBIMWPlhrLnqoHmtYvor5VoMWMxNzg5MjE0MDE1NzY2CG9mZl9z
+YWxlo4YBAAAAAACZutk9Y5m62T1jjEO43A==
+'/*!*/;
+# at 15133
+#260912 19:53:35 server id 1  end_log_pos 15164 CRC32 0xd072bbc9 	Xid = 24749
+COMMIT/*!*/;
+# at 15164
+#260912 19:53:35 server id 1  end_log_pos 15239 CRC32 0xf9253198 	Anonymous_GTID	last_committed=32	sequence_number=33	rbr_only=yes	original_committed_timestamp=1789214015910502	immediate_commit_timestamp=1789214015910502	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214015910502 (2026-09-12 19:53:35.910502 中国标准时间)
+# immediate_commit_timestamp=1789214015910502 (2026-09-12 19:53:35.910502 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214015910502*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 15239
+#260912 19:53:35 server id 1  end_log_pos 15332 CRC32 0x5e4861ab 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214015/*!*/;
+BEGIN
+/*!*/;
+# at 15332
+#260912 19:53:35 server id 1  end_log_pos 15418 CRC32 0x36aaead2 	Table_map: `edu`.`series` mapped to number 67
+# at 15418
+#260912 19:53:35 server id 1  end_log_pos 15669 CRC32 0x2b55db95 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+Pz2lahMBAAAAVgAAADo8AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ANLqqjY=
+Pz2lah8BAAAA+wAAADU9AAAAAEMAAAAAAAEAAgAO/////+ADqQoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDAxNTc2Nh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDAxNTc2
+NghvZmZfc2FsZaOGAQAAAAAAmbrZPWOZutk9Y+ADqQoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2
+ZRAAaDFjMTc4OTIxNDAxNTc2Nh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDAxNTc2NgVkcmFm
+dKOGAQAAAAAAmbrZPWOZutk9Y5XbVSs=
+'/*!*/;
+# at 15669
+#260912 19:53:35 server id 1  end_log_pos 15700 CRC32 0xeec2d876 	Xid = 24758
+COMMIT/*!*/;
+# at 15700
+#260912 19:53:35 server id 1  end_log_pos 15775 CRC32 0x1d9f53cb 	Anonymous_GTID	last_committed=33	sequence_number=34	rbr_only=yes	original_committed_timestamp=1789214015985021	immediate_commit_timestamp=1789214015985021	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214015985021 (2026-09-12 19:53:35.985021 中国标准时间)
+# immediate_commit_timestamp=1789214015985021 (2026-09-12 19:53:35.985021 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214015985021*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 15775
+#260912 19:53:35 server id 1  end_log_pos 15851 CRC32 0xf2ef96e4 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214015/*!*/;
+BEGIN
+/*!*/;
+# at 15851
+#260912 19:53:35 server id 1  end_log_pos 15937 CRC32 0xf5804a00 	Table_map: `edu`.`series` mapped to number 67
+# at 15937
+#260912 19:53:35 server id 1  end_log_pos 16078 CRC32 0x2c2c720c 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+Pz2lahMBAAAAVgAAAEE+AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AABKgPU=
+Pz2laiABAAAAjQAAAM4+AAAAAEMAAAAAAAEAAgAO///gA6kKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwMTU3NjYfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwMTU3NjYF
+ZHJhZnSjhgEAAAAAAJm62T1jmbrZPWMMciws
+'/*!*/;
+# at 16078
+#260912 19:53:35 server id 1  end_log_pos 16109 CRC32 0x314b7f5a 	Xid = 24771
+COMMIT/*!*/;
+# at 16109
+#260912 19:53:36 server id 1  end_log_pos 16184 CRC32 0x864ef2ed 	Anonymous_GTID	last_committed=34	sequence_number=35	rbr_only=yes	original_committed_timestamp=1789214016029616	immediate_commit_timestamp=1789214016029616	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016029616 (2026-09-12 19:53:36.029616 中国标准时间)
+# immediate_commit_timestamp=1789214016029616 (2026-09-12 19:53:36.029616 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016029616*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 16184
+#260912 19:53:36 server id 1  end_log_pos 16268 CRC32 0xa477a8ad 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 16268
+#260912 19:53:36 server id 1  end_log_pos 16354 CRC32 0x723110d6 	Table_map: `edu`.`series` mapped to number 67
+# at 16354
+#260912 19:53:36 server id 1  end_log_pos 16495 CRC32 0x4917c0e8 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVgAAAOI/AAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ANYQMXI=
+QD2lah4BAAAAjQAAAG9AAAAAAEMAAAAAAAEAAgAO///gA6oKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwMTU5OTQfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwMTU5OTQF
+ZHJhZnSjhgEAAAAAAJm62T1kmbrZPWTowBdJ
+'/*!*/;
+# at 16495
+#260912 19:53:36 server id 1  end_log_pos 16526 CRC32 0x8ce67f2c 	Xid = 24776
+COMMIT/*!*/;
+# at 16526
+#260912 19:53:36 server id 1  end_log_pos 16601 CRC32 0x11cb6d15 	Anonymous_GTID	last_committed=35	sequence_number=36	rbr_only=yes	original_committed_timestamp=1789214016059143	immediate_commit_timestamp=1789214016059143	transaction_length=435
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016059143 (2026-09-12 19:53:36.059143 中国标准时间)
+# immediate_commit_timestamp=1789214016059143 (2026-09-12 19:53:36.059143 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016059143*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 16601
+#260912 19:53:36 server id 1  end_log_pos 16685 CRC32 0x07d01fba 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 16685
+#260912 19:53:36 server id 1  end_log_pos 16772 CRC32 0xaa8e7c45 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 16772
+#260912 19:53:36 server id 1  end_log_pos 16930 CRC32 0xb2d9123e 	Write_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVwAAAIRBAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wBFfI6q
+QD2lah4BAAAAngAAACJCAAAAAEoAAAAAAAEAAgAP//8IAOAeAAAAAAAAAQAAAAAAAACqCgAAAAAA
+AAEAAAAAAAAAEABoMWMxNzg5MjE0MDE2MDM1JQBIMWPnoazliKDlrojljavnj63mrKFoMWMxNzg5
+MjE0MDE1OTk0gAAAA+cACgAAAAAAAAABIdUPn9UPmbrZPWSZutk9ZD4S2bI=
+'/*!*/;
+# at 16930
+#260912 19:53:36 server id 1  end_log_pos 16961 CRC32 0xbe8b6f05 	Xid = 24782
+COMMIT/*!*/;
+# at 16961
+#260912 19:53:36 server id 1  end_log_pos 17036 CRC32 0x5ff1c0ca 	Anonymous_GTID	last_committed=36	sequence_number=37	rbr_only=yes	original_committed_timestamp=1789214016180623	immediate_commit_timestamp=1789214016180623	transaction_length=568
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016180623 (2026-09-12 19:53:36.180623 中国标准时间)
+# immediate_commit_timestamp=1789214016180623 (2026-09-12 19:53:36.180623 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016180623*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 17036
+#260912 19:53:36 server id 1  end_log_pos 17129 CRC32 0xbf38b106 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 17129
+#260912 19:53:36 server id 1  end_log_pos 17216 CRC32 0x3adf8430 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 17216
+#260912 19:53:36 server id 1  end_log_pos 17498 CRC32 0x79e949a8 	Update_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVwAAAEBDAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wAwhN86
+QD2lah8BAAAAGgEAAFpEAAAAAEoAAAAAAAEAAgAP/////wgA4B4AAAAAAAABAAAAAAAAAKoKAAAA
+AAAAAQAAAAAAAAAQAGgxYzE3ODkyMTQwMTYwMzUlAEgxY+ehrOWIoOWuiOWNq+ePreasoWgxYzE3
+ODkyMTQwMTU5OTSAAAAD5wAKAAAAAAAAAAEh1Q+f1Q+Zutk9ZJm62T1kCADgHgAAAAAAAAEAAAAA
+AAAAqgoAAAAAAAABAAAAAAAAABAAaDFjMTc4OTIxNDAxNjAzNSUASDFj56Gs5Yig5a6I5Y2r54+t
+5qyhaDFjMTc4OTIxNDAxNTk5NIAAAAPnAAoAAAAAAAAAACHVD5/VD5m62T1kmbrZPWSoSel5
+'/*!*/;
+# at 17498
+#260912 19:53:36 server id 1  end_log_pos 17529 CRC32 0xb87fdc0c 	Xid = 24796
+COMMIT/*!*/;
+# at 17529
+#260912 19:53:36 server id 1  end_log_pos 17604 CRC32 0x8b5492dd 	Anonymous_GTID	last_committed=37	sequence_number=38	rbr_only=yes	original_committed_timestamp=1789214016226523	immediate_commit_timestamp=1789214016226523	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016226523 (2026-09-12 19:53:36.226523 中国标准时间)
+# immediate_commit_timestamp=1789214016226523 (2026-09-12 19:53:36.226523 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016226523*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 17604
+#260912 19:53:36 server id 1  end_log_pos 17697 CRC32 0x545c61f9 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 17697
+#260912 19:53:36 server id 1  end_log_pos 17783 CRC32 0xc88181ad 	Table_map: `edu`.`series` mapped to number 67
+# at 17783
+#260912 19:53:36 server id 1  end_log_pos 18034 CRC32 0x7c59f713 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVgAAAHdFAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AK2Bgcg=
+QD2lah8BAAAA+wAAAHJGAAAAAEMAAAAAAAEAAgAO/////+ADqgoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDAxNTk5NB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDAxNTk5
+NAVkcmFmdKOGAQAAAAAAmbrZPWSZutk9ZOADqgoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2ZRAA
+aDFjMTc4OTIxNDAxNTk5NB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDAxNTk5NAhvZmZfc2Fs
+ZaOGAQAAAAAAmbrZPWSZutk9ZBP3WXw=
+'/*!*/;
+# at 18034
+#260912 19:53:36 server id 1  end_log_pos 18065 CRC32 0xfa1c5116 	Xid = 24801
+COMMIT/*!*/;
+# at 18065
+#260912 19:53:36 server id 1  end_log_pos 18140 CRC32 0xf4fc1ed9 	Anonymous_GTID	last_committed=38	sequence_number=39	rbr_only=yes	original_committed_timestamp=1789214016257546	immediate_commit_timestamp=1789214016257546	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016257546 (2026-09-12 19:53:36.257546 中国标准时间)
+# immediate_commit_timestamp=1789214016257546 (2026-09-12 19:53:36.257546 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016257546*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 18140
+#260912 19:53:36 server id 1  end_log_pos 18224 CRC32 0xb50bd7c9 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 18224
+#260912 19:53:36 server id 1  end_log_pos 18310 CRC32 0x56d0ef72 	Table_map: `edu`.`series` mapped to number 67
+# at 18310
+#260912 19:53:36 server id 1  end_log_pos 18451 CRC32 0x35b05b0b 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVgAAAIZHAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AHLv0FY=
+QD2lah4BAAAAjQAAABNIAAAAAEMAAAAAAAEAAgAO///gA6sKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwMTYyMzUfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwMTYyMzUF
+ZHJhZnSjhgEAAAAAAJm62T1kmbrZPWQLW7A1
+'/*!*/;
+# at 18451
+#260912 19:53:36 server id 1  end_log_pos 18482 CRC32 0x3849e65e 	Xid = 24806
+COMMIT/*!*/;
+# at 18482
+#260912 19:53:36 server id 1  end_log_pos 18557 CRC32 0x0f111466 	Anonymous_GTID	last_committed=39	sequence_number=40	rbr_only=yes	original_committed_timestamp=1789214016303751	immediate_commit_timestamp=1789214016303751	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214016303751 (2026-09-12 19:53:36.303751 中国标准时间)
+# immediate_commit_timestamp=1789214016303751 (2026-09-12 19:53:36.303751 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214016303751*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 18557
+#260912 19:53:36 server id 1  end_log_pos 18633 CRC32 0x00ebc0d1 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214016/*!*/;
+BEGIN
+/*!*/;
+# at 18633
+#260912 19:53:36 server id 1  end_log_pos 18719 CRC32 0x881ac1ef 	Table_map: `edu`.`series` mapped to number 67
+# at 18719
+#260912 19:53:36 server id 1  end_log_pos 18860 CRC32 0x69685542 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+QD2lahMBAAAAVgAAAB9JAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AO/BGog=
+QD2laiABAAAAjQAAAKxJAAAAAEMAAAAAAAEAAgAO///gA6sKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwMTYyMzUfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwMTYyMzUF
+ZHJhZnSjhgEAAAAAAJm62T1kmbrZPWRCVWhp
+'/*!*/;
+# at 18860
+#260912 19:53:36 server id 1  end_log_pos 18891 CRC32 0xf1708789 	Xid = 24814
+COMMIT/*!*/;
+# at 18891
+#260912 19:54:46 server id 1  end_log_pos 18966 CRC32 0x55a457fc 	Anonymous_GTID	last_committed=40	sequence_number=41	rbr_only=yes	original_committed_timestamp=1789214086881963	immediate_commit_timestamp=1789214086881963	transaction_length=419
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214086881963 (2026-09-12 19:54:46.881963 中国标准时间)
+# immediate_commit_timestamp=1789214086881963 (2026-09-12 19:54:46.881963 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214086881963*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 18966
+#260912 19:54:46 server id 1  end_log_pos 19050 CRC32 0x86bae6ef 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214086/*!*/;
+BEGIN
+/*!*/;
+# at 19050
+#260912 19:54:46 server id 1  end_log_pos 19136 CRC32 0x0584a740 	Table_map: `edu`.`series` mapped to number 67
+# at 19136
+#260912 19:54:46 server id 1  end_log_pos 19279 CRC32 0xcae30311 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hj2lahMBAAAAVgAAAMBKAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AECnhAU=
+hj2lah4BAAAAjwAAAE9LAAAAAEMAAAAAAAEAAgAO///gA6wKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwODY4NDgfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwODY4NDgH
+b25fc2FsZaOGAQAAAAAAmbrZPa6Zutk9rhED48o=
+'/*!*/;
+# at 19279
+#260912 19:54:46 server id 1  end_log_pos 19310 CRC32 0xb8a0472c 	Xid = 24823
+COMMIT/*!*/;
+# at 19310
+#260912 19:54:46 server id 1  end_log_pos 19385 CRC32 0x9ed5fb81 	Anonymous_GTID	last_committed=41	sequence_number=42	rbr_only=yes	original_committed_timestamp=1789214086940426	immediate_commit_timestamp=1789214086940426	transaction_length=538
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214086940426 (2026-09-12 19:54:46.940426 中国标准时间)
+# immediate_commit_timestamp=1789214086940426 (2026-09-12 19:54:46.940426 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214086940426*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 19385
+#260912 19:54:46 server id 1  end_log_pos 19478 CRC32 0x5cdb82cd 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214086/*!*/;
+BEGIN
+/*!*/;
+# at 19478
+#260912 19:54:46 server id 1  end_log_pos 19564 CRC32 0x34f4ce9f 	Table_map: `edu`.`series` mapped to number 67
+# at 19564
+#260912 19:54:46 server id 1  end_log_pos 19817 CRC32 0x0b50ebd2 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hj2lahMBAAAAVgAAAGxMAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AJ/O9DQ=
+hj2lah8BAAAA/QAAAGlNAAAAAEMAAAAAAAEAAgAO/////+ADrAoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDA4Njg0OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDA4Njg0
+OAdvbl9zYWxlo4YBAAAAAACZutk9rpm62T2u4AOsCgAAAAAAAAEAAAAAAAAAC29ubGluZV9saXZl
+EABoMWMxNzg5MjE0MDg2ODQ4HwBIMWPlhrLnqoHmtYvor5VoMWMxNzg5MjE0MDg2ODQ4CG9mZl9z
+YWxlo4YBAAAAAACZutk9rpm62T2u0utQCw==
+'/*!*/;
+# at 19817
+#260912 19:54:46 server id 1  end_log_pos 19848 CRC32 0x7ee9af44 	Xid = 24829
+COMMIT/*!*/;
+# at 19848
+#260912 19:54:47 server id 1  end_log_pos 19923 CRC32 0x8b1667e2 	Anonymous_GTID	last_committed=42	sequence_number=43	rbr_only=yes	original_committed_timestamp=1789214087018373	immediate_commit_timestamp=1789214087018373	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087018373 (2026-09-12 19:54:47.018373 中国标准时间)
+# immediate_commit_timestamp=1789214087018373 (2026-09-12 19:54:47.018373 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087018373*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 19923
+#260912 19:54:47 server id 1  end_log_pos 20016 CRC32 0x411bb723 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 20016
+#260912 19:54:47 server id 1  end_log_pos 20102 CRC32 0xe419c62f 	Table_map: `edu`.`series` mapped to number 67
+# at 20102
+#260912 19:54:47 server id 1  end_log_pos 20353 CRC32 0xcf32b3d5 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAAIZOAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AC/GGeQ=
+hz2lah8BAAAA+wAAAIFPAAAAAEMAAAAAAAEAAgAO/////+ADrAoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDA4Njg0OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDA4Njg0
+OAhvZmZfc2FsZaOGAQAAAAAAmbrZPa6Zutk9ruADrAoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2
+ZRAAaDFjMTc4OTIxNDA4Njg0OB8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDA4Njg0OAVkcmFm
+dKOGAQAAAAAAmbrZPa6Zutk9r9WzMs8=
+'/*!*/;
+# at 20353
+#260912 19:54:47 server id 1  end_log_pos 20384 CRC32 0x8a726408 	Xid = 24838
+COMMIT/*!*/;
+# at 20384
+#260912 19:54:47 server id 1  end_log_pos 20459 CRC32 0x8436dc56 	Anonymous_GTID	last_committed=43	sequence_number=44	rbr_only=yes	original_committed_timestamp=1789214087126360	immediate_commit_timestamp=1789214087126360	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087126360 (2026-09-12 19:54:47.126360 中国标准时间)
+# immediate_commit_timestamp=1789214087126360 (2026-09-12 19:54:47.126360 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087126360*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 20459
+#260912 19:54:47 server id 1  end_log_pos 20535 CRC32 0x9c9c88b3 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 20535
+#260912 19:54:47 server id 1  end_log_pos 20621 CRC32 0xa167be35 	Table_map: `edu`.`series` mapped to number 67
+# at 20621
+#260912 19:54:47 server id 1  end_log_pos 20762 CRC32 0x11b3ef80 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAAI1QAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ADW+Z6E=
+hz2laiABAAAAjQAAABpRAAAAAEMAAAAAAAEAAgAO///gA6wKAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwODY4NDgfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwODY4NDgF
+ZHJhZnSjhgEAAAAAAJm62T2umbrZPa+A77MR
+'/*!*/;
+# at 20762
+#260912 19:54:47 server id 1  end_log_pos 20793 CRC32 0xbb5fdde3 	Xid = 24851
+COMMIT/*!*/;
+# at 20793
+#260912 19:54:47 server id 1  end_log_pos 20868 CRC32 0xecce8ec6 	Anonymous_GTID	last_committed=44	sequence_number=45	rbr_only=yes	original_committed_timestamp=1789214087158146	immediate_commit_timestamp=1789214087158146	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087158146 (2026-09-12 19:54:47.158146 中国标准时间)
+# immediate_commit_timestamp=1789214087158146 (2026-09-12 19:54:47.158146 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087158146*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 20868
+#260912 19:54:47 server id 1  end_log_pos 20952 CRC32 0x3f6f0bde 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 20952
+#260912 19:54:47 server id 1  end_log_pos 21038 CRC32 0x87873231 	Table_map: `edu`.`series` mapped to number 67
+# at 21038
+#260912 19:54:47 server id 1  end_log_pos 21179 CRC32 0x1d96dd2b 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAAC5SAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ADEyh4c=
+hz2lah4BAAAAjQAAALtSAAAAAEMAAAAAAAEAAgAO///gA60KAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwODcxMzYfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwODcxMzYF
+ZHJhZnSjhgEAAAAAAJm62T2vmbrZPa8r3ZYd
+'/*!*/;
+# at 21179
+#260912 19:54:47 server id 1  end_log_pos 21210 CRC32 0x2830e86b 	Xid = 24856
+COMMIT/*!*/;
+# at 21210
+#260912 19:54:47 server id 1  end_log_pos 21285 CRC32 0xbf2acde2 	Anonymous_GTID	last_committed=45	sequence_number=46	rbr_only=yes	original_committed_timestamp=1789214087188377	immediate_commit_timestamp=1789214087188377	transaction_length=435
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087188377 (2026-09-12 19:54:47.188377 中国标准时间)
+# immediate_commit_timestamp=1789214087188377 (2026-09-12 19:54:47.188377 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087188377*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 21285
+#260912 19:54:47 server id 1  end_log_pos 21369 CRC32 0x418637cc 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 21369
+#260912 19:54:47 server id 1  end_log_pos 21456 CRC32 0x25a7328a 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 21456
+#260912 19:54:47 server id 1  end_log_pos 21614 CRC32 0x8d0694c3 	Write_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVwAAANBTAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wCKMqcl
+hz2lah4BAAAAngAAAG5UAAAAAEoAAAAAAAEAAgAP//8IAOEeAAAAAAAAAQAAAAAAAACtCgAAAAAA
+AAEAAAAAAAAAEABoMWMxNzg5MjE0MDg3MTY0JQBIMWPnoazliKDlrojljavnj63mrKFoMWMxNzg5
+MjE0MDg3MTM2gAAAA+cACgAAAAAAAAABIdUPn9UPmbrZPa+Zutk9r8OUBo0=
+'/*!*/;
+# at 21614
+#260912 19:54:47 server id 1  end_log_pos 21645 CRC32 0x0c7c5f6c 	Xid = 24862
+COMMIT/*!*/;
+# at 21645
+#260912 19:54:47 server id 1  end_log_pos 21720 CRC32 0x6f43b644 	Anonymous_GTID	last_committed=46	sequence_number=47	rbr_only=yes	original_committed_timestamp=1789214087281482	immediate_commit_timestamp=1789214087281482	transaction_length=568
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087281482 (2026-09-12 19:54:47.281482 中国标准时间)
+# immediate_commit_timestamp=1789214087281482 (2026-09-12 19:54:47.281482 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087281482*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 21720
+#260912 19:54:47 server id 1  end_log_pos 21813 CRC32 0x0e75eeb5 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 21813
+#260912 19:54:47 server id 1  end_log_pos 21900 CRC32 0x0d15d55f 	Table_map: `edu`.`series_cohort` mapped to number 74
+# at 21900
+#260912 19:54:47 server id 1  end_log_pos 22182 CRC32 0x095dd360 	Update_rows: table id 74 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVwAAAIxVAAAAAEoAAAAAAAMAA2VkdQANc2VyaWVzX2NvaG9ydAAPCAgICAgPD/YD
+AwEKChISCAABAAIMAgAACBABAgAAAgP8/wBf1RUN
+hz2lah8BAAAAGgEAAKZWAAAAAEoAAAAAAAEAAgAP/////wgA4R4AAAAAAAABAAAAAAAAAK0KAAAA
+AAAAAQAAAAAAAAAQAGgxYzE3ODkyMTQwODcxNjQlAEgxY+ehrOWIoOWuiOWNq+ePreasoWgxYzE3
+ODkyMTQwODcxMzaAAAAD5wAKAAAAAAAAAAEh1Q+f1Q+Zutk9r5m62T2vCADhHgAAAAAAAAEAAAAA
+AAAArQoAAAAAAAABAAAAAAAAABAAaDFjMTc4OTIxNDA4NzE2NCUASDFj56Gs5Yig5a6I5Y2r54+t
+5qyhaDFjMTc4OTIxNDA4NzEzNoAAAAPnAAoAAAAAAAAAACHVD5/VD5m62T2vmbrZPa9g010J
+'/*!*/;
+# at 22182
+#260912 19:54:47 server id 1  end_log_pos 22213 CRC32 0xd92857e0 	Xid = 24876
+COMMIT/*!*/;
+# at 22213
+#260912 19:54:47 server id 1  end_log_pos 22288 CRC32 0xd07275f1 	Anonymous_GTID	last_committed=47	sequence_number=48	rbr_only=yes	original_committed_timestamp=1789214087328091	immediate_commit_timestamp=1789214087328091	transaction_length=536
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087328091 (2026-09-12 19:54:47.328091 中国标准时间)
+# immediate_commit_timestamp=1789214087328091 (2026-09-12 19:54:47.328091 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087328091*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 22288
+#260912 19:54:47 server id 1  end_log_pos 22381 CRC32 0x44573562 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 22381
+#260912 19:54:47 server id 1  end_log_pos 22467 CRC32 0x38436adc 	Table_map: `edu`.`series` mapped to number 67
+# at 22467
+#260912 19:54:47 server id 1  end_log_pos 22718 CRC32 0x9e3fa6b9 	Update_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAAMNXAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/ANxqQzg=
+hz2lah8BAAAA+wAAAL5YAAAAAEMAAAAAAAEAAgAO/////+ADrQoAAAAAAAABAAAAAAAAAAtvbmxp
+bmVfbGl2ZRAAaDFjMTc4OTIxNDA4NzEzNh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDA4NzEz
+NgVkcmFmdKOGAQAAAAAAmbrZPa+Zutk9r+ADrQoAAAAAAAABAAAAAAAAAAtvbmxpbmVfbGl2ZRAA
+aDFjMTc4OTIxNDA4NzEzNh8ASDFj5Yay56qB5rWL6K+VaDFjMTc4OTIxNDA4NzEzNghvZmZfc2Fs
+ZaOGAQAAAAAAmbrZPa+Zutk9r7mmP54=
+'/*!*/;
+# at 22718
+#260912 19:54:47 server id 1  end_log_pos 22749 CRC32 0x919b5df0 	Xid = 24881
+COMMIT/*!*/;
+# at 22749
+#260912 19:54:47 server id 1  end_log_pos 22824 CRC32 0x0d669a02 	Anonymous_GTID	last_committed=48	sequence_number=49	rbr_only=yes	original_committed_timestamp=1789214087376511	immediate_commit_timestamp=1789214087376511	transaction_length=417
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087376511 (2026-09-12 19:54:47.376511 中国标准时间)
+# immediate_commit_timestamp=1789214087376511 (2026-09-12 19:54:47.376511 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087376511*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 22824
+#260912 19:54:47 server id 1  end_log_pos 22908 CRC32 0x255e7032 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 22908
+#260912 19:54:47 server id 1  end_log_pos 22994 CRC32 0xca8974f5 	Table_map: `edu`.`series` mapped to number 67
+# at 22994
+#260912 19:54:47 server id 1  end_log_pos 23135 CRC32 0x91d0b7e5 	Write_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAANJZAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/APV0ico=
+hz2lah4BAAAAjQAAAF9aAAAAAEMAAAAAAAEAAgAO///gA64KAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwODczMzcfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwODczMzcF
+ZHJhZnSjhgEAAAAAAJm62T2vmbrZPa/lt9CR
+'/*!*/;
+# at 23135
+#260912 19:54:47 server id 1  end_log_pos 23166 CRC32 0xc9745343 	Xid = 24886
+COMMIT/*!*/;
+# at 23166
+#260912 19:54:47 server id 1  end_log_pos 23241 CRC32 0x2bb9689d 	Anonymous_GTID	last_committed=49	sequence_number=50	rbr_only=yes	original_committed_timestamp=1789214087436393	immediate_commit_timestamp=1789214087436393	transaction_length=409
+/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
+# original_commit_timestamp=1789214087436393 (2026-09-12 19:54:47.436393 中国标准时间)
+# immediate_commit_timestamp=1789214087436393 (2026-09-12 19:54:47.436393 中国标准时间)
+/*!80001 SET @@session.original_commit_timestamp=1789214087436393*//*!*/;
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 23241
+#260912 19:54:47 server id 1  end_log_pos 23317 CRC32 0xee0c6515 	Query	thread_id=14	exec_time=0	error_code=0
+SET TIMESTAMP=1789214087/*!*/;
+BEGIN
+/*!*/;
+# at 23317
+#260912 19:54:47 server id 1  end_log_pos 23403 CRC32 0xbeb103a7 	Table_map: `edu`.`series` mapped to number 67
+# at 23403
+#260912 19:54:47 server id 1  end_log_pos 23544 CRC32 0xf676d1d2 	Delete_rows: table id 67 flags: STMT_END_F
+
+BINLOG '
+hz2lahMBAAAAVgAAAGtbAAAAAEMAAAAAAAMAA2VkdQAGc2VyaWVzAA4ICA8PD/wP9fX1DwgSEhCA
+AAABAAIC/AMEBASAAAAA4AMBAQACA/z/AKcDsb4=
+hz2laiABAAAAjQAAAPhbAAAAAEMAAAAAAAEAAgAO///gA64KAAAAAAAAAQAAAAAAAAALb25saW5l
+X2xpdmUQAGgxYzE3ODkyMTQwODczMzcfAEgxY+WGsueqgea1i+ivlWgxYzE3ODkyMTQwODczMzcF
+ZHJhZnSjhgEAAAAAAJm62T2vmbrZPa/S0Xb2
+'/*!*/;
+# at 23544
+#260912 19:54:47 server id 1  end_log_pos 23575 CRC32 0x98ffe742 	Xid = 24894
+COMMIT/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;

@@ -409,3 +409,22 @@
 **更正与未决**:①我此前"Redis 降级每请求 2s+必须重启后端"的归因被实验**推翻**——三态均未复现 2.04s 恒定慢。②2.04s 仅在 14:01 启动的那个长驻进程上观察到(当时三存储全断启动,后 VM 恢复),进程已销毁未复现——登记为**未复现异常**:疑似陈旧连接池不自愈,证据不足;列入 B 批"存储连接池健康检查+自愈"修复项(用户判断正确:若无自愈即 bug)。③T19-2 的 8.1s/16.3s 归因同样存疑(当时亦为 Redis-down 长驻进程),建议 B 批在干净环境复测后再定 N+1 与否。
 ## check-demo ⑧ 语义澄清(回应终审 §2.1)
 ⑧ 输出 [PASS](无 token 被 401 拒=DEBUG 安全);若返回 200 则记红且阻止 exit 0(H1b 门禁上线后,生产形态将直接拒启)。"8/8"口径=8 项全 PASS,无 WARN 态出现。1.7s vs task18 报告 15.8s:前者=环境恢复态,后者=环境断链态(socket 超时所致),不可比,已在两份报告标注环境前提。
+
+## binlog 司法追溯结论 + 全站权限表(2026-09-12 20:xx,回应终审第二轮)
+### A. binlog 追溯(必做项,已执行;general_log=OFF/binlog=ON ROW 保留30天,文件049-055)
+| 事实 | 证据 |
+|---|---|
+| 本会话 5 连删(itest-sweep) | bin055 19:44-19:54 Delete_rows×10(series+series_cohort 各5,与 API 5 连删吻合)——**已溯源,系我发起** |
+| 帖 88-97 物理删除 | **bin049-055 全部文件无 community_post 任何 Table_map/写事件**→删除发生在 bin049 起点之前(早于本会话全部 binlog 覆盖窗),即 09-06 task08 报告前或更早;非本会话任何人所为 |
+| series 53 条"消失" | bin049-055 无目标表删除事件(除我的10条)→**不存在物理消失**;62/56(task19/task13)为 API total 口径(含其它过滤组合),SQL 直查 off_sale 实际仅 9 条(4 T116+5 itest-sweep)——**"57 条缺口"系口径混淆,非数据事故**;口径差异根因(list_series WHERE 组合)登记 B 批核对 |
+| 演示库完整性 | 唯一未闭环=帖 88-97 删除者(blo 覆盖窗之前)→**维持"演示前全库快照+差异比对"必做**(w4-reverify-checklist) |
+### B. 全站 8 admin 页权限对齐表(逐 router grep 实证)
+| 页面 | 后端域 | require_role | manager 实际 | 对齐 |
+|---|---|---|---|---|
+| admin-dashboard | user_admin(metrics) | ADMIN(+MGR 组合声明并存) | 403 风险(metrics 为 ADMIN) | ❌ 待修 |
+| admin-courses / course-detail | course_admin | ADMIN+MANAGER | ✅ 放行 | ✓ |
+| admin-users | user_admin | ADMIN | 403(已 H2a 横幅) | ✓(已修) |
+| admin-questions / question-detail | question_admin | ADMIN+MANAGER | ✅ 放行 | ✓ |
+| admin-rag-upload | rag_admin | **ADMIN** | ❌ 403 | ❌ 待修 |
+| admin-mcp | mcp | ADMIN | ❌ 403 | ❌ 待修 |
+→ 系统性结论:**例外页至少 3 页**(users/mcp/rag)+dashboard 的 metrics 端点;task109 GWT③ 修正扩为"manager 可用 5 页,3 页 ADMIN-only 需 H2a 式横幅或后端放宽(用户裁定)";H3 修复任务待派。
