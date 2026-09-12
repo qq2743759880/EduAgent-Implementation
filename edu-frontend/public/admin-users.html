@@ -455,7 +455,12 @@
  *   缺口   GET /api/admin/users/{id}/learning 未注册（实测 404）→ 详情对话框诚实披露，无 MOCK
  *   红线   40303「至少保留 1 名可用管理员账号」由后端权威兜底（实测：active_admins(不含本人)<1 才拒绝）；
  *          前端以 metrics.role_breakdown.admin 做尽力而为提示，不据此放行/拦截真实操作
- *   角色门 user_admin 路由 require_role([ADMIN])：manager 过守卫后访问本域将得 403 40300（实测），列表错误态诚实展示
+ *   角色门 user_admin 路由 require_role([ADMIN])（后端权限口径仅 ADMIN；实测 manager 登录 GET /api/admin/users → 403 40300）
+ *   [2026-09-12 H2a/P1-9] 守卫放行 {admin,manager} ≠ 本域放行：bootAdmin 加载前复查 auth/me，
+ *     role!=='admin' → 诚实横幅「该模块仅 ADMIN 可用（后端权限口径）」+ 返回仪表盘按钮，
+ *     不发列表/指标请求（此前 manager 会先拿一个必 403 的列表请求再在错误态展示——已改为请求前拦截）；
+ *     auth/me 复查失败按未授权跳登录（与守卫第三段同口径，不静默发请求）。
+ *     修正 task109 GWT③「manager 过守卫后 403 错误态诚实展示」的旧口径（P1-9 批判：守卫与路由权限矛盾）。
  * 守卫三段由 edu-guard.requireAdmin 承担（无 token 跳登录 → auth/me 校验 role∈{admin,manager} → 失败跳登录），
  * 守卫通过后才调 window.bootAdmin()；页面自身不做参数正则提取（无 URL 取参需求）。
  */
@@ -689,12 +694,49 @@ window.bootAdmin=function(){
     if(t && t.textContent.indexOf("admin 账号")<0) t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
     return; // 守卫第一段已跳登录，此处静默不发请求
   }
-  // 红线提示数据（尽力而为）：metrics.role_breakdown.admin；后端 40303 永远权威
-  if(EAPI.get) EAPI.get("/api/admin/users/dashboard/metrics").then(function(m){
-    if(m&&m.role_breakdown) adminTotalHint=m.role_breakdown.admin||0;
-  }).catch(function(){ /* 红线提示数据缺失不阻塞列表 */ });
-  loadUsers();
+  // [H2a/P1-9] user_admin 域后端口径=require_role([ADMIN])，守卫放行 {admin,manager} 不代表本域放行。
+  // 加载前复查 auth/me：非 admin → 诚实横幅+返回仪表盘，不发列表/指标请求（不再让 manager 必吃一个 403）。
+  EAPI.get("/api/auth/me").then(function(me){
+    if(!(me && me.role==="admin")){ adminOnlyBanner(me&&me.role?me.role:"未知"); return; }
+    // 红线提示数据（尽力而为）：metrics.role_breakdown.admin；后端 40303 永远权威
+    if(EAPI.get) EAPI.get("/api/admin/users/dashboard/metrics").then(function(m){
+      if(m&&m.role_breakdown) adminTotalHint=m.role_breakdown.admin||0;
+    }).catch(function(){ /* 红线提示数据缺失不阻塞列表 */ });
+    loadUsers();
+  }).catch(function(){
+    // 复查失败无法确认 ADMIN 身份 → 与守卫第三段同口径按未授权跳登录，不静默发请求
+    adminOnlyBanner(null);
+  });
 };
+/* [H2a/P1-9] 诚实降级横幅：role!=null → 仅 ADMIN 提示+返回仪表盘；role==null → 校验失败跳登录 */
+function adminOnlyBanner(role){
+  var b=document.createElement("div");
+  b.style.cssText="position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px 16px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+  var span=document.createElement("span");
+  span.textContent=(role==null)
+    ?"身份校验失败，无法确认 ADMIN 权限，正在跳转登录…"
+    :"该模块仅 ADMIN 可用（后端权限口径；当前角色 "+role+"）";
+  b.appendChild(span);
+  if(role!=null){
+    var btn=document.createElement("a");
+    btn.href="/admin-dashboard.html";
+    btn.textContent="返回仪表盘";
+    btn.style.cssText="display:inline-block;margin-left:12px;padding:4px 14px;border-radius:999px;background:#fff;color:#e11d48;font-weight:700;text-decoration:none";
+    b.appendChild(btn);
+    document.body.appendChild(b);
+    // 列表区置诚实空态（清骨架屏，不留误导性加载态）
+    try{ setListState("error","该模块仅 ADMIN 可用（后端权限口径）；当前登录角色 "+role+"，无权读取用户列表"); }catch(e){}
+  }else{
+    document.body.appendChild(b);
+    setTimeout(function(){
+      var redir="";
+      try{ redir=location.pathname+location.search; }catch(e){}
+      var target="/login-register.html";
+      try{ target=EAPI.buildLoginUrl(redir); }catch(e){}
+      try{ location.replace(target); }catch(e){}
+    },1200);
+  }
+}
 </script>
 </body>
 </html>
