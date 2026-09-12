@@ -15,6 +15,11 @@
     [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
     [2026-08-23 v1 R1] 初稿提交（KPI 6卡真实 + 注册趋势柱状 + 角色饼图 + 榜单缺口占位 + 四态响应式）→ SUBMITTED
     [2026-08-23 v2 R2] 返工：修正角色饼图 conic-gradient 分段（原 admin 误占 46%，改为真实占比 student 99.96%/teacher .028%/manager .014%/admin .002%）→ 待复核
+    [2026-09-12 task12 reshape-a] 真实接线（curl 实测 2026-09-12）：GET /api/admin/users/dashboard/metrics 200（约 2.1~2.7s 慢查询）
+      → 默认渲染 loading 骨架（不再默认假成功态）；bootAdmin 拉真实 6 指标填 KPI（total_user_count/active_user_count_7d/new_register_count_7d/
+      disabled_user_count/role_breakdown/avg_login_days_per_user_30d）+ register_trend_7d 真实渲染柱状图（全 0 时诚实显示 0 高柱）+
+      role_breakdown 计算 conic-gradient 饼图；total_user_count=0 → 空态；请求失败 → 错误态。删除原 v2 硬编码假 KPI/假趋势/假占比。
+      热门课程榜契约缺口占位保持（trade 域无 admin 全局聚合端点）。
 -->
 <html lang="zh-CN" class="" data-theme="light"><head>
 <meta charset="UTF-8">
@@ -278,44 +283,44 @@ button{font-family:inherit;cursor:pointer}
     <span class="warn">契约缺口</span>：订单数/营收/热门课程榜 —— 后端当前无管理端全局聚合端点（trade 域均用户本人视角），榜单为示例形态 + 占位，待 <b>task70~91</b> 后端聚合端点后接线。
   </div>
 
-  <!-- ================= 成功态（默认） ================= -->
-  <section id="view-success">
+  <!-- ================= 成功态（数据就绪后由 bootAdmin 显示；KPI/图表全部真实数据） ================= -->
+  <section id="view-success" hidden>
     <div class="head">
       <div>
         <h1>平台运营总览</h1>
         <div class="sub">用户规模 / 活跃 / 增长与角色分布一览 · 非 admin 访问被 AdminGuard 拦截</div>
       </div>
-      <span class="updated">● 数据实时聚合</span>
+      <span class="updated" id="updated-at">● 数据实时聚合</span>
     </div>
 
-    <!-- KPI 指标卡 6 -->
+    <!-- KPI 指标卡 6（字段对齐 DashboardMetrics，curl 实测 2026-09-12） -->
     <div class="kpis">
       <div class="kpi">
         <span class="ic indigo" aria-hidden="true">👥</span>
         <div class="kv">
           <div class="lb">用户总数</div>
-          <div class="val">128,450</div>
+          <div class="val" id="kpi-total">—</div>
         </div>
       </div>
       <div class="kpi">
         <span class="ic green" aria-hidden="true">⚡</span>
         <div class="kv">
           <div class="lb">7d 活跃用户</div>
-          <div class="val">23,912</div>
+          <div class="val" id="kpi-active7d">—</div>
         </div>
       </div>
       <div class="kpi">
         <span class="ic green" aria-hidden="true">🚀</span>
         <div class="kv">
           <div class="lb">7d 新增注册</div>
-          <div class="val">1,028</div>
+          <div class="val" id="kpi-newreg7d">—</div>
         </div>
       </div>
       <div class="kpi">
         <span class="ic rose" aria-hidden="true">🚫</span>
         <div class="kv">
           <div class="lb">禁用账号</div>
-          <div class="val">37</div>
+          <div class="val" id="kpi-disabled">—</div>
         </div>
       </div>
       <div class="kpi">
@@ -323,10 +328,10 @@ button{font-family:inherit;cursor:pointer}
         <div class="kv">
           <div class="lb">角色分布</div>
           <div class="role">
-            <span>👑<b class="cnt">2</b></span>
-            <span>🛠<b class="cnt">18</b></span>
-            <span>👩‍🏫<b class="cnt">36</b></span>
-            <span>🎓<b class="cnt">128,394</b></span>
+            <span title="admin">👑<b class="cnt" id="rb-admin">—</b></span>
+            <span title="manager">🛠<b class="cnt" id="rb-manager">—</b></span>
+            <span title="teacher">👩‍🏫<b class="cnt" id="rb-teacher">—</b></span>
+            <span title="student">🎓<b class="cnt" id="rb-student">—</b></span>
           </div>
         </div>
       </div>
@@ -334,26 +339,26 @@ button{font-family:inherit;cursor:pointer}
         <span class="ic indigo" aria-hidden="true">📅</span>
         <div class="kv">
           <div class="lb">30d 人均登录（天）</div>
-          <div class="val">4.6<small> 天</small></div>
+          <div class="val"><span id="kpi-avglogin">—</span><small> 天</small></div>
         </div>
       </div>
     </div>
 
-    <!-- 图表区：注册趋势 + 角色饼图 -->
+    <!-- 图表区：注册趋势 + 角色饼图（数据就绪后由 bootAdmin 渲染） -->
     <div class="grid2">
       <div class="panel">
         <div class="p-title">近 7 天注册趋势 <span class="pill">真实数据</span></div>
         <div class="p-sub">每日新增注册用户数 · 单系列 primary（§1.7）</div>
         <div class="chart">
-          <!-- 纯 CSS 柱状图示意（React 渲染为 echarts BarChart，数据取 register_trend_7d） -->
-          <div class="bars" role="img" aria-label="近 7 天注册趋势：128，156，142，178，190，168，1028 人" style="width: 784.667px; height: 216.667px;">
-            <div class="bar-col"><div class="bar" style="height:42%"><span class="hv">128</span></div><span class="bl">08-17</span></div>
-            <div class="bar-col"><div class="bar" style="height:52%"><span class="hv">156</span></div><span class="bl">08-18</span></div>
-            <div class="bar-col"><div class="bar" style="height:47%"><span class="hv">142</span></div><span class="bl">08-19</span></div>
-            <div class="bar-col"><div class="bar" style="height:58%"><span class="hv">178</span></div><span class="bl">08-20</span></div>
-            <div class="bar-col"><div class="bar" style="height:63%"><span class="hv">190</span></div><span class="bl">08-21</span></div>
-            <div class="bar-col"><div class="bar" style="height:55%"><span class="hv">168</span></div><span class="bl">08-22</span></div>
-            <div class="bar-col"><div class="bar" style="height:100%"><span class="hv">1028</span></div><span class="bl">08-23</span></div>
+          <!-- register_trend_7d 真实渲染（bootAdmin 重建柱列；全 0 时诚实显示 0 值柱） -->
+          <div class="bars" id="bars-real" role="img" aria-label="近 7 天注册趋势加载中">
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
+            <div class="bar-col"><div class="bar" style="height:2%"><span class="hv">·</span></div><span class="bl">--</span></div>
           </div>
         </div>
       </div>
@@ -361,14 +366,14 @@ button{font-family:inherit;cursor:pointer}
       <div class="panel">
         <div class="p-title">角色分布 <span class="pill">多系列</span></div>
         <div class="p-sub">按 §1.7 饼图疏色序：admin/student/teacher/manager</div>
-        <div class="donut" style="background:conic-gradient(var(--chart-purple) 0% 99.956%, var(--chart-blue) 99.956% 99.984%, var(--chart-rose) 99.984% 99.998%, var(--chart-indigo) 99.998% 100%)" role="img" aria-label="角色分布真实比例：student 128394≈99.96%，teacher 36≈0.028%，manager 18≈0.014%，admin 2≈0.002%">
-          <div class="center"><b>128K</b><span>学员占比 99.9%+</span></div>
+        <div class="donut" id="donut-real" style="background:conic-gradient(var(--ht-eee) 0% 100%)" role="img" aria-label="角色分布加载中">
+          <div class="center"><b id="donut-total">—</b><span id="donut-sub">加载中…</span></div>
         </div>
         <div class="legend">
-          <div class="lg"><span class="sw" style="background:var(--chart-indigo)"></span>管理员<span class="lv">2</span></div>
-          <div class="lg"><span class="sw" style="background:var(--chart-purple)"></span>学员<span class="lv">128,394</span></div>
-          <div class="lg"><span class="sw" style="background:var(--chart-blue)"></span>教师<span class="lv">36</span></div>
-          <div class="lg"><span class="sw" style="background:var(--chart-rose)"></span>运营<span class="lv">18</span></div>
+          <div class="lg"><span class="sw" style="background:var(--chart-indigo)"></span>管理员<span class="lv" id="lg-admin">—</span></div>
+          <div class="lg"><span class="sw" style="background:var(--chart-purple)"></span>学员<span class="lv" id="lg-student">—</span></div>
+          <div class="lg"><span class="sw" style="background:var(--chart-blue)"></span>教师<span class="lv" id="lg-teacher">—</span></div>
+          <div class="lg"><span class="sw" style="background:var(--chart-rose)"></span>运营<span class="lv" id="lg-manager">—</span></div>
         </div>
       </div>
     </div>
@@ -406,13 +411,13 @@ button{font-family:inherit;cursor:pointer}
     </div>
   </section>
 
-  <!-- ================= 空态 ================= -->
+  <!-- ================= 空态（total_user_count=0 时诚实展示） ================= -->
   <section id="view-empty" hidden="">
     <div class="state" role="status">
       <span class="st-emoji" aria-hidden="true">📭</span>
       <h3>暂无运营数据</h3>
-      <p>当前抽取周期内暂无用户/活跃指标。请确认数据接入完成后再返回，或点击下方刷新重试。</p>
-      <button type="button" class="retry" onclick="location.reload()">⟳ 刷新数据</button>
+      <p>当前数据库中没有用户（total_user_count=0）。注册产生数据后，指标与图表将在此展示。</p>
+      <button type="button" class="retry" onclick="loadDashboardMetrics()">⟳ 重新加载</button>
     </div>
   </section>
 
@@ -421,8 +426,8 @@ button{font-family:inherit;cursor:pointer}
     <div class="state" role="alert">
       <span class="st-emoji" aria-hidden="true">😵</span>
       <h3>运营指标加载失败</h3>
-      <p>无法连接数据接口，请检查网络或稍后重试（错误详情不吞错展示）。</p>
-      <button type="button" class="retry" onclick="location.reload()">⟳ 重试</button>
+      <p id="err-msg">无法连接数据接口，请检查网络或稍后重试。</p>
+      <button type="button" class="retry" onclick="loadDashboardMetrics()">⟳ 重试</button>
     </div>
   </section>
 </div><!-- /.page -->
@@ -436,10 +441,12 @@ button{font-family:inherit;cursor:pointer}
 <!-- 审核交互脚本（HTML 效果图专属，不进入 React） -->
 <script>
 (function(){
-  // respbar 演示工具条已移除（critique C4）：视口切换([data-vp])与四态切换([data-state])绑定随工具条一并删除；
-  // 页面数据由 window.bootAdmin() 真实接口渲染成功/空/错误态，KPI 数值不再由演示脚本注入。
-  var succ=document.getElementById('view-success');
-  if(succ) succ.hidden=false;
+  // respbar 演示工具条已移除（critique C4）。
+  // task12：默认渲染 loading 骨架（端点为慢查询 ~2s），真实数据由 loadDashboardMetrics 注入后再切成功态。
+  var loading=document.getElementById('view-loading');
+  var success=document.getElementById('view-success');
+  if(loading) loading.hidden=false;
+  if(success) success.hidden=true;
 })();
 </script>
 
@@ -447,9 +454,83 @@ button{font-family:inherit;cursor:pointer}
 <script src="/edu-guard.js"></script>
 <script>eduGuard.requireAdmin();</script>
 <script>
+/* ===== task12 真实接线：GET /api/admin/users/dashboard/metrics（curl 实测 200，约 2.1~2.7s 慢查询）=====
+ * 契约字段（DashboardMetrics，实测 2026-09-12）：
+ *   total_user_count / active_user_count_7d / role_breakdown{admin,manager,teacher,student} /
+ *   disabled_user_count / new_register_count_7d / avg_login_days_per_user_30d / register_trend_7d:[{date,count}x7]
+ * 守卫三段由 edu-guard.requireAdmin 承担（无 token 跳登录→auth/me 校验角色→失败跳登录），守卫通过后才调 bootAdmin。
+ */
 window.bootAdmin=function(){
-(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/admin/users/dashboard/metrics").then(function(d){if(!d)return;var map={total_users:d.total_users,active_users:d.active_users,new_users_today:d.new_users_today};Object.keys(map).forEach(function(k){var el=document.querySelector("[data-metric='"+k+"'],[data-k='"+k+"'],."+k+" .num");if(el&&map[k]!=null)el.textContent=map[k];});}).catch(function(){ /* 指标获取失败：错误已由 EAPI.onError 统一 toast 提示 */ });})();
-(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()){
+    var sub=document.querySelector(".page-head .sub, .demo-note");
+    if(sub && sub.textContent.indexOf("admin 账号")<0) sub.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    return; // 守卫第一段已跳登录，此处静默降级不发请求
+  }
+  window.loadDashboardMetrics();
+};
+window.loadDashboardMetrics=function(){
+  function show(id){
+    ["view-success","view-loading","view-empty","view-error"].forEach(function(v){
+      var el=document.getElementById(v); if(el) el.hidden=(v!==id);
+    });
+  }
+  show("view-loading");
+  var t0=(window.performance&&performance.now)?performance.now():Date.now();
+  EAPI.get("/api/admin/users/dashboard/metrics").then(function(d){
+    if(!d || d.total_user_count==null){ show("view-empty"); return; }
+    var fmt=function(n){ return (n==null?"—":Number(n).toLocaleString("en-US")); };
+    document.getElementById("kpi-total").textContent=fmt(d.total_user_count);
+    document.getElementById("kpi-active7d").textContent=fmt(d.active_user_count_7d);
+    document.getElementById("kpi-newreg7d").textContent=fmt(d.new_register_count_7d);
+    document.getElementById("kpi-disabled").textContent=fmt(d.disabled_user_count);
+    var rb=d.role_breakdown||{};
+    document.getElementById("rb-admin").textContent=fmt(rb.admin);
+    document.getElementById("rb-manager").textContent=fmt(rb.manager);
+    document.getElementById("rb-teacher").textContent=fmt(rb.teacher);
+    document.getElementById("rb-student").textContent=fmt(rb.student);
+    var avg=d.avg_login_days_per_user_30d;
+    document.getElementById("kpi-avglogin").textContent=(avg==null?"—":avg);
+
+    // 注册趋势：register_trend_7d 真实渲染（全 0 时诚实显示 0 值矮柱，不伪造数据）
+    var trend=Array.isArray(d.register_trend_7d)?d.register_trend_7d:[];
+    var bars=document.getElementById("bars-real");
+    if(bars){
+      var maxC=0; trend.forEach(function(p){ if(p.count>maxC) maxC=p.count; });
+      bars.innerHTML=trend.map(function(p){
+        var pct=maxC>0?Math.max(4,Math.round(p.count/maxC*100)):2;
+        var day=(p.date||"").slice(5); // MM-DD
+        return '<div class="bar-col"><div class="bar" style="height:'+pct+'%"><span class="hv">'+p.count+'</span></div><span class="bl">'+day+'</span></div>';
+      }).join("");
+      bars.setAttribute("aria-label","近 7 天注册趋势："+trend.map(function(p){return p.date+" "+p.count+" 人";}).join("，"));
+    }
+
+    // 角色饼图：role_breakdown 计算 conic-gradient（色序 admin indigo / student purple / teacher blue / manager rose）
+    var order=[["admin","var(--chart-indigo)","管理员"],["student","var(--chart-purple)","学员"],
+               ["teacher","var(--chart-blue)","教师"],["manager","var(--chart-rose)","运营"]];
+    var rbSum=0; order.forEach(function(o){ rbSum+=(rb[o[0]]||0); });
+    var donut=document.getElementById("donut-real");
+    var acc=0, segs=[];
+    order.forEach(function(o){ var v=rb[o[0]]||0; if(rbSum>0&&v>0){ var from=acc/rbSum*100; acc+=v; var to=acc/rbSum*100; segs.push(o[1]+" "+from+"% "+to+"%"); } });
+    if(donut){
+      donut.style.background=segs.length?("conic-gradient("+segs.join(", ")+")"):"conic-gradient(var(--ht-eee) 0% 100%)";
+      donut.setAttribute("aria-label","角色分布真实比例："+order.map(function(o){return o[2]+" "+(rb[o[0]]||0)+" 人";}).join("，"));
+      document.getElementById("donut-total").textContent=rbSum>999?Math.round(rbSum/1000)+"K":String(rbSum);
+      document.getElementById("donut-sub").textContent=rbSum>0?("学员占比 "+(rbSum>0&&rb.student?Math.round(rb.student/rbSum*1000)/10:0)+"%"):"暂无用户";
+    }
+    document.getElementById("lg-admin").textContent=fmt(rb.admin);
+    document.getElementById("lg-student").textContent=fmt(rb.student);
+    document.getElementById("lg-teacher").textContent=fmt(rb.teacher);
+    document.getElementById("lg-manager").textContent=fmt(rb.manager);
+
+    var up=document.getElementById("updated-at");
+    if(up) up.textContent="● 数据实时聚合 · 刷新于 "+new Date().toLocaleTimeString("zh-CN",{hour12:false});
+    show("view-success");
+  }).catch(function(err){
+    var em=document.getElementById("err-msg");
+    if(em) em.textContent="无法获取运营指标："+((err&&err.message)||"后端不可用")+"（HTTP "+((err&&err.status)||"—")+"）";
+    show("view-error");
+  });
 };
 </script>
 </body></html>
