@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "EduAgent"
     APP_VERSION: str = "0.3.0"
     DEBUG: bool = False
+    # 环境名（H1b P1-8）：local=本机开发（DEBUG 虚拟管理员允许）；非 local（如
+    # dev/staging/prod/production 等）为显式声明的生产类环境。仅作为 DEBUG
+    # 启动硬门禁（_debug_env_gate）的判据使用，别处请勿当部署参数消费。
+    ENV_NAME: str = "local"
 
     # CORS 允许来源（生产必配）：逗号分隔的完整源，如
     #   CORS_ORIGINS=https://edu.example.com,https://admin.example.com
@@ -606,6 +610,31 @@ class Settings(BaseSettings):
                 _log.warning("[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线")
             if self.API_TOKEN in public_token:
                 _log.warning("[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线")
+        return self
+
+    @model_validator(mode="after")
+    def _debug_env_gate(self):
+        """DEBUG 虚拟管理员启动硬门禁（H1b / P1-8，fail-fast）。
+
+        背景：DEBUG=true 时未携带 Authorization 的请求会被注入虚拟管理员
+        user_id=1（app/auth/dependencies.py 规则②），生产误开 DEBUG 等于
+        匿名可读全量用户数据（P1-8 批判）。原状仅有 _security_guard 的告警，
+        本门禁升级为硬约束：
+
+        - DEBUG=True 且 ENV_NAME 显式为非 local（如 prod/production/staging/
+          dev/qa 等，大小写不敏感）→ 抛 ValueError 拒绝启动（对标 Django
+          DEBUG 生产拒启）；
+        - DEBUG=True 且 ENV_NAME 为 local（默认）→ 放行（本机开发体验不变，
+          Windows 本机现有 .env DEBUG=true 照常能启动）；
+        - DEBUG=False → 与 DEBUG 无关，门禁不生效（生产启动不受影响）。
+        """
+        env = (self.ENV_NAME or "").strip().lower()
+        if self.DEBUG and env not in ("", "local"):
+            raise ValueError(
+                f"启动拒绝：DEBUG=true 且 ENV_NAME='{self.ENV_NAME}' 为非本机环境。"
+                "DEBUG 模式存在虚拟管理员后门（未登录可读用户数据），禁止在非 local "
+                "环境开启。请改用 DEBUG=false 并配置正式鉴权，或 ENV_NAME=local 仅限本机开发。"
+            )
         return self
 
     model_config = SettingsConfigDict(
