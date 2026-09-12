@@ -53,3 +53,12 @@
 
 - [ ] check-demo ⑧ 升 FAIL 语义（P1-8 配套：后端启动硬门禁已由 H1b 落地，检查单探测项语义从 advisory WARN 改 FAIL）
 - [ ] G5 四项打靶脚本落盘 `test-reports/`（复用既有契约测试风格：真实 HTTP + 唯一前缀 + teardown）
+
+## 复验执行结果(2026-09-13,编排者自跑,演示机态)
+| 项 | 结果 | 证据 |
+|---|---|---|
+| task16 资源入口 | ✅ 学生端零假按钮(课件/作业/考试计数=0),唯一资源动线真实 | grep+CDP body |
+| task17 四页 live | ✅ favorites/practice/my-cohorts/refund 全加载,console 零错误 | probe_one ×4 |
+| task06 视觉可播 | ✅(重建后)真实 3MB 视频经冻结分片契约重造(VID-20260913-A3DA351A),GET /media 200 + content-type: video/mp4 + 3145728B 字节一致;headless 无法渲染画面,"可播"以媒体头+字节完整性为判据;learning 页 <video> src 由同一 /media 供给 | 本轮 |
+| task04 收藏写 | ✅ POST /api/favorites 连发两次 code=0(幂等) | 本轮 |
+| 备注 | 原 task06 视频(VID-20260912)已被 09-12 17:02 的批量清理者删除(文件+DB 行),本轮经 API 重建——再次印证"演示前快照+差异比对"必要性 | bin054 |
