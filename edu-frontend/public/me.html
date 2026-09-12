@@ -18,11 +18,12 @@
   FR 编号: 前端页面清单 /me（task54）
   AUDIT LOG:
     [2026-08-22 v1 R1] 初稿提交（头像渐变+4 StatCard+7 入口+档案表单+载/错态+@container 响应式）→ SUBMITTED
+    [2026-09-12 task10] 订单/券/收藏真实接线：我的订单(GET /api/trade/orders 分页壳+状态筛选)、我的优惠券(GET /api/coupons?status=unused 分页壳)、我的收藏(GET /api/favorites → course-detail.html?id={series_id})；头像 avatar_url 真实渲染(onerror 回退 emoji 占位)；死链 /orders→#sec-orders、/tickets→诚实占位（工单页未上线）；PUT profile 往返实测(昵称改/复原)。jsdom 真报文 22/22 + node --check 全过。
 -->
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>个人中心 · 效果图 v1（task54 me · 契约⑤/⑬ 糖果色 candy-playful STYLE FROZEN）</title>
+<title>个人中心 · EduAgent（task54/task10 真实接线：订单/券/收藏/档案）</title>
 <style>
 /* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
 :root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-015: rgba(0,0,0,0.15); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-005: rgba(124,58,237,0.05); --htc-124-58-237-010: rgba(124,58,237,0.1); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-134-208-018: rgba(255,134,208,0.18); --htc-255-200-0-022: rgba(255,200,0,0.22); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
@@ -4137,6 +4138,31 @@ a{text-decoration:none;color:inherit}
   .pf-goal.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-purple-deep)}
   .pf-goal:active{transform:translateY(1px)}
 </style>
+<style id="task10-css">
+/* task10 我的订单/优惠券/收藏 列表样式（复用糖果 token，视觉对齐 .form-card/.od 卡片族）*/
+.t10-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.t10-toolbar select{border:2px solid var(--ink);border-radius:10px;padding:7px 10px;font-weight:700;font-family:inherit;background:var(--white);color:var(--ink);cursor:pointer}
+.t10-meta{font-size:12px;font-weight:700;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.t10-btn{border:2px solid var(--ink);border-radius:10px;background:var(--white);padding:7px 14px;font-weight:800;font-size:13px;font-family:inherit;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--border-chip)}
+.t10-btn:hover:not(:disabled){transform:translateY(-1px)}
+.t10-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.t10-card{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid var(--border-chip);border-radius:14px;background:var(--white);padding:12px 14px;margin-bottom:10px}
+a.t10-card{text-decoration:none;color:inherit;transition:transform .12s ease,box-shadow .12s ease}
+a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip)}
+.t10-main{min-width:0;flex:1}
+.t10-no{font-size:12px;font-weight:800;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.t10-title{font-size:14px;font-weight:800;color:var(--ink);margin:2px 0}
+.t10-time{font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.t10-amt{font-size:15px;font-weight:900;color:var(--ink);margin-left:auto;font-variant-numeric:tabular-nums}
+.t10-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;border:2px solid transparent;margin-left:8px;white-space:nowrap}
+.t10-chip.pending{background:var(--candy-orange-soft,#ffe8dc);color:var(--candy-orange-deep,#c74000)}
+.t10-chip.paid{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+.t10-chip.completed{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+.t10-chip.cancelled{background:var(--candy-blue-soft);color:var(--candy-blue-deep,#0e8ac0)}
+.t10-chip.refund{background:var(--candy-purple-soft);color:var(--candy-purple)}
+.t10-chip.ok{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+.t10-state{border:2px dashed var(--border-chip);border-radius:14px;padding:16px;text-align:center;font-size:13px;font-weight:700;color:var(--ink-muted);background:var(--white)}
+</style>
 </head>
 <body data-st="ok" class="on">
 
@@ -4203,14 +4229,69 @@ a{text-decoration:none;color:inherit}
         <div><div class="ttl" id="nav-sec">功能入口</div><div class="sub">我的订单 / 优惠券 / 收藏 / 班次 / 退款 / 工单 / 错题本（J20）</div></div>
       </div>
       <div class="nav-card">
-        <a class="nav-item yellow" href="practice.html"><span class="n-ico" aria-hidden="true">📝</span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="favorites.html"><span class="n-ico" aria-hidden="true">⭐</span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html"><span class="n-ico" aria-hidden="true">📚</span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后 · J14/J15/J16</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="/orders"><span class="n-ico" aria-hidden="true">🧾</span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">查看 / 支付 / 管理订单 · J6 去支付</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <a class="nav-item green" href="coupons.html"><span class="n-ico" aria-hidden="true">🎟️</span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">失效 / 可用的购课优惠券</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item yellow" href="practice.html"><span class="n-ico" aria-hidden="true">📝</span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="favorites.html"><span class="n-ico" aria-hidden="true">⭐</span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html"><span class="n-ico" aria-hidden="true">📚</span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后 · J14/J15/J16</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="#sec-orders"><span class="n-ico" aria-hidden="true">🧾</span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">本页下方真实订单列表（task10 接线）</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item green" href="coupons.html"><span class="n-ico" aria-hidden="true">🎟️</span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">券中心：领券 / 可用 / 下单闭环</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
 
 
         <a class="nav-item orange" href="refund.html"><span class="n-ico" aria-hidden="true">↩️</span><span class="n-label"><span class="n-title">退款记录</span><span class="n-desc">退款申请状态与进度</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <a class="nav-item pink" href="/tickets"><span class="n-ico" aria-hidden="true">🎫</span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单 / 人工申诉跟进</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        
+        <div class="nav-item pink" role="note" aria-label="售后工单页未上线" style="cursor:default;opacity:.6"><span class="n-ico" aria-hidden="true">🎫</span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单页暂未上线（后端工单端点已有，页面待接）</span></span><span class="n-arrow" aria-hidden="true">›</span></div>
+
       </div>
+    </section>
+
+    <!-- ===== task10：我的订单（GET /api/trade/orders 分页壳真实接线）===== -->
+    <section class="section" aria-labelledby="orders-sec" id="sec-orders">
+      <div class="s-title">
+        <span class="ico" aria-hidden="true">🧾</span>
+        <div><div class="ttl" id="orders-sec">我的订单</div><div class="sub">GET /api/trade/orders · 分页壳 {total,page,page_size,items} · 状态筛选真实下发</div></div>
+      </div>
+      <div class="t10-toolbar">
+        <label class="f-hint" for="odStatus">状态筛选</label>
+        <select id="odStatus">
+          <option value="">全部状态</option>
+          <option value="pending">待支付</option>
+          <option value="paid">已支付</option>
+          <option value="completed">已完成</option>
+          <option value="cancelled">已取消</option>
+          <option value="partial_refunded">部分退款</option>
+          <option value="refunded">已退款</option>
+        </select>
+        <span class="t10-meta" id="odMeta">加载中…</span>
+        <span style="margin-left:auto;display:flex;gap:8px">
+          <button type="button" class="t10-btn" id="odPrev">← 上一页</button>
+          <button type="button" class="t10-btn" id="odNext">下一页 →</button>
+        </span>
+      </div>
+      <div id="odList"><div class="t10-state">正在加载订单…</div></div>
+    </section>
+
+    <!-- ===== task10：我的优惠券（GET /api/coupons?status=unused 分页壳真实接线）===== -->
+    <section class="section" aria-labelledby="coupons-sec" id="sec-coupons">
+      <div class="s-title">
+        <span class="ico green" aria-hidden="true">🎟️</span>
+        <div><div class="ttl" id="coupons-sec">我的优惠券（未使用）</div><div class="sub">GET /api/coupons?status=unused · 领券/下单闭环在券中心 coupons.html</div></div>
+      </div>
+      <div class="t10-toolbar">
+        <span class="t10-meta" id="cpMeta">加载中…</span>
+        <span style="margin-left:auto;display:flex;gap:8px">
+          <button type="button" class="t10-btn" id="cpPrev">← 上一页</button>
+          <button type="button" class="t10-btn" id="cpNext">下一页 →</button>
+        </span>
+      </div>
+      <div id="cpList"><div class="t10-state">正在加载优惠券…</div></div>
+    </section>
+
+    <!-- ===== task10：我的收藏（GET /api/favorites → course-detail.html?id=）===== -->
+    <section class="section" aria-labelledby="favs-sec" id="sec-favs">
+      <div class="s-title">
+        <span class="ico blue" aria-hidden="true">⭐</span>
+        <div><div class="ttl" id="favs-sec">我的收藏</div><div class="sub">GET /api/favorites · 点击卡片进课程详情 course-detail.html?id={series_id}</div></div>
+      </div>
+      <div class="t10-toolbar">
+        <span class="t10-meta" id="fvMeta">加载中…</span>
+        <span style="margin-left:auto"><a class="t10-btn" href="favorites.html" style="text-decoration:none;display:inline-block">全部收藏 →</a></span>
+      </div>
+      <div id="fvList"><div class="t10-state">正在加载收藏…</div></div>
     </section>
 
     <!-- 学员档案表单（真实 GET/PUT /api/users/me/profile，字段对齐后端 UserProfile 契约）-->
@@ -4595,6 +4676,164 @@ a{text-decoration:none;color:inherit}
 
   // dashboard 通过 ?edit=1 直达编辑弹窗
   if (/[?&]edit=1\b/.test(location.search)) open();
+})();
+</script>
+
+<script>
+/* ===== task10：我的订单 / 优惠券(unused) / 收藏 真实接线（契约冻结 reshape-a 30aeddbe，curl 实测 2026-09-12）=====
+ * GET /api/trade/orders?status=&page=&page_size=   → 裸分页壳 {total,page,page_size,items[{order_no,series_id,series_title,order_amount,discount_amount,pay_amount,status,created_at}]}
+ *     status ∈ pending/paid/completed/cancelled/partial_refunded/refunded（router _VALID_STATUSES 实读）
+ * GET /api/coupons?status=unused&page=&page_size=  → 裸分页壳（coupon_id,coupon_name,coupon_type:discount|reduce,face_value,min_spend,status,valid_to,…）
+ * GET /api/favorites?page=&page_size=              → 裸分页壳（favorite_id,target_type:"series",series_id,series_title,cover_url,created_at）
+ * GET /api/users/me/profile                        → avatar_url 真实渲染（加载失败 onerror 回退 emoji 占位）
+ * 三态：加载中 / 空态（真实空文案）/ 错误（重试按钮）；无 token → 三区块登录引导，不发请求。
+ * 收藏/订单卡片点击 → course-detail.html?id={series_id}（course-detail L791 pageId("id") 取参）。 */
+(function () {
+  if (!window.EAPI) return;
+  var E = EAPI;
+  var hasToken = !!E.store.getToken();
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(n) { var v = Number(n) || 0; return "¥" + v.toFixed(2).replace(/\.00$/, ""); }
+  function fmtDate(s) { return String(s || "").replace("T", " ").slice(0, 16); }
+  function stateBox(msg, retryFn) {
+    return '<div class="t10-state">' + esc(msg) + (retryFn ? ' <button type="button" class="t10-retry" style="margin-left:8px;border:2px solid var(--ink);border-radius:8px;background:var(--white);padding:3px 10px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit">🔄 重试</button>' : "") + "</div>";
+  }
+  var OD_STATUS = { pending: "待支付", paid: "已支付", completed: "已完成", cancelled: "已取消", partial_refunded: "部分退款", refunded: "已退款" };
+  function bindRetry(boxEl, fn) {
+    if (!boxEl) return;
+    var b = boxEl.querySelector(".t10-retry");
+    if (b) b.addEventListener("click", fn);
+  }
+  function pageSizeOf(total, size) { return Math.max(1, Math.ceil((Number(total) || 0) / size)); }
+  function loginBox(what) {
+    return '<div class="t10-state">请先登录后查看' + esc(what) + '。 <a href="' + E.buildLoginUrl("/me.html") + '" style="font-weight:800;color:var(--candy-blue)">去登录 / 注册</a></div>';
+  }
+
+  /* ---- 我的订单（分页 + 状态筛选）---- */
+  (function () {
+    var list = document.getElementById("odList"), meta = document.getElementById("odMeta");
+    var prev = document.getElementById("odPrev"), next = document.getElementById("odNext");
+    var statusSel = document.getElementById("odStatus");
+    if (!list || !meta || !prev || !next || !statusSel) return;
+    var PAGE_SIZE = 5, page = 1, pages = 1;
+
+    function paintMeta(total) {
+      pages = pageSizeOf(total, PAGE_SIZE);
+      if (page > pages) page = pages;
+      meta.textContent = "共 " + total + " 笔订单 · 第 " + page + " / " + pages + " 页";
+      prev.disabled = page <= 1;
+      next.disabled = page >= pages;
+    }
+    function rowHTML(it) {
+      var st = OD_STATUS[it.status] || it.status || "-";
+      var discount = Number(it.discount_amount) > 0 ? '<span class="t10-no">已优惠 ' + esc(money(it.discount_amount)) + "</span> " : "";
+      return '<a class="t10-card" href="course-detail.html?id=' + encodeURIComponent(it.series_id != null ? it.series_id : "") + '">' +
+        '<span class="t10-main"><span class="t10-no">' + esc(it.order_no) + '<span class="t10-chip ' + (it.status === "pending" ? "pending" : (it.status === "paid" || it.status === "completed") ? "paid" : it.status === "cancelled" ? "cancelled" : "refund") + '">' + esc(st) + "</span></span>" +
+        '<span class="t10-title">' + esc(it.series_title || "课程订单") + "</span>" +
+        '<span class="t10-time">' + esc(fmtDate(it.created_at)) + " · " + discount + "实付 <b>" + esc(money(it.pay_amount)) + "</b></span></span>" +
+        '<span class="t10-amt">' + esc(money(it.pay_amount)) + "</span></a>";
+    }
+    function load() {
+      list.innerHTML = stateBox("正在加载订单…");
+      var q = "/api/trade/orders?page=" + page + "&page_size=" + PAGE_SIZE + (statusSel.value ? "&status=" + encodeURIComponent(statusSel.value) : "");
+      E.get(q).then(function (d) {
+        var items = (d && d.items) || [], total = (d && d.total) || 0;
+        paintMeta(total);
+        if (!items.length) { list.innerHTML = stateBox(statusSel.value ? "该状态下暂无订单。" : "暂无订单。下单后可在这里查看与跟进。"); return; }
+        list.innerHTML = items.map(rowHTML).join("");
+      }).catch(function (e) {
+        meta.textContent = "加载失败";
+        prev.disabled = next.disabled = true;
+        list.innerHTML = stateBox("订单加载失败：" + ((e && e.message) || "未知错误"), load);
+        bindRetry(list, load);
+      });
+    }
+    prev.addEventListener("click", function () { if (page > 1) { page--; load(); } });
+    next.addEventListener("click", function () { if (page < pages) { page++; load(); } });
+    statusSel.addEventListener("change", function () { page = 1; load(); });
+    if (hasToken) load(); else { list.innerHTML = loginBox("订单"); meta.textContent = "未登录"; prev.disabled = next.disabled = true; }
+  })();
+
+  /* ---- 我的优惠券（unused，分页）---- */
+  (function () {
+    var list = document.getElementById("cpList"), meta = document.getElementById("cpMeta");
+    var prev = document.getElementById("cpPrev"), next = document.getElementById("cpNext");
+    if (!list || !meta || !prev || !next) return;
+    var PAGE_SIZE = 4, page = 1, pages = 1;
+
+    function faceText(c) {
+      if (c.coupon_type === "discount") { var z = Math.round((Number(c.face_value) || 0) * 100) / 10; return z + " 折"; }
+      return "减 " + money(c.face_value);
+    }
+    function rowHTML(c) {
+      var cond = Number(c.min_spend) > 0 ? "满 " + money(c.min_spend) + " 可用 · " : "";
+      return '<div class="t10-card">' +
+        '<span class="t10-main"><span class="t10-no">' + esc(c.coupon_name) + '<span class="t10-chip ok">未使用</span></span>' +
+        '<span class="t10-title">' + esc(faceText(c)) + "</span>" +
+        '<span class="t10-time">' + esc(cond) + "有效期至 " + esc(fmtDate(c.valid_to)) + "</span></span>" +
+        '<a class="t10-btn" href="coupons.html" style="text-decoration:none;display:inline-block">去使用 →</a></div>';
+    }
+    function load() {
+      list.innerHTML = stateBox("正在加载优惠券…");
+      E.get("/api/coupons?status=unused&page=" + page + "&page_size=" + PAGE_SIZE).then(function (d) {
+        var items = (d && d.items) || [], total = (d && d.total) || 0;
+        pages = pageSizeOf(total, PAGE_SIZE);
+        if (page > pages) page = pages;
+        meta.textContent = "共 " + total + " 张未使用 · 第 " + page + " / " + pages + " 页";
+        prev.disabled = page <= 1; next.disabled = page >= pages;
+        if (!items.length) { list.innerHTML = stateBox("暂无未使用优惠券。可到券中心领取。"); return; }
+        list.innerHTML = items.map(rowHTML).join("");
+      }).catch(function (e) {
+        meta.textContent = "加载失败"; prev.disabled = next.disabled = true;
+        list.innerHTML = stateBox("优惠券加载失败：" + ((e && e.message) || "未知错误"), load);
+        bindRetry(list, load);
+      });
+    }
+    prev.addEventListener("click", function () { if (page > 1) { page--; load(); } });
+    next.addEventListener("click", function () { if (page < pages) { page++; load(); } });
+    if (hasToken) load(); else { list.innerHTML = loginBox("优惠券"); meta.textContent = "未登录"; prev.disabled = next.disabled = true; }
+  })();
+
+  /* ---- 我的收藏（→ course-detail.html?id=）---- */
+  (function () {
+    var list = document.getElementById("fvList"), meta = document.getElementById("fvMeta");
+    if (!list || !meta) return;
+    function rowHTML(f) {
+      return '<a class="t10-card" href="course-detail.html?id=' + encodeURIComponent(f.series_id != null ? f.series_id : "") + '">' +
+        '<span class="t10-main"><span class="t10-no">收藏于 ' + esc(fmtDate(f.created_at)) + "</span>" +
+        '<span class="t10-title">' + esc(f.series_title || ("系列 #" + f.series_id)) + "</span>" +
+        '<span class="t10-time">课程详情 · 点击查看班次与报名入口</span></span>' +
+        '<span class="t10-amt">›</span></a>';
+    }
+    function load() {
+      list.innerHTML = stateBox("正在加载收藏…");
+      E.get("/api/favorites?page=1&page_size=4").then(function (d) {
+        var items = (d && d.items) || [], total = (d && d.total) || 0;
+        meta.textContent = "共 " + total + " 个收藏 · 展示最近 4 个";
+        if (!items.length) { list.innerHTML = stateBox("暂无收藏。逛逛课程中心，收藏心仪的课程吧。"); return; }
+        list.innerHTML = items.map(rowHTML).join("");
+      }).catch(function (e) {
+        meta.textContent = "加载失败";
+        list.innerHTML = stateBox("收藏加载失败：" + ((e && e.message) || "未知错误"), load);
+        bindRetry(list, load);
+      });
+    }
+    if (hasToken) load(); else { list.innerHTML = loginBox("收藏"); meta.textContent = "未登录"; }
+  })();
+
+  /* ---- 头像：profile.avatar_url 真实渲染，加载失败回退 emoji（不写死假域名判断）---- */
+  if (hasToken) {
+    E.get("/api/users/me/profile").then(function (p) {
+      var av = document.querySelector(".me-head .avatar");
+      var url = p && p.avatar_url;
+      if (!av || !url) return;
+      var img = new Image();
+      img.onload = function () { av.textContent = ""; av.style.backgroundImage = "url('" + url.replace(/'/g, "%27") + "')"; av.style.backgroundSize = "cover"; av.style.backgroundPosition = "center"; };
+      img.onerror = function () { /* 保持 emoji 占位：头像资源不可达（如演示外链），诚实回退 */ };
+      img.src = url;
+    }).catch(function () {});
+  }
 })();
 </script>
 </body></html>
