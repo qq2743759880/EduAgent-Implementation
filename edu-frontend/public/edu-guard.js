@@ -10,6 +10,10 @@
  * 守卫通过前不发任何 admin API 请求：数据注入收敛为 window.bootAdmin()，由守卫通过后调用。
  * 兼容性：requireAdmin(onPass?) 缺省 onPass 时，通过后轮询 window.bootAdmin（向后兼容原 runBoot，
  *          因为各页 bootAdmin 定义在其后独立 <script>，需等待其就绪）。
+ * [H3-temp 2026-09-12] manager 过守卫后灰显导航例外入口（GWT③ 签字口径）：admin-users/admin-mcp/
+ *          admin-dashboard 三页链接 pointer-events:none+opacity:.45+title「仅 ADMIN 可用」；
+ *          admin 不受影响；rag 页不灰显。一行级过渡措施，不改页面文件；B3-impl（admin-users
+ *          Refine 版权限对齐）落地后由横幅/诚实空态口径取代。
  */
 (function (global) {
   var ADMIN = { admin: 1, manager: 1 };
@@ -37,6 +41,18 @@
     try { location.replace(target); } catch (e) {}
   }
 
+  // [H3-temp] manager 导航例外灰显：users/mcp/dashboard 链接禁点+降透明+title（rag/admin 不受影响）
+  function grayManagerNav() {
+    var LOCK = { "admin-users.html": 1, "admin-mcp.html": 1, "admin-dashboard.html": 1 };
+    try {
+      var links = document.querySelectorAll("a[href]");
+      for (var i = 0; i < links.length; i++) {
+        var f = (links[i].getAttribute("href") || "").split("#")[0].split("?")[0].split("/").pop();
+        if (LOCK[f]) { links[i].style.pointerEvents = "none"; links[i].style.opacity = ".45"; links[i].title = "仅 ADMIN 可用"; }
+      }
+    } catch (e) {}
+  }
+
   function requireAdmin(onPass) {
     if (!global.EAPI) return; // edu-api.js 未加载则不守卫（页面正常都已先引 edu-api.js）
     var redir = "";
@@ -44,6 +60,7 @@
     if (!EAPI.store.getToken()) { gotoLogin(redir); return; } // 第一道判定：无 token 直接跳登录
     EAPI.get("/api/auth/me").then(function (me) {
       if (me && ADMIN[me.role]) {
+        if (me.role === "manager") grayManagerNav(); // [H3-temp] 导航例外灰显（过渡措施，admin 不受影响）
         if (typeof onPass === "function") { try { onPass(); } catch (e) {} }
         else runBoot();
       } else {
