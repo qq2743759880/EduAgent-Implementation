@@ -4,33 +4,32 @@
 """
 from __future__ import annotations
 
+import secrets
+
 import pytest
 
 from app.config import Settings
 
 
-def _settings(monkeypatch: pytest.MonkeyPatch, *, debug: bool, env_name: str):
-    from app.config import settings
+def _settings(debug: bool, env_name: str):
+    from app.config import Settings
 
-    monkeypatch.setattr(settings, "DEBUG", debug)
-    monkeypatch.setattr(settings, "ENV_NAME", env_name)
-    return settings
+    return Settings(_env_file=None, MYSQL_PASSWORD="x", LLM_API_KEY="x", JWT_SECRET=secrets.token_hex(32), DEBUG=debug, ENV_NAME=env_name)
 
 
 @pytest.mark.parametrize(
     "debug,env_name,expect_block",
     [(True, "prod", True), (True, "local", False), (False, "prod", False)],
 )
-def test_debug_env_gate(monkeypatch: pytest.MonkeyPatch, debug: bool, env_name: str, expect_block: bool):
-    s = _settings(monkeypatch, debug=debug, env_name=env_name)
+def test_debug_env_gate(debug: bool, env_name: str, expect_block: bool):
+    import pydantic_core
+
     if expect_block:
-        with pytest.raises(RuntimeError, match="P1-8"):
-            s.enforce_debug_env_gate()
+        with pytest.raises((ValueError, pydantic_core.ValidationError), match="DEBUG"):
+            _settings(debug, env_name)
     else:
-        s.enforce_debug_env_gate()  # 不抛即过
+        _settings(debug, env_name)  # 不抛即过
 
 
 def test_env_name_default_local():
-    from app.config import settings
-
-    assert settings.ENV_NAME == "local"
+    assert _settings(False, "local").ENV_NAME == "local"

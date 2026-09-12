@@ -42,18 +42,6 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     WORKERS: int = 1                     # 开发模式用 1，生产可用 4
-    ENV_NAME: str = "local"              # 部署环境标识：local(本机开发) | prod(生产)。DEBUG=true 仅允许 local
-                                       # （P1-8 硬门禁：DEBUG 的无-Header 虚拟管理员在非 local 环境直接拒启，
-                                       #  对齐 Django「DEBUG 不可上生产」语义——本地开发零影响）
-
-    def enforce_debug_env_gate(self) -> None:
-        """P1-8 硬门禁:DEBUG=true 且 ENV_NAME 非 local/dev → 拒绝启动(虚拟管理员漏洞)。"""
-        if self.DEBUG and str(self.ENV_NAME).strip().lower() not in ("local", "dev", "development"):
-            raise RuntimeError(
-                f"[P1-8 拒绝启动] DEBUG=true 仅允许 ENV_NAME=local（当前 ENV_NAME={self.ENV_NAME!r}）。"
-                "DEBUG 模式下无 Authorization 头会返回虚拟管理员（AGENTS.md 教训 6）。"
-                "生产部署必须 DEBUG=false；如确需调试请设 ENV_NAME=local。"
-            )
 
     # ============================================================
     # MySQL 配置
