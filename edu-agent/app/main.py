@@ -66,6 +66,9 @@ def _warmup_local_models() -> None:
 async def lifespan(app: FastAPI):
     logger.info(f"=== {settings.APP_NAME} v{settings.APP_VERSION} 正在启动 ===")
 
+    # ── P1-8 硬门禁:DEBUG 的无-Header 虚拟管理员在非 local 环境直接拒绝启动 ──
+    settings.enforce_debug_env_gate()
+
     # ── 启动阶段：5 类存储初始化（任一失败仅 DEBUG 模式下继续） ──
     store_status = {}
 
