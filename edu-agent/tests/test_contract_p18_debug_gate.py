@@ -14,7 +14,7 @@ from app.config import Settings
 def _settings(debug: bool, env_name: str):
     from app.config import Settings
 
-    return Settings(_env_file=None, MYSQL_PASSWORD="x", LLM_API_KEY="x", JWT_SECRET=secrets.token_hex(32), DEBUG=debug, ENV_NAME=env_name)
+    return Settings(_env_file=None, MYSQL_PASSWORD="x", LLM_API_KEY="x", JWT_SECRET=secrets.token_hex(32), API_TOKEN=secrets.token_hex(16), DEBUG=debug, ENV_NAME=env_name)
 
 
 @pytest.mark.parametrize(
