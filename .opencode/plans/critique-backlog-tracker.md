@@ -509,3 +509,11 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - pytest **24 passed** 我方实跑(K1 4/K2 6/K3 4/K4 10,K4 真 Redis);deploy.mjs status **9/9**(D2 后含 refine 抽验)。
 - 事件登记补全:#11-13=K 系列派单 3 连败(2×Model request failed/1×600s inactive),第 4 次成功;**inactive 的 agent 实际已完成 K1-K3(83ba660/cef769c/f261846)**——印证"cancelled/inactive≠没干活,先查盘再重派"。
 - 行为变更声明:K4 存量 refresh 一次性失效需重登(已批)/K1 METRICS_TOKEN 可选门(未设=公开+WARN)/K2-K3 默认行为不变。
+
+## 阶段性整体验收·批判性审计(2026-09-13,KB 接入+全项目重扫+三路审计)
+- **KB 接入**:vault②(E:\stu\project\Obsidian\agent架构,AGENTS v1.4)按规范消费——vault-lint exit 0;基准蒸馏 kb-benchmark-agent-arch.md(65 条判据,63 EXTRACTED,溯源卡 ID);诚实发现:域卡全是 build-domain-hubs.py 生成的 hub 索引页零判据,实质在 F/P/S/M 卡。
+- **全项目重扫**:2832 文件/144 万行;edu-agent 后端 838 文件 38.3 万行(含 tools/redis 9.2 万行第三方);前端 src 170 组件 2.7 万行;test-reports+fe-html+截图等非生产行占比过半。
+- **三路审计产物**:audit-edu-rag-mcp.md(26 条:P0×1 P1×5)/audit-edu-chat-langgraph.md(23 条:P0×2 P1×5)/kb-benchmark(65 判据)。
+- **P0 级 3 条(生产功能失效级)**:①记忆写入生产整体失效(main.py lifespan 从未调用 start_memory_worker,队列无人消费)②流式主路径绕过 LangGraph(9 节点图只服务非流式;流式走普通函数)③chunk_id 跨租户碰撞静默覆写(文件名_序号→crc32 主键)。
+- **P1 级代表**:Agent 工具调用 call_tool(arguments=) 签名错 100% 静默失败+契约测试用 monkeypatch 假 call_tool 测不出;TOOL_FALLBACK_MAP 永不可达;task95 四模块(auth/reconnect/isolation/dynamic_update)全是死代码虚标;search_knowledge MCP 空壳与 ai/graph 真检索两套互不相通;execute_tool_plan 死代码,工具决策靠玩具正则;task status IDOR;HyDE=4 条硬编码同义词;knowledge 直连检索旁路使多数请求仅 1 次 LLM。
+- **外部调研锚点**:LangGraph 生产实践=checkpoint+thread_id+interrupt()/Command(resume) 为 HITL 标准范式(docs.langchain.com/oss/python/langgraph/interrupts;swarnendu.de/blog/langgraph-best-practices)——EDU 流式路径未接图,该范式对主路径无效。
