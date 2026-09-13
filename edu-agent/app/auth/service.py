@@ -110,6 +110,11 @@ def decode_token(token: str, *, expect_type: str | None = None) -> TokenData:
 
     参数：
     - expect_type：传 "access" 或 "refresh" 时，额外校验 token_type 匹配
+
+    C5-K2 轮换 fallback：配置 JWT_SECRET_PREVIOUS 后，验签先试当前密钥
+    （JWT_SECRET），签名不符再试旧密钥——密钥轮换窗口期内旧 token 仍可验，
+    签发（_sign_jwt）永远只用当前密钥。过期语义不受 fallback 影响：
+    当前密钥验出 ExpiredSignatureError 直接判过期（说明确为当前密钥签发）。
     """
     try:
         payload = jwt.decode(
@@ -119,8 +124,22 @@ def decode_token(token: str, *, expect_type: str | None = None) -> TokenData:
         )
     except jwt.ExpiredSignatureError as e:
         raise ValidationError("登录已过期，请重新登录", code="AUTH_TOKEN_EXPIRED") from e
-    except jwt.InvalidTokenError as e:
-        raise ValidationError("登录凭证无效", code="AUTH_TOKEN_INVALID") from e
+    except jwt.InvalidTokenError as first_err:
+        prev_secret = (settings.JWT_SECRET_PREVIOUS or "").strip()
+        if prev_secret and prev_secret != settings.JWT_SECRET:
+            try:
+                payload = jwt.decode(
+                    token,
+                    prev_secret,
+                    algorithms=[settings.JWT_ALGORITHM],
+                )
+            except jwt.ExpiredSignatureError as e:
+                # 旧密钥签发但已过期：过期语义优先于密钥来源
+                raise ValidationError("登录已过期，请重新登录", code="AUTH_TOKEN_EXPIRED") from e
+            except jwt.InvalidTokenError:
+                raise ValidationError("登录凭证无效", code="AUTH_TOKEN_INVALID") from first_err
+        else:
+            raise ValidationError("登录凭证无效", code="AUTH_TOKEN_INVALID") from first_err
 
     user_id_str: str | None = payload.get("sub")
     role_str: str | None = payload.get("role")
