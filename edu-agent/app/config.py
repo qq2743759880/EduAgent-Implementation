@@ -514,6 +514,22 @@ class Settings(BaseSettings):
     # 管理端 API 占位 Token（部分后台内部脚本调用时使用）
     API_TOKEN: str = "edu-agent-dev-token"
 
+    # /metrics 抓取门禁（C5-K1）：可选。留空 → /metrics 维持公开（向后兼容，
+    # 监控抓取不被破坏，启动打 WARN）；设置后 /metrics 要求
+    # Authorization: Bearer <METRICS_TOKEN>，否则 401（Prometheus
+    # bearer_token/bearer_token_file 配置同一值即可）。
+    METRICS_TOKEN: str = ""
+
+    # JWT 轮换窗口期旧密钥（C5-K2）：可选。轮换 JWT_SECRET 时把旧密钥填到这里，
+    # 验签先试当前密钥、失败再试旧密钥（旧 token 在窗口期内仍有效）；签发永远
+    # 只用 JWT_SECRET。窗口期结束后清空本字段即可彻底作废旧密钥签发的 token。
+    JWT_SECRET_PREVIOUS: str = ""
+
+    # 500 错误上报 Webhook（C5-K3）：可选。非 DEBUG 且设置时，全局兜底异常处理
+    # 对 500 级异常 POST 精简载荷（trace_id/时间/异常类型/堆栈首 2000 字符）到该
+    # URL；发送失败静默不影响错误响应，DEBUG 模式一律不发。响应契约零变更。
+    ERROR_WEBHOOK_URL: str = ""
+
     # ============================================================
     # 检索参数（P2 调优时改这里，不用改代码）
     # ============================================================

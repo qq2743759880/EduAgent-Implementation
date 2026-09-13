@@ -67,6 +67,13 @@ def _warmup_local_models() -> None:
 async def lifespan(app: FastAPI):
     logger.info(f"=== {settings.APP_NAME} v{settings.APP_VERSION} 正在启动 ===")
 
+    # C5-K1：/metrics 门禁形态自证（未设 METRICS_TOKEN 维持公开=向后兼容，打 WARN）
+    if not (settings.METRICS_TOKEN or "").strip():
+        logger.warning(
+            "[安全] METRICS_TOKEN 未设置，/metrics 维持公开（Prometheus 抓取向后兼容）；"
+            "生产环境建议设置 METRICS_TOKEN 启用 Bearer 门禁（抓取端配 bearer_token 同值）"
+        )
+
     # P1-8 门禁已前移至 Settings 构造期(_debug_env_gate model_validator,import 即拦截)
 
     # ── 启动阶段：5 类存储初始化（任一失败仅 DEBUG 模式下继续） ──

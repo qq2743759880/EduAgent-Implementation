@@ -1,20 +1,37 @@
 # -*- coding: utf-8 -*-
 """监控路由：
-- /metrics：Prometheus 抓取端点（text/plain）。
+- /metrics：Prometheus 抓取端点（text/plain）。C5-K1：可选 METRICS_TOKEN Bearer 门。
 - /api/metrics/cache-context-dashboard：task97 联合看板（上下文水位 task96 + 缓存命中 task97）JSON。
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
 
 from app.monitoring.metrics import render_metrics
 from app.auth import CurrentUser, UserRole, require_role
+from app.config import settings
 
 router = APIRouter(tags=["监控"])
 
 
 @router.get("/metrics")
-async def metrics_endpoint():
-    """Prometheus 抓取端点（text/plain 格式）。"""
+async def metrics_endpoint(request: Request):
+    """Prometheus 抓取端点（text/plain 格式）。
+
+    C5-K1 门禁：METRICS_TOKEN 未设置 → 维持公开（向后兼容，监控抓取不被破坏）；
+    设置后要求 Authorization: Bearer <METRICS_TOKEN>，否则 401 壳（40101，
+    与全站鉴权失败响应形状一致）。比对用 hmac.compare_digest（恒定时间）。
+    """
+    expected = (settings.METRICS_TOKEN or "").strip()
+    if expected:
+        import hmac as _hmac
+
+        provided = request.headers.get("Authorization") or ""
+        if not _hmac.compare_digest(provided, f"Bearer {expected}"):
+            return JSONResponse(
+                status_code=401,
+                content={"code": "40101", "message": "metrics 访问凭证缺失或无效", "data": None},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     return Response(
         content=render_metrics(),
         media_type="text/plain; version=0.0.4; charset=utf-8",
