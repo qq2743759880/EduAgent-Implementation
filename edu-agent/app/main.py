@@ -401,6 +401,36 @@ def _is_dependency_exception(exc: BaseException) -> bool:
     return False
 
 
+# ── C5-K3：500 错误旁路上报（fire-and-forget，失败静默）──
+# 在飞上报任务集合：测试可 drain（asyncio.gather(*_ERROR_WEBHOOK_TASKS)）后断言载荷。
+_ERROR_WEBHOOK_TASKS: set[asyncio.Task] = set()
+
+
+def _report_error_webhook(request: Request, exc: Exception) -> None:
+    """非 DEBUG 且配置 ERROR_WEBHOOK_URL 时，旁路上报 500 级异常精简载荷。
+
+    - DEBUG 一律不发；URL 未设置不发；
+    - fire-and-forget（create_task），任何失败静默，不影响错误响应与契约形状。
+    """
+    url = (settings.ERROR_WEBHOOK_URL or "").strip()
+    if not url or settings.DEBUG:
+        return
+    try:
+        from app.common.error_webhook import build_error_webhook_payload, post_error_webhook
+
+        trace_id = ""
+        try:
+            trace_id = getattr(request.state, "trace_id", "") or ""
+        except Exception:  # pragma: no cover
+            pass
+        payload = build_error_webhook_payload(trace_id, exc)
+        task = asyncio.get_running_loop().create_task(post_error_webhook(url, payload))
+        _ERROR_WEBHOOK_TASKS.add(task)
+        task.add_done_callback(_ERROR_WEBHOOK_TASKS.discard)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """兜底异常 → {code, message, data: null}（T19-3 脱敏，reshape-b 契约）。
@@ -408,13 +438,16 @@ async def global_exception_handler(request: Request, exc: Exception):
     - **data 恒为 null**：无论 DEBUG 与否不再回传 str(exc)（原始异常细节只进日志）；
     - message 一律面向用户：依赖型异常（_is_dependency_exception）→ 50301
       「依赖服务暂不可用，请稍后重试」；其余 → 50000「服务内部错误，请稍后重试」；
-    - 原始异常经 logger.exception（含完整堆栈）入日志，DEBUG 详细报错能力不受影响。
+    - 原始异常经 logger.exception（含完整堆栈）入日志，DEBUG 详细报错能力不受影响；
+    - C5-K3：非 DEBUG 且设置 ERROR_WEBHOOK_URL 时旁路上报（fire-and-forget，
+      失败静默）——本函数返回的响应契约零变更。
     """
     logger.exception(f"未处理的异常: {type(exc).__name__}: {exc}")
     if _is_dependency_exception(exc):
         code, message = DEPENDENCY_UNAVAILABLE, "依赖服务暂不可用，请稍后重试"
     else:
         code, message = "50000", "服务内部错误，请稍后重试"
+    _report_error_webhook(request, exc)
     return JSONResponse(
         status_code=500,
         content={"code": code, "message": message, "data": None},
