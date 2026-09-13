@@ -28,11 +28,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.auth.router import router as auth_router
-from app.common.error_codes import STATUS_TO_CODE
+from app.common.error_codes import STATUS_TO_CODE, DEPENDENCY_UNAVAILABLE
 from app.common.exceptions import AppException
 from app.common.logging import logger
 from app.common.security_headers import SecurityHeadersMiddleware
 from app.config import settings
+from app.core.breaker import CircuitOpenError
 from app.core.openapi_shell import install_openapi_shell
 from app.database import (
     close_milvus, close_minio, close_mongo, close_mysql, close_neo4j, close_redis,
@@ -336,17 +337,78 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
     )
 
 
+# ── 依赖型异常识别（T19-3，contracts/reshape-b.json：50301 DEPENDENCY_UNAVAILABLE）──
+# 语义：外部依赖（Milvus/MongoDB/Redis/MySQL/Neo4j/MinIO/LLM/MCP server）连接失败或超时
+# 时，未捕获逃逸到全局兜底的异常不再以 50000+str(exc) 直泄，改判 50301 + 用户化 message。
+# HTTP 状态码语义不变（兜底恒 500；显式 raise 点可用 503）。
+_DEPENDENCY_LIB_ROOTS = frozenset({
+    "pymilvus", "pymongo", "redis", "pymysql", "mysql", "asyncmy",
+    "httpx", "aiohttp", "requests", "grpc", "neo4j", "minio",
+})
+# 类名兜底（模块根匹配失效时的 belt-and-suspenders；只收无歧义的连接/超时信号）
+_DEPENDENCY_EXC_NAMES = frozenset({
+    # pymilvus
+    "MilvusException", "MilvusClientException",
+    # pymongo
+    "ServerSelectionTimeoutError", "AutoReconnect", "ConnectionFailure",
+    # httpx / aiohttp
+    "ConnectError", "ConnectTimeout", "ReadTimeout", "WriteTimeout", "PoolTimeout",
+    "ClientConnectorError", "ServerTimeoutError",
+})
+
+
+def _is_dependency_exception(exc: BaseException) -> bool:
+    """判定异常是否为「外部依赖不可达/超时」类（50301 判定核心）。
+
+    保守匹配三族 + MCP spawn 签名，宁漏勿误（匹配不上仍走 50000，不影响原有语义）：
+    1. 内建连接/超时族：ConnectionError（含 Refused/Reset/BrokenPipe）、TimeoutError
+       （py3.11 起 asyncio.TimeoutError 与 socket.timeout 均为 TimeoutError 别名）；
+    2. 第三方驱动库：按异常 MRO 的 __module__ 根包匹配（不硬 import，依赖未装也不报错）；
+    3. 已知依赖异常名：按类名兜底（跨库别名/内部熔断信号）；
+    4. MCP stdio spawn 失败签名：app/mcp/executor.py 固定 raise 前缀（stdio /
+       create_subprocess_exec 失败）。
+    """
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return True
+    # 内部依赖信号（避免循环 import，函数内引入）
+    try:
+        from app.core.db_resilience import DependencyUnavailableError as _Dep
+        if isinstance(exc, _Dep):
+            return True
+    except Exception:  # pragma: no cover
+        pass
+    if isinstance(exc, CircuitOpenError):
+        return True
+    for klass in type(exc).__mro__:
+        root = (getattr(klass, "__module__", "") or "").split(".", 1)[0]
+        if root in _DEPENDENCY_LIB_ROOTS:
+            return True
+        if getattr(klass, "__name__", "") in _DEPENDENCY_EXC_NAMES:
+            return True
+    if isinstance(exc, RuntimeError):
+        msg = str(exc)
+        if msg.startswith("stdio") or "create_subprocess_exec 失败" in msg:
+            return True
+    return False
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """兜底异常 → {code: 50000, message, data: null}"""
-    logger.exception(f"未处理的异常: {exc}")
+    """兜底异常 → {code, message, data: null}（T19-3 脱敏，reshape-b 契约）。
+
+    - **data 恒为 null**：无论 DEBUG 与否不再回传 str(exc)（原始异常细节只进日志）；
+    - message 一律面向用户：依赖型异常（_is_dependency_exception）→ 50301
+      「依赖服务暂不可用，请稍后重试」；其余 → 50000「服务内部错误，请稍后重试」；
+    - 原始异常经 logger.exception（含完整堆栈）入日志，DEBUG 详细报错能力不受影响。
+    """
+    logger.exception(f"未处理的异常: {type(exc).__name__}: {exc}")
+    if _is_dependency_exception(exc):
+        code, message = DEPENDENCY_UNAVAILABLE, "依赖服务暂不可用，请稍后重试"
+    else:
+        code, message = "50000", "服务内部错误，请稍后重试"
     return JSONResponse(
         status_code=500,
-        content={
-            "code": "50000",
-            "message": "服务内部错误，请稍后重试",
-            "data": str(exc) if settings.DEBUG else None,
-        },
+        content={"code": code, "message": message, "data": None},
     )
 
 

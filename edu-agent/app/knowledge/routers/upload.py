@@ -30,6 +30,7 @@ from loguru import logger
 
 from app.auth import require_role, UserRole, get_current_user
 from app.auth.dependencies import CurrentUser
+from app.common.exceptions import DependencyUnavailableError
 from app.config import settings
 from app.knowledge.importer.loader import (
     ensure_collection_exists,
@@ -463,11 +464,15 @@ async def list_partitions(
             "partitions": partitions
         }
     except asyncio.TimeoutError:
-        logger.error("查询分区超时（Milvus 不可达），返回 503")
-        raise HTTPException(status_code=503, detail="Milvus 不可达，查询分区超时")
+        # T19-3（reshape-b）：50300「Milvus 不可达」直泄 → 50301 + 用户化 message；
+        # 原始异常（含堆栈）仅入日志，HTTP 503 语义不变。
+        logger.exception("查询分区超时（Milvus 不可达）——原始异常仅入日志，响应脱敏为 50301")
+        raise DependencyUnavailableError(http_status=503) from None
     except Exception as e:
-        logger.error(f"查询分区失败: {e}")
-        raise HTTPException(status_code=500, detail=f"查询失败: {e}")
+        # T19-3：原 f"查询失败: {e}" 直泄 str(e)（pymilvus 类名/host 等）→ 50301 脱敏；
+        # HTTP 500 语义不变，原始异常入日志。
+        logger.exception("查询分区失败（Milvus 依赖侧异常）——原始异常仅入日志，响应脱敏为 50301")
+        raise DependencyUnavailableError(http_status=500) from e
 
 
 @router.delete("/partitions/{tenant_id}")
@@ -487,5 +492,6 @@ async def delete_partition(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"删除分区失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除失败: {e}")
+        # T19-3：原 f"删除失败: {e}" 直泄 str(e) → 50301 脱敏；HTTP 500 语义不变。
+        logger.exception("删除分区失败（Milvus 依赖侧异常）——原始异常仅入日志，响应脱敏为 50301")
+        raise DependencyUnavailableError(http_status=500) from e

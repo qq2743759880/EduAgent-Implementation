@@ -20,6 +20,9 @@
   v1.0→v1.1: 2026-08-18 编排者强制批判发现数字码偏离 dev-plan/doc-frontend-spec/tech-source-audit
   三重权威文档的字符串要求，经裁定改为字符串（方案 A）。
   前端 code===0 判断成功不变，失败 code !== 0 按字符串 key 映射错误提示。
+  v1.1→v1.2: 2026-09-12 T19-3（contracts/reshape-b.json amendments，用户签字）纯增量新增
+  50301 DEPENDENCY_UNAVAILABLE（依赖不可达业务码 + 错误响应脱敏：message 面向用户、
+  原始异常仅入日志、data 恒 null；HTTP 状态码语义不变）。回滚=revert 单 commit。
 """
 
 # ═══════════════════════════════════════════
@@ -38,6 +41,10 @@ VALIDATION = "42200"               # 通用校验失败
 RATE_LIMITED = "42900"             # 限流
 INTERNAL_ERROR = "50000"           # 服务内部错误
 SERVICE_UNAVAILABLE = "50300"      # 服务不可用
+# 依赖不可达（T19-3，reshape-b 契约增补，2026-09-12 用户签字）：Milvus/MCP 等外部依赖
+# 连接失败/超时时返回。message 一律面向用户（「依赖服务暂不可用，请稍后重试」），
+# 原始异常仅入 logger（含堆栈），响应 data 恒为 null；HTTP 语义维持 503/500 不变。
+DEPENDENCY_UNAVAILABLE = "50301"   # 依赖不可达（脱敏业务码，替代 500/50300 直泄）
 
 # ═══════════════════════════════════════════
 # HTTP 状态码 → 业务错误码 单一事实源（judge R4 裁定）

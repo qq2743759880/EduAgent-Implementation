@@ -13,7 +13,7 @@
 """
 from app.common.error_codes import (
     OK, BAD_REQUEST, NOT_FOUND, FORBIDDEN, CONFLICT, VALIDATION,
-    INTERNAL_ERROR, SERVICE_UNAVAILABLE,
+    INTERNAL_ERROR, SERVICE_UNAVAILABLE, DEPENDENCY_UNAVAILABLE,
 )
 
 
@@ -168,4 +168,28 @@ class DatabaseError(AppException):
             message="数据库操作失败，请稍后重试",
             detail=f"{message}: {detail}" if detail else message,
             http_status=500,
+        )
+
+
+class DependencyUnavailableError(AppException):
+    """依赖服务不可达（T19-3，contracts/reshape-b.json：50301 DEPENDENCY_UNAVAILABLE）。
+
+    契约约束（变更单 sanitization 条款）：
+    - message 一律面向用户（默认「依赖服务暂不可用，请稍后重试」），禁止拼入内部异常细节
+      （文件路径/类名/host 等）；
+    - 原始异常由 raise 点用 logger.exception（含堆栈）完整入日志，**不进响应**：
+      detail 恒为 None → app_exception_handler 的 DEBUG data 亦为 null；
+    - HTTP 状态码语义不变：依赖超时/不可达传 http_status=503，未归类兜底传 500。
+
+    注意：与 app.core.db_resilience.DependencyUnavailableError 同名不同物——
+    那边是熔断内部信号（plain Exception），这边是响应壳 AppException。
+    """
+    DEFAULT_MESSAGE = "依赖服务暂不可用，请稍后重试"
+
+    def __init__(self, message: str | None = None, http_status: int = 503):
+        super().__init__(
+            code=DEPENDENCY_UNAVAILABLE,
+            message=message or self.DEFAULT_MESSAGE,
+            detail=None,  # 契约：原始异常仅入日志，detail 恒不回传（data 恒 null）
+            http_status=http_status,
         )
