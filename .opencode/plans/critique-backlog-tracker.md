@@ -465,3 +465,20 @@ test-reports/H-reverify-package.md(一令 pytest+分项手工表+提交索引)�
 - pytest 29 passed(T19-3 15 例+B1 14 例,我方实跑);正常路径 partitions 200 零回归(重启后实测);无效凭证 40101 不受影响。
 - 脱敏实证(agent 8001/8002 双实例对照):BEFORE 500+MilvusException 内部细节泄出 → AFTER 50301「依赖服务暂不可用」+data=null+堆栈全入日志。范围判定登记(8003 独立服务/MCP 审计字段/503 挂起分支 pytest 实证)。
 - B 批第二批状态:T19-3 ✅;B3-impl 独立复验待派(平台恢复后);T5 ✅。
+
+## general_log 已开启 + R0 前置条件全清单(2026-09-13)
+### general_log(用户裁定开启)
+SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,重启生效保持);顺手 PERSIST binlog 30 天保留。**从此任何 SQL 数据变更均带时间戳+线程可溯源**;磁盘开销≈开发强度数 MB/日,定期轮转。
+### R0 前置条件全清单(Gate A 之前必须逐项 ✅,防返工)
+| # | 前置 | 状态 |
+|---|---|---|
+| P0-1 | 范围冻结:R 产物只落 *-proto.html 新文件;存量 23 页与后端契约(reshape-a/a2/b)冻结不动 | ✅ 已在方案定死 |
+| P0-2 | 风格输入:用户需给出风格偏好/对标站点(或由 Gemini 出 3-5 变体供选) | ⬜ R0 第一动作 |
+| P0-3 | 验收工具链:frontend-quality-gate.mjs/prototype-parity-check.mjs/visual-regression.mjs 存在且语法过;CDP 脚本可用 | ✅ 本轮实证 |
+| P0-4 | 现状截图基线:15 页已有(task19);缺 favorites/practice/my-cohorts/refund/login 等 8 页补拍 | ⬜ 编排者补 |
+| P0-5 | Gemini 通道:CLI 可用性探测;不可用→用户中转模式(开工包交付) | ⬜ 待探测 |
+| P0-6 | 数据安全:general_log 已开(本轮✅)+**R0 开始前全库快照基线**(防 R0 期间违规直写无对照) | ⬜ 快照未做 |
+| P0-7 | 安全扫描:Mimosa 完整审计(deadline 09-14)——R0 会新增大量前端文件,先清欠账再开工 | ⬜ 明日到期 |
+| P0-8 | 任务书规范:P2-12 目标态+自证+差距大先停(已生效) | ✅ |
+| P0-9 | 用户评审节拍:每页 Gate A 签收(R1 学生 7 页+R2 管理 7 页),用户需预留时间 | ⬜ 用户知悉 |
+| P0-10 | AI Slop 机验 12 条红线入开工包+报告强制逐条自检 | ✅ 方案已定 |
