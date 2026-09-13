@@ -237,7 +237,9 @@ def _cors_origins() -> list[str]:
         return ["*"]
     if settings.CORS_ORIGINS.strip():
         return [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
-    return ["http://localhost:3000"]
+    # 生产回退：localhost 与 127.0.0.1 双源(taskC3 实证：仅 localhost 时 127.0.0.1:3000
+    # 访问前端的所有 API 调用被 CORS 拦截——DEBUG 态 CORS=* 从未暴露此依赖)
+    return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 app.add_middleware(
     CORSMiddleware,
