@@ -517,3 +517,8 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - **P0 级 3 条(生产功能失效级)**:①记忆写入生产整体失效(main.py lifespan 从未调用 start_memory_worker,队列无人消费)②流式主路径绕过 LangGraph(9 节点图只服务非流式;流式走普通函数)③chunk_id 跨租户碰撞静默覆写(文件名_序号→crc32 主键)。
 - **P1 级代表**:Agent 工具调用 call_tool(arguments=) 签名错 100% 静默失败+契约测试用 monkeypatch 假 call_tool 测不出;TOOL_FALLBACK_MAP 永不可达;task95 四模块(auth/reconnect/isolation/dynamic_update)全是死代码虚标;search_knowledge MCP 空壳与 ai/graph 真检索两套互不相通;execute_tool_plan 死代码,工具决策靠玩具正则;task status IDOR;HyDE=4 条硬编码同义词;knowledge 直连检索旁路使多数请求仅 1 次 LLM。
 - **外部调研锚点**:LangGraph 生产实践=checkpoint+thread_id+interrupt()/Command(resume) 为 HITL 标准范式(docs.langchain.com/oss/python/langgraph/interrupts;swarnendu.de/blog/langgraph-best-practices)——EDU 流式路径未接图,该范式对主路径无效。
+
+## vault② 精读 V2(2026-09-13,回应用户"49卡必须详读")
+- 三路精读完成:kb-deep-1(编排13卡:langgraph Channels/Pregel/checkpoint四包+generative_agents retrieve.py 三因子检索公式逐行核验)/kb-deep-2(记忆RAG评估8卡:cognee eval_framework 实装 EM/F1/coverage+bootstrap CI 为全库唯一实装评估;mem0 evaluation/ 空壳实证;向量库选型=库内确无对比结论,只有集成广度)/kb-deep-3(coding/观测/协议安全20卡:防御纵深五层+三平台可观测+skill三级谱系;发现4处卡片级错误)。
+- **前轮"四盲区"判定修正**:记忆效果评估/可观测平台/安全方法论=卡片确实覆盖( cognee eval 实装、F-C09 三平台、防御纵深五层)——前轮摘要员只读 hub 页属失职;唯"向量库选型对比"确不存在于库(仅集成广度),该条维持。
+- EDU 对照升级判据(新增锋利项):generative_agents 三因子检索排序公式(relevance+recency指数衰减+importance)vs EDU 纯 cos+写死参数;crewai expected_output+crewai test vs EDU 零评估;hermes exact-pin+三级审批 vs EDU 工具调用 100% 静默失败;langgraph Channels 语义(Binop 防覆盖)vs EDU 状态硬编码返回全空。
