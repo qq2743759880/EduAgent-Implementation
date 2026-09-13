@@ -460,3 +460,8 @@ test-reports/H-reverify-package.md(一令 pytest+分项手工表+提交索引)�
 1. **3 笔 pending 订单**:已经 API 取消(3-260906171439/182630/182637 全部 200,pending 清零;取消接口=POST /trade/order/{no}/cancel)。
 2. **帖删除定责(binlog 终版)**:17:02:39 大事务(thread_id=63)删除帖 88/89/90/97+评论+反应+task05 测试单 6-260906172441+券记录——**目标清单与 tracker 公布的 P1-7 残留清单完全重合**;客户端带 READ COMMITTED(app/database.py 无此配置=自定义脚本客户端);ROW binlog 不含执行者身份,general_log=OFF → **agent 级定责不可达**。定责结论:具有 MySQL 凭据(.env)+知晓残留清单的行为人,在第三波 agent 运行窗口执行了清理;可能是善意越权(执行 P1-7 条目)。处置:①禁 DB 直写条款已在 B 批开工单生效 ②建议开启 MySQL general_log(或审计插件)供未来溯源(用户裁定是否开启) ③演示前全库快照+差异比对维持必做。
 3. **T19-3 已签** → reshape-b v2 冻结(见上),实施派第二批。
+
+## T19-3 验收(2026-09-13,3cc09a9,独立 agent 实施+编排者复现)
+- pytest 29 passed(T19-3 15 例+B1 14 例,我方实跑);正常路径 partitions 200 零回归(重启后实测);无效凭证 40101 不受影响。
+- 脱敏实证(agent 8001/8002 双实例对照):BEFORE 500+MilvusException 内部细节泄出 → AFTER 50301「依赖服务暂不可用」+data=null+堆栈全入日志。范围判定登记(8003 独立服务/MCP 审计字段/503 挂起分支 pytest 实证)。
+- B 批第二批状态:T19-3 ✅;B3-impl 独立复验待派(平台恢复后);T5 ✅。
