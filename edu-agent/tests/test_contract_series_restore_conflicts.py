@@ -209,3 +209,21 @@ class TestHardDeleteZeroReference:
         assert "彻底删除" in hb.get("message", ""), f"message 应为真删语义: {hb}"
         gc, _, gb = api("GET", f"{ADMIN_BASE}/series/{sid}", headers=h)
         assert gc == 404 and gb["code"] == "40400", f"真删后 GET 应 404: {gc} {gb}"
+
+
+class TestUploadIdPathTraversal:
+    """Mimosa HIGH 修复回归（H1d）：upload_id 含路径穿越段 → 校验拒绝，不落盘。"""
+
+    def test_traversal_upload_id_rejected(self, admin):
+        h = admin["headers"]
+        sc, _, sb = api("POST", f"{ADMIN_BASE}/videos/init-chunked?session_id=1&file_name=x.mp4&file_size=1024&chunk_count=1", h, {})
+        assert sc == 200 and sb["code"] == 0, f"init 失败: {sb}"
+        up = sb["data"]["upload_id"]
+        import urllib.parse
+        evil = urllib.parse.quote(up + "/../../evil", safe="")
+        cc, _, cb = api("PUT", f"{ADMIN_BASE}/videos/upload-chunk/{evil}/0", h, {"_raw": "x"})
+        # 变更单外新行为：非法 upload_id 走 VALIDATION 42200（HTTP 400/422），路由层 404 同样视为拒绝
+        assert cc in (400, 404, 422) and (cc == 404 or cb.get("code") == "42200"), f"穿越 upload_id 未被拒绝: {cc} {cb}"
+        # 合法 upload_id 正常工作（对偶验证）
+        oc, _, ob = api("PUT", f"{ADMIN_BASE}/videos/upload-chunk/{up}/0", h, {"_raw": "x"})
+        assert oc in (200, 400) and ob.get("code") in (0, "50301"), f"合法 upload_id 异常: {oc} {ob}"

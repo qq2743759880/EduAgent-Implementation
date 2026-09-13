@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import shutil
 import uuid
 from datetime import datetime, timedelta
@@ -470,8 +471,18 @@ def _video_media_root() -> Path:
     return root
 
 
+_UPLOAD_ID_RE = re.compile(r"^[A-Za-z0-9_]{6,64}$")
+
+
+def _safe_upload_id(upload_id: str) -> str:
+    """路径穿越防护（Mimosa HIGH）：upload_id 仅允许字母数字下划线，拒绝 ../ 等任意路径段。"""
+    if not _UPLOAD_ID_RE.match(upload_id or ""):
+        raise AppException(VALIDATION, "非法的 upload_id（仅允许字母/数字/下划线，6~64 位）")
+    return upload_id
+
+
 def _upload_tmp_dir(upload_id: str) -> Path:
-    d = Path(settings.DATA_DIR) / "uploads" / "tmp" / upload_id
+    d = Path(settings.DATA_DIR) / "uploads" / "tmp" / _safe_upload_id(upload_id)
     d.mkdir(parents=True, exist_ok=True)
     return d
 
