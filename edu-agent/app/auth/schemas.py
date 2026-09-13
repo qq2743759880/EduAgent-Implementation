@@ -151,6 +151,9 @@ class TokenData(BaseModel):
     role: UserRole                 # 角色（RBAC 依据）
     exp: datetime                  # 过期时间（UTC）
     token_type: str = "access"     # access / refresh
+    # C5-K4：refresh_token 轮换唯一 ID（refresh 签发时写入 payload）。
+    # access token 无此字段（None）；存量无 jti 的 refresh_token 一次性作废（行为变更已批）。
+    jti: str | None = None
 
 
 # ============================================================

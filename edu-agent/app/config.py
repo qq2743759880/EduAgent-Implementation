@@ -505,6 +505,12 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24   # 24 小时（默认）
     # refresh_token：用于换新 access_token，实现「7 天滑动过期」
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7            # 7 天（默认）
+
+    # refresh_token 轮换 allowlist（C5-K4）：默认开。登录/刷新签发的 refresh_token
+    # 带 jti，Redis 存 rt:{user_id}:{jti}（TTL=refresh 有效期）；刷新成功原子消费
+    # 旧 jti、登记新 jti（轮换后旧 refresh 被拒，防重放）。Redis 降级 fail-open
+    # （跳过校验维持旧行为）；false=回退轮换前行为（存量会话不失效）。
+    JWT_REFRESH_ROTATION_ENABLED: bool = True
     # 兼容老字段（其他模块还在用 JWT_EXPIRE_MINUTES）
     JWT_EXPIRE_MINUTES: int = 60 * 24
 

@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -77,6 +78,11 @@ def _sign_jwt(payload: dict, expire_minutes: int) -> str:
     )
 
 
+def _refresh_allowlist_enabled() -> bool:
+    """C5-K4：refresh_token 轮换 allowlist 总开关（回滚开关，默认开）。"""
+    return bool(getattr(settings, "JWT_REFRESH_ROTATION_ENABLED", True))
+
+
 def create_access_token(user_id: int, role: UserRole) -> tuple[str, int]:
     """签发 access_token。返回 (jwt 字符串, 剩余有效秒数)。"""
     minutes = ACCESS_TOKEN_EXPIRE_MINUTES
@@ -91,17 +97,29 @@ def create_access_token(user_id: int, role: UserRole) -> tuple[str, int]:
     return token, minutes * 60
 
 
-def create_refresh_token(user_id: int, role: UserRole) -> str:
-    """签发 refresh_token（7 天有效，滑动过期）。"""
+def _create_refresh_token_with_jti(user_id: int, role: UserRole) -> tuple[str, str]:
+    """
+    C5-K4：签发带 jti 的 refresh_token。返回 (jwt 字符串, jti)。
+
+    轮换关闭（JWT_REFRESH_ROTATION_ENABLED=false）时 jti 返回空串、payload
+    不含 jti 字段（完全回退轮换前行为）。签发永远只用当前密钥（同 K2 语义）。
+    """
     minutes = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60
-    return _sign_jwt(
-        payload={
-            "sub": str(user_id),
-            "role": role.value,
-            "token_type": "refresh",
-        },
-        expire_minutes=minutes,
-    )
+    jti = uuid.uuid4().hex if _refresh_allowlist_enabled() else ""
+    payload: dict = {
+        "sub": str(user_id),
+        "role": role.value,
+        "token_type": "refresh",
+    }
+    if jti:
+        payload["jti"] = jti
+    return _sign_jwt(payload=payload, expire_minutes=minutes), jti
+
+
+def create_refresh_token(user_id: int, role: UserRole) -> str:
+    """签发 refresh_token（7 天有效，滑动过期）。向后兼容：只返回 token 字符串。"""
+    token, _jti = _create_refresh_token_with_jti(user_id, role)
+    return token
 
 
 def decode_token(token: str, *, expect_type: str | None = None) -> TokenData:
@@ -164,7 +182,79 @@ def decode_token(token: str, *, expect_type: str | None = None) -> TokenData:
         role=role_enum,
         exp=datetime.fromtimestamp(exp_ts, tz=timezone.utc),
         token_type=token_type or "access",
+        jti=payload.get("jti"),
     )
+
+
+# ============================================================
+# 二·五 refresh_token 轮换 allowlist（C5-K4，Redis 最小方案）
+# ============================================================
+# 语义：
+# - 登录/刷新签发的 refresh_token 带 jti，Redis 存 rt:{user_id}:{jti}
+#   （TTL = refresh 有效期）；刷新成功原子消费（删除）旧 jti、登记新 jti。
+# - jti 不在 allowlist → 401（AUTH_TOKEN_INVALID，复用既有 401 映射）。
+# - Redis 降级（未初始化/读写异常）→ fail-open：跳过 allowlist 校验/登记，
+#   维持轮换前行为 + 降级 WARN 日志（可用性优先，与项目 Redis 降级口径一致）。
+# - 存量无 jti 的 refresh_token：Redis 可用时一次性作废（行为变更已批）；
+#   Redis 降级时维持旧行为放行（fail-open）。
+_CONSUME_JTI_LUA = """
+if redis.call('get', KEYS[1]) then
+  redis.call('del', KEYS[1])
+  return 1
+else
+  return 0
+end
+"""
+
+
+def _get_redis_or_none():
+    """取 Redis 客户端；未初始化/取用异常 → None（作为 fail-open 判定依据）。"""
+    try:
+        from app.database import get_redis
+        return get_redis()
+    except Exception:
+        return None
+
+
+async def _allowlist_register(user_id: int, jti: str, ttl_seconds: int) -> bool:
+    """登记 jti 到 Redis allowlist。返回 True=已登记；False=Redis 降级（fail-open）。"""
+    r = _get_redis_or_none()
+    if r is None:
+        logger.warning(
+            "[auth.refresh-rotation] Redis 降级，allowlist fail-open（未登记 jti）"
+            f" user_id={user_id}"
+        )
+        return False
+    try:
+        await r.setex(f"rt:{user_id}:{jti}", ttl_seconds, "1")
+        return True
+    except Exception as e:
+        logger.warning(
+            f"[auth.refresh-rotation] Redis 写入失败，fail-open user_id={user_id}: {e}"
+        )
+        return False
+
+
+async def _allowlist_consume(user_id: int, jti: str) -> bool:
+    """
+    原子校验并消费（get+del）jti。返回 True=有效（或 Redis 降级 fail-open 放行）；
+    False=jti 不在 allowlist（应 401）。
+    """
+    r = _get_redis_or_none()
+    if r is None:
+        logger.warning(
+            "[auth.refresh-rotation] Redis 降级，allowlist fail-open（跳过校验）"
+            f" user_id={user_id}"
+        )
+        return True
+    try:
+        consumed = await r.eval(_CONSUME_JTI_LUA, 1, f"rt:{user_id}:{jti}")
+        return bool(consumed)
+    except Exception as e:
+        logger.warning(
+            f"[auth.refresh-rotation] Redis 校验失败，fail-open user_id={user_id}: {e}"
+        )
+        return True
 
 
 # ============================================================
@@ -304,7 +394,12 @@ async def login_user(req: UserLogin) -> LoginResponse:
 
     role = UserRole(row["role_code"])
     access_str, expires_in = create_access_token(int(row["user_id"]), role)
-    refresh_str = create_refresh_token(int(row["user_id"]), role)
+    refresh_str, refresh_jti = _create_refresh_token_with_jti(int(row["user_id"]), role)
+    if refresh_jti:
+        # C5-K4：refresh allowlist 登记；Redis 降级 fail-open（不阻断登录）
+        await _allowlist_register(
+            int(row["user_id"]), refresh_jti, REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600
+        )
 
     user = UserInfo(
         user_id=int(row["user_id"]),
@@ -331,14 +426,40 @@ async def login_user(req: UserLogin) -> LoginResponse:
 async def refresh_access_token(req: RefreshTokenRequest) -> LoginResponse:
     """
     用 refresh_token 换新 access_token（同时换 refresh_token，实现「滑动过期」）。
+
+    C5-K4 轮换：refresh_token 带 jti，Redis allowlist 校验通过即原子消费旧 jti、
+    换发带新 jti 的 refresh_token（轮换后旧 refresh 被拒，防重放）。
+    Redis 降级 fail-open（跳过校验，维持轮换前行为）。
+    存量无 jti 的 refresh_token：Redis 可用时一次性作废（行为变更已批）。
     """
     token_data = decode_token(req.refresh_token, expect_type="refresh")
+    if _refresh_allowlist_enabled():
+        if token_data.jti:
+            consumed = await _allowlist_consume(token_data.user_id, token_data.jti)
+            if not consumed:
+                raise ValidationError(
+                    "登录凭证无效（refresh_token 已轮换或已失效）",
+                    code="AUTH_TOKEN_INVALID",
+                )
+        elif _get_redis_or_none() is not None:
+            # 存量无 jti 的 token：Redis 可用（未降级）才一次性作废；降级则 fail-open 放行
+            raise ValidationError(
+                "登录凭证无效（存量 refresh_token 已作废，请重新登录）",
+                code="AUTH_TOKEN_INVALID",
+            )
+
     user_info = await get_user_info_by_id(token_data.user_id)
     if user_info is None:
         raise ValidationError("用户不存在", code="AUTH_USER_NOT_FOUND")
 
     access_str, expires_in = create_access_token(user_info.user_id, user_info.role)
-    refresh_str = create_refresh_token(user_info.user_id, user_info.role)
+    refresh_str, refresh_jti = _create_refresh_token_with_jti(
+        user_info.user_id, user_info.role
+    )
+    if refresh_jti:
+        await _allowlist_register(
+            user_info.user_id, refresh_jti, REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600
+        )
 
     logger.info(f"[auth.refresh] Token 刷新成功 user_id={user_info.user_id}")
     return LoginResponse(
