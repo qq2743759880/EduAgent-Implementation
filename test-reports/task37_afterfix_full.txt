@@ -1,0 +1,310 @@
+﻿..................................F..................................... [  8%]
+................F....s.................................................. [ 17%]
+...........s.....................F..F.FFF.FFFFF...F.............s....... [ 25%]
+..........................s............................................. [ 34%]
+........................................................................ [ 43%]
+........................................................................ [ 51%]
+...........................................F..........ssss.............. [ 60%]
+............................................F...............s........... [ 68%]
+......s...................................F............................. [ 77%]
+............................sssssssssssssss...........F................. [ 86%]
+........................................................................ [ 94%]
+...sssssss.ss................................                            [100%]
+================================== FAILURES ===================================
+__________________________ test_be_task01_delete_hit __________________________
+tests\test_be_task01_suite.py:65: in test_be_task01_delete_hit
+    assert r.returncode == 0, "be-task01 打靶存在 FAIL（见上方输出与 test-reports/be-task01-hit-report.md）"
+E   AssertionError: be-task01 打靶存在 FAIL（见上方输出与 test-reports/be-task01-hit-report.md）
+E   assert 2 == 0
+E    +  where 2 = CompletedProcess(args=['Z:\\anaconda3\\envs\\kb311\\python.exe', 'E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\scripts\\restart_uvicorn_and_chat_delete_hit.py'], returncode=2).returncode
+---------------------------- Captured stdout call -----------------------------
+
+$ Z:\anaconda3\envs\kb311\python.exe E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\restart_uvicorn_and_chat_delete_hit.py
+  [INFO] 8000 已在运行，复用现有服务（不杀不重启）
+
+==================================================================
+
+be-task01 打靶：chat DELETE 软删（DEBUG=true，按 .env 分支断言）
+
+==================================================================
+
+  [PASS] [01] A1 /health 200 — 实际 200
+
+  [FAIL] [02] 套件执行异常 — 'access_token'
+
+       [WARN] FAIL：套件执行异常
+
+
+
+[FAIL] 异常：'access_token'
+
+
+
+==================================================================
+
+[FAIL] be-task01 打靶失败：1/2 FAIL（DEBUG=true）
+
+[INFO] 报告：E:\stu\project\stu\EduAgent实施手册\test-reports\be-task01-hit-report.md
+
+==================================================================
+
+============================================================
+
+0. .env DEBUG=true（打靶脚本将按此分支显式断言）
+
+============================================================
+
+
+
+1. 选择 Python
+
+  选中：E:\stu\project\libs\kb311\Scripts\python.exe
+
+
+
+2. 清理占用 8000 的旧进程（含 SO_REUSEADDR 双进程）
+
+  杀 PID=23060…
+
+
+
+3. 启动 uvicorn（DEBUG 分支：值与 .env 一致）
+
+  uvicorn PID=3596，日志：E:\stu\project\stu\EduAgent实施手册\edu-agent\uvicorn_p2.log
+
+
+
+4. 轮询端口就绪（最多 420s：MinIO 不可达时 lifespan 首次会卡默认 300s 连接超时，属既有降级行为）
+
+  [OK] 服务已就绪
+
+
+
+5. 跑 chat_delete_hit.py（DELETE 软删断言矩阵 + DB 直查 + 报告落盘）
+
+_________ TestIdempotencyMiddleware.test_idempotency_repeat_full_body _________
+tests\test_contract_middleware.py:170: in test_idempotency_repeat_full_body
+    assert resp2["data"]["order_no"] == first_order_no
+E   AssertionError: assert '1-260904142323-9739b1' == '1-260904142317-166ba2'
+E     
+E     - 1-260904142317-166ba2
+E     + 1-260904142323-9739b1
+________________ TestMeCohorts.test_list_active_with_progress _________________
+tests\test_contract_task20.py:85: in test_list_active_with_progress
+    assert target, f"夹具班次 {FI['cohort_id']} 应出现在 active 列表"
+E   AssertionError: 夹具班次 997 应出现在 active 列表
+E   assert []
+---------------------------- Captured stdout setup ----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b2ef6617] GET /api/enrollments/me/cohorts → 200 (71ms)[0m
+______________________ TestEnrollmentDetail.test_detail _______________________
+tests\test_contract_task20.py:106: in test_detail
+    assert r.status_code == 200 and r.json()["code"] == 0
+E   assert (404 == 200)
+E    +  where 404 = <Response [404 Not Found]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[a69092b3] GET /api/enrollments/me/cohorts/997 → 404 (12ms)[0m
+______________________ TestEnrollmentStatus.test_status _______________________
+tests\test_contract_task20.py:119: in test_status
+    assert r.status_code == 200 and r.json()["code"] == 0
+E   assert (404 == 200)
+E    +  where 404 = <Response [404 Not Found]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[76705171] GET /api/enrollments/me/cohorts/997/status → 404 (11ms)[0m
+_________________ TestProgressSnapshot.test_snapshot_modules __________________
+tests\test_contract_task20.py:128: in test_snapshot_modules
+    assert r.status_code == 200 and r.json()["code"] == 0
+E   assert (404 == 200)
+E    +  where 404 = <Response [404 Not Found]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[d6fcc147] GET /api/enrollments/me/cohorts/997/progress → 404 (11ms)[0m
+-------------------------- Captured stdout teardown ---------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.database[0m:[36mclose_mysql[0m:[36m132[0m | [1mMySQL 连接池已关闭[0m
+__________________ TestAccessAuthz.test_enrolled_accessible ___________________
+tests\test_contract_task21.py:118: in test_enrolled_accessible
+    assert d["accessible"] is True and d["series_id"] == FI["series_id"]
+E   assert (False is True)
+---------------------------- Captured stdout setup ----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[49245b18] GET /api/study/courses/333/access → 200 (27ms)[0m
+________________ TestAccessAuthz.test_enrolled_can_view_detail ________________
+tests\test_contract_task21.py:133: in test_enrolled_can_view_detail
+    assert r.status_code == 200 and r.json()["code"] == 0
+E   assert (403 == 200)
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[730417e8] GET /api/study/sessions/26725 → 403 (20ms)[0m
+____________ TestSessionDetailAssets.test_assets_filtered_by_scope ____________
+tests\test_contract_task21.py:146: in test_assets_filtered_by_scope
+    scopes = {a["access_scope"] for a in d["assets"]}
+                                         ^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[23b35270] GET /api/study/sessions/26725 → 403 (22ms)[0m
+_____________ TestSessionDetailAssets.test_transcode_status_valid _____________
+tests\test_contract_task21.py:158: in test_transcode_status_valid
+    v = d.get("video")
+        ^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[1dba7de9] GET /api/study/sessions/26725 → 403 (22ms)[0m
+_____________________ TestOutline.test_outline_structure ______________________
+tests\test_contract_task21.py:172: in test_outline_structure
+    assert d["total_sessions"] >= 1
+E   assert 0 >= 1
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[4a16527d] GET /api/study/courses/333/outline → 200 (34ms)[0m
+______________________ TestSessionComplete.test_complete ______________________
+tests\test_contract_task21.py:192: in test_complete
+    assert r.status_code == 200 and r.json()["code"] == 0
+E   assert (403 == 200)
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b77a7c0f] POST /api/study/sessions/26725/complete → 403 (17ms)[0m
+________________ TestUserIsolation.test_cross_user_detail_404 _________________
+tests\test_contract_task22.py:112: in test_cross_user_detail_404
+    assert r.status_code == 404 and r.json()["code"] == "40441"
+E   assert (200 == 404)
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout call -----------------------------
+[32m14:45:12[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[aef7d5ff] GET /api/trade/after_sales/ticket/11054 → 200 (16ms)[0m
+______________ TestExpandSchema.test_expand_schema_returns_full _______________
+tests\test_contract_task_c2.py:157: in test_expand_schema_returns_full
+    assert spec is not None
+E   assert None is not None
+___________ TestAC5Regression.test_default_fallback_recall_unbroken ___________
+tests\test_contract_task_m2.py:209: in test_default_fallback_recall_unbroken
+    assert res and res[0]["memory_id"] == 1
+E   assert ([])
+---------------------------- Captured stdout call -----------------------------
+[32m14:47:25[0m | [1mINFO    [0m | [36mapp.ai.memory.vector[0m:[36m_try_init_milvus[0m:[36m188[0m | [1m[Memory:vector] 已连接 Milvus（backend=milvus, dim=1024）[0m
+____________________ test_inmemory_backend_when_uri_empty _____________________
+tests\test_contract_task_vec.py:86: in test_inmemory_backend_when_uri_empty
+    assert asyncio.run(run()) == [1]
+E   assert [2] == [1]
+E     
+E     At index 0 diff: 2 != 1
+E     
+E     Full diff:
+E       [
+E     -     1,
+E     ?     ^
+E     +     2,
+E     ?     ^
+E       ]
+---------------------------- Captured stdout call -----------------------------
+[32m14:47:47[0m | [1mINFO    [0m | [36mapp.ai.memory.vector[0m:[36m_try_init_milvus[0m:[36m175[0m | [1m[Memory:vector] 无 Milvus URI，降级 in-memory 向量[0m
+[32m14:47:47[0m | [33m[1mWARNING [0m | [36mapp.ai.memory.vector[0m:[36m_try_init_redis[0m:[36m215[0m | [33m[1m[Memory:vector] 无 Redis 客户端，降级 in-memory 向量（degraded_reason=redis_unreachable）[0m
+_______________ TestSeriesListGwt1.test_p95_latency_under_200ms _______________
+tests\test_course_domain.py:137: in test_p95_latency_under_200ms
+    assert p95 < 200, f"P95={p95:.1f}ms 超出 200ms（样本 {durations}）"
+E   AssertionError: P95=2083.4ms 超出 200ms（样本 [2049.3655999889597, 2053.2884999993257, 2053.3324999996694, 2058.01030001021, 2059.562399997958, 2065.6011999963084, 2067.6779999921564, 2068.196000007447, 2068.9684999961173, 2069.4250999949872, 2070.301199986716, 2070.3549000027124, 2071.7260999954306, 2072.008300005109, 2072.3966999939876, 2073.170999996364, 2073.1882999971276, 2075.3448999894317, 2083.428800004185, 2090.1603999955114]）
+E   assert 2083.428800004185 < 200
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app\rerank_service\main.py:115
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:115: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\rerank_service\main.py:128
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_contract_task17.py::TestOrderCore::test_create_order_and_fields
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\_pytest\python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_contract_task17.py::TestOrderCore::test_create_order_and_fields returned <class 'str'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_contract_task24.py::TestIntentRouting::test_knowledge_full_pipeline
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/test_core.py::TestCache::test_cache_hit
+tests/test_core.py::TestCache::test_concurrent_get_or_load
+tests/test_core.py::TestCache::test_short_polling_gets_value
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\core\breaker.py:125: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_be_task01_suite.py::test_be_task01_delete_hit - AssertionError: be-task01 打靶存在 FAIL（见上方输出与 test-reports/be-task01-hit-report.md）
+assert 2 == 0
+ +  where 2 = CompletedProcess(args=['Z:\\anaconda3\\envs\\kb311\\python.exe', 'E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\scripts\\restart_uvicorn_and_chat_delete_hit.py'], returncode=2).returncode
+FAILED tests/test_contract_middleware.py::TestIdempotencyMiddleware::test_idempotency_repeat_full_body - AssertionError: assert '1-260904142323-9739b1' == '1-260904142317-166ba2'
+  
+  - 1-260904142317-166ba2
+  + 1-260904142323-9739b1
+FAILED tests/test_contract_task20.py::TestMeCohorts::test_list_active_with_progress - AssertionError: 夹具班次 997 应出现在 active 列表
+assert []
+FAILED tests/test_contract_task20.py::TestEnrollmentDetail::test_detail - assert (404 == 200)
+ +  where 404 = <Response [404 Not Found]>.status_code
+FAILED tests/test_contract_task20.py::TestEnrollmentStatus::test_status - assert (404 == 200)
+ +  where 404 = <Response [404 Not Found]>.status_code
+FAILED tests/test_contract_task20.py::TestProgressSnapshot::test_snapshot_modules - assert (404 == 200)
+ +  where 404 = <Response [404 Not Found]>.status_code
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_accessible - assert (False is True)
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_can_view_detail - assert (403 == 200)
+ +  where 403 = <Response [403 Forbidden]>.status_code
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_assets_filtered_by_scope - TypeError: 'NoneType' object is not subscriptable
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_transcode_status_valid - AttributeError: 'NoneType' object has no attribute 'get'
+FAILED tests/test_contract_task21.py::TestOutline::test_outline_structure - assert 0 >= 1
+FAILED tests/test_contract_task21.py::TestSessionComplete::test_complete - assert (403 == 200)
+ +  where 403 = <Response [403 Forbidden]>.status_code
+FAILED tests/test_contract_task22.py::TestUserIsolation::test_cross_user_detail_404 - assert (200 == 404)
+ +  where 200 = <Response [200 OK]>.status_code
+FAILED tests/test_contract_task_c2.py::TestExpandSchema::test_expand_schema_returns_full - assert None is not None
+FAILED tests/test_contract_task_m2.py::TestAC5Regression::test_default_fallback_recall_unbroken - assert ([])
+FAILED tests/test_contract_task_vec.py::test_inmemory_backend_when_uri_empty - assert [2] == [1]
+  
+  At index 0 diff: 2 != 1
+  
+  Full diff:
+    [
+  -     1,
+  ?     ^
+  +     2,
+  ?     ^
+    ]
+FAILED tests/test_course_domain.py::TestSeriesListGwt1::test_p95_latency_under_200ms - AssertionError: P95=2083.4ms 超出 200ms（样本 [2049.3655999889597, 2053.2884999993257, 2053.3324999996694, 2058.01030001021, 2059.562399997958, 2065.6011999963084, 2067.6779999921564, 2068.196000007447, 2068.9684999961173, 2069.4250999949872, 2070.301199986716, 2070.3549000027124, 2071.7260999954306, 2072.008300005109, 2072.3966999939876, 2073.170999996364, 2073.1882999971276, 2075.3448999894317, 2083.428800004185, 2090.1603999955114]）
+assert 2083.428800004185 < 200
+17 failed, 786 passed, 34 skipped, 10 warnings in 1816.15s (0:30:16)
+.\.venv\Scripts\python.exe : E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\neo4j\_sync\driver.py:54
+7: DeprecationWarning: Relying on Driver's destructor to close the session is deprecated. Please make sure to close the
+ session. Use it as a context (`with` statement) or make sure to call `.close()` explicitly. Future versions of the dri
+ver will not close drivers automatically.
+At line:15 char:1161
++ ... edu-agent"; .\.venv\Scripts\python.exe -X utf8 -m pytest tests/ -q -- ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (E:\stu\project\... automatically.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

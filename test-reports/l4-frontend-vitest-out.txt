@@ -1,0 +1,317 @@
+﻿
+> edu-frontend@0.2.0 test
+> vitest run
+
+node.exe : [33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned t
+o become the default in a future major version of Vite:
+At line:1 char:1
++ & "Z:\node/node.exe" "Z:\node/node_modules/npm/bin/npm-cli.js" test
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33m(!) Your V...ersion of Vite::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - `__dirname` (vitest.config.mts:18:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mE:/stu/project/stu/EduAgent实施手册/edu-frontend[39m
+
+ [32m✓[39m src/components/layout/AppShell.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 3751[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染品牌 label 与全部菜单 label [33m 1343[2mms[22m[39m
+     [33m[2m✓[22m[39m pathname /courses/123 → 课程中心（matchPrefix=/courses）aria-current=page，其他项无 [33m 565[2mms[22m[39m
+     [33m[2m✓[22m[39m pathname 精确命中（/dashboard）→ 无 matchPrefix 项按 === 激活 [33m 329[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击打开按钮 → 移动菜单 translate-x-0 + aria-expanded=true + 聚焦首菜单项 [33m 390[2mms[22m[39m
+     [33m[2m✓[22m[39m Escape 关闭抽屉 → -translate-x-full + aria-expanded=false + 焦点归还打开按钮 [33m 437[2mms[22m[39m
+     [33m[2m✓[22m[39m 移动打开按钮以 md:hidden 隐藏（SSR/hydration 安全保留在 DOM）；桌面顶部导航可用 [33m 337[2mms[22m[39m
+ [32m✓[39m src/components/community/CommunityFilterBar.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 3762[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染全部 + 4 版块 chips，选中态 aria-pressed [33m 1070[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击版块 chip 回传 onBoardChange 并切换 aria-pressed [33m 340[2mms[22m[39m
+     [33m[2m✓[22m[39m 搜索输入经防抖后回传 onSearch [33m 852[2mms[22m[39m
+     [33m[2m✓[22m[39m 点搜索按钮立即回传 onSearch（trim） [33m 1239[2mms[22m[39m
+ [32m✓[39m src/app/(user)/practice/[mode]/_components/QuizSession.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 3741[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染题干与选项，答对后展示判分横幅与 Markdown 解析 [33m 2007[2mms[22m[39m
+     [33m[2m✓[22m[39m 答错时展示错误横幅与正确答案提示 [33m 957[2mms[22m[39m
+     [33m[2m✓[22m[39m 提供标准判断题选项（非假数据） [33m 365[2mms[22m[39m
+ [32m✓[39m src/components/community/ReactButtons.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 619[2mms[22m[39m
+ [32m✓[39m src/app/(user)/learning/[seriesId]/[sessionId]/_components/learning-play.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 4788[2mms[22m[39m
+     [33m[2m✓[22m[39m 空作答：拦截提交并 toast.error，不调用 submitHomework [33m 1788[2mms[22m[39m
+     [33m[2m✓[22m[39m 填写后提交：调用 submitHomework({series_id, session_id, title:null, detail_payload}) 并展示已提交 [33m 1081[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染 视频/作业/考试 三 Tab，默认选中视频（课程简介） [33m 412[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染模块/课次，当前课 aria-current=page，完成计数=1/2 [33m 696[2mms[22m[39m
+     [33m[2m✓[22m[39m AI 提问 → /chat?context=session:{id}；错题本 → /practice?from_session={id} [33m 393[2mms[22m[39m
+ [32m✓[39m src/components/curriculum/course-detail-components.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 4521[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染班次名/价格/余席；满员班次 disabled [33m 1793[2mms[22m[39m
+     [33m[2m✓[22m[39m 选择班次触发 onSelect(id) [33m 616[2mms[22m[39m
+     [33m[2m✓[22m[39m 价格联动：选中班次价 + 券后实付 [33m 414[2mms[22m[39m
+     [33m[2m✓[22m[39m 模板渲染 + 领取回调；已领取禁用领取 [33m 1238[2mms[22m[39m
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m初始加载渲染用户表（GET 
+/api/admin/users，page_size 10）
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/components/admin/EditUserDialog.test.tsx[2m > [22m[2mEditUserDialog[2m > [22m[2m后端 40303 兜底
+拒绝（非红线场景）→ 全局 MutationCache onError 单次 toast，无组件级双弹
+[22m[39m[query] 请求被拒绝 { status: [33m403[39m, message: [32m'至少保留 1 名可用管理员账号'[39m }
+
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m关键词输入防抖 400ms：
+窗口期内不触发，400ms 后触发带 keyword 查询
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/components/admin/EditUserDialog.test.tsx[2m > [22m[2mEditUserDialog[2m > [22m[2m登录失效 401 → 
+全局 MutationCache onError 单次 toast
+[22m[39m[query] 请求被拒绝 { status: [33m401[39m, message: [32m'登录已过期'[39m }
+
+ [32m✓[39m src/components/admin/QuestionForm.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 5837[2mms[22m[39m
+     [33m[2m✓[22m[39m 标签接口返回空数组（后端已移除 tag 维度） [33m 2949[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换题型为判断题出现「正确/错误」按钮 [33m 1433[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换题型为单选题出现选项正确标记按钮 [33m 1433[2mms[22m[39m
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m关键词输入防抖 400ms：
+窗口期内不触发，400ms 后触发带 keyword 查询
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m角色筛选 + 分页：切换角色
+触发 role_code 查询；多页时翻页触发 page 查询
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+ [32m✓[39m src/components/admin/EditUserDialog.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 6412[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染角色/状态/reason/保存控件（默认值来自 user） [33m 1902[2mms[22m[39m
+     [33m[2m✓[22m[39m 角色切换 student→teacher → POST /users/2/role {target_role:teacher} [33m 1200[2mms[22m[39m
+     [33m[2m✓[22m[39m 状态禁用 → POST /users/2/status {status:0, yn:0} [33m 1418[2mms[22m[39m
+     [33m[2m✓[22m[39m 最后 1 个可用 admin：降级(角色选择)/禁用/保存全禁用 + 红线条幅提示 [33m 576[2mms[22m[39m
+     [33m[2m✓[22m[39m 后端 40303 兜底拒绝（非红线场景）→ 全局 MutationCache onError 单次 toast，无组件级双弹 [33m 804[2mms[22m[39m
+     [33m[2m✓[22m[39m 登录失效 401 → 全局 MutationCache onError 单次 toast [33m 500[2mms[22m[39m
+ [32m✓[39m src/components/community/CommentSection.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 6234[2mms[22m[39m
+     [33m[2m✓[22m[39m 评论 >20 条时显示分页器，点下一页加载第 2 页 [33m 4230[2mms[22m[39m
+     [33m[2m✓[22m[39m 单页（≤20 条）不显示分页器 [33m 864[2mms[22m[39m
+     [33m[2m✓[22m[39m 评论总数展示与分页一致 [33m 677[2mms[22m[39m
+     [33m[2m✓[22m[39m 回帖成功：调用 createComment + 清空输入 + 计数 +1 回调 [33m 384[2mms[22m[39m
+ [32m✓[39m src/components/curriculum/CourseCatalogFilter.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 10556[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染一级学科大类（全部 + 9 类） [33m 3902[2mms[22m[39m
+     [33m[2m✓[22m[39m 选中一级学科后出现二级方向 chips，切换一级重置方向 [33m 3519[2mms[22m[39m
+     [33m[2m✓[22m[39m 交付 chips 变更 delivery [33m 1050[2mms[22m[39m
+     [33m[2m✓[22m[39m 排序 chips 变更 sort [33m 997[2mms[22m[39m
+     [33m[2m✓[22m[39m 重置按钮恢复 DEFAULT_FILTER [33m 832[2mms[22m[39m
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m角色筛选 + 分页：切换角色
+触发 role_code 查询；多页时翻页触发 page 查询
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+ [32m✓[39m src/app/(user)/community/page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 4113[2mms[22m[39m
+     [33m[2m✓[22m[39m 加载态显示骨架（role=status + 读屏文本） [33m 1293[2mms[22m[39m
+     [33m[2m✓[22m[39m 成功态渲染帖子卡、『我的帖子』计数与分页 [33m 720[2mms[22m[39m
+     [33m[2m✓[22m[39m 空态显示『暂无帖子』+ 发第一篇 CTA [33m 558[2mms[22m[39m
+     [33m[2m✓[22m[39m 错误态显示『帖子加载失败』+ 重试；点重试重新查询 [33m 1009[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击版块 chip 以 board_code 重新查询 [33m 526[2mms[22m[39m
+[90mstderr[2m | src/app/(admin)/admin/users/page.test.tsx[2m > [22m[2mAdminUsersPage[2m > [22m[2m角色筛选 + 分页：切换角色
+触发 role_code 查询；多页时翻页触发 page 查询
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+ [32m✓[39m src/app/(admin)/admin/users/page.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 4760[2mms[22m[39m
+     [33m[2m✓[22m[39m 初始加载渲染用户表（GET /api/admin/users，page_size 10） [33m 1748[2mms[22m[39m
+     [33m[2m✓[22m[39m 关键词输入防抖 400ms：窗口期内不触发，400ms 后触发带 keyword 查询 [33m 1183[2mms[22m[39m
+     [33m[2m✓[22m[39m 角色筛选 + 分页：切换角色触发 role_code 查询；多页时翻页触发 page 查询 [33m 1815[2mms[22m[39m
+ [32m✓[39m src/app/(admin)/admin/questions/[id]/page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 6786[2mms[22m[39m
+     [33m[2m✓[22m[39m 单选默认 RadioGroup 选项 + 客观徽章 [33m 2569[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换判断 → 固定 对/错 按钮；切填空 → 无选项提示 [33m 1584[2mms[22m[39m
+     [33m[2m✓[22m[39m 题型切换已填数据不丢：单选填 A → 多选 → 切回单选仍保留 [33m 1678[2mms[22m[39m
+     [33m[2m✓[22m[39m analysis_text 为空时保存被前端拦截（不调 PATCH），提示解析必填 [33m 382[2mms[22m[39m
+     [33m[2m✓[22m[39m 保存调用 updateQuestion({id}, payload) 含 analysis_text + options_json，答案/题干持久化 [33m 561[2mms[22m[39m
+ [32m✓[39m src/app/(user)/courses/page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 7472[2mms[22m[39m
+     [33m[2m✓[22m[39m loading：骨架 + 查询中… [33m 3083[2mms[22m[39m
+     [33m[2m✓[22m[39m error：ErrorState role=alert + 重试可再次请求 [33m 2139[2mms[22m[39m
+     [33m[2m✓[22m[39m empty：EmptyState role=status + 空态文案 [33m 654[2mms[22m[39m
+     [33m[2m✓[22m[39m success：真实卡片 + 总数 + Pagination [33m 586[2mms[22m[39m
+     [33m[2m✓[22m[39m 分页权威字段：总数/页码/分页尺寸从外层 triple 读取（page_meta 兼容字段不再消费） [33m 994[2mms[22m[39m
+ [32m✓[39m src/app/(user)/me/page.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 3482[2mms[22m[39m
+     [33m[2m✓[22m[39m 板块顺序：数据概览 → 功能入口 → 学员档案（签收 me.html 顺序） [33m 2428[2mms[22m[39m
+     [33m[2m✓[22m[39m 真实 API 均被请求（getMe/getLearningSummary/getStudentProfile/getMyPoints，无 MOCK 兜底） [33m 1046[2mms[22m[39m
+ [32m✓[39m src/components/achievement/RankingTabs.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1150[2mms[22m[39m
+     [33m[2m✓[22m[39m 默认请求 DAILY + POINTS [33m 336[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换到周榜重新请求 WEEKLY [33m 537[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/uploader.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1060[2mms[22m[39m
+     [33m[2m✓[22m[39m 选择文件 → onFiles 回调（校验通过） [33m 563[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/dropdown-menu-select.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1986[2mms[22m[39m
+     [33m[2m✓[22m[39m trigger 渲染 + aria-haspopup（行操作入口语义） [33m 924[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染 label + placeholder（受控 value 为空） [33m 333[2mms[22m[39m
+ [32m✓[39m src/components/admin/rag/RebuildDialog.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2022[2mms[22m[39m
+     [33m[2m✓[22m[39m 打开后展示分区信息 [33m 893[2mms[22m[39m
+     [33m[2m✓[22m[39m 提交重建：POST /collections/rebuild body {collection_name, partition_name, mode} → 展示 job_id [33m 512[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换全量模式后提交 mode=full [33m 608[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/data-table.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 835[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染表头 + 数据行（含 accessor） [33m 506[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/confirm-dialog.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1114[2mms[22m[39m
+     [33m[2m✓[22m[39m 打开时渲染标题/描述 + 确认按钮（destructive） [33m 610[2mms[22m[39m
+ [32m✓[39m src/components/admin/mcp/ToolTestDialog.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1769[2mms[22m[39m
+     [33m[2m✓[22m[39m 预填参数 JSON 并展示 schema 参数名 [33m 1137[2mms[22m[39m
+     [33m[2m✓[22m[39m 提交调用：POST /api/mcp/tools/test body {tool_id, args} → 展示 status/latency/result [33m 311[2mms[22m[39m
+ [32m✓[39m src/app/(admin)/admin/questions/page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 7679[2mms[22m[39m
+     [33m[2m✓[22m[39m 题库 Tab 展示题库列表；点击「查看题目」切到题目 Tab 并请求 /banks/{id}/questions [33m 2635[2mms[22m[39m
+     [33m[2m✓[22m[39m 「编辑/解析」按钮指向 task59 详情路由 /admin/questions/{id} [33m 864[2mms[22m[39m
+     [33m[2m✓[22m[39m Dropdown → 删除题库 → ConfirmDialog 确认后调用 deleteBank [33m 3085[2mms[22m[39m
+     [33m[2m✓[22m[39m 初始「批量导入」按钮 disabled，选择题库后可导入 [33m 640[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换题目 Tab（未选择时）显示空态引导 [33m 438[2mms[22m[39m
+ [32m✓[39m src/lib/admin-layout.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1491[2mms[22m[39m
+     [33m[2m✓[22m[39m admin：渲染 6 个菜单（含 MCP），children 放行 [33m 1248[2mms[22m[39m
+[90mstderr[2m | src/components/admin/UserTable.test.tsx[2m > [22m[2mUserTable[2m > [22m[2m渲染用户行 + 角色徽章 + 状态 + 查
+看/编辑按钮
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/components/admin/UserTable.test.tsx[2m > [22m[2mUserTable[2m > [22m[2m最后 1 个可用 admin → 行内显示
+「最后admin」徽章
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+ [32m✓[39m src/components/ui/__tests__/pagination.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 874[2mms[22m[39m
+     [33m[2m✓[22m[39m page=1/total=45/pageSize=20 显示首区间 + 上一页禁用 [33m 486[2mms[22m[39m
+[90mstderr[2m | src/components/admin/UserTable.test.tsx[2m > [22m[2mUserTable[2m > [22m[2m存在多个有效 admin 时不标记最后 a
+dmin
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/components/admin/UserTable.test.tsx[2m > [22m[2mUserTable[2m > [22m[2m「禁用中」用户 → 状态徽章显示「已禁用」
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+[90mstderr[2m | src/components/admin/UserTable.test.tsx[2m > [22m[2mUserTable[2m > [22m[2m点击「查看」打开学习详情；端点未注册（40
+4）→ 契约缺口实披露（不写 MOCK）
+[22m[39mEncountered two children with the same key, `none`. Keys should be unique so that components maintain their i
+dentity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupporte
+d and could change in a future version.
+
+ [32m✓[39m src/components/me/StudentProfileForm.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2228[2mms[22m[39m
+     [33m[2m✓[22m[39m 加载后回显学校/行业/岗位/工作年限 [33m 559[2mms[22m[39m
+     [33m[2m✓[22m[39m 保存：仅提交 UserProfile 可写字段 school_name 并 toast 成功 [33m 1492[2mms[22m[39m
+ [32m✓[39m src/components/admin/UserTable.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 2402[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染用户行 + 角色徽章 + 状态 + 查看/编辑按钮 [33m 855[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击「查看」打开学习详情；端点未注册（404）→ 契约缺口实披露（不写 MOCK） [33m 1047[2mms[22m[39m
+ [32m✓[39m src/components/feature/chat/MessageComposer.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 524[2mms[22m[39m
+     [33m[2m✓[22m[39m 输入后 Enter 发送去空白文本并清空输入框 [33m 326[2mms[22m[39m
+ [32m✓[39m src/components/admin/mcp/ServerTable.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2644[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染 Server 行 + 健康灯（OK 绿 / ERR 红） [33m 1000[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击「发现工具」→ 拉取 DB 工具列表并打开弹窗 [33m 1262[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/accordion.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 638[2mms[22m[39m
+     [33m[2m✓[22m[39m 初始折叠：trigger aria-expanded=false，面板内容不挂载 [33m 373[2mms[22m[39m
+ [32m✓[39m src/app/(user)/achievements/page.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1802[2mms[22m[39m
+     [33m[2m✓[22m[39m Hero 横幅 + 三大板块标题渲染 [33m 1114[2mms[22m[39m
+     [33m[2m✓[22m[39m 板块顺序：排行榜 → 积分 → 徽章墙（用户签收顺序） [33m 502[2mms[22m[39m
+ [32m✓[39m src/components/feature/cohort-card.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 806[2mms[22m[39m
+ [32m✓[39m src/app/(user)/community/[postId]/page.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2321[2mms[22m[39m
+     [33m[2m✓[22m[39m 成功渲染详情：标题/作者/正文/点赞收藏操作行 [33m 1657[2mms[22m[39m
+     [33m[2m✓[22m[39m 锁定帖：操作行隐藏（无点赞按钮）+ 锁定提示 + 评论输入禁用 [33m 401[2mms[22m[39m
+ [32m✓[39m src/components/admin/SeriesForm.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1790[2mms[22m[39m
+     [33m[2m✓[22m[39m 创建模式展示核心字段 [33m 1774[2mms[22m[39m
+ [32m✓[39m src/components/achievement/BadgeWall.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 923[2mms[22m[39m
+     [33m[2m✓[22m[39m 未解锁徽章显示进度数字（progress_current/required） [33m 513[2mms[22m[39m
+ [32m✓[39m src/app/(user)/courses/[seriesId]/page.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 8038[2mms[22m[39m
+     [33m[2m✓[22m[39m error：ErrorState role=alert + 重试可再次请求 [33m 2030[2mms[22m[39m
+     [33m[2m✓[22m[39m success：Hero + 四 Tabs + 默认选中最低价班次 + 大纲渲染 [33m 1113[2mms[22m[39m
+     [33m[2m✓[22m[39m success：最低价班次满员时默认选中下一个有席位班次 [33m 345[2mms[22m[39m
+     [33m[2m✓[22m[39m 未登录：报名/领券/收藏 → /login?redirect= 原路 [33m 1261[2mms[22m[39m
+     [33m[2m✓[22m[39m 登录后：立即报名 → createOrder（cohort_id + coupon_id） [33m 842[2mms[22m[39m
+     [33m[2m✓[22m[39m 登录后：收藏 → addFavorite；再次点击 → removeFavorite [33m 741[2mms[22m[39m
+     [33m[2m✓[22m[39m 登录后：领券弹窗展示模板，领取调用 receiveCoupon [33m 1400[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/states.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 941[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染 文案 + 可选 CTA，role=status [33m 545[2mms[22m[39m
+ [32m✓[39m src/components/community/MarkdownView.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 664[2mms[22m[39m
+     [33m[2m✓[22m[39m markdown 语法仍正常渲染（标题/链接/行内代码） [33m 458[2mms[22m[39m
+ [32m✓[39m src/components/community/PostCard.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 612[2mms[22m[39m
+     [33m[2m✓[22m[39m 标题链接指向 /community/{post_id} [33m 308[2mms[22m[39m
+ [32m✓[39m src/components/curriculum/CourseSearchInput.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 600[2mms[22m[39m
+     [33m[2m✓[22m[39m 输入停止 400ms 后回调 trim 值；400ms 内不触发 [33m 474[2mms[22m[39m
+ [32m✓[39m src/components/curriculum/CourseCard.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 630[2mms[22m[39m
+     [33m[2m✓[22m[39m 整卡链接到详情页 /courses/{id} [33m 368[2mms[22m[39m
+ [32m✓[39m src/components/me/MeNavList.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 621[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染 7 个入口，href 与标题一一对应（J20 表全覆盖） [33m 615[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/stepper-timeline.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 671[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染状态步骤 + 当前项 aria-current=step [33m 626[2mms[22m[39m
+ [32m✓[39m src/components/achievement/PointLogTable.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 699[2mms[22m[39m
+ [32m✓[39m src/components/admin/MetricCards.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 486[2mms[22m[39m
+     [33m[2m✓[22m[39m 加载成功渲染 6 项指标卡（总数/7d 活跃/角色分布/禁用/7d 新增/30d 均登录） [33m 320[2mms[22m[39m
+ [32m✓[39m src/components/me/MeHeader.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 328[2mms[22m[39m
+ [32m✓[39m src/components/me/StatCards.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 415[2mms[22m[39m
+     [33m[2m✓[22m[39m 渲染学习时长(小时)、完成课次、积分、等级 [33m 352[2mms[22m[39m
+ [32m✓[39m src/components/feature/chat/ChatSessionList.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 330[2mms[22m[39m
+ [32m✓[39m src/components/feature/chat/ChatBubble.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 261[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/status-badge.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 531[2mms[22m[39m
+     [33m[2m✓[22m[39m order_status=paid → 文字「已支付」+ success 语义色（非纯色块） [33m 416[2mms[22m[39m
+ [32m✓[39m src/lib/admin-guard.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 192[2mms[22m[39m
+ [32m✓[39m src/components/admin/RoleDonutChart.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1471[2mms[22m[39m
+     [33m[2m✓[22m[39m 加载成功时渲染标题与角色分布 aria-label 摘要 [33m 1288[2mms[22m[39m
+ [32m✓[39m src/components/admin/rag/SearchTester.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 699[2mms[22m[39m
+     [33m[2m✓[22m[39m 提交检索：POST /api/admin/rag/search body {query, top_k, final_max_k} [33m 550[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/price-text.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 146[2mms[22m[39m
+ [32m✓[39m src/lib/api-client.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m src/components/admin/RankFallback.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 272[2mms[22m[39m
+ [32m✓[39m src/components/admin/RegisterTrendChart.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1190[2mms[22m[39m
+     [33m[2m✓[22m[39m 加载成功时渲染标题与 aria-label 数据摘要 [33m 1033[2mms[22m[39m
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mglobalMutationError（写操作 → 统一 toast）[2m > [22m[2m401 → 
+toast.error 一次（不再早退静默）
+[22m[39m[query] 请求被拒绝 { status: [33m401[39m, message: [32m'登录已过期'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mglobalMutationError（写操作 → 统一 toast）[2m > [22m[2m403 → 
+toast.error 一次（无权限/红线兜底可见提示）
+[22m[39m[query] 请求被拒绝 { status: [33m403[39m, message: [32m'至少保留 1 名可用管理员账号'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mglobalMutationError（写操作 → 统一 toast）[2m > [22m[2m403 带 
+detail → message + description 均透传
+[22m[39m[query] 请求被拒绝 { status: [33m403[39m, message: [32m'操作被拒绝'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mglobalQueryError（读操作 → 401/403 静默，其余 toast）[2m > [22m[
+2m401 → 不 toast（onApiUnauthorized 已负责清 token + 跳登录）
+[22m[39m[query] 请求被拒绝 { status: [33m401[39m, message: [32m'登录已过期'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mglobalQueryError（读操作 → 401/403 静默，其余 toast）[2m > [22m[
+2m403 → 不 toast（管理员守卫负责无权限跳转）
+[22m[39m[query] 请求被拒绝 { status: [33m403[39m, message: [32m'无权限'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mcreateQueryClient 端到端接线契约[2m > [22m[2m真实触发 mutation → 
+401 全局单次 toast（生产路径与单测一致）
+[22m[39m[query] 请求被拒绝 { status: [33m401[39m, message: [32m'登录已过期'[39m }
+
+[90mstderr[2m | src/lib/query-client.test.ts[2m > [22m[2mcreateQueryClient 端到端接线契约[2m > [22m[2m真实触发 mutation → 
+403 全局单次 toast（红线兜底可见提示）
+[22m[39m[query] 请求被拒绝 { status: [33m403[39m, message: [32m'至少保留 1 名可用管理员账号'[39m }
+
+ [32m✓[39m src/lib/query-client.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/lib/api/chat.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+[90mstderr[2m | src/lib/api/dashboard.test.ts[2m > [22m[2mbuildRankSlice[2m > [22m[2mmy_rank null → 不设 myRank（R
+ankList 仅渲染列表）
+[22m[39m[dashboard] rankings scope mismatch: requested=WEEKLY, got=DAILY
+
+ [32m✓[39m src/lib/api/dashboard.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/courses.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/rag.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/mcp.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/question-bank.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/lib/api/tickets.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/users.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/lib/api/admin/questions.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/lib/api/orders.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/lib/api/payments.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/lib/admin-nav.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/lib/curriculum-catalog.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/lib/api/refunds.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/lib/redirect.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/lib/api/curriculum.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m76 passed[39m[22m[90m (76)[39m
+[2m      Tests [22m [1m[32m534 passed[39m[22m[90m (534)[39m
+[2m   Start at [22m 21:56:53
+[2m   Duration [22m 75.01s[2m (transform 150.42s, setup 174.41s, import 317.18s, tests 133.17s, environment 352.69s)[22m
+

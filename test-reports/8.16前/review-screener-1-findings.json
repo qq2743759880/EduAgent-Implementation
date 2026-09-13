@@ -1,0 +1,41 @@
+[
+  {
+    "ruleId": "correctness/unhandled-edge-case",
+    "level": "warning",
+    "message": {
+      "text": "chat_delete_hit.py 独立运行路径下，若 8000 端口已有 uvicorn 在运行，脚本直接复用而不校验其 DEBUG 语义，与 .env 分支断言可能对着错误语义执行：.env=DEBUG=true 但运行中服务为 false 时 B1 误判 FAIL（假阴性）；.env=DEBUG=false 但运行中服务为 true 时，未登录 DELETE 会真的软删一条学生会话后才报 FAIL。这是 design-guide §2.6 要求显式断言 DEBUG 语义要规避的场景。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/scripts/chat_delete_hit.py" }, "region": { "startLine": 167, "endLine": 171 } } }],
+    "properties": { "severity": "MEDIUM", "category": "correctness", "suggestion": "复用运行中服务前先发无 Authorization 探测请求判定实际 DEBUG 语义，与 .env 分支不一致时打印告警并 exit 2。" }
+  },
+  {
+    "ruleId": "correctness/logic-error",
+    "level": "warning",
+    "message": {
+      "text": "mapPointsToCard 的今日积分求和用浏览器本地日期与后端 created_at 字符串前 10 位比对。后端 created_at 是 MySQL 服务端本地时间；跨时区部署（UTC 容器 + UTC+8 客户端）时本地 00:00-08:00 的积分会记到前一天。同根因波及 community-meta.formatDateTime 与 ChatSessionSidebar.bucketOf。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/lib/api/dashboard.ts" }, "region": { "startLine": 273, "endLine": 277 } } }],
+    "properties": { "severity": "MEDIUM", "category": "correctness", "suggestion": "统一日期口径：后端返回 today 字段或前端带时区偏移解析；并同步到 community-meta 与 bucketOf。" }
+  },
+  {
+    "ruleId": "correctness/logic-error",
+    "level": "note",
+    "message": { "text": "PointCard 明细行对 points 无条件前缀 '+', 后端积分 delta 允许为负（SHARE_NOTE delta=-10），负积分渲染成 '+-10'。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/dashboard/PointCard.tsx" }, "region": { "startLine": 143, "endLine": 145 } } }],
+    "properties": { "severity": "LOW", "category": "correctness", "suggestion": "改为条件前缀：points > 0 ? '+' : ''。" }
+  },
+  {
+    "ruleId": "correctness/dead-code",
+    "level": "note",
+    "message": { "text": "test_delete_session_cross_user_forbidden 中 assert not hasattr(exc, '_writes') 是恒真断言（ValidationError 永不带 _writes），无法兑现「越权删除不得落任何写 SQL」的验证意图。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/tests/test_chat_delete.py" }, "region": { "startLine": 129, "endLine": 129 } } }],
+    "properties": { "severity": "LOW", "category": "correctness", "suggestion": "改用 monkeypatch 记录型 spy 验证越权路径零写 SQL。" }
+  },
+  {
+    "ruleId": "correctness/unhandled-edge-case",
+    "level": "note",
+    "message": { "text": "AppShell 移动抽屉打开时仅对侧边栏做 inert，主内容区未被 inert、无焦点圈定，键盘/读屏可越过抽屉进入背景页面。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/layout/AppShell.tsx" }, "region": { "startLine": 211, "endLine": 218 } } }],
+    "properties": { "severity": "LOW", "category": "correctness", "suggestion": "mobileOpen 时对主内容加 inert + 抽屉内焦点圈定。" }
+  }
+]

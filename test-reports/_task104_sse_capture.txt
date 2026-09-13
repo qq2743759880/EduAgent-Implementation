@@ -1,0 +1,612 @@
+event: start
+data: {"session_id": null, "query": "什么是Python变量"}
+
+event: retrieval
+data: {"docs": [{"doc_id": "question_geometry_and_topology_bank_q016", "score": 1.0, "content": "【简答题】题目：什么是拓扑不变量？请举一例。\n答案：拓扑不变量是同胚变换下保持不变的性质，如连通性、紧致性或欧拉示性数。\n解析：这类性质是区分空间类型的重要工具。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["几何与拓扑题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "question_general_purpose_programming_bank_q001", "score": 0.809318, "content": "【单选题】题目：关于变量与常量的说法，哪一项更符合常见程序设计实践？\n选项：\nA. 变量一旦赋值就不能再改变\nB. 常量用于表示运行过程中不应被修改的值\nC. 常量和变量没有任何区别\nD. 变量只能保存整数\n答案：B\n解析：常量用于表达业务中不希望被修改的值，能提升代码可读性和安全性。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["通用程序设计题库", "单选题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "question_middle_high_school_informatics_bank_q012", "score": 0.79616, "content": "【编程题】题目：阅读下列程序，写出输出结果：\n\n```python\nx = 5\nif x > 3:\n    x -= 2\nelse:\n    x += 2\nprint(x)\n```\n答案：3\n解析：满足条件后 x 变成 3。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["信息学与编程启蒙题库", "编程题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "question_middle_high_school_informatics_bank_q020", "score": 0.787964, "content": "【编程题】题目：阅读下列程序，写出输出结果：\n\n```python\nx = 0\nfor i in range(5):\n    if i % 2 == 0:\n        x += i\nprint(x)\n```\n答案：6\n解析：偶数 0、2、4 的和是 6。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["信息学与编程启蒙题库", "编程题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "question_modeling_and_simulation_bank_q015", "score": 0.779336, "content": "【简答题】题目：说明“变量、参数、假设”在建模中的区别。\n答案：变量是随时间或条件变化的量；参数是模型中相对固定、需估计或给定的常数；假设是为了抽象问题而对现实作出的简化约定。\n解析：把三者区分开，是写建模论文时最基本也最容易被忽略的一步。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["建模与仿真题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}], "graph_entities": [], "retrieved_count": 150, "final_count": 5, "rewrite_query": "什么是Python变量", "degraded_reason": "rerank_sidecar_unavailable", "mcp_tool_calls": []}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "变量"}
+
+event: token
+data: {"delta": "是"}
+
+event: token
+data: {"delta": "程序中"}
+
+event: token
+data: {"delta": "用来"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "存储"}
+
+event: token
+data: {"delta": "数据"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "的"}
+
+event: token
+data: {"delta": "命名"}
+
+event: token
+data: {"delta": "标识"}
+
+event: token
+data: {"delta": "符"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "可以"}
+
+event: token
+data: {"delta": "理解为"}
+
+event: token
+data: {"delta": "“"}
+
+event: token
+data: {"delta": "给"}
+
+event: token
+data: {"delta": "数据"}
+
+event: token
+data: {"delta": "起"}
+
+event: token
+data: {"delta": "的一个"}
+
+event: token
+data: {"delta": "名字"}
+
+event: token
+data: {"delta": "”。"}
+
+event: token
+data: {"delta": "在"}
+
+event: token
+data: {"delta": " Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "中"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "变量"}
+
+event: token
+data: {"delta": "本身"}
+
+event: token
+data: {"delta": "没有"}
+
+event: token
+data: {"delta": "固定"}
+
+event: token
+data: {"delta": "类型"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "它可以"}
+
+event: token
+data: {"delta": "指向"}
+
+event: token
+data: {"delta": "整数"}
+
+event: token
+data: {"delta": "、"}
+
+event: token
+data: {"delta": "字符串"}
+
+event: token
+data: {"delta": "、"}
+
+event: token
+data: {"delta": "列表"}
+
+event: token
+data: {"delta": "等各种"}
+
+event: token
+data: {"delta": "对象"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "并且"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "可以"}
+
+event: token
+data: {"delta": "随时"}
+
+event: token
+data: {"delta": "重新"}
+
+event: token
+data: {"delta": "赋值"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "例如"}
+
+event: token
+data: {"delta": " doc"}
+
+event: token
+data: {"delta": "["}
+
+event: token
+data: {"delta": "3"}
+
+event: token
+data: {"delta": "]"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "中"}
+
+event: token
+data: {"delta": "：\n\n"}
+
+event: token
+data: {"delta": "```"}
+
+event: token
+data: {"delta": "python"}
+
+event: token
+data: {"delta": "\n"}
+
+event: token
+data: {"delta": "x"}
+
+event: token
+data: {"delta": " ="}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "5"}
+
+event: token
+data: {"delta": "\n"}
+
+event: token
+data: {"delta": "if"}
+
+event: token
+data: {"delta": " x"}
+
+event: token
+data: {"delta": " >"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "3"}
+
+event: token
+data: {"delta": ":\n"}
+
+event: token
+data: {"delta": "   "}
+
+event: token
+data: {"delta": " x"}
+
+event: token
+data: {"delta": " -="}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "2"}
+
+event: token
+data: {"delta": "\n"}
+
+event: token
+data: {"delta": "print"}
+
+event: token
+data: {"delta": "(x"}
+
+event: token
+data: {"delta": ")\n"}
+
+event: token
+data: {"delta": "```\n\n"}
+
+event: token
+data: {"delta": "这里"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "x"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "先"}
+
+event: token
+data: {"delta": "被"}
+
+event: token
+data: {"delta": "赋"}
+
+event: token
+data: {"delta": "值为"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "5"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "随后"}
+
+event: token
+data: {"delta": "又被"}
+
+event: token
+data: {"delta": "修改"}
+
+event: token
+data: {"delta": "为"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "3"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "说明"}
+
+event: token
+data: {"delta": "变量"}
+
+event: token
+data: {"delta": "是"}
+
+event: token
+data: {"delta": "“"}
+
+event: token
+data: {"delta": "可变"}
+
+event: token
+data: {"delta": "”"}
+
+event: token
+data: {"delta": "的"}
+
+event: token
+data: {"delta": "。"}
+
+event: token
+data: {"delta": "这与"}
+
+event: token
+data: {"delta": "常量"}
+
+event: token
+data: {"delta": "不同"}
+
+event: token
+data: {"delta": "——"}
+
+event: token
+data: {"delta": "常量"}
+
+event: token
+data: {"delta": "用于"}
+
+event: token
+data: {"delta": "表示"}
+
+event: token
+data: {"delta": "运行"}
+
+event: token
+data: {"delta": "过程中"}
+
+event: token
+data: {"delta": "不应"}
+
+event: token
+data: {"delta": "被"}
+
+event: token
+data: {"delta": "修改"}
+
+event: token
+data: {"delta": "的值"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "doc"}
+
+event: token
+data: {"delta": "["}
+
+event: token
+data: {"delta": "2"}
+
+event: token
+data: {"delta": "]"}
+
+event: token
+data: {"delta": "）。\n\n"}
+
+event: token
+data: {"delta": "需要"}
+
+event: token
+data: {"delta": "特别"}
+
+event: token
+data: {"delta": "注意的是"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "变量"}
+
+event: token
+data: {"delta": "本质"}
+
+event: token
+data: {"delta": "上是"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "对象的"}
+
+event: token
+data: {"delta": "引用"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "而不是"}
+
+event: token
+data: {"delta": "一个"}
+
+event: token
+data: {"delta": "“"}
+
+event: token
+data: {"delta": "装"}
+
+event: token
+data: {"delta": "数据的"}
+
+event: token
+data: {"delta": "盒子"}
+
+event: token
+data: {"delta": "”。"}
+
+event: token
+data: {"delta": "赋值"}
+
+event: token
+data: {"delta": "操作"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "x"}
+
+event: token
+data: {"delta": " ="}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "5"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "实际上是"}
+
+event: token
+data: {"delta": "让"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "x"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "指向"}
+
+event: token
+data: {"delta": "整数"}
+
+event: token
+data: {"delta": "对象"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "5"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "而不是"}
+
+event: token
+data: {"delta": "把"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "5"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "复制"}
+
+event: token
+data: {"delta": "进"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "x"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "里"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "引用"}
+
+event: token
+data: {"delta": "来源"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "doc"}
+
+event: token
+data: {"delta": "["}
+
+event: token
+data: {"delta": "2"}
+
+event: token
+data: {"delta": "]、"}
+
+event: token
+data: {"delta": "doc"}
+
+event: token
+data: {"delta": "["}
+
+event: token
+data: {"delta": "3"}
+
+event: token
+data: {"delta": "]"}
+
+event: done
+data: {"code": 0, "message": "ok", "data": {"session_id": null, "message_id": null, "retrieved_count": 150, "final_count": 5, "latency_ms": 18121, "rewrite_query": "什么是Python变量", "degraded_reason": "rerank_sidecar_unavailable", "mcp_tool_calls": []}}
+

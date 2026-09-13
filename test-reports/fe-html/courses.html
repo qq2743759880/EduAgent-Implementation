@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>课程中心 · 效果图（task44 契约② HTML 审核版 v4 · 两级导航 + 学中玩风格 + 水平分页）</title>
+<!--
+  AUDIT LOG:
+  [2026-08-19 R1] v1 初稿提交（契约② 对齐：搜索/筛选/排序/分页/四态）→ 状态: SUBMITTED
+  [2026-08-19 R2] v2 返工（15 门真实课程 + 价格「¥X 起」+ 375 筛选条折叠 + 分页真实数据量 2628/176）→ 状态: SUBMITTED
+  [2026-08-19 R3] 用户签收前提出：①15 张卡片封面全是同一 indigo 渐变，看起来一模一样，太单调，没有设计感 → 状态: REVISING
+  [2026-08-19 R4] 按 SOP 返工（Step1→6：封面差异化=同色系渐变族×几何图案族，15/15 组合唯一；verify 15 项全 PASS）→ 状态: SUBMITTED
+  [2026-08-20 R5] 用户返工：①页面索引（分页）应从左到右水平排列 ②学科仅 4 分类，需按「两级导航」方案扩展（一级学科大类 9 类 + 二级课程方向）③整体改为「学中玩」风格（糖果色/吉祥物/XP 激励/进度环）→ 状态: REVISING
+  [2026-08-20 R6] 按 SOP v1.1 返工（Step1 ui-ux-pro-max --design-system → Step2 --domain style → Step3 --domain color → Step4 重设计 → Step5 截图 → Step6 audit）：两级导航 + 学中玩糖果色 + 水平分页 + 封面参考「脚本与自动化编程」风格 → 状态: SUBMITTED
+  [2026-08-20 R7] 用户返工：封面按参考图（居中粗体白字标题）为每门课程注入对应课程名文字（去掉「·直播/·录播」交付后缀），字体用当前 Baloo 2 圆润粗体 → 状态: REVISING
+  [2026-08-20 R8] R7 完成 + 用户指出分页仍为上下方向：修复 #pgPages 纵向堆叠（span 作为 flex 子项被压缩致内部按钮换行）→ 改为 #pgPages 自身 flex nowrap + flex-shrink:0，并用 auto margin 居中避免 375 溢出不可滚动；verify 33 项全 PASS（新增封面标题 5 项 + 页码按钮同 y/x 递增坐标断言）→ 状态: SUBMITTED
+-->
+<style>
+  /* ===== 设计 tokens（效果图「学中玩」糖果色板；React 实现时映射项目 tokens 或新增 candy 色板）===== */
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
+  :root{ --htc-124-58-237-0.28: rgba(124,58,237,0.28); --htc-124-58-237-0.35: rgba(124,58,237,0.35); --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.9: rgba(255,255,255,0.9); --htc-255-75-75-0.08: rgba(255,75,75,0.08); --htc-255-75-75-0.35: rgba(255,75,75,0.35); --htc-255-77-0-0.25: rgba(255,77,0,0.25); --htc-255-77-0-0.3: rgba(255,77,0,0.3); --htc-31-31-31-0.08: rgba(31,31,31,0.08); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.15: rgba(31,31,31,0.15); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.35: rgba(31,31,31,0.35); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-88-204-2-0.18: rgba(88,204,2,0.18); --htc-88-204-2-0.4: rgba(88,204,2,0.4);  --ht-1cb0f6: #1cb0f6; --ht-58cc02: #58cc02; --ht-7c3aed: #7c3aed; --ht-a5e8ff: #a5e8ff; --ht-a5f36a: #a5f36a; --ht-c4b5fd: #c4b5fd; --ht-d8c4fb: #d8c4fb; --ht-e4d5f5: #e4d5f5; --ht-e8e8e8: #e8e8e8; --ht-f1e8ff: #f1e8ff; --ht-faf5ff: #faf5ff; --ht-ff4d00: #ff4d00; --ht-ffb199: #ffb199; --ht-ffc800: #ffc800; --ht-ffc80066: #ffc80066; --ht-ffe58a: #ffe58a; --ht-ffe8dc: #ffe8dc; --ht-fff: #fff; --ht-fff0f0: #fff0f0; --ht-fff3e0: #fff3e0; 
+    /* 糖果色主色（用户指定 Duolingo 系） */
+    --candy-orange:#FF4D00; --candy-green:#58CC02; --candy-purple:#7C3AED;
+    --candy-yellow:#FFC800; --candy-blue:#1CB0F6; --candy-pink:#FF86D0; --candy-red:#FF4B4B;
+    /* 语义映射（对齐项目 tokens 结构：primary/secondary/accent/status） */
+    --primary:var(--candy-green);        /* 主行动（学习/打卡） */
+    --primary-strong:#46A302;            /* 绿深端 */
+    --primary-soft:#E9FBD8;              /* 绿浅底 */
+    --accent:var(--candy-orange);        /* 强调（价格/CTA） */
+    --accent-strong:#E04400;
+    --accent-soft:#FFE8DC;
+    --secondary:var(--candy-purple);     /* 次级品牌（学科导航） */
+    --secondary-soft:#F1E8FF;
+    --success:var(--candy-green); --warning:var(--candy-yellow); --destructive:var(--candy-red);
+    /* 中性（对齐 slate 语义） */
+    --ink:#3C3C3C; --ink-strong:#1F1F1F; --ink-soft:#6B6B6B; --ink-faint:#9A9A9A;
+    --bg:#FFF9F0; --card:#FFFFFF; --line:#F0E6DA; --line-strong:#E4D5C4;
+    /* 圆角（学中玩：超大圆角 20px+） */
+    --radius:1.5rem; --radius-lg:1.25rem; --radius-md:0.9rem; --radius-pill:999px;
+    /* 字体：标题 Baloo 2 圆润粗体；正文系统圆体回退 */
+    --font-head:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;
+    --font: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    /* 粗描边（Claymorphism 参考） */
+    --stroke:3px solid var(--ink);
+    --shadow-pop:0 6px 0 var(--htc-31-31-31-012); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-31-31-31-008: rgba(31, 31, 31, 0.008); --htc-88-204-2-018: rgba(88, 204, 2, 0.018); --htc-124-58-237-035: rgba(124, 58, 237, 0.035); --htc-255-77-0-003: rgba(255, 77, 0, 0.003); --htc-255-75-75-008: rgba(255, 75, 75, 0.008); --htc-124-58-237-028: rgba(124, 58, 237, 0.028); --htc-31-31-31-035: rgba(31, 31, 31, 0.035); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --htc-255-77-0-025: rgba(255, 77, 0, 0.025); --htc-255-255-255-009: rgba(255, 255, 255, 0.009); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --htc-255-75-75-035: rgba(255, 75, 75, 0.035); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-012: rgba(255, 255, 255, 0.012); --htc-31-31-31-015: rgba(31, 31, 31, 0.015); --p: 0; --candy-bg: #fff9f0; --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --muted: #8a8f98;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input{font-family:inherit}
+
+  /* ===== 整页容器 ===== */
+  .page{max-width:1200px;margin:0 auto;padding:24px 20px 64px}
+  .topbar{display:flex;align-items:center;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+  .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--ink-strong)}
+  .doc-badge{font-size:11px;color:var(--candy-purple);background:var(--secondary-soft);border:1px solid var(--ht-d8c4fb);padding:3px 10px;border-radius:999px;font-weight:700}
+  .subtitle{font-size:0.8125rem;color:var(--ink-soft);margin-bottom:18px}
+
+  /* ===== Hero（学中玩：吉祥物 + 口号 + 打卡/等级/XP 社交证明）===== */
+  .hero{display:flex;align-items:center;gap:22px;background:linear-gradient(135deg,var(--ht-fff3e0) 0%,var(--ht-ffe8dc) 45%,var(--ht-f1e8ff) 100%);border:var(--stroke);border-radius:calc(var(--radius) + 6px);padding:22px 24px;margin-bottom:20px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,var(--ht-ffc80066) 0%,transparent 70%)}
+  .hero-mascot{font-size:64px;line-height:1;filter:drop-shadow(0 6px 0 var(--htc-31-31-31-012));animation:float 3.2s ease-in-out infinite;flex-shrink:0}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+  .hero-copy{flex:1;min-width:0}
+  .hero-slogan{font-family:var(--font-head);font-size:26px;font-weight:800;color:var(--ink-strong);line-height:1.2}
+  .hero-slogan b{color:var(--candy-orange)}
+  .hero-sub{font-size:0.8125rem;color:var(--ink-soft);margin-top:4px}
+  .hero-stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .stat-card{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line-strong);border-radius:var(--radius-md);padding:8px 12px;font-size:12px;color:var(--ink);box-shadow:0 3px 0 var(--htc-31-31-31-008)}
+  .stat-icon{font-size:1.125rem}
+  .stat-card b{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--candy-orange)}
+  .level-row{display:flex;align-items:center;gap:6px;font-weight:600}
+  .xp-bar{width:72px;height:10px;background:var(--line);border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle}
+  .xp-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--candy-green),var(--ht-a5f36a));border-radius:999px;transition:width 1.4s cubic-bezier(.34,1.56,.64,1)}
+  .xp-text{font-size:11px;color:var(--ink-soft);font-weight:600}
+
+  /* ===== SearchInput（防抖 400ms）===== */
+  .search-wrap{position:relative;max-width:420px;margin-bottom:18px}
+  .search-wrap svg{position:absolute;left:14px;top:11px;color:var(--ink-faint);pointer-events:none}
+  .search-input{width:100%;height:44px;border-radius:999px;border:2px solid var(--line-strong);background:var(--card);padding:0 44px;font-size:14px;color:var(--ink);transition:border .15s,box-shadow .15s;outline:none}
+  .search-input:focus{border-color:var(--candy-green);box-shadow:0 0 0 4px var(--htc-88-204-2-018)}
+  .search-input::placeholder{color:var(--ink-faint)}
+  .clear-x{position:absolute;right:12px;top:10px;width:24px;height:24px;border:none;border-radius:50%;background:var(--line);color:var(--ink-soft);font-size:14px;line-height:1;display:grid;place-items:center;transition:background .15s}
+  .clear-x:hover{background:var(--line-strong)}
+
+  /* ===== FilterBar（两级导航：一级学科大类 + 二级课程方向）===== */
+  .filterbar{background:var(--card);border:2px solid var(--line-strong);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:20px}
+  .fb-rows{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px}
+  .fb-toggle{display:none;align-items:center;gap:8px;width:100%;background:var(--bg);border:2px solid var(--line-strong);border-radius:12px;padding:10px 14px;font-size:0.8125rem;color:var(--ink);font-weight:700}
+  .fb-toggle .fb-summary{color:var(--candy-orange);font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:58%;margin-left:auto;text-align:right}
+  .fb-toggle svg{transition:transform .18s ease;margin-left:auto}
+  .f-group{display:flex;align-items:flex-start;gap:8px;min-width:0}
+  .f-label{font-size:12px;color:var(--ink-soft);font-weight:700;flex-shrink:0;padding-top:7px}
+  .chip-row{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:0.8125rem;color:var(--ink);background:var(--bg);border:2px solid var(--line-strong);border-radius:999px;padding:6px 14px;font-weight:600;transition:all .15s}
+  .chip:hover{border-color:var(--candy-purple);color:var(--candy-purple);transform:translateY(-1px)}
+  .chip:active{transform:scale(.94)}
+  .chip.active{background:var(--candy-purple);border-color:var(--candy-purple);color:var(--ht-fff);font-weight:700;box-shadow:0 3px 0 var(--htc-124-58-237-035)}
+  /* 二级方向行：浅紫底，选中为橙色 */
+  #subGroup{width:100%;padding-top:10px;border-top:2px dashed var(--line-strong)}
+  #subGroup .f-label{color:var(--candy-purple)}
+  #subGroup .chip{background:var(--ht-faf5ff);border-color:var(--ht-e4d5f5)}
+  #subGroup .chip.active{background:var(--candy-orange);border-color:var(--candy-orange);box-shadow:0 3px 0 var(--htc-255-77-0-003)}
+  .f-divider{width:1px;height:30px;background:var(--line-strong);margin:2px 2px 0}
+  .select{position:relative}
+  .select select{appearance:none;height:36px;padding:0 32px 0 12px;font-size:0.8125rem;border:2px solid var(--line-strong);border-radius:10px;background:var(--card);color:var(--ink);outline:none;transition:border .15s;font-weight:600}
+  .select select:focus{border-color:var(--candy-green);box-shadow:0 0 0 4px var(--htc-88-204-2-018)}
+  .select::after{content:"";position:absolute;right:12px;top:15px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--ink-faint);pointer-events:none}
+  .reset-btn{font-size:0.8125rem;color:var(--ink-soft);background:none;border:none;padding:8px 10px;border-radius:10px;font-weight:600;transition:all .15s}
+  .reset-btn:hover{color:var(--candy-red);background:var(--htc-255-75-75-008)}
+  /* <768px：折叠式（默认收起，点击展开）*/
+  @media(max-width:767px){
+    .fb-toggle{display:flex}
+    .fb-rows{display:none;flex-direction:column;align-items:stretch;gap:12px;margin-top:12px}
+    .filterbar.open .fb-rows{display:flex}
+    .filterbar.open .fb-toggle svg{transform:rotate(180deg)}
+    .fb-rows .f-group{flex-wrap:wrap;gap:8px 10px}
+    .fb-rows .f-group .chip-row{flex:1 1 100%}
+    .fb-rows .f-group .select{flex:1 1 100%}
+    .fb-rows .f-group .select select{width:100%}
+    .f-divider{display:none}
+  }
+
+  /* ===== 结果条 + Skeleton ===== */
+  .resultbar{display:flex;align-items:center;gap:10px;font-size:0.8125rem;color:var(--ink-soft);margin-bottom:14px}
+  .resultbar b{color:var(--ink-strong);font-weight:700}
+  .spin{width:14px;height:14px;border:2px solid var(--line-strong);border-top-color:var(--candy-green);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== Grid lg:3 CourseCard（学中玩：圆角卡片 + 粗描边 + XP 徽章 + 进度环）===== */
+  .grid{display:grid;grid-template-columns:repeat(1,1fr);gap:20px}
+  @media(min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1024px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .card{background:var(--card);border:2px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease,border-color .18s ease;cursor:pointer}
+  .card:hover{border-color:var(--candy-purple);box-shadow:0 10px 24px -10px var(--htc-124-58-237-028);transform:translateY(-4px) rotate(-.4deg)}
+  .card:active{transform:scale(.97)}
+  /* 封面：糖果色渐变族 × 学科 emoji 图标 × 几何图案（参考「脚本与自动化编程」封面：渐变+图标+斜线） */
+  .cover{position:relative;aspect-ratio:16/9;overflow:hidden}
+  .cover--t1{background:linear-gradient(135deg,var(--ht-ff4d00),var(--ht-ffb199))}   /* 橙 */
+  .cover--t2{background:linear-gradient(135deg,var(--ht-58cc02),var(--ht-a5f36a))}   /* 绿 */
+  .cover--t3{background:linear-gradient(135deg,var(--ht-7c3aed),var(--ht-c4b5fd))}   /* 紫 */
+  .cover--t4{background:linear-gradient(135deg,var(--ht-1cb0f6),var(--ht-a5e8ff))}   /* 蓝 */
+  .cover--t5{background:linear-gradient(135deg,var(--ht-ffc800),var(--ht-ffe58a))}   /* 黄 */
+  .cover .pattern{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,var(--ht-fff) 0 2px,transparent 2px 18px);opacity:.14}
+  .cover--p2 .pattern{background-image:radial-gradient(circle at 25% 30%,var(--ht-fff) 2px,transparent 3px),radial-gradient(circle at 75% 65%,var(--ht-fff) 2px,transparent 3px);background-size:26px 26px;opacity:.2}
+  .cover--p3 .pattern{background-image:linear-gradient(var(--ht-fff) 1px,transparent 1px),linear-gradient(90deg,var(--ht-fff) 1px,transparent 1px);background-size:28px 28px;opacity:.1}
+  .cover--p4 .pattern{background-image:conic-gradient(from 90deg,var(--ht-fff) 0 40deg,transparent 40deg 360deg);background-size:48px 48px;opacity:.12}
+  .cover--p5 .pattern{background-image:radial-gradient(circle at center,var(--ht-fff) 0 3px,transparent 4px);background-size:38px 38px;opacity:.16}
+  .cover .cov{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  /* 封面标题（参考「脚本与自动化编程」封面：居中粗体白字，字体用当前 Baloo 2 圆润粗体） */
+  .cover-title{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--ht-fff);text-align:center;line-height:1.3;width:82%;z-index:2;text-shadow:0 2px 6px var(--htc-31-31-31-035);letter-spacing:.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .cover .subject-emoji{position:absolute;right:14px;bottom:12px;font-size:44px;line-height:1;filter:drop-shadow(0 3px 0 var(--htc-31-31-31-018));z-index:2}
+  .cover .delivery{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;color:var(--ht-fff);background:var(--htc-31-31-31-045);backdrop-filter:blur(4px);padding:4px 10px;border-radius:999px;z-index:2}
+  .cover .xp-badge{position:absolute;top:12px;right:12px;font-size:11px;font-weight:800;color:var(--candy-orange);background:var(--ht-fff);border:2px solid var(--candy-orange);padding:3px 9px;border-radius:999px;z-index:2;box-shadow:0 2px 0 var(--htc-255-77-0-025)}
+  .cover .code{position:absolute;bottom:10px;left:12px;font-size:0.625rem;color:var(--htc-255-255-255-009);font-family:ui-monospace,Menlo,monospace;z-index:2;background:var(--htc-31-31-31-035);padding:2px 7px;border-radius:6px}
+  .card-body{padding:14px 14px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .card-title{font-family:var(--font-head);font-size:1rem;font-weight:700;color:var(--ink-strong);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:44px}
+  .cat-row{display:flex;flex-wrap:wrap;gap:6px}
+  .cat{font-size:11px;color:var(--candy-purple);background:var(--secondary-soft);border:1px solid var(--ht-d8c4fb);padding:2px 9px;border-radius:999px;font-weight:700}
+  .meta-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);margin-top:auto;flex-wrap:wrap}
+  .meta-row .dot{width:4px;height:4px;border-radius:50%;background:var(--line-strong)}
+  .meta-row .hot{color:var(--candy-orange);font-weight:700}
+  .price-row{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:2px dashed var(--line)}
+  .price{font-size:19px;font-weight:800;color:var(--candy-orange);font-variant-numeric:tabular-nums;letter-spacing:-.01em;font-family:var(--font-head)}
+  .price .cny{font-size:12px;font-weight:700}
+  .price .qi{font-size:11px;font-weight:600;color:var(--ink-soft);margin-left:2px}
+  .price-empty{font-size:12px;color:var(--ink-faint)}
+  /* 学习进度环（学中玩社交证明，装饰性） */
+  .ring-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);font-weight:600}
+  .ring{width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--candy-green) calc(var(--p)*1%),var(--line) 0);display:grid;place-items:center;position:relative}
+  .ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--card)}
+  .ring b{position:relative;z-index:1;font-size:8px;color:var(--candy-green)}
+
+  /* ===== Card Skeleton ===== */
+  .skeleton .shape{background:linear-gradient(100deg,var(--line) 40%,var(--bg) 50%,var(--line) 60%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+  @keyframes shimmer{to{background-position:-200% 0}}
+
+  /* ===== EmptyState ===== */
+  .empty{border:2px dashed var(--line-strong);border-radius:var(--radius);padding:56px 20px;text-align:center;background:var(--card)}
+  .empty .icon{width:60px;height:60px;margin:0 auto 16px;border-radius:20px;background:var(--primary-soft);display:grid;place-items:center;font-size:28px}
+  .empty .t{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .empty .d{font-size:0.8125rem;color:var(--ink-soft);margin-bottom:18px}
+  .empty button.btn{font-size:0.8125rem;font-weight:800;color:var(--ht-fff);background:var(--candy-green);border:2px solid var(--candy-green);border-radius:12px;padding:10px 20px;box-shadow:0 4px 0 var(--htc-88-204-2-004);transition:all .15s}
+  .empty button.btn:hover{background:var(--primary-strong)}
+  .empty button.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--htc-88-204-2-004)}
+
+  /* ===== ErrorState ===== */
+  .error{border:2px solid var(--htc-255-75-75-035);background:var(--ht-fff0f0);border-radius:var(--radius);padding:44px 20px;text-align:center}
+  .error .t{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .error .d{font-size:0.8125rem;color:var(--ink-soft);margin-bottom:18px}
+  .error button.btn{font-size:0.8125rem;font-weight:800;color:var(--ht-fff);background:var(--candy-red);border:2px solid var(--candy-red);border-radius:12px;padding:10px 20px;box-shadow:0 4px 0 var(--htc-255-75-75-035);transition:all .15s}
+  .error button.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--htc-255-75-75-035)}
+
+  /* ===== Pagination（v4：从左到右水平排列，窄视口横向滚动不换行；auto margin 居中避免溢出不可滚动）===== */
+  .pagination{display:flex;align-items:center;gap:6px;margin-top:28px;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;scrollbar-width:thin}
+  .pagination::before,.pagination::after{content:"";margin:auto}
+  #pgPages{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;flex-shrink:0}
+  .pg-btn{min-width:38px;height:38px;padding:0 13px;border:2px solid var(--line-strong);border-radius:12px;background:var(--card);color:var(--ink);font-size:14px;font-weight:700;display:grid;place-items:center;transition:all .15s;flex-shrink:0}
+  .pg-btn:hover:not(:disabled):not(.active){border-color:var(--candy-purple);color:var(--candy-purple);transform:translateY(-1px)}
+  .pg-btn:active:not(:disabled):not(.active){transform:scale(.94)}
+  .pg-btn.active{background:var(--candy-green);border-color:var(--candy-green);color:var(--ht-fff);box-shadow:0 3px 0 var(--htc-88-204-2-004)}
+  .pg-btn:disabled{opacity:.4;cursor:not-allowed}
+  .pg-info{font-size:0.8125rem;color:var(--ink-soft);margin:0 10px;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .pg-ellipsis{color:var(--ink-faint);padding:0 2px;flex-shrink:0}
+
+  /* ===== 状态演示器（HTML 效果图专属）===== */
+  .statebar{display:flex;align-items:center;gap:8px;margin-top:26px;padding:12px 14px;background:var(--ink-strong);border-radius:14px;flex-wrap:wrap}
+  .statebar .tag{font-size:11px;color:var(--ht-e8e8e8);font-weight:700;margin-right:4px}
+  .statebar button{font-size:12px;border-radius:999px;padding:5px 12px;border:1px solid var(--htc-255-255-255-025);background:transparent;color:var(--ht-e8e8e8);transition:all .15s}
+  .statebar button:hover{background:var(--htc-255-255-255-012)}
+  .statebar button.on{background:var(--candy-green);border-color:var(--candy-green);color:var(--ht-fff)}
+
+  /* ===== 响应工具条 ===== */
+  .respbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--card);border:2px solid var(--line-strong);border-radius:14px;padding:8px 12px;margin-top:20px;box-shadow:0 4px 16px -8px var(--htc-31-31-31-015)}
+  .respbar .rr{font-size:11px;color:var(--ink-faint);font-weight:700;margin-right:4px}
+  .respbar button{font-size:12px;border:none;background:transparent;color:var(--ink-soft);padding:5px 10px;border-radius:999px;transition:all .15s;cursor:pointer}
+  .respbar button:hover{background:var(--line)}
+  .respbar button.on{background:var(--candy-purple);color:var(--ht-fff)}
+  .respbar .sep{width:1px;height:18px;background:var(--line-strong)}
+
+  .demo-note{font-size:11px;color:var(--ink-faint);margin-top:6px;line-height:1.6}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.page,.glayout>.wrap{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--candy-purple));color:var(--candy-purple)}
+  .gnav-item.active{background:var(--candy-green);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-green-deep,var(--candy-green))}
+  .gnav-item.active:hover{background:var(--candy-green-hover,var(--candy-green))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+<!-- STYLE: candy-playful frozen 2026-08-19 (用户指定 Duolingo 系学中玩糖果色, 见 doc-frontend-design-spec §风格定调) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">EduAgent</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item active" href="courses.html" aria-current="page"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>错题/单词本</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a></div>
+</header>
+<div class="page">
+
+  <div class="topbar">
+    <h1 class="page-title">课程中心</h1>
+    <span class="doc-badge">契约② GET /api/series · 效果图 v4 · 两级导航 · 学中玩</span>
+  </div>
+  <p class="subtitle">一级学科大类 → 二级课程方向 · 筛选即重查 · 关键词防抖 400ms · 仅 on_sale · 价格=min_price「¥X 起」</p>
+
+  <!-- Hero：吉祥物 + 口号 + 打卡/等级/XP 社交证明（学中玩） -->
+  <section class="hero">
+    <div class="hero-mascot" role="img" aria-label="吉祥物猫头鹰">🦉</div>
+    <div class="hero-copy">
+      <h2 class="hero-slogan">学中玩 · 玩中学，每天进步<b>一点点</b></h2>
+      <p class="hero-sub">像玩游戏一样把课程学完，打卡、赚 XP、升级徽章</p>
+      <div class="hero-stats">
+        <div class="stat-card"><span class="stat-icon">🔥</span><span>连续打卡 <b>7</b> 天</span></div>
+        <div class="stat-card"><span class="stat-icon">⭐</span><span class="level-row">Lv.5 <span class="xp-bar"><span class="xp-fill" id="xpFill"></span></span><span class="xp-text">120 XP</span></span></div>
+        <div class="stat-card"><span class="stat-icon">🏆</span><span>累计 <b>1,280</b> XP</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SearchInput（防抖 400ms 意图：输入停止 400ms 后触发） -->
+  <div class="search-wrap">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="搜索课程名称、简介或编码" autocomplete="off" />
+    <button class="clear-x" id="clearBtn" aria-label="清空搜索" style="display:none">×</button>
+  </div>
+
+  <!-- FilterBar（v4：两级导航——一级学科大类 + 二级课程方向；375 折叠） -->
+  <div class="filterbar" id="filterBar">
+    <button class="fb-toggle" id="fbToggle" type="button" aria-expanded="false" aria-controls="fbRows">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+      <span>筛选</span>
+      <span class="fb-summary" id="fbSummary">全部课程</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="fb-rows" id="fbRows">
+      <div class="f-group">
+        <span class="f-label">学科</span>
+        <div class="chip-row" id="categoryRow"></div>
+      </div>
+      <div class="f-group" id="subGroup" style="display:none">
+        <span class="f-label">方向</span>
+        <div class="chip-row" id="subRow"></div>
+      </div>
+      <div class="f-divider"></div>
+      <div class="f-group">
+        <span class="f-label">交付</span>
+        <div class="chip-row" id="deliveryRow">
+          <button class="chip active" data-v="">全部</button>
+          <button class="chip" data-v="online_live">在线直播</button>
+          <button class="chip" data-v="online_recorded">在线录播</button>
+          <button class="chip" data-v="offline_face_to_face">线下面授</button>
+        </div>
+      </div>
+      <div class="f-divider"></div>
+      <div class="f-group">
+        <span class="f-label">价格</span>
+        <div class="select">
+          <select id="priceSelect">
+            <option value="">不限</option>
+            <option value="0-2000">¥2000 以下</option>
+            <option value="2000-3000">¥2000 – ¥3000</option>
+            <option value="3000-">¥3000 以上</option>
+          </select>
+        </div>
+      </div>
+      <div class="f-divider"></div>
+      <div class="f-group">
+        <span class="f-label">排序</span>
+        <div class="chip-row" id="sortRow">
+          <button class="chip active" data-v="default">综合</button>
+          <button class="chip" data-v="newest">最新</button>
+          <button class="chip" data-v="price_asc">价格↑</button>
+          <button class="chip" data-v="price_desc">价格↓</button>
+        </div>
+      </div>
+      <button class="reset-btn" id="resetBtn">重置 ×</button>
+    </div>
+  </div>
+
+  <!-- 结果条（加载态：spin + 文案） -->
+  <div class="resultbar" id="resultBar">
+    <span id="resText"></span>
+  </div>
+
+  <!-- Campus（成功态内容容器，演示器会切换其 innerHTML） -->
+  <div id="contentArea"></div>
+
+  <!-- Pagination（v4：从左到右水平排列，page_meta 驱动） -->
+  <nav class="pagination" id="pagination" aria-label="分页">
+    <button class="pg-btn" id="pgPrev" aria-label="上一页">‹</button>
+    <span id="pgPages"></span>
+    <button class="pg-btn" id="pgNext" aria-label="下一页">›</button>
+    <span class="pg-info" id="pgInfo"></span>
+  </nav>
+
+  <p class="demo-note">HTML 效果图（task44 审核流 v4）：内嵌 15 门<b>真实课程</b>（价格=min_price「¥X 起」/ 班次=3 / 交付模式中文化标签 / 封面 cover_url）。<b>v4 变更</b>：①两级导航——一级学科大类（9 类）× 二级课程方向（如「编程→通用程序设计」）②「学中玩」风格——糖果色（橙/绿/紫）、吉祥物 Hero、连续打卡/等级/XP 社交证明、XP 徽章、学习进度环、超大圆角、粗描边按钮、弹性按压动画 ③分页从左到右水平排列（窄视口横向滚动不换行）④封面参考「脚本与自动化编程」风格（糖果渐变 + 学科 emoji + 斜线图案）⑤封面注入对应课程名文字（居中粗体白字，Baloo 2 圆润粗体，去掉交付后缀）。分页文案体现真实数据量（2628 门 · 第 1/176 页）。以下「状态演示」与「视口切换」为审核工具条。</p>
+
+  <!-- 状态演示 + 视口切换（审核工具条，内联文档流不遮挡内容） -->
+  <div class="respbar">
+    <span class="rr">状态演示</span>
+    <button class="on" data-s="success">成功</button>
+    <button data-s="empty">空态</button>
+    <button data-s="loading">加载</button>
+    <button data-s="error">错误</button>
+    <span class="sep"></span>
+    <span class="rr">视口</span>
+    <button data-w="375">375</button>
+    <button data-w="768">768</button>
+    <button data-w="1024">1024</button>
+    <button data-w="1280">1280</button>
+    <button data-w="1440">1440</button>
+    <span class="sep"></span>
+    <button id="resetVp">自适应</button>
+  </div>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* =====================================================================
+ * task44 课程中心 效果图 v4 —— 纯前端演示（数据形状对齐契约② SeriesListItem）
+ * v4 变更：两级导航（一级学科大类 9 类 + 二级课程方向）；「学中玩」糖果色风格；
+ *          分页水平排列；封面参考「脚本与自动化编程」风格
+ * React 实现阶段将真实请求 GET /api/series
+ * ===================================================================== */
+const DM = { "online_live":"在线直播", "online_recorded":"在线录播", "offline_face_to_face":"线下面授" };
+const COVER = (i) => `https://cdn.example.com/covers/course-${String(i).padStart(3,"0")}.jpg`;
+
+/* ---- 两级导航：一级学科大类 → 二级课程方向（用户方案，9 大类）---- */
+const CATS = {
+  "编程":["通用程序设计","系统级编程","脚本与自动化编程","Web编程语言","底层与低级语言","前端开发","后端开发","全栈开发"],
+  "计算机系统":["网络与通信系统","操作系统与运行时","数据存储系统","编译与语言系统","分布式与云系统"],
+  "数据与AI":["数据分析与可视化","数据工程","机器学习方法","深度学习与感知智能","基础模型与智能体"],
+  "图形与游戏":["图形与渲染管线","实时渲染","仿真与物理系统","交互媒体与游戏"],
+  "数学":["分析学基础","代数学基础","几何学基础","微积分与数列极限","数学证明与逻辑","概率与统计方法","运筹优化","数值与计算方法","建模与仿真","数据与定量分析","现代分析理论","现代代数理论","几何与拓扑","离散与组合数学","交叉数学方向"],
+  "考研/考证/公考":["考研数学","考研英语","考研政治","考研专业课","复试与调剂","公务员考试","事业单位考试","教师招聘考试","警务辅警招录","面试与申论专项","教师资格证","会计与财税证书","建工类证书","法律与合规证书","IT与数字化证书"],
+  "管理与职场":["基层管理","项目管理","跨部门协同","领导力进阶","人才培养","组织变革"],
+  "企业培训":["新员工培训","销售培训","客服培训","数据合规","安全生产","服务规范"],
+  "校园成长":["就业竞争力","实习与求职准备","升学与学业规划","高中关键学科衔接","中学数学提升","中学英语提升","中学物理提升","中学化学提升","信息学与编程启蒙"]
+};
+/* 学科 emoji 图标（封面视觉 + 空态提示） */
+const CAT_EMOJI = {
+  "编程":"💻","计算机系统":"🖥️","数据与AI":"📊","图形与游戏":"🎮","数学":"📐",
+  "考研/考证/公考":"🎯","管理与职场":"📈","企业培训":"🏢","校园成长":"🌱"
+};
+const SUB_EMOJI = {
+  "通用程序设计":"💻","系统级编程":"⚙️","脚本与自动化编程":"🤖","Web编程语言":"🌐","底层与低级语言":"🔧",
+  "前端开发":"🎨","后端开发":"🗄️","全栈开发":"🧩"
+};
+
+// 契约② SeriesListItem 形状（snake_case 全列）；15 门真实课程（均 on_sale，映射二级方向）
+const ALL = [
+  {id:1001,delivery_mode:"online_live",series_code:"SC01001",series_name:"通用编程入门班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程入门（直播）真实示例",learners:1280,xp:120},
+  {id:1002,delivery_mode:"online_recorded",series_code:"SC01002",series_name:"通用编程入门班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程入门（录播）真实示例",learners:980,xp:100},
+  {id:1003,delivery_mode:"online_live",series_code:"SC01003",series_name:"通用编程项目班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程项目（直播）真实示例",learners:860,xp:150},
+  {id:1004,delivery_mode:"online_recorded",series_code:"SC01004",series_name:"通用编程项目班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程项目（录播）真实示例",learners:640,xp:130},
+  {id:1005,delivery_mode:"online_live",series_code:"SC01005",series_name:"通用编程就业强化班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程就业强化（直播）真实示例",learners:720,xp:180},
+  {id:1006,delivery_mode:"online_recorded",series_code:"SC01006",series_name:"通用编程就业强化班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"通用程序设计",cohort_count:3,description:"通用编程就业强化（录播）真实示例",learners:530,xp:160},
+  {id:1007,delivery_mode:"online_live",series_code:"SC01007",series_name:"系统级编程基础班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"系统级编程基础（直播）真实示例",learners:410,xp:140},
+  {id:1008,delivery_mode:"online_recorded",series_code:"SC01008",series_name:"系统级编程基础班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"系统级编程基础（录播）真实示例",learners:320,xp:120},
+  {id:1009,delivery_mode:"online_live",series_code:"SC01009",series_name:"系统编程实战班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"系统编程实战（直播）真实示例",learners:280,xp:170},
+  {id:1010,delivery_mode:"online_recorded",series_code:"SC01010",series_name:"系统编程实战班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"系统编程实战（录播）真实示例",learners:210,xp:150},
+  {id:1011,delivery_mode:"online_live",series_code:"SC01011",series_name:"Linux系统开发进阶班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"Linux 系统开发进阶（直播）真实示例",learners:360,xp:190},
+  {id:1012,delivery_mode:"online_recorded",series_code:"SC01012",series_name:"Linux系统开发进阶班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"系统级编程",cohort_count:3,description:"Linux 系统开发进阶（录播）真实示例",learners:270,xp:170},
+  {id:1013,delivery_mode:"online_live",series_code:"SC01013",series_name:"脚本自动化入门班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"脚本与自动化编程",cohort_count:3,description:"脚本自动化入门（直播）真实示例",learners:890,xp:110},
+  {id:1014,delivery_mode:"online_recorded",series_code:"SC01014",series_name:"脚本自动化入门班·录播",min_price:"1999.00",category_names:["编程"],sub_category:"脚本与自动化编程",cohort_count:3,description:"脚本自动化入门（录播）真实示例",learners:760,xp:90},
+  {id:1015,delivery_mode:"online_live",series_code:"SC01015",series_name:"办公与运维自动化班·直播",min_price:"2999.00",category_names:["编程"],sub_category:"脚本与自动化编程",cohort_count:3,description:"办公与运维自动化（直播）真实示例",learners:540,xp:130},
+];
+// 真实数据量（DB 全 on_sale）：success 默认态分页文案用此体现
+const TOTAL_REAL = 2628, TOTAL_PAGES_REAL = 176;
+const STATE_LABEL = { success:"成功", empty:"空态", loading:"加载", error:"错误" };
+
+let filters = { category:"全部", sub:"", delivery:"", price:"", sort:"default", keyword:"" };
+let page = 1, PAGE_SIZE = 15, state = "success";
+
+/* ---- 两级导航渲染：一级学科大类 chips（9 类）+ 二级方向动态 ---- */
+function renderCats(){
+  const row=document.getElementById("categoryRow");
+  const keys=Object.keys(CATS);
+  row.innerHTML = `<button class="chip active" data-v="全部">全部</button>` +
+    keys.map(k=>`<button class="chip" data-v="${k}">${CAT_EMOJI[k]||"📚"} ${k}</button>`).join("");
+}
+function renderSubs(){
+  const group=document.getElementById("subGroup"), row=document.getElementById("subRow");
+  if(filters.category==="全部"){ group.style.display="none"; row.innerHTML=""; return; }
+  const subs=CATS[filters.category]||[];
+  group.style.display="flex";
+  row.innerHTML = `<button class="chip ${filters.sub===""?"active":""}" data-v="">全部方向</button>` +
+    subs.map(s=>`<button class="chip ${filters.sub===s?"active":""}" data-v="${s}">${SUB_EMOJI[s]||"📚"} ${s}</button>`).join("");
+}
+
+/* ---- 375 折叠筛选条：summary 摘要更新 ---- */
+function fbSummary(){
+  const parts=[];
+  if(filters.category!=="全部") parts.push(filters.category);
+  if(filters.sub) parts.push(filters.sub);
+  if(filters.delivery) parts.push(DM[filters.delivery]);
+  if(filters.price){ const r=filters.price.split("-").map(x=>x?"¥"+x:"∞"); parts.push(r.join("–")); }
+  if(filters.sort!=="default") parts.push({newest:"最新",price_asc:"价格↑",price_desc:"价格↓"}[filters.sort]);
+  const el=document.getElementById("fbSummary");
+  el.textContent = parts.length ? parts.join(" · ") : "全部课程";
+}
+function selChips(rowId,el){ document.getElementById(rowId).querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c===el)); }
+
+function applyFilter(k, v){ filters[k]=v; page=1; refresh(); }
+
+/* ---- 刷新：先 loading，再落地当前 state ---- */
+function refresh(){
+  renderResultBar("loading");
+  renderLoading();
+  setTimeout(()=>applyState(state), 420);
+}
+let storedState="success";
+
+/* ---- 卡片渲染（糖果渐变 + 学科 emoji + 斜线图案；价格「¥X 起」+ XP 徽章 + 进度环）---- */
+const TONES=["t1","t2","t3","t4","t5"], PATTERNS=["p1","p2","p3","p4","p5"];
+function coverClass(id){ const i=id-1001; return `cover--${TONES[i%5]} cover--${PATTERNS[Math.floor(i/5)%5]}`; }
+function cardHtml(s){
+  const price = (s.min_price!==null && s.min_price!==undefined) ? s.min_price : null;
+  const coverFail = `onerror="this.remove()"`;
+  const emoji = SUB_EMOJI[s.sub_category] || CAT_EMOJI[(s.category_names||[])[0]] || "📚";
+  const pct = (s.id*7)%100; // 学习进度环（装饰性社交证明）
+  return `
+  <article class="card" tabindex="0" role="button" aria-label="${s.series_name}">
+    <div class="cover ${coverClass(s.id)}">
+      <div class="pattern"></div>
+      <img class="cov" src="${COVER(s.id)}" alt="${s.series_name}封面" loading="lazy" ${coverFail} />
+      <h3 class="cover-title">${s.series_name.replace(/·(直播|录播)$/,"")}</h3>
+      <span class="delivery">${DM[s.delivery_mode]||"在线课程"}</span>
+      <span class="xp-badge">+${s.xp||0} XP</span>
+      <span class="subject-emoji">${emoji}</span>
+      <span class="code">${s.series_code}</span>
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">${s.series_name}</h3>
+      <div class="cat-row"><span class="cat">${emoji} ${s.sub_category||(s.category_names||[])[0]||"课程"}</span></div>
+      <div class="meta-row">
+        <span>${s.cohort_count} 个班次</span>
+        <span class="dot"></span>
+        <span class="hot">🔥 ${(s.learners||0)/1000>=1?((s.learners/1000).toFixed(1)+"k"):s.learners} 人学过</span>
+        <span class="dot"></span>
+        <span class="ring-wrap"><span class="ring" style="--p:${pct}"><b>${pct}%</b></span>进度</span>
+      </div>
+      <div class="price-row">
+        ${price!==null ? `<span class="price"><span class="cny">¥</span>${formatPrice(price)}<span class="qi">起</span></span>` : `<span class="price-empty">-</span>`}
+      </div>
+    </div>
+  </article>`;
+}
+function formatPrice(p){ const n=parseFloat(p); return n.toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+/* ---- 结果条 ---- */
+function renderResultBar(kind, total){
+  const el=document.getElementById("resText"); if(!el) return;
+  if(kind==="loading"){ el.innerHTML='<span class="spin"></span> 查询中…'; }
+  else if(kind==="success"){ el.innerHTML=`共 <b>${total}</b> 门课程`; }
+  else if(kind==="empty"){ el.innerHTML='共 <b>0</b> 门课程'; }
+  else { el.textContent=""; }
+}
+
+/* ---- 成功态：默认展示 15 门 + 真实数据量分页；筛选则按内嵌集过滤 ---- */
+function renderSuccess(){
+  let list=[...ALL];
+  if(filters.category!=="全部") list = list.filter(it=>(it.category_names||[]).join(",").includes(filters.category));
+  if(filters.sub) list = list.filter(it=>it.sub_category===filters.sub);
+  if(filters.delivery) list = list.filter(it=>it.delivery_mode===filters.delivery);
+  if(filters.price){
+    const [lo,hi]=filters.price.split("-").map(x=>x?parseInt(x):null);
+    list = list.filter(it=>{ const p=it.min_price?parseFloat(it.min_price):null; if(p===null) return false; if(lo!==null&&p<lo) return false; if(hi!==null&&p>hi) return false; return true; });
+  }
+  if(filters.keyword) list = list.filter(it=>(it.series_name+it.series_code+(it.description||"")).toLowerCase().includes(filters.keyword.toLowerCase()));
+  if(filters.sort==="newest") list = list.slice().reverse();
+  if(filters.sort==="price_asc") list = list.slice().sort((a,b)=>(a.min_price?parseFloat(a.min_price):Infinity)-(b.min_price?parseFloat(b.min_price):Infinity));
+  if(filters.sort==="price_desc") list = list.slice().sort((a,b)=>(b.min_price?parseFloat(b.min_price):-1)-(a.min_price?parseFloat(a.min_price):-1));
+
+  // 是否「默认浏览态」（无任何筛选/关键词）：用真实数据量 2628/176 体现；否则用内嵌集演示过滤
+  const isDefault = filters.category==="全部" && !filters.sub && !filters.delivery && !filters.price && filters.sort==="default" && !filters.keyword;
+  let total, totalPages;
+  let pageItems;
+  if(isDefault){
+    total=TOTAL_REAL; totalPages=TOTAL_PAGES_REAL;
+    pageItems = list.slice(0, PAGE_SIZE);
+  } else {
+    total=list.length; totalPages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+    pageItems = list.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  }
+
+  const area=document.getElementById("contentArea");
+  if(pageItems.length===0){
+    const catEmoji = filters.category!=="全部" ? (CAT_EMOJI[filters.category]||"📚") : "🔍";
+    area.innerHTML = `<div class="empty"><div class="icon">${catEmoji}</div><div class="t">${filters.category!=="全部"?"该学科课程即将上线":"没有符合条件的课程"}</div><div class="d">${filters.category!=="全部"?"我们正在加紧录制「"+filters.category+"」系列课程，敬请期待":"换一个关键词或筛选条件再试试"}</div><button class="btn" onclick="resetAll()">查看全部课程</button></div>`;
+  } else {
+    area.innerHTML = `<div class="grid">${pageItems.map(cardHtml).join("")}</div>`;
+  }
+  renderPagination(total, totalPages);
+  renderResultBar(pageItems.length===0?"empty":"success", total);
+}
+
+/* ---- 各状态渲染 ---- */
+function renderLoading(){
+  const s="<div class='shape' style='width:100%;height:148px'></div><div class='shape' style='width:75%;height:16px;margin:12px 12px 0'></div><div class='shape' style='width:50%;height:14px;margin:8px 12px 0'></div><div class='shape' style='width:30%;height:12px;margin:8px 12px 0'></div>";
+  document.getElementById("contentArea").innerHTML = `<div class="grid">${Array.from({length:6}).map(()=>`<div class="card skeleton">${s}</div>`).join("")}</div>`;
+  document.getElementById("pgPages").innerHTML="";
+  document.getElementById("pgInfo").textContent="";
+  renderResultBar("loading");
+}
+function renderError(){
+  document.getElementById("contentArea").innerHTML = `<div class="error"><div class="t">加载失败</div><div class="d">网络似乎开小差了，请稍后重试</div><button class="btn" onclick="applyState('success')">重新加载</button></div>`;
+  document.getElementById("pgPages").innerHTML="";
+  document.getElementById("pgInfo").textContent="";
+  renderResultBar("error");
+}
+function applyState(s){
+  state=s; storedState=s;
+  if(s==="success") renderSuccess();
+  else if(s==="loading") renderLoading();
+  else if(s==="empty"){ document.getElementById("contentArea").innerHTML = `<div class="empty"><div class="icon">🔍</div><div class="t">没有符合条件的课程</div><div class="d">换一个关键词或筛选条件再试试</div><button class="btn" onclick="resetAll()">查看全部课程</button></div>`;
+    document.getElementById("pgInfo").textContent=""; document.getElementById("pgPages").innerHTML=""; renderResultBar("empty"); }
+  else if(s==="error") renderError();
+}
+
+/* ---- Pagination（v4：从左到右水平排列；支持真实 176 页省略号；默认态翻页为静态演示）---- */
+function renderPagination(total, totalPages){
+  const pg=document.getElementById("pgPages");
+  let html="";
+  for(let i=1;i<=totalPages;i++){
+    if(totalPages>7 && (i>3 && i<totalPages-2)){ if(i===4) html+=`<span class="pg-ellipsis">⋯</span>`; continue; }
+    html+=`<button class="pg-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  pg.innerHTML=html;
+  document.getElementById("pgPrev").disabled=(page<=1);
+  document.getElementById("pgNext").disabled=(page>=totalPages);
+  document.getElementById("pgInfo").textContent=`共 ${total} 门 · 第 ${page}/${totalPages} 页`;
+}
+function goPage(p){ page=p; refresh(); }
+document.getElementById("pgPrev").addEventListener("click",()=>{ if(page>1){page--; refresh();} });
+document.getElementById("pgNext").addEventListener("click",()=>{ if(page<TOTAL_PAGES_REAL){page++; refresh();} });
+
+/* ---- 状态演示器 ---- */
+function statebar(){
+  document.querySelectorAll(".respbar button[data-s]").forEach(b=>{
+    b.addEventListener("click",()=>{
+      applyState(b.dataset.s);
+      document.querySelectorAll(".respbar button[data-s]").forEach(x=>x.classList.toggle("on",x===b));
+    });
+  });
+}
+
+/* ---- 事件绑定 ---- */
+document.getElementById("fbToggle").addEventListener("click",e=>{
+  const open=document.getElementById("filterBar").classList.toggle("open");
+  document.getElementById("fbToggle").setAttribute("aria-expanded", open ? "true":"false");
+});
+document.getElementById("categoryRow").addEventListener("click",e=>{ const t=e.target.closest(".chip"); if(!t)return; selChips("categoryRow",t); filters.category=t.dataset.v; filters.sub=""; renderSubs(); applyFilter("category",t.dataset.v); });
+document.getElementById("subRow").addEventListener("click",e=>{ const t=e.target.closest(".chip"); if(!t)return; selChips("subRow",t); applyFilter("sub",t.dataset.v); });
+document.getElementById("deliveryRow").addEventListener("click",e=>{ const t=e.target.closest(".chip"); if(!t)return; selChips("deliveryRow",t); applyFilter("delivery",t.dataset.v); });
+document.getElementById("sortRow").addEventListener("click",e=>{ const t=e.target.closest(".chip"); if(!t)return; selChips("sortRow",t); applyFilter("sort",t.dataset.v); });
+document.getElementById("priceSelect").addEventListener("change",e=>applyFilter("price",e.target.value));
+let kwTimer;
+document.getElementById("searchInput").addEventListener("input",e=>{
+  const v=e.target.value;
+  document.getElementById("clearBtn").style.display=v?"block":"none";
+  clearTimeout(kwTimer);
+  kwTimer=setTimeout(()=>applyFilter("keyword",v.trim()),400);  // 防抖 400ms
+});
+document.getElementById("clearBtn").addEventListener("click",()=>{ document.getElementById("searchInput").value=""; document.getElementById("clearBtn").style.display="none"; applyFilter("keyword",""); });
+function resetAll(){
+  filters={category:"全部",sub:"",delivery:"",price:"",sort:"default",keyword:""}; page=1;
+  document.querySelectorAll("#categoryRow .chip").forEach(c=>c.classList.toggle("active",c.dataset.v==="全部"));
+  document.querySelectorAll("#deliveryRow .chip").forEach(c=>c.classList.toggle("active",c.dataset.v===""));
+  document.querySelectorAll("#sortRow .chip").forEach(c=>c.classList.toggle("active",c.dataset.v==="default"));
+  document.getElementById("priceSelect").value=""; document.getElementById("searchInput").value=""; document.getElementById("clearBtn").style.display="none";
+  renderSubs(); fbSummary();
+  applyState("success");
+}
+document.getElementById("resetBtn").addEventListener("click",resetAll);
+
+/* ---- 视口切换 ---- */
+document.querySelectorAll(".respbar button[data-w]").forEach(b=>b.addEventListener("click",()=>{
+  document.body.style.width=b.dataset.w+"px"; document.body.style.margin="0 auto";
+  document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.toggle("on",x===b));
+}));
+document.getElementById("resetVp").addEventListener("click",()=>{ document.body.style.width="auto"; document.body.style.margin="0 auto"; document.querySelectorAll(".respbar button[data-w]").forEach(x=>x.classList.remove("on")); });
+
+/* ---- 初始渲染：两级导航 + XP 进度条动画 + 列表 ---- */
+renderCats();
+renderSubs();
+statebar();
+fbSummary();
+refresh();
+/* XP 等级进度条自动增长（学中玩激励动效） */
+setTimeout(()=>{ const f=document.getElementById("xpFill"); if(f) f.style.width="62%"; }, 300);
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;EAPI.get("/api/series?page=1&page_size=12").then(function(d){var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);if(!items.length)return;var cards=document.querySelectorAll(".course-card,.grid>.card");if(!cards.length)return;items.slice(0,cards.length).forEach(function(s,i){var c=cards[i];var t=c.querySelector("h3,.title,.name");if(t)t.textContent=s.series_name||t.textContent;var p=c.querySelector(".price,[class*=price]");if(p&&s.min_price)p.textContent="¥"+Number(s.min_price).toFixed(2);});}).catch(function(){});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task55 调度者验收报告 — /admin/dashboard 管理端仪表盘</title>
+<style>
+  :root{
+    --bg:#f7f7fb; --card:#ffffff; --ink:#1f2430; --muted:#687086;
+    --line:#e6e8f0; --primary:#4f46e5; --ok:#16a34a; --fail:#dc2626; --warn:#d97706;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa; --candy-orange:#fb923c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;font-size:14px}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+  header.hero{background:linear-gradient(120deg,#eef2ff,#fdf2f8 55%,#fdf4ff);border:1px solid var(--line);border-radius:20px;padding:28px 30px;margin-bottom:24px}
+  header.hero h1{margin:0 0 6px;font-size:24px;color:var(--primary)}
+  header.hero .sub{color:var(--muted);font-size:14px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;background:#fff;border:1px solid var(--line)}
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .badge.grey .dot{background:#cbd5e1}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:20px}
+  section h2{margin:0 0 14px;font-size:17px;display:flex;align-items:center;gap:8px}
+  section h2 .n{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:8px;background:var(--primary);color:#fff;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#fafbff;font-weight:600;color:var(--muted);font-size:12px;text-transform:none}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .t-ok{background:#e7f8ee;color:var(--ok)} .t-fail{background:#fdeaea;color:var(--fail)} .t-warn{background:#fdf1e0;color:var(--warn)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;background:#f4f5fa;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .kv{font-size:13px} .kv b{color:var(--ink)} .kv div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:6px 0}
+  .kv div span:first-child{color:var(--muted)}
+  ul.tight{margin:4px 0;padding-left:18px} ul.tight li{margin:3px 0}
+  .shotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .shot .cap{padding:8px 10px;font-size:12px;color:var(--muted)}
+  .shot .cap b{color:var(--ink)}
+  .okline{background:#f0fbf4;border:1px solid #c9f0d8;border-radius:10px;padding:10px 14px;color:#166534;font-size:13px;font-weight:600}
+  .footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>task55 调度者验收报告</h1>
+  <div class="sub">管理端仪表盘 <code>/admin/dashboard</code> 重构 · 交付方：前端开发者 · 调度：dev-standard 手动&nbsp;8 阶段</div>
+  <div class="badges">
+    <span class="badge"><span class="dot"></span>KPI 真实聚合（无 MOCK）</span>
+    <span class="badge"><span class="dot"></span>AdminGuard 非 admin 拦截</span>
+    <span class="badge"><span class="dot"></span>图表 §1.7 疏色序</span>
+    <span class="badge"><span class="dot"></span>单测 11/11</span>
+    <span class="badge"><span class="dot"></span>5 项审计全 0</span>
+    <span class="badge grey"><span class="dot"></span>榜单=契约缺口占位（待后端）</span>
+  </div>
+</header>
+
+<!-- 0 概览 -->
+<section>
+  <h2><span class="n">0</span>任务概览</h2>
+  <div class="grid2">
+    <div class="kv">
+      <div><span>权威数据源</span><code>GET /api/admin/users/dashboard/metrics</code></div>
+      <div><span>RBAC 拦截</span><code>(admin)/layout.tsx · AdminGuard</code></div>
+      <div><span>技术栈</span>Next.js 16.3 · React 19 · Tailwind v4 · shadcn · echarts</div>
+      <div><span>字段规范</span>snake_case · 禁 MOCK</div>
+    </div>
+    <div class="kv">
+      <div><span>提交 commit</span><code>35d0da2</code> 主体 · <code>2a7c4ed</code> 人数图例</div>
+      <div><span>规范补写</span><code>doc-frontend-design-spec.md P18b</code></div>
+      <div><span>UI 配套</span>HTML 原型 + Playwright 截图矩阵 ×7</div>
+      <div><span>状态</span><span class="tag t-ok">待验收</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 1 数据面盘点 -->
+<section>
+  <h2><span class="n">1</span>数据面盘点与契约缺口（判定依据）</h2>
+  <table>
+    <tr><th style="width:30%">聚合项</th><th>可用端点</th><th style="width:26%">结论</th></tr>
+    <tr><td>用户规模 / 活跃 / 角色分布 / 注册趋势</td><td><code>GET /api/admin/users/dashboard/metrics</code>（user_admin 域 DashboardMetrics）</td><td><span class="tag t-ok">真实聚合</span></td></tr>
+    <tr><td>订单数 / 营收 / 热门课程榜</td><td>后端 trade 域仅用户本人视角，<b>无 admin 全局聚合端点</b></td><td><span class="tag t-warn">契约缺口 · 占位卡</span></td></tr>
+    <tr><td>榜单待后端提供</td><td><code>GET /api/admin/trade/overview</code> 等（task70~91）</td><td><span class="tag t-warn">挂起接入</span></td></tr>
+  </table>
+  <p style="margin:10px 0 0;font-size:13px;color:var(--muted)">原则：<b>禁 MOCK</b>。无后端聚合端点的区块以「契约缺口占位卡」如实呈现，绝不伪造订单/营收/榜数据；待后端落端点后再接真值。</p>
+</section>
+
+<!-- 2 GWT 逐条自查 -->
+<section>
+  <h2><span class="n">2</span>GWT 逐条自查</h2>
+  <table>
+    <tr><th style="width:26%">GWT / 验收点</th><th>判定依据</th><th style="width:12%">结果</th></tr>
+    <tr><td><b>GWT① 先补本页规范（KPI/趋势/榜单设计）再出 HTML</b></td><td><code>doc-frontend-design-spec.md</code> L664 <code>### P18b</code> 新增整节：KPI 指标卡 / 近 7 天注册趋势（单系列 primary）/ 角色分布饼图（§1.7 疏色序）/ 热门课程榜 / AdminGuard RBAC / 数据契约 / 三态与响应式。HTML 原型产出于规范之后。</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><b>GWT② HTML APPROVED 后 React：KPI 真实聚合（无 MOCK）+ AdminGuard 非 admin 拦截</b></td><td><code>MetricCards / RegisterTrendChart / RoleDonutChart</code> 全部经 <code>getDashboardMetrics()</code> 拉真实端点，组件内无硬编码数值；<code>(admin)/layout.tsx</code> 用 <code>AdminGuard</code> 包裹，admin 放行、manager/teacher/student 拦截重定向，未登录跳登录页（后端 ADMIN-only 为权威）。</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><b>GWT③ 图表多系列按 §1.7 色板取色</b></td><td><code>lib/chart-palette.ts</code> 扩展 <code>CHART_SERIES_8</code>（chart1~8 定性序）+ <code>ROLE_CHART_COLORS</code> 疏色序；注册趋势单系列 primary（chart1），角色饼图按 admin/student/teacher/manager 疏色序取色、echarts 按真实值自动算比例。</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><b>审核回环 v2：角色比率 bug 修复</b></td><td>HTML 原型 conic-gradient 原把 admin(2) 画成 0–46%（近半环），已改为真实累计占比 student≈99.96% / teacher≈0.028% / manager≈0.014% / admin≈0.002%；环形图以学员为绝对主导。React echarts 按真实值自动算角度，无此 bug。</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><b>审核回环 v3：角色分布显示具体人数</b></td><td>审核反馈「需显示具体的管理员/学员/教师/运营人数」→ <code>RoleDonutChart</code> 环形下方新增带人数+占比的图例（色点+角色名+人数+%，真实 role_breakdown），色点语义 token（禁内联 hex）。单测追加图例断言。commit <code>2a7c4ed</code>。</td><td><span class="tag t-ok">PASS</span></td></tr>
+  </table>
+</section>
+
+<!-- 3 证据 -->
+<section>
+  <h2><span class="n">3</span>证据</h2>
+  <h3 style="font-size:14px;margin:4px 0 8px">3.1 单测（Vitest · 11/11 通过）</h3>
+  <ul class="tight">
+    <li><code>MetricCards.test.tsx</code> (3)：6 指标卡渲染、真实 API 路径、失败错误态可重试</li>
+    <li><code>RoleDonutChart.test.tsx</code> (3)：渲染 aria 摘要 + 图例 4 角色行/人数/占比、失败错误态可重试</li>
+    <li><code>RegisterTrendChart.test.tsx</code> (2)：渲染标题/aria 摘要、错误态可重试</li>
+    <li><code>RankFallback.test.tsx</code> (2)：渲染标题/契约缺口说明、不渲染伪造数据</li>
+  </ul>
+  <div class="okline">Test Files 4 passed · Tests 11 passed</div>
+
+  <h3 style="font-size:14px;margin:18px 0 8px">3.2 固定 5 项 grep 审计（业务区必须全 0）</h3>
+  <table>
+    <tr><th>文件</th><th>hex</th><th>内联色</th><th>禁闭色</th><th>任意字号</th><th>灰系</th></tr>
+    <tr><td>admin/dashboard/page.tsx</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>MetricCards.tsx</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>RoleDonutChart.tsx</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>RegisterTrendChart.tsx</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>RankFallback.tsx</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  </table>
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">注：<code>h-[220px]</code>（图表容器高度，非字号）收编为 Tailwind 数值刻度 <code>h-55</code>=220px；MetricCards 注释内 <code>text-[13px]</code> 字样改措辞，避免审计误报。</p>
+
+  <h3 style="font-size:14px;margin:18px 0 8px">3.3 视觉截图矩阵（Playwright，失败/加载/成功三态 × 响应式）</h3>
+  <div class="shotgrid">
+    <div class="shot"><div style="height:120px;background:linear-gradient(120deg,#eef2ff,#fdf2f8);display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:600;font-size:13px">成功态 1280 · 学员主导</div><div class="cap"><b>ad-success-1280.png</b><br>紫色（学员）主导，比率正确</div></div>
+    <div class="shot"><div style="height:120px;background:linear-gradient(120deg,#eef2ff,#fdf2f8);display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:600;font-size:13px">成功态 375 · 移动</div><div class="cap"><b>ad-success-375.png</b><br>单列堆叠响应式</div></div>
+    <div class="shot"><div style="height:120px;background:linear-gradient(120deg,#e0e7ff,#fce7f3);display:flex;align-items:center;justify-content:center;color:var(--warn);font-weight:600;font-size:13px">加载态 1280</div><div class="cap"><b>ad-loading-1280.png</b><br>Skeleton 三态</div></div>
+    <div class="shot"><div style="height:120px;background:linear-gradient(120deg,#e0e7ff,#fce7f3);display:flex;align-items:center;justify-content:center;color:var(--fail);font-weight:600;font-size:13px">错误态 1280</div><div class="cap"><b>ad-error-1280.png</b><br>错误卡 + 重试</div></div>
+  </div>
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">截图脚本 <code>test-reports/fe-html/shoot-admin-dashboard.js</code> · PROBE <code>{"successVisible":true,"barsRole":true,"donutRole":true,"legendCount":4,"retryBtn":true}</code></p>
+</section>
+
+<!-- 4 交付物清单 -->
+<section>
+  <h2><span class="n">4</span>交付物清单</h2>
+  <table>
+    <tr><th style="width:46%">文件</th><th>说明</th></tr>
+    <tr><td><code>.opencode/plans/doc-frontend-design-spec.md</code></td><td>P18b 规范补写（KPI/趋势/榜单设计 + 数据契约）</td></tr>
+    <tr><td><code>edu-frontend/src/lib/chart-palette.ts</code></td><td>§1.7 图表色板 + 角色疏色序</td></tr>
+    <tr><td><code>edu-frontend/src/components/admin/MetricCards.tsx</code></td><td>KPI 6 卡（糖果色 + 语义 token）</td></tr>
+    <tr><td><code>edu-frontend/src/components/admin/RegisterTrendChart.tsx</code></td><td>近 7 天注册趋势柱状（单系列 primary）</td></tr>
+    <tr><td><code>edu-frontend/src/components/admin/RoleDonutChart.tsx</code></td><td>角色分布环形饼图（§1.7 疏色序 + 人数图例）</td></tr>
+    <tr><td><code>edu-frontend/src/components/admin/RankFallback.tsx</code></td><td>热门课程榜契约缺口占位卡（禁 MOCK）</td></tr>
+    <tr><td><code>edu-frontend/src/app/(admin)/admin/dashboard/page.tsx</code></td><td>页面组合</td></tr>
+    <tr><td><code>edu-frontend/src/components/admin/*.test.tsx</code> ≈4</td><td>组件单测 11 例</td></tr>
+    <tr><td><code>test-reports/fe-html/admin-dashboard.html</code></td><td>HTML 原型（v2 比率修正）</td></tr>
+    <tr><td><code>test-reports/fe-html/shoot-admin-dashboard.js</code> + <code>ad-*.png</code> ×7</td><td>截图脚本与截图证据</td></tr>
+  </table>
+</section>
+
+<!-- 5 验收判定 -->
+<section>
+  <h2><span class="n">5</span>验收判定</h2>
+  <ul class="tight">
+    <li>✅ 规范补写（GWT①）已落盘并随 HTML 原型产出</li>
+    <li>✅ KPI 真实聚合、无 MOCK（GWT②）</li>
+    <li>✅ AdminGuard 非 admin 拦截（GWT②）</li>
+    <li>✅ 图表多系列按 §1.7 取色（GWT③）</li>
+    <li>✅ 审核回环：比率 bug + 角色具体人数图例均已修复（单测锁定）</li>
+    <li>⚠️ 唯一注意项：热门课程榜为<b>契约缺口占位</b>（后端 trade 域尚无 admin 全局聚合端点，待 task70~91）——属既有数据面限制，非本任务缺陷，不影响本页其余区块验收</li>
+  </ul>
+  <div style="margin-top:14px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fafbff;font-size:13px">
+    <b style="color:var(--primary)">结论</b>：task55 三项 GWT 全部 PASS，证据完备（单测 11/11、5 项审计全 0、截图矩阵）。请求调度者核发<b> APPROVED / 验收通过</b>；未验收前不开始 task56。
+  </div>
+</section>
+
+<div class="footer">task55 调度者验收报告 · 生成于 2026-08-23 · 前端 dev（端口 3000）· 后端 http://127.0.0.1:8003</div>
+</div>
+</body>
+</html>

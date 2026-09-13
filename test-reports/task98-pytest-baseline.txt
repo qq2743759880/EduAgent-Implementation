@@ -1,0 +1,592 @@
+....FFFF..........................F...........................ssssssssss [  9%]
+ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.... [ 18%]
+...........EEEEEEE.........s.................................s.......... [ 27%]
+.................s..........s........................................... [ 36%]
+...........F............................................................ [ 45%]
+........................................................................ [ 54%]
+......F..........ssss.F................................................. [ 63%]
+.......................s.................s.............................. [ 72%]
+......s....................................................sssssssssssss [ 81%]
+sssssssssssssssssssssssssssssssss....................................... [ 90%]
+..........................FF..ssssssssss................................ [100%]
+=================================== ERRORS ====================================
+________ ERROR at setup of TestCreateAppeal.test_create_appeal_ticket _________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+________ ERROR at setup of TestCreateAppeal.test_create_refund_ticket _________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+_______ ERROR at setup of TestUserIsolation.test_cross_user_detail_404 ________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+___________ ERROR at setup of TestUserIsolation.test_own_detail_ok ____________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+_ ERROR at setup of TestSatisfactionIdempotent.test_satisfaction_and_not_duplicate _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+____________ ERROR at setup of TestListFilter.test_list_and_filter ____________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+__________ ERROR at setup of TestListFilter.test_list_admin_sees_all __________
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _init():
+>       _loop.run_until_complete(init_mysql())
+
+tests\test_contract_task22.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:629: in run_until_complete
+    self._check_closed()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ProactorEventLoop running=False closed=True debug=False>
+
+    def _check_closed(self):
+        if self._closed:
+>           raise RuntimeError('Event loop is closed')
+E           RuntimeError: Event loop is closed
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py:520: RuntimeError
+================================== FAILURES ===================================
+___________________________ test_decide_need_search ___________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002150180A210>
+
+    @pytest.mark.asyncio
+    async def test_decide_need_search(monkeypatch):
+        fake = _FakeClient('{"need_search": true, "query_rewrite": "英语 音标 ENG-L1", "tool_plan": [], "answer_direct": ""}')
+        monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+    
+        plan = await agent_mod.decide_agent_plan("英语音标怎么学")
+        assert plan.need_search is True
+>       assert plan.query_rewrite == "英语 音标 ENG-L1"
+E       AssertionError: assert '英语音标怎么学' == '英语 音标 ENG-L1'
+E         
+E         - 英语 音标 ENG-L1
+E         + 英语音标怎么学
+
+tests\test_agent_loop.py:60: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m00:23:17[0m | [1mINFO    [0m | [36mapp.chat.flows.agent[0m:[36mdecide_agent_plan[0m:[36m96[0m | [1m[Agent] 规则决策命中（0-LLM）: intent=learning, need_search=True[0m
+________________________ test_decide_no_search_direct _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021501182590>
+
+    @pytest.mark.asyncio
+    async def test_decide_no_search_direct(monkeypatch):
+        fake = _FakeClient('{"need_search": false, "query_rewrite": "", "tool_plan": [], "answer_direct": "你好！我是 EduAgent，很高兴为你服务。"}')
+        monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+        plan = await agent_mod.decide_agent_plan("你好")
+        assert plan.need_search is False
+>       assert plan.answer_direct != ""
+E       AssertionError: assert '' != ''
+E        +  where '' = <app.chat.flows.agent.AgentPlan object at 0x0000021501B2D940>.answer_direct
+
+tests\test_agent_loop.py:73: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m00:23:20[0m | [1mINFO    [0m | [36mapp.chat.flows.agent[0m:[36mdecide_agent_plan[0m:[36m96[0m | [1m[Agent] 规则决策命中（0-LLM）: intent=chitchat, need_search=False[0m
+________________ test_decide_llm_failure_falls_back_to_search _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000215018C7710>
+
+    @pytest.mark.asyncio
+    async def test_decide_llm_failure_falls_back_to_search(monkeypatch):
+        class Boom:
+            @staticmethod
+            def get():
+                raise RuntimeError("LLM down")
+    
+        monkeypatch.setattr(agent_mod, "_ChatClient", Boom)
+        plan = await agent_mod.decide_agent_plan("任意问题")
+        # LLM 失败 → 保守回退检索
+        assert plan.need_search is True
+>       assert plan.decision_error is not None
+E       assert None is not None
+E        +  where None = <app.chat.flows.agent.AgentPlan object at 0x0000021501B2F470>.decision_error
+
+tests\test_agent_loop.py:87: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m00:23:20[0m | [1mINFO    [0m | [36mapp.chat.flows.agent[0m:[36mdecide_agent_plan[0m:[36m96[0m | [1m[Agent] 规则决策命中（0-LLM）: intent=knowledge, need_search=True[0m
+_____________________ test_decide_unparseable_falls_back ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021501620D50>
+
+    @pytest.mark.asyncio
+    async def test_decide_unparseable_falls_back(monkeypatch):
+        fake = _FakeClient("抱歉，我无法理解你的问题。")
+        monkeypatch.setattr(agent_mod, "_ChatClient", type("C", (), {"get": staticmethod(lambda: fake)}))
+        plan = await agent_mod.decide_agent_plan("xxx")
+        assert plan.need_search is True
+>       assert plan.decision_error == "decision_unparseable"
+E       AssertionError: assert None == 'decision_unparseable'
+E        +  where None = <app.chat.flows.agent.AgentPlan object at 0x0000021501B2F790>.decision_error
+
+tests\test_agent_loop.py:96: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m00:23:20[0m | [1mINFO    [0m | [36mapp.chat.flows.agent[0m:[36mdecide_agent_plan[0m:[36m96[0m | [1m[Agent] 规则决策命中（0-LLM）: intent=knowledge, need_search=True[0m
+__________________________ test_be_task01_delete_hit __________________________
+
+    @pytest.mark.integration
+    def test_be_task01_delete_hit() -> None:
+        """一键打靶：杀 8000 → 按 .env DEBUG 分支启 uvicorn → DELETE 断言矩阵 + DB 直查。"""
+        py = _pick_python()
+        r = _run([py, str(AGENT_ROOT / "scripts" / "restart_uvicorn_and_chat_delete_hit.py")], timeout=900)
+>       assert r.returncode == 0, "be-task01 打靶存在 FAIL（见上方输出与 test-reports/be-task01-hit-report.md）"
+E       AssertionError: be-task01 打靶存在 FAIL（见上方输出与 test-reports/be-task01-hit-report.md）
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['Z:\\anaconda3\\envs\\kb311\\python.exe', 'E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\scripts\\restart_uvicorn_and_chat_delete_hit.py'], returncode=1).returncode
+
+tests\test_be_task01_suite.py:65: AssertionError
+---------------------------- Captured stdout call -----------------------------
+
+$ Z:\anaconda3\envs\kb311\python.exe E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\restart_uvicorn_and_chat_delete_hit.py
+============================================================
+0. .env DEBUG=true（打靶脚本将按此分支显式断言）
+============================================================
+
+1. 选择 Python
+  选中：E:\stu\project\libs\kb311\Scripts\python.exe
+
+2. 清理占用 8000 的旧进程（含 SO_REUSEADDR 双进程）
+---------------------------- Captured stderr call -----------------------------
+Exception in thread Thread-3 (_readerthread):
+Traceback (most recent call last):
+  File "Z:\anaconda3\envs\kb311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "Z:\anaconda3\envs\kb311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "Z:\anaconda3\envs\kb311\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xbb in position 2: invalid start byte
+Traceback (most recent call last):
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\restart_uvicorn_and_chat_delete_hit.py", line 165, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\restart_uvicorn_and_chat_delete_hit.py", line 116, in main
+    pids = _port_pids(PORT)
+           ^^^^^^^^^^^^^^^^
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\restart_uvicorn_and_chat_delete_hit.py", line 57, in _port_pids
+    for line in r.stdout.splitlines():
+                ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'splitlines'
+______________ TestGwt4Registry.test_live_ai_hub_124_registered _______________
+
+self = <tests.test_contract_task94.TestGwt4Registry object at 0x000002150168CF10>
+
+    def test_live_ai_hub_124_registered(self):
+        """LIVE：真实 AI-Hub 中心库应注册 124 个 skill，无死链。"""
+        root = r"D:\.ai-hub\skills"
+        if not os.path.exists(root):
+            pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
+        report = verify.verify_registry()
+>       assert report["total"] == 124, report
+E       AssertionError: {'dead': [], 'dead_links': 0, 'ok': True, 'on_disk': 172, ...}
+E       assert 172 == 124
+
+tests\test_contract_task94.py:99: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m00:25:55[0m | [34m[1mDEBUG   [0m | [36mapp.ai.skills.registry[0m:[36mscan[0m:[36m57[0m | [34m[1m[SkillRegistry] root 不存在，跳过: E:\stu\project\stu\EduAgent实施手册\.claude\skills[0m
+[32m00:25:55[0m | [1mINFO    [0m | [36mapp.ai.skills.registry[0m:[36mscan[0m:[36m76[0m | [1m[SkillRegistry] 扫描完成，索引 172 个 skills（来自 1 个 root，本次新增 172）[0m
+______________ TestExpandSchema.test_expand_schema_returns_full _______________
+
+self = <tests.test_contract_task_c2.TestExpandSchema object at 0x00000215011A8610>
+
+    def test_expand_schema_returns_full(self):
+        spec = expand_schema("calculator")
+>       assert spec is not None
+E       assert None is not None
+
+tests\test_contract_task_c2.py:157: AssertionError
+__________ TestAC1Shadow.test_main_path_identical_with_shadow_on_off __________
+
+self = <tests.test_contract_task_e1.TestAC1Shadow object at 0x000002150123BE10>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000215460E3490>
+
+    async def test_main_path_identical_with_shadow_on_off(self, monkeypatch):
+        # 隔离重检索内部（避免真实 Milvus/embedder IO），仅验证影子机制不改主路径
+        async def _fake_rerank(q, docs):
+            return docs, None
+        monkeypatch.setattr(R, "_milvus_hybrid_search_safe", lambda *a, **k: ([], None))
+        monkeypatch.setattr(R, "_graph_expand", lambda *a, **k: ([], None))
+        monkeypatch.setattr(R, "_rerank_docs", _fake_rerank)
+    
+        kw = dict(user_id=1, role=UserRole.ADMIN, use_hyde=False,
+                  enable_graph=True, top_k=5, final_max_k=5, cutoff_drop_ratio=0.2)
+    
+        monkeypatch.setattr(R.settings, "SHADOW_MODE_ENABLED", False, raising=False)
+>       b_off = await R.retrieve_three_channel("python列表去重", **kw)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task_e1.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+query = 'python列表去重'
+
+    async def retrieve_three_channel(
+        query: str,
+        *,
+        user_id: int,
+        role: UserRole,
+        use_hyde: bool,
+        enable_graph: bool,
+        top_k: int,
+        final_max_k: int,
+        cutoff_drop_ratio: float,
+    ) -> RetrievalBundle:
+        """
+        三通道检索 + 融合 + 重排 + 断崖，完全同步（含 I/O 捕获异常），service 可直接 await。
+        注意：KnowledgeRetriever 留作后用，当前先直接走底层方法以便捕获所有异常。
+        """
+        # 1) HyDE 查询改写
+        rewrite_query, hyde_done, hyde_degrade = _rewrite_query_by_hyde_if_enabled(query, use_hyde=use_hyde)
+        # 2) Milvus 双通道（dense + sparse）→ 混合
+        #    P1-4 修复：同步 Milvus 调用跑线程 + 硬超时，避免阻塞 asyncio 事件循环
+        #    （否则 Milvus 慢时所有并发请求全部排队；超时则降级返回空 docs）
+        _milvus_timeout = float(getattr(settings, "MILVUS_SEARCH_TIMEOUT", 8.0))
+        try:
+            milvus_docs, milvus_degrade = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _milvus_hybrid_search_safe,
+                    rewrite_query,
+                    user_id=user_id,
+                    role=role,
+                    top_k=top_k,
+                ),
+                timeout=_milvus_timeout,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
+            milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
+        # 3) 图谱扩展
+>       graph_entities, graph_degrade = await _graph_expand(rewrite_query, enable_graph=enable_graph)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object tuple can't be used in 'await' expression
+
+app\chat\retriever.py:503: TypeError
+________________________ test_milvus_timeout_degrades _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021546699450>
+
+    @pytest.mark.asyncio
+    async def test_milvus_timeout_degrades(monkeypatch):
+        """Milvus 检索超过 MILVUS_SEARCH_TIMEOUT → 返回空 docs + degraded，不阻塞 event loop。"""
+        # 注意：_milvus_hybrid_search_safe 是被 asyncio.to_thread 调用 → mock 需为同步函数
+        def slow_safe(*a, **kw):
+            time.sleep(0.3)  # 模拟慢（远超测试用短超时）
+            return [], None
+    
+        monkeypatch.setattr(retriever, "_milvus_hybrid_search_safe", slow_safe)
+        monkeypatch.setattr(retriever.settings, "MILVUS_SEARCH_TIMEOUT", 0.1)
+        # 其他通道直接跳过
+        monkeypatch.setattr(retriever, "_rewrite_query_by_hyde_if_enabled", lambda q, use_hyde: (q, False, None))
+        monkeypatch.setattr(retriever, "_graph_expand", lambda *a, **kw: ([], None))
+        monkeypatch.setattr(retriever, "_rule_rerank", lambda q, docs: docs)
+        monkeypatch.setattr(retriever, "_cliff_cutoff", lambda docs, final_max_k, drop_ratio: docs)
+    
+>       bundle = await retriever.retrieve_three_channel(
+            "测试", user_id=1, role="student",
+            use_hyde=False, enable_graph=False, top_k=5, final_max_k=3, cutoff_drop_ratio=0.3,
+        )
+
+tests\test_perf_guard.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+query = '测试'
+
+    async def retrieve_three_channel(
+        query: str,
+        *,
+        user_id: int,
+        role: UserRole,
+        use_hyde: bool,
+        enable_graph: bool,
+        top_k: int,
+        final_max_k: int,
+        cutoff_drop_ratio: float,
+    ) -> RetrievalBundle:
+        """
+        三通道检索 + 融合 + 重排 + 断崖，完全同步（含 I/O 捕获异常），service 可直接 await。
+        注意：KnowledgeRetriever 留作后用，当前先直接走底层方法以便捕获所有异常。
+        """
+        # 1) HyDE 查询改写
+        rewrite_query, hyde_done, hyde_degrade = _rewrite_query_by_hyde_if_enabled(query, use_hyde=use_hyde)
+        # 2) Milvus 双通道（dense + sparse）→ 混合
+        #    P1-4 修复：同步 Milvus 调用跑线程 + 硬超时，避免阻塞 asyncio 事件循环
+        #    （否则 Milvus 慢时所有并发请求全部排队；超时则降级返回空 docs）
+        _milvus_timeout = float(getattr(settings, "MILVUS_SEARCH_TIMEOUT", 8.0))
+        try:
+            milvus_docs, milvus_degrade = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _milvus_hybrid_search_safe,
+                    rewrite_query,
+                    user_id=user_id,
+                    role=role,
+                    top_k=top_k,
+                ),
+                timeout=_milvus_timeout,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
+            milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
+        # 3) 图谱扩展
+>       graph_entities, graph_degrade = await _graph_expand(rewrite_query, enable_graph=enable_graph)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object tuple can't be used in 'await' expression
+
+app\chat\retriever.py:503: TypeError
+---------------------------- Captured stdout call -----------------------------
+[32m00:26:49[0m | [33m[1mWARNING [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m500[0m | [33m[1mMilvus 检索超时（>0.1s），降级返回空 docs[0m
+________________________ test_milvus_fast_returns_docs ________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000215466D4750>
+
+    @pytest.mark.asyncio
+    async def test_milvus_fast_returns_docs(monkeypatch):
+        """Milvus 正常时返回 docs，无 degraded。"""
+        from app.chat.schemas import RetrievedDoc
+    
+        doc = RetrievedDoc(doc_id="d1", score=0.9, content="内容")
+        def fast_safe(*a, **kw):
+            return [doc], None
+    
+        monkeypatch.setattr(retriever, "_milvus_hybrid_search_safe", fast_safe)
+        monkeypatch.setattr(retriever.settings, "MILVUS_SEARCH_TIMEOUT", 5.0)
+        monkeypatch.setattr(retriever, "_rewrite_query_by_hyde_if_enabled", lambda q, use_hyde: (q, False, None))
+        monkeypatch.setattr(retriever, "_graph_expand", lambda *a, **kw: ([], None))
+    
+        # task31 后 _rerank_docs 已改为 async def；隔离重排阶段需用 async fake，
+        # 否则 line498 `await _rerank_docs(...)` 会因「await 一个 tuple」而 TypeError（GWT③ 真实失配修复）
+        async def _fake_rerank(q, docs):
+            return (docs, None)
+    
+        monkeypatch.setattr(retriever, "_rerank_docs", _fake_rerank)
+        monkeypatch.setattr(retriever, "_rule_rerank", lambda q, docs: docs)
+        monkeypatch.setattr(retriever, "_cliff_cutoff", lambda docs, final_max_k, drop_ratio: docs)
+    
+>       bundle = await retriever.retrieve_three_channel(
+            "测试", user_id=1, role="student",
+            use_hyde=False, enable_graph=False, top_k=5, final_max_k=3, cutoff_drop_ratio=0.3,
+        )
+
+tests\test_perf_guard.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+query = '测试'
+
+    async def retrieve_three_channel(
+        query: str,
+        *,
+        user_id: int,
+        role: UserRole,
+        use_hyde: bool,
+        enable_graph: bool,
+        top_k: int,
+        final_max_k: int,
+        cutoff_drop_ratio: float,
+    ) -> RetrievalBundle:
+        """
+        三通道检索 + 融合 + 重排 + 断崖，完全同步（含 I/O 捕获异常），service 可直接 await。
+        注意：KnowledgeRetriever 留作后用，当前先直接走底层方法以便捕获所有异常。
+        """
+        # 1) HyDE 查询改写
+        rewrite_query, hyde_done, hyde_degrade = _rewrite_query_by_hyde_if_enabled(query, use_hyde=use_hyde)
+        # 2) Milvus 双通道（dense + sparse）→ 混合
+        #    P1-4 修复：同步 Milvus 调用跑线程 + 硬超时，避免阻塞 asyncio 事件循环
+        #    （否则 Milvus 慢时所有并发请求全部排队；超时则降级返回空 docs）
+        _milvus_timeout = float(getattr(settings, "MILVUS_SEARCH_TIMEOUT", 8.0))
+        try:
+            milvus_docs, milvus_degrade = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _milvus_hybrid_search_safe,
+                    rewrite_query,
+                    user_id=user_id,
+                    role=role,
+                    top_k=top_k,
+                ),
+                timeout=_milvus_timeout,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
+            milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
+        # 3) 图谱扩展
+>       graph_entities, graph_degrade = await _graph_expand(rewrite_query, enable_graph=enable_graph)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object tuple can't be used in 'await' expression
+
+app\chat\retriever.py:503: TypeError
+============================== warnings summary ===============================
+app\rerank_service\main.py:115
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:115: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\rerank_service\main.py:128
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_contract_task24.py::TestIntentRouting::test_knowledge_full_pipeline
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/test_contract_task24.py::TestIntentRouting::test_knowledge_full_pipeline
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\torch\__init__.py:2167: RuntimeWarning: coroutine 'init_mysql' was never awaited
+    _C._initExtension(_manager_path())
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_contract_task_m1.py::test_api_contract_owner_admin_rewind_history
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_core.py::TestCache::test_cache_hit
+tests/test_core.py::TestCache::test_concurrent_get_or_load
+tests/test_core.py::TestCache::test_short_polling_gets_value
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\core\breaker.py:125: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_agent_loop.py::test_decide_need_search - AssertionError: as...
+FAILED tests/test_agent_loop.py::test_decide_no_search_direct - AssertionErro...
+FAILED tests/test_agent_loop.py::test_decide_llm_failure_falls_back_to_search
+FAILED tests/test_agent_loop.py::test_decide_unparseable_falls_back - Asserti...
+FAILED tests/test_be_task01_suite.py::test_be_task01_delete_hit - AssertionEr...
+FAILED tests/test_contract_task94.py::TestGwt4Registry::test_live_ai_hub_124_registered
+FAILED tests/test_contract_task_c2.py::TestExpandSchema::test_expand_schema_returns_full
+FAILED tests/test_contract_task_e1.py::TestAC1Shadow::test_main_path_identical_with_shadow_on_off
+FAILED tests/test_perf_guard.py::test_milvus_timeout_degrades - TypeError: ob...
+FAILED tests/test_perf_guard.py::test_milvus_fast_returns_docs - TypeError: o...
+ERROR tests/test_contract_task22.py::TestCreateAppeal::test_create_appeal_ticket
+ERROR tests/test_contract_task22.py::TestCreateAppeal::test_create_refund_ticket
+ERROR tests/test_contract_task22.py::TestUserIsolation::test_cross_user_detail_404
+ERROR tests/test_contract_task22.py::TestUserIsolation::test_own_detail_ok - ...
+ERROR tests/test_contract_task22.py::TestSatisfactionIdempotent::test_satisfaction_and_not_duplicate
+ERROR tests/test_contract_task22.py::TestListFilter::test_list_and_filter - R...
+ERROR tests/test_contract_task22.py::TestListFilter::test_list_admin_sees_all
+10 failed, 630 passed, 145 skipped, 10 warnings, 7 errors in 235.55s (0:03:55)

@@ -1,0 +1,368 @@
+﻿
+Running 36 tests using 1 worker
+
+  ok  1 [chromium-1280] › e2e\01-auth-persistence.spec.ts:9:7 › 登录态持久化（task42 批判①） › 登录 → 刷新仍保持登录 (11.2s)
+  ok  2 [chromium-1280] › e2e\01-auth-persistence.spec.ts:19:7 › 登录态持久化（task42 批判①） › 开新标签共享会话（同一浏览器上下文 cookie/localStorage） (21.4s)
+  ok  3 [chromium-1280] › e2e\01-auth-persistence.spec.ts:29:7 › 登录态持久化（task42 批判①） › 登出后受保护页跳转登录 (21.5s)
+  ok  4 [chromium-1280] › e2e\01-auth-persistence.spec.ts:40:7 › 登录态持久化（task42 批判①） › 未登录访问用户页被守卫拦截 (3.0s)
+  ok  5 [chromium-1280] › e2e\02-redirect-query.spec.ts:9:7 › redirect 深层路由含 query 回跳（task42 批判②） › 登录前携带 redirect query，登录后完整回跳（含 page=2） (12.7s)
+  ok  6 [chromium-1280] › e2e\02-redirect-query.spec.ts:27:7 › redirect 深层路由含 query 回跳（task42 批判②） › 不带 redirect 默认回跳 /dashboard (8.9s)
+  ok  7 [chromium-1280] › e2e\03-main-flow.spec.ts:34:7 › 全链路主流程（GWT①） › 用户端 8 页全链路可达 + 导航完整 (28.5s)
+  ok  8 [chromium-1280] › e2e\03-main-flow.spec.ts:51:7 › 全链路主流程（GWT①） › 管理端 6 页（admin 账号）可达 (22.9s)
+  ok  9 [chromium-1280] › e2e\03-main-flow.spec.ts:63:7 › 全链路主流程（GWT①） › RBAC：student 访问管理端端点 → 403 + 统一错误壳 (34.9s)
+  ok 10 [chromium-1280] › e2e\03-main-flow.spec.ts:94:7 › RBAC 后端契约校验（GWT④状态机/RBAC 服务端强制） › admin 用户列表接口返回统一响应壳，无结构违规 (22.1s)
+  x  11 [chromium-1280] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 (1.6m)
+  x  12 [chromium-1280] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） (13.7s)
+  x  13 [chromium-1280] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） (1.6m)
+  ok 14 [chromium-1280] › e2e\06-state-machines.spec.ts:9:7 › 状态机覆盖（GWT④） › SUCCESS：dashboard 渲染用户数据（真实日志/统计） (17.7s)
+  ok 15 [chromium-1280] › e2e\06-state-machines.spec.ts:18:7 › 状态机覆盖（GWT④） › EMPTY：未报名班次用户的 my-courses 空态呈现 (40.9s)
+  ok 16 [chromium-1280] › e2e\06-state-machines.spec.ts:30:7 › 状态机覆盖（GWT④） › ERROR：无效凭证登录 → 表单级错误横幅（401 语义） (11.1s)
+  ok 17 [chromium-1280] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 (46.2s)
+  ok 18 [chromium-1280] › e2e\06-state-machines.spec.ts:52:7 › 状态机覆盖（GWT④） › LOADING：慢请求页面出现骨架屏/加载态（观察首帧） (12.3s)
+  x  19 [chromium-375] › e2e\01-auth-persistence.spec.ts:9:7 › 登录态持久化（task42 批判①） › 登录 → 刷新仍保持登录 (49.8s)
+  x  20 [chromium-375] › e2e\01-auth-persistence.spec.ts:19:7 › 登录态持久化（task42 批判①） › 开新标签共享会话（同一浏览器上下文 cookie/localStorage） (42.0s)
+  ok 21 [chromium-375] › e2e\01-auth-persistence.spec.ts:29:7 › 登录态持久化（task42 批判①） › 登出后受保护页跳转登录 (14.0s)
+  ok 22 [chromium-375] › e2e\01-auth-persistence.spec.ts:40:7 › 登录态持久化（task42 批判①） › 未登录访问用户页被守卫拦截 (2.9s)
+  ok 23 [chromium-375] › e2e\02-redirect-query.spec.ts:9:7 › redirect 深层路由含 query 回跳（task42 批判②） › 登录前携带 redirect query，登录后完整回跳（含 page=2） (11.3s)
+  ok 24 [chromium-375] › e2e\02-redirect-query.spec.ts:27:7 › redirect 深层路由含 query 回跳（task42 批判②） › 不带 redirect 默认回跳 /dashboard (7.7s)
+  x  25 [chromium-375] › e2e\03-main-flow.spec.ts:34:7 › 全链路主流程（GWT①） › 用户端 8 页全链路可达 + 导航完整 (25.5s)
+  ok 26 [chromium-375] › e2e\03-main-flow.spec.ts:51:7 › 全链路主流程（GWT①） › 管理端 6 页（admin 账号）可达 (19.8s)
+  ok 27 [chromium-375] › e2e\03-main-flow.spec.ts:63:7 › 全链路主流程（GWT①） › RBAC：student 访问管理端端点 → 403 + 统一错误壳 (34.8s)
+  ok 28 [chromium-375] › e2e\03-main-flow.spec.ts:94:7 › RBAC 后端契约校验（GWT④状态机/RBAC 服务端强制） › admin 用户列表接口返回统一响应壳，无结构违规 (21.3s)
+  x  29 [chromium-375] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 (1.5m)
+  x  30 [chromium-375] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） (8.5s)
+  x  31 [chromium-375] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） (1.5m)
+  ok 32 [chromium-375] › e2e\06-state-machines.spec.ts:9:7 › 状态机覆盖（GWT④） › SUCCESS：dashboard 渲染用户数据（真实日志/统计） (9.1s)
+  ok 33 [chromium-375] › e2e\06-state-machines.spec.ts:18:7 › 状态机覆盖（GWT④） › EMPTY：未报名班次用户的 my-courses 空态呈现 (36.6s)
+  ok 34 [chromium-375] › e2e\06-state-machines.spec.ts:30:7 › 状态机覆盖（GWT④） › ERROR：无效凭证登录 → 表单级错误横幅（401 语义） (4.6s)
+  ok 35 [chromium-375] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 (26.7s)
+  ok 36 [chromium-375] › e2e\06-state-machines.spec.ts:52:7 › 状态机覆盖（GWT④） › LOADING：慢请求页面出现骨架屏/加载态（观察首帧） (17.3s)
+
+
+  1) [chromium-1280] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('tab', { name: /预览/ }).first()
+
+
+      29 | async function openPreview(page: Page, id: number): Promise<void> {
+      30 |   await ensureEditor(page, id);
+    > 31 |   await page.getByRole("tab", { name: /预览/ }).first().click();
+         |                                                       ^
+      32 | }
+      33 |
+      34 | test.describe("task59 批判① —— 预览 vs 用户端渲染一致性", () => {
+        at openPreview (E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:31:55)
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:38:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium-1280] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      56 |       headers: { Authorization: `Bearer ${token}` },
+      57 |     });
+    > 58 |     expect(api.ok()).toBeTruthy();
+         |                      ^
+      59 |     const shell = await api.json();
+      60 |     const stem: string = shell?.data?.stem ?? "";
+      61 |     expect(stem).toBeTruthy();
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:58:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium-1280] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByLabel('题型')
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByLabel('题型')
+      - Protocol error (Runtime.callFunctionOn): Internal server error, session closed.
+
+
+      74 |
+      75 |     const typeSelect = page.getByLabel("题型");
+    > 76 |     await expect(typeSelect).toBeVisible({ timeout: 10_000 });
+         |                              ^
+      77 |     // 初始为单选的答案（真实题目答案 B）
+      78 |     const curType = await typeSelect.inputValue().catch(() => "");
+      79 |     expect(curType).toBe("single_choice");
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:76:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium-375] › e2e\01-auth-persistence.spec.ts:9:7 › 登录态持久化（task42 批判①） › 登录 → 刷新仍保持登录 ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('nav a[href="/dashboard"]').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  15000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for locator('nav a[href="/dashboard"]').first()
+        32 × locator resolved to <a href="/dashboard" aria-current="page" class="group inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-primary text-primary-foreground shadow-sm">…</a>
+           - unexpected value "hidden"
+
+
+      13 |     await page.reload({ waitUntil: "networkidle" });
+      14 |     const nav = page.locator('nav a[href="/dashboard"]').first();
+    > 15 |     await expect(nav).toBeVisible({ timeout: 15_000 });
+         |                       ^
+      16 |     await expect(nav).toContainText("学习仪表盘");
+      17 |   });
+      18 |
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\01-auth-persistence.spec.ts:15:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\01-auth-persistence-登录态持久化（task42-批判①）-登录-→-刷新仍保持登录-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\01-auth-persistence-登录态持久化（task42-批判①）-登录-→-刷新仍保持登录-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\01-auth-persistence-登录态持久化（task42-批判①）-登录-→-刷新仍保持登录-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\01-auth-persistence-登录态持久化（task42-批判①）-登录-→-刷新仍保持登录-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium-375] › e2e\01-auth-persistence.spec.ts:19:7 › 登录态持久化（task42 批判①） › 开新标签共享会话（同一浏览器上下文 cookie/localStorage） 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('nav a[href="/community"]').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  15000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for locator('nav a[href="/community"]').first()
+        32 × locator resolved to <a href="/community" class="group inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground hover:bg-muted hover:text-foreground">…</a>
+           - unexpected value "hidden"
+
+
+      23 |     await expect(second).toHaveURL(/\/dashboard/);
+      24 |     const nav = second.locator('nav a[href="/community"]').first();
+    > 25 |     await expect(nav).toBeVisible({ timeout: 15_000 });
+         |                       ^
+      26 |     await second.close();
+      27 |   });
+      28 |
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\01-auth-persistence.spec.ts:25:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\01-auth-persistence-登录态持久化-4a39a-浏览器上下文-cookie-localStorage）-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\01-auth-persistence-登录态持久化-4a39a-浏览器上下文-cookie-localStorage）-chromium-375\test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\01-auth-persistence-登录态持久化-4a39a-浏览器上下文-cookie-localStorage）-chromium-375\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\01-auth-persistence-登录态持久化-4a39a-浏览器上下文-cookie-localStorage）-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\01-auth-persistence-登录态持久化-4a39a-浏览器上下文-cookie-localStorage）-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium-375] › e2e\03-main-flow.spec.ts:34:7 › 全链路主流程（GWT①） › 用户端 8 页全链路可达 + 导航完整 ───────────
+
+    Error: /practice/wrong-book 正文为空
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 50
+    Received:   27
+
+      45 |       await page.waitForTimeout(700);
+      46 |       const bodyLen = (await page.evaluate(() => document.body.innerText.length).catch(() => 0)) ?? 0;
+    > 47 |       expect(bodyLen, `${p} 正文为空`).toBeGreaterThan(50);
+         |                                    ^
+      48 |     }
+      49 |   });
+      50 |
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\03-main-flow.spec.ts:47:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\03-main-flow-全链路主流程（GWT①）-用户端-8-页全链路可达-导航完整-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\03-main-flow-全链路主流程（GWT①）-用户端-8-页全链路可达-导航完整-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\03-main-flow-全链路主流程（GWT①）-用户端-8-页全链路可达-导航完整-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\03-main-flow-全链路主流程（GWT①）-用户端-8-页全链路可达-导航完整-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium-375] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('tab', { name: /预览/ }).first()
+
+
+      29 | async function openPreview(page: Page, id: number): Promise<void> {
+      30 |   await ensureEditor(page, id);
+    > 31 |   await page.getByRole("tab", { name: /预览/ }).first().click();
+         |                                                       ^
+      32 | }
+      33 |
+      34 | test.describe("task59 批判① —— 预览 vs 用户端渲染一致性", () => {
+        at openPreview (E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:31:55)
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:38:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium-375] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      56 |       headers: { Authorization: `Bearer ${token}` },
+      57 |     });
+    > 58 |     expect(api.ok()).toBeTruthy();
+         |                      ^
+      59 |     const shell = await api.json();
+      60 |     const stem: string = shell?.data?.stem ?? "";
+      61 |     expect(stem).toBeTruthy();
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:58:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-934c3-核对：预览渲染文本-后端真实-stem（非硬编码占位）-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium-375] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByLabel('题型')
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByLabel('题型')
+      - Test timeout of 90000ms exceeded.
+
+
+      74 |
+      75 |     const typeSelect = page.getByLabel("题型");
+    > 76 |     await expect(typeSelect).toBeVisible({ timeout: 10_000 });
+         |                              ^
+      77 |     // 初始为单选的答案（真实题目答案 B）
+      78 |     const curType = await typeSelect.inputValue().catch(() => "");
+      79 |     expect(curType).toBe("single_choice");
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:76:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-290dd-答案清理逻辑正确（fill-blank-下选项区消失）-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9 failed
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） 
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） 
+    [chromium-375] › e2e\01-auth-persistence.spec.ts:9:7 › 登录态持久化（task42 批判①） › 登录 → 刷新仍保持登录 ───────
+    [chromium-375] › e2e\01-auth-persistence.spec.ts:19:7 › 登录态持久化（task42 批判①） › 开新标签共享会话（同一浏览器上下文 cookie/localStorage） 
+    [chromium-375] › e2e\03-main-flow.spec.ts:34:7 › 全链路主流程（GWT①） › 用户端 8 页全链路可达 + 导航完整 ────────────
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:35:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:49:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 一致性交叉核对：预览渲染文本 == 后端真实 stem（非硬编码占位） 
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:70:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（fill_blank 下选项区消失） 
+  27 passed (18.4m)

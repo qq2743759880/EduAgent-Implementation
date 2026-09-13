@@ -1,0 +1,107 @@
+{
+  "task": "task35",
+  "slices_loaded": 2628,
+  "relations_extracted": 25947,
+  "native_merged": {
+    "nodes": 6680,
+    "rels": 25947
+  },
+  "neo4j_counts": {
+    "nodes": 2100,
+    "rels": 13132,
+    "by_label": [
+      {
+        "l": "KnowledgePoint",
+        "c": 1135
+      },
+      {
+        "l": "CourseModule",
+        "c": 658
+      },
+      {
+        "l": "CourseSeries",
+        "c": 219
+      },
+      {
+        "l": "QuestionTag",
+        "c": 88
+      }
+    ],
+    "by_rel": [
+      {
+        "t": "RELATED_TO",
+        "c": 8357
+      },
+      {
+        "t": "CONTAINS",
+        "c": 4687
+      },
+      {
+        "t": "TESTS",
+        "c": 88
+      }
+    ]
+  },
+  "retriever_graph_expand": {
+    "n_entities": 12,
+    "entities": [
+      {
+        "entity_type": "Keyword",
+        "entity_name": "通用编程入门班",
+        "n_related": 10
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "工程能力",
+        "n_related": 5
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "项目实践",
+        "n_related": 5
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "计算机___编程语言___通用程序设计",
+        "n_related": 24
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "通用程序设计",
+        "n_related": 24
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "语法基础与开发环境",
+        "n_related": 3
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "函数抽象与小练习",
+        "n_related": 3
+      },
+      {
+        "entity_type": "Keyword",
+        "entity_name": "流程控制与数据结构入门",
+        "n_related": 3
+      },
+      {
+        "entity_type": "Module",
+        "entity_name": "general_purpose_programming_foundation_m3",
+        "n_related": 3
+      },
+      {
+        "entity_type": "Module",
+        "entity_name": "general_purpose_programming_foundation_m1",
+        "n_related": 3
+      }
+    ],
+    "degraded_reason": null
+  },
+  "acceptance": {
+    "entities_ingested": true,
+    "graph_entities_non_empty": true,
+    "neo4j_no_degradation": true
+  },
+  "notes": "Neo4j 无 APOC，故用原生 MERGE 写全标签图谱（CourseSeries/CourseModule/KnowledgePoint/QuestionTag）。"
+}

@@ -1,0 +1,15 @@
+﻿
+Running 1 test using 1 worker
+
+TOKEN head:  len= 0
+RESULT: {
+  "/api/admin/questions/types": {
+    "err": "Failed to fetch"
+  },
+  "/api/admin/questions/questions/1": {
+    "err": "Failed to fetch"
+  }
+}
+  ok 1 [chromium-1280] › e2e\probe-admin-types.spec.ts:4:5 › 探针：浏览器内 admin token 调用题型枚举 (14.9s)
+
+  1 passed (17.2s)

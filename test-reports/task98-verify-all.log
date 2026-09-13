@@ -1,0 +1,88 @@
+
+============================================================
+[all] 阶段: schema
+============================================================
+[1m=== schema：E:\stu\project\stu\edu-data\sql\edu.sql vs information_schema ===[0m
+edu.sql 权威: 66 表 | 实际库: 102 表
+[93m  ⚠ sys_user.account 多余列(WARN)[0m
+[93m  ⚠ sys_user.status 多余列(WARN)[0m
+[93m  ⚠ sys_user.username 多余列(WARN)[0m
+[92m
+✓ schema 校验通过：0 差异（66 权威 + 36 自建白名单全部就位）[0m
+
+============================================================
+[all] 阶段: counts
+============================================================
+[1m=== counts：期望值动态计算自权威源（机构数=6，tolerance=0.0）===[0m
+[92m  org_institution: 6 vs 6 PASS[0m
+[92m  series_total: 2628 vs 2628 PASS[0m
+[92m  module_distinct: DISTINCT=657 vs 657 PASS[0m
+[92m  question_bank_total: 449 vs 449 PASS[0m
+[92m  question_total: 10528 vs 10528 PASS[0m
+  sys_user_scale: 100015 vs ~100000 偏差=0.0150% PASS
+  order_scale: 80208 vs ~80000 偏差=0.2600% PASS
+
+  机构维度（逐机构断言）：
+[92m    institution_01: bank 84 vs 84 ✓ | question 1768 vs 1768 ✓[0m
+[92m    institution_02: bank 73 vs 73 ✓ | question 1752 vs 1752 ✓[0m
+[92m    institution_03: bank 73 vs 73 ✓ | question 1752 vs 1752 ✓[0m
+[92m    institution_04: bank 73 vs 73 ✓ | question 1752 vs 1752 ✓[0m
+[92m    institution_05: bank 73 vs 73 ✓ | question 1752 vs 1752 ✓[0m
+[92m    institution_06: bank 73 vs 73 ✓ | question 1752 vs 1752 ✓[0m
+[92m
+✓ counts 校验通过：全部精确 == 期望[0m
+
+============================================================
+[all] 阶段: quality
+============================================================
+[1m=== quality：数据质量 5 维度（完整性/唯一性/有效性/一致性/时序性）===[0m
+[1m
+  [integrity]（5 项断言）[0m
+[92m    ✓ series_cohort.series_id → series: 0 (期望 0)[0m
+[92m    ✓ series_cohort_course.cohort_id → series_cohort: 0 (期望 0)[0m
+[92m    ✓ series_cohort_session.series_cohort_course_id → series_cohort_course: 0 (期望 0)[0m
+[92m    ✓ 已支付订单必须引用支付记录（pending/cancelled 无支付合法）: 0 (期望 0)[0m
+[92m    ✓ order_item.order_id → order: 0 (期望 0)[0m
+[1m
+  [uniqueness]（4 项断言）[0m
+[92m    ✓ series_code 机构内唯一: 0 (期望 0)[0m
+[92m    ✓ bank_code 机构内唯一: 0 (期望 0)[0m
+[92m    ✓ module_code 同 cohort 内唯一（模板 course code，跨 variant×cohort 复制为生成器设计）: 0 (期望 0)[0m
+[92m    ✓ question_code 同 bank 内唯一（模板题 code，跨 bank 共用为 seeds/扩展设计）: 0 (期望 0)[0m
+[1m
+  [validity]（5 项断言）[0m
+[92m    ✓ order.total_amount > 0: 0 (期望 0)[0m
+[92m    ✓ payment_record.amount > 0: 0 (期望 0)[0m
+[92m    ✓ order.order_status 合法枚举（权威=DDL edu.sql:837 + 生成器 ORDER_STATUSES）: 合法=6 非法=无[0m
+[92m    ✓ payment_record.payment_status 合法枚举（权威=生成器 payment_status()）: 合法=5 非法=无[0m
+[92m    ✓ 业务日期不越界（2020-01-01 ~ 2027-12-31）: 0 (期望 0)[0m
+[1m
+  [consistency]（2 项断言）[0m
+[92m    ✓ order.payable_amount == SUM(order_item.payable_amount)（抽样 500 单，应付口径守恒）: 0 (期望 0)[0m
+[92m    ✓ 已支付订单 order.paid_amount == payment.amount（抽样 500 单，pending/cancelled 无实付合法）: 0 (期望 0)[0m
+[1m
+  [temporal]（3 项断言）[0m
+[92m    ✓ created_at <= updated_at（抽样核心表）: 0 (期望 0)[0m
+[92m    ✓ order.created_at <= payment.paid_at: 0 (期望 0)[0m
+[92m    ✓ 课程周期 start_date <= end_date: 0 (期望 0)[0m
+[92m
+✓ quality 校验通过：5 维度全绿（数据基线冻结）[0m
+
+============================================================
+[all] 阶段: pytest（test-reports/task98-pytest-baseline.json）
+============================================================
+[1m=== pytest 集成测试归一化（expected 基线登记）===[0m
+  总测试: 792 | failed+error: 17 (failed 10 + error 7) | expected(已登记): 17 | 未登记: 0
+[92m    test_agent_loop: 4 项 expected ✓[0m
+[92m    test_be_task01_suite: 1 项 expected ✓[0m
+[92m    test_contract_task22: 7 项 expected ✓[0m
+[92m    test_contract_task94: 1 项 expected ✓[0m
+[92m    test_contract_task_c2: 1 项 expected ✓[0m
+[92m    test_contract_task_e1: 1 项 expected ✓[0m
+[92m    test_perf_guard: 2 项 expected ✓[0m
+[92m
+✓ pytest 归一化通过：全部失败项均为已登记 expected 基线[0m
+[92m
+============================================================
+✓ all 校验通过 — 可发布/合并
+============================================================[0m

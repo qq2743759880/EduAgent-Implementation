@@ -1,0 +1,16 @@
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.mts:16:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mE:/stu/project/stu/EduAgent实施手册/edu-frontend[39m
+
+[90mstderr[2m | src/lib/api/dashboard.test.ts[2m > [22m[2mbuildRankSlice[2m > [22m[2mmy_rank null → 不设 myRank（RankList 仅渲染列表）
+[22m[39m[dashboard] rankings scope mismatch: requested=WEEKLY, got=DAILY
+
+ [32m✓[39m src/lib/api/dashboard.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m37 passed[39m[22m[90m (37)[39m
+[2m   Start at [22m 17:02:40
+[2m   Duration [22m 2.51s[2m (transform 119ms, setup 420ms, import 194ms, tests 26ms, environment 1.50s)[22m
+

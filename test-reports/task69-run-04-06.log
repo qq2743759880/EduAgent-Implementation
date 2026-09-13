@@ -1,0 +1,255 @@
+﻿
+Running 16 tests using 1 worker
+
+  x   1 [chromium-1280] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 (1.5m)
+  x   2 [chromium-1280] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 (11.1s)
+  x   3 [chromium-1280] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） (31.2s)
+  ok  4 [chromium-1280] › e2e\06-state-machines.spec.ts:9:7 › 状态机覆盖（GWT④） › SUCCESS：dashboard 渲染用户数据（真实日志/统计） (11.0s)
+  ok  5 [chromium-1280] › e2e\06-state-machines.spec.ts:18:7 › 状态机覆盖（GWT④） › EMPTY：未报名班次用户的 my-courses 空态呈现 (37.5s)
+  ok  6 [chromium-1280] › e2e\06-state-machines.spec.ts:30:7 › 状态机覆盖（GWT④） › ERROR：无效凭证登录 → 表单级错误横幅（401 语义） (5.0s)
+  ok  7 [chromium-1280] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 (29.0s)
+  ok  8 [chromium-1280] › e2e\06-state-machines.spec.ts:52:7 › 状态机覆盖（GWT④） › LOADING：慢请求页面出现骨架屏/加载态（观察首帧） (18.9s)
+  x   9 [chromium-375] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 (1.5m)
+  x  10 [chromium-375] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 (11.6s)
+  x  11 [chromium-375] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） (30.4s)
+  ok 12 [chromium-375] › e2e\06-state-machines.spec.ts:9:7 › 状态机覆盖（GWT④） › SUCCESS：dashboard 渲染用户数据（真实日志/统计） (11.8s)
+  ok 13 [chromium-375] › e2e\06-state-machines.spec.ts:18:7 › 状态机覆盖（GWT④） › EMPTY：未报名班次用户的 my-courses 空态呈现 (36.3s)
+  ok 14 [chromium-375] › e2e\06-state-machines.spec.ts:30:7 › 状态机覆盖（GWT④） › ERROR：无效凭证登录 → 表单级错误横幅（401 语义） (8.6s)
+  x  15 [chromium-375] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 (1.1m)
+  ok 16 [chromium-375] › e2e\06-state-machines.spec.ts:52:7 › 状态机覆盖（GWT④） › LOADING：慢请求页面出现骨架屏/加载态（观察首帧） (17.0s)
+
+
+  1) [chromium-1280] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('tab', { name: /预览/ }).first()
+
+
+      13 |     // 切到「预览」Tab
+      14 |     const previewTab = page.getByRole("tab", { name: /预览/ }).first();
+    > 15 |     await previewTab.click();
+         |                      ^
+      16 |     // 预览内容应渲染出题干文本（真实题目：关于变量与常量……）
+      17 |     await expect(page.locator("body")).toContainText("变量与常量", { timeout: 15_000 });
+      18 |     // 选项 A/B/C/D 渲染
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:15:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium-1280] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      31 |     });
+      32 |     // 端点可达（无论有无班次都返回统一壳）
+    > 33 |     expect(res.ok() || res.status() === 403 || res.status() === 401).toBeTruthy();
+         |                                                                      ^
+      34 |   });
+      35 | });
+      36 |
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:33:70
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium-1280] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '题目编辑' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('heading', { name: '题目编辑' })
+
+
+      40 |     await login(page, ADMIN.account, ADMIN.password, "/dashboard");
+      41 |     await page.goto("/admin/questions/1", { waitUntil: "domcontentloaded", timeout: 30_000 });
+    > 42 |     await expect(page.getByRole("heading", { name: "题目编辑" })).toBeVisible({ timeout: 15_000 });
+         |                                                               ^
+      43 |
+      44 |     const typeSelect = page.getByLabel("题型").first();
+      45 |     await expect(typeSelect).toBeVisible({ timeout: 10_000 });
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:42:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-1280\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-1280\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-1280\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-1280\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium-375] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('tab', { name: /预览/ }).first()
+
+
+      13 |     // 切到「预览」Tab
+      14 |     const previewTab = page.getByRole("tab", { name: /预览/ }).first();
+    > 15 |     await previewTab.click();
+         |                      ^
+      16 |     // 预览内容应渲染出题干文本（真实题目：关于变量与常量……）
+      17 |     await expect(page.locator("body")).toContainText("变量与常量", { timeout: 15_000 });
+      18 |     // 选项 A/B/C/D 渲染
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:15:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-2aac3-id-1：管理端预览渲染-Markdown-与题干一致-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium-375] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      31 |     });
+      32 |     // 端点可达（无论有无班次都返回统一壳）
+    > 33 |     expect(res.ok() || res.status() === 403 || res.status() === 401).toBeTruthy();
+         |                                                                      ^
+      34 |   });
+      35 | });
+      36 |
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:33:70
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-9f6a8--QuizPanel-对同一客观题渲染题干-选项可交互-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium-375] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '题目编辑' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('heading', { name: '题目编辑' })
+
+
+      40 |     await login(page, ADMIN.account, ADMIN.password, "/dashboard");
+      41 |     await page.goto("/admin/questions/1", { waitUntil: "domcontentloaded", timeout: 30_000 });
+    > 42 |     await expect(page.getByRole("heading", { name: "题目编辑" })).toBeVisible({ timeout: 15_000 });
+         |                                                               ^
+      43 |
+      44 |     const typeSelect = page.getByLabel("题型").first();
+      45 |     await expect(typeSelect).toBeVisible({ timeout: 10_000 });
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\04-preview-consistency.spec.ts:42:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\04-preview-consistency-tas-459f9-项-答案清理逻辑正确（提交载荷-options-归空）-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium-375] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForTimeout: Test timeout of 60000ms exceeded.
+
+      45 |     await page.goto("/admin/users", { waitUntil: "networkidle" });
+      46 |     // 前端管理守卫应将非 admin 拦回（至登录或 403 错误态）
+    > 47 |     await page.waitForTimeout(2500);
+         |                ^
+      48 |     const url = page.url();
+      49 |     expect(url).not.toMatch(/\/admin\/users$/);
+      50 |   });
+        at E:\stu\project\stu\EduAgent实施手册\edu-frontend\e2e\06-state-machines.spec.ts:47:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\06-state-machines-状态机覆盖（GWT④）-ERROR：student-越权访问管理端被守卫拦截-chromium-375\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-reports\e2e-artifacts\06-state-machines-状态机覆盖（GWT④）-ERROR：student-越权访问管理端被守卫拦截-chromium-375\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-reports\e2e-artifacts\06-state-machines-状态机覆盖（GWT④）-ERROR：student-越权访问管理端被守卫拦截-chromium-375\trace.zip
+    Usage:
+
+        npx playwright show-trace test-reports\e2e-artifacts\06-state-machines-状态机覆盖（GWT④）-ERROR：student-越权访问管理端被守卫拦截-chromium-375\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7 failed
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 
+    [chromium-1280] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） 
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:8:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 真实题目 id=1：管理端预览渲染 Markdown 与题干一致 
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:24:7 › task59 批判① —— 预览 vs 用户端渲染一致性 › 用户端 QuizPanel 对同一客观题渲染题干 + 选项可交互 
+    [chromium-375] › e2e\04-preview-consistency.spec.ts:38:7 › task59 批判② —— 题型切换边界（无旧选项残留） › 编辑单选→多选→填空：旧选项/答案清理逻辑正确（提交载荷 options 归空） 
+    [chromium-375] › e2e\06-state-machines.spec.ts:42:7 › 状态机覆盖（GWT④） › ERROR：student 越权访问管理端被守卫拦截 ─
+  9 passed (9.5m)

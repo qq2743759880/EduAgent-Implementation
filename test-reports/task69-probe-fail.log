@@ -1,0 +1,17 @@
+﻿
+Running 1 test using 1 worker
+
+[console.error] Access to XMLHttpRequest at 'http://127.0.0.1:8000/api/admin/questions/types' from origin 'http://127.0.0.1:3000' has been blocked by CORS policy: Response to p
+[console.error] Failed to load resource: net::ERR_FAILED
+[console.error] Access to XMLHttpRequest at 'http://127.0.0.1:8000/api/admin/questions/questions/1' from origin 'http://127.0.0.1:3000' has been blocked by CORS policy: Respons
+[console.error] Failed to load resource: net::ERR_FAILED
+
+### 已完成请求 ===
+   POST /api/auth/login -> 200
+
+### 失败请求 ===
+   GET /api/admin/questions/types :: net::ERR_FAILED
+   GET /api/admin/questions/questions/1 :: net::ERR_FAILED
+  ok 1 [chromium-1280] › e2e\probe-fail.spec.ts:4:5 › 探针：失败原因与CORS (21.2s)
+
+  1 passed (26.9s)

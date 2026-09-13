@@ -1,0 +1,47 @@
+[
+  {
+    "ruleId": "security/secrets-exposure",
+    "level": "warning",
+    "message": {
+      "text": "打靶脚本 chat_delete_hit.py 硬编码多组凭据回退：L176 MYSQL_PASSWORD 回退 123456、L177 JWT_SECRET 回退 dev-secret-key-change-in-production、L212 测试学生密码、L237 root+123456。脚本自启 uvicorn 时把弱默认 JWT_SECRET 注入子进程；若指向非本地环境可伪造 JWT 与弱口令连库。当前绑定 127.0.0.1 且测试用途，可利用性受限。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/scripts/chat_delete_hit.py" }, "region": { "startLine": 176, "endLine": 177 } } }],
+    "properties": { "severity": "MEDIUM", "category": "security", "cwe": "CWE-798", "suggestion": "删除硬编码回退值，强制从环境变量读取并 fail-fast。" }
+  },
+  {
+    "ruleId": "security/crypto-weakness",
+    "level": "warning",
+    "message": {
+      "text": "config.py:161 将 JWT 签名密钥默认值硬编码为公开已知字符串 dev-secret-key-change-in-production。若部署在未覆盖 JWT_SECRET 且 DEBUG=false 时运行，攻击者可用公开密钥伪造任意 user_id 的 access_token（含 admin）。当前 DEBUG=true 基线风险被虚拟 admin 兜底掩盖。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/app/config.py" }, "region": { "startLine": 161, "endLine": 161 } } }],
+    "properties": { "severity": "MEDIUM", "category": "security", "cwe": "CWE-798", "suggestion": "JWT_SECRET 改无默认值必填项 + 非 DEBUG 模式对默认值 fail-fast。" }
+  },
+  {
+    "ruleId": "security/auth-bypass",
+    "level": "warning",
+    "message": {
+      "text": "DEBUG 模式身份冒充面（已知设计，本轮未削弱）：X-Force-Role/User-Id 头允许任意调用方在 DEBUG=true 冒充任意用户（含 admin）；无 Authorization 回退虚拟超级管理员。交付基线 DEBUG=true + CORS allow_origins=[*] + 默认 HOST=0.0.0.0，若以非回环地址启动即形成未认证冒充面。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/app/auth/dependencies.py" }, "region": { "startLine": 78, "endLine": 102 } } }],
+    "properties": { "severity": "MEDIUM", "category": "security", "cwe": "CWE-306", "suggestion": "DEBUG=true 绑定非回环地址时告警/拒绝；生产禁止 DEBUG；CORS 收紧。" }
+  },
+  {
+    "ruleId": "security/session-mgmt",
+    "level": "note",
+    "message": {
+      "text": "确认无回归：auth-client.ts 仅 401 触发登出、403 保会话 + toast。后端语义中 401 才是 token 失效信号，403 表示已认证无权限，保留会话正确且避免误杀。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/lib/auth-client.ts" }, "region": { "startLine": 355, "endLine": 377 } } }],
+    "properties": { "severity": "LOW", "category": "security", "cwe": "CWE-284", "suggestion": "保持现状；redirect 侧沿用 isSafeRedirect（已统一）。" }
+  },
+  {
+    "ruleId": "security/cve-dependency",
+    "level": "note",
+    "message": {
+      "text": "依赖 CVE 记录：axios 1.19.0 高于已知 CVE 修复线、next 16.3.0 高于 CVE-2025-29927 修复线；无确认 CVE 级依赖。建议 CI 定期 npm audit。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/package.json" }, "region": { "startLine": 19, "endLine": 24 } } }],
+    "properties": { "severity": "LOW", "category": "security", "cwe": "CWE-1104", "suggestion": "保持锁定版本；npm audit 纳入 CI。" }
+  }
+]

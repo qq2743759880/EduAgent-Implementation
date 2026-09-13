@@ -1,0 +1,785 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task57 原型 · 管理端系列详情 /admin/courses/[seriesId]</title>
+<!--
+  task57 HTML 原型（审核稿）
+  - P14 风格 candy-playful frozen（复用 task56 admin-courses → admin-course-detail 同源样式）
+  - 契约：app/domains/course_admin（权威，task12-contract.md 契约③）
+    四级 CRUD：Series→Cohort→Module→Session（各含 list/detail/create/patch/delete）
+    归属字段：Module 归属 cohort_id；Session 归属 series_cohort_course_id；Cohort 创建必填 head_teacher_id+institution_id
+    视频分片：POST /videos/init-chunked → /finalize-chunked → /bind-session → GET /videos/{id}/transcode-status
+    转码枚举：transcode_status ∈ pending|in_progress|completed|failed；review_status ∈ pending|approved|rejected
+    唯一约束：40901 系列 / 40902 班次 / 40903 模块阶段 / 40904 课次 / 40905 资源 / 40906 视频 / 40907 章节
+  - 契约缺口（实披露，不做 MOCK）：
+    · 资源 4 入口（课件/视频/作业/考试）：仅「视频」有真实端点（分片→转码）；课件/作业/考试无 sessions/{id}/assets 活跃端点 → 占位提示
+    · 章节管理 session_video_chapter：路由层无 CRUD 端点 → 表单位置标注「待后端端点接线」，列表做存量展示样
+  - 审核态多开：默认「管理班次」选中第一班次 → 展开模块半「已绑定视频 转码中」场景
+  AUDIT LOG:
+    [2026-08-24 v1 R1] 初稿提交（系列信息卡可编辑 + 新增班次 + 班次表 + 模块 Accordion + 课次列表 resource 4 入口 + 视频分片 Stepper/转码轮询徽章/Timeline + 章节管理 + 全软删 + 演示控制器多态）→ SUBMITTED
+    [2026-08-24 v1.1 R2] 修演示控制器多态切换 Bug：从「空班次」切回成功/转码状态时，班次行被永久隐藏（applyView 未恢复 tr.display 且空态占位重复追加）。改为 else 分支统一恢复 data-seat 行可见 + 移除空态占位，空态分支只隐藏 data-seat 行且空态占位判重 → 已修复重交
+-->
+<style>
+  :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-4338ca: #4338ca; --ht-6a4fd0: #6a4fd0; --ht-6b7280: #6b7280; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 90px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:220px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* back link + head */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.8125rem;margin-bottom:14px}
+  .back-link:hover{color:var(--primary)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .page-head h1{margin:0;font-size:21px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  /* series info card */
+  .series-card{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:18px}
+  .series-card .si-left{display:flex;gap:14px;min-width:0}
+  .series-card .si-ico{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--primary-deep),var(--primary));color:var(--ht-fff);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .series-card .si-info h2{margin:0 0 6px;font-size:1.125rem}
+  .series-card .si-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .series-card .si-tags code{background:var(--muted-bg);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Consolas,monospace}
+  .series-card .si-desc{margin-top:8px;color:var(--muted);font-size:0.8125rem;max-width:640px}
+  .series-card .si-actions{display:flex;gap:8px;align-items:center}
+  /* generic elements */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .card-h h3{margin:0;font-size:0.9375rem;display:flex;align-items:center;gap:8px}
+  .card-h .cnt{color:var(--muted);font-weight:500}
+  .card-b{padding:6px 18px 16px}
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.row-hover:hover{background:var(--ht-fafbff)}
+  .row-click{cursor:pointer}
+  .row-click.sel{background:var(--primary-soft)!important}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted)}
+  .cell-strong{font-weight:600;color:var(--ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .muted{color:var(--muted)}
+  /* badge 通用 */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)}.badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)}.badge-mut .pd{background:var(--muted-ink)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn-ink)}.badge-warn .pd{background:var(--warn-ink)}
+  .badge-red{background:var(--red-bg);color:var(--red-ink)}.badge-red .pd{background:var(--red-ink)}
+  .badge-primary{background:var(--primary-soft);color:var(--primary)}.badge-primary .pd{background:var(--primary)}
+  .b-dm{display:inline-block;border-radius:7px;padding:2px 8px;font-size:12px;font-weight:600}
+  .b-live{background:var(--ht-e6f3fe);color:var(--ht-0b6bc2)}.b-rec{background:var(--ht-f1ecfe);color:var(--ht-6a4fd0)}.b-offline{background:var(--ht-fdf0e4);color:var(--ht-b4600e)}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:150px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)}.dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center}
+  .dd-sep{height:1px;background:var(--line);margin:4px 0}
+  /* accordion module panel */
+  .module-panel{border:1px solid var(--line);border-radius:12px;background:var(--ht-fff);margin-bottom:11px;overflow:hidden}
+  .mp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--ht-fafbff);border-bottom:1px solid var(--line)}
+  .mp-h .tl{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+  .mp-h .chev{color:var(--muted);transition:.2s}
+  .mp-h .chev.open{transform:rotate(90deg)}
+  .mp-h .mn{font-weight:600}
+  .mp-h .mt{color:var(--muted);font-size:12px}
+  .mp-b{padding:8px 14px 14px}
+  /* pilot */
+  .pilot{height:100%;}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:540px;max-height:88vh;overflow:auto}
+  .modal.wide{max-width:680px}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .field-tip{font-size:11px;color:var(--muted)}
+  .confirm .modal{max-width:420px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* upload stepper */
+  .stepper{display:flex;align-items:center;gap:6px;margin:14px 0 16px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .stp .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--muted-bg);color:var(--muted-ink);font-size:12px}
+  .stp.done .dot{background:var(--ok-bg);color:var(--ok-ink)}
+  .stp.cur .dot{background:var(--primary);color:var(--ht-fff)}
+  .stp-conn{width:26px;height:2px;background:var(--line)}
+  .stp-conn.done{background:var(--ok-ink)}
+  /* upload dropzone + progress + chips */
+  .up-drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:0.8125rem;cursor:pointer}
+  .up-drop:hover{border-color:var(--primary);color:var(--primary)}
+  .up-prog{height:9px;border-radius:999px;background:var(--muted-bg);overflow:hidden;margin:12px 0 6px}
+  .up-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-blue),var(--primary));border-radius:999px;transition:width .2s}
+  .up-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  /* timeline */
+  .tl{position:relative;margin-left:6px;padding-left:20px}
+  .tl::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl-item{position:relative;display:flex;gap:12px;padding:6px 0}
+  .tl-item::before{content:"";position:absolute;left:-20px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--ht-fff);border:2px solid var(--muted)}
+  .tl-item.ok::before{border-color:var(--ok-ink);background:var(--ok-ink)}
+  .tl-item.cur::before{border-color:var(--primary);background:var(--primary)}
+  .tl-item .tt{font-size:0.8125rem;font-weight:600;color:var(--ink);min-width:96px}
+  .tl-item .td{font-size:12px;color:var(--muted);padding-top:1px}
+  /* chapter manager */
+  .chapter-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:0.8125rem;flex-wrap:wrap}
+  .chapter-row:last-child{border-bottom:none}
+  .ch-no{font-family:ui-monospace,monospace;color:var(--muted)}
+  .ch-sec{display:flex;align-items:center;gap:5px;margin-left:auto}
+  .ch-sec input{width:64px;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font:inherit;font-size:12px;text-align:right}
+  .seg{font-size:12px;color:var(--muted)}
+  .gap-tag{display:inline-block;margin-left:8px;font-size:11px;background:var(--warn-bg);color:var(--warn-ink);border-radius:6px;padding:1px 6px}
+  .res-4{display:flex;gap:8px}
+  .res-4 button{cursor:pointer;border:1px solid var(--line);background:var(--ht-fff);border-radius:9px;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;gap:5px;align-items:center}
+  .res-4 button:hover{border-color:var(--primary);color:var(--primary)}
+  .res-4 button.video{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+  /* states */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skline{height:13px;border-radius:6px}
+  /* responsive */
+  @media(max-width:760px){
+    .demo-ctrl{font-size:11px}.demo-ctrl .row{max-width:150px}
+    .series-card{flex-direction:column}
+    .card-b{padding:4px 12px 12px}
+    .res-4{flex-wrap:wrap}
+    .ch-sec{width:100%;margin-left:0}
+    .modal .mf{grid-template-columns:1fr}
+  }
+  /* 面包屑 */
+  .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted,var(--ht-6b7280));margin-bottom:14px}
+  .crumb a{color:var(--primary,var(--ht-4338ca));text-decoration:none}
+  .crumb a:hover{text-decoration:underline}
+  .crumb .sep{opacity:.6}
+  .crumb span.cur{color:var(--ink);font-weight:700}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item active" href="admin-courses.html" aria-current="page"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console</div>
+</header>
+<div class="wrap">
+  <!-- 面包屑 -->
+  <nav class="crumb">
+    <a href="admin-courses.html">课程管理</a>
+    <span class="sep">/</span>
+    <span>零基础 Python 入门营</span>
+    <span class="sep">/</span>
+    <span class="cur">系列详情</span>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1>零基础 Python 入门营</h1>
+      <div class="sub">系列详情 · /admin/courses/[seriesId] · 四级 CRUD + 视频分片上传</div>
+    </div>
+  </div>
+
+  <!-- ========== 系列信息卡（可编辑） ========== -->
+  <div class="series-card">
+    <div class="si-left">
+      <div class="si-ico">PY</div>
+      <div class="si-info">
+        <h2>零基础 Python 入门营</h2>
+        <div class="si-tags">
+          <code>PY-001</code>
+          <span class="b-dm b-live">直播</span>
+          <span class="b-dm b-offline">面授</span>
+          <span class="badge badge-on"><i class="pd"></i>在售</span>
+          <span>机构 #1 · 目标：入门/编程/成人</span>
+        </div>
+        <div class="si-desc">覆盖 Python 基础语法、模块、面向对象，配 6 讲直播 + 2 次面授答疑。</div>
+      </div>
+    </div>
+    <div class="si-actions">
+      <button class="btn btn-ghost btn-mini">编辑系列</button>
+      <button class="btn btn-primary btn-mini">＋ 新增班次</button>
+    </div>
+  </div>
+
+  <!-- ========== 班次 DataTable（选中 ➝ 下方模块管理） ========== -->
+  <div class="card">
+    <div class="card-h">
+      <h3>班次 <span class="cnt">共 2 个</span></h3>
+      <div class="muted" style="font-size:12px">选中班次后，下方面板展开其模块与课次管理</div>
+    </div>
+    <div class="card-b" style="padding:0">
+      <table>
+        <thead>
+          <tr><th>班次</th><th>售价</th><th>容量（已报）</th><th>起止</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr class="row-hover row-click sel" data-seat="1">
+            <td><span class="cell-strong">2026 暑期 A 班</span><br><span class="nb">COH-2026A</span></td>
+            <td>¥399</td>
+            <td><b>18</b>/60</td>
+            <td>03-01 ~ 04-30</td>
+            <td><span class="badge badge-on"><i class="pd"></i>在售</span></td>
+            <td class="cell-actions">
+              <button class="btn btn-ghost btn-mini" data-open="mdl-cohort-edit">编辑</button>
+              <div class="dd">
+                <button class="dd-btn" data-dd>•••</button>
+                <div class="dd-menu">
+                  <button class="dd-item">查看班次</button>
+                  <button class="dd-item danger" data-open="mdl-del-cohort">删除班次（软删）</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr class="row-hover row-click" data-seat="2">
+            <td><span class="cell-strong">2026 秋季 B 班</span><br><span class="nb">COH-2026B</span></td>
+            <td>¥359</td>
+            <td><b>2</b>/60</td>
+            <td>09-01 ~ 10-31</td>
+            <td><span class="badge badge-mut"><i class="pd"></i>草稿</span></td>
+            <td class="cell-actions">
+              <button class="btn btn-ghost btn-mini" data-open="mdl-cohort-edit">编辑</button>
+              <div class="dd">
+                <button class="dd-btn" data-dd>•••</button>
+                <div class="dd-menu">
+                  <button class="dd-item">查看班次</button>
+                  <button class="dd-item danger" data-open="mdl-del-cohort">删除班次（软删）</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== 模块 Accordion（选中班次「2026 暑期 A 班」） ========== -->
+  <div class="card">
+    <div class="card-h">
+      <h3>模块与课次 · 绑班次「2026 暑期 A 班」 <span class="cnt">共 2 模块 / 6 课次</span></h3>
+      <button class="btn btn-primary btn-mini" data-open="mdl-module">＋ 新增模块</button>
+    </div>
+    <div class="card-b" style="padding-top:14px">
+
+      <!-- 模块一 -->
+      <div class="module-panel" data-mp="1">
+        <div class="mp-h">
+          <div class="tl">
+            <span class="chev open">▸</span>
+            <span class="mn">第一阶段 · Python 基础语法</span>
+            <span class="badge badge-mut">stage_no 1</span>
+            <span class="mt">4 课次 / 12 学时</span>
+          </div>
+          <div class="cell-actions">
+            <button class="btn btn-ghost btn-mini">＋ 新增课次</button>
+            <button class="btn btn-ghost btn-mini" data-open="mdl-module-edit">编辑</button>
+            <button class="btn btn-danger btn-mini" data-open="mdl-del-module">删除</button>
+          </div>
+        </div>
+        <div class="mp-b">
+          <table>
+            <thead>
+              <tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr class="row-hover">
+                <td class="nb">#1</td>
+                <td><span class="cell-strong">第 1 讲 · 变量与类型</span></td>
+                <td>03-01</td>
+                <td><span class="badge badge-primary"><i class="pd"></i>进行中</span></td>
+                <td>
+                  <div class="res-4">
+                    <button data-open="mdl-video">▶ 视频</button>
+                    <button>课件</button><button>作业</button><button>考试</button>
+                  </div>
+                </td>
+                <td class="cell-actions">
+                  <button class="btn btn-ghost btn-mini" data-open="mdl-session-edit">编辑</button>
+                  <button class="btn btn-danger btn-mini" data-open="mdl-del-session">删除</button>
+                </td>
+              </tr>
+              <!-- 已绑定视频 + 转码中（默认场景） -->
+              <tr class="row-hover">
+                <td class="nb">#2</td>
+                <td><span class="cell-strong">第 2 讲 · 流程控制</span></td>
+                <td>03-03</td>
+                <td><span class="badge badge-primary"><i class="pd"></i>进行中</span></td>
+                <td>
+                  <div class="res-4">
+                    <button class="video" data-open="mdl-video">▶ 视频</button>
+                    <button>课件</button><button>作业</button><button>考试</button>
+                  </div>
+                  <div class="muted" style="font-size:11px;margin-top:5px">已绑 · 转码中</div>
+                </td>
+                <td class="cell-actions">
+                  <button class="btn btn-ghost btn-mini" data-open="mdl-session-edit">编辑</button>
+                  <button class="btn btn-danger btn-mini" data-open="mdl-del-session">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 模块二（折叠态） -->
+      <div class="module-panel" data-mp="2">
+        <div class="mp-h">
+          <div class="tl">
+            <span class="chev">▸</span>
+            <span class="mn">第二阶段 · 面向对象</span>
+            <span class="badge badge-mut">stage_no 2</span>
+            <span class="mt">2 课次 / 6 学时</span>
+          </div>
+          <div class="cell-actions">
+            <button class="btn btn-ghost btn-mini">＋ 新增课次</button>
+            <button class="btn btn-ghost btn-mini" data-open="mdl-module-edit">编辑</button>
+            <button class="btn btn-danger btn-mini" data-open="mdl-del-module">删除</button>
+          </div>
+        </div>
+        <div class="mp-b" style="display:none">
+          <table>
+            <thead><tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th>操作</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== 视频上传 Stepper + 转码轮询徽章 + Timeline + 章节（默认展示「第 2 讲」转码中） ========== -->
+  <div class="card" id="video-panel">
+    <div class="card-h">
+      <h3>视频上传 · 第 2 讲 流程控制 <span class="badge badge-warn" id="tc-badge"><i class="pd"></i>转码中</span></h3>
+      <button class="btn btn-ghost btn-mini" data-close-panel>关闭</button>
+    </div>
+    <div class="card-b">
+
+      <!-- Stepper：init-chunked → 分片上传 → finalize-chunked → bind-session -->
+      <div class="stepper" id="stepper">
+        <span class="stp done"><span class="dot">✓</span>init-chunked</span>
+        <span class="stp-conn done"></span>
+        <span class="stp done"><span class="dot">✓</span>分片上传</span>
+        <span class="stp-conn done"></span>
+        <span class="stp done"><span class="dot">✓</span>finalize</span>
+        <span class="stp-conn done"></span>
+        <span class="stp cur"><span class="dot">4</span>转码中（轮询）</span>
+      </div>
+
+      <!-- 上传拖区（仅未上传态显示；当前已转码中态用 meta 展示） -->
+      <div id="upzone">
+        <div class="up-drop" id="up-z">点击或拖拽视频文件到此处（.mp4/.mov）</div>
+        <div class="up-prog" id="up-pg" style="display:none"><i style="width:0%"></i></div>
+        <div class="up-meta" id="up-mt" style="display:none"><span>lesson2.mp4 · 42.3MB · 3 分片</span><span>42%</span></div>
+      </div>
+
+      <!-- 转码轮询结果徽章矩阵（下拉演示用） -->
+      <div id="tc-matrix" style="margin-top:14px">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">转码状态轮询（3s refetchInterval，终态停）· 各状态徽章：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-warn"><i class="pd"></i>pending 等待转码</span>
+          <span class="badge badge-primary"><i class="pd"></i>in_progress 转码中</span>
+          <span class="badge badge-on"><i class="pd"></i>completed 已完成</span>
+          <span class="badge badge-red"><i class="pd"></i>failed 失败</span>
+          <span class="badge badge-on"><i class="pd"></i>审核通过 approved</span>
+          <span class="badge badge-mut"><i class="pd"></i>审核待审 pending</span>
+        </div>
+      </div>
+
+      <!-- Timeline 转码轨迹 -->
+      <div style="margin-top:16px">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">转码 Timeline 轨迹：</div>
+        <div class="tl" id="timeline">
+          <div class="tl-item ok"><span class="tt">分片上传</span><span class="td">3/3 分片完成 · upload_id=UP-8821</span></div>
+          <div class="tl-item ok"><span class="tt">finalize</span><span class="td">资产注册 · video_id=9001</span></div>
+          <div class="tl-item ok"><span class="tt">bind-session</span><span class="td">绑定到课次 #2 · sort_no=0</span></div>
+          <div class="tl-item cur"><span class="tt">转码中</span><span class="td">in_progress → pending/completed/failed 轮询中…</span></div>
+        </div>
+      </div>
+
+      <!-- 章节管理（契约缺口占位） -->
+      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">
+          章节管理（start_second / end_second ↔ session_video_chapter）
+          <span class="gap-tag">契约缺口：后端章节 CRUD 端点未注册，保存/新增待接线（存量展示）</span>
+        </div>
+        <div id="chapter-list">
+          <div class="chapter-row">
+            <span class="ch-no">CH-1</span><span>开篇 · 环境安装</span>
+            <span class="ch-sec"><span class="seg">开始</span><input value="0">&nbsp;<span class="seg">结束</span><input value="128">
+            <button class="btn btn-ghost btn-mini" disabled>保存</button><button class="btn btn-danger btn-mini" disabled>删除</button></span>
+          </div>
+          <div class="chapter-row">
+            <span class="ch-no">CH-2</span><span>变量入门</span>
+            <span class="ch-sec"><span class="seg">开始</span><input value="128">&nbsp;<span class="seg">结束</span><input value="356">
+            <button class="btn btn-ghost btn-mini" disabled>保存</button><button class="btn btn-danger btn-mini" disabled>删除</button></span>
+          </div>
+          <div class="chapter-row">
+            <span class="ch-no">＋</span><span>新增章节</span>
+            <span class="ch-sec">
+              <button class="btn btn-ghost btn-mini" disabled>添加章节（待端点）</button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== Dialog 汇总（演示见下方） ========== -->
+
+  <!-- 新增/编辑班次 -->
+  <div class="scrim" id="mdl-cohort-edit">
+    <div class="modal">
+      <div class="mh"><h3>编辑班次 · COH-2026A</h3><button class="m-close" data-close>×</button></div>
+      <div class="mb">
+        <div class="mf">
+          <div class="mff full"><label>班次名称</label><input value="2026 暑期 A 班"></div>
+          <div class="mff"><label>班次编码（创建后不可改）</label><input value="COH-2026A" disabled></div>
+          <div class="mff"><label>售价（元）</label><input type="number" value="399"></div>
+          <div class="mff"><label>容量</label><input type="number" value="60"></div>
+          <div class="mff"><label>开课日期</label><input type="date" value="2026-03-01"></div>
+          <div class="mff"><label>结课日期</label><input type="date" value="2026-04-30"></div>
+          <div class="mff full"><label>负责人 teacher_id</label><input type="number" value="5"></div>
+        </div>
+        <div class="field-tip" style="margin-top:8px">创建班次必填 institution_id + head_teacher_id；冲突报业务码 <b>40902</b>（institution_id+cohort_code 重复）。</div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>保存修改</button></div>
+    </div>
+  </div>
+
+  <!-- 新增模块 -->
+  <div class="scrim" id="mdl-module">
+    <div class="modal">
+      <div class="mh"><h3>新增模块</h3><button class="m-close" data-close>×</button></div>
+      <div class="mb">
+        <div class="mf">
+          <div class="mff full"><label>模块名称（归属选中班次 cohort_id）</label><input placeholder="如：Python 基础语法"></div>
+          <div class="mff"><label>模块编码</label><input placeholder="MOD-01"></div>
+          <div class="mff"><label>阶段 stage_no（唯一）</label><input type="number" value="3"></div>
+          <div class="mff"><label>课次数</label><input type="number" value="4"></div>
+          <div class="mff"><label>总学时</label><input type="number" step="0.5" value="12"></div>
+          <div class="mff"><label>开始日期</label><input type="date"></div>
+          <div class="mff"><label>结束日期</label><input type="date"></div>
+        </div>
+        <div class="field-tip" style="margin-top:8px">Module 归属 <b>cohort_id</b>；冲突报业务码 <b>40903</b>（cohort_id+stage_no 重复）。</div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>创建模块</button></div>
+    </div>
+  </div>
+
+  <!-- 新增课次 -->
+  <div class="scrim" id="mdl-module-edit" style="display:none"></div>
+  <div class="scrim" id="mdl-session-edit">
+    <div class="modal">
+      <div class="mh"><h3>新增课次</h3><button class="m-close" data-close>×</button></div>
+      <div class="mb">
+        <div class="mf">
+          <div class="mff full"><label>课次标题（归属 series_cohort_course_id=模块ID）</label><input placeholder="如：第 3 讲 函数入门"></div>
+          <div class="mff"><label>课次序号 session_no（唯一）</label><input type="number" value="3"></div>
+          <div class="mff"><label>教学状态</label><select><option>scheduled 未开始</option><option>in_progress 进行中</option><option>completed 已完成</option><option>cancelled 已取消</option></select></div>
+          <div class="mff"><label>授课日期</label><input type="date"></div>
+          <div class="mff"><label>开始时间</label><input type="time"></div>
+          <div class="mff"><label>结束时间</label><input type="time"></div>
+          <div class="mff full"><label>考勤必设 checkin_required</label>
+            <select><option value="0">0（无需签到）</option><option value="1">1（必签）</option></select>
+          </div>
+        </div>
+        <div class="field-tip" style="margin-top:8px">Session 归属 <b>series_cohort_course_id</b>（当前 schema 即 module 物理 ID）；冲突报业务码 <b>40904</b>（module+session_no 重复）。</div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-close>创建课次</button></div>
+    </div>
+  </div>
+
+  <!-- 删除确认 ×3（ConfirmDialog） -->
+  <div class="scrim confirm" id="mdl-del-cohort">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+          <div><b>删除班次「2026 暑期 A 班」？</b><p>软删（yn=0），将级联不可见。此操作可恢复吗？按软删语义：数据保留、页内/用户端不再展示。删除模块/课次同理软删。</p></div>
+        </div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
+    </div>
+  </div>
+  <div class="scrim confirm" id="mdl-del-module">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+          <div><b>删除模块「第一 阶段」？</b><p>软删（yn=0），将级联其下 2 个课次并解绑关联视频。数据保留、不再展示。</p></div>
+        </div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
+    </div>
+  </div>
+  <div class="scrim confirm" id="mdl-del-session">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+          <div><b>删除课次「第 2 讲 流程控制」？</b><p>软删（yn=0），关联视频自动解绑。数据保留、不再展示。</p></div>
+        </div>
+      </div>
+      <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" data-close>确认删除（软删）</button></div>
+    </div>
+  </div>
+
+  <!-- ===== 演示控制器（多态切换） ===== -->
+  <div class="demo-ctrl">
+    <b>演示状态</b>
+    <div class="row">
+      <button data-v="loading" id="v-loading">加载</button>
+      <button data-v="success" id="v-success" class="on">成功（转码中）</button>
+      <button data-v="tc-completed" id="v-tc-completed">转码完成</button>
+      <button data-v="tc-failed" id="v-tc-failed">转码失败</button>
+      <button data-v="empty" id="v-empty">空班次</button>
+    </div>
+  </div>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+  // 演示控制：切换多态
+  var views = { loading:null, success:null, 'tc-completed':null, 'tc-failed':null, empty:null };
+  function applyView(v){
+    document.querySelectorAll('.demo-ctrl button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+    var seriesCard = document.querySelector('.series-card');
+    var cohortCard = document.querySelector('.card');
+    var moduleCard = document.querySelectorAll('.card')[1];
+    var videoPanel = document.getElementById('video-panel');
+    var badge = document.getElementById('tc-badge');
+    var zone = document.getElementById('up-z'); var pg=document.getElementById('up-pg'); var mt=document.getElementById('up-mt');
+    var timeline = document.getElementById('timeline');
+    if(v==='loading'){
+      seriesCard.style.display='none';cohortCard.style.display='none';moduleCard.style.display='none';videoPanel.style.display='none';
+      // 骨架屏占位插到最前
+      var sk=document.createElement('div');sk.className='card';sk.id='sk-only';
+      sk.innerHTML='<div class="card-h"><div class="sk skline" style="width:120px;height:18px"></div></div><div class="card-b"><div class="sk" style="padding:8px 12px"><div class="skline" style="background:var(--muted-bg)"></div></div><table><tr class="skrow"><td><div class="sk skline" style="width:60%"></div></td><td><div class="sk skline" style="width:30%"></div></td><td><div class="sk skline" style="width:40%"></div></td></tr></table></div>';
+      document.querySelector('.page-head').after(sk);
+    }else{
+      // 恢复班次行可见（修复：从「空班次」切回后被永久隐藏）+ 移除骨架屏与空态占位
+      cohortCard.querySelectorAll('tbody tr[data-seat]').forEach(function(r){r.style.display='';});
+      var skOnly=document.getElementById('sk-only'); if(skOnly)skOnly.remove();
+      var er=document.getElementById('empty-row'); if(er&&er.parentNode)er.parentNode.removeChild(er);
+      seriesCard.style.display='';cohortCard.style.display='';moduleCard.style.display='';videoPanel.style.display='';
+    }
+    if(v==='success'||v==='tc-completed'||v==='tc-failed'){videoPanel.style.display='';}
+    if(v==='tc-completed'){
+      badge.className='badge badge-on';badge.innerHTML='<i class="pd"></i>转码完成';
+      document.querySelectorAll('#timeline .tl-item')[3].className='tl-item ok';
+      document.querySelectorAll('#timeline .tl-item')[3].querySelector('.td').textContent='completed · 播放就绪 · 审核通过 approved';
+      document.querySelectorAll('#stepper .stp')[3].className='stp done';
+      document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">✓</span>已完成';
+    }else if(v==='tc-failed'){
+      badge.className='badge badge-red';badge.innerHTML='<i class="pd"></i>转码失败';
+      document.querySelectorAll('#timeline .tl-item')[3].className='tl-item ok';
+      document.querySelectorAll('#timeline .tl-item')[3].querySelector('.td').textContent='failed · 请重新上传或联系运维';
+      document.querySelectorAll('#stepper .stp')[3].className='stp cur';document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">4</span>失败';
+    }else if(v==='success'){
+      badge.className='badge badge-warn';badge.innerHTML='<i class="pd"></i>转码中';
+      var tl4=document.querySelectorAll('#timeline .tl-item')[3];tl4.className='tl-item cur';
+      tl4.querySelector('.td').textContent='in_progress → pending/completed/failed 轮询中…';
+      document.querySelectorAll('#stepper .stp')[3].className='stp cur';document.querySelectorAll('#stepper .stp')[3].innerHTML='<span class="dot">4</span>转码中（轮询）';
+    }
+    if(v==='empty'){
+      // 简单空态：只隐藏班次数据行，保留模块+视频面板占位（与上方案尔 else 分支协同，避免从其它态切回时空显）
+      moduleCard.style.display='none';videoPanel.style.display='none';
+      cohortCard.querySelectorAll('tbody tr[data-seat]').forEach(function(r){r.style.display='none';});
+      if(!document.getElementById('empty-row')){
+        var empt=document.createElement('tr');empt.id='empty-row';empt.innerHTML='<td colspan="6"><div class="state"><div class="st-ico">∅</div>暂无班次<br><span style="font-size:12px">点击「新增班次」开始搭建</span></div></td>';
+        cohortCard.querySelector('tbody').appendChild(empt);
+      }
+    }else{var er=document.getElementById('empty-row'); if(er&&er.parentNode)er.parentNode.removeChild(er);}
+  }
+  document.querySelectorAll('.demo-ctrl button').forEach(b=>b.addEventListener('click',()=>applyView(b.dataset.v)));
+
+  // 通用交互：modal 开合 / dropdown / 关闭面板 / row 选中切换
+  document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{var s=document.getElementById(b.dataset.open);if(s)s.classList.add('show');}));
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.scrim').classList.remove('show')));
+  document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('click',e=>{if(e.target===s)s.classList.remove('show');}));
+  document.querySelectorAll('[data-dd]').forEach(b=>b.addEventListener('click',e=>{var dd=b.closest('.dd');dd.classList.toggle('open');e.stopPropagation();}));
+  document.addEventListener('click',()=>document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open')));
+  document.querySelectorAll('[data-close-panel]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('video-panel').style.display='none';}));
+  document.querySelectorAll('[data-seat]').forEach(r=>r.addEventListener('click',()=>{
+    document.querySelectorAll('[data-seat]').forEach(x=>x.classList.remove('sel'));
+    r.classList.add('sel');
+  }));
+  // stepper 上传演示（拖区点击 → 显示进度动画）
+  var zo=document.getElementById('up-z');
+  zo.addEventListener('click',()=>{ document.getElementById('up-pg').style.display='';document.getElementById('up-mt').style.display='';
+    var bar=document.querySelector('#up-pg i');var p=0;var t=setInterval(()=>{p+=11;if(p>=100){clearInterval(t);}bar.style.width=(p>100?100:p)+'%';document.querySelector('#up-mt span:last-child').textContent=p+'%';},120);
+  });
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=(location.pathname.match(//(d+)/)||[])[1];if(!m)return;EAPI.get("/api/admin/courses/series/"+m).then(function(s){if(!s)return;var t=document.querySelector("h1,.title");if(t&&(s.series_name))t.textContent=s.series_name;}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
+</body>
+</html>

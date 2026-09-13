@@ -1,0 +1,5 @@
+﻿REPORT: e:\stu\project\stu\EduAgent实施手册\test-reports\interface-acceptance.md
+TOTAL_REQUESTS: 160
+Counter({'OK': 107, 'BIZ': 46, 'DEBUG': 4, 'BARE': 2, 'BADCODE': 1})
+missing_in_backend: ['/api/admin/courses/materials/redirect-upload', '/api/admin/courses/videos', '/api/admin/questions', '/api/admin/questions/batch-import', '/api/admin/questions/papers/compose', '/api/admin/questions/tags', '/api/cohorts', '/api/community/comments', '/api/knowledge/status', '/api/mindmap/course', '/api/mindmap/me', '/api/study/courses', '/api/study/sessions', '/api/trade/payment']
+unused_by_front count: 99

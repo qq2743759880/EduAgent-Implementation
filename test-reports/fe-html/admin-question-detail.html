@@ -1,0 +1,785 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task59 原型 · 管理端题目解析编辑 /admin/questions/[id]</title>
+<!--
+  task59 HTML 原型（审核稿）
+  - P16 风格 candy-playful frozen（复用 task56/57/58 同源样式 token）
+  - 契约为权威：.opencode/handoffs/task13-contract.md（contract④ question 域）
+    本页：/admin/questions/{id} 题目编辑（含解析编辑）
+      读   GET  /questions/{id}          → QuestionResponseAdmin（含 stem/options_json/answer_text/analysis_text）
+      改   PATCH /questions/{id}          → QuestionAdminUpdate { question_type_id?, stem?, options_json?, answer_text?, analysis_text? }
+      题型 GET  /types                    → QuestionTypeResponse（type_code/type_name/objective_flag/auto_marking_flag/sort_no）
+  - 关键对齐说明：
+    · objective_flag：QUESTION 表 / PATCH schema **均无该字段** → 它派生自 dim_question_type.objective_flag（只读展示），
+      不随 PATCH 提交（设计规范 P16 的"客观题开关"在契约④下收敛为【只读徽章】，随题型联动）——已实披露
+    · 题型枚举以契约④为准 5 种：single_choice 单选 / multi_choice 多选 / true_false 判断 / fill_blank 填空 / short_answer 简答
+    · 选项编辑器按题型联动：单选→RadioGroup 组 / 多选→Checkbox 组 / 判断→固定 T·F / 填空·简答→无预置选项（折叠提示）
+    · 已填数据不丢：按 label 归位已填 options_json（切题型时 A/B/C/D 已填内容跨控恢复）
+    · 题干/解析均支持 Markdown/LaTeX → 预览与 user 端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，无 rehypeRaw）
+    · 下一路由：/admin/questions/{id} tab → 返回 /admin/questions 列表
+  - v0.2.0 灰系清理：本页重写时废弃历史遗留 text-slate-500 等 slate 灰系，一律改用 candy token（var(--muted) 等）
+  AUDIT LOG:
+    [2026-08-24 v1 R1] 初稿提交（面包屑+只读题库/题号头+题型 Select 联动选项编辑器+题干 Markdown Textarea+
+      选项编辑器四态联动(单选Radio/多选Checkbox/判断T·F/填空简答折叠)+答案 Textarea+★解析 analysis_text 必修 Textarea+
+      MarkdownPreview 实时预览+objective 派生只读徽章(随题型联动)+保存/保存并继续/返回列表+预览 Tab 与 QuizPanel 一致的
+      题干+解析渲染+演示控制器(题型切换/已填数据不丢/解析空保存拦截/后端兜底422)+观测点契约对齐）→ SUBMITTED
+-->
+<style>
+  :root{ --htc-0-0-0-0.2: rgba(0,0,0,0.2); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-232a3d: #232a3d; --ht-7c4bd6: #7c4bd6; --ht-eef0f5: #eef0f5; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-0-0-0-002: rgba(0, 0, 0, 0.002); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  .toast-stub{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ht-fff);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px var(--htc-0-0-0-002)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 100px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:240px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* header / breadcrumb */
+  .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted);margin-bottom:12px}
+  .crumb a{color:var(--primary);text-decoration:none}
+  .crumb a:hover{text-decoration:underline}
+  .crumb .sep{opacity:.6}
+  .crumb .code{font-family:ui-monospace,Consolas,monospace;font-weight:600;color:var(--ink)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:2px}
+  .ro-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .ro-pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12px;color:var(--muted)}
+  .ro-pill b{color:var(--ink);font-weight:600}
+  /* buttons */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  /* tabs（编辑 / 预览） */
+  .tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+  .tab{cursor:pointer;border:none;background:transparent;border-radius:9px;padding:8px 20px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted)}
+  .tab.on{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .tab .tip{font-weight:500;font-size:11px;opacity:.8}
+  /* 两张卡：编辑表单 / 预览 */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+  .card + .card{margin-top:14px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .card-h h2{margin:0;font-size:0.9375rem}
+  .card-h .hint{font-size:11px;color:var(--muted)}
+  /* form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+  .fld label .req{color:var(--candy-red);font-weight:700}
+  .fld .ro{display:flex;align-items:center;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:var(--muted-bg);color:var(--ink);font-size:0.8125rem;user-select:none}
+  .fld .ro b{font-weight:600;color:var(--primary)}
+  .fld input,.fld select,.fld textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;font-size:0.8125rem;color:var(--ink);background:var(--ht-fff);width:100%}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .fld textarea{resize:vertical;min-height:80px;line-height:1.6}
+  .fld textarea.lg{min-height:120px}
+  .fld textarea.sm{min-height:64px}
+  .fld .err{font-size:11px;color:var(--candy-red);min-height:14px}
+  .fld-tag{font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.01em}
+  .fld.err input,.fld.err select,.fld.err textarea{border-color:var(--candy-red);outline:2px solid var(--red-bg)}
+  .field-note{font-size:11px;color:var(--muted)}
+  .field-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  /* 选项编辑器（按题型联动） */
+  .opt-editor{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--ht-fafbff)}
+  .opt-editor .oe-h{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);background:var(--ht-fafbff)}
+  .opt-editor .oe-h b{color:var(--ink);font-size:0.8125rem}
+  .opt-editor .oe-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+  .opt-row{display:flex;align-items:flex-start;gap:10px}
+  .opt-ctrl{flex:0 0 auto;display:grid;place-items:center;padding-top:9px}
+  .opt-ctrl input.radio{width:16px;height:16px;accent-color:var(--primary)}
+  .opt-ctrl input.check{width:16px;height:16px;accent-color:var(--primary)}
+  .opt-body{flex:1;display:flex;flex-direction:column;gap:4px}
+  .opt-body input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:0.8125rem}
+  .opt-label{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);font-weight:600}
+  .opt-row .opt-del{cursor:pointer;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:26px;height:26px;color:var(--candy-red);font-size:14px;line-height:1}
+  .opt-row .opt-del:hover{background:var(--red-bg);border-color:var(--candy-red)}
+  .opt-add{align-self:flex-start;cursor:pointer;border:1px dashed var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
+  .opt-add:hover{border-color:var(--primary);color:var(--primary)}
+  .oe-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
+  .oe-empty .big{font-size:22px;margin-bottom:4px}
+  .oe-empty code{background:var(--muted-bg);border-radius:6px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace}
+  /* 判断题固定 T/F */
+  .tf-row{display:flex;gap:10px;flex-wrap:wrap}
+  .tf-opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--ht-fff);cursor:pointer;font-size:0.8125rem;color:var(--ink)}
+  .tf-opt input{accent-color:var(--primary);width:16px;height:16px}
+  .tf-opt.on{border-color:var(--primary);background:var(--primary-soft)}
+  /* objective 派生徽章（只读，来自题型） */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-obj{background:var(--ok-bg);color:var(--ok-ink)} .badge-obj .pd{background:var(--ok-ink)}
+  .badge-subj{background:var(--ht-f3edfe);color:var(--ht-7c4bd6)} .badge-subj .pd{background:var(--ht-7c4bd6)}
+  /* Markdown 预览块 */
+  .md-pre{background:var(--ht-fafbff);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .md-pre .md-title{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:.02em}
+  .md-pre .md-body{font-size:14px;line-height:1.75;color:var(--ink)}
+  .md-pre .md-body h4{margin:10px 0 4px;font-size:14px}
+  .md-pre .md-body p{margin:6px 0}
+  .md-pre .md-body code{background:var(--muted-bg);border-radius:5px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .md-pre .md-body pre{background:var(--ht-232a3d);color:var(--ht-eef0f5);border-radius:10px;padding:10px 12px;overflow:auto;font-size:12px}
+  .md-pre .md-body blockquote{border-left:4px solid var(--line);padding-left:10px;color:var(--muted);margin:6px 0}
+  .md-pre .md-body ul{margin:6px 0;padding-left:20px;list-style:disc}
+  .md-pre .md-body .math-stub{display:inline-block;background:var(--primary-soft);color:var(--primary);border-radius:6px;padding:0 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  /* 用户端 QuizPanel 一致：选项渲染 */
+  .qp-options{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .qp-opt{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--ht-fff)}
+  .qp-opt.checked{border-color:var(--primary);background:var(--primary-soft)}
+  .qp-opt .qp-key{font-family:ui-monospace,Consolas,monospace;font-size:12px;font-weight:700;color:var(--primary);flex:0 0 auto}
+  .qp-opt .qp-body{font-size:0.8125rem;color:var(--ink)}
+  /* action bar */
+  .actionbar{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 20px;margin-top:14px}
+  .actionbar .spacer{flex:1}
+  /* 观测点 */
+  .observe{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;padding:14px 16px;margin-top:16px;font-size:12px;color:var(--muted)}
+  .observe b{color:var(--ink);display:block;margin-bottom:6px;font-size:0.8125rem}
+  .observe .ob{display:flex;gap:8px;padding:3px 0}
+  .observe .ob::before{content:"·";color:var(--primary);font-weight:700}
+  .observe code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace;font-size:11px}
+  .hidden{display:none!important}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="qd-skel">
+  .skld{display:inline-block;height:14px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--card) 50%,var(--line) 75%);background-size:400% 100%;animation:qdsh 1.2s infinite}
+  .w30{width:30%}.w60{width:60%}.w100{width:100%;display:block;margin:6px 0}
+  @keyframes qdsh{0%{background-position:100% 0}100%{background-position:0 0}}
+  .skq{display:block}
+  .skq[hidden]{display:none}
+  .sk-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-top:16px}
+  .sk-card-h{margin-bottom:16px}
+  .sk-row{display:flex;align-items:center;margin:14px 0}
+  .sk-note{color:var(--muted);font-size:0.8125rem;margin:18px 0 0}
+  .sk-err{text-align:center;padding:28px 16px}
+  .sk-err b{color:var(--ink);font-size:1.05rem;display:block;margin-bottom:8px}
+  .sk-err p{color:var(--muted);font-size:0.875rem;margin:0 0 16px}
+  .sk-err .btn{margin-top:4px}
+</style>
+</head>
+<body class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item active" href="admin-questions.html" aria-current="page"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console</div>
+</header>
+<div class="wrap">
+  <!-- 面包屑 -->
+  <nav class="crumb">
+    <a href="#">管理端</a><span class="sep">/</span>
+    <a href="#">题库</a><span class="sep">/</span>
+    <a href="#"><span id="cr-bank">Python 基础编程题库</span></a><span class="sep">/</span>
+    <a href="#"><span id="cr-type">单选题</span></a><span class="sep">/</span>
+    <span class="code" id="cr-code">Q1001</span>
+  </nav>
+
+  <!-- 页头 -->
+  <div class="page-head">
+    <div>
+      <h1>题目编辑</h1>
+      <div class="sub">编辑题干 · 选项 · 答案与解析（解析为必修）</div>
+    </div>
+    <div class="btn btn-ghost" onclick="doBack()">← 返回列表</div>
+  </div>
+
+  <!-- 只读头信息 + objective 派生徽章 -->
+  <div class="ro-badges">
+    <span class="ro-pill">所属题库 <b id="ro-bank-id">Python 基础编程题库</b></span>
+    <span class="ro-pill">题号 <b id="ro-code">Q1001</b></span>
+    <span class="ro-pill">题目 ID <b id="ro-qid">#9001</b></span>
+    <span class="ro-pill">题型 <b id="ro-obj-label">单选题（客观）</b>
+      <span id="ro-obj-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span>
+    </span>
+  </div>
+
+  <!-- 加载态：骨架屏（按题型区骨架，非 MOCK 数据） -->
+  <section id="view-loading" class="skq" hidden>
+    <div class="sk-card">
+      <div class="sk-card-h"><span class="skld w60"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <div class="sk-row"><span class="skld w60"></span><span class="skld w30" style="margin-left:12px"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <p class="sk-note">GET /api/admin/questions/9001 加载中…（骨架占位）</p>
+    </div>
+  </section>
+
+  <!-- 错误态：加载失败 + 重试 -->
+  <section id="view-error" class="skq" hidden>
+    <div class="sk-card">
+      <div class="sk-err"><b>题目加载失败</b><p>无法读取题目 9001 数据，请检查网络或稍后再试。</p><button class="btn btn-ghost" onclick="setQDState('loading');setTimeout(function(){setQDState('success')},900)">⟳ 重试</button></div>
+    </div>
+  </section>
+
+  <!-- 编辑 / 预览 Tabs -->
+  <div style="margin-top:16px" class="tabs" id="tabhead">
+    <button class="tab on" id="tab-edit" onclick="switchPane('edit')">编辑</button>
+    <button class="tab" id="tab-preview" onclick="switchPane('preview')">预览 · 与用户端 QuizPanel 一致<span class="tip" style="margin-left:6px">题干+解析</span></button>
+  </div>
+
+  <!-- ① 编辑表单卡 -->
+  <div id="pane-edit" class="qd-pane">
+    <div class="card">
+      <div class="card-h">
+        <h2>题目内容</h2>
+        <span class="hint">字段对齐 contract④：<code>/questions/{id}</code></span>
+      </div>
+      <div class="form-grid">
+        <!-- 所属题库 / 题号 只读 -->
+        <div class="fld">
+          <label>所属题库 <span class="req">*</span></label>
+          <div class="ro"><b>Python 基础编程题库</b>（id=3）· institution_id=1</div>
+        </div>
+        <div class="fld">
+          <label>题号（question_code）<span class="req">*</span></label>
+          <div class="ro"><b>Q1001</b>（bank_id 内唯一，只读）</div>
+        </div>
+
+        <!-- 题型 Select（联动选项控件；切换已填数据不丢） -->
+        <div class="fld">
+          <label>题型 <span class="req">*</span></label>
+          <select id="f-type" onchange="onTypeChange()">
+            <option value="single_choice" selected>单选题（single_choice）</option>
+            <option value="multi_choice">多选题（multi_choice）</option>
+            <option value="true_false">判断题（true_false）</option>
+            <option value="fill_blank">填空题（fill_blank）</option>
+            <option value="short_answer">简答题（short_answer）</option>
+          </select>
+          <span class="field-note">options_json 结构按题型 schema 联动（契约④ dim_question_type）</span>
+        </div>
+        <div class="fld">
+          <label>客观性 <span class="fld-tag">派生 · 只读</span></label>
+          <div><span id="obj-input-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span></div>
+          <span class="field-note">objective_flag 派生于 dim_question_type，非 question 可编辑字段（PATCH 不提交，契约④权威）</span>
+        </div>
+
+        <!-- 题干 Textarea（Markdown 支持） -->
+        <div class="fld full">
+          <label>题干 stem <span class="req">*</span><span class="fld-tag">支持 Markdown / LaTeX</span></label>
+          <textarea id="f-stem" class="lg">下列 Python 代码的输出是？用 **print** 的结果说明理由。
+
+```python
+print("Hello, Python!")
+```
+它的作用是向控制台输出 `Hello, Python!`，可用于验证环境是否安装成功。</textarea>
+          <span class="err" id="err-stem"></span>
+        </div>
+
+        <!-- 选项编辑器（按题型联动） -->
+        <div class="fld full">
+          <label>选项 options_json</label>
+          <!-- 单选：RadioGroup -->
+          <div id="opt-single">
+            <div class="opt-editor">
+              <div class="oe-h"><b>单选题选项（RadioGroup · 唯一答案）</b><span>options_json 数组</span></div>
+              <div class="oe-body" id="single-body"></div>
+              <button class="opt-add" onclick="addOpt('single')">+ 添加选项</button>
+            </div>
+          </div>
+          <!-- 多选：Checkbox 组 -->
+          <div id="opt-multi" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>多选题选项（Checkbox 组 · 可多选）</b><span>options_json 数组</span></div>
+              <div class="oe-body" id="multi-body"></div>
+              <button class="opt-add" onclick="addOpt('multi')">+ 添加选项</button>
+            </div>
+          </div>
+          <!-- 判断：固定 T/F -->
+          <div id="opt-tf" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>判断题（固定 对/错 两项）</b><span>无需 options_json</span></div>
+              <div class="oe-body">
+                <div class="tf-row">
+                  <label class="tf-opt"><input type="radio" name="tfans"> <b>√</b> 正确（True）</label>
+                  <label class="tf-opt"><input type="radio" name="tfans"> <b>×</b> 错误（False）</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 填空 / 简答：无预置选项 -->
+          <div id="opt-none" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>无预置选项</b></div>
+              <div class="oe-empty"><div class="big">✏️</div>该题型不提供选项编辑器。<br>填空题请在题干中使用 <code>____</code> 占位，答案填写在下方「答案」；<br>简答题直接在「答案」填写参考答案要点。</div>
+            </div>
+          </div>
+          <span class="err" id="err-opt"></span>
+        </div>
+
+        <!-- 答案 -->
+        <div class="fld full">
+          <label>答案 answer_text <span class="req">*</span></label>
+          <textarea id="f-answer" class="sm">B</textarea>
+          <span class="field-note" id="answer-hint">单选/多选/判断：答案填选项标号（如 B / AB）；填空：填答案文本；简答：填参考要点</span>
+          <span class="err" id="err-answer"></span>
+        </div>
+
+        <!-- ★ 解析（必修） + Markdown 实时预览 -->
+        <div class="fld full">
+          <label><span class="req">★</span>解析 analysis_text <span class="fld-tag">必修 · 保存前校验非空 · Markdown 预览</span></label>
+          <textarea id="f-analysis" class="lg">`print` 是 Python 的内置函数，用于将内容输出到标准输出。
+
+**执行步骤：**
+1. 解释器把字符串字面量 `"Hello, Python!"` 解析为 str 对象
+2. 调用 `print` 把该对象打印到控制台并换行
+3. 因此控制台显示：`Hello, Python!`
+
+> 该题用于考察对内置函数 `print` 与字符串字面量的理解。</textarea>
+          <div class="md-pre" style="margin-top:2px">
+            <div class="md-title">Markdown 实时预览（与用户端 QuizPanel 一致渲染）</div>
+            <div class="md-body" id="analysis-preview"></div>
+          </div>
+          <span class="err" id="err-analysis"></span>
+          <span class="field-note">★ 重构核心：analysis_text 解析编辑为必修。为空时前端拦截提示；后端 <code>PATCH</code> 兜底校验（422 校验失败）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作栏 -->
+    <div class="actionbar">
+      <button class="btn btn-ghost" onclick="doBack()">返回列表</button>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" onclick="doSave(true)">保存并继续⇢</button>
+      <button class="btn btn-primary" onclick="doSave(false)">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- ② 预览卡（编辑/预览 Tabs 之二，与用户端 QuizPanel 一致） -->
+  <div id="pane-preview" class="hidden qd-pane">
+    <div class="card">
+      <div class="card-h">
+        <h2>题目预览 · 用户端 QuizPanel</h2>
+        <span class="hint">题干（Markdown）+ 选项（按题型控件）+ 解析（Markdown）渲染一致</span>
+      </div>
+      <div class="md-pre">
+        <div class="md-title">题干 stem</div>
+        <div class="md-body" id="prev-stem"></div>
+      </div>
+      <div class="qp-options" id="prev-options"></div>
+      <div class="md-pre" style="margin-top:14px">
+        <div class="md-title"><span class="badge badge-subj">解析 · 作答后折叠展示</span></div>
+        <div class="md-body" id="prev-analysis"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 观测点（契约对齐说明） -->
+  <div class="observe">
+    <b>观测点 · task59 契约对齐（契约④权威）</b>
+    <div class="ob">保存 <code>PATCH /api/admin/questions/{id}</code> 持久化 body：<code>{ question_type_id, stem, options_json, answer_text, analysis_text }</code></div>
+    <div class="ob">★ 解析必修：<code>analysis_text</code> 为空 → 前端拦截红框 + toast「解析为必填」；后端 <code>PATCH</code> 二次兜底（422 校验失败）</div>
+    <div class="ob">题型切换联动选项控件：单选→RadioGroup / 多选→Checkbox / 判断→固定 T·F / 填空·简答→折叠无选项；<b>已填选项内容按 label 跨切换保留（不丢）</b></div>
+    <div class="ob">预览 Tab 同时渲染题干+解析，与用户端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，LaTeX 用公式占位呈现）</div>
+    <div class="ob"><code>objective_flag</code>：question 表 / PATCH schema 无该字段 → 派生自 dim_question_type（只读徽章随题型联动），PATCH 不提交；设计规范 P16「客观题开关」实披露收敛为只读派生</div>
+    <div class="ob">错误码：<code>40922</code> 题目编码唯一冲突（本页不改题号）；通用 <code>40000/40400/42200</code> 兜底</div>
+    <div class="ob">本页 v0.2.0 历史遗留 <code>text-slate-500</code> 灰系已废弃 → 全部改用 candy token（var(--muted) 等）；禁止内联色/任意字号/禁闭灰系</div>
+  </div>
+</div>
+
+<!-- 演示控制器 -->
+<div class="demo-ctrl">
+  <b>演示 · 题型联动</b>
+  <div class="grp">切换题型（观察选项控件 + 客观性徽章联动）</div>
+  <div class="row">
+    <button class="on" data-t="single_choice" onclick="demoType('single_choice')">单选</button>
+    <button data-t="multi_choice" onclick="demoType('multi_choice')">多选</button>
+    <button data-t="true_false" onclick="demoType('true_false')">判断</button>
+    <button data-t="fill_blank" onclick="demoType('fill_blank')">填空</button>
+    <button data-t="short_answer" onclick="demoType('short_answer')">简答</button>
+  </div>
+  <div class="grp">交互三态（加载→成功/错误）</div>
+  <div class="row">
+    <button class="on" data-st="success" onclick="setQDState('success')">成功</button>
+    <button data-st="loading" onclick="setQDState('loading')">加载(骨架)</button>
+    <button data-st="error" onclick="setQDState('error')">错误(重试)</button>
+  </div>
+  <div class="grp">行为</div>
+  <div class="row">
+    <button onclick="demoFillMulti()">多选填 A·B→切单选</button>
+    <button onclick="demoEmptyAnalysis()">清空解析→保存(拦截)</button>
+    <button onclick="doSave(false)">保存(PATCH)</button>
+    <button onclick="doSave(true)">保存并继续</button>
+    <button onclick="switchPane('preview')">看预览</button>
+  </div>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ============ 状态 ============ */
+var TYPE_META = {
+  single_choice:{ name:"单选题", obj:true  },
+  multi_choice:{  name:"多选题", obj:true  },
+  true_false:{    name:"判断题", obj:true  },
+  fill_blank:{    name:"填空题", obj:false },
+  short_answer:{  name:"简答题", obj:false },
+};
+// 已填选项数据（按 label 归位，切题型保留）
+var OPT_DATA = {
+  A:"输出 Hello, Python! 到控制台",
+  B:"语法报错无法运行",
+  C:"输出 Python! 到控制台",
+  D:"无任何输出",
+};
+var curType = "single_choice";
+
+/* ============ 选项编辑器渲染 ============ */
+function labelsFor(type, n){
+  if(type==="true_false") return ["T","F"];
+  var base=["A","B","C","D","E","F","G","H"];
+  return base.slice(0,n);
+}
+function renderOpts(kind){
+  var el = document.getElementById(kind+"-body");
+  var opts = (kind==="single")? labelsFor("single",4) : labelsFor("multi",4);
+  el.innerHTML = opts.map(function(l){
+    return '<div class="opt-row" data-l="'+l+'">'+
+      '<div class="opt-ctrl">'+(kind==="single"
+        ? '<input type="radio" class="radio" name="opt-radio">'
+        : '<input type="checkbox" class="check">')+'</div>'+
+      '<div class="opt-body"><div class="opt-label">'+l+'</div>'+
+      '<input class="opt-input" placeholder="选项 '+l+' 内容…" value="'+(OPT_DATA[l]||"")+'"></div>'+
+      '<button class="opt-del" onclick="delOpt(this,'+'\''+kind+'\')">×</button>'+
+    '</div>';
+  }).join("");
+}
+function delOpt(btn,kind){
+  var row=btn.closest(".opt-row");
+  var label=row.getAttribute("data-l");
+  delete OPT_DATA[label];
+  row.remove();
+}
+function addOpt(kind){
+  var el=document.getElementById(kind+"-body");
+  var used=(kind==="single")?["A","B","C","D"]:["A","B","C","D"];
+  Array.prototype.forEach.call(el.querySelectorAll(".opt-row"),function(r){
+    var i=used.indexOf(r.getAttribute("data-l"));
+    if(i>=0) used.splice(i,1);
+  });
+  var L=["A","B","C","D","E","F","G","H"].find(function(x){ return used.indexOf(x)<0; });
+  if(!L){ alertMsg("已达 8 个选项上限"); return; }
+  OPT_DATA[L]="";
+  renderOpts(kind);
+}
+
+/* ============ 题型切换（联动 + 已填数据不丢） ============ */
+function collectOpts(){
+  ["single","multi"].forEach(function(k){
+    var el=document.getElementById(k+"-body");
+    if(!el) return;
+    Array.prototype.forEach.call(el.querySelectorAll(".opt-row"),function(r){
+      var l=r.getAttribute("data-l");
+      var inp=r.querySelector(".opt-input");
+      OPT_DATA[l]=inp?inp.value:"";
+    });
+  });
+}
+function applyTypeUI(type){
+  collectOpts();
+  curType=type;
+  var m=TYPE_META[type];
+  // 面包屑 + 题型显示
+  document.getElementById("cr-type").textContent=m.name;
+  // 选项控件显示
+  ["opt-single","opt-multi","opt-tf","opt-none"].forEach(function(id){ document.getElementById(id).classList.add("hidden"); });
+  if(type==="single_choice") document.getElementById("opt-single").classList.remove("hidden");
+  else if(type==="multi_choice") document.getElementById("opt-multi").classList.remove("hidden");
+  else if(type==="true_false") document.getElementById("opt-tf").classList.remove("hidden");
+  else document.getElementById("opt-none").classList.remove("hidden");
+  // 客观性派生徽章
+  var obj=m.obj;
+  var label=m.name+(obj?"（客观）":"（主观）");
+  var text=(obj?"客观 · 自动判题":"主观 · 人工批改");
+  var cls=(obj?"badge-obj":"badge-subj");
+  var el=document.getElementById("ro-obj-badge");
+  var eli=document.getElementById("obj-input-badge");
+  el.textContent=""; el.className="badge "+cls; el.innerHTML="<i class='pd'></i>"+text;
+  eli.textContent=""; eli.className="badge "+cls; eli.innerHTML="<i class='pd'></i>"+text;
+  document.getElementById("ro-obj-label").textContent=label;
+  // 答案提示
+  document.getElementById("answer-hint").textContent =
+    (type==="true_false"||type==="single_choice"||type==="multi_choice")
+      ? "单选/多选/判断：答案填选项标号（如 B / AB / 对）"
+      : "填空/简答：填答案文本（简答填参考要点）";
+  renderOpts("single"); renderOpts("multi");
+}
+function onTypeChange(){
+  var v=document.getElementById("f-type").value;
+  applyTypeUI(v);
+}
+
+/* ============ Markdown 预览渲染（模拟 MarkdownView，skipHtml 安全） ============ */
+function md2html(src){
+  var s=String(src||"");
+  // LaTeX 占位 → 公式桩
+  s=s.replace(/\$\$?([^$\n]+?)\$\$?/g,'<span class="math-stub"> Σ $1 </span>');
+  // 代码块
+  s=s.replace(/```(\w+)?\n([\s\S]*?)```/g, function(_,lang,c){ return "<pre>"+c.replace(/</g,"&lt;")+"</pre>"; });
+  // 行内代码
+  s=s.replace(/`([^`\n]+)`/g,function(_,c){ return "<code>"+c+"</code>"; });
+  // 引用
+  s=s.replace(/^\&gt;\s?(.+)$/gm,"<blockquote>$1</blockquote>");
+  // 粗体 / 斜体
+  s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+  // 列表
+  var lines=s.split("\n"), html="", inU=false;
+  lines.forEach(function(l){
+    var m=l.match(/^\s*[-*]\s+(.+)$/);
+    if(m){ if(!inU){ html+="<ul>"; inU=true;} html+="<li>"+m[1]+"</li>"; }
+    else { if(inU){ html+="</ul>"; inU=false;} html+="<p>"+l+"</p>"; }
+  });
+  if(inU) html+="</ul>";
+  return html.replace(/\n/g,"");
+}
+function renderPreviews(){
+  document.getElementById("analysis-preview").innerHTML=md2html(document.getElementById("f-analysis").value);
+  document.getElementById("prev-stem").innerHTML=md2html(document.getElementById("f-stem").value);
+  document.getElementById("prev-analysis").innerHTML=md2html(document.getElementById("f-analysis").value);
+}
+
+/* ============ 预览选项（与 QuizPanel 一致） ============ */
+function renderPrevOptions(){
+  var type=curType, html="";
+  var el=document.getElementById("prev-options");
+  if(type==="true_false"){
+    html='<div class="qp-opt"><span class="qp-key">√</span><div class="qp-body">正确</div></div>'+
+         '<div class="qp-opt"><span class="qp-key">×</span><div class="qp-body">错误</div></div>';
+  } else if(type==="fill_blank"||type==="short_answer"){
+    el.innerHTML=""; return;
+  } else {
+    ["A","B","C","D"].forEach(function(l){
+      html+='<div class="qp-opt"><span class="qp-key">'+l+'</span><div class="qp-body">'+(OPT_DATA[l]||"选项 "+l)+'</div></div>';
+    });
+  }
+  el.innerHTML=html;
+}
+
+/* ============ Tabs ============ */
+function switchPane(p){
+  document.getElementById("pane-edit").classList.toggle("hidden",p!=="edit");
+  document.getElementById("pane-preview").classList.toggle("hidden",p!=="preview");
+  var t1=document.getElementById("tab-edit"), t2=document.getElementById("tab-preview");
+  t1.classList.toggle("on",p==="edit"); t2.classList.toggle("on",p==="preview");
+  if(p==="preview"){ renderPreviews(); renderPrevOptions(); }
+}
+
+/* ============ 保存（前端解析必修拦截 + 模拟 PATCH） ============ */
+function validateForm(){
+  var ok=true;
+  function mark(id,errId,cond,msg){
+    var f=document.getElementById(id), e=document.getElementById(errId);
+    var bad=document.getElementById(id).closest(".fld");
+    var pass=!cond;
+    if(pass){ bad.classList.remove("err"); if(e) e.textContent=""; }
+    else { bad.classList.add("err"); if(e) e.textContent=msg; ok=false; }
+  }
+  mark("f-stem","err-stem",!document.getElementById("f-stem").value.trim(),"题干为必填");
+  mark("f-answer","err-answer",!document.getElementById("f-answer").value.trim(),"答案为必填");
+  // ★ 解析必修
+  mark("f-analysis","err-analysis",!document.getElementById("f-analysis").value.trim(),"解析（analysis_text）为必填，请填写本题解析");
+  return ok;
+}
+function doSave(andContinue){
+  if(!validateForm()){ alertMsg("保存被拦截：存在必填项未填写（含解析必修）"); return; }
+  var type=curType, m=TYPE_META[type];
+  var body={ question_type_id: typeIdOf(type), stem: gv("f-stem"), answer_text: gv("f-answer"), analysis_text: gv("f-analysis") };
+  if(type==="single_choice"||type==="multi_choice"){ body.options_json=collectOptsJson(); }
+  var act=andContinue?"保存并继续⇢":"保存";
+  alertMsg("〔PATCH /questions/9001 200〕"+act+"成功 · 持久化 "+JSON.stringify(body.question_type_id)+" / "+m.name+"；analysis_text 已提交（"+body.analysis_text.length+" 字）");
+}
+function typeIdOf(code){ return {"single_choice":1,"multi_choice":2,"true_false":3,"fill_blank":4,"short_answer":5}[code]; }
+function collectOptsJson(){
+  var arr=[];
+  ["A","B","C","D"].forEach(function(l){ if((OPT_DATA[l]||"").trim()) arr.push({label:l,content:OPT_DATA[l].trim()}); });
+  return arr;
+}
+function gv(id){ return document.getElementById(id).value; }
+
+/* ============ 交互三态（loading/success/error） ============ */
+function setQDState(s){
+  var loading=document.getElementById("view-loading"), err=document.getElementById("view-error");
+  var head=document.getElementById("tabhead"), panes=document.querySelectorAll(".qd-pane");
+  var showLoad=(s==="loading"), showErr=(s==="error"), showOk=(s==="success");
+  loading.hidden=!showLoad; err.hidden=!showErr; head.hidden=!showOk;
+  Array.prototype.forEach.call(panes,function(p){ p.hidden=!showOk; if(showOk) p.classList.remove("hidden"); });
+  document.querySelectorAll(".demo-ctrl button[data-st]").forEach(function(b){
+    b.classList.toggle("on", b.getAttribute("data-st")===s);
+  });
+  if(s==="error") alertMsg("加载失败（模拟）→ 点击「重试」返回成功态");
+}
+function respLoad(){ setQDState("loading"); setTimeout(function(){ setQDState("success"); },900); }
+
+/* ============ 演示控件 ============ */
+function demoType(t){
+  document.getElementById("f-type").value=t;
+  document.querySelectorAll(".demo-ctrl button[data-t]").forEach(function(b){
+    b.classList.toggle("on", b.getAttribute("data-t")===t);
+  });
+  applyTypeUI(t);
+}
+function demoFillMulti(){
+  demoType("multi_choice");
+  OPT_DATA.A="输出 Hello, Python! 到控制台"; OPT_DATA.B="为后续交互式输入做准备";
+  renderOpts("multi");
+  alertMsg("已填 A·B 两项 → 切回单选：A/B 内容仍保留（按 label 不丢）");
+}
+function demoEmptyAnalysis(){
+  document.getElementById("f-analysis").value="";
+  renderPreviews();
+  doSave(false);
+}
+function doBack(){ alertMsg("← 返回 /admin/questions 题库列表"); }
+function alertMsg(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){d.remove();},3000); }
+
+/* 初始化 */
+applyTypeUI("single_choice");
+renderOpts("single");
+renderPreviews();
+renderPrevOptions();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+(function(){if(!window.EAPI||!EAPI.store.getToken())return;var m=(location.pathname.match(//(d+)/)||[])[1];if(!m)return;EAPI.get("/api/admin/questions/questions/"+m).then(function(q){if(!q)return;var t=document.querySelector("h1,.title");if(t)t.textContent=q.question_code||t.textContent;var s=document.querySelector(".stem,[class*=stem]");if(s&&q.stem_html)s.innerHTML=q.stem_html;}).catch(function(){});})();
+(function(){if(!window.EAPI)return;if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}}})();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mE:/stu/project/stu/EduAgent实施手册/edu-frontend[39m
+
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts[2m > [22m默认参数：sort=HOT&page=1&page_size=20[32m 6[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts[2m > [22m分版 + 排序 + 分页参数正确拼装[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts[2m > [22m空 board_code 不拼该参数（=全部）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts[2m > [22m列表失败向上抛（页面负责错误态，不静默返回空）[32m 3[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts keyword 转义（对抗 fe-task01 #8）[2m > [22mkeyword 含 %/_ 时转义（后端 LIKE 通配符，防超集命中）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts keyword 转义（对抗 fe-task01 #8）[2m > [22m反斜杠本身也转义（防止破坏转义序列）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mlistPosts keyword 转义（对抗 fe-task01 #8）[2m > [22m纯空白 keyword 仍不拼参数[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mcreatePost（写操作）[2m > [22mbody 字段对齐后端 schema：title/content_md/board_code/tags[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mcreatePost（写操作）[2m > [22m发帖失败必须抛错（不静默吞错，由调用方 toast）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22m点赞 / 收藏 / 回帖（写操作）[2m > [22mtogglePostLike 走 POST /posts/{id}/like[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22m点赞 / 收藏 / 回帖（写操作）[2m > [22mtogglePostFavorite 走 POST /posts/{id}/favorite[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22m点赞 / 收藏 / 回帖（写操作）[2m > [22mcreateComment body 携带 content_md + parent_id，响应含 points=2[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22m点赞 / 收藏 / 回帖（写操作）[2m > [22m写操作失败全部向上抛[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mcomments / rankings（列表）[2m > [22mlistComments 拼装分页参数[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/community.test.ts[2m > [22mcomments / rankings（列表）[2m > [22mgetRankings 拼装 scope/dimension/top_n（契约：DAILY|WEEKLY|MONTHLY|ALL_TIME）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mtoProgressTrend[2m > [22mrecent_days 最新在前 → 翻转成时间正序（末位 = 今天）[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mtoProgressTrend[2m > [22mminutes = round(study_seconds / 60)，且不伪造 practiceMinutes（单线预期形态）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mtoProgressTrend[2m > [22mrecent_days 空数组 → 返回空数组（页面据此渲染覆盖层空态）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22m今日/昨日分钟、今日练习题、streak 均从 recent_days[0]/[1] 与 latest_streak_days 派生[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22mcoursesInProgress = overall_ratio∈(0,1) 的系列数（边界 0 / 1 不计）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22maccuracyPct = correct / attempted × 100（round）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22m除零保护：attempted=0 → accuracyPct = null（文案「暂无数据」，非 0）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22mlast7ActiveDays = 最近 7 天 study_seconds>0 的天数[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveDashboardKpis[2m > [22mrecent_days 空数组 → 今日 0 分钟合法（非空态），yesterday null[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveStreakLast7[2m > [22m老→新顺序（末位 = 今天），学习日 done、今天无学习 today、更早无学习 rest[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveStreakLast7[2m > [22m今天有学习 → 末位 done（有学习优先于 today 占位）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveStreakLast7[2m > [22mrecent_days 空 → 7 格全 rest + 末位 today（前段补位，末位今天语义正确）[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveStreakLast7[2m > [22m窗口不足 7 天 → 前段 rest 补位，末位仍为今天[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveAbilityRadar[2m > [22moverallRate null → []（空态；全 0 雷达禁止）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveAbilityRadar[2m > [22mprefs 空但 rate 非 null → 5 维均匀 = base（合法渲染，非空态）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveAbilityRadar[2m > [22m偏好偏移：preference_score=5 → +10，=1 → -10；无偏好学科取 baseline 不偏移[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveAbilityRadar[2m > [22mclamp：base + 偏移越界时限制在 0-100[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mderiveAbilityRadar[2m > [22m仅返回「我的能力」1 组（不渲染全班平均对比组）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapBadgesToWall[2m > [22m字段映射：badge_code→key / name / desc / unlocked→earned / unlocked_at→MM-DD[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapBadgesToWall[2m > [22m未解锁徽章 unlockCondition = `${trigger_rule} ${rule_value}`[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapBadgesToWall[2m > [22mcategory 归并：ACHIEVEMENT→achievement、LEARNING→social、SOCIAL→social（不臆造 subject/streak/explore）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapPointsToCard[2m > [22mtotal = total_points；title = note || point_type；at = HH:mm；points = delta（可为负）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapPointsToCard[2m > [22mkind 白名单：BADGE→badge、SHARE→share、未知→study；今日 logs delta 求和[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapPointsToCard[2m > [22m当日无 log → todayGain = 0（合法，gainTone=slate）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mmapPointsToCard[2m > [22mmapPointKind 顺序匹配首命中（BADGE 优先于 EXPLORE/SHARE）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mbuildRankSlice[2m > [22mRANGE_SCOPE：day/week/month → DAILY/WEEKLY/MONTHLY[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mbuildRankSlice[2m > [22mtop → list 映射：rank_no→rank、user_name 缺失 → 学员{user_id}、metric_value→score、is_myself→mine[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mbuildRankSlice[2m > [22mmy_rank 存在 → myRank（mine=true，nickname 兜底「我」）；不传 avatar/totalPlayers[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mbuildRankSlice[2m > [22mmy_rank null → 不设 myRank（RankList 仅渲染列表）[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetProgressDashboard[2m > [22m拼装 /api/progress/dashboard?days=14（默认）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetProgressDashboard[2m > [22m可传 days[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetProgressCourses（严格封装，不吞错）[2m > [22m成功返回数组[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetProgressCourses（严格封装，不吞错）[2m > [22m失败向上抛（不复用 learning.ts 的 Array.isArray ? : [] 兜底）[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetMySubjectPreferences（snake/camel 双命名兜底）[2m > [22m主源：/me/profile 结构化 subject_preferences 直接返回，不再请求 /me[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetMySubjectPreferences（snake/camel 双命名兜底）[2m > [22m主源 subject_preferences 空数组 → 返回 []（合法空偏好，不发降级请求）[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetMySubjectPreferences（snake/camel 双命名兜底）[2m > [22m降级：主源无字段 → /me 的 subjectPreferences: string[] → preference_score=5[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/api/dashboard.test.ts[2m > [22mgetMySubjectPreferences（snake/camel 双命名兜底）[2m > [22m降级：/me 的 profile.subject_preferences 结构化也兜底[32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m52 passed[39m[22m[90m (52)[39m
+[2m   Start at [22m 19:52:14
+[2m   Duration [22m 3.03s[2m (transform 220ms, setup 1.02s, import 341ms, tests 47ms, environment 3.47s)[22m
+

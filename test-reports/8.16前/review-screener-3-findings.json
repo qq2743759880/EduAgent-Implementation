@@ -1,0 +1,77 @@
+[
+  {
+    "ruleId": "performance/redundant-computation",
+    "level": "error",
+    "message": {
+      "text": "useVideoTicks：enqueueTick（L67-86）在 flush 声明（L88）之前引用 void flush()（L82），且 deps 缺 flush。react-hooks/immutability + preserve-manual-memoization error 使 React Compiler 跳过该视频打点热路径 hook 的 memoization，buffer 满自动提交可能携带首渲染的过期 flush 闭包（UI 进度不同步风险）。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/learning/hooks/useVideoTicks.ts" }, "region": { "startLine": 67, "endLine": 86 } } }],
+    "properties": { "severity": "HIGH", "category": "performance", "suggestion": "flush 声明上移 + 加入 enqueueTick deps（或 ref 存最新 flush）。修复后可消除 2 条 lint error。" }
+  },
+  {
+    "ruleId": "style/dead-code",
+    "level": "warning",
+    "message": {
+      "text": "fe-task07 收敛后遗留两个死函数：CourseCard.tsx L93-97 subjectColorGradient 与 MyCourseCard.tsx L234-238 subjectGradient，均无调用点，靠 void code; 绕过 unused 参数 lint。fe-task07 自身引入 3 条新 lint warning（另 MyCourseCard cn 未使用）。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/curriculum/CourseCard.tsx" }, "region": { "startLine": 93, "endLine": 97 } } }],
+    "properties": { "severity": "MEDIUM", "category": "style", "suggestion": "删除两个死函数 + 多余 import + 清理 cn。" }
+  },
+  {
+    "ruleId": "style/dead-code",
+    "level": "warning",
+    "message": {
+      "text": "curriculum.ts L8-14 SUBJECT_OPTIONS 的 color 字段（5 个分功能多色）在 fe-task07 收敛后已无消费方，成为死数据，与『全站不保留分功能多色』红线在数据层冲突。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/lib/api/curriculum.ts" }, "region": { "startLine": 8, "endLine": 14 } } }],
+    "properties": { "severity": "MEDIUM", "category": "style", "suggestion": "删除 color 字段（保留 code/name），同步核对消费方。" }
+  },
+  {
+    "ruleId": "style/duplication",
+    "level": "warning",
+    "message": {
+      "text": "KpiCard.tsx L29-60：收敛后 ACCENT_MAP 6 个 key 全部映射同一组 primary 类，5 个 key 的 3 行块完全重复。accent prop 退化视觉 no-op，但 dashboard 页仍传 4 个不同 accent——API 面与实现脱节，是分功能多色回潮隐患入口。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/dashboard/KpiCard.tsx" }, "region": { "startLine": 29, "endLine": 60 } } }],
+    "properties": { "severity": "MEDIUM", "category": "style", "suggestion": "收敛为单一无参样式，删除 accent prop 及 ACCENT_MAP 重复分支。" }
+  },
+  {
+    "ruleId": "style/duplication",
+    "level": "note",
+    "message": {
+      "text": "chart-palette.ts L44-45：primaryGradient 硬编码 rgba(79,70,229) 与 CHART_COLORS.primary（#4f46e5）双写同源色值，tokens 变更时不会自动跟随。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/lib/chart-palette.ts" }, "region": { "startLine": 33, "endLine": 47 } } }],
+    "properties": { "severity": "LOW", "category": "style", "suggestion": "从 hex 派生 rgba（primaryRgb 字段或 hexToRgb 工具）。" }
+  },
+  {
+    "ruleId": "style/dead-code",
+    "level": "note",
+    "message": { "text": "chat_delete_hit.py L276-277：acc_a/acc_b 仅被解构从未使用。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/scripts/chat_delete_hit.py" }, "region": { "startLine": 276, "endLine": 277 } } }],
+    "properties": { "severity": "LOW", "category": "style", "suggestion": "删除未用解构或标注忽略。" }
+  },
+  {
+    "ruleId": "style/function-length",
+    "level": "note",
+    "message": { "text": "chat_delete_hit.py _run_suite（L263-424）约 163 行，远超 50 行拆分红线，承担六类职责。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/scripts/chat_delete_hit.py" }, "region": { "startLine": 263, "endLine": 424 } } }],
+    "properties": { "severity": "LOW", "category": "style", "suggestion": "按 [B]/[C]/[D] 段落拆分。" }
+  },
+  {
+    "ruleId": "performance/unnecessary-allocation",
+    "level": "note",
+    "message": { "text": "chat_delete_hit.py _db_session_row 每次 DB 断言新建 pymysql 连接（约 6-8 次），非热路径可忽略。" },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-agent/scripts/chat_delete_hit.py" }, "region": { "startLine": 232, "endLine": 245 } } }],
+    "properties": { "severity": "LOW", "category": "performance", "suggestion": "复用单连接。" }
+  },
+  {
+    "ruleId": "style/comment-quality",
+    "level": "note",
+    "message": {
+      "text": "CourseCard.tsx L29：新增 bg-[radial-gradient(...rgba(...))] arbitrary class 内含硬编码 rgba，命中 design-guide §7 薄弱点 8『arbitrary 变体审计盲区』。当前为白色中性高光不越界，但属红线形式违规。"
+    },
+    "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "edu-frontend/src/components/curriculum/CourseCard.tsx" }, "region": { "startLine": 29, "endLine": 29 } } }],
+    "properties": { "severity": "LOW", "category": "style", "suggestion": "封面高光登记为语义 utility 或改用 tokens 组合；审计命令补 bg-[radial-gradient 形态。" }
+  }
+]

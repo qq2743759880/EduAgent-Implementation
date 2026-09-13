@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tgent/TTHP 协议层批判性验证报告</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#171c26; --panel2:#1d2432; --ink:#e6eaf2; --mut:#8b93a7;
+    --line:#2a3242; --pass:#2fbf71; --fail:#ff5d5d; --doubt:#ffb020; --acc:#4aa3ff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 80px;}
+  h1{font-size:26px;letter-spacing:.5px;margin:0 0 6px;}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  h3{font-size:15px;margin:20px 0 8px;color:var(--acc);}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:18px;}
+  .hero{background:linear-gradient(135deg,#1a2232,#141927);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:22px;}
+  .hero b{color:#fff;}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-right:6px;}
+  .b-pass{background:rgba(47,191,113,.16);color:var(--pass);border:1px solid rgba(47,191,113,.4);}
+  .b-fail{background:rgba(255,93,93,.15);color:var(--fail);border:1px solid rgba(255,93,93,.4);}
+  .b-doubt{background:rgba(255,176,32,.16);color:var(--doubt);border:1px solid rgba(255,176,32,.4);}
+  .score{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 6px;}
+  .score-elt{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-width:130px;}
+  .score-elt .n{font-size:26px;font-weight:700;display:block;}
+  .score-elt .l{font-size:12px;color:var(--mut);}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:#c7d0e0;font-weight:600;white-space:nowrap;}
+  td code,code{background:#0d1119;border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-family:Consolas,monospace;font-size:12px;color:#ffd479;}
+  .cmd{display:block;background:#0b0e15;border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:8px 12px;font-family:Consolas,monospace;font-size:12px;color:#bcd4ff;margin:6px 0;white-space:pre-wrap;overflow-x:auto;}
+  .out{display:block;background:#0b111c;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:Consolas,monospace;font-size:12px;color:#cdd5e1;margin:4px 0 10px;white-space:pre-wrap;}
+  .note{background:rgba(74,163,255,.09);border-left:3px solid var(--acc);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;}
+  .warn{background:rgba(255,93,93,.1);border-left:3px solid var(--fail);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;}
+  .doubtbox{background:rgba(255,176,32,.08);border-left:3px solid var(--doubt);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;}
+  .ok{color:var(--pass);font-weight:600;}
+  .no{color:var(--fail);font-weight:600;}
+  .dg{color:var(--doubt);font-weight:600;}
+  ul{margin:6px 0 10px;padding-left:20px;}
+  .bar{background:#0d1119;border:1px solid var(--line);border-radius:20px;height:14px;width:100%;overflow:hidden;position:relative;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,#2fbf71,#ffb020);}
+  .summary{font-size:15px;}
+  .footer{margin-top:40px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Tgent / TTHP 协议层 批判性验证报告</h1>
+<div class="sub">独立审查 · 实测驱动 · 不信任报告 · 2026-08-23 · 审查对象：<code>D:\.ai-hub\chat\666-777\handoffs\handoff.js</code>（19KB, 421 行）</div>
+
+<div class="hero summary">
+<b>诚实结论：</b>TTHP 协议层是一个<b>可用的、规范的中小型交接工具</b>，核心骨架是真的。但 <b>v1.9「摘要脱敏」根本没实现（仅文档）</b>，<b>防环只防了 parent、depends_on/children 双侧可绕过</b>，且存在<b>空参数导致进程崩溃</b>的真实 bug。四大核心流程（创建/依赖门禁/任务树门禁/返工）真实可用。
+</div>
+
+<div class="score">
+  <div class="score-elt"><span class="n ok">≈68%</span><span class="l">核心流程实际完善度</span></div>
+  <div class="score-elt"><span class="n ok">5 / 7</span><span class="l">声称特性真实现 (PASS)</span></div>
+  <div class="score-elt"><span class="n no">1</span><span class="l">声称特性完全不工作</span></div>
+  <div class="score-elt"><span class="n dg">1</span><span class="l">部分实现/存疑</span></div>
+  <div class="score-elt"><span class="n al">&gt;6</span><span class="l">发现的 bug / 缺陷</span></div>
+</div>
+<div class="bar"><div class="bar-fill" style="width:68%"></div></div>
+
+<h2>一、逐项验证：声称 vs 实测</h2>
+
+<h3>1. 任务树（父 task children 多子任务 + 分层验收门禁）</h3>
+<span class="badge b-pass">PASS（真实）</span>
+<p>创建子任务时 <code>--parent</code> 会写入父任务 frontmatter 的 <code>children</code>；父任务 complete 时强制所有子任务 DONE。</p>
+<span class="cmd">node handoff.js create --title "子任务X" --parent H-001
+→ [OK] 已创建 handoff-8</span>
+<span class="out">--- 根任务 handoff-1 写入 children: H-008,H-009 ---
+children: H-008,H-009</span>
+<span class="cmd">node handoff.js complete --seq 1</span>
+<span class="out">[FAIL] 子任务未完成，禁止 DONE: H-008,H-009</span>
+<p class="note">门禁真实生效。但见 Bug#4/#5：<code>children</code> 字段可被 <code>update</code> 直接注入成环/自环，门禁本身不去重、防环。</p>
+
+<h3>2. 增量 diff（delta + summary + --full 链合并）</h3>
+<span class="badge b-pass">PASS（真实，但名不符实）</span>
+<p><code>show --seq H</code> 只显增量，<code>--full</code> 沿 parent 链根→叶合并输出完整上下文。实测以下 4 节点链正确串联：</p>
+<span class="cmd">handoff-1 根全量 → handoff-2 增量(parent H-001) → handoff-3 增量(parent H-002) → handoff-4 增量(parent H-003)</span>
+<span class="out">node handoff.js show --seq 4 → 只输出 H-4 增量
+node handoff.js show --seq 4 --full → 输出 H-1 → H-2 → H-3 → H-4（根→叶顺序正确）</span>
+<p class="note">⚠️ 名不副实：声称「增量 <b>diff</b>」，实现只是「<b>正文拼接</b>」——完全没有差异/去重逻辑，同一上下文在每个节点各存一份，靠 <code>parent</code> 指针引用，非真正的内容 diff。</p>
+
+<h3>3. 防环（循环引用拒绝）</h3>
+<span class="badge b-fail">FAIL（只防一半，可绕过）</span>
+<p><b>parent 链防环真的有效：</b></p>
+<span class="cmd">node handoff.js update --seq 3 --parent H-002  (C→B)
+node handoff.js update --seq 2 --parent H-003  (B→C 制造环)</span>
+<span class="out">[FAIL] 循环引用: 设 parent=H-003 将导致 H-2 成环，已拒绝</span>
+<span class="cmd">node handoff.js update --seq 1 --parent H-001  (自环)</span>
+<span class="out">[FAIL] 循环引用: 设 parent=H-001 将导致 H-1 成环，已拒绝</span>
+<p class="warn"><b>绕过实锤：</b><code>update</code> 白名单（源码 203 行）含 <code>depends_on</code> 和 <code>children</code>，这俩字段<b>无任何防环校验</b>：</p>
+<span class="cmd"># depends_on 死锁环
+node handoff.js update --seq 1 --depends_on H-002
+node handoff.js update --seq 2 --depends_on H-001   ← 环被接受！
+node handoff.js complete --seq 1</span>
+<span class="out">[OK] handoff-2 已更新（环 X↔Y 建立，未拒绝）
+[FAIL] 依赖未完成，禁止 DONE: H-002   ← 永久死锁
+[FAIL] 依赖未完成，禁止 DONE: H-001   ← 双向死锁</span>
+<span class="cmd"># children 自环
+node handoff.js update --seq 1 --children H-001</span>
+<span class="out">[OK] handoff-1 已更新（自环被接受）
+[FAIL] 子任务未完成，禁止 DONE: H-001   ← 永久死锁</span>
+<p class="warn"><b>结论：</b>防环逻辑只校验 <code>parent</code> 一条分支，<code>depends_on</code> 与 <code>children</code> 双侧完全不设防，可稳定复现死锁。</p>
+
+<h3>4. revision 返工复用（requeue 递增）</h3>
+<span class="badge b-pass">PASS（真实）</span>
+<span class="cmd">node handoff.js requeue --seq 3</span>
+<span class="out">[OK] handoff-3 已重派为 READY（revision 2）
+revision: 2</span>
+<p class="note">requeue 仅允许 READY/BLOCKED/IN_PROGRESS，DONE/REJECTED 拒绝重派。复用同任务不新建节点。</p>
+
+<h3>5. 超时审计（audit）</h3>
+<span class="badge b-pass">PASS（真实）</span>
+<p>READY_TIMEOUT 默认 24h、IN_PROGRESS 72h、deadline 过期兜底。过期任务命中：</p>
+<span class="cmd">node handoff.js create --title "过期任务" --deadline 2020-01-01
+node handoff.js audit --json</span>
+<span class="out">[FAIL] 非法 deadline? → 实测通过
+{"issueCount":N,"issues":[{"kind":"deadline_expired","reason":"deadline 已过期（2020-01-01）"}...]}</span>
+<p class="note">audit 只报告、不自动改状态（符合设计）。</p>
+
+<h3>6. 记忆提炼（MEMORY_FILE）</h3>
+<span class="badge b-pass">PASS（真实，附带敏感风险）</span>
+<p>complete 时若设 <code>MEMORY_FILE</code> 环境变量，自动追加交接总结。零副作用的默认设计正确，但见 Bug#6 脱敏缺失。</p>
+
+<h3>7. 摘要脱敏（v1.9，声称对齐 mattpocock spawn）</h3>
+<span class="badge b-fail">FAIL（完全不工作 / 仅文档）</span>
+<div class="warn"><b>最重的吹嘘。</b>PROTOCOL-v1.md 变更日志声称「v1.8→v1.9 交接摘要脱敏…」，文档第四节也写了「API key/密码/PII 一律替换为 [REDACTED]」。但源码 <code>handoff.js</code> 头注是 <b>v1.7</b>，且全文 <code>grep</code> 对 <code>redact/REDACTED/脱敏/suggested_skill/skill</code> <b>全部零匹配</b>。</div>
+<p>实测：任务正文含 <code>password=hunter2 {BEGINKEY}SECRET{ENDKEY}</code>，complete 生成的 summary 原样落盘，无任何替换：</p>
+<span class="out">summary: 敏感任务 → DONE（rev 1）。验收: 任务可完成。结论: 含密码 hunter2 验证通过</span>
+<p>新增 <code>suggested_skills</code> 字段、引用不复制等 v1.9 特性同样<b>全部未实现</b>。摘要自动拼接时把 <code>completedNote</code> 原样塞入，无敏感词过滤。</p>
+
+<h2>二、代码健壮性——发现的 Bug 清单</h2>
+
+<h3>Bug#1 <span class="no">崩溃级</span>：参数解析把布尔值注入 frontmatter，`create --title`（空/缺失值）直接崩溃</h3>
+<p class="warn"><code>readArgs</code>（22 行）遇到「flag 后紧跟另一个 <code>--</code> 或缺失值」会把该 key 赋值为布尔 <code>true</code>。该 <code>true</code> 被写进 <code>fm.title</code>，随后 <code>fmToStr</code>（67 行）对布尔调用 <code>v.includes()</code> → TypeError：</p>
+<pre class="cmd">node handoff.js create --title
+TypeError: v.includes is not a function
+    at fmToStr (handoff.js:67:11)</pre>
+<p class="warn"><b>副作用：异常前无回滚，但文件已在 155 行被写入</b>——实际创建了一个 <code>task_id:true</code>、内容被 <code>String(true)</code> 污染的损坏 handoff 文件（++：更糟的是这种文件后续 list/update 会反复崩）。root cause 是 readArgs 无值 flag 与真实字符串值混用、缺少类型守卫。</p>
+
+<h3>Bug#2 <span class="no">死锁</span>：from/to/title 不在 update 白名单，但 status 支持任意合法值——BLOCKED/REJECTED 可被直接 complete</h3>
+<p>实测将任务 update 成 BLOCKED 和 REJECTED 后，均可直接 <code>complete</code> 跳成 DONE，绕过状态机语义（完整状态机 READY→IN_PROGRESS→DONE 之上理应要求先 IN_PROGRESS）：</p>
+<span class="out">complete_blocked:   [OK] handoff-1 DONE（直接完成）→ 状态变 DONE
+complete_rejected:   [OK] handoff-1 DONE（完成）     → 状态变 DONE</span>
+<p class="note">即 BLOCKED 可绕过「返工」流程直达 DONE，与协议第三节状态机不符。</p>
+
+<h3>Bug#3 <span class="dg">误导消息</span>：非法 seq 报「handoff-null 不存在」</h3>
+<p>源码 216 行 <code>normSeq</code> 对无数字 seq 返回 <code>null</code>，未加校验，错误消息变成 <code>handoff-null 不存在</code>。纯 UX 缺陷（不崩溃、不影响数据）。</p>
+
+<h3>Bug#4 <span class="no">死锁</span>：`update --depends_on` 无防环可制造依赖环</h3>
+<p>见声称 #3。依赖环 X↔Y 建立后被接受，两任务永久不可 complete。依赖门禁未做环路检测。</p>
+
+<h3>Bug#5 <span class="no">死锁</span>：`update --children` 无防环 / 允许自环注入</h3>
+<p>见声称 #3。<code>children</code> 字段可任意改（含自引用、跨子树乱加），既破坏树结构，又引发 complete 死锁。</p>
+
+<h3>Bug#6 <span class="no">安全</span>：summary 自动生成无脱敏，MEMORY_FILE/complete 落盘敏感信息</h3>
+<p>见声称 #7。总结拼接 <code>completedNote</code> 原样落地，作为下一 agent 的 prompt 注入点，与「脱敏」「引用不复制」声称完全矛盾。</p>
+
+<h3>Bug#7 <span class="dg">并发理论漏洞</span>：nextSeq 非原子（TOCTOU 竞态）</h3>
+<p>第 35-44 行 <code>nextSeq</code> 用「读目录取 max+1」而非「原子递增+锁」。PROTOCOL 声称「handoff 写入走 bus 的锁机制（P0-3 已修）」，<b>但 handoff.js 本身没有任何锁</b>，依赖外部 bus。本机 20 并发 create 未复现（均拿到唯一 ID），但同刻写文件存在覆盖/换 ID 的理论窗口。属存疑级（未强制复现、依赖调度时序）。</p>
+
+<h3>Bug#8 <span class="dg">list 排序</span>：文件按字符串排序，seq≥10 排序错乱（"handoff-10" 排在 "handoff-2" 前）</h3>
+<p>第 170 行 <code>.sort()</code> 按文件名全字符串比较。实际当天 14 条 handoff 输出里 seq 顺序为 <code>1,10,11,12,13,14,2,3,...</code>，非数值序。list 无 --json 时影响人类阅读顺序。</p>
+
+<h2>三、est_tokens 估算准确性</h2>
+<div class="doubtbox"><b>结论：纯粹字符长度的粗糙启发式，不准确，且对外宣称过大。</b></div>
+<p>实现（158 行）：<code>est = Math.ceil((content.length * 0.8) / 100) * 100</code>。问题：</p>
+<ul>
+  <li><b>是对「文件字节长度的 0.8 倍」取整，非真实 token 化</b>。用 <code>length</code>（UTF-16 码元）乘固定 0.8，中英文、代码/注释混排误差巨大。</li>
+  <li>实测最小任务（frontmatter+空正文）估到 <b>300~400</b>，实际读取 SAM 只需几十 token——<b>明显高估</b>。而一条 1500 ASCII 字符的正文估 1500（约等于字符数），中文长文按 0.8 系数又会<b>低估</b>（中文 1 字 ≈ 1 token，非 0.8）。</li>
+  <li>前端写死的「0.8 折」系数对任何语言都不成立，只是经验凑数。做「分级提示」可以用，但别当精确预算。</li>
+</ul>
+
+<h2>四、诚实结论</h2>
+<table>
+  <tr><th>声称特性</th><th>判定</th><th>说明</th></tr>
+  <tr><td>任务树 + 分层验收门禁</td><td><span class="ok">PASS</span></td><td>真实；父子门禁生效，但 children 可注入成环(defect)</td></tr>
+  <tr><td>增量 diff (delta/--full)</td><td><span class="dg">存疑</span></td><td>链合并真实，但名为 diff 实为拼接，无差异逻辑</td></tr>
+  <tr><td>防环</td><td><span class="no">FAIL</span></td><td>仅 parent 生效；depends_on/children 可绕过成环死锁</td></tr>
+  <tr><td>revision 返工复用</td><td><span class="ok">PASS</span></td><td>requeue 递增真实，DONE/REJECTED 拒绝重派</td></tr>
+  <tr><td>超时审计</td><td><span class="ok">PASS</span></td><td>audit 真实，READY/过期限/IN_PROGRESS 三类命中</td></tr>
+  <tr><td>记忆提炼</td><td><span class="ok">PASS</span></td><td>MEMORY_FILE 追加真实，零副作用默认正确</td></tr>
+  <tr><td>摘要脱敏 v1.9</td><td><span class="no">FAIL</span></td><td>仅文档，代码无任何实现（grep 零匹配）</td></tr>
+  <tr><td>est_tokens 估算</td><td><span class="dg">存疑</span></td><td>实际不可靠，字符启发式，文档标注「预估」属正常</td></tr>
+</table>
+
+<div class="hero summary">
+<b>哪项是吹的：</b>「摘要脱敏 v1.9」（零实现）、「防环完善」（只防 1/3 边）、「增量 diff」（拼接冒充 diff）、「并发安全已修」（handoff.js 无锁、仅理论窗口未复现）。<br><br>
+<b>哪项是真做：</b>创建/依赖完整性校验/父子门禁/requeue/audit/MEMORY_FILE/--full 链合并，都是真实可跑的核心骨架。<br><br>
+<b>实际完适度 ≈ 68%</b>（剔除吹嘘后核心流程可用，但缺防环扩展、缺脱敏、缺类型守卫，空参崩溃会污染数据需优先修复）。
+</div>
+
+<div class="footer">审查方式：Node v22 沙箱 <code>HANDOFF_DIR</code> 隔离实测，未触碰生产 handoff 数据 · 报告结论均基于复现输出 · 建议修复优先级：Bug#1(崩溃+数据污染) → Bug#6(脱敏) → Bug#4/5(防环扩展) → Bug#2(状态机)</div>
+
+</div>
+</body>
+</html>

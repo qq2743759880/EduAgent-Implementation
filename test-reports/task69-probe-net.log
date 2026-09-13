@@ -1,0 +1,44 @@
+﻿
+Running 1 test using 1 worker
+
+
+### 登录 — 8 个 /api 请求
+    POST 127.0.0.1:8000/api/auth/login
+    GET 127.0.0.1:8000/api/chat/sessions?limit=50
+    GET 127.0.0.1:8000/api/progress/dashboard?days=14
+    GET 127.0.0.1:8000/api/progress/courses
+    GET 127.0.0.1:8000/api/users/me/profile
+    GET 127.0.0.1:8000/api/gamification/me/badges
+    GET 127.0.0.1:8000/api/gamification/me/points?page=1&page_size=20
+    GET 127.0.0.1:8000/api/gamification/rankings?scope=DAILY&dimension=POINTS&top_n=10
+
+### 题型枚举(页面导航后) — 3 个 /api 请求
+    GET 127.0.0.1:8000/api/chat/sessions?limit=50
+    GET 127.0.0.1:8000/api/admin/questions/types
+    GET 127.0.0.1:8000/api/admin/questions/questions/1
+
+=== 页面当前文本 ===
+EduAgent 管理端
+仪表盘
+课程
+题库
+用户
+RAG
+MCP
+A
+Adm02Test
+退出
+管理端
+题库
+详情
+加载失败
+
+题型枚举加载失败
+
+重试
+请先登录后使用 AI 助手
+网络错误，无法连接后端服务，请检查网络
+网络错误，无法连接后端服务，请检查网络
+  ok 1 [chromium-1280] › e2e\probe-net.spec.ts:22:5 › 探针：登录+题型 请求路径 (20.1s)
+
+  1 passed (25.1s)

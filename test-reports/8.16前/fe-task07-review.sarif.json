@@ -1,0 +1,602 @@
+{
+  "": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodeAgora-Review",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "correctness/unhandled-edge-case",
+              "shortDescription": {
+                "text": "correctness/unhandled-edge-case"
+              }
+            },
+            {
+              "id": "correctness/logic-error",
+              "shortDescription": {
+                "text": "correctness/logic-error"
+              }
+            },
+            {
+              "id": "correctness/dead-code",
+              "shortDescription": {
+                "text": "correctness/dead-code"
+              }
+            },
+            {
+              "id": "security/secrets-exposure",
+              "shortDescription": {
+                "text": "security/secrets-exposure"
+              }
+            },
+            {
+              "id": "security/crypto-weakness",
+              "shortDescription": {
+                "text": "security/crypto-weakness"
+              }
+            },
+            {
+              "id": "security/auth-bypass",
+              "shortDescription": {
+                "text": "security/auth-bypass"
+              }
+            },
+            {
+              "id": "security/session-mgmt",
+              "shortDescription": {
+                "text": "security/session-mgmt"
+              }
+            },
+            {
+              "id": "security/cve-dependency",
+              "shortDescription": {
+                "text": "security/cve-dependency"
+              }
+            },
+            {
+              "id": "performance/redundant-computation",
+              "shortDescription": {
+                "text": "performance/redundant-computation"
+              }
+            },
+            {
+              "id": "style/dead-code",
+              "shortDescription": {
+                "text": "style/dead-code"
+              }
+            },
+            {
+              "id": "style/duplication",
+              "shortDescription": {
+                "text": "style/duplication"
+              }
+            },
+            {
+              "id": "style/function-length",
+              "shortDescription": {
+                "text": "style/function-length"
+              }
+            },
+            {
+              "id": "performance/unnecessary-allocation",
+              "shortDescription": {
+                "text": "performance/unnecessary-allocation"
+              }
+            },
+            {
+              "id": "style/comment-quality",
+              "shortDescription": {
+                "text": "style/comment-quality"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "correctness/unhandled-edge-case",
+          "level": "warning",
+          "message": {
+            "text": "chat_delete_hit.py 独立运行路径下，若 8000 端口已有 uvicorn 在运行，脚本直接复用而不校验其 DEBUG 语义，与 .env 分支断言可能对着错误语义执行：.env=DEBUG=true 但运行中服务为 false 时 B1 误判 FAIL（假阴性）；.env=DEBUG=false 但运行中服务为 true 时，未登录 DELETE 会真的软删一条学生会话后才报 FAIL。这是 design-guide §2.6 要求显式断言 DEBUG 语义要规避的场景。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/scripts/chat_delete_hit.py"
+                },
+                "region": {
+                  "startLine": 167,
+                  "endLine": 171
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "correctness",
+            "suggestion": "复用运行中服务前先发无 Authorization 探测请求判定实际 DEBUG 语义，与 .env 分支不一致时打印告警并 exit 2。"
+          }
+        },
+        {
+          "ruleId": "correctness/logic-error",
+          "level": "warning",
+          "message": {
+            "text": "mapPointsToCard 的今日积分求和用浏览器本地日期与后端 created_at 字符串前 10 位比对。后端 created_at 是 MySQL 服务端本地时间；跨时区部署（UTC 容器 + UTC+8 客户端）时本地 00:00-08:00 的积分会记到前一天。同根因波及 community-meta.formatDateTime 与 ChatSessionSidebar.bucketOf。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/lib/api/dashboard.ts"
+                },
+                "region": {
+                  "startLine": 273,
+                  "endLine": 277
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "correctness",
+            "suggestion": "统一日期口径：后端返回 today 字段或前端带时区偏移解析；并同步到 community-meta 与 bucketOf。"
+          }
+        },
+        {
+          "ruleId": "correctness/logic-error",
+          "level": "note",
+          "message": {
+            "text": "PointCard 明细行对 points 无条件前缀 '+', 后端积分 delta 允许为负（SHARE_NOTE delta=-10），负积分渲染成 '+-10'。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/dashboard/PointCard.tsx"
+                },
+                "region": {
+                  "startLine": 143,
+                  "endLine": 145
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "correctness",
+            "suggestion": "改为条件前缀：points > 0 ? '+' : ''。"
+          }
+        },
+        {
+          "ruleId": "correctness/dead-code",
+          "level": "note",
+          "message": {
+            "text": "test_delete_session_cross_user_forbidden 中 assert not hasattr(exc, '_writes') 是恒真断言（ValidationError 永不带 _writes），无法兑现「越权删除不得落任何写 SQL」的验证意图。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/tests/test_chat_delete.py"
+                },
+                "region": {
+                  "startLine": 129,
+                  "endLine": 129
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "correctness",
+            "suggestion": "改用 monkeypatch 记录型 spy 验证越权路径零写 SQL。"
+          }
+        },
+        {
+          "ruleId": "correctness/unhandled-edge-case",
+          "level": "note",
+          "message": {
+            "text": "AppShell 移动抽屉打开时仅对侧边栏做 inert，主内容区未被 inert、无焦点圈定，键盘/读屏可越过抽屉进入背景页面。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/layout/AppShell.tsx"
+                },
+                "region": {
+                  "startLine": 211,
+                  "endLine": 218
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "correctness",
+            "suggestion": "mobileOpen 时对主内容加 inert + 抽屉内焦点圈定。"
+          }
+        },
+        {
+          "ruleId": "security/secrets-exposure",
+          "level": "warning",
+          "message": {
+            "text": "打靶脚本 chat_delete_hit.py 硬编码多组凭据回退：L176 MYSQL_PASSWORD 回退 123456、L177 JWT_SECRET 回退 dev-secret-key-change-in-production、L212 测试学生密码、L237 root+123456。脚本自启 uvicorn 时把弱默认 JWT_SECRET 注入子进程；若指向非本地环境可伪造 JWT 与弱口令连库。当前绑定 127.0.0.1 且测试用途，可利用性受限。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/scripts/chat_delete_hit.py"
+                },
+                "region": {
+                  "startLine": 176,
+                  "endLine": 177
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "security",
+            "cwe": "CWE-798",
+            "suggestion": "删除硬编码回退值，强制从环境变量读取并 fail-fast。"
+          }
+        },
+        {
+          "ruleId": "security/crypto-weakness",
+          "level": "warning",
+          "message": {
+            "text": "config.py:161 将 JWT 签名密钥默认值硬编码为公开已知字符串 dev-secret-key-change-in-production。若部署在未覆盖 JWT_SECRET 且 DEBUG=false 时运行，攻击者可用公开密钥伪造任意 user_id 的 access_token（含 admin）。当前 DEBUG=true 基线风险被虚拟 admin 兜底掩盖。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/app/config.py"
+                },
+                "region": {
+                  "startLine": 161,
+                  "endLine": 161
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "security",
+            "cwe": "CWE-798",
+            "suggestion": "JWT_SECRET 改无默认值必填项 + 非 DEBUG 模式对默认值 fail-fast。"
+          }
+        },
+        {
+          "ruleId": "security/auth-bypass",
+          "level": "warning",
+          "message": {
+            "text": "DEBUG 模式身份冒充面（已知设计，本轮未削弱）：X-Force-Role/User-Id 头允许任意调用方在 DEBUG=true 冒充任意用户（含 admin）；无 Authorization 回退虚拟超级管理员。交付基线 DEBUG=true + CORS allow_origins=[*] + 默认 HOST=0.0.0.0，若以非回环地址启动即形成未认证冒充面。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/app/auth/dependencies.py"
+                },
+                "region": {
+                  "startLine": 78,
+                  "endLine": 102
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "security",
+            "cwe": "CWE-306",
+            "suggestion": "DEBUG=true 绑定非回环地址时告警/拒绝；生产禁止 DEBUG；CORS 收紧。"
+          }
+        },
+        {
+          "ruleId": "security/session-mgmt",
+          "level": "note",
+          "message": {
+            "text": "确认无回归：auth-client.ts 仅 401 触发登出、403 保会话 + toast。后端语义中 401 才是 token 失效信号，403 表示已认证无权限，保留会话正确且避免误杀。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/lib/auth-client.ts"
+                },
+                "region": {
+                  "startLine": 355,
+                  "endLine": 377
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "security",
+            "cwe": "CWE-284",
+            "suggestion": "保持现状；redirect 侧沿用 isSafeRedirect（已统一）。"
+          }
+        },
+        {
+          "ruleId": "security/cve-dependency",
+          "level": "note",
+          "message": {
+            "text": "依赖 CVE 记录：axios 1.19.0 高于已知 CVE 修复线、next 16.3.0 高于 CVE-2025-29927 修复线；无确认 CVE 级依赖。建议 CI 定期 npm audit。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/package.json"
+                },
+                "region": {
+                  "startLine": 19,
+                  "endLine": 24
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "security",
+            "cwe": "CWE-1104",
+            "suggestion": "保持锁定版本；npm audit 纳入 CI。"
+          }
+        },
+        {
+          "ruleId": "performance/redundant-computation",
+          "level": "error",
+          "message": {
+            "text": "useVideoTicks：enqueueTick（L67-86）在 flush 声明（L88）之前引用 void flush()（L82），且 deps 缺 flush。react-hooks/immutability + preserve-manual-memoization error 使 React Compiler 跳过该视频打点热路径 hook 的 memoization，buffer 满自动提交可能携带首渲染的过期 flush 闭包（UI 进度不同步风险）。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/learning/hooks/useVideoTicks.ts"
+                },
+                "region": {
+                  "startLine": 67,
+                  "endLine": 86
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "HIGH",
+            "category": "performance",
+            "suggestion": "flush 声明上移 + 加入 enqueueTick deps（或 ref 存最新 flush）。修复后可消除 2 条 lint error。"
+          }
+        },
+        {
+          "ruleId": "style/dead-code",
+          "level": "warning",
+          "message": {
+            "text": "fe-task07 收敛后遗留两个死函数：CourseCard.tsx L93-97 subjectColorGradient 与 MyCourseCard.tsx L234-238 subjectGradient，均无调用点，靠 void code; 绕过 unused 参数 lint。fe-task07 自身引入 3 条新 lint warning（另 MyCourseCard cn 未使用）。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/curriculum/CourseCard.tsx"
+                },
+                "region": {
+                  "startLine": 93,
+                  "endLine": 97
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "style",
+            "suggestion": "删除两个死函数 + 多余 import + 清理 cn。"
+          }
+        },
+        {
+          "ruleId": "style/dead-code",
+          "level": "warning",
+          "message": {
+            "text": "curriculum.ts L8-14 SUBJECT_OPTIONS 的 color 字段（5 个分功能多色）在 fe-task07 收敛后已无消费方，成为死数据，与『全站不保留分功能多色』红线在数据层冲突。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/lib/api/curriculum.ts"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "style",
+            "suggestion": "删除 color 字段（保留 code/name），同步核对消费方。"
+          }
+        },
+        {
+          "ruleId": "style/duplication",
+          "level": "warning",
+          "message": {
+            "text": "KpiCard.tsx L29-60：收敛后 ACCENT_MAP 6 个 key 全部映射同一组 primary 类，5 个 key 的 3 行块完全重复。accent prop 退化视觉 no-op，但 dashboard 页仍传 4 个不同 accent——API 面与实现脱节，是分功能多色回潮隐患入口。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/dashboard/KpiCard.tsx"
+                },
+                "region": {
+                  "startLine": 29,
+                  "endLine": 60
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "MEDIUM",
+            "category": "style",
+            "suggestion": "收敛为单一无参样式，删除 accent prop 及 ACCENT_MAP 重复分支。"
+          }
+        },
+        {
+          "ruleId": "style/duplication",
+          "level": "note",
+          "message": {
+            "text": "chart-palette.ts L44-45：primaryGradient 硬编码 rgba(79,70,229) 与 CHART_COLORS.primary（#4f46e5）双写同源色值，tokens 变更时不会自动跟随。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/lib/chart-palette.ts"
+                },
+                "region": {
+                  "startLine": 33,
+                  "endLine": 47
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "style",
+            "suggestion": "从 hex 派生 rgba（primaryRgb 字段或 hexToRgb 工具）。"
+          }
+        },
+        {
+          "ruleId": "style/dead-code",
+          "level": "note",
+          "message": {
+            "text": "chat_delete_hit.py L276-277：acc_a/acc_b 仅被解构从未使用。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/scripts/chat_delete_hit.py"
+                },
+                "region": {
+                  "startLine": 276,
+                  "endLine": 277
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "style",
+            "suggestion": "删除未用解构或标注忽略。"
+          }
+        },
+        {
+          "ruleId": "style/function-length",
+          "level": "note",
+          "message": {
+            "text": "chat_delete_hit.py _run_suite（L263-424）约 163 行，远超 50 行拆分红线，承担六类职责。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/scripts/chat_delete_hit.py"
+                },
+                "region": {
+                  "startLine": 263,
+                  "endLine": 424
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "style",
+            "suggestion": "按 [B]/[C]/[D] 段落拆分。"
+          }
+        },
+        {
+          "ruleId": "performance/unnecessary-allocation",
+          "level": "note",
+          "message": {
+            "text": "chat_delete_hit.py _db_session_row 每次 DB 断言新建 pymysql 连接（约 6-8 次），非热路径可忽略。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-agent/scripts/chat_delete_hit.py"
+                },
+                "region": {
+                  "startLine": 232,
+                  "endLine": 245
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "performance",
+            "suggestion": "复用单连接。"
+          }
+        },
+        {
+          "ruleId": "style/comment-quality",
+          "level": "note",
+          "message": {
+            "text": "CourseCard.tsx L29：新增 bg-[radial-gradient(...rgba(...))] arbitrary class 内含硬编码 rgba，命中 design-guide §7 薄弱点 8『arbitrary 变体审计盲区』。当前为白色中性高光不越界，但属红线形式违规。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "edu-frontend/src/components/curriculum/CourseCard.tsx"
+                },
+                "region": {
+                  "startLine": 29,
+                  "endLine": 29
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "LOW",
+            "category": "style",
+            "suggestion": "封面高光登记为语义 utility 或改用 tokens 组合；审计命令补 bg-[radial-gradient 形态。"
+          }
+        }
+      ],
+      "properties": {
+        "verdict": "APPROVE_WITH_NOTES",
+        "riskLevel": "MODERATE",
+        "summary": "终判 APPROVE_WITH_NOTES：本轮改动可合并，无合入前必修项。无 BLOCKER、无本轮引入 HIGH；唯一 HIGH（F11 useVideoTicks，性能类·存量热路径）经 moderator 判定非阻断并建议下轮排期，本轮改动本身未引入 HIGH。6 条本轮引入 MEDIUM（F1/F2/F6/F12/F13/F14）逐一评估均不构成合入前必修，全部挂账下轮且已给出修复建议。下一步按 F11→F6→F2→F12/F13/F14→LOW 排期处理；F8（DEBUG 冒充面·已知设计）在非回环地址部署前必须收紧。",
+        "findingCounts": {
+          "BLOCKER": 0,
+          "HIGH": 1,
+          "MEDIUM": 8,
+          "LOW": 10
+        },
+        "reviewPipeline": {
+          "screeners": [
+            "review-screener-1",
+            "review-screener-2",
+            "review-screener-3"
+          ],
+          "moderator": "review-moderator",
+          "judge": "review-judge"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+﻿node.exe : [33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned t
+o become the default in a future major version of Vite:
+所在位置 行:1 字符: 1
++ & "Z:\node/node.exe" "Z:\node/node_modules/npm/bin/npx-cli.js" vitest ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33m(!) Your V...ersion of Vite::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - `__dirname` (vitest.config.mts:16:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mE:/stu/project/stu/EduAgent瀹炴柦鎵嬪唽/edu-frontend[39m
+
+ [32m鉁?[39m src/components/community/PostCard.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 631[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鏍囬閾炬帴鎸囧悜 /community/{post_id} [33m 388[2mms[22m[39m
+ [32m鉁?[39m src/lib/admin-layout.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 852[2mms[22m[39m
+     [33m[2m鉁?[22m[39m admin锛氭覆鏌?6 涓彍鍗曪紙鍚?MCP锛夛紝children 鏀捐 [33m 785[2mms[22m[39m
+ [32m鉁?[39m src/components/layout/AppShell.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1149[2mms[22m[39m
+     [33m[2m鉁?[22m[39m pathname /courses/123 鈫?璇剧▼涓績锛坢atchPrefix=/courses锛塧ria-current=page锛屽叾浠栭」鏃?[33m 481[2mms[22m[39m
+ [32m鉁?[39m src/components/community/MarkdownView.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 539[2mms[22m[39m
+     [33m[2m鉁?[22m[39m markdown 璇硶浠嶆甯告覆鏌擄紙鏍囬/閾炬帴/琛屽唴浠ｇ爜锛?[33m 354[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/MetricCards.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 431[2mms[22m[39m
+ [32m鉁?[39m src/components/achievement/BadgeWall.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 759[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鏈В閿佸窘绔犳樉绀鸿繘搴︽暟瀛楋紙progress_current/required锛?[33m 394[2mms[22m[39m
+ [32m鉁?[39m src/components/community/ReactButtons.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1179[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 娓叉煋鍒濆鐐硅禐/鏀惰棌璁℃暟 [33m 396[2mms[22m[39m
+ [32m鉁?[39m src/components/achievement/RankingTabs.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1104[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鍒囨崲鍒板懆姒滈噸鏂拌姹?WEEKLY [33m 559[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/mcp/ToolTestDialog.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1190[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 棰勫～鍙傛暟 JSON 骞跺睍绀?schema 鍙傛暟鍚?[33m 639[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/rag/RebuildDialog.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1096[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鎵撳紑鍚庡睍绀哄垎鍖轰俊鎭?[33m 611[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/UserTable.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 698[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 娓叉煋鐢ㄦ埛琛?+ 瑙掕壊涓嬫媺 + 绂佺敤/璇︽儏鎸夐挳 [33m 307[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/SeriesForm.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 767[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鍒涘缓妯″紡灞曠ず鏍稿績瀛楁 [33m 755[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/mcp/ServerTable.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1044[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鐐瑰嚮銆屽彂鐜板伐鍏枫€嶁啋 鎷夊彇 DB 宸ュ叿鍒楄〃骞舵墦寮€寮圭獥 [33m 601[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/QuestionForm.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1637[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鏍囩鎺ュ彛 GET /api/admin/questions/tags 琚皟鐢?[33m 870[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鍒囨崲棰樺瀷涓哄垽鏂鍑虹幇銆屾纭?閿欒銆嶆寜閽?[33m 374[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鍒囨崲棰樺瀷涓哄崟閫夐鍑虹幇閫夐」姝ｇ‘鏍囪鎸夐挳 [33m 375[2mms[22m[39m
+ [32m鉁?[39m src/components/community/CommentSection.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 3039[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 璇勮 >20 鏉℃椂鏄剧ず銆屽姞杞芥洿澶氥€嶏紝鐐瑰嚮鍚庢寜椤佃拷鍔犲苟闅愯棌鎸夐挳 [33m 2263[2mms[22m[39m
+     [33m[2m鉁?[22m[39m 鍗曢〉锛堚墹20 鏉★級涓嶆樉绀恒€屽姞杞芥洿澶氥€?[33m 572[2mms[22m[39m
+ [32m鉁?[39m src/lib/admin-guard.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 183[2mms[22m[39m
+ [32m鉁?[39m src/components/achievement/PointLogTable.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 282[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/chat.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m鉁?[39m src/lib/api-client.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+[90mstderr[2m | src/lib/api/dashboard.test.ts[2m > [22m[2mbuildRankSlice[2m > [22m[2mmy_rank null 鈫?涓嶈 myRank锛
+圧ankList 浠呮覆鏌撳垪琛級
+[22m[39m[dashboard] rankings scope mismatch: requested=WEEKLY, got=DAILY
+
+ [32m鉁?[39m src/lib/api/dashboard.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin/mcp.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m鉁?[39m src/components/admin/rag/SearchTester.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 386[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/community.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin/rag.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin/users.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin/questions.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m鉁?[39m src/lib/api/admin/courses.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m鉁?[39m src/lib/admin-nav.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m鉁?[39m src/lib/redirect.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m [1m[32m256 passed[39m[22m[90m (256)[39m
+[2m   Start at [22m 20:42:42
+[2m   Duration [22m 17.51s[2m (transform 3.54s, setup 29.94s, import 35.93s, tests 17.24s, environment 115.30s)[22m
+

@@ -1,0 +1,291 @@
+﻿
+> edu-frontend@0.1.0 lint
+> eslint
+
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\scripts\check-react-keys.mjs
+  34:7  warning  '__dirname' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\scripts\task05-del-ok-toast-test.mjs
+  36:7  warning  'sessId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\scripts\task05-delete-fail-toast-test.mjs
+  13:22  warning  'session_id' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\scripts\verify-task05-chat-ui.mjs
+  27:7  warning  'reg' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\scripts\verify-task05-user-chain.mjs
+  20:7  warning  '__dirname' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\courses\[seriesId]\page.tsx
+   12:3   warning  'Loader2' is defined but never used                @typescript-eslint/no-unused-vars
+   20:10  warning  'Separator' is defined but never used              @typescript-eslint/no-unused-vars
+   70:9   warning  'mindmapState' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  504:10  warning  'subjectBgGradient' is defined but never used      @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\courses\search\page.tsx
+   61:9  warning  The 'filters' object makes the dependencies of useEffect Hook (at line 140) change on every render. To fix this, wrap the initialization of 'filters' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  139:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\courses\search\page.tsx:139:5
+  137 |   const [localFilters, setLocalFilters] = useState<SubjectLevelFiltersValue>(filters);
+  138 |   useEffect(() => {
+> 139 |     setLocalFilters(filters);
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  140 |   }, [filters]);
+  141 |
+  142 |   const appliedChips = useMemo(() => {  react-hooks/set-state-in-effect
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\learning\[seriesId]\[sessionId]\_components\LearningPlayClient.tsx
+  60:9  warning  'pathname' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\me\page.tsx
+  28:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\my-courses\_components\MyCoursesClient.tsx
+   96:9   warning  The 'data' logical expression could make the dependencies of useMemo Hook (at line 97) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'data' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+  114:43  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\app\(user)\my-courses\_components\MyCoursesClient.tsx:114:43
+  112 |
+  113 |   useEffect(() => {
+> 114 |     if (initialTab && tab !== initialTab) setTab(initialTab);
+      |                                           ^^^^^^ Avoid calling setState() directly within an effect
+  115 |   }, [initialTab, tab]);
+  116 |
+  117 |   const onFavoritedChange = useCallback(  react-hooks/set-state-in-effect
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\chat\ChatMessageBubble.tsx
+  161:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\chat\ChatPanel.tsx
+  265:13  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\chat\ChatSessionSidebar.tsx
+  109:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\chat\ChatSessionSidebar.tsx:109:5
+  107 |   const [selected, setSelected] = React.useState<string | number | null>(initialSessionId ?? storeSelected ?? null);
+  108 |   React.useEffect(() => {
+> 109 |     setSelected(initialSessionId ?? storeSelected ?? null);
+      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  110 |     void sessions;
+  111 |   }, [initialSessionId, storeSelected, sessions]);
+  112 |  react-hooks/set-state-in-effect
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\curriculum\CourseCard.tsx
+  93:10  warning  'subjectColorGradient' is defined but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\curriculum\CourseMindmapView.tsx
+  75:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\curriculum\SubjectLevelFilters.tsx
+  100:19  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\curriculum\SubjectLevelFilters.tsx:100:19
+   98 |   });
+   99 |
+> 100 |   const subject = form.watch("subject");
+      |                   ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  101 |   const level = form.watch("level");
+  102 |
+  103 |   const apply = (patch: Partial<z.infer<typeof Schema>>) => {  react-hooks/incompatible-library
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\MyCourseCard.tsx
+   23:10  warning  'cn' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   51:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\MyCourseCard.tsx:51:5
+  49 |   useEffect(() => {
+  50 |     if (typeof data.__favorited === "boolean") return;
+> 51 |     setFav(isSeriesFavorited(data.series_id));
+     |     ^^^^^^ Avoid calling setState() directly within an effect
+  52 |   }, [data.series_id, data.__favorited]);
+  53 |
+  54 |   const nextSession = findNextSession(data);  react-hooks/set-state-in-effect
+  234:10  warning  'subjectGradient' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\QuizPanel.tsx
+   95:38  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\QuizPanel.tsx:95:38
+  93 |   });
+  94 |
+> 95 |   const loadedAtRef = useRef<number>(Date.now());
+     |                                      ^^^^^^^^^^ Cannot call impure function
+  96 |   const question = q.data ?? null;
+  97 |   const initialAnswer = useInitialAnswer(question);
+  98 |   const [answer, setAnswer] = useState<AnswerShape>(initialAnswer);                                                                                                                                                                                                                                                                                                       react-hooks/purity
+  104:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\QuizPanel.tsx:104:5
+  102 |
+  103 |   useEffect(() => {
+> 104 |     setAnswer(useInitialAnswer(question));
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  105 |     setUserAnalysis("");
+  106 |     setUsedHint(false);
+  107 |     setSubmitted(null);  react-hooks/set-state-in-effect
+  104:15  error    React Hook "useInitialAnswer" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/rules-of-hooks
+  109:6   warning  React Hook useEffect has a missing dependency: 'question'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+  230:52  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\QuizPanel.tsx:230:52
+  228 |                 <div className="flex items-center justify-between">
+  229 |                   <div className="text-xs text-muted-foreground">
+> 230 |                     褰撳墠鐢ㄦ椂 {(Math.max(1, Math.floor((Date.now() - loadedAtRef.current) / 1000)))} 绉?      |                                                    ^^^^^^^^^^ Cannot call impure function
+  231 |                   </div>
+  232 |                   <Button
+  233 |                     onClick={handleSubmit}                                                                                                                                                              react-hooks/purity
+  230:65  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\QuizPanel.tsx:230:65
+  228 |                 <div className="flex items-center justify-between">
+  229 |                   <div className="text-xs text-muted-foreground">
+> 230 |                     褰撳墠鐢ㄦ椂 {(Math.max(1, Math.floor((Date.now() - loadedAtRef.current) / 1000)))} 绉?      |                                                                 ^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  231 |                   </div>
+  232 |                   <Button
+  233 |                     onClick={handleSubmit}                                                                                                        react-hooks/refs
+  586:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/rules-of-hooks')
+  601:6   warning  React Hook useMemo has a missing dependency: 'q'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\VideoPlayer.tsx
+  139:11  error  'ticks_handle' is never reassigned. Use 'const' instead  prefer-const
+  157:18  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  165:23  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  166:39  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  167:18  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\VocabDailyPanel.tsx
+  11:34  warning  'useMemo' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  82:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\VocabDailyPanel.tsx:82:5
+  80 |
+  81 |   useEffect(() => {
+> 82 |     setIndex(0);
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  83 |     setRevealed(false);
+  84 |   }, [q.dataUpdatedAt, q.data?.today]);
+  85 |  react-hooks/set-state-in-effect
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\hooks\useVideoTicks.ts
+  82:14  error    Error: Cannot access variable before it is declared
+
+`flush` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\hooks\useVideoTicks.ts:82:14
+  80 |       });
+  81 |       if (bufferRef.current.length >= maxBufferedTicks) {
+> 82 |         void flush();
+     |              ^^^^^ `flush` accessed before it is declared
+  83 |       }
+  84 |     },
+  85 |     [enabled, sessionId, maxBufferedTicks],
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\hooks\useVideoTicks.ts:88:3
+   86 |   );
+   87 |
+>  88 |   const flush = useCallback(async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  89 |     if (flushLockRef.current) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  90 |     const pending = bufferRef.current.slice();
+      鈥?      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 120 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 121 |   }, [seriesId, onFlushed, onError]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `flush` is declared here
+  122 |
+  123 |   /* 15s 瀹氭椂鍣?*/
+  124 |   useEffect(() => {  react-hooks/immutability
+  85:5   warning  React Hook useCallback has a missing dependency: 'flush'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  88:29  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\learning\hooks\useVideoTicks.ts:88:29
+   86 |   );
+   87 |
+>  88 |   const flush = useCallback(async () => {
+      |                             ^^^^^^^^^^^^^
+>  89 |     if (flushLockRef.current) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  90 |     const pending = bufferRef.current.slice();
+      鈥?      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 120 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 121 |   }, [seriesId, onFlushed, onError]);
+      | ^^^^ Could not preserve existing memoization
+  122 |
+  123 |   /* 15s 瀹氭椂鍣?*/
+  124 |   useEffect(() => {                                                                                                                                                                                                                                                                                                                  react-hooks/preserve-manual-memoization
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\profile\PreferencesForm.tsx
+  31:29  warning  'UserInfo' is defined but never used  @typescript-eslint/no-unused-vars
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\components\ui\radio-group.tsx
+  101:25  error  React Hook "React.useId" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\lib\api\curriculum.ts
+  179:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  190:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\stu\project\stu\EduAgent瀹炴柦鎵嬪唽\edu-frontend\src\lib\api\learning.ts
+  242:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  326:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  375:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  425:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  437:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+鉁?54 problems (25 errors, 29 warnings)
+  1 error and 1 warning potentially fixable with the `--fix` option.
+

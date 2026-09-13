@@ -1,0 +1,1008 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>task58 原型 · 管理端题库 /admin/questions</title>
+<!--
+  task58 HTML 原型（审核稿）
+  - P15 风格 candy-playful frozen（复用 task56/57 同源样式）
+  - 契约为权威：.opencode/handoffs/task13-contract.md（contract④，question 域）
+    两级管理：question_bank（题库 CRUD，bank_code 唯一）→ question（题目，question_code 唯一 per bank）
+    端点（前缀 /api/admin/questions）：
+      题库  GET /banks（分页+关键词） · POST /banks · PATCH /banks/{id} · DELETE /banks/{id}（yn 软删）
+      题目  GET /banks/{bank_id}/questions?question_type&keyword（LIKE stem+analysis_text）· POST /questions
+            PATCH /questions/{id} · DELETE /questions/{id}
+      导入  POST /import-preview?bank_id=N（逐行校验不落库）→ POST /import-execute?bank_id=N（幂等）
+    错误码：40921 题库编码重复 / 40922 题目编码重复（唯一约束冲突段）
+    标签废除：不再维护 admin_question_tag → 改用 stem+analysis_text LIKE 全文检索（无标签筛选控件残留）
+  - 关键对齐说明：
+    · 题目列表经选中题库联动（"管理"任一题库行 → 切「题目」Tab，GET /banks/{bank_id}/questions）
+      （P15/GWT 中 /api/admin/questions?bank_id= 为简写语义；本原型以 contract④ 的 REST 路径为权威）
+    · 「编辑 / 解析」→ 跳 task59 /admin/questions/[id]（页面右侧「观测点」说明 + 行内按钮占位跳转）
+    · 批量导入四步：上传 → 校验预览 → 进度 → 结果报告（失败行可定位）
+    · objective_flag：objective=1 客观（绿）/ objective=0 主观（紫）→ StatusBadge
+  AUDIT LOG:
+    [2026-08-24 v1 R1] 初稿提交（题库/题目两级 Tabs + 题库 DataTable bank_code 唯一提示 + 新建/编辑题库 Dialog +
+      删库 ConfirmDialog「题量确认」+ 题目 Tab 选中库联动 + 全文检索(无标签控件) + 批量导入四步 Stepper
+      Uploader→预览N行→进度轮询→结果报告失败行定位 + objective 客观/主观徽章 + 演示控制器多态）→ SUBMITTED
+    [2026-08-24 v1.1 R2] 修正演示数据：题库由 4 个扩为 31 个并按知识点分类正确划分（编程/前端/算法/数据库/安全/
+      数学/英语/语文/物理/化学/生物/历史/地理 分属不同题库）；原「少儿数学题库（1752 题）」实为编程题、跨类错放，
+      改为匹配的「Python 基础编程题库」（编程, 1752）以保证 question 与分类一致；题库/题目列表改为每页 10 条分页
+      （renderPager 按 data-bind 调 bk/q 页，data-pg 分发），分类筛选/题库计数同步扩展；
+      题目列表改为按所选题库分类取样例（sampleQuestions(bank.cat)，跨类不混放），题量展示库真实 total → 已修复重交
+-->
+<style>
+  :root{ --htc-0-0-0-0.2: rgba(0,0,0,0.2); --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-f0f1f7: #f0f1f7; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px;
+    --sky-6:#0284c7; --subj-bg:#f3edfe; --subj-ink:#7c4bd6; --rowbad-bg:#fdf2f4; --rowbad-ink:#a91f36; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-0-0-0-002: rgba(0, 0, 0, 0.002); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  .toast-stub{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ht-fff);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px var(--htc-0-0-0-002)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1140px;margin:0 auto;padding:28px 20px 90px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:230px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* header */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.8125rem;margin-bottom:14px}
+  .back-link:hover{color:var(--primary)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:2px}
+  .page-head .act{display:flex;gap:8px;flex-wrap:wrap}
+  /* tabs */
+  .tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+  .tab{cursor:pointer;border:none;background:transparent;border-radius:9px;padding:8px 20px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted)}
+  .tab.on{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .tab .tip{font-weight:500;font-size:11px;opacity:.8}
+  /* buttons */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:260px}
+  .fld select{width:150px}
+  .fld select:focus,.fld input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .ft-note{width:100%;font-size:11px;color:var(--muted)}
+  .ft-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  .toolbar-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12px;color:var(--muted)}
+  .toolbar-meta b{color:var(--ink);font-size:0.8125rem}
+  .cur-bank{display:flex;align-items:center;gap:8px}
+  .cur-bank .bn{font-weight:600;color:var(--primary)}
+  /* table */
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.hov:hover{background:var(--ht-fafbff)}
+  .prim-cell{display:flex;align-items:center;gap:11px}
+  .prim-cell .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0;font-size:1.125rem}
+  .prim-cell .nm{font-weight:600;color:var(--ink)}
+  .prim-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .tag-chips{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;background:var(--primary-soft);color:var(--primary)}
+  .ok-mark{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:0 6px;background:var(--ok-bg);color:var(--ok-ink)}
+  .stem-clamp{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted);font-size:12px}
+  .muted{color:var(--muted)}
+  /* objective badge（statusBadge：objective=1 客观绿 / 0 主观紫） */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)} .badge-mut .pd{background:var(--muted-ink)}
+  .badge-obj{background:var(--ok-bg);color:var(--ok-ink)} .badge-obj .pd{background:var(--ok-ink)}
+  .badge-subj{background:var(--subj-bg);color:var(--subj-ink)} .badge-subj .pd{background:var(--subj-ink)}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:156px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)} .dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center;opacity:.75}
+  .dd-item .go{font-size:0.625rem;color:var(--primary);opacity:.85}
+  /* pagination */
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  /* three-state */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skrow td{padding:14px}.sk-line{height:13px;border-radius:6px}
+  .hidden{display:none!important}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:540px;max-height:88vh;overflow:auto}
+  .modal.wide{max-width:760px}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .mh .mstep{font-size:11px;color:var(--muted)}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mff .err{font-size:11px;color:var(--candy-red)}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .field-tip{font-size:11px;color:var(--muted)}
+  .confirm .modal{max-width:440px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* upload stepper */
+  .stepper{display:flex;align-items:center;gap:6px;margin:6px 0 16px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .stp .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--muted-bg);color:var(--muted-ink);font-size:12px}
+  .stp.done .dot{background:var(--ok-bg);color:var(--ok-ink)}
+  .stp.cur .dot{background:var(--primary);color:var(--ht-fff)}
+  .stp-conn{width:26px;height:2px;background:var(--line)}
+  .stp-conn.done{background:var(--ok-ink)}
+  /* upload dropzone + progress + chips */
+  .up-drop{border:2px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted);font-size:0.8125rem;cursor:pointer}
+  .up-drop:hover{border-color:var(--primary);color:var(--primary)}
+  .up-drop.drag{border-color:var(--primary);background:var(--primary-soft)}
+  .up-drop .big{font-size:26px;margin-bottom:6px}
+  .up-drop code{background:var(--muted-bg);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Consolas,monospace}
+  .up-file{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--ht-fafbff)}
+  .up-file .nm{font-weight:600;font-size:0.8125rem}
+  .up-file .meta{font-size:11px;color:var(--muted)}
+  .up-prog{height:10px;border-radius:999px;background:var(--muted-bg);overflow:hidden;margin:12px 0 6px}
+  .up-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-blue),var(--primary));border-radius:999px;transition:width .25s}
+  .up-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  /* import summary stat cards */
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--ht-fafbff);text-align:center}
+  .stat .n{font-size:26px;font-weight:700;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .stat.imp .n{color:var(--ok-ink)} .stat.skip .n{color:var(--warn-ink)} .stat.fail .n{color:var(--candy-red)}
+  /* preview / result table */
+  .mini-table{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:300px}
+  .mini-table table{width:100%;border-collapse:collapse;font-size:12px}
+  .mini-table thead th{position:sticky;top:0;background:var(--ht-fafbff);padding:8px 10px;font-size:11px}
+  .mini-table tbody td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .mini-table tr.row-bad{background:var(--rowbad-bg)}
+  .mini-table tr.row-bad td{color:var(--rowbad-ink)}
+  .err-pill{display:inline-block;font-size:0.625rem;background:var(--red-bg);color:var(--red-ink);border-radius:5px;padding:0 5px;margin:1px 3px 0 0}
+  .ok-pill{display:inline-block;font-size:0.625rem;background:var(--ok-bg);color:var(--ok-ink);border-radius:5px;padding:0 5px}
+  .msg-list{font-family:ui-monospace,Consolas,monospace;font-size:11px;max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--ht-fafbff)}
+  .msg-list div{padding:3px 0;border-bottom:1px dashed var(--line)}
+  .msg-list div:last-child{border-bottom:none}
+  .msg-list .ms-ok{color:var(--ok-ink)} .msg-list .ms-skip{color:var(--warn-ink)} .msg-list .ms-fail{color:var(--candy-red)}
+  .req-chip{font-size:11px;color:var(--muted)}
+  .req-chip code{background:var(--warn-bg);color:var(--warn-ink);border-radius:5px;padding:0 5px}
+  /* responsive */
+  @media(max-width:760px){
+    .demo-ctrl{font-size:11px}.demo-ctrl .row{max-width:160px}
+    .page-head{flex-direction:column;align-items:flex-start}
+    .filterbar .fld,.filterbar .fld.search,.filterbar .fld input.search,.filterbar .fld select{width:100%}
+    .stat-row{grid-template-columns:1fr}
+    .modal .mf{grid-template-columns:1fr}
+    .munit-hide{display:none}
+  }
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page .respbar,.cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+</head>
+<body class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page" class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item active" href="admin-questions.html" aria-current="page"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console</div>
+</header>
+<div class="wrap">
+
+  <a class="back-link" href="#">← 管理首页</a>
+
+  <div class="page-head">
+    <div>
+      <h1>题库管理</h1>
+      <div class="sub">题库 → 题目 两级管理 · 批量导入 1752 题 · /admin/questions</div>
+    </div>
+    <div class="act">
+      <button class="btn btn-ghost" id="btn-import" onclick="openImport(1)">⬆ 批量导入</button>
+      <button class="btn btn-primary" data-open="bank-form">＋ 新建题库</button>
+    </div>
+  </div>
+
+  <!-- 两级 Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="banks" onclick="switchTab('banks')">题库</button>
+    <button class="tab" data-tab="questions" onclick="switchTab('questions')">题目 <span class="tip" id="tab-q-bank" style="display:none"></span></button>
+  </div>
+
+  <!-- ============ 题库 Tab ============ -->
+  <section id="pane-banks">
+    <div class="filterbar">
+      <div class="fld search"><label for="f-bank-kw">题库搜索</label><input id="f-bank-kw" class="search" type="text" placeholder="题库名称 / bank_code"></div>
+      <div class="fld"><label for="f-bank-cat">分类</label>
+        <select id="f-bank-cat">
+          <option value="">全部分类</option>
+          <option>编程</option><option>前端</option><option>算法</option><option>数据库</option>
+          <option>安全</option><option>数学</option><option>英语</option><option>语文</option>
+          <option>物理</option><option>化学</option><option>生物</option><option>历史</option><option>地理</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetBankFilter()">重置</button>
+      <div class="ft-note">bank_code 在机构内唯一；重复时后端返回 <code>40921</code> 并在此提示</div>
+    </div>
+
+    <div class="toolbar-meta"><span>共 <b id="bank-count">4</b> 个题库 · 每页 10</span></div>
+
+    <div class="tbl-card">
+      <table>
+        <thead>
+          <tr><th style="width:34%">题库</th><th>分类</th><th>题目数</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="bank-body"></tbody>
+      </table>
+      <div id="bank-empty" class="state hidden">
+        <div class="st-ico">📭</div>
+        <div><b style="color:var(--ink)">暂无题库</b></div>
+        <p style="margin:4px 0 0">点击右上角「＋新建题库」开始建设题库资产</p>
+      </div>
+      <div id="bank-error" class="state hidden">
+        <div class="st-ico">⚠️</div>
+        <div><b style="color:var(--ink)">加载失败</b></div>
+        <p style="margin:4px 0 12px" id="bank-err-msg">后端不可用，请稍后重试</p>
+        <button class="btn btn-ghost btn-mini" onclick="renderBanks('success')">重试</button>
+      </div>
+      <div id="bank-pager" class="pager"></div>
+    </div>
+  </section>
+
+  <!-- ============ 题目 Tab ============ -->
+  <section id="pane-questions" class="hidden">
+    <div class="filterbar">
+      <div class="cur-bank"><span class="muted">当前题库：</span><span class="bn" id="q-cur-bank">—</span>
+        <span class="req-chip"><code>GET /banks/{id}/questions</code> 联动</span></div>
+      <div class="fld search"><label for="f-q-kw">全文检索</label><input id="f-q-kw" class="search" type="text" placeholder="题号 / 题干 / 解析（stem + analysis_text LIKE）"></div>
+      <div class="fld"><label for="f-q-type">题型</label>
+        <select id="f-q-type">
+          <option value="">全部题型</option><option>单选题</option><option>多选题</option><option>判断题</option><option>填空题</option>
+        </select>
+      </div>
+      <div class="fld"><label for="f-q-obj">客观/主观</label>
+        <select id="f-q-obj"><option value="">全部</option><option value="1">客观</option><option value="0">主观</option></select>
+      </div>
+      <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetQFilter()">重置</button>
+      <div class="ft-note">已废除标签筛选：知识点按 <code>stem + analysis_text</code> 全文检索（LIKE），无标签控件。</div>
+    </div>
+
+    <div class="toolbar-meta"><span>共 <b id="q-count">0</b> 题 · 每页 10</span></div>
+
+    <div class="tbl-card">
+      <table>
+        <thead>
+          <tr><th>题号</th><th>题型</th><th style="width:42%">题干（截断）</th><th>客观</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="q-body"></tbody>
+      </table>
+      <div id="q-none" class="state">
+        <div class="st-ico">🧩</div>
+        <div><b style="color:var(--ink)">请先在「题库」选中一个题库</b></div>
+        <p style="margin:4px 0 0">在题库 Tab 点击任一行的「管理」，题目列表将切到该题库（GET /banks/{id}/questions 联动）</p>
+      </div>
+      <div id="q-empty" class="state hidden">
+        <div class="st-ico">📭</div>
+        <div><b style="color:var(--ink)">该题库暂无题目</b></div>
+        <p style="margin:4px 0 0">可点击右上角「批量导入」或后续「新建题目」填充</p>
+      </div>
+      <div id="q-error" class="state hidden">
+        <div class="st-ico">⚠️</div>
+        <div><b style="color:var(--ink)">题目加载失败</b></div>
+        <p style="margin:4px 0 12px">题库题目接口不可用，请稍后重试</p>
+        <button class="btn btn-ghost btn-mini" onclick="renderQuestions('success')">重试</button>
+      </div>
+      <div id="q-pager" class="pager"></div>
+    </div>
+
+    <div class="ft-note" style="margin-top:10px">观测点：每行「编辑 / 解析」→ 跳 task59 <code>/admin/questions/[id]</code>（Markdown/LaTeX 题干、analysis_text 必填、题型联动编辑）。</div>
+  </section>
+
+  <!-- 演示控制器（审核用，非产物） -->
+  <div class="demo-ctrl">
+    <b>视图（审核用）</b>
+    <div class="grp">题库 Tab</div>
+    <div class="row">
+      <button data-vbk="success" class="on">成功</button>
+      <button data-vbk="loading">加载</button>
+      <button data-vbk="error">错误</button>
+      <button data-vbk="empty">空</button>
+    </div>
+    <div class="grp">题目 Tab（先经题库「管理」选中）</div>
+    <div class="row">
+      <button data-vq="success" class="on">成功</button>
+      <button data-vq="empty">空</button>
+      <button data-vq="none">未选库</button>
+    </div>
+    <div class="grp">批量导入步骤</div>
+    <div class="row">
+      <button data-vimp="1">1上传</button>
+      <button data-vimp="2">2预览</button>
+      <button data-vimp="3">3进度</button>
+      <button data-vimp="4">4结果</button>
+    </div>
+  </div>
+
+  <!-- ============ 新建/编辑题库 Dialog ============ -->
+  <div class="scrim" id="bank-form">
+    <div class="modal">
+      <div class="mh"><h3 id="bank-form-title">新建题库</h3><button class="m-close" data-close>&times;</button></div>
+      <form class="mb" id="bank-form-fields">
+        <div class="mf">
+          <div class="mff full"><label>题库名称 *</label><input name="bank_name" placeholder="如：编程基础 · 进阶题库"></div>
+          <div class="mff"><label>题库编码 *（唯一）</label><input name="bank_code" placeholder="如：PROG-L2"></div>
+          <div class="mff"><label>机构 ID *</label><input name="institution_id" type="number" placeholder="如：1"></div>
+          <div class="mff"><label>分类</label>
+            <select name="category"><option value="编程">编程</option><option value="数学">数学</option><option value="英语">英语</option><option value="算法">算法</option></select>
+          </div>
+          <div class="mff full"><label>简介</label><textarea name="description" placeholder="题库用途 / 适用人群…"></textarea></div>
+          <div class="mff full"><span class="req-chip">bank_code 冲突时返回 <code>40921</code>，保存按钮将提示「题库编码已存在」</span></div>
+        </div>
+      </form>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-primary btn-mini" onclick="saveBank()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 删除题库 ConfirmDialog（题量确认） ============ -->
+  <div class="scrim confirm" id="confirm-del-bank">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div>
+            <b>删除题库「<span id="del-bank-name"></span>」？</b>
+            <p>该题库下共有 <b id="del-bank-cnt">0</b> 道题。删除为<b>软删</b>（yn=0），题库与其下题目将不再展示，但<b>不会物理删除数据</b>。请二次确认。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doDeleteBank()">确认删除（软删）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 删除题目 ConfirmDialog ============ -->
+  <div class="scrim confirm" id="confirm-del-q">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div>
+            <b>删除题目「<span id="del-q-code"></span>」？</b>
+            <p>软删（yn=0），题目将不再出现在选题与组卷中。已发布的考试快照（session_exam_question_rel）不受影响。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doDeleteQ()">确认删除（软删）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 批量导入 Dialog（四步） ============ -->
+  <div class="scrim" id="import-dialog">
+    <div class="modal wide">
+      <div class="mh"><h3>批量导入题目</h3>
+        <span class="mstep" id="imp-step-hint">Step 1/4 · 上传文件</span>
+        <button class="m-close" data-close>&times;</button>
+      </div>
+
+      <div class="mb">
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="stp" data-step="1"><span class="dot">1</span>上传</div><div class="stp-conn" data-conn="1"></div>
+          <div class="stp" data-step="2"><span class="dot">2</span>校验预览</div><div class="stp-conn" data-conn="2"></div>
+          <div class="stp" data-step="3"><span class="dot">3</span>导入进度</div><div class="stp-conn" data-conn="3"></div>
+          <div class="stp" data-step="4"><span class="dot">4</span>结果报告</div>
+        </div>
+
+        <!-- Step 1 上传 -->
+        <div class="imp-step" data-idx="1">
+          <div class="up-drop" id="up-drop" onclick="fakePick()">
+            <div class="big">📤</div>
+            拖拽 <code>.xlsx</code> / <code>.csv</code> 到此处，或点击选择文件
+            <div class="field-tip" style="margin-top:6px">前置校验：题干必填 · 答案必填 · 题型枚举（提问型/客观题）</div>
+          </div>
+          <div class="up-file hidden" id="up-file">
+            <div>📄</div>
+            <div><div class="nm" id="up-file-name">编程题库_v2.xlsx</div><div class="meta" id="up-file-meta">1,752 行 · 送往 /import-preview</div></div>
+          </div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" data-close>取消</button>
+            <button class="btn btn-primary btn-mini" onclick="previewDone()">开始校验 →</button>
+          </div>
+        </div>
+
+        <!-- Step 2 校验预览 -->
+        <div class="imp-step hidden" data-idx="2">
+          <p class="field-tip">共 <b id="pv-total">1,752</b> 行 · <b style="color:var(--ok-ink)" id="pv-valid">1,745</b> 有效 · <b style="color:var(--candy-red)" id="pv-invalid">7</b> 无效。预览前 8 行，无效行已标红，可导入时定位。</p>
+          <div class="mini-table"><table>
+            <thead><tr><th>行</th><th>题号</th><th>题型</th><th>题干（截断）</th><th>校验</th></tr></thead>
+            <tbody id="pv-body"></tbody>
+          </table></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" onclick="impBack(1)">← 重传</button>
+            <button class="btn btn-primary btn-mini" onclick="startImport()">确认导入 1,752 行 →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 导入进度（轮询） -->
+        <div class="imp-step hidden" data-idx="3">
+          <div class="field-tip" style="margin-bottom:4px" id="prog-label">正在导入：已处理 <b id="prog-done">0</b> / <b id="prog-total">1752</b> 行…</div>
+          <div class="up-prog"><i id="prog-bar" style="width:0%"></i></div>
+          <div class="up-meta"><span id="prog-detail">解析 & 落库（powered by POST /import-execute，幂等）</span><span id="prog-pct">0%</span></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" data-close>最小化</button>
+            <button class="btn btn-primary btn-mini" disabled>导入中…</button>
+          </div>
+        </div>
+
+        <!-- Step 4 结果报告 -->
+        <div class="imp-step hidden" data-idx="4">
+          <div class="stat-row">
+            <div class="stat imp"><div class="n" id="res-imp">1,740</div><div class="l">导入成功 imported</div></div>
+            <div class="stat skip"><div class="n" id="res-skip">5</div><div class="l">幂等跳过 skipped</div></div>
+            <div class="stat fail"><div class="n" id="res-fail">7</div><div class="l">失败 failed</div></div>
+          </div>
+          <p class="field-tip">失败行可依据<code>messages</code>中的行号定位并修正后重新导入（重复 question_code 幂等跳过）。</p>
+          <div class="msg-list" id="res-msgs"></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" onclick="openImport(1)">再次导入</button>
+            <button class="btn btn-primary btn-mini" data-close>完成</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ============ 样例数据（审核展示用；React 实现走真实 API，无 MOCK） ============ */
+/* 题库样例 = 按知识点分类划分的几十个题库（edu 题库体系）：
+   题库 ID → 分类 | 名称 | 题目数 | 状态；question 归属对应分类的题库，不做跨类混放 */
+const CCODE={编程:"PY",前端:"FE",算法:"AL",数据库:"DB",安全:"SEC",数学:"MT",英语:"EN",语文:"CN",物理:"PH",化学:"CH",生物:"BI",历史:"HI",地理:"GE"};
+const BANK_SEED=[
+  ["编程","Python 基础编程题库",1752,"enabled"],
+  ["编程","Python 进阶 · 面向对象",386,"enabled"],
+  ["编程","Java 基础题库",412,"enabled"],
+  ["编程","C/C++ 入门题库",298,"enabled"],
+  ["前端","HTML/CSS 题库",520,"enabled"],
+  ["前端","JavaScript 题库",644,"enabled"],
+  ["前端","React 组件题库",210,"draft"],
+  ["前端","Vue 题库",175,"enabled"],
+  ["算法","算法与数据结构 · 入门",318,"enabled"],
+  ["算法","算法与数据结构 · 高级",97,"enabled"],
+  ["算法","LeetCode 高频题",402,"enabled"],
+  ["数据库","SQL 语法题库",276,"enabled"],
+  ["数据库","MySQL 实战题库",189,"enabled"],
+  ["安全","网络安全基础",183,"enabled"],
+  ["安全","渗透测试题库",55,"draft"],
+  ["数学","小学数学 · 一年级",420,"enabled"],
+  ["数学","小学数学 · 二年级",398,"enabled"],
+  ["数学","初中代数题库",305,"enabled"],
+  ["数学","高中几何题库",226,"enabled"],
+  ["英语","英语语法精选",86,"enabled"],
+  ["英语","英语词汇 · 四级",342,"enabled"],
+  ["英语","英语阅读真题",198,"enabled"],
+  ["语文","小学古诗文",267,"enabled"],
+  ["语文","现代文阅读理解",152,"draft"],
+  ["物理","初中物理题库",233,"enabled"],
+  ["物理","高中物理力学",164,"enabled"],
+  ["化学","高中化学基础",201,"enabled"],
+  ["生物","高中生物题库",142,"draft"],
+  ["历史","中国古代史",118,"enabled"],
+  ["历史","世界近现代史",97,"enabled"],
+  ["地理","初中地理题库",176,"enabled"],
+];
+const BANKS = BANK_SEED.map(([cat,name,cnt,st],i)=>({ id:i+1, cat, name, code:(CCODE[cat]||"BK")+"-"+String(i+1).padStart(3,"0"), cnt, st }));
+/* 分类 → 图标渐变色（token 内渐变，勿新增 hex） */
+const CGRAD={"数学":"var(--candy-blue),var(--sky-6)","编程":"var(--primary-deep),var(--primary)",
+ "前端":"var(--candy-pink),var(--primary)","算法":"var(--candy-purple),var(--primary)",
+ "数据库":"var(--candy-green),var(--primary)","英语":"var(--candy-orange),var(--primary)",
+ "语文":"var(--primary-deep),var(--candy-purple)","物理":"var(--candy-blue),var(--candy-purple)",
+ "化学":"var(--candy-green),var(--candy-blue)","生物":"var(--candy-green),var(--candy-pink)",
+ "历史":"var(--candy-orange),var(--candy-pink)","地理":"var(--sky-6),var(--candy-blue)",
+ "安全":"var(--candy-red),var(--candy-purple)"};
+/* 题目样例 = 按题库分类对应（每题归属其分类题库，跨类不混放）；预览每组 5~10 行 */
+const QS={
+  "编程":[
+    ["Q1001","单选题","在 Python 中，用于定义函数的关键字是？",1],
+    ["Q1002","多选题","下面哪些是 Python 的内置数据类型？",1],
+    ["Q1003","判断题","Python 中的列表（list）是可变类型。",1],
+    ["Q1004","单选题","Python 中单行注释以 ____ 字符开头。",1],
+    ["Q1005","单选题","关于 stem + analysis_text 全文检索（LIKE），以下说法正确的是？",1],
+    ["Q1006","单选题","某题的解析（analysis_text）含『装饰器』，检索该词也应命中。",1],
+    ["Q1007","填空题","Python 中字典用 ____ 花括号定义。",0],
+    ["Q1008","多选题","以下哪些是合法的 Python 变量命名？",1],
+    ["Q1009","判断题","shadcn DataTable 支持行点击选中。",1],
+    ["Q1010","填空题","导入结果报告用于 ____ 失败行定位。",0],
+  ],
+  "前端":[
+    ["F001","单选题","HTML 中定义无序列表的标签是？",1],
+    ["F002","多选题","以下哪些 CSS 属性用于控制 flex 布局？",1],
+    ["F003","单选题","fetch() 返回的 Promise 在状态码为 404 时会？",1],
+    ["F004","填空题","浏览器默认样式重置的工具叫 ____ 。",0],
+  ],
+  "算法":[
+    ["A001","单选题","快速排序的平均时间复杂度是？",1],
+    ["A002","多选题","以下哪些是非线性数据结构？",1],
+    ["A003","判断题","二分查找要求数组有序。",1],
+    ["A004","填空题","O(n log n) 的排序算法有 ____ 。",0],
+  ],
+  "数据库":[
+    ["D001","单选题","SQL 中去除重复用哪个关键字？",1],
+    ["D002","单选题","以下哪个是事务的 ACID 特性？",1],
+    ["D003","判断题","外键必须引用主键。",1],
+    ["D004","填空题","事务隔离级别有 ____ 种。",0],
+  ],
+  "安全":[
+    ["S001","单选题","XSS 属于哪类 web 攻击？",1],
+    ["S002","多选题","以下哪些是身份认证手段？",1],
+    ["S003","判断题","HTTPS 能抵御中间人篡改。",1],
+    ["S004","填空题","OWASP Top 10 每 ____ 年更新一版。",0],
+  ],
+  "数学":[
+    ["M001","单选题","3 + 5 × 2 的计算结果是？",1],
+    ["M002","单选题","下列哪个数是质数？",1],
+    ["M003","判断题","直角三角形的斜边最长。",1],
+    ["M004","填空题","圆的周长公式 C = 2π ____ 。",0],
+  ],
+  "英语":[
+    ["E001","单选题","___ you like coffee? → Do",1],
+    ["E002","单选题","She ___ to school every day. → goes",1],
+    ["E003","多选题","下列哪些是不可数名词？",1],
+    ["E004","填空题","『天气』的英文是 ____ 。",0],
+  ],
+  "语文":[
+    ["C001","单选题","《静夜思》的作者是？",1],
+    ["C002","单选题","下列哪个是『比喻』修辞？",1],
+    ["C003","判断题","『大鹏一日同风起』出自李白。",1],
+    ["C004","填空题","春眠不觉晓，____ 处处闻啼鸟。",0],
+  ],
+  "物理":[
+    ["P001","单选题","重力加速度的近似值是？",1],
+    ["P002","单选题","下列哪个单位用于测力？",1],
+    ["P003","判断题","光在真空中传播速度最快。",1],
+    ["P004","填空题","牛顿第一定律又称 ____ 定律。",0],
+  ],
+  "化学":[
+    ["H001","单选题","水的化学式是？",1],
+    ["H002","判断题","燃烧需要氧气参与。",1],
+    ["H003","填空题","元素周期表第一个元素是 ____ 。",0],
+  ],
+  "生物":[
+    ["B001","单选题","细胞的基本结构不包括？",1],
+    ["B002","判断题","DNA 双螺旋结构于 1953 年被发现。",1],
+    ["B003","填空题","人体最大的器官是 ____ 。",0],
+  ],
+  "历史":[
+    ["H001","单选题","秦始皇统一六国在公元前哪一年？",1],
+    ["H002","判断题","『文艺复兴』起源于意大利。",1],
+    ["H003","填空题","辛亥革命发生在 ____ 年。",0],
+  ],
+  "地理":[
+    ["G001","单选题","世界最高峰是？",1],
+    ["G002","判断题","长江是中国最长的河流。",1],
+    ["G003","填空题","七大洲中面积最大的是 ____ 。",0],
+  ],
+};
+function sampleQuestions(cat){ return (QS[cat]||QS["编程"]).map(([code,type,stem,obj],i)=>({id:9000+Math.abs(hashCode(code))%9000, code, type, stem, obj})); }
+function hashCode(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))|0; } return h; }
+const PREVIEW = [
+  { ri:0,  code:"Q001", type:"单选题", stem:"Python 中 1+1 的结果是？", ok:true,  err:[] },
+  { ri:1,  code:"Q002", type:"单选题", stem:"下列哪个是 Python 关键字？", ok:true,  err:[] },
+  { ri:2,  code:"Q003", type:"多选题", stem:"可迭代对象包括？", ok:true,  err:[] },
+  { ri:9,  code:"",   type:"单选题", stem:"",            ok:false, err:["题干为空"] },
+  { ri:12, code:"",   type:"未知题型", stem:"重复导入示例", ok:false, err:["题型枚举非法","答案为空"] },
+  { ri:15, code:"Q016", type:"判断题", stem:"布尔值是 int 的子类。", ok:true,  err:[] },
+  { ri:33, code:"Q034", type:"填空题", stem:"____ 用于全文检索。", ok:true,  err:[] },
+  { ri:50, code:"",  type:"单选题", stem:"缺题号",      ok:false, err:["question_code 为空"] },
+];
+const RES_MSGS = [
+  ["[0] 导入成功", "ms-ok"], ["[1] 导入成功", "ms-ok"],
+  ["[9] 失败：题干为空", "ms-fail"],
+  ["[12] 失败：题型枚举非法 / 答案为空", "ms-fail"],
+  ["[50] 失败：question_code 为空", "ms-fail"],
+  ["[15] 导入成功", "ms-ok"], ["[33] 导入成功", "ms-ok"],
+  ["[40] 幂等跳过（已存在）: Q045", "ms-skip"],
+  ["[41] 幂等跳过（已存在）: Q052", "ms-skip"],
+  ["…（共 1752 行，导入 1740 / 跳过 5 / 失败 7）", "ms-skip"],
+];
+
+let tab="banks", curBank=null, delTarget=null, openDD=null;
+let bkView="success", qView="success", bkPage=1, qPage=1;
+const PAGE_SIZE=10;
+
+/* ---- tab 切换 ---- */
+function switchTab(t){
+  tab=t;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  document.getElementById("pane-banks").classList.toggle("hidden", t!=="banks");
+  document.getElementById("pane-questions").classList.toggle("hidden", t!=="questions");
+  if(t==="questions"){ renderQuestions(qView); }
+}
+function selectBank(b){
+  curBank=b;
+  const tip=document.getElementById("tab-q-bank");
+  tip.style.display="inline"; tip.textContent="· "+b.name;
+  document.getElementById("q-cur-bank").textContent=b.name+"（"+b.code+"）";
+  switchTab("questions");
+}
+
+/* ---- 题库渲染 ---- */
+function bankRow(b){
+  const ico = CGRAD[b.cat] || "var(--primary-deep),var(--primary)";
+  return `<tr class="hov">
+    <td><div class="prim-cell">
+      <div class="ico" style="background:linear-gradient(120deg,${ico})">📚</div>
+      <div><div class="nm">${b.name}</div><div class="cd">${b.code} · 机构 #1</div></div>
+    </div></td>
+    <td><span class="tag-chips">${b.cat}</span></td>
+    <td><b>${b.cnt.toLocaleString()}</b></td>
+    <td>${b.st==="enabled"?'<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-mut"><span class="pd"></span>草稿</span>'}</td>
+    <td class="cell-actions" style="justify-content:flex-end">
+      <button class="btn btn-primary btn-mini" onclick="selectBank(BANKS[${b.id-1}])">管理</button>
+      <div class="dd">
+        <button class="dd-btn" data-dd>•••</button>
+        <div class="dd-menu">
+          <button class="dd-item" data-open="bank-form">编辑题库</button>
+          <button class="dd-item danger" onclick="openDelBank(BANKS[${b.id-1}])">删除题库（软删）</button>
+        </div>
+      </div>
+    </td></tr>`;
+}
+function renderBanks(view){
+  bkView=view;
+  const body=document.getElementById("bank-body");
+  const totalPg=Math.max(1,Math.ceil(BANKS.length/PAGE_SIZE));
+  if(bkPage>totalPg) bkPage=totalPg;
+  const start=(bkPage-1)*PAGE_SIZE;
+  const rows=(view==="success")?BANKS.slice(start,start+PAGE_SIZE):[];
+  const skel=`<tr class="skrow"><td colspan="5"><div class="sk sk-line" style="height:15px"></div></td></tr>
+    <tr class="skrow"><td colspan="5"><div class="sk sk-line" style="height:15px"></div></td></tr>
+    <tr class="skrow"><td colspan="5"><div class="sk sk-line" style="height:15px"></div></td></tr>`;
+  body.innerHTML= view==="loading" ? skel : (view==="error"||view==="empty") ? "" : rows.map(bankRow).join("");
+  document.getElementById("bank-count").textContent=BANKS.length;
+  document.getElementById("bank-empty").classList.toggle("hidden", view!=="empty");
+  document.getElementById("bank-error").classList.toggle("hidden", view!=="error");
+  document.getElementById("bank-pager").classList.toggle("hidden", view==="error");
+  if(view!=="error") renderPager(document.getElementById("bank-pager"), totalPg, bkPage, "bk");
+}
+function resetBankFilter(){ document.getElementById("f-bank-kw").value=""; document.getElementById("f-bank-cat").value=""; }
+
+/* ---- 题目渲染 ---- */
+function qRow(q){
+  return `<tr class="hov">
+    <td class="nb">${q.code}</td>
+    <td>${q.type}</td>
+    <td><div class="stem-clamp">${q.stem}</div></td>
+    <td>${q.obj? '<span class="badge badge-obj"><span class="pd"></span>客观</span>':'<span class="badge badge-subj"><span class="pd"></span>主观</span>'}</td>
+    <td><span class="badge badge-on"><span class="pd"></span>启用</span></td>
+    <td class="cell-actions" style="justify-content:flex-end">
+      <button class="btn btn-ghost btn-mini" title="跳 task59 编辑页">编辑</button>
+      <button class="btn btn-ghost btn-mini" title="跳 task59 解析编辑">解析</button>
+      <button class="btn btn-ghost btn-mini" style="color:var(--candy-red);border-color:var(--candy-red)" onclick="openDelQ('${q.code}')">删除</button>
+    </td></tr>`;
+}
+function renderQuestions(view){
+  qView=view;
+  const body=document.getElementById("q-body");
+  const skirt=document.getElementById("q-pager");
+  if(!curBank){ setNull("q-none",true,"q-empty",false,"q-error",false); body.innerHTML=""; qcount(0); skirt.innerHTML=""; return; }
+  setNull("q-none",false,"q-empty",view!=="empty","q-error",view==="error");
+  const list=sampleQuestions(curBank.cat);                       // 题目按题库分类对应
+  const totalPg=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+  if(qPage>totalPg) qPage=totalPg;
+  const start=(qPage-1)*PAGE_SIZE;
+  const rows=(view==="success")?list.slice(start,start+PAGE_SIZE):[];
+  body.innerHTML = rows.map(qRow).join("");
+  qcount(view==="success"?curBank.cnt:0);                       // 展示题库真实题量
+  if(view!=="error") renderPager(skirt, totalPg, qPage, "q");
+}
+function setNull(n1,a1,n2,a2,n3,a3){ document.getElementById(n1).classList.toggle("hidden",!a1); if(n2!==null){document.getElementById(n2).classList.toggle("hidden",!a2);} if(n3!==null){document.getElementById(n3).classList.toggle("hidden",!a3);} }
+function qcount(n){ document.getElementById("q-count").textContent=n; }
+function resetQFilter(){ document.getElementById("f-q-kw").value=""; document.getElementById("f-q-type").value=""; document.getElementById("f-q-obj").value=""; }
+
+/* ---- 分页 ---- */
+function renderPager(el,total,active,bind){
+  if(!el) return;
+  let html=`<button ${active<=1?'disabled':''} data-pg="${Math.max(1,active-1)}" data-bind="${bind}">‹</button>`;
+  for(let i=1;i<=total;i++) html+=`<button class="${i===active?'cur':''}" data-pg="${i}" data-bind="${bind}">${i}</button>`;
+  html+=`<button ${active>=total?'disabled':''} data-pg="${Math.min(total,active+1)}" data-bind="${bind}">›</button>`;
+  el.innerHTML=html;
+}
+function goPage(bind, page){
+  if(bind==="bk"){ bkPage=page; renderBanks(bkView); }
+  else{ qPage=page; renderQuestions(qView); }
+}
+
+/* ---- 通用 modal / dropdown ---- */
+document.addEventListener("click",function(e){
+  const pg=e.target.closest("[data-pg]");
+  if(pg){ goPage(pg.dataset.bind, +pg.dataset.pg); return; }
+  const dd=e.target.closest("[data-dd]");
+  if(dd){ const box=dd.parentElement; const wasOpen=box.classList.contains("open");
+    document.querySelectorAll(".dd.open").forEach(x=>x.classList.remove("open"));
+    if(!wasOpen)box.classList.add("open"); return; }
+  document.querySelectorAll(".dd.open").forEach(x=>x.classList.remove("open"));
+  const t=e.target.closest("[data-open]");
+  if(t){ openModal(t.getAttribute("data-open")); return; }
+  if(e.target.closest("[data-close]")){ closeAll(); }
+});
+function openModal(id){
+  const pair={ "bank-form":()=>{},
+    "confirm-del-bank":()=>{},
+    "confirm-del-q":()=>{},
+    "import-dialog":()=>{} };
+  pair[id]&&pair[id]();
+  document.getElementById(id).classList.add("show");
+}
+function closeAll(){ document.querySelectorAll(".scrim.show").forEach(x=>x.classList.remove("show")); }
+
+/* ---- 题库表单 ---- */
+function saveBank(){ closeAll(); alertMsg("题库已保存（bank_code 唯一校验：冲突返回 40921）"); }
+function openBankForm(){ }
+/* ---- 删除 ---- */
+function openDelBank(b){ delTarget=b; document.getElementById("del-bank-name").textContent=b.name; document.getElementById("del-bank-cnt").textContent=b.cnt; openModal("confirm-del-bank"); }
+function doDeleteBank(){ closeAll(); alertMsg(`题库「${delTarget.name}」已软删（含 ${delTarget.cnt} 题，yn=0）`); }
+function openDelQ(code){ delTarget=code; document.getElementById("del-q-code").textContent=code; openModal("confirm-del-q"); }
+function doDeleteQ(){ closeAll(); alertMsg(`题目「${delTarget}」已软删`); }
+
+/* ---- 批量导入 ---- */
+function openImport(step){
+  step=step||1; impStep(step);
+  document.getElementById("bank-count").textContent=BANKS.length;
+  document.getElementById("import-dialog").classList.add("show");
+}
+function impStep(n){
+  document.querySelectorAll(".imp-step").forEach(x=>x.classList.toggle("hidden", Number(x.dataset.idx)!==n));
+  document.getElementById("imp-step-hint").textContent=`Step ${n}/4 · ${["上传文件","校验预览","导入进度","结果报告"][n-1]}`;
+  document.querySelectorAll(".stp,.stp-conn").forEach(x=>{
+    const i=Number(x.dataset.step||x.dataset.conn||0);
+    x.classList.toggle("done", i && i<n);
+    x.classList.toggle("cur", i===n);
+    if(x.classList.contains("stp")) x.style.color = i===n?"var(--primary)":"" ;
+  });
+  if(n===2) renderPreview();
+  if(n===4) renderResult();
+}
+function impBack(n){ impStep(n); }
+function fakePick(){ document.getElementById("up-file").classList.remove("hidden"); }
+function previewDone(){ impStep(2); }
+function renderPreview(){
+  document.getElementById("pv-total").textContent="1,752";
+  document.getElementById("pv-valid").textContent="1,745";
+  document.getElementById("pv-invalid").textContent="7";
+  document.getElementById("pv-body").innerHTML=PREVIEW.map(r=>`
+    <tr class="${r.ok?'':'row-bad'}">
+      <td class="nb">#${r.ri}</td><td class="nb">${r.code||"—"}</td><td>${r.type}</td>
+      <td class="stem-clamp">${r.stem||"<em>（空）</em>"}</td>
+      <td>${r.ok?'<span class="ok-pill">✓ 有效</span>':r.err.map(e=>`<span class="err-pill">${e}</span>`).join("")}</td>
+    </tr>`).join("");
+}
+function startImport(){
+  impStep(3);
+  let done=0; const total=1752;
+  const label=document.getElementById("prog-label");
+  const sd=document.getElementById("prog-done"), st=document.getElementById("prog-total");
+  st.textContent=total;
+  const iv=setInterval(()=>{
+    done+= total*0.08;
+    const p=Math.min(100, done/total*100);
+    document.getElementById("prog-bar").style.width=p+"%";
+    document.getElementById("prog-pct").textContent=Math.round(p)+"%";
+    sd.textContent=Math.min(total, Math.round(done));
+    label.innerHTML=`正在导入：已处理 <b>${Math.min(total,Math.round(done))}</b> / <b>${total}</b> 行…`;
+    if(p>=100){ clearInterval(iv); setTimeout(()=>impStep(4), 350); }
+  }, 260);
+}
+function renderResult(){
+  document.getElementById("res-msgs").innerHTML=RES_MSGS.map(m=>`<div class="${m[1]}">${m[0]}</div>`).join("");
+}
+function alertMsg(m){ const d=document.createElement("div"); d.className="toast-stub"; d.textContent="〔审批态〕"+m; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+
+/* ---- 演示控制器 ---- */
+document.addEventListener("click",function(e){
+  const b=e.target.closest("[data-vbk]"); if(b){ document.querySelectorAll("[data-vbk]").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderBanks(b.dataset.vbk); return; }
+  const q=e.target.closest("[data-vq]"); if(q){ document.querySelectorAll("[data-vq]").forEach(x=>x.classList.remove("on")); q.classList.add("on"); if(!curBank&&q.dataset.vq!=="none") selectBank(BANKS[0]); renderQuestions(q.dataset.vq); return; }
+  const im=e.target.closest("[data-vimp]"); if(im){ document.querySelectorAll("[data-vimp]").forEach(x=>x.classList.remove("on")); im.classList.add("on"); const n=+im.dataset.vimp; if(!document.getElementById("import-dialog").classList.contains("show")) openImport(n); else impStep(n); }
+});
+
+/* 初始化 */
+renderBanks("success");
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 对接真实后端（admin-questions 题库 + 题目）===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) {
+    var b = document.getElementById("bank-body");
+    if (b) b.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--candy-red);padding:24px">请用 admin 账号登录（adm02test / Test@123456）后刷新本页</td></tr>';
+    return;
+  }
+  Promise.allSettled([
+    EAPI.get("/api/admin/questions/banks?page=1&page_size=50"),
+    EAPI.get("/api/admin/questions/types"),
+  ]).then(function (res) {
+    var banks = res[0].status === "fulfilled" ? res[0].value : null;
+    var items = banks && banks.items ? banks.items : (Array.isArray(banks) ? banks : []);
+    if (items.length && typeof BANKS !== "undefined") {
+      var types = res[1].status === "fulfilled" ? res[1].value : [];
+      var typeName = function (tc) { var t = (types && types.items) || types || []; var f = t.find(function (x) { return x.type_code === tc; }); return f ? f.type_name : tc; };
+      BANKS = items.map(function (b, i) {
+        return { id: b.id, cat: b.subject_code || "", name: b.bank_name, code: b.bank_code, cnt: b.question_count || 0, st: b.yn === 1 ? "启用" : "停用", bank_id: b.id, typeName: typeName };
+      });
+      try { if (typeof renderBanks === "function") renderBanks("success"); } catch (e) {}
+    }
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1064 @@
+{
+  "login": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "user_id": 1,
+        "account": "user000001",
+        "username": "edu_user_000001",
+        "nickname": "edu_user_000001",
+        "real_name": "杨怡骏",
+        "mobile": "13900000001",
+        "email": "user000001@edu.example.com",
+        "gender": "female",
+        "avatar_url": "https://cdn.example.com/avatar/000001.png",
+        "role": "student"
+      }
+    }
+  },
+  "access": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "series_id": 1,
+        "cohort_id": 1,
+        "accessible": true,
+        "reason": null
+      }
+    }
+  },
+  "outline": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "series_id": 1,
+        "series_title": "通用编程入门班·直播",
+        "overall_ratio": 0,
+        "total_sessions": 84,
+        "completed_sessions": 0,
+        "modules": [
+          {
+            "module_id": 1,
+            "module_title": "语法基础与开发环境",
+            "module_no": 1,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 1,
+                "session_title": "语法基础与开发环境 第1课",
+                "session_no": 1,
+                "duration_minutes": 95,
+                "video_url": "https://cdn.example.com/session-assets/00000001_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 2,
+                "session_title": "语法基础与开发环境 第2课",
+                "session_no": 2,
+                "duration_minutes": 95,
+                "video_url": "https://cdn.example.com/session-assets/00000002_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 3,
+                "session_title": "语法基础与开发环境 第3课",
+                "session_no": 3,
+                "duration_minutes": 104,
+                "video_url": "https://cdn.example.com/session-assets/00000003_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 4,
+                "session_title": "语法基础与开发环境 第4课",
+                "session_no": 4,
+                "duration_minutes": 88,
+                "video_url": "https://cdn.example.com/session-assets/00000004_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 5,
+                "session_title": "语法基础与开发环境 第5课",
+                "session_no": 5,
+                "duration_minutes": 111,
+                "video_url": "https://cdn.example.com/session-assets/00000005_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 6,
+                "session_title": "语法基础与开发环境 第6课",
+                "session_no": 6,
+                "duration_minutes": 90,
+                "video_url": "https://cdn.example.com/session-assets/00000006_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 7,
+                "session_title": "语法基础与开发环境 第7课",
+                "session_no": 7,
+                "duration_minutes": 80,
+                "video_url": "https://cdn.example.com/session-assets/00000007_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 8,
+                "session_title": "语法基础与开发环境 第8课",
+                "session_no": 8,
+                "duration_minutes": 65,
+                "video_url": "https://cdn.example.com/session-assets/00000008_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 2,
+            "module_title": "流程控制与数据结构入门",
+            "module_no": 2,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 9,
+                "session_title": "流程控制与数据结构入门 第1课",
+                "session_no": 1,
+                "duration_minutes": 93,
+                "video_url": "https://cdn.example.com/session-assets/00000009_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 10,
+                "session_title": "流程控制与数据结构入门 第2课",
+                "session_no": 2,
+                "duration_minutes": 69,
+                "video_url": "https://cdn.example.com/session-assets/00000010_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 11,
+                "session_title": "流程控制与数据结构入门 第3课",
+                "session_no": 3,
+                "duration_minutes": 68,
+                "video_url": "https://cdn.example.com/session-assets/00000011_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 12,
+                "session_title": "流程控制与数据结构入门 第4课",
+                "session_no": 4,
+                "duration_minutes": 80,
+                "video_url": "https://cdn.example.com/session-assets/00000012_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 13,
+                "session_title": "流程控制与数据结构入门 第5课",
+                "session_no": 5,
+                "duration_minutes": 92,
+                "video_url": "https://cdn.example.com/session-assets/00000013_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 14,
+                "session_title": "流程控制与数据结构入门 第6课",
+                "session_no": 6,
+                "duration_minutes": 110,
+                "video_url": "https://cdn.example.com/session-assets/00000014_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 15,
+                "session_title": "流程控制与数据结构入门 第7课",
+                "session_no": 7,
+                "duration_minutes": 115,
+                "video_url": "https://cdn.example.com/session-assets/00000015_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 16,
+                "session_title": "流程控制与数据结构入门 第8课",
+                "session_no": 8,
+                "duration_minutes": 73,
+                "video_url": "https://cdn.example.com/session-assets/00000016_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 17,
+                "session_title": "流程控制与数据结构入门 第9课",
+                "session_no": 9,
+                "duration_minutes": 117,
+                "video_url": "https://cdn.example.com/session-assets/00000017_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 18,
+                "session_title": "流程控制与数据结构入门 第10课",
+                "session_no": 10,
+                "duration_minutes": 118,
+                "video_url": "https://cdn.example.com/session-assets/00000018_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 3,
+            "module_title": "函数抽象与小练习",
+            "module_no": 3,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 19,
+                "session_title": "函数抽象与小练习 第1课",
+                "session_no": 1,
+                "duration_minutes": 86,
+                "video_url": "https://cdn.example.com/session-assets/00000019_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 20,
+                "session_title": "函数抽象与小练习 第2课",
+                "session_no": 2,
+                "duration_minutes": 77,
+                "video_url": "https://cdn.example.com/session-assets/00000020_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 21,
+                "session_title": "函数抽象与小练习 第3课",
+                "session_no": 3,
+                "duration_minutes": 72,
+                "video_url": "https://cdn.example.com/session-assets/00000021_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 22,
+                "session_title": "函数抽象与小练习 第4课",
+                "session_no": 4,
+                "duration_minutes": 77,
+                "video_url": "https://cdn.example.com/session-assets/00000022_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 23,
+                "session_title": "函数抽象与小练习 第5课",
+                "session_no": 5,
+                "duration_minutes": 105,
+                "video_url": "https://cdn.example.com/session-assets/00000023_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 24,
+                "session_title": "函数抽象与小练习 第6课",
+                "session_no": 6,
+                "duration_minutes": 85,
+                "video_url": "https://cdn.example.com/session-assets/00000024_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 25,
+                "session_title": "函数抽象与小练习 第7课",
+                "session_no": 7,
+                "duration_minutes": 116,
+                "video_url": "https://cdn.example.com/session-assets/00000025_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 26,
+                "session_title": "函数抽象与小练习 第8课",
+                "session_no": 8,
+                "duration_minutes": 119,
+                "video_url": "https://cdn.example.com/session-assets/00000026_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 27,
+                "session_title": "函数抽象与小练习 第9课",
+                "session_no": 9,
+                "duration_minutes": 109,
+                "video_url": "https://cdn.example.com/session-assets/00000027_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 28,
+                "session_title": "函数抽象与小练习 第10课",
+                "session_no": 10,
+                "duration_minutes": 61,
+                "video_url": "https://cdn.example.com/session-assets/00000028_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 4,
+            "module_title": "语法基础与开发环境",
+            "module_no": 1,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 29,
+                "session_title": "语法基础与开发环境 第1课",
+                "session_no": 1,
+                "duration_minutes": 92,
+                "video_url": "https://cdn.example.com/session-assets/00000029_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 30,
+                "session_title": "语法基础与开发环境 第2课",
+                "session_no": 2,
+                "duration_minutes": 67,
+                "video_url": "https://cdn.example.com/session-assets/00000030_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 31,
+                "session_title": "语法基础与开发环境 第3课",
+                "session_no": 3,
+                "duration_minutes": 65,
+                "video_url": "https://cdn.example.com/session-assets/00000031_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 32,
+                "session_title": "语法基础与开发环境 第4课",
+                "session_no": 4,
+                "duration_minutes": 67,
+                "video_url": "https://cdn.example.com/session-assets/00000032_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 33,
+                "session_title": "语法基础与开发环境 第5课",
+                "session_no": 5,
+                "duration_minutes": 80,
+                "video_url": "https://cdn.example.com/session-assets/00000033_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 34,
+                "session_title": "语法基础与开发环境 第6课",
+                "session_no": 6,
+                "duration_minutes": 73,
+                "video_url": "https://cdn.example.com/session-assets/00000034_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 35,
+                "session_title": "语法基础与开发环境 第7课",
+                "session_no": 7,
+                "duration_minutes": 106,
+                "video_url": "https://cdn.example.com/session-assets/00000035_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 36,
+                "session_title": "语法基础与开发环境 第8课",
+                "session_no": 8,
+                "duration_minutes": 74,
+                "video_url": "https://cdn.example.com/session-assets/00000036_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 5,
+            "module_title": "流程控制与数据结构入门",
+            "module_no": 2,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 37,
+                "session_title": "流程控制与数据结构入门 第1课",
+                "session_no": 1,
+                "duration_minutes": 80,
+                "video_url": "https://cdn.example.com/session-assets/00000037_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 38,
+                "session_title": "流程控制与数据结构入门 第2课",
+                "session_no": 2,
+                "duration_minutes": 95,
+                "video_url": "https://cdn.example.com/session-assets/00000038_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 39,
+                "session_title": "流程控制与数据结构入门 第3课",
+                "session_no": 3,
+                "duration_minutes": 72,
+                "video_url": "https://cdn.example.com/session-assets/00000039_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 40,
+                "session_title": "流程控制与数据结构入门 第4课",
+                "session_no": 4,
+                "duration_minutes": 70,
+                "video_url": "https://cdn.example.com/session-assets/00000040_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 41,
+                "session_title": "流程控制与数据结构入门 第5课",
+                "session_no": 5,
+                "duration_minutes": 98,
+                "video_url": "https://cdn.example.com/session-assets/00000041_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 42,
+                "session_title": "流程控制与数据结构入门 第6课",
+                "session_no": 6,
+                "duration_minutes": 64,
+                "video_url": "https://cdn.example.com/session-assets/00000042_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 43,
+                "session_title": "流程控制与数据结构入门 第7课",
+                "session_no": 7,
+                "duration_minutes": 98,
+                "video_url": "https://cdn.example.com/session-assets/00000043_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 44,
+                "session_title": "流程控制与数据结构入门 第8课",
+                "session_no": 8,
+                "duration_minutes": 63,
+                "video_url": "https://cdn.example.com/session-assets/00000044_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 45,
+                "session_title": "流程控制与数据结构入门 第9课",
+                "session_no": 9,
+                "duration_minutes": 96,
+                "video_url": "https://cdn.example.com/session-assets/00000045_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 46,
+                "session_title": "流程控制与数据结构入门 第10课",
+                "session_no": 10,
+                "duration_minutes": 106,
+                "video_url": "https://cdn.example.com/session-assets/00000046_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 6,
+            "module_title": "函数抽象与小练习",
+            "module_no": 3,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 47,
+                "session_title": "函数抽象与小练习 第1课",
+                "session_no": 1,
+                "duration_minutes": 109,
+                "video_url": "https://cdn.example.com/session-assets/00000047_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 48,
+                "session_title": "函数抽象与小练习 第2课",
+                "session_no": 2,
+                "duration_minutes": 74,
+                "video_url": "https://cdn.example.com/session-assets/00000048_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 49,
+                "session_title": "函数抽象与小练习 第3课",
+                "session_no": 3,
+                "duration_minutes": 63,
+                "video_url": "https://cdn.example.com/session-assets/00000049_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 50,
+                "session_title": "函数抽象与小练习 第4课",
+                "session_no": 4,
+                "duration_minutes": 67,
+                "video_url": "https://cdn.example.com/session-assets/00000050_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 51,
+                "session_title": "函数抽象与小练习 第5课",
+                "session_no": 5,
+                "duration_minutes": 115,
+                "video_url": "https://cdn.example.com/session-assets/00000051_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 52,
+                "session_title": "函数抽象与小练习 第6课",
+                "session_no": 6,
+                "duration_minutes": 76,
+                "video_url": "https://cdn.example.com/session-assets/00000052_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 53,
+                "session_title": "函数抽象与小练习 第7课",
+                "session_no": 7,
+                "duration_minutes": 91,
+                "video_url": "https://cdn.example.com/session-assets/00000053_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 54,
+                "session_title": "函数抽象与小练习 第8课",
+                "session_no": 8,
+                "duration_minutes": 106,
+                "video_url": "https://cdn.example.com/session-assets/00000054_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 55,
+                "session_title": "函数抽象与小练习 第9课",
+                "session_no": 9,
+                "duration_minutes": 116,
+                "video_url": "https://cdn.example.com/session-assets/00000055_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 56,
+                "session_title": "函数抽象与小练习 第10课",
+                "session_no": 10,
+                "duration_minutes": 109,
+                "video_url": "https://cdn.example.com/session-assets/00000056_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 7,
+            "module_title": "语法基础与开发环境",
+            "module_no": 1,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 57,
+                "session_title": "语法基础与开发环境 第1课",
+                "session_no": 1,
+                "duration_minutes": 85,
+                "video_url": "https://cdn.example.com/session-assets/00000057_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 58,
+                "session_title": "语法基础与开发环境 第2课",
+                "session_no": 2,
+                "duration_minutes": 108,
+                "video_url": "https://cdn.example.com/session-assets/00000058_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 59,
+                "session_title": "语法基础与开发环境 第3课",
+                "session_no": 3,
+                "duration_minutes": 73,
+                "video_url": "https://cdn.example.com/session-assets/00000059_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 60,
+                "session_title": "语法基础与开发环境 第4课",
+                "session_no": 4,
+                "duration_minutes": 116,
+                "video_url": "https://cdn.example.com/session-assets/00000060_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 61,
+                "session_title": "语法基础与开发环境 第5课",
+                "session_no": 5,
+                "duration_minutes": 113,
+                "video_url": "https://cdn.example.com/session-assets/00000061_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 62,
+                "session_title": "语法基础与开发环境 第6课",
+                "session_no": 6,
+                "duration_minutes": 69,
+                "video_url": "https://cdn.example.com/session-assets/00000062_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 63,
+                "session_title": "语法基础与开发环境 第7课",
+                "session_no": 7,
+                "duration_minutes": 118,
+                "video_url": "https://cdn.example.com/session-assets/00000063_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 64,
+                "session_title": "语法基础与开发环境 第8课",
+                "session_no": 8,
+                "duration_minutes": 101,
+                "video_url": "https://cdn.example.com/session-assets/00000064_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 8,
+            "module_title": "流程控制与数据结构入门",
+            "module_no": 2,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 65,
+                "session_title": "流程控制与数据结构入门 第1课",
+                "session_no": 1,
+                "duration_minutes": 71,
+                "video_url": "https://cdn.example.com/session-assets/00000065_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 66,
+                "session_title": "流程控制与数据结构入门 第2课",
+                "session_no": 2,
+                "duration_minutes": 82,
+                "video_url": "https://cdn.example.com/session-assets/00000066_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 67,
+                "session_title": "流程控制与数据结构入门 第3课",
+                "session_no": 3,
+                "duration_minutes": 61,
+                "video_url": "https://cdn.example.com/session-assets/00000067_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 68,
+                "session_title": "流程控制与数据结构入门 第4课",
+                "session_no": 4,
+                "duration_minutes": 99,
+                "video_url": "https://cdn.example.com/session-assets/00000068_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 69,
+                "session_title": "流程控制与数据结构入门 第5课",
+                "session_no": 5,
+                "duration_minutes": 90,
+                "video_url": "https://cdn.example.com/session-assets/00000069_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 70,
+                "session_title": "流程控制与数据结构入门 第6课",
+                "session_no": 6,
+                "duration_minutes": 61,
+                "video_url": "https://cdn.example.com/session-assets/00000070_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 71,
+                "session_title": "流程控制与数据结构入门 第7课",
+                "session_no": 7,
+                "duration_minutes": 116,
+                "video_url": "https://cdn.example.com/session-assets/00000071_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 72,
+                "session_title": "流程控制与数据结构入门 第8课",
+                "session_no": 8,
+                "duration_minutes": 88,
+                "video_url": "https://cdn.example.com/session-assets/00000072_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 73,
+                "session_title": "流程控制与数据结构入门 第9课",
+                "session_no": 9,
+                "duration_minutes": 86,
+                "video_url": "https://cdn.example.com/session-assets/00000073_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 74,
+                "session_title": "流程控制与数据结构入门 第10课",
+                "session_no": 10,
+                "duration_minutes": 106,
+                "video_url": "https://cdn.example.com/session-assets/00000074_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          },
+          {
+            "module_id": 9,
+            "module_title": "函数抽象与小练习",
+            "module_no": 3,
+            "overall_ratio": 0,
+            "sessions": [
+              {
+                "session_id": 75,
+                "session_title": "函数抽象与小练习 第1课",
+                "session_no": 1,
+                "duration_minutes": 75,
+                "video_url": "https://cdn.example.com/session-assets/00000075_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 76,
+                "session_title": "函数抽象与小练习 第2课",
+                "session_no": 2,
+                "duration_minutes": 64,
+                "video_url": "https://cdn.example.com/session-assets/00000076_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 77,
+                "session_title": "函数抽象与小练习 第3课",
+                "session_no": 3,
+                "duration_minutes": 100,
+                "video_url": "https://cdn.example.com/session-assets/00000077_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 78,
+                "session_title": "函数抽象与小练习 第4课",
+                "session_no": 4,
+                "duration_minutes": 118,
+                "video_url": "https://cdn.example.com/session-assets/00000078_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 79,
+                "session_title": "函数抽象与小练习 第5课",
+                "session_no": 5,
+                "duration_minutes": 91,
+                "video_url": "https://cdn.example.com/session-assets/00000079_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 80,
+                "session_title": "函数抽象与小练习 第6课",
+                "session_no": 6,
+                "duration_minutes": 112,
+                "video_url": "https://cdn.example.com/session-assets/00000080_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 81,
+                "session_title": "函数抽象与小练习 第7课",
+                "session_no": 7,
+                "duration_minutes": 83,
+                "video_url": "https://cdn.example.com/session-assets/00000081_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 82,
+                "session_title": "函数抽象与小练习 第8课",
+                "session_no": 8,
+                "duration_minutes": 62,
+                "video_url": "https://cdn.example.com/session-assets/00000082_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 83,
+                "session_title": "函数抽象与小练习 第9课",
+                "session_no": 9,
+                "duration_minutes": 86,
+                "video_url": "https://cdn.example.com/session-assets/00000083_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              },
+              {
+                "session_id": 84,
+                "session_title": "函数抽象与小练习 第10课",
+                "session_no": 10,
+                "duration_minutes": 111,
+                "video_url": "https://cdn.example.com/session-assets/00000084_03.mp4",
+                "watch_ratio": 0,
+                "homework_done": false,
+                "transcode_status": "completed"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "session": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "session_id": 5,
+        "session_no": 5,
+        "session_title": "语法基础与开发环境 第5课",
+        "teaching_status": "completed",
+        "teaching_date": "2026-01-22T00:00:00",
+        "module_id": 1,
+        "module_name": "语法基础与开发环境",
+        "series_id": 1,
+        "assets": [
+          {
+            "asset_id": 13,
+            "asset_code": "AST0000000501",
+            "asset_name": "语法基础与开发环境 第5课 讲义",
+            "material_category": "handout",
+            "access_scope": "enrolled_only",
+            "file_url": "https://cdn.example.com/session-assets/00000005_01.pdf",
+            "file_size": 446784661
+          },
+          {
+            "asset_id": 14,
+            "asset_code": "AST0000000502",
+            "asset_name": "语法基础与开发环境 第5课 参考资料",
+            "material_category": "reference",
+            "access_scope": "enrolled_only",
+            "file_url": "https://cdn.example.com/session-assets/00000005_02.pdf",
+            "file_size": 585887224
+          },
+          {
+            "asset_id": 15,
+            "asset_code": "AST0000000503",
+            "asset_name": "语法基础与开发环境 第5课 回放视频",
+            "material_category": "video",
+            "access_scope": "enrolled_only",
+            "file_url": "https://cdn.example.com/session-assets/00000005_03.mp4",
+            "file_size": 515850910
+          }
+        ],
+        "video": {
+          "video_id": 5,
+          "video_code": "VID00000015",
+          "video_title": "语法基础与开发环境 第5课 回放视频",
+          "duration_seconds": 6671,
+          "cover_url": "https://cdn.example.com/video-cover/00000015.jpg",
+          "transcode_status": "completed",
+          "review_status": "approved",
+          "video_url": "https://cdn.example.com/session-assets/00000005_03.mp4",
+          "chapters": [
+            {
+              "id": 13,
+              "chapter_no": 1,
+              "chapter_title": "第1章",
+              "start_second": 0,
+              "end_second": 2223
+            },
+            {
+              "id": 14,
+              "chapter_no": 2,
+              "chapter_title": "第2章",
+              "start_second": 2223,
+              "end_second": 4446
+            },
+            {
+              "id": 15,
+              "chapter_no": 3,
+              "chapter_title": "第3章",
+              "start_second": 4446,
+              "end_second": 6671
+            }
+          ]
+        }
+      }
+    }
+  },
+  "tickBatch": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "inserted": 3,
+        "study_seconds_delta": 66,
+        "message": "ok"
+      }
+    }
+  },
+  "complete": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "session_id": 5,
+        "completed": true
+      }
+    }
+  }
+}
