@@ -455,3 +455,8 @@ test-reports/H-reverify-package.md(一令 pytest+分项手工表+提交索引)�
 - a2 三条(video/start / sale_status 澄清 / 聚合端点)与数据事故(帖删除/订单来源)无因果 → **解耦,独立冻结**(contracts/reshape-a2.json)。数据事故处置(帖删除定责/3 笔单标种子)独立推进,不阻塞契约。
 ## task109 GWT③ 修正·签字文本(待用户)
 「manager 完整可用 4 页(courses/course-detail/questions/question-detail);例外 4 处=users/mcp/dashboard 整页+rag collections 卡;例外处理=导航灰显+横幅/诚实空态」
+
+## 用户三裁决定案+删除定责终版(2026-09-13)
+1. **3 笔 pending 订单**:已经 API 取消(3-260906171439/182630/182637 全部 200,pending 清零;取消接口=POST /trade/order/{no}/cancel)。
+2. **帖删除定责(binlog 终版)**:17:02:39 大事务(thread_id=63)删除帖 88/89/90/97+评论+反应+task05 测试单 6-260906172441+券记录——**目标清单与 tracker 公布的 P1-7 残留清单完全重合**;客户端带 READ COMMITTED(app/database.py 无此配置=自定义脚本客户端);ROW binlog 不含执行者身份,general_log=OFF → **agent 级定责不可达**。定责结论:具有 MySQL 凭据(.env)+知晓残留清单的行为人,在第三波 agent 运行窗口执行了清理;可能是善意越权(执行 P1-7 条目)。处置:①禁 DB 直写条款已在 B 批开工单生效 ②建议开启 MySQL general_log(或审计插件)供未来溯源(用户裁定是否开启) ③演示前全库快照+差异比对维持必做。
+3. **T19-3 已签** → reshape-b v2 冻结(见上),实施派第二批。

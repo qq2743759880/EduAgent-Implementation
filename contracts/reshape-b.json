@@ -1,0 +1,60 @@
+{
+ "planId": "reshape-b",
+ "draft": false,
+ "frozen_at": "2026-09-06",
+ "change_order": ".ai-hub/plans/contract-change-reshape-b-health-scan.md(用户已签字)",
+ "endpoints": [
+  {
+   "method": "POST",
+   "path": "/api/mcp/health-scan-async",
+   "resp": {
+    "job_id": "string"
+   },
+   "status": 202,
+   "idempotency": "同参数重复 POST 返回同一 job_id(用户签字①)"
+  },
+  {
+   "method": "GET",
+   "path": "/api/mcp/health-scan/{job_id}",
+   "resp": {
+    "status": "running|done",
+    "result": "MCPHealthScanResp"
+   },
+   "errors": {
+    "40450": "job 不存在(用户签字②)"
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/mcp/health-scan",
+   "compat": "旧同步端点保留 30 天兼容窗口,此后下线"
+  }
+ ],
+ "amendments": [
+  {
+   "method": "POST",
+   "path": "/api/favorites",
+   "body": {
+    "series_id": "int"
+   },
+   "note": "实测幂等;原遗漏于 reshape-a 冻结清单,本轮补登(2026-09-06 验收 A4)"
+  },
+  {
+   "id": "T19-3",
+   "signed": "2026-09-12 用户签字",
+   "add": {
+    "error_code": "50301",
+    "name": "DEPENDENCY_UNAVAILABLE",
+    "semantics": "依赖不可达的业务语义码(替代 500/50300 直泄)",
+    "sanitization": "message 面向用户(依赖服务暂不可用),原始异常仅入日志",
+    "affected": "全局异常处理器 + knowledge/mcp 等依赖型端点",
+    "compat": "纯增量,回滚=revert 单 commit"
+   }
+  }
+ ],
+ "acceptance": {
+  "health_p95_ms": 500,
+  "scan_concurrent": 50
+ },
+ "hash_sha256": "b7b506b79a4db83bee3cc13ed270f6021073ce833139f4a1c8c5e7e0b9dd5c24"
+}
