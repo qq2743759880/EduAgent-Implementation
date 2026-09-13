@@ -214,6 +214,20 @@ class Settings(BaseSettings):
     CHECKPOINT_TTL: int = 604800              # LangGraph checkpoint TTL（7 天 = 604800s，对齐 task26 防过载）
 
     # ============================================================
+    # 【H 加固批 · Mimosa 审计登记项 ①② 修复开关】※ 独立安全加固配置段
+    # ============================================================
+    # ① coding 判题 exec 子进程隔离（H-1）：True → 用户代码在独立 python 子进程
+    #   （-I isolated mode）中执行，timeout 硬杀；False → 回退旧进程内 exec 路径
+    #   （回滚开关，默认开）。
+    CODING_EXEC_SUBPROCESS: bool = True
+    # ② checkpoint 快照 HMAC 签名（H-2）：True → pickle 快照包 HMAC-SHA256 信封写入，
+    #   读时恒定时间校验，不过即丢弃走重建（Redis 被写不再等于 RCE）；False → 回退旧
+    #   无签名裸 pickle 行为（回滚开关，默认开）。
+    CHECKPOINT_SIGN: bool = True
+    # HMAC 独立密钥：留空 → 回退 JWT_SECRET（启动 WARN 提示隔离性缺失）。
+    CHECKPOINT_HMAC_KEY: str = ""
+
+    # ============================================================
     # 【task96 新增段 · R4 context editing 与上下文使用率监控】※ 本段为 task96 专属，
     #   并行任务（task93 skills / task95 MCP）请勿在此段内插入配置，避免 merge 冲突。
     #   对齐 Claude Code《Manage Claude's context window》：context editing = 最轻量上下文管理

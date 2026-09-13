@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
 from datetime import datetime
 from typing import Any
 
 from app.common.exceptions import AppException as BizError
+from app.config import settings
 from app.database import execute_write, fetch_all, fetch_one
 
 from app.interactive.coding.schemas import (
@@ -105,10 +112,108 @@ async def _run_piston(lang: str, code: str, stdin: str, timeout: float = 3.0) ->
     return None
 
 
+# ============== H-1 加固：Python 用户代码子进程隔离 =============
+# Mimosa 审计登记①（HIGH）：原 mock 路径 exec(compile(code,...), ns) 在后端进程内
+# 直接执行用户提交代码——用户代码可 import os 等做任意事（读环境变量/文件/起线程）。
+# 修复：用户代码写入随机名临时文件 → subprocess 起独立 python（同 venv）执行 →
+# stdin 喂参数、stdout 捕获 → timeout 硬杀 → 临时文件用后即删。
+# 防逃逸基线：子进程启动参数加 -I（isolated mode：忽略 PYTHON* 环境变量、不加
+# site-packages 用户目录、隔离 sys.path）。资源限制：Windows 无 resource 模块
+# （RLIMIT_CPU/RLIMIT_AS 不可用），本层以 timeout 硬杀兜底；容器级隔离
+# （cgroups/jobs 限额 + 只读 FS + 网络禁用）归 C 全量部署批处理（ponytail 登记）。
+
+# 判题时长约束沿用现状（与 Piston 路径 3s 同源）；子进程超时硬杀。
+SUBPROCESS_TIMEOUT_SECONDS: float = 3.0
+
+# 判题引导器：在隔离子进程内执行。argv[1]=用户代码临时文件路径；stdin=用例输入。
+# 退出码约定：0=Pass（stdout=函数返回值）；3=RuntimeError（stderr=原因）；其他=RuntimeError 兜底。
+# 语义与旧进程内 _run_mock 逐分支对齐（ExecError/No target function/RunError）。
+_RUNNER_SRC = r'''
+import sys
+
+def main():
+    user_path = sys.argv[1]
+    with open(user_path, "r", encoding="utf-8") as f:
+        src = f.read()
+    ns = {}
+    try:
+        exec(compile(src, "<code>", "exec"), ns)
+    except Exception as e:
+        sys.stderr.write("ExecError: %s: %s" % (type(e).__name__, e))
+        sys.exit(3)
+    fn = None
+    name = None
+    for cand in ("add", "reverse", "fib"):
+        if cand in ns and callable(ns[cand]):
+            fn = ns[cand]
+            name = cand
+            break
+    if fn is None:
+        sys.stderr.write("No target function add/reverse/fib defined")
+        sys.exit(3)
+    try:
+        parts = sys.stdin.read().strip().split()
+        if name == "add":
+            out = str(fn(int(parts[0]), int(parts[1])))
+        elif name == "reverse":
+            out = str(fn(parts[0] if parts else ""))
+        elif name == "fib":
+            out = str(fn(int(parts[0])))
+        else:
+            sys.stderr.write("No target function")
+            sys.exit(3)
+    except Exception as e:
+        sys.stderr.write("RunError: %s: %s" % (type(e).__name__, e))
+        sys.exit(3)
+    sys.stdout.write(out)
+    sys.exit(0)
+
+main()
+'''
+
+
+async def _run_python_subprocess(code: str, stdin: str, timeout: float) -> tuple[str, str, str | None]:
+    """隔离子进程判题：返回 (stdout, stderr, status) 三元组（契约与旧 mock 一致）。
+
+    - 父进程只做 ast.parse（纯语法分析、无代码执行）→ CompileError 语义保持；
+    - exec/函数调用全部发生在 -I 隔离子进程内；
+    - 超时硬杀后返回 RuntimeError（TimeoutError 描述），聚合逻辑不受影响。
+    """
+    try:
+        ast.parse(code)
+    except SyntaxError as e:
+        return "", f"SyntaxError: {e.msg} line {e.lineno}", "CompileError"
+
+    tmpdir = tempfile.mkdtemp(prefix="edu_judge_")
+    user_file = os.path.join(tmpdir, f"u{os.urandom(8).hex()}.py")
+    try:
+        with open(user_file, "w", encoding="utf-8") as f:
+            f.write(code)
+        try:
+            proc = await asyncio.to_thread(
+                subprocess.run,
+                [sys.executable, "-I", "-c", _RUNNER_SRC, user_file],
+                input=stdin,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=tmpdir,
+            )
+        except subprocess.TimeoutExpired:
+            return "", f"TimeoutError: execution exceeded {timeout}s (subprocess killed)", "RuntimeError"
+        if proc.returncode == 0:
+            return proc.stdout.strip(), "", "Pass"
+        return "", (proc.stderr or "ExecError: unknown subprocess failure")[:500], "RuntimeError"
+    finally:
+        # 临时文件用后即删（随机目录名 + 随机用户代码文件一并清除）
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 async def _run_mock(lang: str, code: str, stdin: str, expected_output: str | None = None, *,
                      force_status: str | None = None) -> tuple[str, str, str | None]:
     """本地 mock：
-       - Python：ast 解析失败 → CompileError；否则 eval 预置函数（只支持代码中明确写了 def add/reverse/fib 等对应题目）
+       - Python：ast 解析失败 → CompileError；否则执行用户代码——
+         默认【子进程隔离】（H-1 加固）；CODING_EXEC_SUBPROCESS=False 回退旧进程内 exec
        - JS/C++：走黑盒：如果 stdin 的输出和 expected_output 字符串匹配 code 关键词（"return"/"split"/"reverse"/"for"）→ 猜测通过
        - 返回 (stdout, stderr, status_inferred)
     """
@@ -118,13 +223,16 @@ async def _run_mock(lang: str, code: str, stdin: str, expected_output: str | Non
         return "", "mock forced runtime error", "RuntimeError"
 
     if lang == "python":
+        if settings.CODING_EXEC_SUBPROCESS:
+            return await _run_python_subprocess(code, stdin, timeout=SUBPROCESS_TIMEOUT_SECONDS)
+        # ---- 回滚路径（CODING_EXEC_SUBPROCESS=False）：旧进程内 exec（RCE 面保留，仅供回滚） ----
         try:
             ast.parse(code)
         except SyntaxError as e:
             return "", f"SyntaxError: {e.msg} line {e.lineno}", "CompileError"
         ns: dict[str, Any] = {}
         try:
-            exec(compile(code, "<code>", "exec"), ns)
+            exec(compile(code, "<code>", "exec"), ns)  # noqa: S102 -- 回滚开关显式保留的旧路径
         except Exception as e:  # noqa: BLE001
             return "", f"ExecError: {type(e).__name__}: {e}", "RuntimeError"
         # 按题目挑函数
