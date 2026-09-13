@@ -492,6 +492,7 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - 结论:**262 findings(237H+25L),生产代码仅 10 条,其余全在临时验证/文档脚本**(exec/eval 类,一次性工具);run=inconclusive(部分覆盖缺口,登记:后续可重跑补覆盖)。
 - **已修(H1d,本轮)**:course_admin/service.py upload_id 路径穿越(HIGH)——白名单正则+回归用例;23/23 测试过。
 - **登记待办(硬ening 批次,归 C 阶段/B 批后续)**:①coding/service.py:127 exec 在进程内跑用户代码(HIGH,功能本意=判题,但无沙箱——改造方向=子进程/容器隔离+资源限制)②checkpoint_redis.py pickle 反序列化(HIGH,Redis 被攻破→RCE;方向=签名校验/改 JSON 序列化)③4 处 insecure-randomness LOW(random 用于抖动/非密钥,登记不修)。
+- **[x] 硬ening 批次闭环(✅ C 阶段加固批 2026-09-13,报告 test-reports/HARDening-completion-report.md)**:①exec 子进程隔离(✅ b661ea2:用户代码写随机临时文件→python -I 隔离子进程判题,stdin 喂参/stdout 捕获/timeout 3s 硬杀/临时文件即删;三元组与 CompileError/RuntimeError/force_status 语义保持;回滚开关 CODING_EXEC_SUBPROCESS 默认开;pytest 14 passed 含 pid 隔离实证+8010 临时实例 HTTP 实证 child pid=8332≠backend pid=14940;Windows 无 resource 模块→容器级隔离登记 C 全量)②pickle HMAC 签名(✅ a54fcdf:快照包 {v:1,hmac:hex,payload:b64} 信封,HMAC-SHA256 key=CHECKPOINT_HMAC_KEY 缺省回退 JWT_SECRET+WARN;读侧恒定时间 compare_digest,不过/旧无签名→丢弃+WARN+走重建不抛 500;一次性影响=存量无签名快照升级后拒收重建;回滚开关 CHECKPOINT_SIGN 默认开;真 Redis pytest 7 passed+task24/26/39 回归 48 passed 1 skipped)③维持登记不修。
 - 依赖风险:0 受影响包。
 ## R0 排序调整(用户裁定 2026-09-13)
 **所有其他阶段任务完成后才进行前端风格大改**;首要目标=项目实际跑起来(部署可运行性)。R0 前置队列的 3 件准备(截图 23 页基线齐✅/全库快照 997MB✅/Mimosa 审计✅)本轮已全部完成——R0 解锁条件届时齐备,唯优先级降至最后。
