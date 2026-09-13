@@ -504,3 +504,8 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 | 3 | B3-impl 独立复验(平台恢复后派) | ⬜ |
 | 4 | R0+R1/R2/R3 前端大改 | ⏸ 最低优先(用户裁定) |
 | 5 | C 阶段其余(pgvector 收敛等) | ⏸ 占位 |
+
+## K 系列验收(2026-09-13,6 commits,编排者复现)
+- pytest **24 passed** 我方实跑(K1 4/K2 6/K3 4/K4 10,K4 真 Redis);deploy.mjs status **9/9**(D2 后含 refine 抽验)。
+- 事件登记补全:#11-13=K 系列派单 3 连败(2×Model request failed/1×600s inactive),第 4 次成功;**inactive 的 agent 实际已完成 K1-K3(83ba660/cef769c/f261846)**——印证"cancelled/inactive≠没干活,先查盘再重派"。
+- 行为变更声明:K4 存量 refresh 一次性失效需重登(已批)/K1 METRICS_TOKEN 可选门(未设=公开+WARN)/K2-K3 默认行为不变。
