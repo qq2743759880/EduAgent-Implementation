@@ -5,6 +5,7 @@
 //         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
 //         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6)
+//         ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
 // 全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
@@ -248,6 +249,12 @@ const debugCheck = Object.assign(
   },
   { __warn: true, __fix: FIX.debug });
 await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/admin/users)`, debugCheck);
+
+// ⑨ 抽验页(C5-D2 扩清单):admin-users-refine-proto.html 单列第 9 项,
+// 不并入 ⑦ 核心故事线(核心页 8 个口径不变);FAIL 指引同前端。
+await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object.assign(
+  () => httpProbe(`${FRONTEND}/admin-users-refine-proto.html`),
+  { __fix: FIX.frontend }));
 
 // ---------- 汇总 ----------
 const pass = results.filter((r) => r.ok).length;

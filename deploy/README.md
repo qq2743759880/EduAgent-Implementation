@@ -62,7 +62,7 @@
 |---|---|---|
 | MySQL 8 | 业务主库 | Windows 服务方式运行；空库不建表（见 §3 步骤③） |
 | Node.js ≥ 18 | 部署脚本 / 前端 | deploy.mjs、check-demo.mjs 零新依赖（fetch/net/child_process 内置）；当前验证机 Node v24、next 16.3.0 |
-| Python venv（3.11.x） | 后端运行时 | `edu-agent/pyproject.toml` 要求 `>=3.11,<3.12`；虚拟解释器路径固定为 `edu-agent\.venv\Scripts\python.exe`（deploy.mjs 硬编码查找）。依赖以 pyproject `[project].dependencies` 为真相源；venv 首次创建的安装命令历史未统一留存（**待验证**），常用 `python -m pip install -e .` |
+| Python venv（3.11.x） | 后端运行时 | `edu-agent/pyproject.toml` 要求 `>=3.11,<3.12`；虚拟解释器路径固定为 `edu-agent\.venv\Scripts\python.exe`（deploy.mjs 硬编码查找）。依赖以 pyproject `[project].dependencies` 为真相源；venv 首次创建安装命令（C5-O2 已实证收口，2026-09-13）：`python -m venv .venv` 后在 `edu-agent/` 下执行 `python -m pip install -e .`（pyproject `[build-system]` = hatchling，pip 按 PEP 517 自动拉取构建后端；当前 venv 实测为 editable 安装——site-packages 含 `_editable_impl_edu_agent.pth` + `edu_agent-0.3.0.dist-info`，`pip show edu-agent` 正常） |
 | Docker Desktop | 宿主 Redis 容器 | 容器名 `edu-redis-standalone`；引擎未运行时 check-demo/deploy 会报「docker 引擎未运行」 |
 | VMware + 虚拟机 | VM 内 Docker 跑 Milvus/Mongo/MinIO/Neo4j | VM 电源无法被脚本拉起（宿主 GUI 操作），脚本只探测 + 给指引 |
 
@@ -127,7 +127,11 @@ mysql -uroot -p < deploy/backups/20260816_task00/edu_full_dump.sql
 mysql -uroot -p -e "SELECT COUNT(*) AS table_count FROM information_schema.tables WHERE table_schema='edu'"
 
 # 方式二：更新快照 deploy/backups/edu_snapshot_20260913_preR0.sql（997MB，无清单文件；
-#   恢复命令同上通用方式，是否含建库语句未核验——待验证）
+#   建库语句已核验（C5-O2，2026-09-13）：该快照为单库模式 dump，全文件 **不含** CREATE DATABASE / USE
+#   语句（grep 全文 0 匹配，区别于方式一）——必须先建库再导入）
+mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS edu DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
+mysql -uroot -p edu < deploy/backups/edu_snapshot_20260913_preR0.sql
+# 验证（期望 106 表，同方式一）
 ```
 
 - 快照背景见 `deploy/backups/20260816_task00/BACKUP_MANIFEST.md`（106 表、恢复演练 85.8s 关键表行数一致）。
@@ -232,7 +236,7 @@ node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一�
 1. **每次演示/交付前**：`node scripts\deploy\deploy.mjs status` → 期望 8/8 全绿（约 2 秒）。
 2. **每日**：Docker Desktop 在跑、`docker exec edu-redis-standalone redis-cli ping` = PONG；VM 在线（①③ 探测绿）。
 3. **每周**：查看 `logs/` 磁盘占用（轮转/保留由 .env 控制）；`deploy-frontend-build.log` 是否有异常 build 重试。
-4. Redis 容器未配置开机自启（是否配 restart 策略**待验证**），宿主机重启后需手动 `docker start edu-redis-standalone`。
+4. Redis 容器开机自启（C5-D3 已实证收口，2026-09-13）：`docker inspect edu-redis-standalone` RestartPolicy.Name = `unless-stopped`（容器 Running=true），宿主机重启后 Docker 自动拉起容器，无需手动 `docker start`；但 Docker Desktop 本身需设为开机自启（Windows 设置 → 启动项）。
 
 ### 数据安全红线
 
