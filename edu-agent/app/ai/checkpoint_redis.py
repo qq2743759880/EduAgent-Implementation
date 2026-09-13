@@ -26,10 +26,26 @@ task39 GWT④ 并发加固（并发 100 resume 无丢失/错乱）：
     修复：客户端初始化加全局锁；持久化/回填加「按 thread_id 粒度的锁」，
           把「super().aput() + 落盘」整段串行化，保证同一线程的写顺序与快照一致。
           锁按 thread_id 分片，不同线程之间仍完全并发（不影响吞吐）。
+
+H 加固批（Mimosa 审计登记② HIGH）：pickle 快照 HMAC 签名。
+    原实现 pickle.dumps 后直写 Redis、读时 pickle.loads 直反序列化——Redis 被写入
+    即等于 RCE（攻击者可构造恶意 pickle payload）。修复（签名最小方案）：
+      写：payload = pickle.dumps(...) → envelope = {"v":1, "hmac": hex, "payload": b64(payload)}
+          hmac = HMAC-SHA256(key, payload)；key = CHECKPOINT_HMAC_KEY（缺省回退
+          JWT_SECRET 并 WARN）。
+      读：先 json 解析 envelope → hmac.compare_digest 恒定时间校验 → 不过即丢弃该
+          快照（WARN）+ 走重建路径（内存从空开始重建，不抛 500）。
+    兼容：旧「无签名裸 pickle」快照按「无签名 = 不可信」丢弃走重建（一次性影响：
+    升级后存量 checkpoint 线程首次 resume 时重建，不恢复旧中断态）。
+    回滚开关：CHECKPOINT_SIGN=False → 回退旧裸 pickle 行为（仅应急）。
 """
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import hmac
+import json
 import pickle
 import uuid
 from typing import Any
@@ -39,6 +55,9 @@ from loguru import logger
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.base import CheckpointTuple
 from langchain_core.runnables import RunnableConfig
+
+# 签名信封版本（结构变更时递增；读侧只认 v=1，其余视为不可信丢弃）
+_ENVELOPE_VERSION = 1
 
 
 class PlainRedisSaver(InMemorySaver):
@@ -75,6 +94,57 @@ class PlainRedisSaver(InMemorySaver):
         # 首轮并发期间 self._loop 仍为 None → 每次都判定「跨 loop」→ 反复重置锁表
         # → 各协程拿到不同的 Lock 对象 → 互斥彻底失效（实测同线程 100 并发写会丢最后一步）。
         self._locks_loop: Any = None
+        # H 加固：HMAC 回退 JWT_SECRET 的 WARN 只发一次（懒触发，随每次读写动态取配置，
+        # 以便测试/灰度运行时切换 CHECKPOINT_HMAC_KEY / JWT_SECRET 无需重启）。
+        self._hmac_fallback_warned = False
+
+    # ---- H 加固批：pickle 快照 HMAC 签名 ----
+    def _hmac_key(self) -> bytes:
+        """签名密钥：优先 CHECKPOINT_HMAC_KEY 独立密钥；缺省回退 JWT_SECRET（首次 WARN）。"""
+        from app.config import settings
+
+        key = (getattr(settings, "CHECKPOINT_HMAC_KEY", "") or "").strip()
+        if key:
+            return key.encode("utf-8")
+        if not self._hmac_fallback_warned:
+            self._hmac_fallback_warned = True
+            logger.warning(
+                "[PlainRedisSaver] CHECKPOINT_HMAC_KEY 未配置，checkpoint 快照签名密钥回退 "
+                "JWT_SECRET——与鉴权密钥共享会增加密钥面，生产建议配置独立强随机密钥。"
+            )
+        return (getattr(settings, "JWT_SECRET", "") or "").encode("utf-8")
+
+    def _sign_envelope(self, payload: bytes) -> bytes:
+        """pickle payload → 签名信封字节：{"v":1,"hmac":hex(HMAC-SHA256(key,payload)),"payload":b64}。"""
+        mac = hmac.new(self._hmac_key(), payload, hashlib.sha256).hexdigest()
+        return json.dumps(
+            {"v": _ENVELOPE_VERSION, "hmac": mac,
+             "payload": base64.b64encode(payload).decode("ascii")},
+            separators=(",", ":"),
+        ).encode("ascii")
+
+    def _verify_and_open(self, raw: bytes) -> bytes | None:
+        """校验签名信封，通过返回内层 pickle payload；不可信（旧无签名/篡改/结构异常）返回 None。
+
+        恒定时间比较（hmac.compare_digest）防时序侧信道。
+        """
+        try:
+            env = json.loads(raw)
+        except Exception:
+            return None  # 非 JSON → 旧无签名裸 pickle，按不可信处理
+        if not isinstance(env, dict) or env.get("v") != _ENVELOPE_VERSION:
+            return None
+        mac, b64 = env.get("hmac"), env.get("payload")
+        if not isinstance(mac, str) or not isinstance(b64, str):
+            return None
+        try:
+            payload = base64.b64decode(b64, validate=True)
+        except Exception:
+            return None
+        expect = hmac.new(self._hmac_key(), payload, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(mac, expect):
+            return None
+        return payload
 
     # ---- 锁设施（GWT④）：随事件循环重建，避免跨 loop 使用 asyncio.Lock 报错 ----
     def _locks_for_loop(self) -> tuple[asyncio.Lock, asyncio.Lock]:
@@ -128,19 +198,28 @@ class PlainRedisSaver(InMemorySaver):
         return f"{self._prefix}:{thread_id}"
 
     async def _persist_thread(self, thread_id: str) -> None:
-        """把该线程的 storage/writes/blobs 快照持久化到 Redis。"""
+        """把该线程的 storage/writes/blobs 快照持久化到 Redis（H 加固：HMAC 签名信封）。"""
         try:
             storage = dict(self.storage.get(thread_id) or {}) if hasattr(self, "storage") and thread_id in self.storage else {}
             writes = {k: v for k, v in dict(self.writes).items() if k[0] == thread_id}
             blobs = {k: v for k, v in dict(self.blobs).items() if k[0] == thread_id}
             payload = pickle.dumps({"storage": storage, "writes": writes, "blobs": blobs})
+            from app.config import settings
+            if getattr(settings, "CHECKPOINT_SIGN", True):
+                raw = self._sign_envelope(payload)
+            else:
+                raw = payload  # 回滚开关关闭：旧裸 pickle 行为（仅应急）
             r = await self._client()
-            await r.set(self._key(thread_id), payload, ex=self._ttl)
+            await r.set(self._key(thread_id), raw, ex=self._ttl)
         except Exception as exc:  # 持久化失败不阻塞执行（内存仍可用）
             logger.warning(f"[PlainRedisSaver] persist thread {thread_id} 失败: {type(exc).__name__}: {exc}")
 
     async def _ensure_loaded(self, thread_id: str) -> None:
-        """aget_tuple 前把该线程状态从 Redis 回填到内存（首次或进程重启后）。"""
+        """aget_tuple 前把该线程状态从 Redis 回填到内存（首次或进程重启后）。
+
+        H 加固：签名开启时先校验 HMAC 信封——不可信（旧无签名/被篡改）快照直接丢弃
+        （WARN），内存从空开始，等价「快照不存在」走重建路径，不抛 500。
+        """
         if thread_id in self._loaded_threads:
             return
         try:
@@ -149,7 +228,19 @@ class PlainRedisSaver(InMemorySaver):
             if raw is None:
                 self._loaded_threads.add(thread_id)
                 return
-            data = pickle.loads(raw)
+            from app.config import settings
+            if getattr(settings, "CHECKPOINT_SIGN", True):
+                payload = self._verify_and_open(raw)
+                if payload is None:
+                    logger.warning(
+                        f"[PlainRedisSaver] thread {thread_id} 快照签名校验失败或为旧无签名格式"
+                        "——已丢弃（无签名=不可信），走重建路径"
+                    )
+                    self._loaded_threads.add(thread_id)
+                    return
+            else:
+                payload = raw
+            data = pickle.loads(payload)
             self.storage[thread_id].update(data.get("storage", {}))
             for k, v in data.get("writes", {}).items():
                 self.writes[k] = v
