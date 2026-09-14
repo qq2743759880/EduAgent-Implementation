@@ -81,6 +81,12 @@ async def _post_stream(monkeypatch, token_aiter, build_finalize=_ok_finalize):
         return None, _make_bundle(), [], token_aiter, build_finalize, []
 
     monkeypatch.setattr(chat_router, "service_chat_stream", _fake_service)
+    # R02：本文件是「旧路径（service_chat_stream）」的错误通道契约测试——STREAM_VIA_GRAPH
+    # 默认 True 会把 /api/chat/stream 分发到图适配层（绕过上面的 mock，打到真 LLM）。
+    # 钉住 False 回退开关，锁定被测对象为旧路径（与新路径契约由 test_contract_task_r02.py 覆盖）。
+    from app.config import settings as _settings
+
+    monkeypatch.setattr(_settings, "STREAM_VIA_GRAPH", False)
 
     app = FastAPI()
     app.include_router(chat_router.router)
