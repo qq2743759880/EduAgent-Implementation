@@ -200,6 +200,22 @@ class Settings(BaseSettings):
     MAX_REFLECT_ITERATIONS: int = 2       # LLM-as-judge 最大回 plan 轮数，超限 answer 标 degraded_reason="reflect_max_iter"
 
     # ============================================================
+    # R02 流式主路径进 LangGraph（dev-plan-reshape-r W2）
+    # ============================================================
+    # 流式主路径执行体开关：True → POST /api/chat/stream 经 graph.astream（六节点图）执行；
+    # False → 一键回旧路径 run_agent_turn（flows/agent.py 普通函数）。SSE 契约冻结（contracts/reshape-a.json）。
+    STREAM_VIA_GRAPH: bool = True
+    # 图内检索参数对齐旧路径（R02 检索参数对齐；基线=RagQueryRequest 生产默认 + R20-b PROD_DEFAULTS）。
+    # 六节点直连检索（sixnode.fan_out knowledge 快路径）与子代理 search_knowledge 服务共用。
+    SIXNODE_USE_HYDE: bool = True            # 对齐旧路径 use_hyde=True（R20-b 根因：图内硬编码 False 致 Jaccard 0.641）
+    SIXNODE_TOP_K: int = 12                  # 对齐旧路径 top_k=12（图内硬编码 8）
+    SIXNODE_FINAL_MAX_K: int = 5             # 对齐旧路径 final_max_k=5
+    SIXNODE_CUTOFF_DROP_RATIO: float = 0.40  # 对齐旧路径断崖阈值 0.40（图内硬编码 0.2）
+    # 图内 answer 节点流式吐 token 的上层开关（适配层经 configurable.stream_tokens 逐请求门控；
+    # 本开关为全局熔断，False 时图内一律阻塞生成，流式路径退化为整段一次性 token）
+    GRAPH_ANSWER_STREAMING: bool = True
+
+    # ============================================================
     # compaction + R4 context editing + artifact 分流（task26）
     #   对齐 Anthropic《Effective Context Engineering》Compaction 章节：
     #   - 6000 token 阈值；新增 >3000 再触发
@@ -283,6 +299,7 @@ class Settings(BaseSettings):
     QUEUE_KEY: str = "chat:queue"             # LLM 请求排队 Redis list key
     CONCURRENT_KEY_PREFIX: str = "chat:concurrent"  # 单用户并发计数 key 前缀（INCR/DECR）
     GLOBAL_CONCURRENT_KEY: str = "ai:llm:concurrent"  # 全局并发计数 key（原子 Lua INCR/DECR）
+    GUARD_SLOT_TTL: int = 600                # 并发槽 TTL 自愈（R20-b 缺陷：进程崩溃残留槽永不释放 → 用户被永久拒；TTL 须 > 最长请求时长）
     ZSET_SHARD_SIZE: int = 50                 # ZSET 单分片条目上限，超限按 member 哈希分片
     BIGKEY_THRESHOLD_BYTES: int = 1048576     # bigkey 扫描告警阈值（1MB = 1024*1024）
 

@@ -65,9 +65,12 @@ class TokenBucket:
         return self.capacity - self.tokens
 
 
-# Lua：原子 INCR 带上限，超限则回滚返回 -1（避免多 worker 竞态超超卖）
+# Lua：原子 INCR 带上限，超限则回滚返回 -1（避免多 worker 竞态超超卖）；
+# R20-b 缺陷自愈：EXPIRE 无条件刷新（含超限拒绝路径——历史无 TTL 残留槽也会在
+# GUARD_SLOT_TTL 内自愈），进程崩溃未 release 的残留槽位不再永久卡死单用户/全局闸。
 _ACQUIRE_LUA = """
 local v = redis.call('INCR', KEYS[1])
+redis.call('EXPIRE', KEYS[1], ARGV[2])
 if v > tonumber(ARGV[1]) then
   redis.call('DECR', KEYS[1])
   return -1
@@ -80,6 +83,17 @@ if v > 0 then
   return redis.call('DECR', KEYS[1])
 end
 return 0
+"""
+
+# 单用户并发槽原子占用：INCR+TTL 自愈（无条件刷新）+上限回滚
+_ACQUIRE_USER_LUA = """
+local v = redis.call('INCR', KEYS[1])
+redis.call('EXPIRE', KEYS[1], ARGV[2])
+if v > tonumber(ARGV[1]) then
+  redis.call('DECR', KEYS[1])
+  return -1
+end
+return v
 """
 
 
@@ -119,9 +133,12 @@ class ConcurrencyGuard:
             uid = 0
         if self._redis is not None:
             try:
-                v = await self._redis.incr(key)
-                if v > self.user_max:
-                    await self._redis.decr(key)
+                # R20-b 缺陷自愈：INCR+上限回滚+EXPIRE 原子化（崩溃残留槽 TTL 到期自动归零，
+                # 不再永久拒绝该用户）。eval 参数：KEYS[1]=key, ARGV[1]=上限, ARGV[2]=TTL
+                v = await self._redis.eval(
+                    _ACQUIRE_USER_LUA, 1, key, self.user_max, int(getattr(settings, "GUARD_SLOT_TTL", 600)),
+                )
+                if int(v) < 0:
                     return False
                 return True
             except Exception:
@@ -175,7 +192,11 @@ class ConcurrencyGuard:
         """
         if self._redis is not None:
             try:
-                v = await self._redis.eval(_ACQUIRE_LUA, 1, settings.GLOBAL_CONCURRENT_KEY, self.global_limit)
+                # ARGV[2]=GUARD_SLOT_TTL：INCR/EXPIRE 原子化（崩溃残留槽自愈，R20-b 缺陷）
+                v = await self._redis.eval(
+                    _ACQUIRE_LUA, 1, settings.GLOBAL_CONCURRENT_KEY,
+                    self.global_limit, int(getattr(settings, "GUARD_SLOT_TTL", 600)),
+                )
                 if int(v) < 0:
                     return False
             except Exception:
@@ -209,7 +230,10 @@ class ConcurrencyGuard:
             # 让位放行：Redis 分布式计数同步补一次 INCR，避免下漂、多 worker 突破上限
             if self._redis is not None:
                 try:
-                    await self._redis.eval(_ACQUIRE_LUA, 1, settings.GLOBAL_CONCURRENT_KEY, self.global_limit)
+                    await self._redis.eval(
+                        _ACQUIRE_LUA, 1, settings.GLOBAL_CONCURRENT_KEY,
+                        self.global_limit, int(getattr(settings, "GUARD_SLOT_TTL", 600)),
+                    )
                 except Exception:
                     pass
             if not fut_to_set.done():

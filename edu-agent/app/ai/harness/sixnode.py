@@ -158,10 +158,15 @@ class SixNodeHarness(Harness):
                     if isinstance(m, HumanMessage):
                         query = str(m.content)
                 t0 = time.perf_counter()
+                # R02 检索参数对齐（R20-b 根因修复）：原硬编码 use_hyde=False/top_k=8 与旧路径
+                # 生产默认 use_hyde=True/top_k=12 漂移 → docs Jaccard 0.641。现由
+                # sixnode_retrieval_params() 从 settings 读取（默认对齐 retrieve_three_channel 现值）。
+                params = _graph.sixnode_retrieval_params()
                 bundle = await retrieve_three_channel(
                     query, user_id=user_id, role=None,
-                    use_hyde=False, enable_graph=True,
-                    top_k=8, final_max_k=5, cutoff_drop_ratio=0.2,
+                    use_hyde=params["use_hyde"], enable_graph=params["enable_graph"],
+                    top_k=params["top_k"], final_max_k=params["final_max_k"],
+                    cutoff_drop_ratio=params["cutoff_drop_ratio"],
                 )
                 # search 摘要：每文档一行（来源 + 内容片段），token 预算与子代理一致
                 parts = []
@@ -210,11 +215,25 @@ class SixNodeHarness(Harness):
                 elapsed_ms = int((time.perf_counter() - t0) * 1000)
                 logger.info(f"[sixnode.fanout] knowledge 直连检索快路径（0 子代理 LLM）完成，耗时 {elapsed_ms}ms，docs={len(bundle.docs)}")
                 distilled = [r.as_distilled() for r in results]
-                return {"subagent_results": distilled, "degraded_reason": None} | _graph._record(state, "fan_out")
+                # R02（audit P1-5 回填）：真实检索产物写入 state.retrieval，供 run_agent 返回体
+                # 回填与流式适配层 retrieval 帧消费（纯 dict/list，checkpoint pickle 安全）。
+                return {
+                    "subagent_results": distilled,
+                    "degraded_reason": None,
+                    "retrieval": {
+                        "docs": [d.model_dump() for d in bundle.docs],
+                        "graph_entities": [g.model_dump() for g in bundle.graph_entities],
+                        "retrieved_count": int(bundle.raw_retrieved_count or 0),
+                        "rewrite_query": bundle.rewrite_query,
+                        "degraded_reason": bundle.degraded_reason,
+                    },
+                } | _graph._record(state, "fan_out")
             except Exception as exc:
                 logger.warning(f"[sixnode.fanout] knowledge 直连检索失败 → 回退子代理路径: {type(exc).__name__}: {exc}")
 
-        services = _graph._build_tool_services(user_id=user_id, thread_id=thread_id)
+        # 子代理路径：capture 闭包捕获 search_knowledge 真实检索产物（P1-5 回填）
+        capture: dict = {}
+        services = _graph._build_tool_services(user_id=user_id, thread_id=thread_id, capture=capture)
         sub_tasks: list[SubagentTask] = []
         for t in tasks:
             sub_tasks.append(
@@ -235,7 +254,19 @@ class SixNodeHarness(Harness):
         logger.info(f"[sixnode.fanout] 并行 {len(sub_tasks)} 个子代理完成，耗时 {elapsed_ms}ms")
 
         distilled = [r.as_distilled() for r in results]
-        return {"subagent_results": distilled, "degraded_reason": None} | _graph._record(state, "fan_out")
+        # R02（P1-5 回填）：子代理路径经 capture 取 search_knowledge 真实产物（未触发检索则空）
+        cap_ret = capture.get("retrieval") if isinstance(capture.get("retrieval"), dict) else {}
+        return {
+            "subagent_results": distilled,
+            "degraded_reason": None,
+            "retrieval": {
+                "docs": list(cap_ret.get("docs") or []),
+                "graph_entities": list(cap_ret.get("graph_entities") or []),
+                "retrieved_count": int(cap_ret.get("retrieved_count") or 0),
+                "rewrite_query": cap_ret.get("rewrite_query"),
+                "degraded_reason": cap_ret.get("degraded_reason"),
+            },
+        } | _graph._record(state, "fan_out")
 
     async def merge(self, state: AgentState) -> dict:
         distilled = state.get("subagent_results", [])
@@ -301,6 +332,31 @@ class SixNodeHarness(Harness):
             {"role": "system", "content": system_content},
             {"role": "user", "content": query},
         ]
+
+        # R02：流式吐 token 分支——仅当上层适配层经 configurable.stream_tokens=True 显式请求
+        # 且全局开关 GRAPH_ANSWER_STREAMING 开启时启用。普通 run_agent/ainvoke 不带该键，
+        # 走下方原阻塞路径（行为逐字节一致，零变化）。
+        if self._stream_tokens_requested():
+            writer = None
+            try:
+                from langgraph.config import get_stream_writer
+
+                writer = get_stream_writer()
+            except Exception:
+                writer = None
+            if writer is not None:
+                try:
+                    answer = await self._stream_answer_tokens(messages, writer)
+                    return {"final_answer": answer, "degraded_reason": None} | _graph._record(state, "answer")
+                except Exception as exc:
+                    # 流式已吐部分 token → 不重试（防重复输出），异常上抛由适配层转 error 事件
+                    if getattr(exc, "stream_tokens_emitted", False):
+                        raise
+                    logger.warning(
+                        f"[sixnode.answer] 流式生成失败（未吐 token，回退阻塞 strong→fast）: {type(exc).__name__}: {exc}"
+                    )
+                    # 落到下方阻塞降级链（strong 失败语义与原实现一致）
+
         try:
             answer = await _graph._llm_call(messages, model="strong", temperature=settings.LLM_TEMPERATURE, max_tokens=settings.LLM_MAX_TOKENS)
         except Exception as exc:
@@ -311,3 +367,83 @@ class SixNodeHarness(Harness):
                 answer = f"抱歉，AI 服务暂时不可用（{type(exc2).__name__}），请稍后重试。"
                 return {"final_answer": answer, "degraded_reason": "llm_failed"} | _graph._record(state, "answer")
         return {"final_answer": answer, "degraded_reason": None} | _graph._record(state, "answer")
+
+    # ──────────────────────────────────────────────
+    # R02：answer 流式支原语（门控判定 + token 桥接）
+    # ──────────────────────────────────────────────
+    @staticmethod
+    def _stream_tokens_requested() -> bool:
+        """是否处于「流式吐 token」请求上下文（适配层经 configurable.stream_tokens 门控）。"""
+        if not getattr(settings, "GRAPH_ANSWER_STREAMING", True):
+            return False
+        try:
+            from langgraph.config import get_config
+
+            cfg = get_config()
+            return bool((cfg.get("configurable") or {}).get("stream_tokens"))
+        except Exception:
+            return False
+
+    @staticmethod
+    async def _stream_answer_tokens(messages: list[dict], writer) -> str:
+        """strong 模型流式生成：token 增量经 LangGraph custom stream writer 推给适配层（SSE token 帧）。
+
+        - 阻塞生成器 → 线程池 queue 桥接（与 generator.generate_stream 同构，60s 无增量超时）；
+        - 复用 call_chat_stream_with_retry：未吐 token 前按错误类型重试 + FAST↔STRONG 互切；
+        - 已吐 token 后失败 → 标记 stream_tokens_emitted 后上抛（不静默、不重复输出）；
+        - 异常统一 record_degraded("llm")（对齐 graph._llm_call 口径）。
+        """
+        import asyncio as _asyncio
+        import queue as _queue
+        import threading as _threading
+
+        from app.chat.generator import _ChatClient
+
+        client = _ChatClient.get()
+        loop = _asyncio.get_running_loop()
+        q: _queue.Queue = _queue.Queue()
+
+        def _worker():
+            try:
+                for tok in client.call_chat_stream_with_retry(
+                    messages=messages,
+                    model="strong",
+                    temperature=settings.LLM_TEMPERATURE,
+                    max_tokens=settings.LLM_MAX_TOKENS,
+                ):
+                    q.put(tok)
+                q.put(None)
+            except BaseException as e:  # noqa: BLE001 — 桥接线程把异常原样带回事件循环
+                q.put(e)
+
+        _threading.Thread(target=_worker, daemon=True).start()
+
+        emitted = False
+        parts: list[str] = []
+        while True:
+            try:
+                item = await loop.run_in_executor(None, q.get, True, 60.0)
+            except _queue.Empty:
+                exc = TimeoutError("LLM stream 60s 无增量，超时降级")
+                if emitted:
+                    exc.stream_tokens_emitted = True  # type: ignore[attr-defined]
+                try:
+                    from app.monitoring.metrics import record_degraded
+                    record_degraded("llm", f"sixnode_answer_stream:{type(exc).__name__}")
+                except Exception:  # noqa: BLE001
+                    pass
+                raise exc
+            if item is None:
+                return "".join(parts)
+            if isinstance(item, BaseException):
+                if emitted:
+                    item.stream_tokens_emitted = True  # type: ignore[attr-defined]
+                try:
+                    from app.monitoring.metrics import record_degraded
+                    record_degraded("llm", f"sixnode_answer_stream:{type(item).__name__}")
+                except Exception:  # noqa: BLE001
+                    pass
+                raise item
+            emitted = True
+            parts.append(str(item))
+            writer({"type": "token", "delta": str(item)})

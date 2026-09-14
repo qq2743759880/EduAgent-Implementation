@@ -87,6 +87,11 @@ class AgentState(TypedDict):
     skill_context: str                       # task94：命中的 skill body 按需注入（不进前缀，动态注入当前轮）
     active_paths: list[str]                  # 当前工作文件路径（驱动 paths 条件触发）
     context_edit: dict | None                # task97(task#25)：context_edit 决策链输出（编辑后 messages + 水位快照），供 plan 消费
+    # R02（audit P1-5 回填）：fan_out 真实检索产物汇总（一次检索一覆盖，LastValue）：
+    #   {docs:[RetrievedDoc dump], graph_entities:[GraphEntity dump], retrieved_count:int,
+    #    rewrite_query:str|None, degraded_reason:str|None}
+    # 消费方：run_agent 返回体真实回填（修硬编码空 docs）+ 流式适配层 retrieval SSE 帧。
+    retrieval: dict | None
 
 
 def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentState:
@@ -108,6 +113,7 @@ def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentSt
         skill_context="",
         active_paths=[],
         context_edit=None,
+        retrieval=None,
     )
 
 
@@ -420,11 +426,53 @@ async def context_edit_node(state: AgentState) -> dict:
 # ============================================================
 # Node 3: fan_out_node —— 并行子代理（task92 runner，独立上下文 + asyncio.gather）
 # ============================================================
-def _build_tool_services(*, user_id: int, thread_id: str | None) -> dict[str, Any]:
+# ============================================================
+# R02：thread_id 语义修复（audit P2-8 / R02-c）+ 图内检索参数对齐（audit P2-23 / R20-b 根因）
+# ============================================================
+def resolve_thread_id(session_id: str | None, user_id: int) -> str:
+    """解析 LangGraph checkpoint thread_id。
+
+    R02-c 修复（原 `session_id or f"task24-{user_id}"` 缺陷）：
+    - 有 session_id → 用 session_id（同会话多轮共享 checkpoint 线程，历史延续）；
+    - 匿名请求（无 session）→ **每请求独立** `anon-{uuid}` 线程，同用户两笔匿名请求
+      checkpoint 键不同、互不可见对方历史（P-002 因子10：多任务不共用会话；
+      修复原实现下同用户所有匿名请求在同一 `task24-{user_id}` 线程上 add_messages
+      无限累积的跨请求上下文污染）。
+    """
+    if session_id:
+        return str(session_id)
+    import uuid as _uuid
+
+    return f"anon-{_uuid.uuid4().hex}"
+
+
+def sixnode_retrieval_params() -> dict:
+    """图内检索参数（settings 驱动，默认对齐旧路径 retrieve_three_channel 生产现值）。
+
+    R20-b 双跑基线根因（docs Jaccard 0.641）：图内直连检索硬编码 use_hyde=False/top_k=8，
+    与旧路径生产默认 use_hyde=True/top_k=12 漂移。现统一从 settings 读取：
+    SIXNODE_USE_HYDE/SIXNODE_TOP_K/SIXNODE_FINAL_MAX_K/SIXNODE_CUTOFF_DROP_RATIO（config.py，
+    默认=True/12/5/0.40 对齐 _BaseRagRequest 生产默认）。enable_graph 两侧恒 True。
+    role 恒 None（学员租户范围，不扩大搜索——R4 安全红线；与原子代理链路一致）。
+    """
+    return {
+        "use_hyde": bool(getattr(settings, "SIXNODE_USE_HYDE", True)),
+        "enable_graph": True,
+        "top_k": int(getattr(settings, "SIXNODE_TOP_K", 12)),
+        "final_max_k": int(getattr(settings, "SIXNODE_FINAL_MAX_K", 5)),
+        "cutoff_drop_ratio": float(getattr(settings, "SIXNODE_CUTOFF_DROP_RATIO", 0.40)),
+    }
+
+
+def _build_tool_services(*, user_id: int, thread_id: str | None, capture: dict | None = None) -> dict[str, Any]:
     """把真实后端能力包装成子代理工具服务（search=检索 / tool=MCP）。
 
     工具服务在 fan_out_node 内、以「该请求的 user_id/thread_id」闭包绑定，禁止模块级共享状态
     （否则并发请求会串号）。GWT③ 要求 user_id 真实——此处由 state.user_id 注入。
+
+    R02：检索参数改由 sixnode_retrieval_params() 统一（对齐旧路径，修 R20-b 根因）；
+    capture 非空时，search_knowledge 的真实检索产物回填进 capture（供 fan_out 写入 state.retrieval
+    → run_agent 返回体真实 docs/graph_entities，修 audit P1-5 硬编码空返回）。
     """
     services: dict[str, Any] = {}
 
@@ -434,13 +482,25 @@ def _build_tool_services(*, user_id: int, thread_id: str | None) -> dict[str, An
         q = (args or {}).get("q", "")
         if not q:
             return {"docs": [], "graph_entities": [], "error": "缺少查询词 q"}
+        params = sixnode_retrieval_params()
         try:
             bundle = await _retrieve(
                 q, user_id=int(user_id), role=None,
-                use_hyde=False, enable_graph=True,
-                top_k=8, final_max_k=5, cutoff_drop_ratio=0.2,
+                use_hyde=params["use_hyde"], enable_graph=params["enable_graph"],
+                top_k=params["top_k"], final_max_k=params["final_max_k"],
+                cutoff_drop_ratio=params["cutoff_drop_ratio"],
             )
-            return {"docs": [d.model_dump() for d in bundle.docs], "graph_entities": [g.model_dump() for g in bundle.graph_entities], "retrieved_count": bundle.raw_retrieved_count}
+            docs = [d.model_dump() for d in bundle.docs]
+            graph_entities = [g.model_dump() for g in bundle.graph_entities]
+            if capture is not None:
+                capture["retrieval"] = {
+                    "docs": docs,
+                    "graph_entities": graph_entities,
+                    "retrieved_count": int(bundle.raw_retrieved_count or 0),
+                    "rewrite_query": bundle.rewrite_query,
+                    "degraded_reason": bundle.degraded_reason,
+                }
+            return {"docs": docs, "graph_entities": graph_entities, "retrieved_count": bundle.raw_retrieved_count}
         except Exception as exc:
             return {"docs": [], "graph_entities": [], "error": str(exc)[:200]}
 
@@ -778,11 +838,18 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
     task26 防过载：入口 acquire 全局 LLM 并发闸 + 单用户并发槽（第 3 个并发被拒、
     全局闸满排队 >10s 返回友好提示）；出口 finally release。Redis 不可用时 fail-open（不阻塞本地/打靶）。
     active_paths：当前工作文件路径（task94 GWT④，驱动 skill paths 条件触发）。
+
+    R02 修复：
+    - thread_id（audit P2-8）：匿名请求不再共享 `task24-{user_id}`——resolve_thread_id 每请求
+      独立 `anon-{uuid}`；返回体新增 thread_id 供调用方/适配层与 checkpoint 键实证对账。
+    - docs/graph_entities 真实回填（audit P1-5）：从图终态 state.docs/graph_entities 取
+      fan_out 真实检索产物，替代硬编码空列表（非流式引用溯源恢复）。
     """
     g = await _ensure_agent_graph()
     state = _empty_state(query, user_id=user_id, session_id=session_id)
     state["active_paths"] = list(active_paths or [])
-    config = {"configurable": {"thread_id": session_id or f"task24-{user_id}"}}
+    thread_id = resolve_thread_id(session_id, user_id)
+    config = {"configurable": {"thread_id": thread_id}}
 
     # —— task26 防过载准入 ——
     guard_entry: dict | None = None
@@ -804,6 +871,7 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
             "docs": [], "graph_entities": [], "tool_results": [], "loop_count": 0,
             "latency_ms": 0, "intent": "", "effort": "L1", "subagents": [],
             "nodes_executed": [], "degraded_reason": guard_entry.get("reason"),
+            "thread_id": thread_id,
         }
 
     t0 = time.perf_counter()
@@ -819,12 +887,24 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
                     pass
     except Exception as exc:
         logger.error(f"[graph.run] 图执行异常: {type(exc).__name__}: {exc}")
-        return {"answer": f"AI 服务异常（{type(exc).__name__}），请稍后重试", "docs": [], "graph_entities": [], "tool_results": [], "loop_count": 0, "latency_ms": int((time.perf_counter() - t0) * 1000), "degraded_reason": str(exc)[:120]}
+        return {"answer": f"AI 服务异常（{type(exc).__name__}），请稍后重试", "docs": [], "graph_entities": [], "tool_results": [], "loop_count": 0, "latency_ms": int((time.perf_counter() - t0) * 1000), "degraded_reason": str(exc)[:120], "thread_id": thread_id}
     latency_ms = int((time.perf_counter() - t0) * 1000)
+    # R02（audit P1-5）：docs/graph_entities 从图终态 retrieval 真实回填（fan_out 直连检索产物或
+    # 子代理 search_knowledge capture），替代原硬编码空列表——非流式引用溯源恢复。
+    # dict 序列（RetrievedDoc/GraphEntity model_dump）容错重建，脏数据降级为空不炸响应。
+    retrieval = final.get("retrieval") if isinstance(final.get("retrieval"), dict) else {}
+    try:
+        docs_out = list(retrieval.get("docs") or [])
+    except Exception:
+        docs_out = []
+    try:
+        graph_out = list(retrieval.get("graph_entities") or [])
+    except Exception:
+        graph_out = []
     return {
         "answer": final.get("final_answer", ""),
-        "docs": [],
-        "graph_entities": [],
+        "docs": docs_out,
+        "graph_entities": graph_out,
         "tool_results": [],
         "loop_count": int(final.get("reflect_count", 0)),
         "latency_ms": latency_ms,
@@ -833,4 +913,5 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
         "subagents": final.get("subagent_results", []),
         "nodes_executed": final.get("nodes_executed", []),
         "degraded_reason": final.get("degraded_reason"),
+        "thread_id": thread_id,
     }

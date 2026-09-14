@@ -348,6 +348,9 @@ async def chat_answer(
 
     # 3) LangGraph Agent（LLM 决策 → 检索/工具 → 循环 → 生成）
     use_agent = bool(getattr(settings, "USE_AGENT_LOOP", True))
+    # P2-9（dev-plan W2 R02 顺带修复）：plan 必须先初始化——USE_AGENT_LOOP=False 或
+    # agent 异常回退时，下方 `if plan is None` 原先引用未赋值变量 → UnboundLocalError。
+    plan = None
     if use_agent:
         try:
             agent_result = await run_langgraph_agent(
@@ -514,95 +517,30 @@ async def chat_answer(
     )
 
 
-async def chat_stream(
-    req: RagQueryRequest,
+def make_stream_finalize(
     *,
+    req: RagQueryRequest,
     user_id: int,
     role: UserRole,
+    session: ChatSession | None,
+    bundle: RetrievalBundle,
+    mcp_summaries: list[MCPToolCallSummary],
+    mcp_degraded: str | None,
+    t0: float,
 ):
+    """构造流式收束函数 build_finalize(answer_text, *, degraded_extra)（R02 抽取为工厂）。
+
+    职责：拼接降级原因 → 工具摘要前置 → 落库（user+assistant 消息 + 会话计数）→ 审计日志
+    → 异步记忆 ingest → 返回 done 帧 data（session_id/message_id/retrieved_count/final_count/
+    latency_ms/rewrite_query/degraded_reason/mcp_tool_calls）。
+    旧路径（service.chat_stream）与新路径（flows/graph_stream.py）共用本工厂，
+    保证两执行体的落库/审计/done 语义单一事实源（audit P2-23 防漂移）。
+    函数体 = 原 chat_stream.build_finalize 闭包原样迁移（行为逐字节一致）。
     """
-    流式问答：返回 (session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries)。
-    router 负责发送 SSE 事件；build_finalize(answer_text, latency_ms, degraded_extra, mcp_summaries) 会落库并返回汇总 dict。
-    """
-    t0 = time.perf_counter()
-
-    session: ChatSession | None = None
-    if req.session_id:
-        session = await _ensure_session_owner(req.session_id, user_id, role)
-
-    history_turns = await _history_window(
-        req.session_id, user_id, role, include_history=int(req.include_history),
-    )
-
-    # Agent 循环（LLM 意图决策 → 按需检索）——AGENT_LOOP 关闭时回退「检索先行」
-    # P1-4：MCP 工具调用与决策并发（两者都基于 query 无数据依赖），省 MCP 串行耗时
-    use_agent = bool(getattr(settings, "USE_AGENT_LOOP", True))
-    plan = None
-
-    async def _run_mcp() -> tuple[list[MCPToolCallSummary], str, str | None]:
-        try:
-            return await run_chat_tool_calls(
-                query=req.query,  # 用原 query 提前匹配（决策改写只加关键词，启发式匹配不影响）
-                operator_user_id=int(user_id),
-                session_id=(session.session_id if session else None),
-                use_mcp_flag=bool(req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
-            )
-        except Exception as exc:
-            logger.warning(f"[P2 chat_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
-            return [], "", f"MCP 工具阶段异常({type(exc).__name__})"
-
-    mcp_future = asyncio.create_task(_run_mcp())
-
-    try:
-        if use_agent:
-            agent_res = await run_agent_turn(
-                req.query,
-                user_id=user_id,
-                role=role,
-                use_hyde=req.use_hyde,
-                enable_graph=req.enable_graph,
-                top_k=int(req.top_k),
-                final_max_k=int(req.final_max_k),
-                cutoff_drop_ratio=float(req.cutoff_drop_ratio),
-                session_id=(session.session_id if session else None),
-            )
-            plan = agent_res["plan"]
-            bundle = agent_res["bundle"]
-        else:
-            plan = None
-    except Exception as exc:
-        logger.warning(f"[P2 chat_stream] Agent 决策层异常，回退检索先行：{type(exc).__name__}: {exc}")
-        plan = None
-    try:
-        if plan is None:
-            bundle = await _retrieve_and_bundle_for_chat(req, user_id=user_id, role=role)
-    except Exception as exc:
-        logger.warning(f"[P2 chat_stream] 检索兜底失败（返回空 bundle）：{type(exc).__name__}: {exc}")
-        bundle = RetrievalBundle(
-            docs=[], raw_retrieved_count=0, graph_entities=[],
-            rewrite_query=req.query, degraded_reason=None,
-        )
-
-    # 检索改写后的 query（决策改写 或 原 query）
-    gen_query = (plan.query_rewrite if plan and plan.query_rewrite else req.query)
-
-    # 等 MCP 结果（已与决策并行，此处合并）
-    mcp_summaries, mcp_context, mcp_degraded_stream = await mcp_future
-
-    token_aiter = generate_stream(
-        query=gen_query,
-        docs=bundle.docs,
-        graph_entities=bundle.graph_entities,
-        history_turns=history_turns,
-        model=req.model,
-        degraded_reason=bundle.degraded_reason,
-        mcp_context=mcp_context,
-        strict_rag=(plan.need_search if plan else True),
-    )
 
     async def build_finalize(answer_text: str, *, degraded_extra: str | None) -> dict:
         latency_ms = int((time.perf_counter() - t0) * 1000)
-        merged_deg_parts = [x for x in [bundle.degraded_reason, degraded_extra, mcp_degraded_stream] if x]
+        merged_deg_parts = [x for x in [bundle.degraded_reason, degraded_extra, mcp_degraded] if x]
         merged_deg = "；".join(merged_deg_parts) or None
 
         # 工具结果前置（fallback_rule 时拼接）
@@ -697,5 +635,100 @@ async def chat_stream(
             "degraded_reason": merged_deg,
             "mcp_tool_calls": [s.model_dump() for s in mcp_summaries],
         }
+
+    return build_finalize
+
+
+async def chat_stream(
+    req: RagQueryRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+):
+    """
+    流式问答：返回 (session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries)。
+    router 负责发送 SSE 事件；build_finalize(answer_text, latency_ms, degraded_extra, mcp_summaries) 会落库并返回汇总 dict。
+    """
+    t0 = time.perf_counter()
+
+    session: ChatSession | None = None
+    if req.session_id:
+        session = await _ensure_session_owner(req.session_id, user_id, role)
+
+    history_turns = await _history_window(
+        req.session_id, user_id, role, include_history=int(req.include_history),
+    )
+
+    # Agent 循环（LLM 意图决策 → 按需检索）——AGENT_LOOP 关闭时回退「检索先行」
+    # P1-4：MCP 工具调用与决策并发（两者都基于 query 无数据依赖），省 MCP 串行耗时
+    use_agent = bool(getattr(settings, "USE_AGENT_LOOP", True))
+    plan = None
+
+    async def _run_mcp() -> tuple[list[MCPToolCallSummary], str, str | None]:
+        try:
+            return await run_chat_tool_calls(
+                query=req.query,  # 用原 query 提前匹配（决策改写只加关键词，启发式匹配不影响）
+                operator_user_id=int(user_id),
+                session_id=(session.session_id if session else None),
+                use_mcp_flag=bool(req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
+            )
+        except Exception as exc:
+            logger.warning(f"[P2 chat_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
+            return [], "", f"MCP 工具阶段异常({type(exc).__name__})"
+
+    mcp_future = asyncio.create_task(_run_mcp())
+
+    try:
+        if use_agent:
+            agent_res = await run_agent_turn(
+                req.query,
+                user_id=user_id,
+                role=role,
+                use_hyde=req.use_hyde,
+                enable_graph=req.enable_graph,
+                top_k=int(req.top_k),
+                final_max_k=int(req.final_max_k),
+                cutoff_drop_ratio=float(req.cutoff_drop_ratio),
+                session_id=(session.session_id if session else None),
+            )
+            plan = agent_res["plan"]
+            bundle = agent_res["bundle"]
+        else:
+            plan = None
+    except Exception as exc:
+        logger.warning(f"[P2 chat_stream] Agent 决策层异常，回退检索先行：{type(exc).__name__}: {exc}")
+        plan = None
+    try:
+        if plan is None:
+            bundle = await _retrieve_and_bundle_for_chat(req, user_id=user_id, role=role)
+    except Exception as exc:
+        logger.warning(f"[P2 chat_stream] 检索兜底失败（返回空 bundle）：{type(exc).__name__}: {exc}")
+        bundle = RetrievalBundle(
+            docs=[], raw_retrieved_count=0, graph_entities=[],
+            rewrite_query=req.query, degraded_reason=None,
+        )
+
+    # 检索改写后的 query（决策改写 或 原 query）
+    gen_query = (plan.query_rewrite if plan and plan.query_rewrite else req.query)
+
+    # 等 MCP 结果（已与决策并行，此处合并）
+    mcp_summaries, mcp_context, mcp_degraded_stream = await mcp_future
+
+    token_aiter = generate_stream(
+        query=gen_query,
+        docs=bundle.docs,
+        graph_entities=bundle.graph_entities,
+        history_turns=history_turns,
+        model=req.model,
+        degraded_reason=bundle.degraded_reason,
+        mcp_context=mcp_context,
+        strict_rag=(plan.need_search if plan else True),
+    )
+
+    # R02：finalize 落库逻辑抽取为模块级工厂 make_stream_finalize（与图路径适配层共用同一实现）
+    build_finalize = make_stream_finalize(
+        req=req, user_id=user_id, role=role, session=session, bundle=bundle,
+        mcp_summaries=mcp_summaries, mcp_degraded=mcp_degraded_stream, t0=t0,
+    )
 
     return session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries
