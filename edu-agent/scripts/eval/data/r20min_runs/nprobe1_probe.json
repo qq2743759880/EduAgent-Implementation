@@ -1,0 +1,923 @@
+{
+  "tag": "nprobe1_probe",
+  "ran_at": "2026-09-14T11:24:56.421970+00:00",
+  "git_rev": "d9aab44dbd469eed9fdaf3f8e5dd8ae72303afbd",
+  "mode": "isolated_replay_nprobe=1",
+  "params": {
+    "recall_topk": 150,
+    "rerank_topk": 20,
+    "final_max_k": 5,
+    "cutoff_drop_ratio": 0.4,
+    "use_hyde": false,
+    "enable_graph": true,
+    "nprobe": 1,
+    "rrf_k": 60,
+    "embed_backend": "cuda",
+    "rerank_sidecar": "http://127.0.0.1:8601",
+    "role": "student",
+    "nprobe_override_mode": "isolated_replay_channel"
+  },
+  "seed": 20260914,
+  "n_cases": 32,
+  "hit_rate@5": 1.0,
+  "mrr@5": 1.0,
+  "wall_seconds": 21.7,
+  "per_query": [
+    {
+      "idx": 0,
+      "query": "化学方程式总是写错时，最该加强的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q019",
+      "golden_doc_sha256": "f3b54bdeeb7573a906ba1b81b00d8b670c4eb0a95e165658fb94a962380bc880",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": false,
+          "dense_recall_drop": true,
+          "base_dense_rank": 1,
+          "probe_dense_rank": null,
+          "dense_rank_shift": null
+        }
+      }
+    },
+    {
+      "idx": 1,
+      "query": "在多学科并行时，最能提升效率的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q016",
+      "golden_doc_sha256": "0b8d94a5327a1e447537b2d894176ffd3243ff5000a75ca17e91a37800e0c4ff",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 2,
+      "query": "限流可以帮助保护接口免受突发流量或恶意请求冲击。对还是错？ ",
+      "golden_chunk_id": "question_backend_development_bank_q016",
+      "golden_doc_sha256": "1efbcd91f4eb349905b8535fbbbf410cda6677a5d503d51e75aa1b59ec08735c",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 3,
+      "query": "如果缓存数据和数据库数据不一致，常见的处理思路是什么？",
+      "golden_chunk_id": "question_backend_development_bank_q020",
+      "golden_doc_sha256": "8627e30844db75146df2a0ba796f0b354755275ee30eb3ef3369bb00f5ddee6c",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 4,
+      "query": "异步请求失败时仍然应该考虑显式捕获错误。对还是错？ ",
+      "golden_chunk_id": "question_web_programming_languages_bank_q016",
+      "golden_doc_sha256": "a0ff4694fb7d53a583d0fcfcd3b150272f05a17245e476d1c3501e1d74bf2d71",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": false,
+          "dense_recall_drop": true,
+          "base_dense_rank": 1,
+          "probe_dense_rank": null,
+          "dense_rank_shift": null
+        }
+      }
+    },
+    {
+      "idx": 5,
+      "query": "在 Web 语言相关开发中，为什么要注意数据编码？",
+      "golden_chunk_id": "question_web_programming_languages_bank_q008",
+      "golden_doc_sha256": "6fb37f368788774f0c2ab3fe085fb56a9b0b1020bcbefdfcb7d584fcadbdc478",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 6,
+      "query": "请分析公司准备建立后备干部梯队，但很多岗位的接班人还没有被识别出来。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_talent_development_bank_q024",
+      "golden_doc_sha256": "13d60acc312b17523c1bbceee7aaa122a46d63cb1f004381abb6ff5673d0a8d2",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 7,
+      "query": "关于部门里有两名员工能力突出，但培养方向还不明确。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_talent_development_bank_q003",
+      "golden_doc_sha256": "f920447dc5bcc336f0680ccf38b1b485d034896e9c53adb6902016aa6850969d",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 8,
+      "query": "你会怎样回答？",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q024",
+      "golden_doc_sha256": "71d80e901ac8436e081aef4a6cba232d0711c610e3ce017d5894d7cb7f562305",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 64,
+          "probe_dense_rank": 34,
+          "dense_rank_shift": 30
+        }
+      }
+    },
+    {
+      "idx": 9,
+      "query": "复试中只要答案正确，表达方式不重要。 ",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q013",
+      "golden_doc_sha256": "89131f53d00854dd651617a183cb23198e75655de5007079c365c68703a94111",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": false,
+          "dense_recall_drop": true,
+          "base_dense_rank": 1,
+          "probe_dense_rank": null,
+          "dense_rank_shift": null
+        }
+      }
+    },
+    {
+      "idx": 10,
+      "query": "关于模型验证与模型评估，下列说法正确的是： ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q008",
+      "golden_doc_sha256": "f7ed73c579b695b7c91f06f448202e46ce189dcd9a2d8265b7930fb27ba417ce",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 11,
+      "query": "某产品月销量依次为 120、128、131、140、149。若用简单线性趋势描述，请判断其总体变化并给出一句分析。 ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q023",
+      "golden_doc_sha256": "2b719a69195d9fd179bbe76dd39042398875deed156311c611e0f1bf9de6a485",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 12,
+      "query": "为什么要关注 TCP 的 TIME_WAIT 状态？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q021",
+      "golden_doc_sha256": "60e00f8d266c98ff407374c1e7edfcbb4dc218a7b6831f0dcc1ce15e5b346738",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 13,
+      "query": "TLS 证书在安全通信中的关键作用更接近哪一项？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q007",
+      "golden_doc_sha256": "9e63100408e0c5b95c6a3e451d11dd5997e3ce64c12627ea62a12a8960f6e8ef",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 14,
+      "query": "关于假设检验，下列说法正确的是： ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q010",
+      "golden_doc_sha256": "3adc5068ac73fc4cfb5e0a0edf90fc279f0ee4206ec9119a9b91e3dffa010789",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 15,
+      "query": "说明方差和标准差之间的关系。 ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q017",
+      "golden_doc_sha256": "a8b60df90279a079d2e9515b606b87abe03fc4cba65a00d28eb4edac797029b3",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 16,
+      "query": "在工程里如何理解 CAP，而不是只背概念？",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q018",
+      "golden_doc_sha256": "8daa80cd05678c1195d3ccf89bdece377b830dc8823c13adca983297d84b333b",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": false,
+          "dense_recall_drop": true,
+          "base_dense_rank": 1,
+          "probe_dense_rank": null,
+          "dense_rank_shift": null
+        }
+      }
+    },
+    {
+      "idx": 17,
+      "query": "写出一个指数退避加随机抖动的重试伪代码。 ",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q023",
+      "golden_doc_sha256": "00778542d0b23eb19def5fe0eab5892e8e21b2e86f7389ea3fb7ad1c6d07bcee",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 18,
+      "query": "关于车间巡检时发现地面有油渍，旁边还有行走通道。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q003",
+      "golden_doc_sha256": "9b1bf7ee4ad0da67e068fb9bcb3d4291698195f7f251dd6e3adc5bee79b1dbcd",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 19,
+      "query": "员工要进行有粉尘的操作，但嫌佩戴防护用品麻烦。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q009",
+      "golden_doc_sha256": "b044b645b9a8580debbde3b679a23e817fc8e42ef508416d109d22d1b7a503dd",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 3,
+          "probe_dense_rank": 3,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 20,
+      "query": "半径为 3 的圆的面积是： ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q006",
+      "golden_doc_sha256": "c7abc3b29d512d9cec942663131e0d390227a7def668b09d6d3c4b1f32ef3d8d",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 21,
+      "query": "解方程 x^2-7x+10=0。 ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q021",
+      "golden_doc_sha256": "2eac18381fbcdbcbb07a821c7bf7420f7c2a02c4fecd8bcee85fcb8e1261f1a5",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 22,
+      "query": "简述该场景下的处理顺序。 ",
+      "golden_chunk_id": "question_service_standard_bank_q013",
+      "golden_doc_sha256": "b1367fc01bc30bb92b0693ed6e12cbf5b2239d54291367f60c3bfad32bb84389",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 23,
+          "probe_dense_rank": 23,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 23,
+      "query": "请分析门店早班迎宾时，客户刚进门，前台还在低头整理文件。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_service_standard_bank_q008",
+      "golden_doc_sha256": "4f59c31e8452eb99db082e024f5397d7f79d55517992856d2173c3924b0b3382",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 24,
+      "query": "材料六：共同富裕不是少数人的富裕，也不是整齐划一的平均主义，而是全体人民共同富裕的渐进过程。 作答要避免把共同富裕理解成平均主义。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q006",
+      "golden_doc_sha256": "764df29a68273f5bcb36a46e43a487c3796df55eec3cea45b1e009be173fa525",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 25,
+      "query": "网上出现关于食品安全的谣言，引发居民恐慌。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q011",
+      "golden_doc_sha256": "3be16756c6ad8ad5013bdd334cba032f4ba0ba7dd749b42b82236d624bb4e881",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 26,
+      "query": "某初中班级中，一名学生连续两周作业拖延，课堂上也不愿回答问题。班主任在与其谈话后发现，他担心自己基础差、回答错误会被同学笑话。请结合教育心理学知识，说明班主任可以采取的两类支持措施，并简要说明理由。 ",
+      "golden_chunk_id": "question_teacher_certificate_bank_q021",
+      "golden_doc_sha256": "41e6cb6760983471b0d1853b0d9ba6541b59d7ed7c2a9b1fbd38edfebcd77008",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 27,
+      "query": "关于班级管理，哪些说法正确？",
+      "golden_chunk_id": "question_teacher_certificate_bank_q010",
+      "golden_doc_sha256": "318349f00fa3e8dfa19d0f8ae65c76ef05c2776fa98bdaf975ef2e3c3d0b4486",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 28,
+      "query": "关于前后端联调，哪些做法通常有效？",
+      "golden_chunk_id": "question_fullstack_development_bank_q009",
+      "golden_doc_sha256": "82fde9da2ffd59fccdb977db0d85cefb157d86cc60c2748123c0368193c77b35",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 29,
+      "query": "关于跨域请求，哪一项更准确？",
+      "golden_chunk_id": "question_fullstack_development_bank_q006",
+      "golden_doc_sha256": "cf8c7407cabe6f643a0fa27583a71d6c77784ab7acceeb203075c5ba58b88994",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 30,
+      "query": "企业月末应计提工资 36000 元，若全部计入管理费用，问本月应确认的管理费用金额。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q019",
+      "golden_doc_sha256": "8ee587fc9147c625e81225492139b02b2dd0afccb717144a4fc379ce08726a91",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    },
+    {
+      "idx": 31,
+      "query": "权责发生制下，收入一定要等到现金收到后才能确认。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q013",
+      "golden_doc_sha256": "c4176aede3898523c32012238a00e784ef6edd3148e2343940003e83a5844b27",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [],
+      "latency_ms": null,
+      "trace": {
+        "recall_layer": 150,
+        "rerank_layer": null,
+        "final_layer": null,
+        "degraded_reason": "sensitivity_isolated_replay: 召回层布尔口径, 只对照 base(nprobe=10) 差值",
+        "base_recall_hit": true,
+        "probe_recall_hit": true,
+        "recall_drop": false,
+        "dense_channel": {
+          "base_hit_nprobe10": true,
+          "probe_hit": true,
+          "dense_recall_drop": false,
+          "base_dense_rank": 1,
+          "probe_dense_rank": 1,
+          "dense_rank_shift": 0
+        }
+      }
+    }
+  ]
+}
