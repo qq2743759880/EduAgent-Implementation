@@ -547,3 +547,14 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 ### D 项处置
 - **D-2 已由编排者修复**:.env 两行模型路径 C:/ai-models→E:/stu/ai-models(实盘验证 bge-m3/bge-reranker-v2-m3 均在;重启后 reranker device=cuda 加载成功)。密钥未触碰。
 - D-1(QuestionTag graph 通道 ValidationError)登记 R10 承接;D-3(nprobe 硬编码 loader.py:318)登记 R03 顺带提 settings;D-4(断崖 2~5 波动)知悉项。
+
+## R20-b 验收(2026-09-13/14,双环,100 样本全绿确定性)
+### 常规验收:PASS(编排者逐指标独立复现)
+- intent 分歧 **0/100**(分源全 0:eval32/chat/edge 四类);docs Jaccard mean **0.641**(==1:47,<0.5:43);TTFT old P50 3.41/P95 4.10s vs new 3.51/4.51s(**1.10× 贴线**);样本构成 32+50+6+6+6 与样本文档一致。
+- 修复实证:Redis 防过载槽 `chat:concurrent:1` 崩溃卡死→探针启动自动复位已加(前轮"docs 全空假象"根因);deepseek 402 降级 fast 符合设计。
+### 批判性审查(3 条)
+- **C-a Jaccard 0.64 未达 0.9 的根因是参数结构性差异而非缺陷**:旧 hyde=on/top_k=12 vs 新 hyde=off/top_k=8——收敛路径=R02 图内检索节点对齐旧参数后复跑,预期 Jaccard 大幅上行;若对齐后仍 <0.9,才升级为图召回质量问题。
+- **C-b TTFT 1.10× 贴线风险**:新路径 P95 4.51s vs 门槛"旧+10%"——按 C3 实测旧路径基线 4.10s,余量仅 0;R02 灰度期必须持续监控,劣化即先优化图内快路径(sixnode 直连检索段)。
+- **C-c Redis 槽卡死暴露 guard 恢复缺口**:崩溃后 `chat:concurrent:1` 残留致新请求全拒(docs 全空假象)——探针已加自动复位,但生产 guard 需要 TTL 自愈(登记 B 批 R02 前置)。
+### 判定
+W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-b 双跑基线(intent 0%,Jaccard 0.641 为收敛初值)。**R02 进图灰度的对照基准齐备,可派 R02**(含 R02-c thread_id/TTFT 预算/参数对齐三件)。
