@@ -558,3 +558,13 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - **C-c Redis 槽卡死暴露 guard 恢复缺口**:崩溃后 `chat:concurrent:1` 残留致新请求全拒(docs 全空假象)——探针已加自动复位,但生产 guard 需要 TTL 自愈(登记 B 批 R02 前置)。
 ### 判定
 W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-b 双跑基线(intent 0%,Jaccard 0.641 为收敛初值)。**R02 进图灰度的对照基准齐备,可派 R02**(含 R02-c thread_id/TTFT 预算/参数对齐三件)。
+
+## R02 验收(2026-09-14,双环,带条件 PASS)
+### 常规验收:四件套全过(编排者复现)
+- 4 commits(b891326/2d2dcb8/8c3892f/51bfb83);task24-{user_id} 兜底全仓清除(仅存注释);STREAM_VIA_GRAPH=config:207 默认 True;R02/stream 套件 25 passed;活体 SSE 帧序 start→retrieval(final_count=5,retrieved_count=150)→token×N→done{code:0} 契约逐字段保持;checkpoint 双键隔离实证(edu:ckpt:anon-* 多键,匿名不串线);docs 真实回填。
+- 双跑复验(我方抽核 dualrun_results.json):intent 0/100;Jaccard mean 0.641→**0.853**(参数对齐 hyde/top_k 后 knowledge 通道 82/82=1.000;残差全在 tool/learning 子代理结构样本=W3/R12 面)。
+### TTFT 判定:活体未达,登记尾巴
+- 编排者活体实测(真实 HTTP+SSE):热态 TTFT **5.27-5.32s > 冻结预算 4.51s(+18%)**;start→retrieval 段 3.4-3.6s 为大头(agent 进程内口径 4.52s 系未含全 HTTP 栈)。
+- 处置:①R02 判**带条件 PASS**——四件套/契约/可回退全过,TTFT 活体超标=登记尾巴 ②优化靶=sixnode 直连检索段 3.4s(对齐旧路径速度)③灰度门 TTFT 项未过→**旧路径保留,R05 冻结至达标** ④复测=R02-tail 任务(归 W3,与 R12 同窗)。
+### 事件登记
+- 编排者失误一次:W0 详档 safe_w 批量改装曾把 3 个脚本的 import 插进多行括号块内(语法坏),已修复并 py_compile 全过;教训=批量改 import 必须逐文件 py_compile。
