@@ -522,3 +522,7 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - 三路精读完成:kb-deep-1(编排13卡:langgraph Channels/Pregel/checkpoint四包+generative_agents retrieve.py 三因子检索公式逐行核验)/kb-deep-2(记忆RAG评估8卡:cognee eval_framework 实装 EM/F1/coverage+bootstrap CI 为全库唯一实装评估;mem0 evaluation/ 空壳实证;向量库选型=库内确无对比结论,只有集成广度)/kb-deep-3(coding/观测/协议安全20卡:防御纵深五层+三平台可观测+skill三级谱系;发现4处卡片级错误)。
 - **前轮"四盲区"判定修正**:记忆效果评估/可观测平台/安全方法论=卡片确实覆盖( cognee eval 实装、F-C09 三平台、防御纵深五层)——前轮摘要员只读 hub 页属失职;唯"向量库选型对比"确不存在于库(仅集成广度),该条维持。
 - EDU 对照升级判据(新增锋利项):generative_agents 三因子检索排序公式(relevance+recency指数衰减+importance)vs EDU 纯 cos+写死参数;crewai expected_output+crewai test vs EDU 零评估;hermes exact-pin+三级审批 vs EDU 工具调用 100% 静默失败;langgraph Channels 语义(Binop 防覆盖)vs EDU 状态硬编码返回全空。
+
+## reshape-r v1.1 终审五问闭环(2026-09-13)
+- A1 双跑统计洞:temp=0+门槛收窄 intent/docs;A2 golden 未落盘实证(脚本在/产物无,首步跑生成器)+新洞(R03 改 ID 致 golden 失配→双键+id_map 设计);B 迁移语义钉死(读旧 content 改 PK,不重新切分);C 五层拆任务(R15-b guard 三桩点新增/task-C-sandbox 登记);D 灰度五条件推荐值入草案;E Mimosa=本环境安全扫描插件 hook,出处可溯。
+- **派发协议(用户裁定)**:编排者出交接 Prompt→用户转交执行 agent→编排者独立复验。

@@ -53,7 +53,16 @@
 **C-R-EVAL(W0 最先)**→C-R-CHUNK(R03 前)→C-R-ACI(R15 前,R04 凭草案)→C-R-HITL(R11 前)。C-R-SSE 复用既有。冻结后禁改走变更单。
 
 ## TT 合规补齐(缺陷⑦承接)
-- §3 详档:每任务派单前生成 tasks/taskRxx-*.md(W0 两份已随本版生成);§4 开工 prompt 具名 skill/资产路径+子 agent 平台;§7 验收批判含竞品 URL+日期——本版对标:[LangGraph ToolNode 官方](https://reference.langchain.com/python/langgraph.prebuilt/tool_node/ToolNode)(错误须 ToolMessage 回喂模型=自愈式,反衬 EDU 吞异常)[issue#6486](https://github.com/langchain-ai/langgraph/issues/6486)(1.0.1+ 错误处理默认变更,升级依赖须复核)[自愈式错误讨论](https://forum.langchain.com/t/raising-tool-call-errors-so-agents-can-be-self-healing/3152)[interrupts 官方](https://docs.langchain.com/oss/python/langgraph/interrupts)[best practices](https://www.swarnendu.de/blog/langgraph-best-practices/)(均 2026-09-13 访问);review-gate 输出存档 artifacts/review-gate-reshape-r-v1.1.txt。
+- §3 详档:每任务派单前生成 tasks/taskRxx-*.md(W0 两份已随本版生成);**派发协议=编排者出交接 Prompt→用户转交执行 agent→完工后编排者独立复验**(用户裁定 2026-09-13,与历史矩阵 v1.3 同源);§4 开工 prompt 具名 skill/资产路径;§7 验收批判含竞品 URL+日期(见上批与 reshape-a 批判 4/4 URL 机验先例)。
+- **review-gate 含金量声明(终审 D)**:其 PASS=文档格式合规(标题/占位/子段检查),不校验 GWT 可机验性/依赖闭环/URL 可达——方案正确性的首次真实验收=W0 两份数字(基线 JSON+双跑分歧报告),此前一切 PASS 仅为格式门。
+- **Mimosa 出处(终审 E)**:Mimosa=本 ZCode 环境的安全扫描插件(mcp mimosa-security-scan+其 PreToolUse hook"生成前安全约束",本会话 hook 注入原文可溯)。PRD 引用的"SQL 参数绑定/SSRF host 校验/凭据仅 env"即其注入约束,非杜撰代号;追溯路径=会话 hook 输出+插件本体。
+
+## 终审五问闭环(v1.1 补丁,2026-09-13)
+- **A1 双跑统计洞**:temp=0 确定性强制+自跑稳定性预验;门槛指标收窄为 intent/docs 两项;答案抽检 30% 仅报告不入门槛(已改 taskR20b v1.1)。
+- **A2 golden 现状**:编排者核实——build_eval_set32.py 在(golden=题目 chunk 自身 chunk_id,自动生成),**eval_set32.json 从未落盘**;W0 首步=跑生成器+5 条抽检,工期含此项。**新发现洞**:R03 改 chunk_id 会使冻结 golden 全量失配→基线 golden 双键(chunk_id+doc_sha256),迁移须输出 old→new id_map(入 C-R-CHUNK)。
+- **B 迁移语义钉死**:C-R-CHUNK 契约加一句——"迁移=从 Milvus 读旧 chunk.content→计算新 ID→upsert 改 PK+scalar,**不重新 parse/chunk**(chunk 边界不变,向量原地)"。
+- **C 五层防御拆任务**:①凭证 env/落库脱敏→R04-b ②**guard 三桩点(工具前/LLM 前/输出前)→新增 R15-b(W3)** ③权限门/HITL→R15/R11 ④沙箱容器级→**登记 C 批次占位 task-C-sandbox(tracker 可查),不入本 plan** ⑤审计→R24(+R04-b 脱敏)。
+- **D 灰度门槛不留空**:R02-b 五条件推荐值入 C-R-EVAL 草案——**千条样本/连续 3 天/intent 分歧<5%/docs Jaccard>0.9/P95 TTFT 不劣化超阈值(阈值=旧路径实测+10%)**,五条全过才进 W3 删旧路;用户可调禁留空。
 
 ## 规划自审
 ### CEO 范围自审

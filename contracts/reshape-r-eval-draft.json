@@ -1,0 +1,33 @@
+{
+  "planId": "reshape-r-eval",
+  "draft": true,
+  "note": "C-R-EVAL 草案:W0 由 R20-min 执行冻结(基线数字落位后 draft=false);灰度五条件为用户批复推荐值,可调禁留空",
+  "baseline": {
+    "file": "contracts/rag-baseline-eval32.json",
+    "metrics": ["hit_rate", "mrr"],
+    "golden_double_key": ["chunk_id", "doc_sha256(content 哈希,R03 迁移后 id_map 解析用)"],
+    "thresholds_env": {"RAG_EVAL_HIT_RATE_MIN": "基线-0.02", "RAG_EVAL_MRR_MIN": "基线-0.02"},
+    "regression_gate": "R03 迁移后重跑偏差<=2%超即回滚;R22 起 CI 拦截"
+  },
+  "dualrun_gate_R02b": {
+    "samples": 1000,
+    "duration_days": 3,
+    "conditions": [
+      "intent 分歧率 < 5%",
+      "docs Jaccard > 0.9",
+      "P95 TTFT 不劣化超阈值(阈值=旧路径实测 P95+10%,W0 实测后填数)",
+      "连续 3 天满足上述",
+      "累计样本 >= 1000"
+    ],
+    "gate_scope": "仅 intent/docs 中间层指标;答案语义 30% 抽样仅报告不入门槛",
+    "determinism": "LLM 路由 temp=0;同 query 自跑两轮稳定预验"
+  },
+  "R03_migration_clause": "迁移=从 Milvus 读旧 chunk.content→计算新 ID→upsert 改 PK+scalar;不重新 parse/chunk(边界不变,向量原地);须输出 old→new id_map 落盘供基线 golden 解析",
+  "competitor_anchors": [
+    "https://reference.langchain.com/python/langgraph.prebuilt/tool_node/ToolNode",
+    "https://github.com/langchain-ai/langgraph/issues/6486",
+    "https://forum.langchain.com/t/raising-tool-call-errors-so-agents-can-be-self-healing/3152",
+    "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "https://www.swarnendu.de/blog/langgraph-best-practices/"
+  ]
+}
