@@ -533,3 +533,6 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 - Milvus 自证:执行 agent 首步 list_collections 连通失败即停(编排者不代验)。
 - R20-b 样本构成钉死:32 eval_set+50 chat_message 真实采样(role=user/长度≥10/每会话≤3/固定 seed,SQL 入报告)+18 手写边界(6/6/6 逐条入报告),三类 source 标注可复现。
 - **验收环补缺(终审"缺批判性验收")**:W0 编排者复验=常规验收(重跑指标/commit/灵敏度)+**技术批判≥3 条(竞品 URL+日期:基线方法漏洞/样本代表性/灵敏度设计合理性)+优化方案+tracker 回流**,缺一不予通过;批判结论进入 W1 开工前消化。
+
+## 派发协议补条(2026-09-13,用户指令)
+- **每次 kickoff 必须给出仓库内绝对路径**(如 E:\stu\project\stu\EduAgent实施手册\.ai-hub\plans\artifacts\kickoff-R20min-W0.md),禁止只给相对/短路径——用户转交时直接取用,不容二次查找。
