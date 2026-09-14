@@ -38,6 +38,11 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app.config import settings  # noqa: E402
+try:
+    from _safeio import safe_w  # 直接运行（脚本目录在 sys.path）
+except ImportError:  # 以包形式导入（pytest: from scripts.eval import ...）
+    from scripts.eval._safeio import safe_w  # Mimosa 路径穿越防护:写出统一收容校验
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EVAL_DIR = os.path.join(BASE_DIR, "scripts", "eval")
@@ -174,7 +179,7 @@ def build_eval_set(limit: int = 32) -> None:
         },
         "cases": cases,
     }
-    with open(EVAL_SET_PATH, "w", encoding="utf-8") as f:
+    with open(safe_w(EVAL_SET_PATH), "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"[build] n={len(cases)} → {EVAL_SET_PATH}")
     print(f"[build] gt_in_frozen_recall={sum(1 for c in cases if c['gt_in_frozen_recall'])}/{len(cases)}")
@@ -475,7 +480,7 @@ def freeze() -> None:
         "id_map_note": "R03 迁移须输出 old→new chunk_id id_map 落盘; golden 双键中 doc_sha256 为迁移后解析兜底键",
     }
     os.makedirs(os.path.dirname(CONTRACT_PATH), exist_ok=True)
-    with open(CONTRACT_PATH, "w", encoding="utf-8") as f:
+    with open(safe_w(CONTRACT_PATH), "w", encoding="utf-8") as f:
         json.dump(contract, f, ensure_ascii=False, indent=2)
     print(f"[freeze] → {CONTRACT_PATH}")
     print(f"[freeze] baseline hit_rate@5={hit} mrr@5={mrr} determinism={det['hit_rate_equal'] and det['mrr_equal']} sensitivity={sens['verdict']}")

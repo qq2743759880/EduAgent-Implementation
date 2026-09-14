@@ -38,6 +38,11 @@ from app.knowledge.importer.embedder import (
     encode_dense_batch,
     ensure_jieba_ready,
 )
+try:
+    from _safeio import safe_w  # 直接运行（脚本目录在 sys.path）
+except ImportError:  # 以包形式导入（pytest: from scripts.eval import ...）
+    from scripts.eval._safeio import safe_w  # Mimosa 路径穿越防护:写出统一收容校验
+
 from app.knowledge.importer.loader import (
     COLLECTION_NAME,
     COURSE_PUBLIC,
@@ -207,7 +212,7 @@ def main() -> None:
         params={"filter_expr": filter_expr, "tenant_ids": tenant_ids},
         use_reranker=True,
     )
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with open(safe_w(OUT_PATH), "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"[build] 已写出 {OUT_PATH}")
     print(f"[build] data_hash = {out['meta']['data_hash']}")

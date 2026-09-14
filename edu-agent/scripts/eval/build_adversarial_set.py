@@ -12,6 +12,11 @@ from __future__ import annotations
 
 import json
 import os
+try:
+    from _safeio import safe_w  # 直接运行（脚本目录在 sys.path）
+except ImportError:  # 以包形式导入（pytest: from scripts.eval import ...）
+    from scripts.eval._safeio import safe_w  # Mimosa 路径穿越防护:写出统一收容校验
+
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _OUT = os.path.join(_DIR, "adversarial_dataset.json")

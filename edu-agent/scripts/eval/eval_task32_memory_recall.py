@@ -30,6 +30,11 @@ from app.ai.memory.vector import (  # noqa: E402
     MemoryVectorStore,
     SemanticEmbedder,
 )
+try:
+    from _safeio import safe_w  # 直接运行（脚本目录在 sys.path）
+except ImportError:  # 以包形式导入（pytest: from scripts.eval import ...）
+    from scripts.eval._safeio import safe_w  # Mimosa 路径穿越防护:写出统一收容校验
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(BASE_DIR, "scripts", "eval", "data")
@@ -126,7 +131,7 @@ async def main_async() -> None:
         },
         "target_met": real["rank@1"] >= 0.9,
     }
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with open(safe_w(OUT_PATH), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     print(f"[task32] 已写出 {OUT_PATH}")
     print(f"[task32] 达标(BGE rank@1>=0.9) = {result['target_met']}")

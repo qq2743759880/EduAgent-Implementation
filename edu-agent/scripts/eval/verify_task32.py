@@ -31,6 +31,11 @@ from app.chat.rag_evaluator import (  # noqa: E402
     _hit_at_k,
     compare_rerank_vs_rule,
 )
+try:
+    from _safeio import safe_w  # 直接运行（脚本目录在 sys.path）
+except ImportError:  # 以包形式导入（pytest: from scripts.eval import ...）
+    from scripts.eval._safeio import safe_w  # Mimosa 路径穿越防护:写出统一收容校验
+
 
 SET_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "task32_eval_set.json")
 OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "task32_result.json")
@@ -144,7 +149,7 @@ def main() -> None:
         "per_case": abt.per_case,
         "gap_analysis": abt.gap_analysis,
     }
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with open(safe_w(OUT_PATH), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
     print(f"[task32-verify] top-20 hit: rule={summary.get('rule_hit_rate')}, "
