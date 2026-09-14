@@ -1,0 +1,611 @@
+{
+  "meta": {
+    "built_at": "2026-09-14T20:16:07",
+    "seed": 20260914,
+    "n_total": 100,
+    "counts": {
+      "eval_set32": 32,
+      "chat_history": 50,
+      "edge_chitchat": 6,
+      "edge_tool": 6,
+      "edge_knowledge": 6
+    },
+    "chat_sampling": {
+      "sql": "SELECT m.session_id AS session_id, m.user_id AS user_id, m.content AS content, m.created_at AS created_at FROM chat_message m JOIN chat_session s ON s.session_id = m.session_id WHERE m.role = 'user' AND CHAR_LENGTH(m.content) >= 10 AND s.yn = 1 ORDER BY m.created_at DESC LIMIT %s",
+      "params": {
+        "limit": 120
+      },
+      "seed": 20260914,
+      "per_session_cap": 3,
+      "eligible_total": 72,
+      "prelimit_rows": 72,
+      "session_count": 49,
+      "order_note": "SQL 相对序=created_at 倒序 LIMIT 120；确定性=python 种子内洗牌（新插入数据不改已选集，仅 eligible_total 漂移），会话配额≤3 防单会话偏置"
+    },
+    "note_eval_set32": "rag_eval_set32.json（R20-min 冻结，builder=r20min_run.py --mode build (query 提取复用 build_eval_set32._extract_query), built_at=2026-09-14T11:17:03.951108+00:00, seed=20260914, n_cases=32, recall_topk=150）；本探针全量取 32 条 query。"
+  },
+  "samples": [
+    {
+      "source": "eval_set32",
+      "query": "化学方程式总是写错时，最该加强的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q019",
+      "sample_id": 1
+    },
+    {
+      "source": "eval_set32",
+      "query": "在多学科并行时，最能提升效率的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q016",
+      "sample_id": 2
+    },
+    {
+      "source": "eval_set32",
+      "query": "限流可以帮助保护接口免受突发流量或恶意请求冲击。对还是错？ ",
+      "golden_chunk_id": "question_backend_development_bank_q016",
+      "sample_id": 3
+    },
+    {
+      "source": "eval_set32",
+      "query": "如果缓存数据和数据库数据不一致，常见的处理思路是什么？",
+      "golden_chunk_id": "question_backend_development_bank_q020",
+      "sample_id": 4
+    },
+    {
+      "source": "eval_set32",
+      "query": "异步请求失败时仍然应该考虑显式捕获错误。对还是错？ ",
+      "golden_chunk_id": "question_web_programming_languages_bank_q016",
+      "sample_id": 5
+    },
+    {
+      "source": "eval_set32",
+      "query": "在 Web 语言相关开发中，为什么要注意数据编码？",
+      "golden_chunk_id": "question_web_programming_languages_bank_q008",
+      "sample_id": 6
+    },
+    {
+      "source": "eval_set32",
+      "query": "请分析公司准备建立后备干部梯队，但很多岗位的接班人还没有被识别出来。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_talent_development_bank_q024",
+      "sample_id": 7
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于部门里有两名员工能力突出，但培养方向还不明确。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_talent_development_bank_q003",
+      "sample_id": 8
+    },
+    {
+      "source": "eval_set32",
+      "query": "你会怎样回答？",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q024",
+      "sample_id": 9
+    },
+    {
+      "source": "eval_set32",
+      "query": "复试中只要答案正确，表达方式不重要。 ",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q013",
+      "sample_id": 10
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于模型验证与模型评估，下列说法正确的是： ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q008",
+      "sample_id": 11
+    },
+    {
+      "source": "eval_set32",
+      "query": "某产品月销量依次为 120、128、131、140、149。若用简单线性趋势描述，请判断其总体变化并给出一句分析。 ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q023",
+      "sample_id": 12
+    },
+    {
+      "source": "eval_set32",
+      "query": "为什么要关注 TCP 的 TIME_WAIT 状态？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q021",
+      "sample_id": 13
+    },
+    {
+      "source": "eval_set32",
+      "query": "TLS 证书在安全通信中的关键作用更接近哪一项？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q007",
+      "sample_id": 14
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于假设检验，下列说法正确的是： ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q010",
+      "sample_id": 15
+    },
+    {
+      "source": "eval_set32",
+      "query": "说明方差和标准差之间的关系。 ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q017",
+      "sample_id": 16
+    },
+    {
+      "source": "eval_set32",
+      "query": "在工程里如何理解 CAP，而不是只背概念？",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q018",
+      "sample_id": 17
+    },
+    {
+      "source": "eval_set32",
+      "query": "写出一个指数退避加随机抖动的重试伪代码。 ",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q023",
+      "sample_id": 18
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于车间巡检时发现地面有油渍，旁边还有行走通道。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q003",
+      "sample_id": 19
+    },
+    {
+      "source": "eval_set32",
+      "query": "员工要进行有粉尘的操作，但嫌佩戴防护用品麻烦。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q009",
+      "sample_id": 20
+    },
+    {
+      "source": "eval_set32",
+      "query": "半径为 3 的圆的面积是： ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q006",
+      "sample_id": 21
+    },
+    {
+      "source": "eval_set32",
+      "query": "解方程 x^2-7x+10=0。 ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q021",
+      "sample_id": 22
+    },
+    {
+      "source": "eval_set32",
+      "query": "简述该场景下的处理顺序。 ",
+      "golden_chunk_id": "question_service_standard_bank_q013",
+      "sample_id": 23
+    },
+    {
+      "source": "eval_set32",
+      "query": "请分析门店早班迎宾时，客户刚进门，前台还在低头整理文件。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_service_standard_bank_q008",
+      "sample_id": 24
+    },
+    {
+      "source": "eval_set32",
+      "query": "材料六：共同富裕不是少数人的富裕，也不是整齐划一的平均主义，而是全体人民共同富裕的渐进过程。 作答要避免把共同富裕理解成平均主义。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q006",
+      "sample_id": 25
+    },
+    {
+      "source": "eval_set32",
+      "query": "网上出现关于食品安全的谣言，引发居民恐慌。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q011",
+      "sample_id": 26
+    },
+    {
+      "source": "eval_set32",
+      "query": "某初中班级中，一名学生连续两周作业拖延，课堂上也不愿回答问题。班主任在与其谈话后发现，他担心自己基础差、回答错误会被同学笑话。请结合教育心理学知识，说明班主任可以采取的两类支持措施，并简要说明理由。 ",
+      "golden_chunk_id": "question_teacher_certificate_bank_q021",
+      "sample_id": 27
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于班级管理，哪些说法正确？",
+      "golden_chunk_id": "question_teacher_certificate_bank_q010",
+      "sample_id": 28
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于前后端联调，哪些做法通常有效？",
+      "golden_chunk_id": "question_fullstack_development_bank_q009",
+      "sample_id": 29
+    },
+    {
+      "source": "eval_set32",
+      "query": "关于跨域请求，哪一项更准确？",
+      "golden_chunk_id": "question_fullstack_development_bank_q006",
+      "sample_id": 30
+    },
+    {
+      "source": "eval_set32",
+      "query": "企业月末应计提工资 36000 元，若全部计入管理费用，问本月应确认的管理费用金额。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q019",
+      "sample_id": 31
+    },
+    {
+      "source": "eval_set32",
+      "query": "权责发生制下，收入一定要等到现金收到后才能确认。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q013",
+      "sample_id": 32
+    },
+    {
+      "source": "chat_history",
+      "query": "什么是雅思听力填空题的同义替换？",
+      "session_id": "s_b63a3503c654",
+      "sample_id": 33
+    },
+    {
+      "source": "chat_history",
+      "query": "请介绍雅思听力备考的三种有效方法",
+      "session_id": "s_d7284068209c",
+      "sample_id": 34
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_d9e5558e3b0e",
+      "sample_id": 35
+    },
+    {
+      "source": "chat_history",
+      "query": "请介绍雅思听力备考的三种有效方法",
+      "session_id": "s_09c43165c327",
+      "sample_id": 36
+    },
+    {
+      "source": "chat_history",
+      "query": "调用DeepSeek",
+      "session_id": "s_1908e45e1cc9",
+      "sample_id": 37
+    },
+    {
+      "source": "chat_history",
+      "query": "请介绍雅思听力备考的三种有效方法",
+      "session_id": "s_461eeb2c55ae",
+      "sample_id": 38
+    },
+    {
+      "source": "chat_history",
+      "query": "帮我讲一下勾股定理的推导过程，并配 3 道练习题。",
+      "session_id": "s_6ba578e54e2b",
+      "sample_id": 39
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题有哪些常见的考点？线性代数特征值与特征向量在考研数学中占比如何？Python 装饰器怎么入门？",
+      "session_id": "s_f6ea0f3277d7",
+      "sample_id": 40
+    },
+    {
+      "source": "chat_history",
+      "query": "计算 5 加 12 请给出结果",
+      "session_id": "s_7ebbccf63eae",
+      "sample_id": 41
+    },
+    {
+      "source": "chat_history",
+      "query": "帮我讲一下勾股定理的推导过程，并配 3 道练习题。",
+      "session_id": "s_1908e45e1cc9",
+      "sample_id": 42
+    },
+    {
+      "source": "chat_history",
+      "query": "请详细解释一下勾股定理，并举 2 个例题",
+      "session_id": "s_06a97bbf3ebe",
+      "sample_id": 43
+    },
+    {
+      "source": "chat_history",
+      "query": "计算 5 加 12 请给出结果",
+      "session_id": "s_c7d5911ef1e8",
+      "sample_id": 44
+    },
+    {
+      "source": "chat_history",
+      "query": "echo Hello EduAgent MCP",
+      "session_id": "s_8d6814df8636",
+      "sample_id": 45
+    },
+    {
+      "source": "chat_history",
+      "query": "echo Hello EduAgent MCP",
+      "session_id": "s_7ebbccf63eae",
+      "sample_id": 46
+    },
+    {
+      "source": "chat_history",
+      "query": "给我生成知识库里的题",
+      "session_id": "s_a32a70df79c9",
+      "sample_id": 47
+    },
+    {
+      "source": "chat_history",
+      "query": "seeds/3_question文件夹下的所有文件",
+      "session_id": "s_372b8beeb413",
+      "sample_id": 48
+    },
+    {
+      "source": "chat_history",
+      "query": "请用一句话介绍雅思听力备考的要点",
+      "session_id": "s_910afda1e13d",
+      "sample_id": 49
+    },
+    {
+      "source": "chat_history",
+      "query": "什么是雅思听力填空题的同义替换？",
+      "session_id": "s_7f6a189249ca",
+      "sample_id": 50
+    },
+    {
+      "source": "chat_history",
+      "query": "什么是雅思听力填空题的同义替换？",
+      "session_id": "s_ef98d13cd65d",
+      "sample_id": 51
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题常见考点是什么？请简要回答。",
+      "session_id": "s_f30d45465fa3",
+      "sample_id": 52
+    },
+    {
+      "source": "chat_history",
+      "query": "P7 审计打靶：什么是梯度下降？",
+      "session_id": "s_9ecbd4af8ee7",
+      "sample_id": 53
+    },
+    {
+      "source": "chat_history",
+      "query": "计算 5 加 12 请给出结果",
+      "session_id": "s_4a7a23452da2",
+      "sample_id": 54
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题有哪些常见的考点？线性代数特征值与特征向量在考研数学中占比如何？Python 装饰器怎么入门？",
+      "session_id": "s_089907985c28",
+      "sample_id": 55
+    },
+    {
+      "source": "chat_history",
+      "query": "P7 审计打靶：什么是梯度下降？",
+      "session_id": "s_6613789ea15f",
+      "sample_id": 56
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_8d6814df8636",
+      "sample_id": 57
+    },
+    {
+      "source": "chat_history",
+      "query": "你好，我想了解一下三角函数的基本概念和常用公式",
+      "session_id": "s_706dd3faec67",
+      "sample_id": 58
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_7ebbccf63eae",
+      "sample_id": 59
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_c9a0c659350f",
+      "sample_id": 60
+    },
+    {
+      "source": "chat_history",
+      "query": "你好，我想了解一下三角函数的基本概念和常用公式",
+      "session_id": "s_e0173b0978a8",
+      "sample_id": 61
+    },
+    {
+      "source": "chat_history",
+      "query": "P7 审计打靶：什么是梯度下降？",
+      "session_id": "s_4fbbec4d1671",
+      "sample_id": 62
+    },
+    {
+      "source": "chat_history",
+      "query": "计算 5 加 12 请给出结果",
+      "session_id": "s_ef74c14c6c3b",
+      "sample_id": 63
+    },
+    {
+      "source": "chat_history",
+      "query": "P7 审计打靶：什么是梯度下降？",
+      "session_id": "s_7006a8bd432d",
+      "sample_id": 64
+    },
+    {
+      "source": "chat_history",
+      "query": "什么是雅思听力填空题的同义替换？",
+      "session_id": "s_a4644cf232ef",
+      "sample_id": 65
+    },
+    {
+      "source": "chat_history",
+      "query": "计算 5 加 12 请给出结果",
+      "session_id": "s_8a7efb2de84e",
+      "sample_id": 66
+    },
+    {
+      "source": "chat_history",
+      "query": "向我介绍该网站的C++课程",
+      "session_id": "s_277ef21c6990",
+      "sample_id": 67
+    },
+    {
+      "source": "chat_history",
+      "query": "关于python的习题解析",
+      "session_id": "s_372b8beeb413",
+      "sample_id": 68
+    },
+    {
+      "source": "chat_history",
+      "query": "当前知识库内容有哪些",
+      "session_id": "s_e03acc3e3f5a",
+      "sample_id": 69
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题常见考点是什么？请简要回答。",
+      "session_id": "s_f30d45465fa3",
+      "sample_id": 70
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_ef74c14c6c3b",
+      "sample_id": 71
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_4a7a23452da2",
+      "sample_id": 72
+    },
+    {
+      "source": "chat_history",
+      "query": "生成知识库中的编程题",
+      "session_id": "s_a32a70df79c9",
+      "sample_id": 73
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题有哪些常见的考点？线性代数特征值与特征向量在考研数学中占比如何？Python 装饰器怎么入门？",
+      "session_id": "s_d2e8c7830b81",
+      "sample_id": 74
+    },
+    {
+      "source": "chat_history",
+      "query": "echo Hello EduAgent MCP",
+      "session_id": "s_8a7efb2de84e",
+      "sample_id": 75
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题有哪些常见的考点？线性代数特征值与特征向量在考研数学中占比如何？Python 装饰器怎么入门？",
+      "session_id": "s_c83bee9fe7b5",
+      "sample_id": 76
+    },
+    {
+      "source": "chat_history",
+      "query": "什么是雅思听力填空题的同义替换？",
+      "session_id": "s_1b34bf80f4a5",
+      "sample_id": 77
+    },
+    {
+      "source": "chat_history",
+      "query": "请你计算 3 + 4 等于几？",
+      "session_id": "s_92fb06936e6f",
+      "sample_id": 78
+    },
+    {
+      "source": "chat_history",
+      "query": "P7 审计打靶：什么是梯度下降？",
+      "session_id": "s_edf114459ca6",
+      "sample_id": 79
+    },
+    {
+      "source": "chat_history",
+      "query": "解释一下现在完成时的用法",
+      "session_id": "s_1533e7674dcc",
+      "sample_id": 80
+    },
+    {
+      "source": "chat_history",
+      "query": "雅思听力填空题有哪些常见的考点？线性代数特征值与特征向量在考研数学中占比如何？Python 装饰器怎么入门？",
+      "session_id": "s_93e3509c59b7",
+      "sample_id": 81
+    },
+    {
+      "source": "chat_history",
+      "query": "查询我最近三次模考的知识点掌握热力图，并给出薄弱点。",
+      "session_id": "s_bd30b2a1ce37",
+      "sample_id": 82
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "你好呀，你叫什么名字？",
+      "sample_id": 83
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "今天天气真不错，适合出去走走。",
+      "sample_id": 84
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "讲个笑话听听吧。",
+      "sample_id": 85
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "你都能做些什么？",
+      "sample_id": 86
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "晚安，明天见。",
+      "sample_id": 87
+    },
+    {
+      "source": "edge_chitchat",
+      "query": "我有点无聊，陪我聊聊天。",
+      "sample_id": 88
+    },
+    {
+      "source": "edge_tool",
+      "query": "帮我算一下 128 乘以 46 等于多少。",
+      "sample_id": 89
+    },
+    {
+      "source": "edge_tool",
+      "query": "请把 hello 用 python echo 输出一遍。",
+      "sample_id": 90
+    },
+    {
+      "source": "edge_tool",
+      "query": "计算 (15+27)*3 的结果。",
+      "sample_id": 91
+    },
+    {
+      "source": "edge_tool",
+      "query": "帮我执行一段代码：print(sum(range(10)))。",
+      "sample_id": 92
+    },
+    {
+      "source": "edge_tool",
+      "query": "查一下 2 的 20 次方是多少。",
+      "sample_id": 93
+    },
+    {
+      "source": "edge_tool",
+      "query": "用工具算出 2024 年有多少天。",
+      "sample_id": 94
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "线性代数中特征值和特征向量的几何意义是什么？",
+      "sample_id": 95
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "雅思听力Section 4的常见陷阱有哪些？",
+      "sample_id": 96
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "解释一下光合作用的光反应和暗反应区别。",
+      "sample_id": 97
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "权责发生制和收付实现制在会计确认上的核心差异？",
+      "sample_id": 98
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "考研英语阅读的精读方法应该怎么做？",
+      "sample_id": 99
+    },
+    {
+      "source": "edge_knowledge",
+      "query": "Python装饰器的底层实现机制是什么？",
+      "sample_id": 100
+    }
+  ]
+}

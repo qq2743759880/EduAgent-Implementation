@@ -1,0 +1,179 @@
+{
+  "ran_at": "2026-09-14T21:59:46",
+  "n_verified": 10,
+  "mismatch_n": 0,
+  "gwt3_pass": true,
+  "rows": [
+    {
+      "sample_id": 3,
+      "source": "eval_set32",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 14,
+      "source": "eval_set32",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 27,
+      "source": "eval_set32",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 43,
+      "source": "chat_history",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 52,
+      "source": "chat_history",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 74,
+      "source": "chat_history",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 83,
+      "source": "edge_chitchat",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 90,
+      "source": "edge_tool",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 93,
+      "source": "edge_tool",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    },
+    {
+      "sample_id": 94,
+      "source": "edge_tool",
+      "runA": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge"
+      },
+      "rerun": {
+        "old_intent": "knowledge",
+        "old_need_search": true,
+        "new_intent": "knowledge",
+        "old_stable": true,
+        "new_stable": true
+      },
+      "reproducible": true
+    }
+  ],
+  "note": "稳定性预验本身每样本已含同进程双轮；本脚本补跨进程×时间维度。任何 MISMATCH 列表化交编排者处置（固化手段：seed/prompt 缓存/规则覆盖），不得静默忽略。"
+}
