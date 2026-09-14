@@ -526,3 +526,10 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 ## reshape-r v1.1 终审五问闭环(2026-09-13)
 - A1 双跑统计洞:temp=0+门槛收窄 intent/docs;A2 golden 未落盘实证(脚本在/产物无,首步跑生成器)+新洞(R03 改 ID 致 golden 失配→双键+id_map 设计);B 迁移语义钉死(读旧 content 改 PK,不重新切分);C 五层拆任务(R15-b guard 三桩点新增/task-C-sandbox 登记);D 灰度五条件推荐值入草案;E Mimosa=本环境安全扫描插件 hook,出处可溯。
 - **派发协议(用户裁定)**:编排者出交接 Prompt→用户转交执行 agent→编排者独立复验。
+
+## W0 详档 v1.2(2026-09-13,终审四问全修)
+- 端到端口径钉死:R20-min 指标=走 retriever.py 全链(召回150→rerank20→截断5)实时检索判定 GT;build_eval_set32 冻结 candidates 仅产 query+golden 映射禁算指标(终审问题1:两数字差异巨大)。
+- limit 钉死:W0 冻结=32 条(--limit 32,默认 80 禁用)。
+- Milvus 自证:执行 agent 首步 list_collections 连通失败即停(编排者不代验)。
+- R20-b 样本构成钉死:32 eval_set+50 chat_message 真实采样(role=user/长度≥10/每会话≤3/固定 seed,SQL 入报告)+18 手写边界(6/6/6 逐条入报告),三类 source 标注可复现。
+- **验收环补缺(终审"缺批判性验收")**:W0 编排者复验=常规验收(重跑指标/commit/灵敏度)+**技术批判≥3 条(竞品 URL+日期:基线方法漏洞/样本代表性/灵敏度设计合理性)+优化方案+tracker 回流**,缺一不予通过;批判结论进入 W1 开工前消化。
