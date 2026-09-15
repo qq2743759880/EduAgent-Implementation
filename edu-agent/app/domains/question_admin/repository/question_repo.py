@@ -113,3 +113,19 @@ class QuestionAdminRepo:
             "UPDATE `question` SET yn = 0, updated_at = NOW() WHERE id = %s",
             (question_id,),
         )
+
+    async def count_active_by_bank(self, bank_id: int) -> int:
+        """F-8：题库内有效题目数（yn=1），删库前置保护用。"""
+        row = await fetch_one(
+            "SELECT COUNT(*) AS cnt FROM `question` WHERE bank_id = %s AND yn = 1",
+            (bank_id,),
+        )
+        return int(row["cnt"]) if row else 0
+
+    async def soft_delete_all_by_bank(self, bank_id: int) -> int:
+        """F-8：force 删库时级联软删库内全部有效题目（yn=0，可恢复，不物理删）。"""
+        return await execute_write(
+            "UPDATE `question` SET yn = 0, updated_at = NOW() "
+            "WHERE bank_id = %s AND yn = 1",
+            (bank_id,),
+        )

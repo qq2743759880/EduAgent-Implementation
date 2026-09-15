@@ -16,6 +16,7 @@ from typing import Any, List, Optional
 
 from app.common.error_codes import (
     BAD_REQUEST,
+    BANK_IN_USE,
     CONFLICT,
     NOT_FOUND,
 )
@@ -113,12 +114,27 @@ async def update_bank(bank_id: int, payload: BankUpdateAdmin) -> BankResponseAdm
     return BankResponseAdmin(**updated)
 
 
-async def delete_bank(bank_id: int) -> None:
-    """软删题库（yn=0）。"""
+async def delete_bank(bank_id: int, *, force: bool = False) -> dict:
+    """删除题库（软删 yn=0）。
+
+    F-8 引用保护（对齐课程域 40908 风格）：
+    - 库内仍有有效题目且未显式 force → 40924，绝不静默留下题目孤儿；
+    - force=True → 先级联软删库内题目（yn=0，可恢复，不物理删）再软删题库。
+    """
     row = await _bank_repo.get_by_id(bank_id)
     if not row or row.get("yn") == 0:
         raise NotFoundError("题库", str(bank_id))
+    question_count = await _question_repo.count_active_by_bank(bank_id)
+    if question_count > 0 and not force:
+        raise ConflictError(
+            message=f"题库内仍有 {question_count} 道有效题目，无法删除（确需连同题目一并删除请加 force=true）",
+            code=BANK_IN_USE,
+        )
+    cascaded = 0
+    if question_count > 0:  # force=True
+        cascaded = await _question_repo.soft_delete_all_by_bank(bank_id)
     await _bank_repo.soft_delete(bank_id)
+    return {"bank_id": bank_id, "forced": bool(force and cascaded > 0), "questions_removed": cascaded}
 
 
 # ═══════════════════════════════════════════

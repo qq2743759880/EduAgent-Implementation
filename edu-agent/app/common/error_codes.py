@@ -127,11 +127,12 @@ CHAPTER_NO_CONFLICT = "40907"      # 章节号重复（video_id + chapter_no）
 SERIES_IN_USE = "40908"          # 系列被班次/订单引用，禁止真删（hard delete 前置校验）
 
 # ═══════════════════════════════════════════
-# 题库域（question_admin）— 40921~40929 唯一约束冲突（task13 新段）
+# 题库域（question_admin）— 40921~40929（task13 唯一约束 + F-8 引用保护）
 # ═══════════════════════════════════════════
 BANK_CODE_CONFLICT = "40921"       # 题库编码重复（institution_id + bank_code）
 QUESTION_CODE_CONFLICT = "40922"   # 题目编码重复（bank_id + question_code）
 EXAM_CODE_CONFLICT = "40923"       # 考试编码重复（session_id + exam_code）
+BANK_IN_USE = "40924"              # 题库内仍有有效题目，禁止直接删除（F-8：force=true 级联软删）
 
 # ═══════════════════════════════════════════
 # 问答/LLM 下游域（chat/llm）— 5001x（流式"建连后"错误通道专用，W2 批判 C3 登记 2026-09-04）

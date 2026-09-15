@@ -91,10 +91,18 @@ async def update_bank(bank_id: int, payload: BankUpdateAdmin):
     return ok(data=result.model_dump(mode="json"))
 
 
-@router.delete("/banks/{bank_id}", summary="删除题库（软删 yn=0）")
-async def delete_bank(bank_id: int):
-    await svc.delete_bank(bank_id)
-    return ok(data={"deleted": True, "id": bank_id})
+@router.delete("/banks/{bank_id}", summary="删除题库（软删 yn=0；非空且非 force→40924，force→级联软删题目）")
+async def delete_bank(
+    bank_id: int,
+    force: bool = Query(False, description="true=库内含题目时仍级联软删题目（需谨慎，仅 ADMIN）"),
+):
+    result = await svc.delete_bank(bank_id, force=force)
+    return ok(data={
+        "deleted": True,
+        "id": bank_id,
+        "forced": result["forced"],
+        "questions_removed": result["questions_removed"],
+    })
 
 
 # ═══════════════════════════════════════════
