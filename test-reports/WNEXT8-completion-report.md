@@ -100,3 +100,18 @@
 - 开工时 **8000 后端未运行**（`/health` fetch failed），本批按 §4④ 原文手工拉起 `.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`（未改 .env；`DEBUG=true`、`ENV_NAME` 缺省）。3000 前端在跑（dev 形态）。
 - 结果：`check-demo.mjs` = `绿 7/9,红项 ⑧,WARN ⑤ (1843ms)`。其中 ⑧ 红因 `.env` 未写 `ENV_NAME=local`（W-NEXT-5 新语义：缺省=非 local → 分支 C 红），⑤ WARN 因前端为 dev 形态——**均为本机 dev 形态的既有预期，非本批缺陷**。
 - 单写者锁：`edu-agent/scripts/eval/wnext8.lock`（任务五闭环后删除）。
+
+---
+
+## 5. 交付 commit 列表（分支 `feature/opt-waves`）
+
+| commit | 标题 | 文件 |
+|---|---|---|
+| `5542b5d` | `docs(w)/WNEXT8-readme-env-guard` | `deploy/README.md`、`AGENTS.md` |
+| `3645e7a` | `chore(w)/WNEXT8-deploy-98` | `edu-agent/scripts/deploy/deploy.mjs`、`edu-agent/.env.example`、`edu-agent/app/domains/course_admin/router.py` |
+| `69c5cdb` | `fix(w)/WNEXT8-orphan-questions` | `edu-agent/scripts/eval/wnext8_orphan_questions_cleanup.ps1`（新增） |
+| `3da0ddb` | `docs(reports)/WNEXT8-completion-report` | 本报告 |
+
+- 开工基线 HEAD `1c4dbd9`；本批执行期间仓库为**多写者共享**（W-NEXT-5/9 相继在 `feature/opt-waves` 落 commit，如 `35e98d7`/`677e763`/`df5f8ca`），故各 commit 的父节点非固定基线——已用 `git merge-base --is-ancestor` 逐条确认 4 个 commit 均在 HEAD 祖先链上。
+- 仅 stage 本批归属文件；工作树中 W-NEXT-9 的 `edu-frontend/public/*.html` 等改动未被本批提交。
+- 已知瑕疵（非内容问题）：首条 commit 消息中的 `§` 字符被 PowerShell 控制台编码吞掉（显示为 `S4`/`S5`），后续 commit 一律避免使用该字符；因系共享历史且其上已有他人 commit，未做 amend。
