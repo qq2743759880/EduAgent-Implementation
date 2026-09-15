@@ -340,6 +340,38 @@ async def _zincr_points_zset(user_id: int, delta: int, now: datetime) -> None:
             pass
 
 
+async def _self_heal_my_points(user_id: int, scope: str, snap: list[dict],
+                               now: datetime) -> list[dict]:
+    """F-2 读取侧单行对账（POINTS 维度，MySQL 账本=真相源）。
+
+    背景：``_ranking_from_zset`` 只在 key **完全为空**时用 SQL 快照回填；key 一旦有部分
+    数据（如 Redis 故障/清空窗口内 fail-open 丢过 ZINCRBY，或历史积分经数据导入绕过
+    ``award_points`` 入口），非空键永不重算，ZSET 分值与 ``user_point_log`` 永久分叉。
+    本函数只对「请求者本人」做读修复：ZSET 榜单行分值与该 scope 账本 SUM 不一致时，
+    ZADD 绝对写回真相值并同步修正本次返回行（只在用户主动看榜时修自己，零表扫描扩散）。
+
+    红线：任何异常（Redis/DB）静默返回原 snap——fail-open 语义不变，绝不清零真实积分。
+    全量/跨用户对齐走一次性脚本 ``scripts/reconcile_points_zset.py``。
+    """
+    try:
+        truth = await _user_metric_value(user_id, scope, "POINTS")
+        for row in snap:
+            if int(row.get("user_id") or 0) != user_id:
+                continue
+            if int(row.get("metric_value") or 0) != truth:
+                try:
+                    from app.database import get_redis
+                    r = get_redis()
+                    await r.zadd(_rank_zset_key(scope, "POINTS", now), {str(user_id): truth})
+                except Exception:
+                    pass  # Redis 不可用：本次返回仍按 MySQL 真相值，写回下次再试
+                row["metric_value"] = truth
+            break
+    except Exception:
+        return snap
+    return snap
+
+
 async def _ranking_from_zset(scope: str, dimension: str, top_n: int, now: datetime) -> list[dict] | None:
     """读取侧：从 ZSET 取前 top_n；key 空缺时用 SQL 实时算并回填（快照种子）。
 
@@ -384,6 +416,9 @@ async def ranking(user_id: int, scope: str = "DAILY", dimension: str = "POINTS",
     source = "ZSET" if snap is not None else "LIVE_CALC"
     if snap is None:
         snap = await _live_ranking(scope=scope, dimension=dimension, top_n=top_n)
+    elif dimension == "POINTS":
+        # F-2：ZSET 非空不触发空键回填，历史/故障期分叉在此对请求者单行读修复（MySQL 为真相源）
+        snap = await _self_heal_my_points(user_id, scope, snap, now_dt)
 
     # 徽章数（给每行附带）
     top_uid = [int(r["user_id"]) for r in snap]
