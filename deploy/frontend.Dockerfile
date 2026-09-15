@@ -14,6 +14,10 @@ WORKDIR /app
 # 浏览器访问后端的地址（build 时内联，Next 的 NEXT_PUBLIC_* 语义）
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+# F-1：服务端 /media 同源代理目标（rewrites 在 next build 时求值烘焙；
+# 容器内走 compose 网络 → http://backend:8000，区别于浏览器侧 NEXT_PUBLIC_API_BASE_URL）
+ARG MEDIA_PROXY_TARGET=http://backend:8000
+ENV MEDIA_PROXY_TARGET=$MEDIA_PROXY_TARGET
 COPY --from=deps /app/node_modules ./node_modules
 COPY edu-frontend/ ./
 # 生产环境不构建 dev 用测试

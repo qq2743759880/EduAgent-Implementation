@@ -225,6 +225,8 @@ services:
         # Next.js 的 NEXT_PUBLIC_* 在 build 时内联，故用 build arg 注入后端地址。
         # 浏览器会直接访问该地址（由后端 CORS_ORIGINS 放行）。默认 localhost（本机部署）。
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        # F-1：/media 同源代理是服务端回源，走 compose 内网 backend:8000（不经浏览器）
+        MEDIA_PROXY_TARGET: ${MEDIA_PROXY_TARGET:-http://backend:8000}
     image: eduagent-frontend:latest
     container_name: edu-frontend
     restart: unless-stopped
