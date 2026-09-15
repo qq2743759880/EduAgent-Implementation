@@ -3,6 +3,7 @@
 > 执行者：W-NEXT-9 前端修复工程师（独立执行，单写者）｜工作区 `E:\stu\project\stu\EduAgent实施手册`
 > 任务书：`.ai-hub/plans/artifacts/kickoff-WNEXT9-frontend-fixes.md`（批判源 T6-C1/C2/C3/C4 + T9-C3）
 > 分支：`feature/opt-waves`｜开工 HEAD：`1b09aff1e18501402742acb9ae23d793916f1648`
+> commits：`35e98d7` fix(fe-html)/WNEXT9-courses-order+spec-cleanup（19 个 public/*.html）→ `48c4c8d` chore: 移出误入版本库的 mimosa hook-state 运行时文件 → `677e763` fix(chat)/WNEXT9-T9C3-empty-answer-not-into-memory-window（chat/service.py + ai/memory/service.py）→ `94cd822` docs(reports)/WNEXT9-completion-report
 > 单写者锁：`edu-agent/scripts/eval/wnext9.lock`（开工建，完工删）
 > 环境：前端 3000 全程运行**未重启**；后端 8000 开工时为「已停止」（netstat 无监听）→ **启动**（非重启）；`/health` 200
 > 方法：自建最小 DOM 仿真宿主（口径同 blind-t6 附录 A：按文档顺序 eval `<script>`、记录全部 fetch/console.error/未捕获异常/DOM 写入值），脚本均置于仓库外临时目录；**全程未使用 Playwright**。
