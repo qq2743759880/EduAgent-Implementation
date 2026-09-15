@@ -102,6 +102,68 @@ def detect_memories(text: str) -> list[MemoryCandidate]:
     return cands
 
 
+# ---------------------------------------------------------------------------
+# R01-b：对话窗（mem0 式最近 N 条，用户 query + assistant 回复成对）
+# ---------------------------------------------------------------------------
+def _canon_role(role: str) -> str | None:
+    """角色归一：user/human → user；assistant/ai/bot → assistant；其余（system/tool）→ None。"""
+    r = (role or "").strip().lower()
+    if r.startswith("user") or r == "human":
+        return "user"
+    if r.startswith("assistant") or r in ("ai", "bot"):
+        return "assistant"
+    return None
+
+
+def normalize_window(
+    messages: list[dict] | None = None,
+    *,
+    text: str | None = None,
+    assistant_reply: str | None = None,
+    limit: int = 10,
+) -> list[dict[str, str]]:
+    """把输入归一为对话窗 `[{"role":"user"|"assistant","content":...}]`。
+
+    - 显式 messages：逐条约简（角色非法/内容空/非 str 丢弃），取最近 `limit` 条；
+    - 或 text（+可选 assistant_reply）：合成「用户问→助手答」最小窗口；
+    - 纯函数、零 I/O；单条内容截断 2000 字（与入队载荷上限一致）。
+    """
+    window: list[dict[str, str]] = []
+    if messages:
+        for m in messages:
+            if not isinstance(m, dict):
+                continue
+            role = _canon_role(str(m.get("role") or ""))
+            content = m.get("content")
+            if role is None or not isinstance(content, str) or not content.strip():
+                continue
+            window.append({"role": role, "content": content.strip()[:2000]})
+    elif text and str(text).strip():
+        window.append({"role": "user", "content": str(text).strip()[:2000]})
+        if assistant_reply and str(assistant_reply).strip():
+            window.append({"role": "assistant", "content": str(assistant_reply).strip()[:2000]})
+    n = max(1, int(limit or 10))
+    return window[-n:]
+
+
+def detect_memories_window(messages: list[dict]) -> list[MemoryCandidate]:
+    """规则路径窗口抽取：仅扫**用户**发言（高精度信号），跨条去重。
+
+    助手侧事实性陈述由 LLM 抽取（extract_llm）覆盖——规则不扫助手文本以免噪音入库。
+    """
+    cands: list[MemoryCandidate] = []
+    seen: set[str] = set()
+    for m in messages or []:
+        if not isinstance(m, dict) or _canon_role(str(m.get("role") or "")) != "user":
+            continue
+        for c in detect_memories(str(m.get("content") or "")):
+            if c.content in seen:
+                continue
+            seen.add(c.content)
+            cands.append(c)
+    return cands
+
+
 async def ingest_turn(text: str, user_id: int, enqueue: Any) -> int:
     """单轮显式触发：抽出候选并异步入队（GWT①：不阻塞应答链路）。
 

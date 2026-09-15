@@ -168,25 +168,20 @@ class SixNodeHarness(Harness):
                 # 嵌入+向量库查询全额叠加在检索之后（profile 实测 warm 80~120ms，冷态 600~1200ms）。
                 # 并行不改变任一侧的调用参数与产出 → 检索/记忆语义零变化。
                 async def _memory_direct() -> tuple[str, int]:
-                    """memory 直连召回（与原串行块逐字节同语义：失败→占位+warning，恒返回元组）。"""
+                    """memory 直连召回（与原串行块同语义：失败→占位+warning，恒返回元组）。
+
+                    R01：注入文本走 memory.service 序号映射（[M1]…，真实 memory_id 不进
+                    prompt，附「只能引用列出序号」指令——mem0 同款防幻觉）。
+                    """
                     memory_summary_ = "（无历史记忆）"
                     memory_calls_ = 0
                     try:
-                        from app.ai.memory.service import recall_topk
+                        from app.ai.memory.service import recall_topk, format_memories_for_prompt
 
                         top = await recall_topk(int(user_id), query, top_k=3)
-                        mem_texts = []
-                        for m in (top or []):
-                            if isinstance(m, dict):
-                                val = m.get("content") or m.get("text") or m.get("memory")
-                                if val is None:
-                                    val = str(m)
-                            else:
-                                val = str(m)
-                            if val:
-                                mem_texts.append(str(val).replace("\n", " ").strip()[:100])
-                        if mem_texts:
-                            memory_summary_ = "用户记忆：" + "；".join(mem_texts)
+                        mapped_text, _ref_map = format_memories_for_prompt(top or [])
+                        if mapped_text:
+                            memory_summary_ = mapped_text
                             memory_calls_ = 1
                     except Exception as exc:
                         logger.warning(f"[sixnode.fanout] memory 直连召回失败（降级占位）: {type(exc).__name__}: {exc}")

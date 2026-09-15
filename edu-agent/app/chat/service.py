@@ -494,11 +494,12 @@ async def chat_answer(
             assistant_message_id=message_id_assistant,
         )
 
-    # task25 R7：会话结束异步记忆 ingest（显式触发「记住X/纠正/目标偏好」→ 异步入队）
+    # task25 R7 / R01-b：会话结束异步记忆 ingest——传对话窗（用户 query + assistant 回复成对），
+    # worker 内规则+LLM 抽取（显式触发/纠正/目标偏好 + 助手事实性陈述）。
     # 不 await、不 try-raise：无论如何都不阻塞应答链路（GWT①④ 异步隔离）
     try:
         from app.ai.memory.service import enqueue_turn
-        asyncio.create_task(enqueue_turn(int(user_id), req.query))
+        asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=answer))
     except Exception:
         pass
 
@@ -618,10 +619,10 @@ def make_stream_finalize(
             assistant_message_id=message_id_assistant,
         )
 
-        # task25 R7：流式会话结束异步记忆 ingest（与应答解耦，异步隔离）
+        # task25 R7 / R01-b：流式会话结束异步记忆 ingest——对话窗含助手最终回复（与应答解耦）
         try:
             from app.ai.memory.service import enqueue_turn
-            asyncio.create_task(enqueue_turn(int(user_id), req.query))
+            asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=final_answer))
         except Exception:
             pass
 

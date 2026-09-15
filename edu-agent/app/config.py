@@ -358,6 +358,11 @@ class Settings(BaseSettings):
     MEMORY_TOP_K: int = 3                          # 向量召回 top-k 进 lead plan prompt
     MEMORY_QUEUE_KEY: str = "edu:mem_queue"        # 异步写队列 Redis list key
     MEMORY_QUEUE_MAX_RETRY: int = 3                # 单条写失败最大重试次数（异步隔离）
+    # R01-b：mem0 式对话窗抽取（用户 query + assistant 回复成对，抽取在 worker 内完成）
+    MEMORY_INGEST_WINDOW: int = 10                 # 每轮入队的最近对话条数（用户/助手发言）
+    MEMORY_LLM_EXTRACT_ENABLED: bool = True        # worker 内 LLM 事实抽取开关（False=仅规则抽取）
+    MEMORY_EXTRACT_MODEL: str = "fast"             # 抽取 LLM 通道（与 Dream 巩固同档，cost 友好）
+    MEMORY_EXTRACT_MAX_TOKENS: int = 600           # 抽取输出上限（JSON 数组，防 token 膨胀）
     MEMORY_VECTOR_DIM: int = 512                   # 内存向量降级维度（Milvus 时用 EMBEDDING_DIM=1024）
     MILVUS_MEMORY_COLLECTION: str = "user_memory"  # 记忆向量 collection（用户分区/过滤）
 

@@ -130,7 +130,9 @@ class MemoryStore:
             m.access_count = new_count
             m.last_access_at = now
             m.score = new_score
-            out.append({**(m.to_recall_dict()), "vector_score": float(h.get("score", 0.0))})
+            # R01：携带内部 id 供代码侧序号映射（service 层向 prompt/工具返回前会剥离）
+            out.append({"id": int(m.id), **(m.to_recall_dict()),
+                        "vector_score": float(h.get("score", 0.0))})
         out.sort(key=lambda r: r.get("vector_score", 0.0), reverse=True)
         try:
             from app.otel.exporter import get_otel_exporter

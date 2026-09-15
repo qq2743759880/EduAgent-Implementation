@@ -1,10 +1,13 @@
-"""三层记忆 - 门面 service（task25 R7）。
+"""三层记忆 - 门面 service（task25 R7；R01/R01-b 升级）。
 
 对外统一入口，供 chat service / graph 工具 / 管理接口调用：
 - `get_memory_store()` / `get_memory_queue()`：单例
 - `start_memory_worker()` / `stop_memory_worker()`：应用 lifespan 启停后台消费
-- `enqueue_turn(user_id, text)`：单轮显式触发（R7）→ 规则抽候选 → 异步入队
-- `recall_topk(user_id, query, top_k)`：GWT② 向量召回 top-3
+- `enqueue_turn(user_id, text, *, messages=, assistant_reply=)`：R01-b 起改收**对话窗**
+  （用户 query + assistant 回复成对，mem0 式最近 N 条）→ 整窗异步入队，抽取在 worker 内完成
+- `recall_topk(user_id, query, top_k)`：GWT② 向量召回 top-3（返回体**不含内部 id**，
+  防原始记忆 ID 泄入 LLM prompt）
+- `format_memories_for_prompt()` / `recall_topk_mapped()`：R01 防幻觉 ID→序号映射（mem0 同款）
 
 线程/协程安全：单例惰性初始化 + asyncio 单事件循环场景（与 FastAPI 一致）。
 """
@@ -16,9 +19,13 @@ from typing import Any
 from loguru import logger
 
 from app.config import settings
-from app.ai.memory.ingest import detect_memories, ingest_turn
+from app.ai.memory.ingest import normalize_window
 from app.ai.memory.queue import MemoryWriteQueue
 from app.ai.memory.store import MemoryStore
+
+# R01 防幻觉：记忆以 [M1]/[M2] 序号注入 prompt，真实 memory_id 只留在代码侧映射表，
+# 禁止把内部 id 交给 LLM（mem0 同款）。本指令随映射文本一起注入，防止模型臆造未列出的序号。
+MEMORY_REF_INSTRUCTION = "（引用用户记忆时只能使用上述 [M序号]，禁止臆造未列出的记忆或序号）"
 
 
 # ---------------------------------------------------------------------------
@@ -113,31 +120,109 @@ async def stop_memory_worker() -> None:
 # ---------------------------------------------------------------------------
 # 对上层接口（chat service / graph 工具调用）
 # ---------------------------------------------------------------------------
-async def enqueue_turn(user_id: int, text: str, *, threshold: int | None = None) -> int:
-    """单轮对话结束的显式触发记忆（R7）：规则抽候选 → 异步入队。
+async def enqueue_turn(
+    user_id: int,
+    text: str | None = None,
+    *,
+    messages: list[dict] | None = None,
+    assistant_reply: str | None = None,
+    threshold: int | None = None,
+) -> int:
+    """单轮对话结束触发记忆（R01-b 起收**对话窗**，兼容旧的单 query 调用）。
 
-    importance < threshold 的候选会被过滤（默认 settings.MEMORY_IMPORTANCE_THRESHOLD=4），
-    满足 GWT①「importance≥4 才写长时记忆」。全程不阻塞/不抛错到应答链路。
+    入参三选一/组合：
+    - `messages`：完整对话窗（[{role, content}]，取最近 MEMORY_INGEST_WINDOW=10 条）；
+    - `text`（+可选 `assistant_reply`）：合成「用户问→助手答」最小窗口；
+    整窗作为 turn 载荷异步入队（毫秒级快返），规则+LLM 抽取均在 worker 内完成。
+    importance < threshold 的候选在 worker 侧过滤（默认 MEMORY_IMPORTANCE_THRESHOLD=4）。
+    全程不阻塞/不抛错到应答链路（GWT①④）。
+
+    Returns:
+        成功入队返回 1，空窗/入队失败返回 0。
     """
-    cluster = detect_memories(text)
-    queue = await get_memory_queue()
-    pushed = 0
-    th = int(threshold if threshold is not None else 4)
-    for c in cluster:
-        if c.importance < th:
+    try:
+        window = normalize_window(
+            messages, text=text, assistant_reply=assistant_reply,
+            limit=int(getattr(settings, "MEMORY_INGEST_WINDOW", 10)),
+        )
+        if not window:
+            return 0
+        queue = await get_memory_queue()
+        return 1 if await queue.enqueue_turn_window(
+            int(user_id), window, threshold=threshold
+        ) else 0
+    except Exception as exc:  # 记忆链路任何异常都不允许波及应答链路
+        logger.warning(f"[Memory] enqueue_turn 失败（本轮不入队，不影响应答）: {exc}")
+        return 0
+
+
+def _strip_internal_ids(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """剥离内部 memory_id：召回结果进工具返回/prompt 时不得携带原始 id（R01 防幻觉）。"""
+    return [{k: v for k, v in (row or {}).items() if k != "id"} for row in rows]
+
+
+def format_memories_for_prompt(
+    memories: list[dict[str, Any]],
+    *,
+    header: str = "用户记忆",
+    with_instruction: bool = True,
+) -> tuple[str, dict[str, int | None]]:
+    """R01 防幻觉：召回记忆 → 序号化 prompt 文本 + 代码侧 ID 映射（mem0 同款）。
+
+    - 注入文本只含 `[M1] …；[M2] …` 序号，**真实 memory_id 永不进 prompt**；
+    - 返回 `(text, ref_map)`，ref_map={"[M1]": 17, ...}（id 缺失时映射为 None），
+      供后续 LLM 驱动的更新/删除操作把序号解析回真实 id 前做存在性校验；
+    - 空列表返回 `("", {})`，调用方据此回退「（无历史记忆）」占位。
+    """
+    lines: list[str] = []
+    ref_map: dict[str, int | None] = {}
+    serial = 0
+    for row in memories or []:
+        if not isinstance(row, dict):
             continue
-        ok = await queue.enqueue_candidate(int(user_id), c)
-        pushed += 1 if ok else 0
-    return pushed
+        content = str(row.get("content") or "").replace("\n", " ").strip()
+        if not content:
+            continue
+        serial += 1
+        ref = f"[M{serial}]"
+        lines.append(f"{ref} {content[:200]}")
+        raw_id = row.get("id")
+        ref_map[ref] = int(raw_id) if raw_id is not None else None
+    if not lines:
+        return "", {}
+    text = f"{header}：" + "；".join(lines)
+    if with_instruction:
+        text += "\n" + MEMORY_REF_INSTRUCTION
+    return text, ref_map
 
 
 async def recall_topk(user_id: int, query: str, top_k: int = 3, *,
                        valid_only: bool = True) -> list[dict[str, Any]]:
     """GWT②：向量召回 top-k 记忆（供 graph 的 memory 子代理/lead plan prompt）。
 
-    valid_only 默认 True：仅返回 `valid_to IS NULL` 有效版本（task-M1 AC2）。"""
+    valid_only 默认 True：仅返回 `valid_to IS NULL` 有效版本（task-M1 AC2）。
+    R01：返回体剥离内部 id（原始 id 只经 `recall_topk_mapped` 的映射表暴露给代码侧）。"""
     store = await get_memory_store()
-    return await store.recall(user_id=int(user_id), query=query, top_k=max(1, top_k), valid_only=valid_only)
+    rows = await store.recall(user_id=int(user_id), query=query, top_k=max(1, top_k),
+                              valid_only=valid_only)
+    return _strip_internal_ids(rows)
+
+
+async def recall_topk_mapped(
+    user_id: int, query: str, top_k: int = 3, *, header: str = "用户记忆",
+) -> tuple[str, dict[str, int | None], list[dict[str, Any]]]:
+    """R01：召回 + ID→序号映射一步到位的 prompt 注入入口。
+
+    Returns:
+        (prompt_text, ref_map, safe_rows)
+        - prompt_text：空召回时为 ""（调用方回退占位文案）；
+        - ref_map：序号→真实 memory_id（代码侧持有，不入 prompt）；
+        - safe_rows：剥离 id 的召回明细（供日志/结构化透传）。
+    """
+    store = await get_memory_store()
+    rows = await store.recall(user_id=int(user_id), query=query, top_k=max(1, top_k))
+    text, ref_map = format_memories_for_prompt(rows, header=header)
+    return text, ref_map, _strip_internal_ids(rows)
 
 
 async def run_forget(user_id: int) -> dict[str, int]:

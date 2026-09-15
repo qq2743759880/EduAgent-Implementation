@@ -171,10 +171,29 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"AI HITL 超时扫描任务启动失败（跳过，不影响服务）: {e}")
 
+    # ── R01 P0：记忆写队列消费者通电（全仓唯一生产启动点；Dream/HITL 后台循环随之启动）──
+    # audit P0：此前 lifespan 从未调用 start_memory_worker，chat 每轮 LPUSH 进 edu:mem_queue
+    # 后无人消费，user_memory 永不落库。启动失败仅 WARN 不阻断主服务（与存储初始化同语义）。
+    try:
+        from app.ai.memory.service import start_memory_worker
+        await start_memory_worker()
+    except Exception as e:
+        logger.warning(
+            f"记忆 worker 启动失败（记忆写队列本轮无人消费，降级运行，不影响主服务）: "
+            f"{type(e).__name__}: {e}"
+        )
+
     # ── 运行阶段 ──
     yield
 
     # ── 关闭阶段 ──
+    # R01：先停记忆消费者（停止取新单 + 取消 Dream/HITL 后台循环），再关存储连接，
+    # 避免关闭途中 worker 取单访问已释放的 MySQL/Redis。
+    try:
+        from app.ai.memory.service import stop_memory_worker
+        await stop_memory_worker()
+    except Exception as e:
+        logger.warning(f"记忆 worker 停止异常（忽略继续关闭）: {type(e).__name__}: {e}")
     if hitl_scan_task is not None:
         hitl_stop.set()
         try:
