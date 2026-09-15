@@ -96,9 +96,24 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 
 ### ② 配置 .env（按 .env.example 生产段）
 
+> ⚠ **已有 .env 判别（执行前必查，配置文件不可恢复风险）**
+>
+> 若 `edu-agent/.env` **已存在**（例如本机正在运行的 dev 形态），**先备份再改**：
+>
+> ```bash
+> cd edu-agent
+> cp .env .env.bak    # Windows: copy .env .env.bak
+> ```
+>
+> 两条硬事实：① `.env` 已被 `.gitignore` 忽略，**覆盖后无法从 git 恢复**；② `.env.example` 是
+> **生产模板**（`DEBUG=false` + `ENV_NAME=prod`，6 个必填密钥 `MYSQL_PASSWORD`/`NEO4J_PASSWORD`/
+> `MINIO_SECRET_KEY`/`LLM_API_KEY`/`JWT_SECRET`/`API_TOKEN` 全为 `REPLACE_ME_*` 占位），直接
+> `copy .env.example .env` 覆盖现有 dev `.env` 后，后端会因 `_security_guard`（密钥默认值/占位值）
+> fail-fast **拒绝启动**。只有**全新机器、尚无 .env** 时才能直接 copy。
+
 ```bash
 cd edu-agent
-copy .env.example .env    # 然后编辑 .env
+copy .env.example .env    # ⚠ 仅当 .env 不存在时用；已存在先按上方备份，再逐键改而非整文件覆盖
 ```
 
 生产段最小必改项：
@@ -172,25 +187,25 @@ start 依序执行：前置检查（MySQL/VM/Redis 探测，**只报告不阻塞
 node scripts\check-demo.mjs        # 或 node scripts\deploy\deploy.mjs status
 ```
 
-期望末行：`汇总: 绿 9/9 —— 演示环境就绪`。红项按 §4 故障对照表处置后重跑。
+期望末行：`汇总: 绿 9/9 —— 演示环境就绪`（生产段 .env＝`DEBUG=false`+`ENV_NAME=prod` 下含 ⑧；若沿用 dev 形态 `DEBUG=true`，⑧ 按分支 B/C 走 WARN/红——`.env` 写明 `ENV_NAME=local` 才是 WARN，缺省视为非 local 判红）。红项按 §4 故障对照表处置后重跑。
 
 ---
 
 ## 4. 故障对照表（逐项对齐 check-demo 9 项 + 已知项）
 
-check-demo 检查项与序号一一对应；每行处置与脚本 FAIL 时输出的指引一致。
+check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `check-demo.mjs` FAIL 时打印的 `-> …` 指引（`FIX` 表 / 各 `check()` 的 `__fix`，含原文半角标点），其前后按本机实测补充前置判断（⑥ 限流先等 60s、⑤ 形态判别的生产形态验法等）。⑤⑦⑨ 共用前端指引 `FIX.frontend`。
 
 | # | 检查项 | 典型现象 | 处置 |
 |---|---|---|---|
-| ① | Milvus 连通 192.168.85.101:19530 | 连接超时/主机不可达 | 开启 VMware 虚拟机：`vmrun start "E:\tt\CentOS 7 64 位 的克隆 docker\CentOS 7 64 位 的克隆 docker.vmx" nogui`，等 60s；进 VM `docker ps` 确认 milvus 容器在跑。⚠ 该 vmx 路径是 `check-demo.mjs` 头部「配置段」的登记值，**脚本自检发现路径不存在会提示**——换机器后按实际 VM 路径修改 `VMX_PATH` |
-| ② | Redis（`docker exec edu-redis-standalone redis-cli ping` 期望 PONG） | docker 引擎未运行 / 容器停 | 先启动 Docker Desktop，再 `docker start edu-redis-standalone` |
-| ③ | MongoDB 连通 192.168.85.101:27017 | 同 ① | 同 ①（确认 mongo 容器在跑） |
-| ④ | 后端 8000 `/health`（status=ok） | /health 不可达，或后端进程起后自杀 | 见下方「8000 拒启三分支」；日志 `logs/deploy-backend.log` |
-| ⑤ | 前端 3000 `/login-register.html` | 拒绝连接 / 非 200 | `node scripts\deploy\deploy.mjs start`（会自动 build+start）；build 失败看 `logs/deploy-frontend-build.log` |
-| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / 账号不存在 | 先过 ④ 后端；仍失败 = edu 库无种子数据，按 §3 步骤③ 恢复快照（测试账号见下表）。⚠ 该项每账号含真实登录+鉴权，单项 6-10s 属正常波动（整轮巡检约 10-15 秒，见 §5 巡检建议） |
-| ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 前端未就绪先修 ⑤；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
-| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME≠local | DEBUG 后门！上线前必须 `DEBUG=false`（settings.DEBUG=false）并重启后端；调试态（DEBUG=true + ENV_NAME=local）输出 WARN 不阻断（见脚本注释三分支语义） |
-| ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤ |
+| ① | Milvus 连通 192.168.85.101:19530 | 连接超时/主机不可达 | `开启 VMware 虚拟机: vmrun start "E:\tt\CentOS 7 64 位 的克隆 docker\CentOS 7 64 位 的克隆 docker.vmx" nogui,等 60s`；进 VM `docker ps` 确认 milvus 容器在跑。⚠ 该 vmx 路径即 `check-demo.mjs` 头部「配置段」的 `VMX_PATH`（路径不存在时脚本自动追加「配置的 vmx 路径不存在」提示）——换机器后按实际 VM 路径改该常量 |
+| ② | Redis（`docker exec edu-redis-standalone redis-cli ping` 期望 PONG） | docker 引擎未运行 / 容器停 | 脚本原文＝`docker start edu-redis-standalone(若 docker 引擎未运行,先启动 Docker Desktop)` |
+| ③ | MongoDB 连通 192.168.85.101:27017 | 同 ① | 同 ①（脚本给同一条 `vmrun start …` 指引，确认 mongo 容器在跑） |
+| ④ | 后端 8000 `/health`（status=ok） | `fetch failed`（后端未起）/ status≠ok | `cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`；启动即自杀见下方「8000 拒启三分支」，日志 `logs/deploy-backend.log` |
+| ⑤ | 前端 3000 `/login-register.html`（+生产形态判别） | 拒绝连接 / 非 200；或 dev 形态（`_buildManifest` dev 探针 200） | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000(验生产形态:deploy.mjs stop 后 start,先 build 再起)`。生产形态优先 `node scripts\deploy\deploy.mjs start`（自动 build+start `.next-prod`）；build 失败看 `logs/deploy-frontend-build.log`。⚠ dev 形态为 **WARN**（不阻断 exit），提示「生产形态未验收」 |
+| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / `fetch failed` / 账号不存在 | **先等 60 秒重跑**（登录限流 42900/60s 窗口，密集连跑必红，12-25ms 快失败即限流特征）。脚本原文指引：`先过 ④ 后端: cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000(若账号失效查 DB 种子)`。**勿直接恢复快照**——§3③ 仅适用全新空库，本机非空库执行＝破坏性覆盖＋数据回滚。耗时：约 1.0-1.3s，冷启动/限流重试时 6-10s（整轮巡检见 §5） |
+| ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`（`FIX.frontend`，与 ⑦⑨ 同源；⑤ 另带生产形态判别后缀）；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
+| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me，三分支） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME 缺省/≠local | `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端)`。三分支：**A** 被 401/403 拒绝 → PASS（DEBUG=true 时文案不再自称「安全」）；**B** 有数据 + DEBUG=true + `ENV_NAME=local`（确证）→ WARN 不阻断；**C** 有数据 + DEBUG≠true 或 ENV_NAME 缺省/≠local → **红，阻断 exit 1**（安全缺省＝非 local，`.env` 不写 `ENV_NAME=local` 即走此支） |
+| ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤（脚本原文＝`FIX.frontend`：`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`） |
 
 **测试账号（快照内种子，check-demo ⑥ 使用）**：
 
@@ -251,7 +266,7 @@ node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一�
 
 ### 巡检建议
 
-1. **每次演示/交付前**：`node scripts\deploy\deploy.mjs status` → 期望 9/9 全绿（整轮巡检约 **10-15 秒**；其中⑥ 登录链路占大头——admin+student 各一次真实 login + /api/auth/me，单项 6-10s 属正常波动，非卡死）。
+1. **每次演示/交付前**：`node scripts\deploy\deploy.mjs status` → 期望 9/9 全绿（整轮巡检约 **2-7 秒**，脚本末行自带 `检查耗时 …ms`；实测样本 1.8s / 2.3s / 2.6s / 6.6s，全红快失败时 <1s）。**最大单项在 ② Redis `docker exec`（0.5-1.3s）与 ⑥ 登录链路（1.0-1.2s）之间波动**（后端/容器冷启动时 ② 常居首）；⑥ 单项 6-10s 仅见于冷启动或限流重试，非卡死。⚠ dev 形态下 ⑤ 报 WARN（非生产 build）、⑧ 按分支 C 报红属预期，见 §3⑤。⚠ **红态耗时会成倍拉长**：②/③ 走 socket 超时 3s、④-⑨ 走 HTTP 超时 5s，VM 关机或后端/前端未起时逐项等满超时才失败（实测一例 VM+后端+前端全缺：整轮 27.2s，④ 单项 5.54s 最大，①④⑥ 红）——**红态整轮 10-30s 属正常，不要按卡死处理**。
 2. **每日**：Docker Desktop 在跑、`docker exec edu-redis-standalone redis-cli ping` = PONG；VM 在线（①③ 探测绿）。
 3. **每周**：查看 `logs/` 磁盘占用（轮转/保留由 .env 控制）；`deploy-frontend-build.log` 是否有异常 build 重试。
 4. Redis 容器开机自启（C5-D3 已实证收口，2026-09-13）：`docker inspect edu-redis-standalone` RestartPolicy.Name = `unless-stopped`（容器 Running=true），宿主机重启后 Docker 自动拉起容器，无需手动 `docker start`；但 Docker Desktop 本身需设为开机自启（Windows 设置 → 启动项）。
@@ -265,7 +280,7 @@ node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一�
 mysqldump -uroot -p --routines --triggers --single-transaction --set-gtid-purged=OFF edu > deploy/backups/edu_snapshot_<日期说明>.sql
 ```
 
-3. **恢复**：按 §3 步骤③（全库 dump 含建库语句；恢复后用 information_schema 计数验证 106 表）。
+3. **恢复**：按 §3 步骤③（全库 dump 含建库语句；恢复后用 information_schema 计数验证 106 表）。⚠ **恢复前必读 §3③「非空即停」**：既存 `edu` 库执行恢复＝破坏性覆盖（本机实测 104 表 ≠ 08-16 dump 106 表，双向分叉），先查 `information_schema.tables` 计数，`≠0` 即停，改走快照/换干净空库。
 
 ---
 
@@ -380,6 +395,17 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/api/metrics/cache
 #    已知盲区：变量拼接跳转（"/x.html?"+id）非静态可判，社区/详情 ID 动态页需人工走查。
 node test-reports/scan-deadlinks.mjs
 #    期望：最后一行「=== 死链总数: 0 ===」
+
+# 6) HITL resume 端点鉴权（W-NEXT-8 登记，承接批判 T8-C3）→ 无 token 必须 401
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  -H "Content-Type: application/json" \
+  -d "{\"thread_id\":\"probe-nonexistent\",\"action\":\"confirm\"}" \
+  http://localhost:8000/api/chat/resume
+#    期望：401（未鉴权即拒）。
+#    ⚠ 本机 dev 态（DEBUG=true + ENV_NAME 缺省=local）W-NEXT-8 实测为 **404 {"code":"40450"}
+#      CHAT_HITL_THREAD_NOT_FOUND（HTTP 404）而非 401**：DEBUG 虚拟管理员通道使无 token 请求也进入
+#      业务逻辑（批判 T8-C3 锚点；同轮无 token GET /api/users/me = 200 虚拟管理员）。生产
+#      DEBUG=false 下的 401 行为**待本检查单窗口实测登记**（W-NEXT-8 登记在案，未改代码——DEBUG 语义为既有设计）。
 ```
 
 ### venv 依赖清单（task61 补装，出包前核对）

@@ -39,6 +39,7 @@
 8. **真实契约优先于页面注释**：task104 curl 实测发现 chat SSE token 事件字段是 `delta` 而非注释里的 `token`——契约以 curl 实测为准，页面注释只是初稿
 9. **静态页参数提取禁用正则** **`match`**：task102 修复 `match(/(d+)/)` 路径误匹配——一律走 `EAPI.pageId(name)` 包装的 URLSearchParams
 10. **admin 角色守卫三段不可少**：无 token 跳登录 → 有 token 校验 `GET /api/auth/me` role∈{admin,manager} → 请求失败仍跳登录（防 DEBUG 模式降级绕过）；数据注入由 `window.bootAdmin()` 守卫通过后调用
+11. **记忆落库口径（先查事件表）**：默认 `MEMORY_EVENT_ENABLED=true`（`config.py:373`）→ 事实源是 **`user_memory_event`**（append-only，工厂见 `app/ai/memory/persistence.py:212`）；**当前有效记忆的 HEAD 判据＝`valid_to IS NULL AND event_type <> 'delete'`**（`app/ai/memory/event_persistence.py:68`，新建记录 `event_type='create'`）。`user_memory` 是快照表，**行数少不等于「没落库」**，验收/排查一律先查 `user_memory_event`。实测 2026-09-16：`user_memory_event` 16 行 / `user_memory` 2 行 / HEAD 2 行
 
 ## 待办
 
