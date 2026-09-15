@@ -568,3 +568,15 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 处置:①R02 判**带条件 PASS**——四件套/契约/可回退全过,TTFT 活体超标=登记尾巴 ②优化靶=sixnode 直连检索段 3.4s(对齐旧路径速度)③灰度门 TTFT 项未过→**旧路径保留,R05 冻结至达标** ④复测=R02-tail 任务(归 W3,与 R12 同窗)。
 ### 事件登记
 - 编排者失误一次:W0 详档 safe_w 批量改装曾把 3 个脚本的 import 插进多行括号块内(语法坏),已修复并 py_compile 全过;教训=批量改 import 必须逐文件 py_compile。
+
+## 盲测 T1(学生链路)验收:PASS+5 条真新发现(2026-09-14,双环复现)
+### 常规验收:执行 agent 关键断言全部复现(编排者独立实测)
+- /media 跨源:3000 origin **404** vs 8000 origin 200——**部署形态视频断链实锤**;收藏 5/订单 33/券 96 与页面一致;SSE done 帧包壳(我早前探针自证:done载荷带 {code,message,data} 壳,token 裸传)。
+### 真新发现(F 系列,非已知问题)
+- **F-1(P1) /media 未被 3000 代理**:页面 <video> 相对路径落 3000 → 404 无限 loading;learning 视频在真实部署形态不可播(我此前探针直连 8000 验证,掩盖此问题——盲测价值实证)。修法候选:Next rewrites 代理 /media→8000(https://nextjs.org/docs/app/building-your-application/configuring/rewrites,2026-09-14)或 API 下发绝对 URL。
+- **F-2(P1) 积分双源打架**:排行榜 ZSET=35 vs 积分面板=349 同页并列;今日 12 轮问答+收藏**零积分流水**——行为→积分挂钩缺失(gamification 未挂 chat/favorite 事件)。对标 [F-C06-001] mem0 行为→记忆决策管线:行为侧产生的事实必须进统一账本。
+- **F-3(P2) SSE done 帧包响应壳而其余事件裸传**:事件信封不一致(编排者早期探针已自见未报——盲测抓到)。修法:统一事件信封或文档明示。
+- **F-4(P2) 徽章进度 150/60 超限显示**:进度条无上限钳制。
+- **F-5(P3) start 事件字段与 router docstring 漂移**。
+### 事件
+- 前端 dev 进程再次静默死亡(执行 agent 拉起替代,正常);AGENTS.md 过时启动命令再证(第 4 次撞坑)。
