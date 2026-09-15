@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+node_modules/
+.next/
+.next-prod/
+edu-agent/.venv/
+__pycache__/
+*.pyc
+logs/
+test-reports/
+deploy/backups/
+.git/
+.gitignore
