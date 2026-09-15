@@ -303,3 +303,49 @@ async def test_update_post_missing(monkeypatch):
 
     monkeypatch.setattr(com_svc, "fetch_one", fake_fetch_one)
     assert await com_svc.update_post(1, 999, PostUpdate(title="x")) is False
+
+
+# ============================================================
+# 11. GHOST-pin-rootfix：分页排序必须全序（置顶仅首页一次 / 不跨页重复）
+# ============================================================
+@pytest.mark.asyncio
+@pytest.mark.parametrize("sort_key", ["HOT", "NEW", "LIKE"])
+async def test_list_posts_order_by_is_total_order(monkeypatch, sort_key):
+    """列表分页 ORDER BY 必须以「置顶优先」开头、以唯一 tiebreaker `P.id DESC` 收尾。
+
+    背景（GHOST-pin-rootfix）：原排序 (is_pinned, hot_score, created_at) 不是全序——
+    hot_score=0 / created_at 相同的成批行在 LIMIT/OFFSET 下顺序不确定，同一帖子会跨页重复
+    或被漏出（total 与 items 对不上）。补主键 tiebreaker 后排序唯一，分页严格不重不漏；
+    `is_pinned DESC` 前置则保证置顶帖只在第一页首屏出现一次。
+    """
+    captured: list[str] = []
+
+    async def fake_fetch_one(sql, args):
+        if "COUNT(*)" in sql and "author_id=" not in sql:
+            return {"c": 1}
+        if "author_id=" in sql:
+            return {"c": 1}
+        return {"c": 0}
+
+    async def fake_fetch_all(sql, args):
+        captured.append(sql)
+        if "community_react" in sql:
+            return []
+        return [_mk_post_row(7, is_pinned=1)]
+
+    monkeypatch.setattr(com_svc, "fetch_one", fake_fetch_one)
+    monkeypatch.setattr(com_svc, "fetch_all", fake_fetch_all)
+
+    await com_svc.list_posts(1, page=1, page_size=10, sort=sort_key)
+
+    page_sql = [s for s in captured if "ORDER BY" in s and "community_react" not in s]
+    assert page_sql, "未捕获分页 SQL"
+    sql = page_sql[0]
+    assert "LIMIT" in sql and "OFFSET" in sql, f"分页 SQL 缺少 LIMIT/OFFSET: {sql}"
+    # 置顶优先（= 置顶帖只会落在第一页首屏），且以唯一 tiebreaker 收尾
+    assert sql.index("P.is_pinned DESC") < sql.index("ORDER BY") + len("ORDER BY ") + 1, \
+        f"ORDER BY 首要键必须为 P.is_pinned DESC: {sql}"
+    assert "P.id DESC" in sql, f"ORDER BY 缺少唯一 tiebreaker P.id DESC（分页不重不漏失效）: {sql}"
+    # tiebreaker 必须落在 ORDER BY 子句内、LIMIT 之前
+    assert sql.index("ORDER BY") < sql.index("P.id DESC") < sql.index("LIMIT"), \
+        f"tiebreaker 必须位于 ORDER BY 子句末位（LIMIT 前）: {sql}"

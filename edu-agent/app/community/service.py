@@ -70,11 +70,15 @@ async def list_posts(user_id: int, *, board_code: str | None = None,
         kw = f"%{keyword}%"
         where.append("(P.title LIKE %s OR P.content_md LIKE %s)")
         args += [kw, kw]
+    # GHOST-pin-rootfix: 排序键末位补 `P.id DESC` 唯一决定性 tiebreaker。
+    # 原实现只按 (is_pinned, hot_score, created_at) 排序，而 hot_score=0/created_at 相同的大量行
+    # 在 LIMIT/OFFSET 分页下顺序不确定 → 同一帖子可能跨页重复出现或被漏出（total/items 对不上）。
+    # 加上主键 tiebreaker 后排序全序，分页严格不重不漏。响应结构不变（非契约变更）。
     order_by = {
-        "HOT": "P.is_pinned DESC, P.hot_score DESC, P.created_at DESC",
-        "NEW": "P.is_pinned DESC, P.created_at DESC",
-        "LIKE": "P.is_pinned DESC, P.like_count DESC, P.created_at DESC",
-    }.get(sort, "P.is_pinned DESC, P.hot_score DESC, P.created_at DESC")
+        "HOT": "P.is_pinned DESC, P.hot_score DESC, P.created_at DESC, P.id DESC",
+        "NEW": "P.is_pinned DESC, P.created_at DESC, P.id DESC",
+        "LIKE": "P.is_pinned DESC, P.like_count DESC, P.created_at DESC, P.id DESC",
+    }.get(sort, "P.is_pinned DESC, P.hot_score DESC, P.created_at DESC, P.id DESC")
 
     sql_base = f" FROM community_post P WHERE {' AND '.join(where)}"
     total_row = await fetch_one(f"SELECT COUNT(*) AS c {sql_base}", tuple(args))

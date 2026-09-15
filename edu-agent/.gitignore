@@ -63,3 +63,7 @@ alembic.ini
 /_check*
 /_tmp*
 /tmp_smoke_*
+
+# GHOST-pin-rootfix: 单写者锁 + 探针临时产物（复核可重放，不入库）
+scripts/eval/.ghost_tmp/
+scripts/eval/ghost.lock
