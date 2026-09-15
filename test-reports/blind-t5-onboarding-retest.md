@@ -220,3 +220,64 @@ sleep 65 && cd edu-agent && node scripts/check-demo.mjs                   # →�
 ```
 
 **自清声明**：临时脚手架目录 `%TEMP%\cdtest_t5\`（脚本副本 + 合成 `.env` + 401 模拟后端）**已删除**；模拟后端 8099 **已杀且端口已释放**；限流窗口**已等待复位**（末次为 `绿 9/9`）；未对 `.env`、`.env.example`、数据库、后端/前端进程做任何写操作。仓库内**仅新增本报告**一个文件。
+
+---
+
+## E. 补充验证（收口首轮被限流中断的那一项 + 端点的系统化只读核对）
+
+> 首轮跑 learning 页数据链路时被登录限流（429）打断，`/api/study/courses/{id}/outline` 未取到证据。
+> 本节把该缺口补上，并用 **OpenAPI 只读核对**把「页面引用的端点是否真的存在」一次性系统化，
+> 同时**更正我自己上一轮的两处探针错误**。
+
+### E1 学习页核心数据链路（首轮缺口，现已补齐）
+
+`[实测]` 学生 `user000001` 实际报名 `series_id=1`（`cohort_id` 1 与 2，2 条报名）：
+
+| 端点 | 结果 |
+|---|---|
+| `GET /api/study/courses/1/access` | 200 → `{"series_id":1,"cohort_id":1,"accessible":true,"reason":null}` |
+| `GET /api/study/courses/1/outline` | 200 → `series_title="通用编程入门班·直播"`、`total_sessions=84`、`completed_sessions=0`、`modules[]` 含 `module_title="语法基础与开发环境"`、`sessions[]` 含 `session_title="语法基础与开发环境 第1课"` 与真实 `video_url` |
+| `GET /api/gamification/rankings` | 200 → `snapshot_date=2026-09-15`、`top[]` 真实用户（`is_myself:true` 命中 user_id=1，`rank_no=2`） |
+
+⇒ learning 页的「班次→大纲→模块→课次」与排行榜**都是活数据**，非死壳。
+（另注：README §待办 曾把 `cohort accessible:true` 路径列为降级项，本轮实测该路径**已可用**。）
+
+### E2 端点存在性系统化核对（改为只读，不触发任何写动作）
+
+`[实测]` 用 `GET /openapi.json`（**只读**，不调用任何 POST/扫描）取注册路径 **177** 条，逐一核对页面引用端点：
+
+- **18 个页面关键端点全部已注册**：`/api/mcp/{servers,tools,call-log,tools/test,health-scan}`、
+  `/api/knowledge/{partitions,tasks}`、`/api/study/courses/{series_id}/{outline,access}`、
+  `/api/progress/dashboard`、`/api/gamification/me/{points,badges}`、`/api/gamification/rankings`、
+  `/api/enrollments/me/cohorts`、`/api/series`、`/api/users/me`、`/api/auth/me`。
+- `/api/mcp/*` 实注册 20 条（含 `servers/{id}/health`、`health-scan-async`、`description-review` 等）。
+
+**更正我上一轮的两处探针错误（原样记录，避免后续被误引为缺陷）**
+
+| 我的错误探针 | 真相 |
+|---|---|
+| 裸 `GET /api/study/courses/` → 我报 404 | **不是缺陷**。learning.html 只调 `{series_id}/outline` 与 `{series_id}/access`，从不调裸路径（见 `learning.html:747/777/784`）。本轮已用真实 `series_id=1` 验通，见 E1 |
+| `GET /api/mcp/health` → 我报 404 | **不是缺陷**。该端点确不存在，但页面也**没用它**：admin-mcp.html 用的是 `POST /api/mcp/health-scan`（`admin-mcp.html:322/330/518`），已注册 ✅ |
+
+⇒ 结论：**未发现「页面引用不存在的端点」**。我上一轮两处 404 均为探针自造，已作废。
+
+### E3 `_rwtest` 残留测试表（精度提示）
+
+`[实测]` `_rwtest`（`table_rows=2`，`create_time=2026-09-04 20:49:10`）是遗留的**测试表**，但它被计入
+README 所称的「现库 104 表」，也出现在 §3③「现库独有 9 张」名单里。⇒ 数字口径**没错**，但
+「9 张会丢失的表」中含 1 张测试残留（丢失无害）。属精度提示，非缺陷。
+
+### E4 未实跑项（如实登记，避免误读为已验）
+
+- `deploy.mjs stop` / `stop --all` **未实跑**——执行它会拆掉正在运行的 8000/3000，属破坏性动作；
+  本轮仅做**代码级**核对（`deploy.mjs:287-317` 按端口 `netstat→PID→taskkill /F /T`，`--all` 仅附加
+  提示不停 Redis 容器），标注 `[代码佐证]` 而非 `[实测]`。
+- `check-demo.mjs --fail-drill` **未跑**（README 未把它列为部署步骤，脚本自测用）。
+- 容器化路线（`docker compose`）**未实跑**：README §6 明确本包边界为「本机同构」，
+  容器化归 C 阶段全量；本轮只核对了资产存在性与 `pdfplumber` 未落地（§C-D9）。
+
+### E5 补充自清声明
+
+本节仅新增 **1 次学生登录 + 1 次管理员登录**（均在限流阈值内，各用例已 `sleep` 间隔），
+**未执行任何写操作**（`/openapi.json` 为只读；`health-scan` 等 POST 端点**刻意未调用**）。
+

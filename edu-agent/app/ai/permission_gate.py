@@ -143,11 +143,14 @@ ADMIN_WRITE_TOOLS: frozenset[str] = CONTRACT_PENDING_ADMIN_WRITE_TOOLS
 
 # ==================================================================
 # ④ 契约矩阵（**语义冻结，R15b 不改**）：类别 → 允许角色
+#    CR-ACI-teacher-read（2026-09-15 用户签收）：KNOWN_ROLES 补 teacher，
+#    teacher = 公开只读（与 student 同档，不给写类/admin 专属）；
+#    未知新角色仍 default=deny，进业务前须先走契约变更单登记（流程防线）。
 # ==================================================================
-KNOWN_ROLES = frozenset({"admin", "manager", "student"})
+KNOWN_ROLES = frozenset({"admin", "manager", "student", "teacher"})
 
 _CLASS_ALLOWED_ROLES: dict[ToolClass, frozenset[str]] = {
-    "public_read": frozenset({"student", "manager", "admin"}),
+    "public_read": frozenset({"student", "manager", "admin", "teacher"}),
     "course_write": frozenset({"manager", "admin"}),
     "admin_write": frozenset({"admin"}),
 }

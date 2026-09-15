@@ -1,0 +1,35 @@
+{
+  "planId": "reshape-r-aci",
+  "draft": false,
+  "frozen_at": "2026-09-15",
+  "signed_by": "user(项目所有者) 2026-09-15 签字生效",
+  "amendments": [
+    {
+      "id": "CR-ACI-teacher-read",
+      "date": "2026-09-15",
+      "signed_by": "user 2026-09-15 签收",
+      "ref": "handoffs/CR-ACI-teacher-read.md",
+      "change": "KNOWN_ROLES 补 teacher;矩阵 teacher=公开只读;未知新角色进业务前须先走契约变更单登记(流程防线,default=deny 不变)"
+    }
+  ],
+  "description": "ACI 错误信封 + 权限门(对齐 F-C03-001 CanUseToolFn + P-003 Poka-yoke)",
+  "error_envelope": {
+    "shape": {"code": "string", "message": "string(面向用户)", "action_hint": "string(可行动建议)"},
+    "rules": [
+      "message 面向用户,禁止错误码堆砌/堆栈泄出",
+      "action_hint 必须是可执行动作(如'请先登录'/'联系 admin 开通')",
+      "错误信封本身是 prompt——模型读到即知道下一步该做什么"
+    ]
+  },
+  "permission_gate": {
+    "pattern": "CanUseToolFn(角色×工具矩阵)",
+    "default": "deny(非白名单即拒)",
+    "matrix": {
+      "admin": "全量工具",
+      "manager": "只读工具+课程/题库写类",
+      "student": "仅公开只读工具"
+    },
+    "write_class_tools": ["收藏写", "积分变更", "知识库导入", "订单创建"],
+    "rule_fallback": "LLM 决策超时→规则路由(已上,R02 落)"
+  }
+}

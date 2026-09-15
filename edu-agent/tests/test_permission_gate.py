@@ -140,8 +140,9 @@ def test_matrix_real_tools_all_roles_allowed(role, tool):
 
 
 def test_contract_matrix_class_semantics_unchanged():
-    """G3：契约矩阵「类别→允许角色」语义未变（R15b 只改映射表，不改矩阵）。"""
-    assert class_allowed_roles("public_read") == frozenset({"student", "manager", "admin"})
+    """G3：契约矩阵「类别→允许角色」语义（CR-ACI-teacher-read 2026-09-15 用户签收后：
+    public_read 增补 teacher；course_write/admin_write 语义不变）。"""
+    assert class_allowed_roles("public_read") == frozenset({"student", "manager", "admin", "teacher"})
     assert class_allowed_roles("course_write") == frozenset({"manager", "admin"})
     assert class_allowed_roles("admin_write") == frozenset({"admin"})
     assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 7, "真实工具面应为 7 个"
@@ -157,10 +158,30 @@ def test_fail_closed_unregistered_tool(role):
     assert d.action_hint
 
 
-@pytest.mark.parametrize("role", ["", "  ", "unknown", "teacher"])
+@pytest.mark.parametrize("role", ["", "  ", "unknown", "guest"])
 def test_fail_closed_unknown_role(role):
-    # 未知角色（含空白/未登录）→ 公开只读也 deny
+    # 未知角色（含空白/未登录；CR-ACI-teacher-read 后 teacher 已入 KNOWN_ROLES，不再属未知）→ 公开只读也 deny
     assert can_use_tool(role, READ_TOOL).allowed is False
+
+
+# ---- CR-ACI-teacher-read（2026-09-15 用户签收）：teacher = 公开只读 ----
+def test_teacher_public_read_allowed():
+    """G1：teacher × public_read（search_knowledge）= allowed。"""
+    assert can_use_tool("teacher", "search_knowledge").allowed is True
+
+
+@pytest.mark.parametrize("tool", ["course_create", "question_delete"])
+def test_teacher_write_denied(tool):
+    """G1：teacher × 课程/题库写类（挂起工具）= denied + action_hint。"""
+    d = can_use_tool("teacher", tool)
+    assert d.allowed is False and d.action_hint
+
+
+@pytest.mark.parametrize("tool", ["order_create", "favorite_add"])
+def test_teacher_admin_write_denied(tool):
+    """G1：teacher × admin 专属（挂起工具）= denied + action_hint。"""
+    d = can_use_tool("teacher", tool)
+    assert d.allowed is False and d.action_hint
 
 
 @pytest.mark.parametrize("role", ALL_ROLES)

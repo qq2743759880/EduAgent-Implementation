@@ -42,7 +42,7 @@
 | 角色三方差异是否吻合矩阵 | **不吻合**——权限门未参与判定，三方在流式面上**行为完全一致（都能执行）** |
 | fail-closed（不存在工具） | 门**本体**正确（单元级 23 passed），但**门未被生产路径消费**，且**用户看不到 deny 提示** |
 
-> 一句话（更正后）：**权限门本体是好的，但它没有接进生产 chat 路径——流式面上一套无门实现会直接执行 MCP 工具，student 实测执行成功；非流式面则是 admin 幻觉式"已完成"。R15 契约的 `permission_gate.default=deny` 在当前生产链路上不成立。**
+> 一句话（更正后）：**权限门本体是好的，但它没有接进生产 chat 路径——流式面上一套无门实现会直接执行 MCP 工具，student 实测执行成功；非流式面则是 admin 幻觉式"已完成"。更糟的是，另一道护栏（executor 的 HITL 高风险缝）因命名约定错配，对契约的 10 个写类工具全部漏判（§11）。四道防线没有一道会在写类工具上线时拦住 student——R15 契约的 `permission_gate.default=deny` 在当前生产链路上不成立。**
 
 
 ---
@@ -409,4 +409,82 @@ rm -f _t4_gate_bypass_test.py
 - **[未验证]** `echo` / `list_alphabet` 未逐一实测（`add` / `ping` 已覆盖同一代码路径 `tool_calling.py:283`）。
 - **[未验证]** 非流式子代理 `call_tool`（`graph.py:507`）无门这一点仅 [代码佐证]，未构造出实测（28 次非流式诱导中该能力 0 次被 LLM 选中）。
 - **[实测]** 本节所有"执行成功"结论均有 `mcp_tool_call_log` 新增行 + app.log 子进程日志双证，非仅 HTTP 200。
+
+---
+
+## 11. 追问：权限门没接，那 executor 层的 HITL 护栏兜得住写类工具吗？——**也兜不住**（命名约定错配）
+
+F6 说"写类工具一旦注册就会被任意 student 触发"。但仓里还有**第二道**护栏：`executor.call_tool` 里的 HITL 缝（`HITL_ENABLED=True`，`.env:93` 实测确为 True）。问题是它按**工具名前缀**分类：
+
+```python
+# app/mcp/executor.py:45
+_WRITE_TOOL_PREFIXES = ("write_", "create_", "delete_", "update_", "send_", "broadcast_", "upload_")
+# app/mcp/executor.py:69-72
+if any(n.startswith(p) for p in _HITL_EXEC_COMMAND_PREFIXES): return "exec_command"
+if any(n.startswith(p) for p in _WRITE_TOOL_PREFIXES):        return "write_file"
+```
+
+而契约里 10 个写类工具用的是**`<实体>_<动词>`**命名（`course_create`），分类器只认**`<动词>_<实体>`**（`create_course`）——**全部漏判**。
+
+**实测（`_classify_hitl_action`，纯函数，19:10:49）**：
+
+| 工具名 | 分类结果 | 是否过 HITL |
+|---|---|---|
+| `course_create` / `course_update` / `course_delete` | `None` | ❌ **不过** |
+| `question_create` / `question_update` / `question_delete` | `None` | ❌ **不过** |
+| `favorite_add` / `points_change` / `knowledge_import` / `order_create` | `None` | ❌ **不过** |
+| `create_course`（反例，动词在前） | `write_file` | ✅ 过 |
+| `delete_course`（反例） | `write_file` | ✅ 过 |
+| `run_shell` / `fetch_url` / `refund_order`（反例） | `exec_command` / `network_access` / `refund` | ✅ 过 |
+
+即：**契约自己的 10 个写类工具名，一个都命中不了 HITL 分类器**；反而是"另一种命名"能被命中。这不是"没上线所以没触发"，是**上线了也不会触发**。
+
+**第三处连带问题：写类工具被判为"可缓存"（同参 60s 缓存）**——`_is_cached_call`（executor.py:91-96）同样用前缀判定：
+
+```
+_is_cached_call(course_create)   = True     ← 写操作被当只读，可命中 60s 同参缓存
+_is_cached_call(points_change)   = True
+_is_cached_call(order_create)    = True
+_is_cached_call(create_course)   = False    ← 反例才被正确排除
+_is_cached_call(ping)            = True     ← 只读，正确
+```
+
+→ 同一个前缀假设被三处复用（HITL 分类、只读判定、权限门映射），所以一处命名约定错配会**同时**打穿三道防线。
+
+### 11.1 合并后的风险画像（F6 + §11）
+
+| 防线 | 位置 | 对契约 10 个写类工具 |
+|---|---|---|
+| 权限门 `can_use_tool` | `permission_gate.py` | ❌ 未接入生产链路（F6） |
+| HITL 高风险缝 | `executor.py:490-501` | ❌ 命名约定错配，全漏判（§11） |
+| 只读/缓存判定 | `executor.py:91-96` | ❌ 判为可缓存（§11） |
+| 工具选择 | `tool_calling._parse_heuristic` | ⚠️ 按**用户 query 关键词**选，无角色概念 |
+
+**结论**：当前"没出事"纯粹是因为写类工具**还没注册**（`CONTRACT_PENDING_TOOLS`）且已注册的 4 个都是只读。四道防线里没有任何一道会在写类工具上线时拦住 student——**上线即越权**。
+
+### 11.2 建议修法（按性价比排序）
+
+1. `_WRITE_TOOL_PREFIXES` 增加**动词后缀**匹配（或改为正则 `(^|_)(create|update|delete|add|change|import|remove|set)_?` + 结尾动词 `_(create|update|delete|add|change|import)$`），三个消费方（HITL 分类 / 缓存判定 / 权限门）共用一份分类函数。
+2. 把 `can_use_tool` 接进 `tool_calling.run_chat_tool_calls`（流式）与 `app/ai/graph.py:507` 子代理 `call_tool`（非流式）；deny 时**不要执行**并把 `message/action_hint` 作为答案流出。
+3. 删除或接线 `app/chat/flows/langgraph_agent.py`（当前无人 import；接线前先修 `:414` 的 `tr['result']` KeyError）。
+4. `_parse_heuristic` 选工具后应过一遍"该角色可见工具集"，而不是只看 `mcp_tool.yn=1` + `server.enabled=1`。
+
+### 11.3 §11 的复跑方式
+
+```bash
+cd "E:/stu/project/stu/EduAgent实施手册/edu-agent"
+.venv/Scripts/python.exe -c "
+import sys; sys.stdout.reconfigure(encoding='utf-8')
+from app.mcp.executor import _classify_hitl_action, _is_cached_call
+from app.ai.permission_gate import CONTRACT_PENDING_TOOLS
+for n in list(CONTRACT_PENDING_TOOLS)+['create_course','ping']:
+    print(f'{n:20s} hitl={_classify_hitl_action(n)} cached={_is_cached_call(n,{})}')
+"
+```
+
+### 11.4 §11 的局限
+
+- **[代码佐证]** "写类工具上线后不会被 HITL 拦"是基于分类器实测 + `call_tool` 时序（`executor.py:474` 解析工具 → `:490` 过 HITL）的**推演**；因工具未注册，无法构造端到端样本。
+- **[未验证]** `_run_hitl_seam` 的人工确认 UI/超时路径未实测（`HITL_ENABLED=True` 下无可用写类工具可触发）。
+
 
