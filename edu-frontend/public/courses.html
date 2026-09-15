@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>课程中心 · 效果图（task44 契约② HTML 审核版 v4 · 两级导航 + 学中玩风格 + 水平分页）</title>
+<title>课程中心 · EduAgent</title>
 <!--
   AUDIT LOG:
   [2026-08-19 R1] v1 初稿提交（契约② 对齐：搜索/筛选/排序/分页/四态）→ 状态: SUBMITTED
@@ -52,7 +52,7 @@
   .page{max-width:1200px;margin:0 auto;padding:24px 20px 64px}
   .topbar{display:flex;align-items:center;gap:14px;margin-bottom:4px;flex-wrap:wrap}
   .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--ink-strong)}
-  .doc-badge{font-size:11px;color:var(--candy-purple);background:var(--secondary-soft);border:1px solid var(--ht-d8c4fb);padding:3px 10px;border-radius:999px;font-weight:700}
+
   .subtitle{font-size:0.8125rem;color:var(--ink-soft);margin-bottom:18px}
 
   /* ===== Hero（学中玩：吉祥物 + 口号 + 打卡/等级/XP 社交证明）===== */
@@ -214,7 +214,6 @@
   /* ===== 响应工具条 ===== */
   /* respbar 演示工具条（状态演示 + 视口切换）样式已移除（critique C4） */
 
-  .demo-note{font-size:11px;color:var(--ink-faint);margin-top:6px;line-height:1.6}
   /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
   .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
   .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
@@ -356,9 +355,8 @@
 
   <div class="topbar">
     <h1 class="page-title">课程中心</h1>
-    <span class="doc-badge">契约② GET /api/series · 效果图 v4 · 两级导航 · 学中玩</span>
   </div>
-  <p class="subtitle">一级学科大类 → 二级课程方向 · 筛选即重查 · 关键词防抖 400ms · 仅 on_sale · 价格=min_price「¥X 起」</p>
+  <p class="subtitle">按学科与方向浏览课程，支持关键词搜索、价格筛选与排序</p>
 
   <!-- Hero：吉祥物 + 口号 + 打卡/等级/XP 社交证明（学中玩） -->
   <section class="hero">
@@ -367,9 +365,9 @@
       <h2 class="hero-slogan">学中玩 · 玩中学，每天进步<b>一点点</b></h2>
       <p class="hero-sub">像玩游戏一样把课程学完，打卡、赚 XP、升级徽章</p>
       <div class="hero-stats">
-        <div class="stat-card"><span class="stat-icon">🔥</span><span>连续打卡 <b>7</b> 天</span></div>
-        <div class="stat-card"><span class="stat-icon">⭐</span><span class="level-row">Lv.5 <span class="xp-bar"><span class="xp-fill" id="xpFill"></span></span><span class="xp-text">120 XP</span></span></div>
-        <div class="stat-card"><span class="stat-icon">🏆</span><span>累计 <b>1,280</b> XP</span></div>
+        <div class="stat-card"><span class="stat-icon">🔥</span><span>连续打卡 <b id="heroStreak">–</b> 天</span></div>
+        <div class="stat-card"><span class="stat-icon">⭐</span><span class="level-row">Lv.<b id="heroLevel">–</b> <span class="xp-bar"><span class="xp-fill" id="xpFill"></span></span><span class="xp-text" id="heroXp">– XP</span></span></div>
+        <div class="stat-card"><span class="stat-icon">🏆</span><span>累计 <b id="heroTotalXp">–</b> XP</span></div>
       </div>
     </div>
   </section>
@@ -450,16 +448,13 @@
     <span class="pg-info" id="pgInfo"></span>
   </nav>
 
-  <p class="demo-note">HTML 效果图（task44 审核流 v4）：内嵌 15 门<b>真实课程</b>（价格=min_price「¥X 起」/ 班次=3 / 交付模式中文化标签 / 封面 cover_url）。<b>v4 变更</b>：①两级导航——一级学科大类（9 类）× 二级课程方向（如「编程→通用程序设计」）②「学中玩」风格——糖果色（橙/绿/紫）、吉祥物 Hero、连续打卡/等级/XP 社交证明、XP 徽章、学习进度环、超大圆角、粗描边按钮、弹性按压动画 ③分页从左到右水平排列（窄视口横向滚动不换行）④封面参考「脚本与自动化编程」风格（糖果渐变 + 学科 emoji + 斜线图案）⑤封面注入对应课程名文字（居中粗体白字，Baloo 2 圆润粗体，去掉交付后缀）。分页文案体现真实数据量（2628 门 · 第 1/176 页）。</p>
 </div>
 </div><!-- /.glayout -->
 
 <script>
 /* =====================================================================
- * task44 课程中心 效果图 v4 —— 纯前端演示（数据形状对齐契约② SeriesListItem）
- * v4 变更：两级导航（一级学科大类 9 类 + 二级课程方向）；「学中玩」糖果色风格；
- *          分页水平排列；封面参考「脚本与自动化编程」风格
- * React 实现阶段将真实请求 GET /api/series
+ * 课程中心 —— 两级导航（一级学科大类 9 类 + 二级课程方向）；列表/分页/筛选
+ * 真实请求 GET /api/series（task103 接真，无演示兜底）
  * ===================================================================== */
 const DM = { "online_live":"在线直播", "online_recorded":"在线录播", "offline_face_to_face":"线下面授" };
 /* 封面策略：真实 cover_url 且非占位假域名时用图片，否则用首字母色块占位 */
@@ -717,13 +712,33 @@ function resetAll(){
 }
 document.getElementById("resetBtn").addEventListener("click",resetAll);
 
-/* ---- 初始渲染：两级导航 + XP 进度条动画 + 列表（respbar 状态/视口演示已移除，critique C4）---- */
+/* ---- 初始渲染：两级导航 + Hero 真实数据 + 列表（respbar 状态/视口演示已移除，critique C4）---- */
 renderCats();
 renderSubs();
 fbSummary();
 refresh();
-/* XP 等级进度条自动增长（学中玩激励动效） */
-setTimeout(()=>{ const f=document.getElementById("xpFill"); if(f) f.style.width="62%"; }, 300);
+/* B-G2：Hero 等级/积分/连续打卡接真实端点（gamification/me/points + progress/dashboard）；
+ * 未登录或请求失败时保持占位「–」，不造演示数据 */
+function loadHero(){
+  if (!window.EAPI || !EAPI.store || !EAPI.store.getToken()) return;
+  function setText(id, v){ var el=document.getElementById(id); if (el) el.textContent = v; }
+  EAPI.get("/api/gamification/me/points?page=1&page_size=1").then(function (d) {
+    if (!d) return;
+    if (typeof d.level_no === "number") setText("heroLevel", d.level_no);
+    if (typeof d.total_points === "number") {
+      var s = d.total_points.toLocaleString("zh-CN");
+      setText("heroTotalXp", s); setText("heroXp", s + " XP");
+    }
+    if (typeof d.level_progress_pct === "number") {
+      var f = document.getElementById("xpFill");
+      if (f) f.style.width = Math.min(100, Math.max(0, d.level_progress_pct)) + "%";
+    }
+  }).catch(function(){});
+  EAPI.get("/api/progress/dashboard?days=14").then(function (d) {
+    if (d && typeof d.latest_streak_days === "number") setText("heroStreak", d.latest_streak_days);
+  }).catch(function(){});
+}
+loadHero();
 </script>
 <script>
 /* 全局导航抽屉（移动端） */

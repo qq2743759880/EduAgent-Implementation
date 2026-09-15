@@ -467,6 +467,9 @@ button{font-family:inherit;cursor:pointer}
 </div><!-- /page -->
 </div><!-- /.glayout -->
 
+<!-- T3B-B-G1: 补 /edu-api.js 加载（死壳修复——此前全页 0 处引入，接线 IIFE 首行 if(!window.EAPI) 静默退出；教训 4 注入模式）-->
+<script src="/edu-api.js"></script>
+
 <script>
 /* task11（reshape-a）：学生仪表盘全量真实接线，演示兜底脚本已清零。
  * 数据源（均 curl 实测，见文件头）：

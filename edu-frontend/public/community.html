@@ -56,8 +56,7 @@ input,select{font-family:inherit}
 .visually-hidden{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .page{width:100%;max-width:1080px;margin:0 auto;padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
 
-/* respbar 演示工具条样式已移除（critique C4） */
-.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
+/* respbar 演示工具条样式已移除（critique C4）；demo-note 元素已随 T3B-B-G4 演示清理删除 */
 
 /* ===== Hero 横幅（糖果渐变底 + 白字 + emoji 装饰）===== */
 .hero{position:relative;overflow:hidden;border-radius:var(--radius-xl);border:3px solid var(--ink);box-shadow:var(--shadow-3d);background:linear-gradient(120deg,var(--candy-purple) 0%,var(--candy-blue) 55%,var(--candy-pink) 100%);color:var(--ht-fff);padding:26px 24px}
@@ -272,7 +271,7 @@ input,select{font-family:inherit}
 </head>
 <body>
 
-<!-- respbar 演示工具条已移除（critique C4）；未登录演示列表由脚本 buildOk() 兜底 -->
+<!-- respbar 演示工具条已移除（critique C4）；演示列表兜底已清零（T3B-B-G4），列表四态由真实脚本驱动 -->
 
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
 <div class="gnav-overlay" id="gnavOverlay"></div>
@@ -330,103 +329,21 @@ input,select{font-family:inherit}
 
   <!-- ===== 列表工具行：我的帖子 + 发新帖 CTA ===== -->
   <div class="toolbar">
-    <span class="mine" style="width: 724.531px; height: 43.9792px; transform: matrix(1, 0, 0, 1, 0, 2.34376);">🎒 我的帖子 <b style="width: 27.3334px; height: 22px; transform: matrix(1, 0, 0, 1, -7.32287, 3.00001); font-size: 13px;">&nbsp; 3</b></span>
-    <button type="button" class="post-new" id="postNewDesktop" style="width: 92.1563px; height: 45.3333px; transform: matrix(1, 0, 0, 1, -9.35414, 0); font-size: 11px;">＋ 发新帖</button>
+    <span class="mine">🎒 我的帖子 <b>&nbsp;–</b></span>
+    <button type="button" class="post-new" id="postNewDesktop">＋ 发新帖</button>
   </div>
 
-  <!-- ===== 帖子列表（默认：success 态，mock 数据，契约⑬字段）===== -->
-  <!-- 字段映射：👁=view_count · 💬=comment_count · 👍=like_count（与契约⑬ mock 一致，R2 修正反序） -->
-  <div class="boards" id="boards" aria-live="polite"><article class="post" tabindex="0" aria-label="打开帖子：【置顶】高数第三章「分部积分」易错题集锦"><div class="p-top"><span class="pin">📌 置顶</span><span class="board-tag math">数学</span></div><h3>【置顶】高数第三章「分部积分」易错题集锦</h3><p class="p-sum">整理了分部积分的 5 个典型易错点，每个都配了注释和反例，评论区欢迎补充你的踩坑经历。</p><div class="p-tags"><span class="tag">高数</span><span class="tag">分部积分</span><span class="tag">易错</span></div><div class="p-meta"><span class="who">小豆芽</span><span class="sep-dot">·</span><span>2026-08-20 09:12</span><span class="sep-dot">·</span><span>👁 1283</span><span class="sep-dot">·</span><span class="cmt">💬 <i>18</i></span><span class="sep-dot">·</span><span>👍 342</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：后端扣分点：Python 异步里别随意开协程池"><div class="p-top"><span class="board-tag prog">编程</span></div><h3>后端扣分点：Python 异步里别随意开协程池</h3><p class="p-sum">在 AI 助手模块联调时踩的坑，分享 App.tsx 与 SSE 流解析的配合方式，附最小复现 Demo。</p><div class="p-tags"><span class="tag">Python</span><span class="tag">异步</span><span class="tag">踩坑</span></div><div class="p-meta"><span class="who">奈奈酱</span><span class="sep-dot">·</span><span>2026-08-20 08:40</span><span class="sep-dot">·</span><span>👁 864</span><span class="sep-dot">·</span><span class="cmt">💬 <i>9</i></span><span class="sep-dot">·</span><span>👍 211</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：备考英语四级：10 天背完高频词的记忆法"><div class="p-top"><span class="board-tag en">英语</span></div><h3>备考英语四级：10 天背完高频词的记忆法</h3><p class="p-sum">用联想 + 词根拆分的方式整理的记忆卡片，每天 20 分钟，配合艾宾浩斯复习，亲测有效。</p><div class="p-tags"><span class="tag">四级</span><span class="tag">背单词</span><span class="tag">记忆法</span></div><div class="p-meta"><span class="who">单词小恐龙</span><span class="sep-dot">·</span><span>2026-08-19 21:05</span><span class="sep-dot">·</span><span>👁 542</span><span class="sep-dot">·</span><span class="cmt">💬 <i>11</i></span><span class="sep-dot">·</span><span>👍 156</span></div></article><article class="post locked" aria-disabled="true" aria-label="锁定帖（只读）：本贴已锁定：关于组织架构调整的官方说明"><div class="p-top"><span class="lock">🔒 锁定</span><span class="board-tag gen">综合</span></div><h3>本贴已锁定：关于组织架构调整的官方说明</h3><p class="p-sum">涉及团队分组的调整通知，本贴锁定仅管理员可回复，请勿在评论区展开无关讨论。</p><div class="p-tags"><span class="tag">公告</span><span class="tag">官方</span></div><div class="p-meta"><span class="who">小栗子</span><span class="sep-dot">·</span><span>2026-08-19 16:20</span><span class="sep-dot">·</span><span>👁 2104</span><span class="sep-dot">·</span><span class="cmt">💬 <i>0</i></span><span class="sep-dot">·</span><span>👍 89</span></div></article><article class="post" tabindex="0" aria-label="打开帖子：求助：Tailwind v4 自定义糖果色 token 的正确姿势"><div class="p-top"><span class="board-tag prog">编程</span></div><h3>求助：Tailwind v4 自定义糖果色 token 的正确姿势</h3><p class="p-sum">项目里想统一糖果色板，但 @theme 注册后编译报错，请指教 globals.css 与 design-tokens 双写的最佳实践。</p><div class="p-tags"><span class="tag">Tailwind</span><span class="tag">前端</span><span class="tag">求助</span></div><div class="p-meta"><span class="who">米团</span><span class="sep-dot">·</span><span>2026-08-19 14:30</span><span class="sep-dot">·</span><span>👁 396</span><span class="sep-dot">·</span><span class="cmt">💬 <i>13</i></span><span class="sep-dot">·</span><span>👍 64</span></div></article></div>
+  <!-- ===== 帖子列表（真实数据由下方脚本 GET /api/community/posts 渲染，四态由脚本驱动）===== -->
+  <div class="boards" id="boards" aria-live="polite"></div>
 
-  <!-- ===== 分页（C2）===== -->
-  <div class="pager" id="pager">
-    <button type="button" class="pager-btn" data-pg="prev" disabled="">‹</button>
-    <button type="button" class="pager-btn on" data-pg="1">1</button>
-    <button type="button" class="pager-btn" data-pg="2">2</button>
-    <button type="button" class="pager-btn" data-pg="3">3</button>
-    <button type="button" class="pager-btn" data-pg="next">›</button>
-    <span class="total" id="total">共 42 条</span>
-  </div>
+  <!-- ===== 分页（真实分页由脚本 renderPager 驱动）===== -->
+  <div class="pager" id="pager"></div>
 
   <!-- ===== 移动 FAB（发布，<820 显示，CSS 断点控制）===== -->
   <button type="button" class="fab" id="fab" aria-label="发新帖">＋ 发新帖</button>
 
-  <footer class="demo-note" role="note">
-    数据契约⑬：<code>GET /api/community/posts?board_code&amp;keyword&amp;sort&amp;page&amp;page_size</code> →
-    壳解包 <code>data{total,page,page_size,items,mine_total_posts}</code>；点击帖子 → <code>/community/[postId]</code>；
-    锁定帖 🔒 只读；置顶帖排前。HTML 效果图仅静态示意 + 局部交互，非真实接口数据。
-  </footer>
 </div>
 </div><!-- /.glayout -->
-
-<script>
-/* ===== HTML 效果图专属演示脚本（respbar 工具条已移除，保留演示列表兜底）===== */
-(function(){
-  var boards = document.getElementById('boards');
-  var pager  = document.getElementById('pager');
-
-  /* 契约⑬ PostListItem 精简元组：[tag,author,title,summary,tags,pin,lock,date,view,like,cmt] */
-  function BoardsHtml(data){
-    var boardName = {math:'数学', prog:'编程', en:'英语', gen:'综合'};
-    var tagCls    = {math:'board-tag math', prog:'board-tag prog', en:'board-tag en', gen:'board-tag gen'};
-    boards.innerHTML = data.map(function(p){
-      var pinBtn  = p[5] === 1 ? '<span class="pin">📌 置顶</span>' : '';
-      var lockBtn = p[6] === 1 ? '<span class="lock">🔒 锁定</span>' : '';
-      var locked  = p[6] === 1 ? ' locked' : '';
-      var tIdx    = p[6] === 1 ? 'aria-disabled="true"' : 'tabindex="0"';
-      var label   = (p[6] === 1 ? '锁定帖（只读）：' : '打开帖子：') + p[2];
-      var tags = p[4].map(function(t){ return '<span class="tag">' + t + '</span>'; }).join('');
-      return '<article class="post' + locked + '" ' + tIdx + ' aria-label="' + label + '">'
-        + '<div class="p-top">' + pinBtn + lockBtn + '<span class="' + tagCls[p[0]] + '">' + boardName[p[0]] + '</span></div>'
-        + '<h3>' + p[2] + '</h3>'
-        + '<p class="p-sum">' + p[3] + '</p>'
-        + '<div class="p-tags">' + tags + '</div>'
-        + '<div class="p-meta">'
-        + '<span class="who">' + p[1] + '</span><span class="sep-dot">·</span><span>' + p[7] + '</span>'
-        + '<span class="sep-dot">·</span><span>👁 ' + p[8] + '</span>'
-        + '<span class="sep-dot">·</span><span class="cmt">💬 <i>' + p[10] + '</i></span>'
-        + '<span class="sep-dot">·</span><span>👍 ' + p[9] + '</span>'
-        + '</div></article>';
-    }).join('');
-  }
-
-  function buildOk(){
-    BoardsHtml([
-      ['math','小豆芽','【置顶】高数第三章「分部积分」易错题集锦','整理了分部积分的 5 个典型易错点，每个都配了注释和反例，评论区欢迎补充你的踩坑经历。',['高数','分部积分','易错'],1,0,'2026-08-20 09:12',1283,342,18],
-      ['prog','奈奈酱','后端扣分点：Python 异步里别随意开协程池','在 AI 助手模块联调时踩的坑，分享 App.tsx 与 SSE 流解析的配合方式，附最小复现 Demo。',['Python','异步','踩坑'],0,0,'2026-08-20 08:40',864,211,9],
-      ['en','单词小恐龙','备考英语四级：10 天背完高频词的记忆法','用联想 + 词根拆分的方式整理的记忆卡片，每天 20 分钟，配合艾宾浩斯复习，亲测有效。',['四级','背单词','记忆法'],0,0,'2026-08-19 21:05',542,156,11],
-      ['gen','小栗子','本贴已锁定：关于组织架构调整的官方说明','涉及团队分组的调整通知，本贴锁定仅管理员可回复，请勿在评论区展开无关讨论。',['公告','官方'],0,1,'2026-08-19 16:20',2104,89,0],
-      ['prog','米团','求助：Tailwind v4 自定义糖果色 token 的正确姿势','项目里想统一糖果色板，但 @theme 注册后编译报错，请指教 globals.css 与 design-tokens 双写的最佳实践。',['Tailwind','前端','求助'],0,0,'2026-08-19 14:30',396,64,13]
-    ]);
-  }
-  function buildLoading(){
-    var s = '';
-    for (var i = 0; i < 4; i++){
-      s += '<div class="sk-card"><div class="sk-h"></div><div class="sk-line w90"></div><div class="sk-line w70"></div><div class="sk-line w40"></div></div>';
-    }
-    boards.innerHTML = '<div class="sk" role="status"><span class="visually-hidden">正在加载帖子…</span>' + s + '</div>';
-  }
-  function buildEmpty(){
-    boards.innerHTML = '<div class="state" role="status"><span class="st-emoji">🏝️</span><h3>暂无帖子</h3>'
-      + '<p>这个版块还没有人发过帖，来当第一个分享的人吧～</p><button type="button" class="state-cta">＋ 发第一篇</button></div>';
-  }
-  function buildError(){
-    boards.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>帖子加载失败</h3>'
-      + '<p>网络开小差了，请稍后重试。若仍无法加载，可点击下方按钮刷新。</p><button type="button" class="retry">🔄 重试</button>';
-  }
-
-  /* 版块筛选高亮（单选，切 aria-pressed） */
-  document.getElementById('chips').querySelectorAll('.chip').forEach(function(c){
-    c.addEventListener('click', function(){
-      document.getElementById('chips').querySelectorAll('.chip').forEach(function(x){ x.classList.remove('on'); x.setAttribute('aria-pressed','false'); });
-      c.classList.add('on'); c.setAttribute('aria-pressed','true');
-    });
-  });
-
-  /* 初始默认态：success 列表 */
-  buildOk();
-})();
-</script>
 
 <script>
 /* 全局导航抽屉（移动端） */
@@ -484,7 +401,15 @@ task118/task08 仅改本页，不重定义全局 $ / renderSides。 */
       boards.innerHTML = '<div class="state" role="status"><span class="st-emoji">🏝️</span><h3>暂无帖子</h3><p>这个版块还没有人发过帖，来当第一个分享的人吧～</p></div>';
       return;
     }
-    boards.innerHTML = items.map(function (p) {
+    /* B-G4：同一帖 post_id 只渲染 1 次（防重复渲染；跨页重复由 LIMIT/OFFSET 保证不发生，curl 实测附 T3B 报告） */
+    var seen = {};
+    var uniq = [];
+    for (var i = 0; i < items.length; i++) {
+      var pid = items[i].post_id;
+      if (pid != null) { if (seen[pid]) continue; seen[pid] = 1; }
+      uniq.push(items[i]);
+    }
+    boards.innerHTML = uniq.map(function (p) {
       var tags = (p.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
       var pin = (p.is_pinned || p.pinned) ? '<span class="pin">📌 置顶</span>' : "";
       var m = BOARD[p.board_code] || ["", ""];
