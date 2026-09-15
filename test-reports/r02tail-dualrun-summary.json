@@ -1,0 +1,139 @@
+{
+  "ran_at": "2026-09-15T10:16:38",
+  "seed": 20260914,
+  "git_rev": "509496d",
+  "probe_user": {
+    "user_id": 1,
+    "role_sent": "UserRole.STUDENT（对齐生产非 admin 租户范围）"
+  },
+  "prod_defaults": {
+    "use_hyde": true,
+    "top_k": 12,
+    "final_max_k": 5,
+    "cutoff_drop_ratio": 0.4,
+    "enable_graph": true
+  },
+  "hooks": {
+    "module_attr_is_spy": true,
+    "flows_binding_is_orig": true
+  },
+  "n_samples": 100,
+  "n_valid": 100,
+  "n_error": 0,
+  "unstable_n": 0,
+  "intent_divergence": {
+    "count": 0,
+    "rate": 0.0,
+    "by_source": {
+      "chat_history": {
+        "n": 50,
+        "diverge": 0
+      },
+      "edge_chitchat": {
+        "n": 6,
+        "diverge": 0
+      },
+      "edge_knowledge": {
+        "n": 6,
+        "diverge": 0
+      },
+      "edge_tool": {
+        "n": 6,
+        "diverge": 0
+      },
+      "eval_set32": {
+        "n": 32,
+        "diverge": 0
+      }
+    }
+  },
+  "need_search_divergence": {
+    "count": 0,
+    "rate": 0.0,
+    "by_source": {
+      "chat_history": {
+        "n": 50,
+        "diverge": 0
+      },
+      "edge_chitchat": {
+        "n": 6,
+        "diverge": 0
+      },
+      "edge_knowledge": {
+        "n": 6,
+        "diverge": 0
+      },
+      "edge_tool": {
+        "n": 6,
+        "diverge": 0
+      },
+      "eval_set32": {
+        "n": 32,
+        "diverge": 0
+      }
+    }
+  },
+  "docs_jaccard": {
+    "n": 100,
+    "mean": 0.85,
+    "p50": 1.0,
+    "p95": 1.0,
+    "min": 0.0,
+    "max": 1.0,
+    "eq1_count": 82,
+    "lt0.5_count": 18,
+    "eq0_count": 11
+  },
+  "ttft_proxy": {
+    "old": {
+      "n": 100,
+      "mean": 2.568,
+      "p50": 2.299,
+      "p95": 3.085,
+      "min": 1.19,
+      "max": 27.967,
+      "eq1_count": 100,
+      "lt0.5_count": 0,
+      "eq0_count": 0
+    },
+    "new": {
+      "n": 100,
+      "mean": 3.1504,
+      "p50": 2.718,
+      "p95": 3.983,
+      "min": 1.395,
+      "max": 45.637,
+      "eq1_count": 100,
+      "lt0.5_count": 0,
+      "eq0_count": 0
+    },
+    "note": "旧=决策完成→检索完成；新=start→hook 首检索完成；无检索路径（chitchat 直连/降级）为 None 不计入——两路径事件源不同，近似口径，供 R02 TTFT 预算立项参考"
+  },
+  "semantic_30pct": {
+    "n_planned": 30,
+    "n_done": 30,
+    "equivalent": 27,
+    "not_equivalent": 1,
+    "judge_failed": 2,
+    "gate_note": "答案语义仅入报告，不作灰度门槛（详档 v1.2 终审 A1）"
+  },
+  "five_conditions_current": {
+    "千条样本": {
+      "当前值": "100 条/批（W0 初值；千条由 R02-b 灰度期累积）"
+    },
+    "连续3天": {
+      "当前值": "单日 1 轮（连续性由 R02-b 灰度期考核）"
+    },
+    "intent分歧<5%": {
+      "当前值": "0.0%"
+    },
+    "docsJaccard>0.9": {
+      "当前值": 0.85
+    },
+    "P95TTFT容差": {
+      "旧P95_s": 3.085,
+      "新P95_s": 3.983,
+      "阈值说明": "旧路径实测 P95 + 10%；阈值裁定属用户/编排者，本探针只报数"
+    }
+  }
+}

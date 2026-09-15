@@ -17,6 +17,7 @@ skill_node / compact_node / context_edit_node）继续生效——这是行为�
 """
 from __future__ import annotations
 
+import asyncio
 import time
 
 from langchain_core.messages import HumanMessage
@@ -162,12 +163,51 @@ class SixNodeHarness(Harness):
                 # 生产默认 use_hyde=True/top_k=12 漂移 → docs Jaccard 0.641。现由
                 # sixnode_retrieval_params() 从 settings 读取（默认对齐 retrieve_three_channel 现值）。
                 params = _graph.sixnode_retrieval_params()
+                # R02-tail：memory 召回与三通道检索并行（两者输入独立：query/user_id，
+                # 产物独立：search_summary / memory_summary）——原串行实现下 recall_topk 的
+                # 嵌入+向量库查询全额叠加在检索之后（profile 实测 warm 80~120ms，冷态 600~1200ms）。
+                # 并行不改变任一侧的调用参数与产出 → 检索/记忆语义零变化。
+                async def _memory_direct() -> tuple[str, int]:
+                    """memory 直连召回（与原串行块逐字节同语义：失败→占位+warning，恒返回元组）。"""
+                    memory_summary_ = "（无历史记忆）"
+                    memory_calls_ = 0
+                    try:
+                        from app.ai.memory.service import recall_topk
+
+                        top = await recall_topk(int(user_id), query, top_k=3)
+                        mem_texts = []
+                        for m in (top or []):
+                            if isinstance(m, dict):
+                                val = m.get("content") or m.get("text") or m.get("memory")
+                                if val is None:
+                                    val = str(m)
+                            else:
+                                val = str(m)
+                            if val:
+                                mem_texts.append(str(val).replace("\n", " ").strip()[:100])
+                        if mem_texts:
+                            memory_summary_ = "用户记忆：" + "；".join(mem_texts)
+                            memory_calls_ = 1
+                    except Exception as exc:
+                        logger.warning(f"[sixnode.fanout] memory 直连召回失败（降级占位）: {type(exc).__name__}: {exc}")
+                    return memory_summary_, memory_calls_
+
+                _t_mem = time.perf_counter()
+                mem_task = asyncio.ensure_future(_memory_direct())
+                _t_ret = time.perf_counter()
                 bundle = await retrieve_three_channel(
                     query, user_id=user_id, role=None,
                     use_hyde=params["use_hyde"], enable_graph=params["enable_graph"],
                     top_k=params["top_k"], final_max_k=params["final_max_k"],
                     cutoff_drop_ratio=params["cutoff_drop_ratio"],
                 )
+                _retrieval_ms = int((time.perf_counter() - _t_ret) * 1000)
+                try:
+                    memory_summary, memory_calls = await mem_task
+                except Exception as exc:  # noqa: BLE001 — 任务级异常同样降级占位（与原串行语义一致）
+                    logger.warning(f"[sixnode.fanout] memory 召回任务异常（降级占位）: {type(exc).__name__}: {exc}")
+                    memory_summary, memory_calls = "（无历史记忆）", 0
+                _memory_ms = int((time.perf_counter() - _t_mem) * 1000)
                 # search 摘要：每文档一行（来源 + 内容片段），token 预算与子代理一致
                 parts = []
                 for i, d in enumerate(bundle.docs, 1):
@@ -178,28 +218,6 @@ class SixNodeHarness(Harness):
                     "\n".join(parts) or "（未检索到相关文档）",
                     budget=settings.SUBAGENT_SUMMARY_BUDGET,
                 )
-                # memory 直连：无 LLM 的确定性召回
-                memory_summary = "（无历史记忆）"
-                memory_calls = 0
-                try:
-                    from app.ai.memory.service import recall_topk
-
-                    top = await recall_topk(int(user_id), query, top_k=3)
-                    mem_texts = []
-                    for m in (top or []):
-                        if isinstance(m, dict):
-                            val = m.get("content") or m.get("text") or m.get("memory")
-                            if val is None:
-                                val = str(m)
-                        else:
-                            val = str(m)
-                        if val:
-                            mem_texts.append(str(val).replace("\n", " ").strip()[:100])
-                    if mem_texts:
-                        memory_summary = "用户记忆：" + "；".join(mem_texts)
-                        memory_calls = 1
-                except Exception as exc:
-                    logger.warning(f"[sixnode.fanout] memory 直连召回失败（降级占位）: {type(exc).__name__}: {exc}")
                 results = [
                     _runner.SubagentResult(
                         subagent="search", summary=search_summary, artifact_ref="",
@@ -213,6 +231,15 @@ class SixNodeHarness(Harness):
                     ),
                 ]
                 elapsed_ms = int((time.perf_counter() - t0) * 1000)
+                # R02-tail profile：直连快路径内部分段。R02-tail 起 memory 与 retrieval 并行
+                # （mem_par_await 为重叠收口窗口，不叠加在关键路径上），summary=总-retrieval。
+                logger.info(
+                    "[sixnode.fanout-profile] total={}ms retrieval={:.0f}ms mem_par_await={:.0f}ms "
+                    "summary={:.0f}ms docs={}".format(
+                        elapsed_ms, (_retrieval_ms or 0), (_memory_ms or 0),
+                        max(0, (time.perf_counter() - t0) * 1000 - (_retrieval_ms or 0)),
+                        len(bundle.docs))
+                )
                 logger.info(f"[sixnode.fanout] knowledge 直连检索快路径（0 子代理 LLM）完成，耗时 {elapsed_ms}ms，docs={len(bundle.docs)}")
                 distilled = [r.as_distilled() for r in results]
                 # R02（audit P1-5 回填）：真实检索产物写入 state.retrieval，供 run_agent 返回体

@@ -138,6 +138,8 @@ async def graph_stream_sse(
         final_updates: dict = {}                  # 各节点更新合并（LastValue 覆盖语义）
         ttft_retrieval_ms: int | None = None
         ttft_first_token_ms: int | None = None
+        # R02-tail profile：各节点 update 到达时刻（ms since t0，含 checkpoint 保存开销）
+        node_arrivals: dict[str, int] = {}
 
         async def _await_mcp() -> None:
             nonlocal mcp_summaries, mcp_context, mcp_degraded
@@ -226,6 +228,8 @@ async def graph_stream_sse(
                         for node, update in payload.items():
                             if not isinstance(update, dict):
                                 continue
+                            if node not in node_arrivals:
+                                node_arrivals[node] = int((time.perf_counter() - t0) * 1000)
                             final_updates[node] = update
                             # chitchat 直连（route→answer，无 fan_out）：按旧路径口径发空 docs retrieval 帧
                             if node == "route" and update.get("intent") == "chitchat" and retrieval_payload is None:
@@ -280,6 +284,7 @@ async def graph_stream_sse(
                 f" thread_id={thread_id} ttft_retrieval_ms={ttft_retrieval_ms}"
                 f" ttft_first_token_ms={ttft_first_token_ms} tokens={len(answer_parts)}"
                 f" docs={len((retrieval_payload or {}).get('docs') or [])}"
+                f" node_arrivals_ms={node_arrivals}"
             )
         except Exception as e:
             # 两段式错误模型 · 第二段：建连后生成真失败 → 可区分错误码 error 帧并收束

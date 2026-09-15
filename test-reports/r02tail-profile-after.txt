@@ -1,0 +1,31 @@
+09:44:11 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=347ms embed(dense)=100ms sparse=1ms search=243ms asm=3ms docs=150
+09:44:13 | WARNING  | app.chat.retriever:_sidecar_breaker_trip:439 | [retriever] rerank sidecar 连接失败 → 熔断 60s（冷却窗内直接进程内直连，到期自动重试）
+09:44:13 | INFO     | app.chat.retriever:_rerank_docs:510 | [retrieval-profile] rerank sidecar attempt=1046ms ok=False
+09:44:14 | INFO     | app.chat.retriever:_rerank_docs:519 | [retrieval-profile] rerank local fallback=1155ms pairs=150 sidecar_fail=yes
+09:44:14 | INFO     | app.chat.retriever:retrieve_three_channel:636 | [retrieval-profile] pipeline total=4380ms | hyde=0 milvus=1468 graph=705 merge=0 rerank=2207 cliff=0 | raw=150 final=5
+09:44:14 | INFO     | app.ai.harness.sixnode:fan_out:236 | [sixnode.fanout-profile] total=4381ms retrieval=4380ms mem_par_await=4381ms summary=-4379ms docs=5
+09:44:24 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-a48f3e5e3348441493af946617a568a7 ttft_retrieval_ms=9150 ttft_first_token_ms=14360 tokens=336 docs=5 node_arrivals_ms={'route': 3989, 'skill': 4747, 'compact': 4756, 'context_edit': 4764, 'plan': 4766, 'fan_out': 9150, 'merge': 9153, 'reflect': 9156, 'answer': 19222}
+09:44:26 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=485ms embed(dense)=121ms sparse=0ms search=362ms asm=2ms docs=150
+09:44:26 | INFO     | app.chat.retriever:_rerank_docs:499 | [retriever] rerank sidecar 熔断冷却中 → 直接进程内直连
+09:44:27 | INFO     | app.chat.retriever:_rerank_docs:503 | [retrieval-profile] rerank local (breaker-skip)=1005ms pairs=150
+09:44:27 | INFO     | app.chat.retriever:retrieve_three_channel:636 | [retrieval-profile] pipeline total=1908ms | hyde=0 milvus=751 graph=150 merge=0 rerank=1007 cliff=0 | raw=150 final=5
+09:44:27 | INFO     | app.ai.harness.sixnode:fan_out:236 | [sixnode.fanout-profile] total=1909ms retrieval=1908ms mem_par_await=1908ms summary=-1907ms docs=5
+09:44:36 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-50c395afebb240b1acc01736ef3f059b ttft_retrieval_ms=1978 ttft_first_token_ms=6086 tokens=342 docs=5 node_arrivals_ms={'route': 39, 'skill': 60, 'compact': 61, 'context_edit': 64, 'plan': 65, 'fan_out': 1978, 'merge': 1980, 'reflect': 1982, 'answer': 10599}
+09:44:38 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=439ms embed(dense)=114ms sparse=0ms search=323ms asm=2ms docs=150
+09:44:38 | INFO     | app.chat.retriever:_rerank_docs:499 | [retriever] rerank sidecar 熔断冷却中 → 直接进程内直连
+09:44:39 | INFO     | app.chat.retriever:_rerank_docs:503 | [retrieval-profile] rerank local (breaker-skip)=1006ms pairs=150
+09:44:39 | INFO     | app.chat.retriever:retrieve_three_channel:636 | [retrieval-profile] pipeline total=1663ms | hyde=0 milvus=655 graph=0 merge=0 rerank=1008 cliff=0 | raw=150 final=5
+09:44:39 | INFO     | app.ai.harness.sixnode:fan_out:236 | [sixnode.fanout-profile] total=1663ms retrieval=1663ms mem_par_await=1663ms summary=-1662ms docs=5
+09:44:47 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-8546c8891a50481992f887cfd5db5940 ttft_retrieval_ms=1732 ttft_first_token_ms=3758 tokens=414 docs=5 node_arrivals_ms={'route': 37, 'skill': 60, 'compact': 61, 'context_edit': 64, 'plan': 65, 'fan_out': 1731, 'merge': 1733, 'reflect': 1736, 'answer': 9319}
+09:44:48 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=222ms embed(dense)=86ms sparse=1ms search=134ms asm=2ms docs=150
+09:44:48 | INFO     | app.chat.retriever:_rerank_docs:499 | [retriever] rerank sidecar 熔断冷却中 → 直接进程内直连
+09:44:49 | INFO     | app.chat.retriever:_rerank_docs:503 | [retrieval-profile] rerank local (breaker-skip)=1104ms pairs=150
+09:44:49 | INFO     | app.chat.retriever:retrieve_three_channel:636 | [retrieval-profile] pipeline total=1534ms | hyde=0 milvus=429 graph=0 merge=0 rerank=1105 cliff=0 | raw=150 final=5
+09:44:49 | INFO     | app.ai.harness.sixnode:fan_out:236 | [sixnode.fanout-profile] total=1535ms retrieval=1535ms mem_par_await=1535ms summary=-1535ms docs=5
+09:44:59 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-b36eaeb9f7924a5f84a05e2348fafa38 ttft_retrieval_ms=1605 ttft_first_token_ms=5620 tokens=342 docs=5 node_arrivals_ms={'route': 43, 'skill': 63, 'compact': 64, 'context_edit': 65, 'plan': 66, 'fan_out': 1604, 'merge': 1606, 'reflect': 1609, 'answer': 10938}
+09:45:00 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=242ms embed(dense)=109ms sparse=0ms search=130ms asm=2ms docs=150
+09:45:00 | INFO     | app.chat.retriever:_rerank_docs:499 | [retriever] rerank sidecar 熔断冷却中 → 直接进程内直连
+09:45:01 | INFO     | app.chat.retriever:_rerank_docs:503 | [retrieval-profile] rerank local (breaker-skip)=992ms pairs=150
+09:45:01 | INFO     | app.chat.retriever:retrieve_three_channel:636 | [retrieval-profile] pipeline total=1421ms | hyde=0 milvus=428 graph=0 merge=0 rerank=993 cliff=0 | raw=150 final=5
+09:45:01 | INFO     | app.ai.harness.sixnode:fan_out:236 | [sixnode.fanout-profile] total=1421ms retrieval=1421ms mem_par_await=1421ms summary=-1420ms docs=5
+09:45:17 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-f3daded015394556b6bcb2007b3cd057 ttft_retrieval_ms=1503 ttft_first_token_ms=10754 tokens=292 docs=5 node_arrivals_ms={'route': 53, 'skill': 73, 'compact': 75, 'context_edit': 77, 'plan': 78, 'fan_out': 1502, 'merge': 1504, 'reflect': 1508, 'answer': 17687}

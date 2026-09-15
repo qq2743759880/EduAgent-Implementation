@@ -1,0 +1,24 @@
+09:34:12 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=2483ms embed(dense)=889ms sparse=41ms search=1547ms asm=5ms docs=150
+09:34:15 | INFO     | app.chat.retriever:_rerank_docs:463 | [retrieval-profile] rerank sidecar attempt=2080ms ok=False
+09:34:18 | INFO     | app.chat.retriever:_rerank_docs:472 | [retrieval-profile] rerank local fallback=3207ms pairs=150 sidecar_fail=yes
+09:34:18 | INFO     | app.chat.retriever:retrieve_three_channel:587 | [retrieval-profile] pipeline total=8239ms | hyde=0 milvus=2485 graph=465 merge=0 rerank=5289 cliff=0 | raw=150 final=5
+09:34:19 | INFO     | app.ai.harness.sixnode:fan_out:221 | [sixnode.fanout-profile] total=9440ms retrieval=8239ms memory=1200ms summary=2ms docs=5
+09:34:30 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-0d40ceb01c0d476f9a82dda071cc6ff0 ttft_retrieval_ms=10408 ttft_first_token_ms=14688 tokens=438 docs=5 node_arrivals_ms={'route': 117, 'skill': 924, 'compact': 936, 'context_edit': 944, 'plan': 945, 'fan_out': 10408, 'merge': 10411, 'reflect': 10414, 'answer': 21214}
+09:34:32 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=611ms embed(dense)=368ms sparse=1ms search=238ms asm=4ms docs=150
+09:34:35 | INFO     | app.chat.retriever:_rerank_docs:463 | [retrieval-profile] rerank sidecar attempt=2092ms ok=False
+09:34:39 | INFO     | app.chat.retriever:_rerank_docs:472 | [retrieval-profile] rerank local fallback=3766ms pairs=150 sidecar_fail=yes
+09:34:39 | INFO     | app.chat.retriever:retrieve_three_channel:587 | [retrieval-profile] pipeline total=6982ms | hyde=0 milvus=612 graph=509 merge=0 rerank=5860 cliff=0 | raw=150 final=5
+09:34:39 | INFO     | app.ai.harness.sixnode:fan_out:221 | [sixnode.fanout-profile] total=7597ms retrieval=6982ms memory=615ms summary=1ms docs=5
+09:34:55 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-e8ffecbbb289421bb97fec61038cbac9 ttft_retrieval_ms=8022 ttft_first_token_ms=16577 tokens=422 docs=5 node_arrivals_ms={'route': 390, 'skill': 414, 'compact': 415, 'context_edit': 418, 'plan': 420, 'fan_out': 8022, 'merge': 8024, 'reflect': 8050, 'answer': 23202}
+09:34:56 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=458ms embed(dense)=259ms sparse=0ms search=195ms asm=3ms docs=150
+09:34:58 | INFO     | app.chat.retriever:_rerank_docs:463 | [retrieval-profile] rerank sidecar attempt=2060ms ok=False
+09:34:59 | INFO     | app.chat.retriever:_rerank_docs:472 | [retrieval-profile] rerank local fallback=898ms pairs=150 sidecar_fail=yes
+09:34:59 | INFO     | app.chat.retriever:retrieve_three_channel:587 | [retrieval-profile] pipeline total=3632ms | hyde=0 milvus=460 graph=213 merge=0 rerank=2959 cliff=0 | raw=150 final=5
+09:34:59 | INFO     | app.ai.harness.sixnode:fan_out:221 | [sixnode.fanout-profile] total=3713ms retrieval=3632ms memory=80ms summary=1ms docs=5
+09:35:08 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-5b63accf59144acbae8c0fe4d8d2c430 ttft_retrieval_ms=3780 ttft_first_token_ms=6356 tokens=436 docs=5 node_arrivals_ms={'route': 44, 'skill': 61, 'compact': 62, 'context_edit': 63, 'plan': 63, 'fan_out': 3780, 'merge': 3783, 'reflect': 3788, 'answer': 12347}
+09:35:10 | INFO     | app.chat.retriever:_milvus_hybrid_search_safe:269 | [retrieval-profile] milvus total=486ms embed(dense)=277ms sparse=0ms search=207ms asm=1ms docs=150
+09:35:12 | INFO     | app.chat.retriever:_rerank_docs:463 | [retrieval-profile] rerank sidecar attempt=2051ms ok=False
+09:35:13 | INFO     | app.chat.retriever:_rerank_docs:472 | [retrieval-profile] rerank local fallback=1007ms pairs=150 sidecar_fail=yes
+09:35:13 | INFO     | app.chat.retriever:retrieve_three_channel:587 | [retrieval-profile] pipeline total=3759ms | hyde=0 milvus=487 graph=212 merge=0 rerank=3060 cliff=0 | raw=150 final=5
+09:35:13 | INFO     | app.ai.harness.sixnode:fan_out:221 | [sixnode.fanout-profile] total=3867ms retrieval=3759ms memory=107ms summary=1ms docs=5
+09:35:22 | INFO     | app.chat.flows.graph_stream:_gen:282 | [graph_stream] 完成 thread_id=anon-1308521212124686b94e6f72aebc20b2 ttft_retrieval_ms=3949 ttft_first_token_ms=6387 tokens=454 docs=5 node_arrivals_ms={'route': 59, 'skill': 74, 'compact': 75, 'context_edit': 77, 'plan': 78, 'fan_out': 3949, 'merge': 3952, 'reflect': 3955, 'answer': 12572}

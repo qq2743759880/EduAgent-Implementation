@@ -205,14 +205,21 @@ def _milvus_hybrid_search_safe(
     filter_expr 排除促销/班次/公告类 content_type，避免课程问答混入推广文案（GWT③）。
     """
     tenant_ids = _search_tenant_ids(user_id, role)
+    # R02-tail profile：Milvus 通道内部分段计时（嵌入 dense/稀疏/远端搜索/装配）
+    _t_total = time.perf_counter()
+    _t_embed = _t_sparse = _t_search = _t_asm = 0.0
     try:
         ensure_jieba_ready()
         # 稠密
+        _t0 = time.perf_counter()
         dense_vecs = encode_dense_batch([query])
+        _t_embed = time.perf_counter() - _t0
         dense_vec = [float(x) for x in dense_vecs[0]]
         # 稀疏：build_sparse_vector 返回 {str(term_id): weight}，基于（HyDE 后的）contextual 文本生成
         # —— BM25 双路增益（GWT④：sparse 与入库端同样基于带上下文文本，双路互补召回）
+        _t0 = time.perf_counter()
         sparse_vec = build_sparse_vector(query)
+        _t_sparse = time.perf_counter() - _t0
 
         # 召回候选数：优先 150（GWT②）；外部传的 top_k 只是最终展示期望，不应压召回
         recall_k = max(int(top_k), int(getattr(settings, "RETRIEVER_RECALL_TOPK", 150)))
@@ -223,6 +230,7 @@ def _milvus_hybrid_search_safe(
             filter_expr = f"content_type not in [{quoted}]"
 
         # 真实调用（内部已含 RRF 融合 + 可选分区过滤）；timeout 防 Milvus 慢拖死链路（P1-4）
+        _t0 = time.perf_counter()
         raw = _milvus_hybrid_search(
             dense_vec=dense_vec,
             sparse_vec=sparse_vec,
@@ -231,6 +239,8 @@ def _milvus_hybrid_search_safe(
             timeout=getattr(settings, "MILVUS_SEARCH_TIMEOUT", 8.0),
             filter_expr=filter_expr,
         )
+        _t_search = time.perf_counter() - _t0
+        _t0 = time.perf_counter()
         docs: list[RetrievedDoc] = []
         for r in raw:
             # 分数统一到 0~1：COSINE（-1~1）→ (x+1)/2；RRF 已经过融合，这里粗暴线性缩放，避免负数
@@ -254,6 +264,14 @@ def _milvus_hybrid_search_safe(
                 visibility=r.get("visibility") or None,
                 source_channel="hybrid",
             ))
+        _t_asm = time.perf_counter() - _t0
+        # R02-tail profile：Milvus 通道分段（embed=稠密嵌入 sparse=稀疏向量 search=远端混合检索 asm=DTO 装配）
+        logger.info(
+            "[retrieval-profile] milvus total={:.0f}ms embed(dense)={:.0f}ms sparse={:.0f}ms "
+            "search={:.0f}ms asm={:.0f}ms docs={}".format(
+                (time.perf_counter() - _t_total) * 1000, _t_embed * 1000, _t_sparse * 1000,
+                _t_search * 1000, _t_asm * 1000, len(docs))
+        )
         return docs, None
     except Exception as e:
         reason = f"Milvus 检索跳过（{type(e).__name__}）"
@@ -393,18 +411,51 @@ def _normalize_rerank_scores(scores: list[float]) -> list[float]:
     return [(s - lo) / (hi - lo) for s in scores]
 
 
+# ============================================================
+# 6b-0. R02-tail：sidecar 连接失败熔断（TTFT 检索段优化）
+#   profile 实测（8010，2026-09-15）：sidecar 不可达时每次请求的连接尝试固定烧 ~2.05s
+#   （4 轮 2051~2092ms），占 start→retrieval ~55%。连接级失败（ConnectError/超时）后
+#   在冷却窗内跳过 sidecar 直接进程内直连：分数与 sidecar 同模型同批式等价
+#   （rerank_pairs AC1「单对分数逐位相等」），检索语义零变化；冷却到期自动重试自愈。
+#   仅 transport 级失败触发熔断——HTTP 非 200 / 分数长度不符说明 sidecar 进程活着，
+#   可能瞬时可恢复，保持逐请求重试不熔断。
+# ============================================================
+_SIDECAR_FAIL_UNTIL: float = 0.0    # epoch 秒：此前跳过 sidecar 尝试（0=未熔断）
+
+
+def _sidecar_breaker_open() -> bool:
+    """熔断是否生效中（冷却窗内）。"""
+    if float(getattr(settings, "RERANK_SIDECAR_COOLDOWN_S", 60.0) or 0) <= 0:
+        return False
+    return time.time() < _SIDECAR_FAIL_UNTIL
+
+
+def _sidecar_breaker_trip() -> None:
+    """连接级失败 → 开启冷却窗。"""
+    global _SIDECAR_FAIL_UNTIL
+    cooldown = float(getattr(settings, "RERANK_SIDECAR_COOLDOWN_S", 60.0) or 0)
+    if cooldown > 0:
+        _SIDECAR_FAIL_UNTIL = time.time() + cooldown
+        logger.warning(f"[retriever] rerank sidecar 连接失败 → 熔断 {cooldown:.0f}s（冷却窗内直接进程内直连，到期自动重试）")
+
+
 async def _rerank_via_sidecar(query: str, contents: list[str]) -> list[float] | None:
     """主链路默认走 sidecar（GPU 计算在独立进程，不阻塞主事件循环，AC2）。
 
     任何异常/超时/非 200/分数长度不符 → 返回 None，由 _rerank_docs 回退进程内直连（AC4）。
     全程不抛异常 → 主链路安全降级。
+    R02-tail：连接相位用独立短超时（RERANK_CONNECT_TIMEOUT，默认 1s）——实测对已关闭端口
+    的连接尝试固定烧 ~2.05s（Windows 连接耗尽路径），短超时把最坏情况封顶。
     """
     url = getattr(settings, "RERANK_SERVICE_URL", "http://127.0.0.1:8601").rstrip("/") + "/rerank"
-    timeout = float(getattr(settings, "RERANK_HTTP_TIMEOUT", 2.0))
+    timeout = float(getattr(settings, "RERANK_HTTP_TIMEOUT", 10.0))
+    connect_to = float(getattr(settings, "RERANK_CONNECT_TIMEOUT", 1.0) or 0) or timeout
+    connect_to = max(0.05, min(connect_to, timeout))
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=connect_to)) as client:
             resp = await client.post(url, json={"query": query, "contents": contents})
     except Exception as exc:  # noqa: BLE001 - 连接/超时等 → 降级
+        _sidecar_breaker_trip()
         logger.warning(f"[retriever] rerank sidecar 调用失败（{type(exc).__name__}: {exc}）→ 回退进程内直连")
         return None
     if resp.status_code != 200:
@@ -431,24 +482,50 @@ async def _rerank_docs(query: str, docs: list[RetrievedDoc]) -> tuple[list[Retri
       sidecar（默认，GPU 在独立进程不阻塞事件循环）→ 进程内直连（degraded="rerank_sidecar_unavailable"）
       → _rule_rerank（degraded="reranker_unavailable"）。
     RERANK_SIDECAR_ENABLED=False 时直接进程内直连（平滑切换/降级调试）。
+    R02-tail：sidecar 连接失败冷却窗内跳过 HTTP 尝试直接进程内直连（分数等价，AC1）；
+    进程内 rerank 是同步 GPU 前向（实测 ~0.9-1.0s/150 对），移入线程池避免阻塞事件循环。
     """
     rerank_k = int(getattr(settings, "RETRIEVER_RERANK_TOPK", 20))
     if not docs:
         return docs, None
+    _t0 = time.perf_counter()
     contents = [d.content or "" for d in docs]
     scores: list[float] | None = None
     degrade: str | None = None
     if getattr(settings, "RERANK_SIDECAR_ENABLED", True):
-        scores = await _rerank_via_sidecar(query, contents)
-        if scores is None:  # sidecar 不可达/失败 → 回退进程内直连（task31 现状路径）
-            logger.warning("[retriever] rerank sidecar 不可达 → 回退进程内直连")
+        if _sidecar_breaker_open():
+            # R02-tail：熔断冷却窗内跳过 sidecar（连接尝试实测固定 ~2s 纯烧）→ 直接进程内直连。
+            # 与「sidecar 尝试失败后回退」同一降级语义：本地成功仍标 rerank_sidecar_unavailable。
+            logger.info("[retriever] rerank sidecar 熔断冷却中 → 直接进程内直连")
+            _t1 = time.perf_counter()
             rk = Reranker.get()
-            scores = rk.rerank(query, contents)
+            scores = await asyncio.to_thread(rk.rerank, query, contents)
+            logger.info("[retrieval-profile] rerank local (breaker-skip)={:.0f}ms pairs={}".format(
+                (time.perf_counter() - _t1) * 1000, len(contents)))
             if scores is not None:
                 degrade = "rerank_sidecar_unavailable"
+        else:
+            _tsc = time.perf_counter()
+            scores = await _rerank_via_sidecar(query, contents)
+            logger.info("[retrieval-profile] rerank sidecar attempt={:.0f}ms ok={}".format(
+                (time.perf_counter() - _tsc) * 1000, scores is not None))
+            if scores is None:  # sidecar 不可达/失败 → 回退进程内直连（task31 现状路径）
+                logger.warning("[retriever] rerank sidecar 不可达 → 回退进程内直连")
+                _t1 = time.perf_counter()
+                rk = Reranker.get()
+                scores = await asyncio.to_thread(rk.rerank, query, contents)
+                _local_ms = (time.perf_counter() - _t1) * 1000
+                # R02-tail profile：sidecar 失败回退时的进程内 rerank 耗时
+                logger.info("[retrieval-profile] rerank local fallback={:.0f}ms pairs={} sidecar_fail=yes".format(
+                    _local_ms, len(contents)))
+                if scores is not None:
+                    degrade = "rerank_sidecar_unavailable"
     else:
+        _t1 = time.perf_counter()
         rk = Reranker.get()
-        scores = rk.rerank(query, contents)
+        scores = await asyncio.to_thread(rk.rerank, query, contents)
+        logger.info("[retrieval-profile] rerank local={:.0f}ms pairs={} sidecar=disabled".format(
+            (time.perf_counter() - _t1) * 1000, len(contents)))
 
     if scores is None:  # 直连也失败 → 规则兜底，明确标注降级
         logger.warning(f"[retriever] reranker 不可用 → 规则重排兜底")
@@ -500,30 +577,40 @@ async def retrieve_three_channel(
     三通道检索 + 融合 + 重排 + 断崖，完全同步（含 I/O 捕获异常），service 可直接 await。
     注意：KnowledgeRetriever 留作后用，当前先直接走底层方法以便捕获所有异常。
     """
+    # R02-tail profile：主链路分段计时（hyde / milvus / graph / merge / rerank / cliff）
+    _prof_t0 = time.perf_counter()
     # 1) HyDE 查询改写
     rewrite_query, hyde_done, hyde_degrade = _rewrite_query_by_hyde_if_enabled(query, use_hyde=use_hyde)
+    _prof_hyde = time.perf_counter() - _prof_t0
     # 2) Milvus 双通道（dense + sparse）→ 混合
     #    P1-4 修复：同步 Milvus 调用跑线程 + 硬超时，避免阻塞 asyncio 事件循环
     #    （否则 Milvus 慢时所有并发请求全部排队；超时则降级返回空 docs）
+    #    R02-tail：图谱通道与 Milvus 通道并行化——两者都只依赖 rewrite_query、产物独立
+    #    （docs / graph_entities 分开装配），串行纯叠延迟（profile 实测 graph 212ms+ 全额在
+    #    关键路径上）。并行不改任何通道的输入/输出 → 检索语义零变化；降级原因仍按
+    #    milvus→graph 固定顺序汇总（下方 degrade_parts 组装顺序不变）。
     _milvus_timeout = float(getattr(settings, "MILVUS_SEARCH_TIMEOUT", 8.0))
+    _prof_t1 = time.perf_counter()
+    milvus_task = asyncio.ensure_future(asyncio.to_thread(
+        _milvus_hybrid_search_safe,
+        rewrite_query,
+        user_id=user_id,
+        role=role,
+        top_k=top_k,
+    ))
+    graph_task = asyncio.ensure_future(_graph_expand(rewrite_query, enable_graph=enable_graph))
     try:
-        milvus_docs, milvus_degrade = await asyncio.wait_for(
-            asyncio.to_thread(
-                _milvus_hybrid_search_safe,
-                rewrite_query,
-                user_id=user_id,
-                role=role,
-                top_k=top_k,
-            ),
-            timeout=_milvus_timeout,
-        )
+        milvus_docs, milvus_degrade = await asyncio.wait_for(milvus_task, timeout=_milvus_timeout)
     except asyncio.TimeoutError:
         logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
         milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
-    # 3) 图谱扩展
-    graph_entities, graph_degrade = await _graph_expand(rewrite_query, enable_graph=enable_graph)
+    _prof_milvus = time.perf_counter() - _prof_t1
+    # 3) 图谱扩展（已与 Milvus 并行启动，此处仅收口；_graph_expand 内部全吞异常，恒返回元组）
+    graph_entities, graph_degrade = await graph_task
+    _prof_graph = time.perf_counter() - _prof_t1 - _prof_milvus
 
     # 4) 融合去重（Milvus 去重即可，BM25 后续接入 MySQL 倒排再合并）
+    _prof_t3 = time.perf_counter()
     seen: set[str] = set()
     merged: list[RetrievedDoc] = []
     for d in milvus_docs:
@@ -533,13 +620,27 @@ async def retrieve_three_channel(
         merged.append(d)
 
     raw_retrieved_count = len(merged)
+    _prof_merge = time.perf_counter() - _prof_t3
 
     # 5) 重排（task31 + task-R1）：默认经 sidecar HTTP 重排（GPU 在独立进程不阻塞事件循环），
     #    sidecar 不可达→进程内直连→规则兜底（degraded_reason 标注）
+    _prof_t4 = time.perf_counter()
     merged, rerank_degrade = await _rerank_docs(rewrite_query, merged)
+    _prof_rerank = time.perf_counter() - _prof_t4
 
     # 6) 断崖 + final_max_k 上限
     final_docs = _cliff_cutoff(merged, final_max_k=final_max_k, drop_ratio=cutoff_drop_ratio)
+    _prof_cliff = time.perf_counter() - _prof_t4 - _prof_rerank
+
+    # R02-tail profile：三通道主链路分段汇总（一次检索一行）
+    logger.info(
+        "[retrieval-profile] pipeline total={:.0f}ms | hyde={:.0f} milvus={:.0f} graph={:.0f} "
+        "merge={:.0f} rerank={:.0f} cliff={:.0f} | raw={} final={}".format(
+            (time.perf_counter() - _prof_t0) * 1000,
+            _prof_hyde * 1000, _prof_milvus * 1000, _prof_graph * 1000,
+            _prof_merge * 1000, _prof_rerank * 1000, max(0.0, _prof_cliff) * 1000,
+            raw_retrieved_count, len(final_docs))
+    )
 
     # 7) 汇总降级原因 + task39 GWT② 逐组件指标埋点
     #    组件归属按「变量出处」判定（非字符串匹配）：
