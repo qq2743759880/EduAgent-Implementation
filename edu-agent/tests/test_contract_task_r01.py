@@ -315,6 +315,84 @@ async def test_extract_llm_success_empty_and_empty_window(offline_broker):
 
 
 # ============================================================
+# c2) 截断容错 salvage（T9-C1：前几条合法事实不因尾部截断连坐落 degraded）
+# ============================================================
+def test_salvage_json_array_boundaries():
+    """salvage 纯函数边界：只收已闭合元素；字符串内花括号/转义引号不误判。"""
+    from app.ai.memory.extract_llm import _salvage_json_array
+
+    truncated = '[{"content":"a"}, {"content":"b"}, {"content":"c'
+    assert [e["content"] for e in _salvage_json_array(truncated)] == ["a", "b"]
+    # 字符串内的 }{ 与 \" 不参与括号计数
+    tricky = '[{"content":"含 }{ 与 \\" 引号"}, {"content":"截'
+    assert [e["content"] for e in _salvage_json_array(tricky)] == ['含 }{ 与 " 引号']
+
+    assert _salvage_json_array("抱歉，@@@无法解析的散文，没有数组") == []
+    assert _salvage_json_array('[{"content": "截') == [], "无一条完整元素→空"
+
+
+async def test_truncated_output_salvages_leading_entries_not_degraded():
+    """截断输出（前 2 条完整 + 第 3 条截断）→ 前 2 条为候选、error=None。"""
+    from app.ai.memory.extract_llm import extract_candidates_llm
+
+    async def _truncated_llm(_messages, model=None):
+        return (
+            '[{"content": "用户目标雅思 6.5", "memory_type": "goal", "topic": "learning-goals", "importance": 5}, '
+            '{"content": "用户零基础", "memory_type": "profile", "topic": "profile", "importance": 4}, '
+            '{"content": "用户想学'
+        )
+
+    candidates, error = await extract_candidates_llm(
+        [{"role": "user", "content": "我想考雅思 6.5，零基础"}], llm=_truncated_llm
+    )
+    assert error is None, "尾部截断不得整批判 llm_unparseable_output"
+    assert [c.content for c in candidates] == ["用户目标雅思 6.5", "用户零基础"]
+    assert {c.source for c in candidates} == {"llm_window"}
+
+
+async def test_truncated_output_salvage_persists_without_degraded(offline_broker, monkeypatch):
+    """队列级：截断 salvage 的候选照常落库，degraded 不增。"""
+    async def _truncated_llm(_messages, model=None):
+        return (
+            '[{"content": "用户已完成 Python 入门前三章", "memory_type": "fact", '
+            '"topic": "general", "importance": 4}, '
+            '{"content": "用户每晚学习一小时'
+        )
+
+    _patch_extract_with_llm(monkeypatch, _truncated_llm)
+    persistence, _store, queue = _make_components()
+    user_id = 9005001
+    assert await queue.enqueue_turn_window(user_id, [
+        {"role": "user", "content": "随便聊聊"},
+        {"role": "assistant", "content": "好的，根据记录你已完成 Python 入门前三章。"},
+    ]) is True
+
+    assert await queue.pump_once() is True
+    assert queue.stats["degraded"] == 0, "截断但可 salvage → 不落 degraded"
+    assert await queue.degraded_count() == 0
+    assert await _drain(queue) >= 1
+    contents = [r.content for r in await persistence.list_effective(user_id)]
+    assert "用户已完成 Python 入门前三章" in contents, contents
+
+
+async def test_no_complete_element_still_degraded(offline_broker, monkeypatch):
+    """连一条完整元素都 salvage 不出 → 仍判 llm_unparseable_output 落 degraded。"""
+    async def _cut_mid_element_llm(_messages, model=None):
+        return '[{"content": "用户想学雅思，但这条被截断在字符串里'
+
+    _patch_extract_with_llm(monkeypatch, _cut_mid_element_llm)
+    persistence, _store, queue = _make_components()
+    user_id = 9005002
+    await queue.enqueue_turn_window(user_id, [
+        {"role": "user", "content": "我想考雅思"},
+        {"role": "assistant", "content": "好的"},
+    ])
+    assert await queue.pump_once() is True
+    assert queue.stats["degraded"] == 1
+    assert queue._degraded_mem[0]["reason"].startswith("llm_unparseable_output")
+
+
+# ============================================================
 # d) 防幻觉：ID→序号映射 + 召回返回体剥离 id
 # ============================================================
 class TestPromptIdMapping:

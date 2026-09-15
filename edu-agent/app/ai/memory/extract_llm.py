@@ -6,15 +6,18 @@
   「其目标考试时间为…」），纯规则无法覆盖，由本模块 LLM 抽取补齐（mem0 ADD 语义）。
 
 铁律（对齐 PRD R01 两要点）：
-- LLM **链路失败**（网络/HTTP/超时/输出不可解析）必须显式返回 error，由调用方落 degraded
+- LLM **链路失败**（网络/HTTP/超时/输出完全不可解析）必须显式返回 error，由调用方落 degraded
   队列项——**禁止把失败伪装成空列表**（空列表的合法语义是「本轮确无值得记忆的信息」）；
-- 合法空结果 `([], None)` 不触发 degraded。
+- 合法空结果 `([], None)` 不触发 degraded；
+- 输出被 max_tokens 截断时按 T9-C1 逐条 salvage 已闭合的合法元素，仅当连一条完整元素都
+  取不出时才判 `llm_unparseable_output` 落 degraded（合法事实不因尾部残缺连坐丢弃）。
 
 默认 LLM 复用子代理 `_default_llm`（fast 模型，cost 友好，与 Dream 巩固同通道）；
 测试/窗口验证可注入 `llm` 假件（签名 `async llm(messages, model=...) -> str`）。
 """
 from __future__ import annotations
 
+import json
 from typing import Awaitable, Callable
 
 from loguru import logger
@@ -92,6 +95,56 @@ def _coerce_entry(raw: object) -> MemoryCandidate | None:
     )
 
 
+def _salvage_json_array(text: str) -> list[dict]:
+    """截断容错（T9-C1）：从被 max_tokens 截断的输出中逐条 salvage 完整合法元素。
+
+    仅在整段 ``json.loads`` 失败时兜底调用：从首个 ``[`` 起做括号 / 字符串状态扫描，
+    逐个收集**已闭合**的顶层 ``{...}`` 元素并单独 json 解析；未闭合的尾部元素丢弃。
+    返回可解析元素列表（空列表 = 连一条完整元素都 salvage 不出 = 真不可解析）。
+    """
+    if not isinstance(text, str):
+        return []
+    start = text.find("[")
+    if start < 0:
+        return []
+    items: list[dict] = []
+    depth = 0          # 数组内嵌套深度：0 = 顶层元素位置
+    in_str = False
+    escaped = False
+    elem_start = -1
+    for i in range(start + 1, len(text)):
+        ch = text[i]
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            depth += 1
+            if depth == 1 and ch == "{":
+                elem_start = i
+        elif ch in "}]":
+            if depth == 0:
+                if ch == "]":
+                    break  # 数组已闭合，其后内容与本次 salvage 无关
+                continue
+            depth -= 1
+            if depth == 0 and elem_start >= 0:
+                try:
+                    obj = json.loads(text[elem_start:i + 1])
+                except Exception:
+                    obj = None
+                if isinstance(obj, dict):
+                    items.append(obj)
+                elem_start = -1
+    return items
+
+
 async def extract_candidates_llm(
     messages: list[dict],
     *,
@@ -132,6 +185,7 @@ async def extract_candidates_llm(
     from app.ai.memory.dream import _extract_json_array
 
     arr = _extract_json_array(raw_text)
+    partial = False
     if not arr:
         # 区分「合法空数组」与「不可解析」：仅当文本中确实存在可 json 解析的 [] 切片时
         # 才算合法空结果；普通散文里的方括号不会误判（json 解析失败 → degraded）。
@@ -147,8 +201,14 @@ async def extract_candidates_llm(
                 is_empty_array = False
         if is_empty_array:
             return [], None
-        logger.warning(f"[Memory:extract] LLM 输出不可解析，判 degraded：{raw_text[:200]}")
-        return [], "llm_unparseable_output"
+        # T9-C1 截断容错：整批解析失败时逐条 salvage 已闭合的合法元素，
+        # 仅真正不可解析的部分落 degraded（前几条合法事实不再被尾部截断连坐丢弃）。
+        salvaged = _salvage_json_array(raw_text)
+        if not salvaged:
+            logger.warning(f"[Memory:extract] LLM 输出不可解析，判 degraded：{raw_text[:200]}")
+            return [], "llm_unparseable_output"
+        arr = salvaged
+        partial = True
 
     candidates: list[MemoryCandidate] = []
     seen: set[str] = set()
@@ -158,4 +218,8 @@ async def extract_candidates_llm(
             continue
         seen.add(cand.content)
         candidates.append(cand)
+    if partial:
+        logger.warning(
+            f"[Memory:extract] 输出被截断，已 salvage {len(candidates)} 条完整合法元素入库(partial=true)"
+        )
     return candidates, None
