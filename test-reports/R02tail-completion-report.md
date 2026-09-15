@@ -2,7 +2,7 @@
 
 - 执行：ZCode-R02-tail ｜ 完工：2026-09-15 ｜ 工作区 `E:\stu\project\stu\EduAgent实施手册`
 - 任务：profile→优化 start→retrieval 段（编排者活体基线 3.38-3.6s，目标 ≤2s 或对齐旧路径同段水平）
-- 交付 commit：`feat(r)/R02-tail-ttft`
+- 交付 commit：`feat(r)/R02-tail-ttft` = **`fbcb778`**（主体 13 文件；注：本批新增 config.py 配置段 17 行（`RERANK_CONNECT_TIMEOUT`/`RERANK_SIDECAR_COOLDOWN_S`）因共享工作区竞态被并行 R12 会话的 `509496d` 连带先行提交，已生效于 HEAD，归属以本说明为准）
 - 复跑：`test-reports/r02tail-ttft-probe.py`（8010 临时实例）、`scripts/eval/r20b_dualrun_probe.py`（Jaccard 复跑）、`tests/test_contract_task_r02tail.py`（新增 5 单测）
 
 ---
@@ -109,7 +109,8 @@
 4. 禁 Playwright：requests/httpx/pytest✅
 5. 检索参数与语义：hyde=True/top_k=12/5/0.40 未动（`sixnode_retrieval_params` 原样）；Jaccard knowledge 通道复跑 1.000✅
 6. 旧路径行为：`retrieve_three_channel` 为两路径单一事实源，修复对两侧等价生效；旧路径契约测试 PASS✅
-7. commit/报告：`feat(r)/R02-tail-ttft` + 本报告✅
+7. commit/报告：`fbcb778`（feat(r)/R02-tail-ttft）+ 本报告✅
+8. **工作区竞态登记**：本会话工作期间，并行 R12 会话提交 `509496d`（R12-llm-tool-decision）将本批 config.py 新增段（17 行）连带入库——该段内容为本批所写且已验证生效（8010 实测连接超时 1s 生效），归属以 commit message 与本报告为准；本批 commit 未纳入 R12 的 tool_calling.py 等文件。
 
 ## §7 遗留与建议
 
