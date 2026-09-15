@@ -95,13 +95,17 @@ mysqldump -h127.0.0.1 -P3306 -uroot -p*** --single-transaction --skip-add-locks 
 
 **before / after**
 
-| 指标 | before | 清理当时 after | 复核时（跑完 live 契约测试后） |
+| 指标 | before | 清理当时 after | 收尾复核（跑完 live 契约测试） |
 |---|---|---|---|
-| `rows_total`（全表） | 98 | 98（软删不减行） | 99（契约测试新增 1 帖） |
-| `yn=1` | 98 | **58** | 59 |
-| `yn=0`（软删） | 0 | **40** | 40 |
+| `rows_total`（全表） | 98 | 98（软删不减行） | **100**（live 契约测试各新建 1 帖） |
+| `yn=1` | 98 | **58** | **60** |
+| `yn=0`（软删） | 0 | **40** | **40** |
 | `is_pinned=1 且 yn=1` | **14** | **1** | **1** |
 | `yn=1` 同标题重复组 | 4 | **0** | **0** |
+
+> 注：`rows_total`/`yn=1` 会随任何 live 契约测试（`POST /api/community/posts`）继续增长，**不是本次清理的回退**；
+> 本次清理的净效果看 `yn=0=40`（软删恒为 40）与「同标题重复组 0」「置顶 1」两个不变量。
+> 收尾复核：`ghost_pin_cleanup.py --check` → `[check] duplicate_groups=0 -> PASS(无重复)`。
 
 副作用（已核查、无害且可逆）：挂在软删帖上的孤儿 `community_comment` **3** 条、`community_react` **3** 条——这些帖子 `yn=0` 后列表/详情均不可见，关系行保留即「原样可回收」；`gamification` 的 `POST_LIKES_TOTAL` 走 `WHERE yn=1 AND author_id=%s`，admin(uid=1) 的虚拟点赞基数随重复帖一并回落（期望行为）。保留置顶：`id=1, 👋 欢迎来到 EduAgent 学习社区！, view_count=130`。
 
