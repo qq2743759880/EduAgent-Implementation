@@ -1,13 +1,13 @@
 # EduAgent 部署 README（运维 runbook 第一章 · taskC4）
 
 > 面向读者：**从未接触过本项目的新运维/新人**。目标：照本文从零操作，把 EduAgent 在与本机同构的环境
-> （Windows 主机 + VMware 虚拟机 Docker）里一键拉起，并通过 check-demo 8/8 验收（与 taskC5 同一验收态）。
+> （Windows 主机 + VMware 虚拟机 Docker）里一键拉起，并通过 check-demo 9/9 验收（与 taskC5 同一验收态）。
 >
 > 事实来源（先读后写，本文一切命令/路径/行为与下列交付物一致）：
 > - 一键脚本：`edu-agent/scripts/deploy/deploy.mjs`（taskC1）
-> - 生产配置模板：`edu-agent/.env.example`（taskC0，220 键）；配置项清单 `.ai-hub/plans/deploy-config-checklist.md`
+> - 生产配置模板：`edu-agent/.env.example`（taskC0，未注释键 37 个，2026-09-15 实测）；配置项清单 `.ai-hub/plans/deploy-config-checklist.md`
 > - 生产形态端到端实测：`edu-agent/test-reports/C3-e2e-report.md`（taskC3）
-> - 检查单：`edu-agent/scripts/check-demo.mjs`（8 项检查，FAIL 时逐项给一句话处置指引）
+> - 检查单：`edu-agent/scripts/check-demo.mjs`（9 项检查，FAIL 时逐项给一句话处置指引）
 >
 > 边界一句话：**本包 = 本机同构部署**；公网/HTTPS/容器化归 C 阶段全量（容器化路线见文末附录）。
 
@@ -112,12 +112,29 @@ copy .env.example .env    # 然后编辑 .env
 | `LLM_API_KEY` | 服务商 key | 必填无默认 |
 | `CORS_ORIGINS` | 建议留空或显式双源 | **必须同时含 `http://localhost:3000` 与 `http://127.0.0.1:3000` 双源**（C3 实证，详见 §4 已知项） |
 
-其余 220 键逐键说明见 `.ai-hub/plans/deploy-config-checklist.md`（含每键默认值/必填性/生产值指引），本 README 不重复。
+其余未注释键逐键说明见 `.ai-hub/plans/deploy-config-checklist.md`（含每键默认值/必填性/生产值指引，`.env.example` 未注释键 37 个，2026-09-15 实测），本 README 不重复。
 
 ### ③ 数据库初始化（edu 库）
 
+> ⚠ **已有库判别（执行前必查，P1 数据损失风险）**
+>
+> **下面两条恢复命令都是破坏性覆盖导入**：方式一的全库 dump 内含 **106 条 `DROP TABLE`**，在任何**已存在 `edu` 库**的机器上执行，都会先清空现库表再回滚到快照时刻。本仓库实测 `edu` 库当前 104 表，而 08-16 dump 为 106 表，**二者已双向分叉**：
+>
+> - **dump 独有 11 张**（`admin_*`×7、`curriculum_*`×4）——现有库执行后会被重建/覆盖；
+> - **现库独有 9 张**（`user_memory*`、`hitl_approval`、`task_execution`、`course_review`、`knowledge_import_task` 等）——现有库执行后**整表丢失**，且现库 2026-09-13 以来的真实订单数据一并回滚。
+>
+> （分叉表完整清单见 `test-reports/onboarding-fresh-report.md` §3③。）
+>
+> **执行前必查（非空即停）：**
+>
+> ```bash
+> mysql -uroot -p -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='edu'"
+> ```
+>
+> **结果 `≠0` 即停**：说明这台机已不是干净空库，照做 = 破坏性覆盖（清 11 张新表 + 数据回滚 1 个月）。此时切换到「维护快照」或换一台干净空库机器部署；确认必须重置时，先按 §5 数据安全红线做完整 `mysqldump` 快照备份后再执行。
+
 - **后端不会自动建库建表**：`app/database.py init_mysql()` 仅创建连接池（已核实源码）。
-- 因此 `edu` 库与其 106 张业务表、种子数据（含测试账号）来自**快照恢复**：
+- 因此 `edu` 库与其 106 张业务表、种子数据（含测试账号）来自**快照恢复**（仅适用于全新空库机器）：
 
 ```bash
 # 方式一（推荐，有清单+恢复演练背书）：20260816_task00 全库 dump
@@ -149,17 +166,17 @@ start 依序执行：前置检查（MySQL/VM/Redis 探测，**只报告不阻塞
 自动 `npx next build`，约 1-2 分钟）→ 自动跑 check-demo 断言，exit code 透传。
 幂等：端口已在监听则跳过对应服务并提示 PID。
 
-### ⑤ 验收：check-demo 8/8
+### ⑤ 验收：check-demo 9/9
 
 ```bash
 node scripts\check-demo.mjs        # 或 node scripts\deploy\deploy.mjs status
 ```
 
-期望末行：`汇总: 绿 8/8 —— 演示环境就绪`。红项按 §4 故障对照表处置后重跑。
+期望末行：`汇总: 绿 9/9 —— 演示环境就绪`。红项按 §4 故障对照表处置后重跑。
 
 ---
 
-## 4. 故障对照表（逐项对齐 check-demo 8 项 + 已知项）
+## 4. 故障对照表（逐项对齐 check-demo 9 项 + 已知项）
 
 check-demo 检查项与序号一一对应；每行处置与脚本 FAIL 时输出的指引一致。
 
@@ -170,9 +187,10 @@ check-demo 检查项与序号一一对应；每行处置与脚本 FAIL 时输出
 | ③ | MongoDB 连通 192.168.85.101:27017 | 同 ① | 同 ①（确认 mongo 容器在跑） |
 | ④ | 后端 8000 `/health`（status=ok） | /health 不可达，或后端进程起后自杀 | 见下方「8000 拒启三分支」；日志 `logs/deploy-backend.log` |
 | ⑤ | 前端 3000 `/login-register.html` | 拒绝连接 / 非 200 | `node scripts\deploy\deploy.mjs start`（会自动 build+start）；build 失败看 `logs/deploy-frontend-build.log` |
-| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / 账号不存在 | 先过 ④ 后端；仍失败 = edu 库无种子数据，按 §3 步骤③ 恢复快照（测试账号见下表） |
+| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / 账号不存在 | 先过 ④ 后端；仍失败 = edu 库无种子数据，按 §3 步骤③ 恢复快照（测试账号见下表）。⚠ 该项每账号含真实登录+鉴权，单项 6-10s 属正常波动（整轮巡检约 10-15 秒，见 §5 巡检建议） |
 | ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 前端未就绪先修 ⑤；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
-| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/admin/users） | 无 token 竟返回 200 有数据 | DEBUG=true 后门！上线前必须 `DEBUG=false` 并重启后端（settings.DEBUG=false） |
+| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME≠local | DEBUG 后门！上线前必须 `DEBUG=false`（settings.DEBUG=false）并重启后端；调试态（DEBUG=true + ENV_NAME=local）输出 WARN 不阻断（见脚本注释三分支语义） |
+| ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤ |
 
 **测试账号（快照内种子，check-demo ⑥ 使用）**：
 
@@ -190,7 +208,7 @@ check-demo 检查项与序号一一对应；每行处置与脚本 FAIL 时输出
 | ENV_NAME+DEBUG 组合（P1-8 门禁） | DEBUG=true 且 ENV_NAME≠local（prod/staging/dev/qa 等） | 组合只有两种合法形态：dev=`DEBUG=true + ENV_NAME=local`；生产=`DEBUG=false + ENV_NAME=prod`。按此改 .env |
 | 存储不可达（lifespan 硬校验） | DEBUG=false 下 MySQL/Milvus/MongoDB/MinIO/Neo4j/Redis **任一**连不通 | 逐个修 ①②③ 与 MinIO/Neo4j 连通性后重启（DEBUG=true 时仅降级不拒启，生产 false 必拒） |
 
-**已知项（check-demo 8 项之外，C3 实测发现）**：
+**已知项（check-demo 9 项之外，C3 实测发现）**：
 
 - **A. CORS 生产双源**（commit `c208020`）：DEBUG 态 CORS=`*` 从未暴露此问题；生产形态下若 CORS 白名单
   只有 `http://localhost:3000`，用户以 `http://127.0.0.1:3000` 访问前端时所有 API 被预检拦截
@@ -211,7 +229,7 @@ check-demo 检查项与序号一一对应；每行处置与脚本 FAIL 时输出
 ### 三命令
 
 ```bash
-node scripts\deploy\deploy.mjs start    # 前置检查→后端→前端→check-demo 8/8 断言（幂等）
+node scripts\deploy\deploy.mjs start    # 前置检查→后端→前端→check-demo 9/9 断言（幂等）
 node scripts\deploy\deploy.mjs stop     # 按端口清 8000/3000（netstat→PID→taskkill /F /T）
 node scripts\deploy\deploy.mjs stop --all   # 同上，附加 Redis 容器处置提示（容器本身不停）
 node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一致
@@ -233,7 +251,7 @@ node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一�
 
 ### 巡检建议
 
-1. **每次演示/交付前**：`node scripts\deploy\deploy.mjs status` → 期望 8/8 全绿（约 2 秒）。
+1. **每次演示/交付前**：`node scripts\deploy\deploy.mjs status` → 期望 9/9 全绿（整轮巡检约 **10-15 秒**；其中⑥ 登录链路占大头——admin+student 各一次真实 login + /api/auth/me，单项 6-10s 属正常波动，非卡死）。
 2. **每日**：Docker Desktop 在跑、`docker exec edu-redis-standalone redis-cli ping` = PONG；VM 在线（①③ 探测绿）。
 3. **每周**：查看 `logs/` 磁盘占用（轮转/保留由 .env 控制）；`deploy-frontend-build.log` 是否有异常 build 重试。
 4. Redis 容器开机自启（C5-D3 已实证收口，2026-09-13）：`docker inspect edu-redis-standalone` RestartPolicy.Name = `unless-stopped`（容器 Running=true），宿主机重启后 Docker 自动拉起容器，无需手动 `docker start`；但 Docker Desktop 本身需设为开机自启（Windows 设置 → 启动项）。
@@ -254,7 +272,7 @@ mysqldump -uroot -p --routines --triggers --single-transaction --set-gtid-purged
 ## 6. 边界声明
 
 - 本部署包 = **本机同构部署**（Windows 主机 + VMware VM Docker 一键拉起），验收口径 =
-  干净进程环境一条命令拉起 + check-demo 8/8 + 核心页抽验；不含公网暴露/HTTPS/域名/Nginx 反代。
+  干净进程环境一条命令拉起 + check-demo 9/9 + 核心页抽验；不含公网暴露/HTTPS/域名/Nginx 反代。
 - 公网/HTTPS/容器化/Linux 归 **C 阶段全量**；容器化路线资产（docker compose + 前后端 Dockerfile）见下方附录。
 - 脚本能力边界：VM 电源、Docker Desktop、Redis 容器的拉起**不在 start 脚本能力内**（脚本只探测 + 给指引）；
   .env 形态归用户所有，脚本读原样报告、不做替换。
