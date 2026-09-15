@@ -580,3 +580,10 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **F-5(P3) start 事件字段与 router docstring 漂移**。
 ### 事件
 - 前端 dev 进程再次静默死亡(执行 agent 拉起替代,正常);AGENTS.md 过时启动命令再证(第 4 次撞坑)。
+
+## F 系列验收(2026-09-14,双环,4 commits 全过)
+- F-1 ✅ 3000 反代 /media 实测 200/video/mp4/3145728 + Range 206(拖动 seek 可用);抽查页 200。遗留:C 全量建议 nginx 直挂媒体(过 Next 代理有内存开销)。
+- F-2 ✅ 两源同步:ALL_TIME my=351 = 面板 351(真实回帖+2 双边同步);对账脚本 19 ZADD;self-heal 读修复。事件映射表已入报告(哪些行为加分=产品待决)。
+- F-3+F-5 ✅ SSE 信封契约测试 4/4 过(我方实跑);docstring 对齐零线变更。
+- F-4 ✅ 销项:钳制三处早已存在(编排在 2026-09-02 a86a9e9),pct=100 无溢出;"未解锁"疑问归徽章规则域(check_and_unlock_badges),非展示 bug。
+- 复验锚点:F-1 前端跨源代理属 Next rewrites 正规用法(nextjs.org rewrites 文档);F-2 双源一致性属账本单一真相源原则([F-C06-001] mem0 决策管线同构)。
