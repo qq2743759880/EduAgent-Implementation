@@ -411,6 +411,15 @@ class Settings(BaseSettings):
     MCP_HC_SESSION_TTL_S: int = 600       # hc 专用会话空闲 TTL（秒），session_create 内钳制 30~1800
 
     # ============================================================
+    # R12：图内 LLM 工具决策接管（dev-plan-reshape-r W3）
+    #   默认 rule = 现行为（tool_calling._parse_heuristic 启发式正则），不改生产；
+    #   llm = LLM 决策器（tool_decision.decide_tool_plan）：query+真实 registry 工具清单
+    #   → 结构化 tool_plan；超时/异常 → 规则路由 fallback，降级计数入日志。
+    # ============================================================
+    TOOL_DECISION_MODE: str = "rule"      # "rule"=启发式正则（现行为，默认） | "llm"=LLM 决策器
+    TOOL_DECISION_TIMEOUT: float = 5.0    # llm 模式决策超时预算（秒）；超时→规则路由 fallback（防 TTFT 劣化）
+
+    # ============================================================
     # 【task-T1 新增段 · 工具调用闭环（换参→换工具→熔断→人工指南）】※ 本段为 task-T1 专属，
     #   对齐 Codex orchestrator.rs / auto-review（3 连续拒绝熔断）/ retry telemetry（production-upgrade-plan P6）。
     #   - TOOL_FALLBACK_MAP：原工具失败后尝试的备用工具（按列表顺序取第一个可用）；
@@ -464,6 +473,14 @@ class Settings(BaseSettings):
     RERANK_HTTP_TIMEOUT: float = 10.0         # 主链路调 sidecar 超时（秒）：2.0 在 6 并发×20docs 批处理+GPU 竞争下过紧，易误触发进程内回退→事件循环阻塞→雪崩链（2026-08-29 周末复测实测 44 次 ConnectTimeout/ReadTimeout）
     RERANK_SIDECAR_ENABLED: bool = True       # False → 主链路直接进程内 rerank（平滑切换/降级调试）
     RERANK_QUEUE_REDIS: bool = False          # 可选：Redis list 缓冲峰值（默认直连 batcher）
+    # R02-tail（TTFT 检索段优化，profile 实测驱动）：
+    #   实测 sidecar 不可达时每次请求的连接尝试固定烧 ~2.05s（8010 profile 4 轮全部 2051~2092ms），
+    #   占 start→retrieval 的 ~55%。两项不改检索语义的修复：
+    #   - RERANK_CONNECT_TIMEOUT：连接相位独立短超时（连接失败快速暴露，不再吃满总超时/连接耗尽）；
+    #   - RERANK_SIDECAR_COOLDOWN_S：连接失败后 sidecar 熔断冷却窗（窗内直接进程内直连，分数与
+    #     sidecar 同模型同批式等价——rerank_pairs AC1；冷却到期自动重试，自愈不丧失 sidecar 优先级）。
+    RERANK_CONNECT_TIMEOUT: float = 1.0       # sidecar 连接相位超时（秒）；0 = 沿用 RERANK_HTTP_TIMEOUT
+    RERANK_SIDECAR_COOLDOWN_S: float = 60.0   # sidecar 连接失败熔断冷却窗（秒）；0 = 关闭熔断（逐请求重试）
     # ============================================================
     # 【task-R1 新增段结束】
     # ============================================================

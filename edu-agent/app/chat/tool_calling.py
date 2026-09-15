@@ -8,6 +8,9 @@ P8 补充：MCP 工具注入 LLM 对话（能力 10 联动）。
   2. 触发策略「启发式优先、LLM 意图识别兜底」：
      - 先用正则/关键词匹配已知工具（ping/add/echo/list_alphabet…），快速决策，避免额外 LLM 调用。
      - 启发式未命中时，可选择调用一次 LLM 工具意图识别 prompt（默认关闭，节省成本）。
+     - R12：TOOL_DECISION_MODE=llm 时由 app.chat.tool_decision.decide_tool_plan 接管决策
+       （LLM+真实 registry 工具清单→结构化 tool_plan，超时 TOOL_DECISION_TIMEOUT 秒→规则
+       fallback+降级计数入日志）；默认 rule 保持本模块启发式（生产行为零变化）。
   3. 工具结果注入：把工具返回内容（text/result 字段）作为一段 tool 上下文提前拼入 system prompt 末尾，
      让生成答案时直接引用，既符合 MCP 标准的「tool 注入」语义，也对本地规则/远程 LLM 都生效。
   4. 任何工具调用异常（超时/网络问题）都不影响回答，工具层错误会写 degraded_reason 的 MCP_FAILED 子串并跳过。
@@ -249,7 +252,22 @@ async def run_chat_tool_calls(
         # 无工具：静默返回（不给 degraded，避免打扰正常 RAG 提示）
         return summaries, "", None
 
-    plans = _parse_heuristic(query, tools)
+    # R12：TOOL_DECISION_MODE=llm → 图内 LLM 工具决策接管（query+真实 registry 工具清单
+    # → 结构化 tool_plan）；超时/异常/不可解析 → 内部自动规则路由 fallback（现行为
+    # _parse_heuristic），降级计数入日志（tool_decision._STATS）。
+    # 默认 rule = 纯现行为（生产零变化）。
+    decision_note = "rule"
+    if str(getattr(settings, "TOOL_DECISION_MODE", "rule") or "rule").strip().lower() == "llm":
+        from app.chat.tool_decision import decide_tool_plan
+
+        dres = await decide_tool_plan(query, tools)
+        plans = dres.plans
+        decision_note = (
+            f"llm({dres.latency_ms}ms)" if not dres.fallback
+            else f"llm→rule fallback({dres.fallback_reason},{dres.latency_ms}ms)"
+        )
+    else:
+        plans = _parse_heuristic(query, tools)
     if not plans:
         return summaries, "", None
 
@@ -321,7 +339,7 @@ async def run_chat_tool_calls(
         return summaries, "", degraded_extra
     total_ms = int((time.perf_counter() - t0) * 1000)
     header = (
-        f"\n\n# MCP 工具上下文（本轮共 {len(plans)} 次调用，总耗时 {total_ms} ms）\n"
+        f"\n\n# MCP 工具上下文（决策器={decision_note}，本轮共 {len(plans)} 次调用，总耗时 {total_ms} ms）\n"
         "以下内容来自 EduAgent MCP Server 的真实工具调用结果；回答时请直接引用这些结果，并在结果处声明「工具 X 返回…」，不要自行编造数值。\n"
     )
     return summaries, (header + "\n".join(parts) if parts else ""), degraded_extra
