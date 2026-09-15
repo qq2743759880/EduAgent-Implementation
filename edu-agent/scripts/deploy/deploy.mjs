@@ -6,7 +6,7 @@
 //           与 check-demo 同口径) ②后端 .venv uvicorn app.main:app --port 8000(读 .env 的
 //           DEBUG/ENV_NAME 形态原样,不做替换;.env 须用户自行按 .env.example 配置)
 //         ③前端 build+start 生产形态(C2 结论:NEXT_PROD_DIST_DIR=.next-prod,缺产物先 build)
-//         ④拉起后自动跑 check-demo.mjs 断言 8/8(exit code 透传)
+//         ④拉起后自动跑 check-demo.mjs 断言 9/9(exit code 透传)
 // stop  : 按端口清 8000/3000(--all 附加提示 Redis 容器处置,容器本身不停)
 // status: 透传执行 scripts/check-demo.mjs(exit code 透传)
 //
@@ -251,10 +251,10 @@ async function startFrontend() {
 }
 
 async function runCheckDemoAssert() {
-  log(`\n${C.b}=== ④ check-demo 断言(期望 8/8)===${C.x}`);
+  log(`\n${C.b}=== ④ check-demo 断言(期望 9/9)===${C.x}`);
   const r = spawnSync(process.execPath, [CHECK_DEMO], { stdio: "inherit", cwd: BACKEND_DIR });
   const code = r.status ?? 1;
-  if (code === 0) ok("check-demo 8/8 全绿——演示环境就绪");
+  if (code === 0) ok("check-demo 9/9 全绿——演示环境就绪");
   else {
     fail(`check-demo 存在红项(exit=${code})——按上方逐项指引处置;环境前提类红项(VM/Redis)如实记录不阻塞交付`);
     if (readEnvKeys(["DEBUG"]).DEBUG?.toLowerCase() === "true") {
@@ -330,7 +330,7 @@ function cmdStatus() {
   if (CMD === "status") return cmdStatus();
   log("EduAgent 一键部署三件套(taskC1)");
   log("用法: node scripts/deploy/deploy.mjs start|stop|status [--all]");
-  log("  start  前置检查(报告口径)→ 后端 uvicorn(读 .env 形态原样)→ 前端 build+start(.next-prod)→ check-demo 8/8 断言");
+  log("  start  前置检查(报告口径)→ 后端 uvicorn(读 .env 形态原样)→ 前端 build+start(.next-prod)→ check-demo 9/9 断言");
   log("  stop   按端口清 8000/3000;--all 附加 Redis 容器处置提示(容器本身不停)");
   log("  status 透传 check-demo.mjs");
   process.exit(CMD ? 2 : 0);

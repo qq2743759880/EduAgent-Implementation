@@ -206,7 +206,7 @@ async def admin_update_session(session_id: int, payload: SessionUpdateAdmin,
     return ok(data=result.model_dump(mode="json"))
 
 
-@router.delete("/sessions/{session_id}", summary="管理端·软删课次（yn=0）")
+@router.delete("/sessions/{session_id}", summary="管理端·删除课次（物理删除，不可恢复；被引用则 40908）")
 async def admin_delete_session(session_id: int, me: CurrentUser = Depends(get_current_user)):
     await svc.delete_session(session_id)
     return ok(data=None, message="课次已删除")
