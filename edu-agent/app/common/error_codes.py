@@ -135,6 +135,13 @@ EXAM_CODE_CONFLICT = "40923"       # 考试编码重复（session_id + exam_code
 BANK_IN_USE = "40924"              # 题库内仍有有效题目，禁止直接删除（F-8：force=true 级联软删）
 
 # ═══════════════════════════════════════════
+# HITL 人机协作域（chat hitl）— 4045x（R11，contracts/reshape-r-hitl.json 冻结 2026-09-15）
+# 语义：POST /api/chat/resume 未找到挂起中的 thread_id（未知 / TTL 过期自动失效）→「确认已超时」。
+# HTTP 404（404xx 码段 → _http_status_for_code 自动映射）。
+# ═══════════════════════════════════════════
+CHAT_HITL_THREAD_NOT_FOUND = "40450"   # HITL 确认超时/线程不存在（resume 未知或过期 thread_id）
+
+# ═══════════════════════════════════════════
 # 问答/LLM 下游域（chat/llm）— 5001x（流式"建连后"错误通道专用，W2 批判 C3 登记 2026-09-04）
 # 语义：SSE 连接建立后，token 迭代 / 落库阶段的失败不再固定 50000 单调或静默 degraded_reason，
 # 统一走 `event: error` 并携带可区分 subcode。映射规则见 router._map_stream_exception。

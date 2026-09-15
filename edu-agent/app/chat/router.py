@@ -14,12 +14,15 @@ P2 问答路由：
 """
 from __future__ import annotations
 
+import json
+import time
 from collections.abc import AsyncGenerator
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from loguru import logger
+from pydantic import BaseModel
 
 from app.auth import CurrentUser, get_current_user
 from app.config import settings
@@ -43,7 +46,7 @@ from app.chat.service import (
     search_only,
 )
 from app.common.exceptions import AppException, NotFoundError, ValidationError
-from app.common.error_codes import CHAT_PERSIST_FAIL
+from app.common.error_codes import CHAT_PERSIST_FAIL, DEPENDENCY_UNAVAILABLE
 
 
 router = APIRouter(prefix="/api/chat", tags=["P2-知识问答"])
@@ -330,3 +333,62 @@ async def chat_stream_sse(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ============================================================
+# 5. HITL 中断恢复（R11，contracts/reshape-r-hitl.json 冻结）
+# ============================================================
+class ChatResumeRequest(BaseModel):
+    """resume 请求体：thread_id（pending_confirm 帧携带）+ confirm/reject + 可选 reason。"""
+
+    thread_id: str
+    action: Literal["confirm", "reject"]
+    reason: str | None = None
+
+
+@router.post("/resume")
+async def chat_resume(
+    body: ChatResumeRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """HITL 中断恢复决策端点（契约 reshape-r-hitl.json）：
+    - 校验该 thread_id 存在挂起中的确认（Redis hitl:pending: 标记，TTL=timeout_s=300 内有效）；
+    - 决策写 Redis hitl:decision:{thread_id}（TTL=300），供客户端以同 thread_id 重开
+      POST /api/chat/stream 时由 graph_stream 适配层以 Command(resume=决策) 续跑挂起图；
+    - 未知/过期 thread_id → 40450（CHAT_HITL_THREAD_NOT_FOUND，HTTP 404，语义「确认已超时」）；
+    - Redis 不可达 → 50301 DEPENDENCY_UNAVAILABLE（脱敏，T19-3 契约）。
+    """
+    from app.common.error_codes import CHAT_HITL_THREAD_NOT_FOUND
+    from app.common.exceptions import AppException as _AppException
+    from app.database import get_redis
+
+    try:
+        r = get_redis()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[P2 resume] Redis 不可用: {type(exc).__name__}: {exc}")
+        raise _AppException(DEPENDENCY_UNAVAILABLE, "依赖服务暂不可用，请稍后重试", http_status=503) from exc
+
+    pending_key = f"hitl:pending:{body.thread_id}"
+    decision_key = f"hitl:decision:{body.thread_id}"
+    ttl = int(getattr(settings, "HITL_RESUME_TTL", 300))
+    try:
+        raw = await r.get(pending_key)
+        if not raw:
+            # 未知 / TTL 过期 → 契约 40450（「确认已超时」）
+            logger.info(f"[P2 resume] thread_id 无挂起确认（未知或已超时）: {body.thread_id}")
+            raise _AppException(
+                CHAT_HITL_THREAD_NOT_FOUND,
+                "确认请求已超时或不存在，无法继续执行，请重新提问。",
+            )
+        decision = {"action": body.action, "reason": body.reason or "", "created_at": time.time()}
+        await r.set(decision_key, json.dumps(decision, ensure_ascii=False), ex=ttl)
+        await r.delete(pending_key)
+    except _AppException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[P2 resume] 决策写入失败: {type(exc).__name__}: {exc}")
+        raise _AppException(DEPENDENCY_UNAVAILABLE, "依赖服务暂不可用，请稍后重试", http_status=503) from exc
+
+    status_val = "resumed" if body.action == "confirm" else "rejected"
+    logger.info(f"[P2 resume] thread_id={body.thread_id} action={body.action} → {status_val}")
+    return ok({"status": status_val})

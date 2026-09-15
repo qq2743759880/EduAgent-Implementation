@@ -30,12 +30,15 @@ KB 对标（F-C01-002 LangGraph）：
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
+from typing import Any
 
 from fastapi.responses import StreamingResponse
 from loguru import logger
+from langgraph.types import Command
 
 from app.ai.graph import _empty_state, _ensure_agent_graph, resolve_thread_id
 from app.auth import UserRole
@@ -44,6 +47,63 @@ from app.chat.service import _ensure_session_owner, make_stream_finalize
 from app.chat.sse import map_stream_exception, sse_line
 from app.common.error_codes import CHAT_PERSIST_FAIL
 from app.config import settings
+
+
+# ============================================================
+# R11 HITL（contracts/reshape-r-hitl.json）：挂起/决策 Redis 键 + 读写辅助
+#   hitl:pending:{thread_id}  → pending_confirm payload（TTL=timeout_s=300；resume 端点校验存在性）
+#   hitl:decision:{thread_id} → {"action","reason","created_at"}（TTL=300；续流时一次性消费）
+# ============================================================
+_HITL_PENDING_PREFIX = "hitl:pending:"
+_HITL_DECISION_PREFIX = "hitl:decision:"
+
+
+def _hitl_resume_ttl() -> int:
+    """resume 决策/挂起标记 TTL（秒）。契约 timeout_s=300；测试可注入短 TTL 验超时。"""
+    return int(getattr(settings, "HITL_RESUME_TTL", 300))
+
+
+async def _hitl_redis() -> Any | None:
+    try:
+        from app.database import get_redis
+
+        return get_redis()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[graph_stream.hitl] Redis 不可用: {type(exc).__name__}: {exc}")
+        return None
+
+
+async def _mark_hitl_pending(thread_id: str, payload: dict) -> None:
+    """interrupt 捕获后写挂起标记（resume 端点据此判定 thread_id 有效/未过期）。"""
+    r = await _hitl_redis()
+    if r is None:
+        return
+    try:
+        await r.set(
+            f"{_HITL_PENDING_PREFIX}{thread_id}",
+            json.dumps(payload, ensure_ascii=False),
+            ex=_hitl_resume_ttl(),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[graph_stream.hitl] 写 pending 标记失败: {type(exc).__name__}: {exc}")
+
+
+async def _pop_hitl_decision(thread_id: str) -> dict | None:
+    """读并删除该 thread_id 的 resume 决策（一次性消费）；无 → None（正常新会话）。"""
+    r = await _hitl_redis()
+    if r is None:
+        return None
+    key = f"{_HITL_DECISION_PREFIX}{thread_id}"
+    try:
+        raw = await r.get(key)
+        if not raw:
+            return None
+        await r.delete(key)
+        d = json.loads(raw)
+        return d if isinstance(d, dict) else None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[graph_stream.hitl] 读决策失败: {type(exc).__name__}: {exc}")
+        return None
 
 
 class _DictModel(SimpleNamespace):
@@ -75,7 +135,13 @@ async def graph_stream_sse(
     # 建连前：会话归属校验（与旧路径 service.chat_stream 同源语义）
     session = None
     if req.session_id:
-        session = await _ensure_session_owner(req.session_id, user_id, role)
+        # R11 HITL 续流专线：anon- 前缀是 LangGraph checkpoint 线程 id 而非真实会话
+        # （新会话首问即触发中断时 thread_id=anon-{uuid}，契约要求以同 thread_id 重开续跑），
+        # 跳过会话归属校验；真实会话照常校验 owner。
+        if str(req.session_id).startswith("anon-"):
+            session = None
+        else:
+            session = await _ensure_session_owner(req.session_id, user_id, role)
 
     # R02-c：thread_id——有 session 用 session；匿名请求每请求独立 uuid（禁 task24-{user_id} 共享）
     thread_id = resolve_thread_id(req.session_id, user_id)
@@ -220,12 +286,41 @@ async def graph_stream_sse(
                 return
 
             g = await _ensure_agent_graph()
+            # R11 续流驱动：同 thread_id 已有 resume 决策（confirm/reject）→ Command(resume) 续跑
+            # 挂起图（checkpoint 已保存 interrupt 状态），不再新建 state；无决策 → 正常新会话。
+            resume_decision = await _pop_hitl_decision(thread_id)
+            if resume_decision is not None:
+                logger.info(f"[graph_stream] HITL resume 续跑 thread_id={thread_id} decision={resume_decision.get('action')}")
             state = _empty_state(req.query, user_id=int(user_id), session_id=req.session_id)
             config = {"configurable": {"thread_id": thread_id, "stream_tokens": True}}
             try:
-                async for mode, payload in g.astream(state, config, stream_mode=["updates", "custom"]):
+                async for mode, payload in g.astream(
+                    Command(resume=resume_decision) if resume_decision is not None else state,
+                    config,
+                    stream_mode=["updates", "custom"],
+                ):
                     if mode == "updates" and isinstance(payload, dict):
                         for node, update in payload.items():
+                            # R11：图内 interrupt() 挂起 → pending_confirm 帧 + Redis 挂起标记
+                            # （写类工具未执行；流发完本帧即收束，待用户 confirm/reject 后重开续跑）
+                            if node == "__interrupt__":
+                                intr_items = update if isinstance(update, (tuple, list)) else (update,)
+                                for intr in intr_items:
+                                    value = getattr(intr, "value", intr)
+                                    if isinstance(value, dict) and value.get("tool_name"):
+                                        logger.info(f"[graph_stream] HITL 中断捕获: {value.get('tool_name')}")
+                                        await _mark_hitl_pending(thread_id, value)
+                                        yield sse_line("pending_confirm", value)
+                                yield sse_line(SseEventType.DONE.value, {"code": 0, "message": "ok", "data": {
+                                    "session_id": session_id_out, "message_id": None,
+                                    "retrieved_count": int((retrieval_payload or {}).get("retrieved_count") or 0),
+                                    "final_count": len((retrieval_payload or {}).get("docs") or []),
+                                    "latency_ms": int((time.perf_counter() - t0) * 1000),
+                                    "rewrite_query": (retrieval_payload or {}).get("rewrite_query"),
+                                    "degraded_reason": "awaiting_human_confirm",
+                                }})
+                                logger.info(f"[graph_stream] HITL 中断，流挂起收束（待 resume）: {thread_id}")
+                                return
                             if not isinstance(update, dict):
                                 continue
                             if node not in node_arrivals:

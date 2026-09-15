@@ -262,6 +262,27 @@ async def retrieve_node(state: AgentState) -> dict:
 # ============================================================
 # Node 3: tool_node — MCP 工具调用节点
 # ============================================================
+# R11 HITL（contracts/reshape-r-hitl.json）：写类/外发类/危险级工具执行前 interrupt。
+# 工具集 = R15 write_class_tools（admin_write）∪ course_write ∪ hitl_gate 高风险类
+# （复用 executor._classify_hitl_action 分类，单一事实源，禁另造分类器）；
+# 风险级用 hitl_gate.RiskLevel 映射到契约 low|medium|high。
+def _hitl_risk_level(tool_name: str) -> str | None:
+    """判定工具是否需要 HITL 中断，返回契约风险级 low|medium|high；只读/未登记 → None（免中断）。"""
+    from app.ai.hitl_gate import RiskLevel
+    from app.ai.permission_gate import ADMIN_WRITE_TOOLS, COURSE_WRITE_TOOLS
+    from app.mcp.executor import _classify_hitl_action
+
+    n = (tool_name or "").strip().lower()
+    risk_map = {RiskLevel.L1.value: "low", RiskLevel.L2.value: "medium", RiskLevel.L3.value: "high"}
+    if n in ADMIN_WRITE_TOOLS:
+        return risk_map[RiskLevel.L3.value]   # write_class_tools（收藏写/积分/导入/订单）→ high
+    if n in COURSE_WRITE_TOOLS:
+        return risk_map[RiskLevel.L2.value]   # 课程/题库写类 → medium
+    if _classify_hitl_action(n) is not None:
+        return risk_map[RiskLevel.L3.value]   # executor 高风险类（执行/网络/退款/写前缀）→ high
+    return None
+
+
 async def tool_node(state: AgentState) -> dict:
     """
     调用 MCP 工具。
@@ -269,6 +290,9 @@ async def tool_node(state: AgentState) -> dict:
     从 state 中读取 tool_name 和 tool_args，调用 MCP executor。
     在 call_tool 之前过权限门（can_use_tool，默认 deny fail-closed）；deny 不抛异常、
     不进现有 except 分支，直接返回 ACI 错误信封（code/message/action_hint）。
+    R11：权限门通过后、执行前，写类/外发类/危险级工具（settings.HITL_ENABLED=True 时）
+    过 langgraph interrupt() 挂起（F-C01-002 interrupt+Command(resume) 三件套）；
+    resume=confirm → 真实执行；reject → 零执行 + 拒绝上下文给 generate。
     """
     tool_name = state.get("tool_name", "")
     tool_args = state.get("tool_args", {})
@@ -289,6 +313,38 @@ async def tool_node(state: AgentState) -> dict:
             "message": permission_denied_message(role, tool_name),
             "action_hint": decision.action_hint,
         }]}
+
+    # R11 HITL：写类/外发类/危险级工具执行前 interrupt（总开关 settings.HITL_ENABLED）
+    if getattr(settings, "HITL_ENABLED", False):
+        risk = _hitl_risk_level(tool_name)
+        if risk is not None:
+            from langgraph.config import get_config
+            from langgraph.types import interrupt
+
+            cfg = get_config()
+            thread_id = str((cfg.get("configurable") or {}).get("thread_id") or "unknown")
+            payload = {
+                "thread_id": thread_id,
+                "tool_name": tool_name,
+                "args": tool_args,
+                "risk_level": risk,
+                "timeout_s": 300,
+            }
+            logger.info(f"[Agent] HITL 中断等待确认: {payload}")
+            resume_value = interrupt(payload)
+            d = resume_value if isinstance(resume_value, dict) else {}
+            action = str(d.get("action") or "").strip().lower()
+            if action != "confirm":
+                logger.warning(f"[Agent] HITL 拒绝执行工具: {tool_name} reason={d.get('reason')}")
+                return {"tool_results": [{
+                    "tool_name": tool_name,
+                    "status": "rejected",
+                    "code": "hitl_rejected",
+                    "message": "您拒绝了该高风险操作，工具未执行。",
+                    "reason": str(d.get("reason") or ""),
+                    "action_hint": "如需执行可重新提问并确认。",
+                }]}
+            logger.info(f"[Agent] HITL 确认执行工具: {tool_name}")
 
     logger.info(f"[Agent] 调用工具: {tool_name}({tool_args})")
 

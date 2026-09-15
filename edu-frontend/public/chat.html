@@ -110,6 +110,22 @@ textarea{font-family:inherit}
 .error-st .ic{width:64px;height:64px;border-radius:50%;background:var(--candy-orange-soft);display:grid;place-items:center;font-size:32px}
 .error-st .t{font-size:1rem;font-weight:800}
 .error-st .d{font-size:12px;color:var(--ink-muted);max-width:360px;line-height:1.6}
+/* R11 HITL 确认卡（pending_confirm：高风险工具执行前中断，等待用户确认/拒绝） */
+.hitl-card{border:3px solid var(--ink);border-radius:16px;background:var(--candy-orange-soft);padding:14px;box-shadow:var(--shadow-3d);display:flex;flex-direction:column;gap:8px;animation:fade .25s ease}
+.hitl-card.hitl-busy{opacity:.65;pointer-events:none}
+.hitl-ic{font-size:26px}
+.hitl-title{font-weight:800;font-size:15px;letter-spacing:-.01em}
+.hitl-tool{font-size:12.5px;color:var(--ink-strong)}
+.hitl-tool code{background:var(--ht-fff);border:2px solid var(--border-chip);border-radius:7px;padding:1px 6px;font-size:12px}
+.hitl-risk{display:inline-flex;align-items:center;align-self:flex-start;font-size:11px;font-weight:800;border:2px solid var(--ink);border-radius:999px;padding:3px 11px}
+.hitl-risk-high{background:var(--candy-red);color:var(--ht-fff)}
+.hitl-risk-medium{background:var(--candy-yellow);color:var(--ink)}
+.hitl-risk-low{background:var(--candy-green);color:var(--ht-fff)}
+.hitl-args{font-size:11.5px;color:var(--ink-muted);background:var(--ht-fff);border:2px dashed var(--border-chip);border-radius:9px;padding:7px 9px;word-break:break-all;max-height:76px;overflow:auto;white-space:pre-wrap}
+.hitl-acts{display:flex;gap:8px;margin-top:4px}
+.hitl-acts .btn{padding:6px 16px;font-size:12.5px}
+.hitl-note{font-size:11px;color:var(--ink-muted)}
+.hitl-note .hitl-tick{font-weight:800;color:var(--candy-orange)}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* ===== 消息气泡 ===== */
@@ -845,6 +861,7 @@ if (!__logon) { renderSides(); draw("history"); }
       return;
     }
     var sid = activeId;
+    lastQuery = text;                     /* R11 HITL：确认后续流需重发原提问（同 thread_id 重开流） */
     /* 追加新气泡（不再清空既有历史；移除空态/错误态占位） */
     var ph = stage.querySelector(".empty,.error-st"); if (ph) ph.parentNode.removeChild(ph);
     stage.insertAdjacentHTML("beforeend",
@@ -853,6 +870,79 @@ if (!__logon) { renderSides(); draw("history"); }
     scrollStage(true);
     input.value = "";
     setStreaming(true);
+    openStream(text, sid, {});
+  }
+  /* ---- R11 HITL：pending_confirm 确认卡 + resume 决策 + 同 thread_id 续流（契约 reshape-r-hitl.json）---- */
+  var hitlPending = null, hitlTimer = null, lastQuery = "";
+  function riskLabel(r) { return ({ low: "低风险", medium: "中风险", high: "高风险" })[r] || "未知风险"; }
+  function renderHitlCard(pc) {
+    hitlPending = pc;
+    var el = $("aiResp"); if (!el) return;
+    var argsText = "";
+    try { argsText = JSON.stringify(pc.args || {}); } catch (e) { argsText = String(pc.args || ""); }
+    if (argsText.length > 200) argsText = argsText.slice(0, 200) + "…";
+    el.innerHTML =
+      '<div class="hitl-card" id="hitlCard">' +
+        '<div class="hitl-ic">🛡️</div>' +
+        '<div class="hitl-title">高风险操作需要您的确认</div>' +
+        '<div class="hitl-tool">工具：<code>' + esc(pc.tool_name || "未知工具") + '</code></div>' +
+        '<div class="hitl-risk hitl-risk-' + esc(pc.risk_level || "high") + '">' + esc(riskLabel(pc.risk_level)) + '</div>' +
+        '<div class="hitl-args">' + esc(argsText) + '</div>' +
+        '<div class="hitl-note">请确认是否执行该操作：确认后立即执行；拒绝将中断执行。<span class="hitl-tick" id="hitlTick"></span></div>' +
+        '<div class="hitl-acts">' +
+          '<button class="btn btn-danger hitl-reject" type="button">拒绝</button>' +
+          '<button class="btn btn-primary hitl-confirm" type="button">确认执行</button>' +
+        '</div>' +
+      '</div>';
+    var okBtn = el.querySelector(".hitl-confirm");
+    var noBtn = el.querySelector(".hitl-reject");
+    if (okBtn) okBtn.addEventListener("click", function () { resumeHitl("confirm", ""); });
+    if (noBtn) noBtn.addEventListener("click", function () { resumeHitl("reject", ""); });
+    /* 超时自动按 reject 处理（契约：TTL 到期决策失效 → 渲染超时态 + 按 reject） */
+    var ttl = Number(pc.timeout_s) > 0 ? Number(pc.timeout_s) : 300;
+    var tick = $("hitlTick"), left = ttl;
+    if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+    hitlTimer = setInterval(function () {
+      left--;
+      if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+      if (left <= 0) {
+        clearInterval(hitlTimer); hitlTimer = null;
+        var card = $("hitlCard");
+        if (card) {
+          card.classList.add("hitl-busy");
+          var n = card.querySelector(".hitl-note");
+          if (n) n.textContent = "⏰ 确认超时，已按拒绝处理";
+        }
+        resumeHitl("reject", "确认超时");
+      }
+    }, 1000);
+    scrollStage(true);
+  }
+  function resumeHitl(action, reason) {
+    if (!hitlPending || !hitlPending.thread_id) return;
+    if (hitlTimer) { clearInterval(hitlTimer); hitlTimer = null; }
+    var card = $("hitlCard");
+    if (card) card.classList.add("hitl-busy");
+    var q = lastQuery || "";
+    EAPI.post("/api/chat/resume", { thread_id: hitlPending.thread_id, action: action, reason: reason || undefined })
+      .then(function (s) {
+        /* resumed → 以同 thread_id 重开流续跑挂起图（graph_stream 检测决策 → Command(resume)） */
+        var pc = hitlPending; hitlPending = null;
+        if (q) continueStream(q, pc.thread_id);
+        else failStream("无法续流：原提问已丢失");
+      })
+      .catch(function () {
+        if (card) card.classList.remove("hitl-busy");
+      });
+  }
+  function continueStream(query, threadId) {
+    var el = $("aiResp");
+    if (el) el.innerHTML = THINK_HTML;
+    openStream(query, threadId, { resume: true });
+  }
+  /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 120ms 节流） */
+  function openStream(query, sid, opts) {
+    opts = opts || {};
     var acc = "", gotToken = false, gotDone = false, renderTimer = null;
     function renderStream(final) {
       var el = $("aiResp"); if (!el || !acc) return;
@@ -883,7 +973,7 @@ if (!__logon) { renderSides(); draw("history"); }
     fetch(EAPI.BASE + "/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
-      body: JSON.stringify({ query: text, session_id: sid || null, stream: true }),
+      body: JSON.stringify({ query: query, session_id: sid || null, stream: true }),
     }).then(function (resp) {
       if (!resp.ok) throw new Error("HTTP " + resp.status);
       var reader = resp.body.getReader(), dec = new TextDecoder(), buf = "", evt = "";
@@ -911,6 +1001,15 @@ if (!__logon) { renderSides(); draw("history"); }
               /* start→retrieval→首 token 的检索空窗：思考中动效（首 token 到达后被内容整体替换） */
               if (!gotToken) { var th = $("aiResp"); if (th) th.innerHTML = THINK_HTML; }
             }
+            else if (evt === "pending_confirm") {
+              /* R11 HITL：高风险工具执行前中断 → 确认卡（工具名+参数+风险级+确认/拒绝） */
+              setStreaming(false);
+              try {
+                var pc = JSON.parse(payload);
+                if (!pc || !pc.thread_id) { failStream("确认事件缺少 thread_id"); return; }
+                renderHitlCard(pc);
+              } catch (e) { failStream("确认事件解析失败"); }
+            }
             else if (evt === "done") {
               /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
                  流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则立即收编 session_id 并只刷侧栏 */
@@ -918,9 +1017,13 @@ if (!__logon) { renderSides(); draw("history"); }
               setStreaming(false);
               try {
                 var d = JSON.parse(payload);
-                if (!sid && d && d.data && d.data.session_id) {
-                  activeId = d.data.session_id;      /* 防连续发送再开新会话 */
-                  loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
+                /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染 */
+                if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") return;
+                if (d && d.data && d.data.session_id) {
+                  if (!sid || (opts.resume && d.data.session_id !== sid)) {
+                    activeId = d.data.session_id;      /* 防连续发送再开新会话 */
+                    loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
+                  }
                 }
               } catch (e) {}
               if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
