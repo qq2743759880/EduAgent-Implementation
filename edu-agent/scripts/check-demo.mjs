@@ -2,7 +2,7 @@
 // 用法: node scripts/check-demo.mjs [--fail-drill] [--no-color]
 // 零新依赖:Node >= 18(fetch / net / child_process 均内置)。
 // 检查项:① Milvus socket ② Redis(docker exec redis-cli ping)③ MongoDB socket
-//         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html
+//         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html + 前端形态判别(dev/prod,T5-C2)
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
 //         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,三分支语义)
 //         ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
@@ -46,16 +46,17 @@ const C = NOCOLOR
 // ---------- 工具 ----------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// 读 edu-agent/.env 判 DEBUG/ENV_NAME(A-G4 三分支判据):缺文件/缺值按安全缺省(ENV_NAME 缺省=local)
+// 读 edu-agent/.env 判 DEBUG/ENV_NAME(A-G4 三分支判据):缺文件/缺值按安全缺省
+// ENV_NAME 缺省 = null(非 local)——T5-C1 修:原默认 "local" 会把「未声明环境」误判为安全开发态
 function readDevEnv() {
   const envPath = new URL("../.env", import.meta.url);
-  const out = { DEBUG: null, ENV_NAME: "local" }; // ENV_NAME 缺省视为 local(D-04 本机正是缺省态)
+  const out = { DEBUG: null, ENV_NAME: null };
   if (!existsSync(envPath)) return out;
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
     const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
     if (!m) continue;
     if (m[1] === "DEBUG") out.DEBUG = m[2];
-    if (m[1] === "ENV_NAME") out.ENV_NAME = m[2] || "local";
+    if (m[1] === "ENV_NAME") out.ENV_NAME = m[2] || null; // 空值同样视为未确证 local
   }
   return out;
 }
@@ -139,7 +140,9 @@ function runCmd(cmd, cargs, timeoutMs = DOCKER_TIMEOUT_MS) {
 const results = [];
 async function check(no, name, fn) {
   const r = await timed(fn);
-  const isWarn = fn.__warn && !r.ok; // advisory 项走 WARN(软,不阻断 exit)而非 FAIL
+  // advisory 项走 WARN(软,不阻断 exit)而非 FAIL:检查函数静态 __warn 或按结果动态 e.__warn
+  // (T5-C1:⑧ 分支 C 必须真红,故 ⑧ 不再静态 __warn,改由分支 B 抛 e.__warn 标 WARN)
+  const isWarn = !r.ok && (fn.__warn === true || r.err?.__warn === true);
   results.push({ no, name, ...r, warn: isWarn });
   if (r.ok) {
     console.log(`${C.g}[PASS]${C.x} ${no}. ${name} ${C.dim}(${r.ms}ms)${C.x}${r.detail ? C.dim + "  " + r.detail + C.x : ""}`);
@@ -203,10 +206,26 @@ await check("④", `后端 8000 /health`, Object.assign(
   },
   { __fix: FIX.backend }));
 
-// ⑤ 前端登录页
-await check("⑤", `前端 3000 /login-register.html`, Object.assign(
-  () => httpProbe(`${FRONTEND}/login-register.html`),
-  { __fix: FIX.frontend }));
+// ⑤ 前端登录页 + 前端形态判别(T5-C2:dev 开发形态从未被验收门覆盖的假绿)
+// 判别法:next dev 会暴露 /_next/static/development/_buildManifest.js(200),生产 build 无此路径(404)
+await check("⑤", `前端 3000 /login-register.html(+生产形态判别)`, Object.assign(
+  async () => {
+    await httpProbe(`${FRONTEND}/login-register.html`);
+    let devForm = false;
+    try {
+      await httpProbe(`${FRONTEND}/_next/static/development/_buildManifest.js`);
+      devForm = true;
+    } catch {
+      devForm = false; // 404 = 生产 build 形态
+    }
+    if (devForm) {
+      const e = new Error("前端为 next dev 开发形态(_buildManifest dev 探针 200),非生产 build,生产形态未验收");
+      e.__warn = true;
+      throw e;
+    }
+    return "生产 build 形态(_buildManifest dev 探针 404)";
+  },
+  { __fix: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000(验生产形态:deploy.mjs stop 后 start,先 build 再起)[${d}]` }));
 
 // ⑥ 登录链路(admin + student 各一次 login + /api/auth/me)
 await check("⑥", `登录链路 login×2 + /api/auth/me×2`, Object.assign(
@@ -248,10 +267,11 @@ await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
 
 // ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6,A-G4 改探真后门 + 三分支语义)
 // 分支:
-//   A) 无 token GET /api/users/me 被 401/403 拒绝 → 安全 PASS「DEBUG 安全」
-//   B) 返回 200/有数据(后门存在)且 DEBUG=true + ENV_NAME=local → WARN「开发态虚拟管理员后门存在(已知;部署前必须 DEBUG=false)」——不阻断 exit 0(本机开发态预期)
-//   C) 返回 200/有数据且 DEBUG=true + ENV_NAME≠local → 红,阻断 exit 1(真后门/非本地即危险)
-// ENV_NAME 从 edu-agent/.env 读(grep ^ENV_NAME=,缺省视为 local);fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
+//   A) 无 token GET /api/users/me 被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
+//   B) 返回 200/有数据(后门存在)且 DEBUG=true 且 ENV_NAME==='local'(确证读到) → WARN 不阻断 exit 0(本机开发态预期)
+//   C) 返回 200/有数据但 DEBUG≠true 或 ENV_NAME 缺省/≠'local' → 红,阻断 exit 1(安全缺省=非 local)
+// ENV_NAME 从 edu-agent/.env 读(grep ^ENV_NAME=),缺省=null 即非 local(T5-C1:不再默认 local);
+// fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
 const debugCheck = Object.assign(
   async () => {
     const env = readDevEnv();
@@ -264,17 +284,23 @@ const debugCheck = Object.assign(
     }
     const text = await res.text();
     const vuln = res.status === 200 || /"code":\s*0/.test(text);
-    if (!vuln) return `无 token 被 ${res.status} 拒绝(DEBUG 安全)`;
+    if (!vuln) {
+      // 分支 A:被拒即 PASS;DEBUG=true 时只说明「.env 后门开关开着」,不得自称 DEBUG 安全(T5-C6)
+      return env.DEBUG === "true"
+        ? `无 token 被 ${res.status} 拒绝(DEBUG=true:.env 后门开关仍开启,按分支 B/C 语义判定)`
+        : `无 token 被 ${res.status} 拒绝(DEBUG 安全)`;
+    }
     const isLocalDev = env.DEBUG === "true" && env.ENV_NAME === "local";
     if (isLocalDev) {
-      // 开发态已知后门:WARN(软)不阻断,避免永久红=狼来了
+      // 分支 B:开发态已知后门,ENV_NAME 确证 local → WARN(软)不阻断,避免永久红=狼来了
       const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME});部署前必须 DEBUG=false,见 P1-8 ENV_NAME 门`);
       e.__warn = true;
       throw e;
     }
-    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME});上线前必须 DEBUG=false`);
+    // 分支 C:DEBUG 未开却 200(真后门),或 ENV_NAME 未确证 local(缺省/其它环境)→ 红,阻断 exit 1
+    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME === null ? "缺省(≠local)" : env.ENV_NAME});未确证本地开发态即危险,上线前必须 DEBUG=false`);
   },
-  { __warn: true, __fix: FIX.debug });
+  { __fix: FIX.debug });
 await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支)`, debugCheck);
 
 // ⑨ 抽验页(C5-D2 扩清单):admin-users-refine-proto.html 单列第 9 项,
