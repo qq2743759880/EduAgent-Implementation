@@ -204,12 +204,15 @@ async def chat_stream_sse(
     request: Request = None,  # FastAPI 注入 Request 实例（特殊类型，忽略默认值）
 ):
     """
-    SSE 流式问答：
-    - start       : { session_id, message_id_pre (占位用) }
-    - retrieval   : { docs[], graph_entities[], rewrite_query, retrieved_count, degraded_reason }
-    - token       : { delta }
-    - done        : { session_id, message_id, retrieved_count, final_count, latency_ms, rewrite_query, degraded_reason }
-    - error       : { message }
+    SSE 流式问答（帧形状由 tests/test_sse_envelope_contract.py 钉死，改动=破坏性变更）：
+    - start       : { session_id, query }                                          # 裸帧
+    - retrieval   : { docs[], graph_entities[], retrieved_count, final_count,     # 裸帧
+                      rewrite_query, degraded_reason, mcp_tool_calls[] }
+    - token       : { delta }                                                     # 裸帧，逐字累加
+    - done        : { code:0, message:"ok",                                       # 唯一带统一壳
+                      data:{ session_id, message_id, retrieved_count, final_count,
+                             latency_ms, rewrite_query, degraded_reason } }
+    - error       : { code, message }（落库失败额外带 generated_tokens/session_id/message_id）  # 裸帧
 
     R02：settings.STREAM_VIA_GRAPH=True（默认）→ 走 graph.astream 适配层（flows/graph_stream.py，
     同一 SSE 契约）；False → 一键回旧路径 service_chat_stream（行为与本函数历史版本逐字节等同）。
