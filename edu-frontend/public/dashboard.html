@@ -20,7 +20,7 @@
 <html lang="zh-CN" class="" data-theme="light"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学习仪表盘 · 效果图 v2（task43 /dashboard 契约⑤⑬ candy-playful STYLE FROZEN · 9 大学科水平条形）</title>
+<title>学习仪表盘 · EduAgent</title>
 <style>
 /* ===== 糖果色 tokens（对齐 globals.css + chart-palette.ts §1.7；业务区禁止硬编码 hex/内联色/任意字号/灰系）===== */
 :root{ --htc-225-29-72-0.06: rgba(225,29,72,0.06); --htc-225-29-72-0.4: rgba(225,29,72,0.4); --htc-255-249-240-0.95: rgba(255,249,240,0.95); --htc-31-31-31-0.05: rgba(31,31,31,0.05); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45);  --ht-f6f5ff: #f6f5ff; --ht-f7f5ff: #f7f5ff; --ht-fff9f0: #fff9f0; 
@@ -375,7 +375,7 @@ button{font-family:inherit;cursor:pointer}
     <!-- 折线：单系列 → primary 主色；数据来自 /api/progress/dashboard recent_days（真实 7 日） -->
     <div class="panel">
       <div class="p-title"><span class="emo">📈</span>学习时长 · 近 7 天<span class="pill">分钟</span></div>
-      <div class="p-sub">统计每天学习时长，单位分钟；来自 /api/progress/dashboard.recent_days</div>
+      <div class="p-sub">统计每天学习时长（分钟）</div>
       <div class="chart" id="trendChart">
         <svg class="trend-svg" viewBox="0 0 640 220" role="img" aria-label="近7天学习时长折线">
           <defs>
@@ -398,8 +398,8 @@ button{font-family:inherit;cursor:pointer}
     <!-- 学科掌握度：契约缺口（归并端点不在冻结契约）→ 诚实空态，React 批次接 C-A 后回填 -->
     <div class="panel">
       <div class="p-title"><span class="emo">📊</span>学科掌握度<span class="pill">%</span></div>
-      <div class="p-sub">按学科归并课程完成度（契约缺口：归并端点未冻结，暂无真实数据）</div>
-      <div class="empty" style="margin-top:8px"><span class="e-emo">📊</span><p>学科掌握度待按新契约归并后接入，当前暂无数据</p></div>
+      <div class="p-sub">按学科归并课程完成度</div>
+      <div class="empty" style="margin-top:8px"><span class="e-emo">📊</span><p>学科掌握度暂无数据</p></div>
     </div>
   </section>
 
@@ -408,15 +408,15 @@ button{font-family:inherit;cursor:pointer}
     <!-- 学习构成：来自 /api/users/me/learning-summary（无分类占比字段，不造假饼图；donut 仅作视觉保留） -->
     <div class="panel">
       <div class="p-title"><span class="emo">🍩</span>学习构成<span class="pill">累计</span></div>
-      <div class="p-sub">来自 /api/users/me/learning-summary；分类占比无真实字段，不虚构饼图</div>
+      <div class="p-sub">视频观看、作业与测验的累计情况</div>
       <div class="donut" id="donut" hidden></div>
       <div class="empty" id="structureEmpty" hidden><span class="e-emo">🍩</span><p>暂无学习构成数据</p></div>
       <div class="legend" id="structure-legend"></div>
     </div>
     <!-- 排行榜 Top5 + 我的排名 + 积分卡 -->
     <div class="panel">
-      <div class="p-title"><span class="emo">🏆</span>本周排行榜<span class="pill">ZSET</span></div>
-      <div class="p-sub">来自 /api/gamification/rankings?dimension=POINTS</div>
+      <div class="p-title"><span class="emo">🏆</span>本周排行榜</div>
+      <div class="p-sub">按本周获得积分排名</div>
       <div class="empty" id="rankEmpty" hidden><span class="e-emo">🏆</span><p>暂无排行榜数据，快去学习抢榜首吧</p></div>
       <div class="ranklist" id="ranklist"></div>
       <div class="myrank" id="rankMy">
@@ -436,7 +436,7 @@ button{font-family:inherit;cursor:pointer}
     <!-- 最近解锁徽章（真实 /api/gamification/me/badges，按 unlocked_at 最近排序） -->
     <div class="panel badge-row-panel">
       <div class="p-title"><span class="emo">🎖️</span>最近解锁徽章<span class="pill" id="badgePill">…</span></div>
-      <div class="p-sub">来自 /api/gamification/me/badges：最近解锁</div>
+      <div class="p-sub">最近解锁的徽章</div>
       <div class="empty" id="badgesEmpty" hidden><span class="e-emo">🎖️</span><p>还差一点就解锁第一枚徽章啦，去课程中心开启学习吧</p></div>
       <div class="badges badges-strip" id="badgesStrip"></div>
     </div>

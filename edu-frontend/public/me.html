@@ -4196,7 +4196,8 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
       <div class="avatar" aria-hidden="true">🐻</div>
       <div class="me-info">
         <div class="name-row">
-          <h1 id="me-name">慕剑知</h1>
+          <!-- 静态骨架用中性占位（—），真实数据返回后由脚本覆盖；禁写假人名/假数字 -->
+          <h1 id="me-name">—</h1>
           <button class="edit-btn">✏️ 编辑资料</button>
         </div>
         <div class="me-goal">学习目标：<b id="me-goal">编程入门</b></div>
@@ -4215,10 +4216,10 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
         <div><div class="ttl" id="stats-sec">数据概览</div><div class="sub">学习时长 / 在学班次 · 积分 / 等级</div></div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num" id="st-time">68</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
+        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num" id="st-time">—</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
         <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num" id="st-sessions">0</span><span class="sc-unit">班次</span></div><div class="sc-label">在学班次</div></div>
-        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num" id="st-points">1,280</span></div><div class="sc-label">积分</div></div>
-        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num" id="st-level">Lv.10</span></div><div class="sc-label">等级 · 学神</div></div>
+        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num" id="st-points">—</span></div><div class="sc-label">积分</div></div>
+        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num" id="st-level">—</span></div><div class="sc-label">等级</div></div>
       </div>
     </section>
 
@@ -4351,18 +4352,8 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
 </script>
 <script src="/edu-api.js"></script>
 <script>
-/* admin 角色显示管理后台入口 */
-(function () {
-  if (!window.EAPI) return;
-  var el = document.getElementById("adminEntry");
-  if (!el || !EAPI.store.getToken()) return;
-  EAPI.get("/api/users/me").then(function (u) {
-    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
-  }).catch(function () {});
-})();
-</script>
-<script>
-/* ===== 对接真实后端（me 个人中心）===== */
+/* ===== 对接真实后端（me 个人中心）=====
+ * 首屏 /api/users/me 只请求一次：头部资料与 admin 入口链接共用同一份结果 */
 (function () {
   if (!window.EAPI) return;
   if (!EAPI.store.getToken()) return;
@@ -4376,6 +4367,9 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     var prefs = u.subjectPreferences || u.subject_preferences || [];
     var el = document.getElementById("me-prefs");
     if (el && prefs.length) el.innerHTML = prefs.slice(0, 3).map(function (p) { return '<span class="pref-tag">' + (typeof p === "string" ? p : p.subject_name || p.subject_code || "") + '</span>'; }).join("");
+    /* admin 角色显示管理后台入口（复用同一份 /api/users/me 结果，不重复请求） */
+    var adminEl = document.getElementById("adminEntry");
+    if (adminEl && (u.role === "admin" || u.role === "manager")) adminEl.style.display = "";
   }).catch(function () {});
 
   Promise.allSettled([
@@ -4517,8 +4511,10 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
   });
 
   // 打开页面：GET profile 回填表单（未登录保持静态演示不报错）
+  // 首屏 profile 只请求一次：下方头像区块复用这份 Promise（window.__meProfileOnce），避免重复请求
   if (EAPI.store.getToken()) {
-    EAPI.get("/api/users/me/profile").then(fill).catch(function () {});
+    window.__meProfileOnce = EAPI.get("/api/users/me/profile");
+    window.__meProfileOnce.then(fill).catch(function () {});
   }
 })();
 </script>
@@ -4822,9 +4818,11 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     if (hasToken) load(); else { list.innerHTML = loginBox("收藏"); meta.textContent = "未登录"; }
   })();
 
-  /* ---- 头像：profile.avatar_url 真实渲染，加载失败回退 emoji（不写死假域名判断）---- */
+  /* ---- 头像：profile.avatar_url 真实渲染，加载失败回退 emoji（不写死假域名判断）----
+   * 复用首屏 profile 请求（window.__meProfileOnce），不重复 GET /api/users/me/profile */
   if (hasToken) {
-    E.get("/api/users/me/profile").then(function (p) {
+    var profileReq = window.__meProfileOnce || E.get("/api/users/me/profile");
+    profileReq.then(function (p) {
       var av = document.querySelector(".me-head .avatar");
       var url = p && p.avatar_url;
       if (!av || !url) return;

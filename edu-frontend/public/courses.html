@@ -451,6 +451,8 @@
 </div>
 </div><!-- /.glayout -->
 
+<!-- 共享 API 客户端必须先于主脚本加载：主脚本末段 refresh()/loadHero() 会立即调用 EAPI -->
+<script src="/edu-api.js"></script>
 <script>
 /* =====================================================================
  * 课程中心 —— 两级导航（一级学科大类 9 类 + 二级课程方向）；列表/分页/筛选
@@ -744,7 +746,6 @@ loadHero();
 /* 全局导航抽屉（移动端） */
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
-<script src="/edu-api.js"></script>
 <script>
 /* admin 角色显示管理后台入口 */
 (function () {
