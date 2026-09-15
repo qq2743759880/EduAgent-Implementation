@@ -55,6 +55,7 @@ class AgentState(TypedDict):
     next_action: str
     final_answer: str
     user_id: int
+    user_role: str
 
 
 # ============================================================
@@ -266,12 +267,28 @@ async def tool_node(state: AgentState) -> dict:
     调用 MCP 工具。
 
     从 state 中读取 tool_name 和 tool_args，调用 MCP executor。
+    在 call_tool 之前过权限门（can_use_tool，默认 deny fail-closed）；deny 不抛异常、
+    不进现有 except 分支，直接返回 ACI 错误信封（code/message/action_hint）。
     """
     tool_name = state.get("tool_name", "")
     tool_args = state.get("tool_args", {})
 
     if not tool_name:
         return {"tool_results": [{"tool_name": "unknown", "status": "error", "result": "未指定工具名"}]}
+
+    # R15 权限门：call_tool 之前判定，deny 零执行
+    from app.ai.permission_gate import can_use_tool, permission_denied_message
+    role = state.get("user_role", "") or "student"
+    decision = can_use_tool(role, tool_name)
+    if not decision.allowed:
+        logger.warning(f"[Agent] 权限门拒绝: role={role} tool={tool_name}")
+        return {"tool_results": [{
+            "tool_name": tool_name,
+            "status": "denied",
+            "code": "permission_denied",
+            "message": permission_denied_message(role, tool_name),
+            "action_hint": decision.action_hint,
+        }]}
 
     logger.info(f"[Agent] 调用工具: {tool_name}({tool_args})")
 
@@ -460,6 +477,19 @@ async def run_agent(query: str, user_id: int = 1, session_id: str | None = None)
     """
     t0 = time.perf_counter()
 
+    # R15 角色注入：查 users（sys_user_auth.role_code）取得 role → 注入 AgentState.user_role；
+    # 查不到 → "student" 兜底 + warning 日志
+    user_role = "student"
+    try:
+        from app.auth.service import get_user_info_by_id
+        info = await get_user_info_by_id(int(user_id))
+        if info is not None:
+            user_role = info.role.value
+        else:
+            logger.warning(f"[Agent] 用户 {user_id} 不存在，user_role 兜底 student")
+    except Exception as exc:
+        logger.warning(f"[Agent] 获取用户角色失败，user_role 兜底 student: {type(exc).__name__}: {exc}")
+
     initial_state: AgentState = {
         "messages": [HumanMessage(content=query)],
         "docs": [],
@@ -469,6 +499,7 @@ async def run_agent(query: str, user_id: int = 1, session_id: str | None = None)
         "next_action": "",
         "final_answer": "",
         "user_id": int(user_id),
+        "user_role": user_role,
     }
 
     # 用 session_id 作为 thread_id，支持 Checkpoint（对话历史持久化）
