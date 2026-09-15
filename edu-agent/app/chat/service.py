@@ -497,11 +497,13 @@ async def chat_answer(
     # task25 R7 / R01-b：会话结束异步记忆 ingest——传对话窗（用户 query + assistant 回复成对），
     # worker 内规则+LLM 抽取（显式触发/纠正/目标偏好 + 助手事实性陈述）。
     # 不 await、不 try-raise：无论如何都不阻塞应答链路（GWT①④ 异步隔离）
-    try:
-        from app.ai.memory.service import enqueue_turn
-        asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=answer))
-    except Exception:
-        pass
+    # T9-C3：answer 为空串（LLM 空响应，sixnode.answer 仅异常兜底）→ 调用侧短路，不入记忆窗
+    if answer and answer.strip():
+        try:
+            from app.ai.memory.service import enqueue_turn
+            asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=answer))
+        except Exception:
+            pass
 
     return RagAnswerResponse(
         session_id=(session.session_id if session else None),
@@ -620,11 +622,13 @@ def make_stream_finalize(
         )
 
         # task25 R7 / R01-b：流式会话结束异步记忆 ingest——对话窗含助手最终回复（与应答解耦）
-        try:
-            from app.ai.memory.service import enqueue_turn
-            asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=final_answer))
-        except Exception:
-            pass
+        # T9-C3：收束 answer 为空串（模型零 token / 空响应）→ 调用侧短路，不入记忆窗
+        if final_answer and final_answer.strip():
+            try:
+                from app.ai.memory.service import enqueue_turn
+                asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=final_answer))
+            except Exception:
+                pass
 
         return {
             "session_id": sess_id_out,

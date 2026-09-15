@@ -138,9 +138,14 @@ async def enqueue_turn(
     全程不阻塞/不抛错到应答链路（GWT①④）。
 
     Returns:
-        成功入队返回 1，空窗/入队失败返回 0。
+        成功入队返回 1；空窗 / 助手回复为空串（T9-C3 跳过不入窗）/ 入队失败返回 0。
     """
     try:
+        # T9-C3：助手回复为空串（LLM 空响应，sixnode.answer/generator 只对异常兜底、不兜空串）
+        # → 本轮对话不完整，跳过入记忆窗，避免空 answer 轮触发抽取污染长期记忆。
+        if assistant_reply is not None and not str(assistant_reply).strip():
+            logger.warning("[Memory] 本轮助手回复为空串，跳过入记忆窗（T9-C3，防记忆污染）")
+            return 0
         window = normalize_window(
             messages, text=text, assistant_reply=assistant_reply,
             limit=int(getattr(settings, "MEMORY_INGEST_WINDOW", 10)),
