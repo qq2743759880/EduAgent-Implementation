@@ -18,8 +18,10 @@ Schema 规范 (与 03_P1 文档一致):
 - 动态字段: series_code/series_name/category 等
 """
 
+import hashlib
 import time
 import zlib
+from datetime import datetime, timezone
 from pymilvus import MilvusClient, DataType
 from loguru import logger
 
@@ -28,6 +30,39 @@ from app.knowledge.models import KnowledgeChunk
 
 
 COLLECTION_NAME = settings.MILVUS_COLLECTION
+
+
+# ============================================================
+# R03 · chunk_id 唯一化（契约 C-R-CHUNK）
+# 新格式: {tenant}:{sha256(canonical_content)[:16]}:{seq}
+#   canonical_content = contextualize 之前的原始 chunk 文本 =
+#       chunk.raw_content（有值） else chunk.content（题库/代码/未开启 contextualize）
+#   tenant          = 导入上下文租户（公共=_default / 用户=user_{id} / course_public）
+#   seq             = 同租户同 canonical 内容块的出现序号(1-based)，保证同内容多块可区分
+# 唯一权威生成点=load_chunks（同时掌握 tenant + 最终 canonical 内容）：
+# parse/chunker 生成的 chunk_id 仅是过渡值，入库前的最终 FK 以本处为准。
+# 幂等：同一导入（同内容+同顺序）→ 同 chunk_id → upsert 去重；跨租户同名同内容 → 租户前缀隔离。
+# ============================================================
+def canonical_content_of(chunk: KnowledgeChunk) -> str:
+    """返回契约定义的 canonical_content（contextualize 之前的原文）。"""
+    return (chunk.raw_content or chunk.content or "").strip()
+
+
+def canonical_id(tenant_id: str, canonical_content: str, seq: int) -> str:
+    """按契约 C-R-CHUNK 生成 chunk_id：{tenant}:{sha256(canonical)[:16]}:{seq}。"""
+    h = hashlib.sha256(canonical_content.encode("utf-8")).hexdigest()[:16]
+    return f"{tenant_id}:{h}:{seq}"
+
+
+def _assign_canonical_ids(chunks: list[KnowledgeChunk], tenant_id: str) -> None:
+    """就地改写 chunk.chunk_id 为全局唯一 canonical id（同 batch 内按 (tenant,hash) 计数 seq）。"""
+    counts: dict[str, int] = {}
+    for c in chunks:
+        canonical = canonical_content_of(c)
+        h = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+        key = f"{tenant_id}:{h}"
+        counts[key] = counts.get(key, 0) + 1
+        c.chunk_id = f"{key}:{counts[key]}"
 
 
 def get_milvus_client() -> MilvusClient:
@@ -175,6 +210,9 @@ def load_chunks(chunks: list[KnowledgeChunk], tenant_id: str = "_default") -> in
     if not chunks:
         return 0
 
+    # R03: 入库前统一改写 chunk_id 为全局唯一 canonical id（tenant + 内容 hash + seq）
+    _assign_canonical_ids(chunks, tenant_id)
+
     # 确保 Collection 和 Partition 存在
     ensure_collection_exists()
     partition_name = ensure_partition_exists(tenant_id)
@@ -206,6 +244,8 @@ def load_chunks(chunks: list[KnowledgeChunk], tenant_id: str = "_default") -> in
                 "sparse_vec": sparse_dict if sparse_dict else {"0": 0.0},
                 "tenant_id": tenant_id,
                 "visibility": chunk.visibility.value,
+                # R03: created_at 作为 dynamic field 承载（Milvus enable_dynamic_field=True，免 alter 免重嵌）
+                "created_at": chunk.created_at.isoformat() if chunk.created_at else datetime.now(timezone.utc).isoformat(),
             }
 
             # 动态字段 (通用元数据)

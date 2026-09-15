@@ -176,9 +176,13 @@ def test_course_public_partition_and_filter_isolate(tmp_path) -> None:
         c.sparse_values = [float(v) for _, v in items]
         return c
 
-    assert loader.load_chunks([_chunk("t31_course", "线性代数特征值与特征向量计算")], tenant_id="course_public") == 1
+    # R03: load_chunks 入库前覆写 canonical chunk_id，断言/清理均以覆写后 id 为准
+    course_probe = [_chunk("t31_course", "线性代数特征值与特征向量计算")]
+    assert loader.load_chunks(course_probe, tenant_id="course_public") == 1
+    course_cid = course_probe[0].chunk_id
     promo = _chunk("t31_promo", "暑期大促五折抢购、班次时间安排")
     assert loader.load_chunks([promo], tenant_id="_default") == 1
+    promo_cid = promo.chunk_id
 
     qvec = _pseudo_dense("特征值 特征向量")
     qsparse = {}
@@ -209,7 +213,7 @@ def test_course_public_partition_and_filter_isolate(tmp_path) -> None:
         # 只搜 course_public 分区：不带过滤 → promotion 也可见（分区内）
         all_course = loader.hybrid_search(qvec, qsparse, tenant_ids=["course_public"], top_k=10)
         all_ids = {r["chunk_id"] for r in all_course}
-        assert "t31_course" in all_ids and "t31_promo_in_course" in all_ids
+        assert course_cid in all_ids and "t31_promo_in_course" in all_ids
 
         # 带 filter_expr 排促销/班次 → promotion 被过滤，课程 chunk 保留
         filtered = loader.hybrid_search(
@@ -217,10 +221,10 @@ def test_course_public_partition_and_filter_isolate(tmp_path) -> None:
             filter_expr='content_type not in ["promotion","schedule","announcement","marketing"]',
         )
         f_ids = {r["chunk_id"] for r in filtered}
-        assert "t31_course" in f_ids
+        assert course_cid in f_ids
         assert "t31_promo_in_course" not in f_ids          # 促销文案不混入（GWT③）
 
-        # 分区隔离：搜 course_public 不返回 _default 里的促销 chunk
-        assert "t31_promo" not in {r["chunk_id"] for r in all_course}
+        # 分区隔离：搜 course_public 不返回 _default 里的促销 chunk（R03: 按 canonical id 判定）
+        assert promo_cid not in {r["chunk_id"] for r in all_course}
     finally:
-        _cleanup_ids("t31_course", "t31_promo", "t31_promo_in_course")
+        _cleanup_ids(course_cid, promo_cid, "t31_promo_in_course")

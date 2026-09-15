@@ -10,13 +10,24 @@
 1. 文件名弱信号 → 候选
 2. 内容结构强校验 → 确认
 只有两步都通过才走专用解析路径。
+
+chunk_id：本模块生成的只是「中间态 ID」（内容稳定、文件内唯一，供 chunker 作切分前缀）。
+全局唯一 chunk_id（{tenant}:{sha256(canonical)[:16]}:{seq}）由 loader.load_chunks
+在入库前按契约 C-R-CHUNK 统一生成（loader 同时掌握 tenant 与 canonical 内容）。
 """
+import hashlib
 import re
 from pathlib import Path
 
 from app.common.logging import logger
 from app.knowledge.importer.readers import read_file, detect_file_type
 from app.knowledge.models import ContentType, ImportState, KnowledgeChunk
+
+
+def _local_id(content: str, seq: int) -> str:
+    """中间态 chunk_id：内容稳定 + 文件内唯一（chunker 作切分前缀 / loader 会被覆写）。"""
+    h = hashlib.sha256((content or "").encode("utf-8")).hexdigest()[:12]
+    return f"c{h}_{seq:04d}"
 
 
 def parse_course_intro(md_text: str, source_file: str) -> list[KnowledgeChunk]:
@@ -59,7 +70,7 @@ def parse_course_intro(md_text: str, source_file: str) -> list[KnowledgeChunk]:
         content = "\n".join(p for p in content_parts if p)
 
         chunk = KnowledgeChunk(
-            chunk_id=f"course_{idx:03d}",
+            chunk_id=_local_id(content, idx),
             content=content,
             content_type=ContentType.COURSE_INTRO,
             series_code=series_code,
@@ -122,7 +133,7 @@ def parse_questions(md_text: str, source_file: str) -> list[KnowledgeChunk]:
             content = "\n".join(p for p in content_parts if p)
 
             chunk = KnowledgeChunk(
-                chunk_id=f"question_{question_code}",
+                chunk_id=_local_id(content, len(chunks) + 1),
                 content=content,
                 content_type=ContentType.QUESTION,
                 question_bank_code=bank_code,
@@ -157,7 +168,7 @@ def parse_generic(
     meta = metadata or {}
     for idx, para in enumerate(paragraphs, start=1):
         chunk = KnowledgeChunk(
-            chunk_id=f"{source_file}_{idx:04d}",
+            chunk_id=_local_id(para, idx),
             content=para,
             content_type=ContentType.DOC_CHUNK,
             tags=meta.get("tags", []),

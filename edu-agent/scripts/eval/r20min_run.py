@@ -9,7 +9,8 @@ retriever.retrieve_three_channel 完整链（Milvus hybrid 召回 150 → BGE re
 禁止在冻结 candidates 上算指标（漏掉召回层与截断层，数字虚高）。
 
 golden 双键: chunk_id + doc_sha256(=sha256(GT 原文 utf-8))。
-R03 迁移后 chunk_id 变更时，评估 harness 优先按 sha256 解析目标块（id_map 兜底）。
+R03 迁移后 chunk_id 变更时，评估 harness 解析顺序: chunk_id 直配 → id_map(old→new)
+翻译 → doc_sha256 内容兜底（见 _match_golden），冻结评估集 rag_eval_set32.json 不重 build。
 
 确定性: 不经 LLM；同配置重跑须逐位一致。临时参数覆盖（nprobe）以 monkeypatch
 注入、仅本脚本运行时生效、验后还原（进程退出即还原），不改任何正产代码。
@@ -77,6 +78,40 @@ PARAMS = {
 #   partitions + RRFRanker(k=60), loader.py:315-348 逐字段对照实现）, 仅 dense
 #   nprobe 不同; 该通道只出召回层布尔口径, 仅作同通道相对对照, 不与主链混算。
 # ============================================================
+
+
+# R03 验收专用（GPU 显存争议缓解，不改任何检索语义）:
+#   本机 8GB 卡无法同时驻留 BGE-M3 fp16(~2.3G) 与 rerank sidecar fp16(~1.1G)
+#   ——同载在模型加载期触发原生 0xC0000005 崩溃（非 Python 异常）。
+#   验收路径：先以独立进程用基线同口径 embedder(EMBED_BACKEND=cuda/fp16) 预算全部
+#   query dense 向量落盘 → 再启动 GPU sidecar → 本进程把两处 encode_dense_batch 绑定
+#   替换为精确文本查表。Milvus 召回/rerank/断崖/top5 链路零改动；未命中文本直接硬错，
+#   禁止静默重算或云端降级（EMBED_BACKEND 契约仍为 cuda）。
+_R03_PRECOMPUTED_DENSE = os.environ.get("R03_PRECOMPUTED_DENSE")
+
+
+def _install_r03_precomputed_dense() -> dict:
+    """安装 R03 预计算 dense 查表补丁，返回向量缓存（仅 eval 主通道使用）。"""
+    import app.chat.retriever as chat_retriever
+    from app.knowledge.importer import embedder as _embedder_mod
+
+    with open(_R03_PRECOMPUTED_DENSE, encoding="utf-8") as f:
+        payload = json.load(f)
+    cache = payload["vectors"] if isinstance(payload, dict) and "vectors" in payload else payload
+
+    def _cached_encode_dense_batch(texts):
+        out = []
+        for t in texts:
+            if t not in cache:
+                raise RuntimeError(f"R03 预计算 dense 向量未命中，禁止静默重算/降级：{str(t)[:60]!r}")
+            out.append(cache[t])
+        return out
+
+    # 两处绑定都要替换：函数内 `from ...embedder import encode_dense_batch` 在调用时
+    # 从模块属性重取；retriever.py:26 是模块加载期按名绑定，须改其本地引用。
+    _embedder_mod.encode_dense_batch = _cached_encode_dense_batch
+    chat_retriever.encode_dense_batch = _cached_encode_dense_batch
+    return cache
 
 
 # ============================================================
@@ -161,7 +196,12 @@ def build_eval_set(limit: int = 32) -> None:
             {"doc_id": str(r.get("chunk_id") or ""), "score": float(r.get("score") or 0.0)}
             for r in recall[:PARAMS["recall_topk"]]
         ]
-        c["gt_in_frozen_recall"] = any(x["doc_id"] == c["golden"]["chunk_id"] for x in c["frozen_candidates"])
+        # R03: 冻结召回命中判定兼容新旧 id（golden 旧 id + id_map 映射新 id）
+        _gt_ids = {c["golden"]["chunk_id"]}
+        _mapped = _load_id_map().get(c["golden"]["chunk_id"])
+        if _mapped:
+            _gt_ids.add(_mapped)
+        c["gt_in_frozen_recall"] = any(x["doc_id"] in _gt_ids for x in c["frozen_candidates"])
 
     out = {
         "meta": {
@@ -188,9 +228,58 @@ def build_eval_set(limit: int = 32) -> None:
 # ============================================================
 # 实时端到端评估
 # ============================================================
+# R03 golden 双键解析（契约 C-R-CHUNK read_compat / baseline_compat）
+# 优先级：① chunk_id 直配（旧 golden；id_map 翻译成新 id 同等待遇）
+#         ② doc_sha256 内容兜底（sha256(检索回块 content utf-8) == golden.doc_sha256）
+#         ③ 均不中 → 返回 id_map 映射值（或旧 id），按未命中计入指标
+# id_map 缺失（迁移前环境）→ 空映射，行为退回纯 chunk_id 口径
+# ============================================================
+_ID_MAP_CACHE: dict | None = None
+
+
+def _load_id_map() -> dict[str, str]:
+    """懒加载 R03 old→new chunk_id 映射（scripts/eval/data/r03_id_map.json）。"""
+    global _ID_MAP_CACHE
+    if _ID_MAP_CACHE is None:
+        path = os.path.join(DATA_DIR, "r03_id_map.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                payload = json.load(f)
+            _ID_MAP_CACHE = {m["old_chunk_id"]: m["new_chunk_id"] for m in payload.get("rows", [])}
+        except FileNotFoundError:
+            _ID_MAP_CACHE = {}
+    return _ID_MAP_CACHE
+
+
 def _sha_resolve(case: dict) -> str:
-    """golden 双键解析: chunk_id 主键; R03 迁移后 id_map 场景按 sha256 兜底（详档步骤 2）。"""
-    return case["golden"]["chunk_id"]
+    """golden 主键解析：chunk_id 经 id_map 翻译成迁移后新 id（无映射则原样返回）。"""
+    old_id = case["golden"]["chunk_id"]
+    return _load_id_map().get(old_id, old_id)
+
+
+def _match_golden(case: dict, docs: list[dict]) -> tuple[str, str]:
+    """在最终命中文档上解析 GT，返回 (实际参与判定的 chunk_id, 解析路径)。
+
+    解析路径留痕: chunk_id / chunk_id+id_map / doc_sha256 / miss ——
+    供 R03 验收证明「golden 按 doc_sha256 解析不受 ID 变更影响」。
+    """
+    golden = case["golden"]
+    old_id = golden["chunk_id"]
+    new_id = _load_id_map().get(old_id)
+    # ① 主键直配：旧 id（迁移前/未迁移行）或 id_map 新 id
+    for d in docs:
+        if d["chunk_id"] == old_id:
+            return d["chunk_id"], "chunk_id"
+    if new_id is not None:
+        for d in docs:
+            if d["chunk_id"] == new_id:
+                return d["chunk_id"], "chunk_id+id_map"
+    # ② doc_sha256 内容兜底（与 build 同口径：content 原样 sha256，不 strip）
+    for d in docs:
+        if hashlib.sha256(d["content"].encode("utf-8")).hexdigest() == golden["doc_sha256"]:
+            return d["chunk_id"], "doc_sha256"
+    # ③ 未命中：用映射后 id 保持指标判定口径（ranks 自然为空）
+    return new_id or old_id, "miss"
 
 
 async def _eval_one(sem, idx: int, case: dict, results: list, trace_hook=None) -> None:
@@ -213,7 +302,7 @@ async def _eval_one(sem, idx: int, case: dict, results: list, trace_hook=None) -
         lat_ms = round((time.perf_counter() - t0) * 1000, 1)
 
         docs = [{"chunk_id": d.doc_id, "content": d.content, "score": d.score} for d in bundle.docs]
-        gt_id = _sha_resolve(case)
+        gt_id, gt_via = _match_golden(case, docs)  # R03: chunk_id → doc_sha256 → id_map
         m = evaluate_retrieval(case["query"], docs, [gt_id], k=TOP_K_EVAL)
 
         ranks = [i + 1 for i, d in enumerate(docs) if d["chunk_id"] == gt_id]
@@ -231,6 +320,8 @@ async def _eval_one(sem, idx: int, case: dict, results: list, trace_hook=None) -
             "query": case["query"],
             "golden_chunk_id": case["golden"]["chunk_id"],
             "golden_doc_sha256": case["golden"]["doc_sha256"],
+            "gt_resolved_id": gt_id,        # R03: 实际参与判定的 chunk_id（迁移后为新 id）
+            "gt_resolve_via": gt_via,       # R03: 解析路径留痕 chunk_id/chunk_id+id_map/doc_sha256/miss
             "hit": bool(m.hit_rate >= 1.0),
             "rr": m.mrr,
             "rank_of_gt": ranks[0] if ranks else None,
@@ -248,6 +339,16 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
         eval_set = json.load(f)
     cases = eval_set["cases"]
     ensure_jieba_ready()
+
+    r03_precomp = None
+    if _R03_PRECOMPUTED_DENSE and nprobe_override is None:
+        _cache0 = _install_r03_precomputed_dense()
+        r03_precomp = {
+            "path": _R03_PRECOMPUTED_DENSE,
+            "n_vectors": len(_cache0),
+            "precompute_backend": "cuda fp16 BGE-M3（独立进程预算，与基线 embedder 同口径）",
+            "eval_process_dense": "exact_text_lookup（未命中即硬错；召回/rerank/断崖链路不变）",
+        }
 
     effective_params = dict(PARAMS)
     if nprobe_override is not None:
@@ -286,6 +387,7 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
         "hit_rate@5": hit_rate,
         "mrr@5": mrr,
         "wall_seconds": wall_s,
+        "r03_dense_precompute": r03_precomp,
         "per_query": results,
     }
     os.makedirs(RUNS_DIR, exist_ok=True)
@@ -370,7 +472,9 @@ def _run_sensitivity(cases: list[dict], nprobe: int) -> tuple[list[dict], float]
 
     results: list[dict] = []
     for i, c in enumerate(cases):
-        gt = c["golden"]["chunk_id"]
+        # R03: 灵敏度通道召回集是迁移后新 id；golden 旧 id 经 id_map 翻译（无内容快照，不走 sha 兜底）
+        gt_old = c["golden"]["chunk_id"]
+        gt = _load_id_map().get(gt_old, gt_old)
         base_ids, probe_ids = channel_results[10][i], channel_results[nprobe][i]
         base_hit = gt in base_ids
         probe_hit = gt in probe_ids

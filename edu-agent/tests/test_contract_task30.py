@@ -193,10 +193,11 @@ def test_loader_persists_contextualize_fields(tmp_path) -> None:
     n = loader.load_chunks([chunk], tenant_id="_default")
     assert n == 1
     assert len(chunk.content) <= 8000  # Milvus content 上限内
-    # 清理探针：按确定性主键 = crc32(chunk_id) 删除
+    # 清理探针：R03 后 load_chunks 已就地覆写 chunk_id 为 canonical id，
+    # 确定性主键 = crc32(覆写后的 chunk.chunk_id)（旧的字面量 task30_verify_probe 已不存在于库中）
     import zlib
     client = loader.get_milvus_client()
-    pk = zlib.crc32("task30_verify_probe".encode("utf-8"))
+    pk = zlib.crc32(chunk.chunk_id.encode("utf-8"))
     try:
         client.delete(collection_name=loader.COLLECTION_NAME, ids=[pk])
     except Exception:
