@@ -92,6 +92,31 @@ def _parse_json_columns(row: dict) -> dict:
 
 
 # ═══════════════════════════════════════════
+# F-7：父记录外键预校验
+# 背景：非法外键值会让 pymysql 抛 IntegrityError(1452)，其 MRO 模块根为 "pymysql"，
+# 被 main.py _is_dependency_exception 判为「依赖不可达」→ 误回 50301。所有写入父 FK
+# 的入口必须先做存在性校验，把客户端传错 ID 转成语义 40400（NotFoundError）。
+# ═══════════════════════════════════════════
+async def _validate_cohort_refs(
+    *,
+    institution_id: Optional[int] = None,
+    series_id: Optional[int] = None,
+    campus_id: Optional[int] = None,
+    head_teacher_id: Optional[int] = None,
+) -> None:
+    """班次写入口的父记录校验（传 None 的维度跳过；PATCH 只校验出现的字段）。"""
+    if institution_id is not None and not await _cohort_repo.institution_exists(int(institution_id)):
+        raise NotFoundError("院校", str(institution_id))
+    if series_id is not None and not await _series_repo.get_by_id(int(series_id)):
+        # series 无 yn 列（sale_status 三态），管理端 FK 只认存在性
+        raise NotFoundError("课程系列", str(series_id))
+    if campus_id is not None and not await _cohort_repo.campus_exists(int(campus_id)):
+        raise NotFoundError("校区", str(campus_id))
+    if head_teacher_id is not None and not await _cohort_repo.head_teacher_exists(int(head_teacher_id)):
+        raise NotFoundError("负责人（教职工档案）", str(head_teacher_id))
+
+
+# ═══════════════════════════════════════════
 # Series（系列）
 # ═══════════════════════════════════════════
 
@@ -208,6 +233,13 @@ async def get_series_admin(series_id: int) -> SeriesResponseAdmin:
 # ═══════════════════════════════════════════
 
 async def create_cohort(data: CohortCreateAdmin) -> CohortResponseAdmin:
+    # F-7：父记录外键预校验（非法 ID → 40400 语义错误，而非 FK 1452 逃逸成 50301）
+    await _validate_cohort_refs(
+        institution_id=data.institution_id,
+        series_id=data.series_id,
+        campus_id=data.campus_id,
+        head_teacher_id=data.head_teacher_id,
+    )
     existing = await _cohort_repo.get_by_code(data.institution_id, data.cohort_code)
     if existing:
         raise ConflictError(
@@ -227,7 +259,13 @@ async def update_cohort(cohort_id: int, data: CohortUpdateAdmin) -> CohortRespon
     row = await _cohort_repo.get_by_id(cohort_id)
     if not row:
         raise NotFoundError("班次", str(cohort_id))
-    await _cohort_repo.update(cohort_id, data.model_dump(exclude_unset=True, exclude_none=True))
+    patch = data.model_dump(exclude_unset=True, exclude_none=True)
+    # F-7：PATCH 仅校验本次出现的父引用字段
+    await _validate_cohort_refs(
+        campus_id=patch.get("campus_id"),
+        head_teacher_id=patch.get("head_teacher_id"),
+    )
+    await _cohort_repo.update(cohort_id, patch)
     updated = await _cohort_repo.get_by_id(cohort_id)
     # task23 写后精确 DEL：班次详情 + 余位 + 系列详情聚合价/班次数失效（GWT②，D1 补）
     await invalidate(f"course:cohort:detail:{cohort_id}", f"course:cohort:seats:{cohort_id}",
@@ -264,6 +302,9 @@ async def get_cohort_admin(cohort_id: int) -> CohortResponseAdmin:
 
 async def create_module(data: ModuleCreateAdmin) -> ModuleResponseAdmin:
     """创建模块。唯一约束：cohort_id + stage_no。"""
+    # F-7 同病核查：父班次不存在 → 40400（否则 cohort_id FK 1452 逃逸成 50301）
+    if not await _cohort_repo.get_by_id(data.cohort_id):
+        raise NotFoundError("班次", str(data.cohort_id))
     existing = await _module_repo.get_by_stage(data.cohort_id, data.stage_no)
     if existing:
         raise ConflictError(
@@ -330,6 +371,11 @@ async def get_module_admin(module_id: int) -> ModuleResponseAdmin:
 # ═══════════════════════════════════════════
 
 async def create_session(data: SessionCreateAdmin) -> SessionResponseAdmin:
+    # F-7 同病核查：父模块/教室不存在 → 40400（否则 FK 1452 逃逸成 50301）
+    if not await _module_repo.get_by_id(data.series_cohort_course_id):
+        raise NotFoundError("模块", str(data.series_cohort_course_id))
+    if data.room_id is not None and not await _session_repo.room_exists(int(data.room_id)):
+        raise NotFoundError("教室", str(data.room_id))
     existing = await _session_repo.get_by_session_no(
         data.series_cohort_course_id, data.session_no,
     )
@@ -396,6 +442,9 @@ async def get_session_admin(session_id: int) -> SessionResponseAdmin:
 
 async def create_chapter(data: ChapterCreateAdmin) -> ChapterResponseAdmin:
     """创建章节。唯一约束：video_id + chapter_no。"""
+    # F-7 同病核查：父视频不存在 → 40400（否则 video_id FK 1452 逃逸成 50301）
+    if not await _video_repo.get_by_id(data.video_id):
+        raise NotFoundError("视频", str(data.video_id))
     existing = await _chapter_repo.get_by_chapter_no(data.video_id, data.chapter_no)
     if existing:
         raise ConflictError(

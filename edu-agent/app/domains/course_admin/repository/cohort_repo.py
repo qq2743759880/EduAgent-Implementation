@@ -81,3 +81,28 @@ class CohortAdminRepo:
             "UPDATE series_cohort SET yn = 1, updated_at = NOW() WHERE id = %s",
             (cohort_id,),
         )
+
+    # ── F-7：外键存在性预校验（把 pymysql FK 1452→全局 50301 误判，提前转为语义 40400）──
+    async def head_teacher_exists(self, staff_id: int) -> bool:
+        """负责人教职工档案存在且在职（staff_profile.yn=1）。"""
+        row = await fetch_one(
+            "SELECT 1 AS ok FROM staff_profile WHERE id = %s AND yn = 1 LIMIT 1",
+            (staff_id,),
+        )
+        return row is not None
+
+    async def institution_exists(self, institution_id: int) -> bool:
+        """院校存在且启用（org_institution.yn=1）。"""
+        row = await fetch_one(
+            "SELECT 1 AS ok FROM org_institution WHERE id = %s AND yn = 1 LIMIT 1",
+            (institution_id,),
+        )
+        return row is not None
+
+    async def campus_exists(self, campus_id: int) -> bool:
+        """校区存在且启用（org_campus.yn=1）。"""
+        row = await fetch_one(
+            "SELECT 1 AS ok FROM org_campus WHERE id = %s AND yn = 1 LIMIT 1",
+            (campus_id,),
+        )
+        return row is not None

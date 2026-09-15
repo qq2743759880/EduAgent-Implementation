@@ -46,6 +46,14 @@ class SessionAdminRepo:
             (module_id, session_no),
         )
 
+    async def room_exists(self, room_id: int) -> bool:
+        """F-7：教室存在且启用（org_classroom.yn=1），供 room_id 外键预校验。"""
+        row = await fetch_one(
+            "SELECT 1 AS ok FROM org_classroom WHERE id = %s AND yn = 1 LIMIT 1",
+            (room_id,),
+        )
+        return row is not None
+
     async def insert(self, data: dict) -> int:
         return await execute_write(
             "INSERT INTO series_cohort_session (series_cohort_course_id, room_id, session_no, "
