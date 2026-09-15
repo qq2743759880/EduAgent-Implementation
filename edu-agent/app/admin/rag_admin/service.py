@@ -47,6 +47,12 @@ try:
 except Exception:  # pragma: no cover - 导入失败就只走 MySQL 占位
     _milvus_list_all_partitions = None
 
+try:
+    # F-10②：拿 Milvus 物理集合名列表做「幽灵集合」读侧过滤（可选依赖）
+    from app.knowledge.importer.loader import get_milvus_client as _milvus_get_client
+except Exception:  # pragma: no cover - 导入失败则跳过幽灵过滤
+    _milvus_get_client = None
+
 
 # ============================================================
 # Milvus 调用限时执行（task04 修正轮 2 修复：async 路由禁止同步阻塞外部服务）
@@ -77,6 +83,30 @@ async def _list_all_partitions_limited() -> list[dict]:
         logger.warning(
             f"[rag_admin] Milvus 分区列表失败（限时 {_MILVUS_CALL_TIMEOUT_S}s，"
             f"{type(exc).__name__}），降级为 MySQL 快照/占位式：{exc}"
+        )
+        return []
+
+
+async def _list_milvus_collections_limited() -> list[str]:
+    """F-10②：Milvus 物理集合名列表（线程池 + 5s 超时）。
+
+    失败/超时/导入缺失 → 返回 []（调用方据此跳过幽灵集合过滤，保持 MySQL 快照降级）。
+    """
+    if _milvus_get_client is None:
+        return []
+
+    def _call() -> list[str]:
+        return [str(c) for c in _milvus_get_client().list_collections()]
+
+    try:
+        return await asyncio.wait_for(
+            anyio.to_thread.run_sync(_call),
+            timeout=_MILVUS_CALL_TIMEOUT_S,
+        )
+    except Exception as exc:
+        logger.warning(
+            f"[rag_admin] Milvus 集合列表失败（限时 {_MILVUS_CALL_TIMEOUT_S}s，"
+            f"{type(exc).__name__}），幽灵集合不过滤（保持降级）：{exc}"
         )
         return []
 
@@ -210,10 +240,17 @@ async def list_collections() -> list[CollectionMeta]:
         # Milvus 不可达/超时：保留 MySQL 快照降级（helper 已记录告警日志）
         return items
 
+    # F-10②：Milvus 可达时读侧过滤「物理不存在的幽灵集合」（如 knowledge_chunk_v1）——
+    # 仅隐藏、不删 MySQL 行；Milvus 集合名拿不到（不可达/失败）→ 不过滤，保持降级。
+    real_collections = await _list_milvus_collections_limited()
+    real_set = set(real_collections) if real_collections else None
+
     milvus_map: dict[str, int] = {str(p["name"]): int(p.get("row_count") or 0) for p in part_rows}
     now = datetime.now()
     async with transaction() as (_conn, cur):
         for item in items:
+            if real_set is not None and item.collection_name not in real_set:
+                continue  # 幽灵集合：不回写快照
             new_count = milvus_map.get(item.partition_name, item.row_count)
             await cur.execute(
                 "UPDATE rag_collection_meta SET row_count = %s, last_snapshot_at = %s WHERE id = %s AND yn = 1",
@@ -223,7 +260,10 @@ async def list_collections() -> list[CollectionMeta]:
             item.last_snapshot_at = now
     # 重新读取（字段值更严谨一致）
     rows2 = await fetch_all("SELECT * FROM rag_collection_meta WHERE yn = 1 ORDER BY id ASC")
-    return [_row_to_collection_meta(r) for r in rows2]
+    result = [_row_to_collection_meta(r) for r in rows2]
+    if real_set is not None:
+        result = [meta for meta in result if meta.collection_name in real_set]
+    return result
 
 
 # ============================================================

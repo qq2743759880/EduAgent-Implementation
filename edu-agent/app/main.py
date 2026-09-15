@@ -235,10 +235,30 @@ app = FastAPI(
 from pathlib import Path as _MediaPath  # noqa: E402
 
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+from starlette.exceptions import HTTPException as _StarletteHTTPException  # noqa: E402
+from starlette.responses import PlainTextResponse as _PlainTextResponse  # noqa: E402
 
 _MEDIA_ROOT = _MediaPath(settings.DATA_DIR) / "media"
 _MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount("/media", StaticFiles(directory=str(_MEDIA_ROOT)), name="media")
+
+
+class _MediaStaticFiles(StaticFiles):
+    """F-10①：/media 缺失文件返回纯文本 404。
+
+    静态资源非 API，不应套用统一 JSON 响应壳（原先 404 经全局 HTTPException
+    处理器返回 application/json，与「静态文件缺失」语义不符）。
+    """
+
+    async def get_response(self, path, scope):
+        try:
+            return await super().get_response(path, scope)
+        except _StarletteHTTPException as exc:
+            if exc.status_code == 404:
+                return _PlainTextResponse("404 Not Found", status_code=404)
+            raise
+
+
+app.mount("/media", _MediaStaticFiles(directory=str(_MEDIA_ROOT)), name="media")
 
 
 # ── 中间件（顺序：SecurityHeaders → CORS → RateLimit → AdminAuth → Idempotency → CircuitGuard → Trace → RespWrap） ──
