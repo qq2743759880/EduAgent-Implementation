@@ -3,12 +3,12 @@
 | 项 | 值 |
 |---|---|
 | executionSessionId | `20260915_185301_t8hitl` |
-| 执行时间窗 | 2026-09-15 18:53–19:02 (GMT+8) |
+| 执行时间窗 | 2026-09-15 18:53–19:05 (GMT+8)｜**两轮**：轮 1 = SSE/40450/续流；轮 2 = TTL 过期 + 生产 `tool_node` 直调（应编排者"resume TTL/工具零执行"复验点补验） |
 | 被测版本 | 分支 `feature/opt-waves`，HEAD `dfde11210eb3f0244db06ccc98cdc6dfc2c8446b` |
 | 被测实例 | **独立后端** `127.0.0.1:8078`（`MYSQL_HOST=127.0.0.1`，`.venv` uvicorn），未触碰在跑的 8000/3000，验后已关闭 |
 | 数据纪律 | 自建会话 2 个（`s_350fb9ea0385` / `s_89cc18ff2edb` 及另一次同类）验后 `DELETE` 清理；Redis 自建键验后清理；**无任何 DB 直写** |
 | 遵守的禁令 | 未读任何历史报告/验收文档（仅读 README/AGENTS/被测代码 + 测试代码）；未用 Playwright；未 DB 直写 |
-| 证据来源 | 全部为本次新跑的 HTTP/进程内实测；脚本落在 `%TEMP%\blind_t8\`（`probe_t8.py` / `probe_t8b.py` / `probe_t8c.py`），非仓库文件 |
+| 证据来源 | 全部为本次新跑的 HTTP/进程内实测；脚本落在 `%TEMP%\blind_t8\`（`probe_t8.py` / `probe_t8b.py` / `probe_t8c.py` / `probe_t8d.py` / `probe_t8e.py`），非仓库文件 |
 
 标注口径：`[实测]` 本次真实跑出；`[代码佐证]` 源码/grep 出处；`[推演]` 由事实推导、未直接观测；`[未验证]` 受环境或禁令限制无法验证；`[文档原文]` 引用文档字符串。
 
@@ -19,9 +19,9 @@
 | 被测路径 | 判定 | 一句话依据 |
 |---|---|---|
 | ① 中断触发（`event: pending_confirm` + 五字段） | **FAIL（链路不可达）** | 6/6 写类/危险级诱导 query 走 `/api/chat/stream`，事件序列恒为 `start→retrieval→token×N→done`，**0 次** `pending_confirm`；诱导的写工具**一次都没被调用**（`mcp_tool_calls: []`） |
-| ② 中断时工具零执行（安全不变量） | **PASS（但原因是"没走到"，非"拦住了"）** | 工具未执行是因为请求根本没触发工具路径，而不是被 HITL 拦截；不变量当前**未被真实考验** |
+| ② 中断时工具零执行（安全不变量） | **PASS（但原因是"没走到"，非"拦住了"）** | 工具未执行是因为请求根本没触发工具路径，而不是被 HITL 拦截；`[实测]` 直调生产 `tool_node` 10/10 组合**无一到达 interrupt**（`allowed ∧ risky` 在真实注册面上是**空集**）——不变量当前**未被真实考验** |
 | ③ 确认卡渲染（工具名+参数+风险级+确认/拒绝） | **PASS-仅静态** `[代码佐证]` / **渲染与交互 [未验证]** | `chat.html` 中卡片 DOM/CSS/事件齐全，但无 pending_confirm 可触发，且禁 Playwright → 无法截图 |
-| ④ 超时自动 reject | `[代码佐证]` / **[未验证]** | `chat.html:905-918` 有 1s 倒计时，归零调 `resumeHitl("reject","确认超时")`；无法真实跑到 |
+| ④ 超时自动 reject | 端点侧 **PASS（实测 TTL 过期→40450）** / 前端倒计时与「自动 reject 后图侧零执行」 **[未验证]** | `[实测]` 预置 pending `ex=1` 过期后 resume → 404/40450；`chat.html:905-918` 的 1s 倒计时只能 `[代码佐证]`（无 pending 可触发） |
 | ⑤ confirm 路径（resume→同 thread_id 续流→工具真实执行） | **FAIL（不可达）** | 无 pending 可确认；用**人工合成预置** pending 可让端点回 200，但续流时因图中本就无 interrupt，决策被静默吞掉 |
 | ⑥ reject 路径（零执行 + 拒绝上下文） | **FAIL（不可达）** | 同上；拒绝上下文分支（`langgraph_agent.py:337-346`）从未在线路上出现 |
 | ⑦ 40450（伪造/过期 thread_id） | **PASS** | 4/4 例返回 **HTTP 404 + `{"code":"40450","message":"确认请求已超时或不存在…","data":null}`**；非法 `action` → 422/42200 |
@@ -117,6 +117,38 @@ data: {"code": 0, "message": "ok", "data": {"degraded_reason": null, ...}}
 `[实测]` **线上 0 次观测到**（6 组诱导全无该帧）。
 `[代码佐证]` 既有测试 `tests/test_r11_hitl.py::test_g1` 断言 `set(v.keys()) == {5 个键}`——但断言对象是**测试内复刻图**在内存里产生的 `__interrupt__`，不是线路上的字节。
 
+### 2.6 补验（第二轮，升级两处原 `[代码佐证]` 为 `[实测]`）
+
+**(E) 直接调用「生产」`tool_node`，证明双重不可达**（不使用测试里的复刻图；仅把 `executor.call_tool` 在本进程内替换为计数器）
+
+| 工具 | 角色 | `can_use_tool` | `_hitl_risk_level` | executor 调用次数 | **是否到达 interrupt** | 节点输出 |
+|---|---|---|---|---|---|---|
+| `ping` | student | True | None | 1 | **否** | 真实执行 |
+| `echo` | student | True | None | 1 | **否** | 真实执行 |
+| `calculator` | student | True | None | 1 | **否** | 真实执行 |
+| `search_knowledge` | student | True | None | 1 | **否** | 真实执行 |
+| `points_change` | admin | **False** | high | **0** | **否** | `denied` / `permission_denied` |
+| `favorite_add` | admin | **False** | high | **0** | **否** | `denied` |
+| `course_create` | admin | **False** | medium | **0** | **否** | `denied` |
+| `question_delete` | admin | **False** | medium | **0** | **否** | `denied` |
+| `knowledge_import` | admin | **False** | high | **0** | **否** | `denied` |
+| `order_create` | admin | **False** | high | **0** | **否** | `denied` |
+
+`[实测]` **10/10 无一到达 interrupt**：放行的 4 个 risk 全为 `None`（不进 HITL 分支），写类 6 个在权限门就 `denied`（HITL 分支在其后）。
+⇒ `interrupt` 的前置条件是 `allowed ∧ risky`，而该集合**在真实注册面上是空集** —— 这不是概率问题，是恒等式。
+
+**(D) resume 决策 TTL 与过期路径（真实 HTTP）**
+
+| 步骤 | 操作 | 实测结果 |
+|---|---|---|
+| D1 | 预置 `hitl:pending:{s}` 且 **`ex=1`** → 等 3s（键 `ttl=-2` 即已消失）→ `POST /api/chat/resume {confirm}` | **HTTP 404 + `code:"40450"` + `data:null`** → **TTL 过期路径真实生效**（原为 `[代码佐证]`，现 `[实测]`） |
+| D2 | 预置 pending(`ex=300`) → resume(confirm) | 200 `{"status":"resumed"}`；`hitl:decision:{s}` **实测 `ttl=300`**（= `HITL_RESUME_TTL` 默认值；`.env` 未设该键） |
+| D3 | 预置 pending → resume(**reject**, reason=`盲测拒绝`) | **200 `{"status":"rejected"}`**；决策值实测 `{"action":"reject","reason":"盲测拒绝","created_at":…}`，`ttl=300`；`hitl:pending` 已删 |
+| D4/D5 | 清理 | 3 个自建会话 `DELETE` → 200×3；Redis `hitl:*` 键清空（`[]`） |
+
+`[实测]` **TTL 三口径确认（全部实测值）**：前端倒计时 `pc.timeout_s=300` / 图侧挂起键与 resume 决策键 `HITL_RESUME_TTL=300`（默认，未在 `.env` 配置）/ 后台 sweep `HITL_PENDING_TTL_S=600`。**后台 sweep 的 600s 与其余 300s 不是同一口径** → 复核时按未收敛项处理。
+`[实测]` reject 决策**在键面与响应面都是真的**（200 `rejected` + 落键）；但「拒绝 → 工具零执行」的**图侧闭环仍不可达**（无 interrupt 可拒）。
+
 ---
 
 ## 3. 根因（为什么中断不可达）— 全部代码佐证
@@ -165,15 +197,17 @@ data: {"code": 0, "message": "ok", "data": {"degraded_reason": null, ...}}
 cd "E:/stu/project/stu/EduAgent实施手册/edu-agent"
 MYSQL_HOST=127.0.0.1 .venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8078
 
-# 2) 跑盲测探针（脚本在 %TEMP%\blind_t8\，需 requests 等价物 urllib，已内置代理绕过）
-E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8.py    # SSE 6 组 + 40450 4 例
-E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8b.py   # Redis 键面 + gate 三态（须 cwd=edu-agent）
-E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8c.py   # 合成 pending → resume 200 → 续流
+# 2) 跑盲测探针（脚本在 %TEMP%\blind_t8\，仅用标准库 + redis；已内置代理绕过）
+E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8.py    # 第一轮：SSE 6 组 + 40450 4 例
+E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8b.py   # 第一轮：Redis 键面 + gate 三态（须 cwd=edu-agent）
+E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8c.py   # 第一轮：合成 pending → resume 200 → 续流
+E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8d.py   # 第二轮：TTL 过期→40450 / 决策键 TTL / reject 决策面
+E:/…/edu-agent/.venv/Scripts/python.exe %TEMP%/blind_t8/probe_t8e.py   # 第二轮：生产 tool_node 直调（须 cwd=edu-agent）
 
 # 3) 收尾
 powershell -c "Stop-Process -Id (Get-NetTCPConnection -LocalPort 8078 -State Listen).OwningProcess -Force"
 ```
-关键预期：步骤 2 第 1 个脚本应看到 **6 组 query 全部无 `pending_confirm`**；第 3 个脚本应看到 resume 200 后**再 resume 变 40450**。
+关键预期：`probe_t8` 应看到 **6 组 query 全部无 `pending_confirm`**；`probe_t8c` 应在 resume 200 后**再 resume 变 40450**；`probe_t8d` 应看到 **`ex=1` 过期后 resume → 40450** 且决策键 `ttl=300`；`probe_t8e` 应看到 **10/10 组合 `interrupt_reached=false`**。
 
 ---
 
@@ -192,15 +226,20 @@ powershell -c "Stop-Process -Id (Get-NetTCPConnection -LocalPort 8078 -State Lis
 | A9 | 无挂起图时决策被消费后按普通新会话续跑（无 error 帧、无提示）→ **静默** | `[实测]`（合成） |
 | A10 | `/api/chat/stream` 所用图的节点集为 9 个、**不含 `tool`** | `[代码佐证]` |
 | A11 | `langgraph_agent.tool_node`（唯一会话侧 `interrupt()`）在生产代码零引用 | `[代码佐证]`（grep） |
-| A12 | 7 个真实注册工具 `_hitl_risk_level()==None` 且权限门允许 → 永不断点 | `[实测]`（函数级） |
-| A13 | 10 个契约挂起写类工具权限门对 admin 亦 deny，且先于 interrupt 判定 | `[实测]` + `[代码佐证]` |
+| A12 | 7 个真实注册工具 `_hitl_risk_level()==None` 且权限门允许 → 永不断点 | `[实测]`（函数级 + **生产 `tool_node` 直调 4/4 执行成功、0 interrupt**） |
+| A13 | 10 个契约挂起写类工具权限门对 admin 亦 deny，且先于 interrupt 判定 | `[实测]`（**生产 `tool_node` 直调 6/6 → `denied`、0 executor 调用、0 interrupt**） + `[代码佐证]` |
 | A14 | 生产工具执行路径（`tool_calling.run_chat_tool_calls` / `agent.execute_tool_plan`）直调 executor，无权限门无 HITL | `[代码佐证]` |
 | A15 | executor 层 HITL gate 三态逻辑正确（pending/rejected 零执行、executed 执行 1 次） | `[实测·进程内 MemHitlStore]` |
 | A16 | 生产无任何调用方传 `hitl_decision=True` → executor gate 只会长期 pending | `[代码佐证]`（grep） |
 | A17 | confirm/reject 端到端链路（弹卡→点按钮→工具真实执行/零执行）**未被验证** | `[未验证]` |
 | A18 | 确认卡视觉渲染与交互 | `[未验证]`（禁 Playwright + 无 pending 可触发） |
-| A19 | 超时自动 reject 的真实触发 | `[未验证]`（同上；仅 `[代码佐证]` 定时器） |
+| A19 | 前端 1s 倒计时与「超时自动 reject 后图侧零执行」 | `[未验证]`（仅 `[代码佐证]` 定时器） |
 | A20 | Redis 不可达时 resume 回 503/50301 | `[未验证]`（本窗口 Redis 正常） |
+| **A21** | **pending 键 TTL 过期后 resume → HTTP 404 + 40450（真实 HTTP，非模拟）** | **`[实测]`**（预置 `ex=1` → 等 3s → 40450） |
+| **A22** | **resume 决策键实际 TTL = 300s（= `HITL_RESUME_TTL` 默认值，`.env` 未配置）** | **`[实测]`** |
+| **A23** | **reject 决策：HTTP 200 `{"status":"rejected"}` + 决策值含 `reason`、pending 删除** | **`[实测]`**（图侧零执行仍不可达） |
+| **A24** | **生产 `tool_node` 直调：10/10 组合无一到达 `interrupt`（放行→risk=None；写类→deny）** | **`[实测]`** |
+| **A25** | **TTL 三口径：前端/图侧/决策键 = 300s，后台 sweep = 600s → 不一致** | **`[实测]`** |
 
 ---
 
@@ -210,7 +249,7 @@ powershell -c "Stop-Process -Id (Get-NetTCPConnection -LocalPort 8078 -State Lis
 
 2. **HITL 有两套互不连通的实现，且两套的风险分类器互相打架。** 会话侧 `_hitl_risk_level()` 把 10 个写类名字判 `medium/high`，executor 侧 `_classify_hitl_action()` 对**同 10 个名字统统返回 `None`**（前缀/子串匹配，"course_create" 不 `startswith("create_")`）→ 即使工具真上线，executor gate 也不会拦它们。同时 7 个真实注册工具被两套分类器一致判为"免中断"，但它们被工具路径**直调执行、绕过权限门**（`tool_calling.py:283`）。所以"中断时工具零执行"这个安全不变量**今天没有被真实考验过**——它成立只是因为没走到工具，而不是因为被拦住了。
 
-3. **reject / 超时不点 的真实兜底状态是未知的，别当成"已实现"。** 前端有 1s 倒计时归零自动 `reject`（`chat.html:905-918`），后端有 `pending_ttl_s` 与 `sweep_expired_pending`（`hitl_gate.py:416-430`，由 `app/ai/memory/service.py:246-257` 调用），但：① 二者 TTL 不是同一个口径（前端用 `pc.timeout_s=300`，后端 sweep 用 `HITL_PENDING_TTL_S=600`）；② 断点从不发生 → 两条兜底都从未在真实链路上跑过；③ resume 的 pending 键 TTL 取 `settings.HITL_RESUME_TTL`（默认 300，**`.env` 中未设置**）。复核时请把「TTL 三口径不一致 + 兜底未实测」当作**未收敛项**处理，而不是当作已验收。
+3. **reject / 超时不点 的真实兜底状态是未知的，别当成"已实现"。** 前端有 1s 倒计时归零自动 `reject`（`chat.html:905-918`），后端有 `pending_ttl_s` 与 `sweep_expired_pending`（`hitl_gate.py:416-430`，由 `app/ai/memory/service.py:246-257` 调用），但：① 二者 TTL 不是同一个口径 —— `[实测]` 前端倒计时 `pc.timeout_s`、图侧挂起键与 resume 决策键均为 **300s**，而后台 sweep 用 `HITL_PENDING_TTL_S=600`；② 断点从不发生 → 两条兜底都从未在真实链路上跑过（**注意**：`[实测]` 的"TTL 过期→40450"验的是 **resume 端点的键过期语义**，不是"超时自动 reject 的图侧闭环"）；③ 图侧挂起键 TTL 取 `HITL_RESUME_TTL`（默认 300，**`.env` 中未设置**）。复核时请把「TTL 三口径不一致 + 图侧兜底未实测」当作**未收敛项**处理，而不是当作已验收。
 
 ---
 
