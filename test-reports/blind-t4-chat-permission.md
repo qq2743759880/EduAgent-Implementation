@@ -13,18 +13,37 @@
 
 ---
 
-## 1. 结论摘要
+## ⚠️ 更正公告（2026-09-15 19:05 追加，请先读本节再读 §1/§2）
+
+初版报告把**非流式** `/api/chat` 当作唯一对话面，得出「权钮门是死代码」的结论——方向对，但**面选窄了**。
+追加 Round5（SSE）后发现：**流式 `/api/chat/stream` 上工具是真的会执行的，只是走了一条完全不过权限门的实现**。
+因此：
+
+| 初版结论 | 更正后 |
+|---|---|
+| F3「权限门在 chat 面不可达」 | ✅ **升级为 F6（P0）**：不是"不可达"，是**根本没接进生产路径**；流式路径另有一套无门的工具执行，student 实测真的执行了 MCP 工具 |
+| F2「deny 末段断链 = P0」 | ⬇️ **降级为"死代码潜在缺陷"**：`langgraph_agent.py` 无任何模块 import，不是生产路径；若将来重新接线则立即复发 |
+| F1「admin 幻觉式成功」 | ✅ 不变（非流式面实测，仍是最易伤人的问题） |
+| F4「三角色无差异」 | ✅ 不变，但**理由变了**：不只是"写类工具未注册"，而是**权限门三方差异根本没参与判定** |
+
+**新增 §10 为决定性实证，其优先级高于 §1/§2 的初版表述。**
+
+---
+
+## 1. 结论摘要（已按 §10 更正）
 
 | 判定项 | 结果 |
 |---|---|
-| 28 次 HTTP 诱导（3 角色 × 4 写类 + 3 角色 × 1 幽灵工具 + 3 角色 × 3 强制注入 + student × 4 口语工具诱导） | 全部 HTTP 200 |
+| 28 次**非流式** `/api/chat` 诱导（3 角色 × 4 写类 + 3 角色 × 1 幽灵工具 + 3 角色 × 3 强制注入 + student × 4 口语工具诱导） | 全部 HTTP 200 |
+| 6 次**流式** `/api/chat/stream` 诱导（3 角色 × {表达式计算, ping 连通性}） | 全部 HTTP 200，**6/6 真实执行了 MCP 工具** |
 | 到达权限门（`[Agent] 权限门拒绝`）的次数 | **0**（4 条 gate 日志全部来自 18:52:39 的单元测试） |
-| 真实 executor 调用（`mcp_tool_calls` 非空 / 日志 `调用工具:`） | **0 / 0** |
-| 任务书要求评的「被拒 ACI 信封」（code/message/action_hint） | **HTTP 层从未产生，0 条可评** |
-| 角色三方差异是否吻合矩阵 | **不吻合（差异不可观测）**——见 F4，非越权漏洞 |
-| fail-closed（不存在工具） | 门本体正确（单元级 23 passed），但**用户看不到 deny 提示**——见 F2 |
+| 生产路径真实 executor 调用 | 非流式 **0**；流式 **6 次**（`mcp_tool_call_log` id 94–99，user_id 覆盖 student=1 / manager=100004 / admin=100003） |
+| 任务书要求评的「被拒 ACI 信封」（code/message/action_hint） | **从未产生，0 条可评**（流式路径根本不判定，也就无所谓"被拒"） |
+| 角色三方差异是否吻合矩阵 | **不吻合**——权限门未参与判定，三方在流式面上**行为完全一致（都能执行）** |
+| fail-closed（不存在工具） | 门**本体**正确（单元级 23 passed），但**门未被生产路径消费**，且**用户看不到 deny 提示** |
 
-> 一句话：**权限门本体是好的，但它在 chat 面上是死代码；而 chat 面真正出现的问题不是"越权",而是 admin 的幻觉式"已完成"。**
+> 一句话（更正后）：**权限门本体是好的，但它没有接进生产 chat 路径——流式面上一套无门实现会直接执行 MCP 工具，student 实测执行成功；非流式面则是 admin 幻觉式"已完成"。R15 契约的 `permission_gate.default=deny` 在当前生产链路上不成立。**
+
 
 ---
 
@@ -53,7 +72,7 @@
 **判定**：课程**根本不存在**，模型凭空宣称"已创建并上架"并给出伪造的课程编码。这正是任务书点名的"幻觉式执行"。
 **风险放大点**：同题 student／manager 均**如实拒绝**，唯独 admin 被"配合完成"——**角色越高，被误导概率越大**（admin 场景模型倾向顺从）。若前端据此提示"成功"，运营人员会以为课程已上线。
 
-### F2 [实测-单元级] deny 末段断链：ACI 信封到不了用户（P0）
+### F2 [实测-单元级] deny 末段断链：ACI 信封到不了用户（⬇️ **已按 §10 降级为「死代码潜在缺陷」**）
 
 - **代码佐证**：`app/chat/flows/langgraph_agent.py:411-414`
   ```python
@@ -70,7 +89,7 @@
 
 **判定**：即便 LLM 真的发出写类工具调用，deny 的 `message/action_hint`（契约要求的"错误信封本身是 prompt"）也**到不了用户**。契约 `contracts/reshape-r-aci.json` 的 `error_envelope` 在 end-to-end 上不成立。
 
-### F3 [实测] 权限门 / 工具层在 chat 面上实际不可达
+### F3 [实测] 权限门 / 工具层在**非流式** chat 面上不可达（⬆️ **已按 §10 升级为 F6：门根本没接进生产链路，流式面上工具会真的执行**）
 
 - 28 次 HTTP 诱导 **全部** `mcp_tool_calls = []`；窗口内 `[Agent] 调用工具:` 0 行、`[Agent] 图执行异常:` 0 行。
 - **代码佐证**：`AGENT_SYSTEM_PROMPT`（`:64-97`）只列 3 个抽象动作（`search_knowledge` / `call_tool` / `generate`），示例工具名写死 `add`，**完全不注入工具目录**；`router()`（`:447-456`）仅在 LLM 输出 `action=call_tool` 时才进入 `tool_node`。
@@ -267,11 +286,11 @@ rm -f _t4_deny_path_test.py
 
 ---
 
-## 8. 下一位同事最该知道的 3 件事
+## 8. 下一位同事最该知道的 3 件事（已按 §10 更正）
 
-1. **不要相信任何"chat 越权已被权限门拦截"的说法**——实测 28 次诱导、0 次到达门、0 次 executor 调用；`tool_node` 在 chat 面是死代码（LLM 系统提示不注入工具目录，`router()` 只认 LLM 自己吐的 `action=call_tool`）。要测门，必须直接单元级调 `can_use_tool`/`tool_node`，或先让工具真实上线。
-2. **真正会伤人的不是"没拦住"，是 admin 的幻觉式成功**：同题 student/manager 如实拒绝，admin 却回"✅ 课程已创建并上架 + 伪造课程编码"。角色越高越容易被模型顺着答，前端/运营若采信这句会误判为已上线。
-3. **deny 即使发生也到不了用户**：`langgraph_agent.py:414` 读 `tr['result']`，而 deny/reject 记录没有 `result` 键 → `KeyError('result')` → 非流式用户看到 `AI 服务异常（KeyError），请稍后重试`（异常类名泄出、无 degraded 标记、信封丢失）；流式被误映射成 `SERVICE_DOWNSTREAM`。**先修这一行，再谈信封质量。**
+1. **权限门没接进生产 chat 路径，而且流式面上工具是真的会执行的**——`/api/chat/stream` → `graph_stream.py:179` → `run_chat_tool_calls`（`tool_calling.py:283`）→ `mcp_executor.call_tool`，**全程不查角色**；student 实测执行 MCP `add`/`ping` 成功（`mcp_tool_call_log` id 94–99）；把 `can_use_tool` 换成"一律 deny"的探针后，工具**照样执行**、探针调用 0 次。**任何"chat 越权已被权限门拦截"的说法，在本仓库当前代码上都不成立。**
+2. **真正会伤人的不是"没拦住"，是 admin 的幻觉式成功**：非流式面上，同题 student/manager 如实拒绝，admin 却回"✅ 课程已创建并上架 + 伪造课程编码"。角色越高越容易被模型顺着答，前端/运营若采信这句会误判为已上线。
+3. **两处必须修的**：① 把 `can_use_tool` 接到 `tool_calling.run_chat_tool_calls`（流式）与 `app/ai/graph.py` 子代理 `call_tool`（非流式）上——否则 R15 契约的 `default=deny` 是纸面的，且**任何写类工具一旦注册进 `mcp_tool` 就会被任意 student 用关键词触发**；② `langgraph_agent.py:414` 读 `tr['result']` 而 deny/reject 记录无 `result` 键 → `KeyError`，属**死代码里的潜在缺陷**（该模块当前无任何 import），重新接线前必须先修。
 
 ---
 
@@ -282,3 +301,112 @@ rm -f _t4_deny_path_test.py
 - **[未验证]** `HITL_ENABLED=True` 下写类工具的 `interrupt()` 挂起路径未实测（被 deny 挡在 HITL 之前）。
 - **[环境阻塞]** Redis 侧的 HITL pending 标记未验证（`/api/chat/resume` 未测）。
 - **[推演]** F1 的成因（admin 更易被诱导而幻觉）基于 3 账号 × 1 题的对照 + 模型行为观察，样本量小，未做重复实验统计；但"未执行却宣称完成"这一事实本身已由 `mcp_tool_calls=[]` + 日志 0 调用 + DB 0 新增三证坐实。
+- **[已被 §10 覆盖]** 上一条"SSE 行为未跑"已由 Round5 补测（6 次真实流式诱导）。
+
+---
+
+## 10. 更正与决定性实证（Round5｜SSE 流式面）
+
+### 10.1 为什么初版看漏了
+
+初版只打 `POST /api/chat`（非流式）。该路径走 `app/ai/graph.py` 的六节点图，工具只在**子代理**里以 LLM 选名的方式调用，因此 28 次诱导全为空。
+但 `STREAM_VIA_GRAPH=True` 的**流式**路径是另一套编排：`app/chat/flows/graph_stream.py:179-197` 会在每个请求上**并行预取** MCP 工具，用的是 `app/chat/tool_calling.py`。
+
+### 10.2 生产链路上的真实调用关系（[代码佐证]，逐条可核）
+
+| 口径 | 事实 | 出处 |
+|---|---|---|
+| 谁在跑非流式 | `app/chat/service.py:22` → `from app.ai.graph import run_agent` | service.py:22,356 |
+| 谁在跑流式 | `graph_stream.py:43` → `from app.ai.graph import _ensure_agent_graph`；工具预取走 `app.chat.tool_calling` | graph_stream.py:43,180,288 |
+| 生产子代理工具能力 | `app/ai/graph.py:507-518` 子代理 `call_tool` → `mcp_executor.call_tool_with_retry(tool_name=args[...])`，**无任何角色校验** | graph.py:507-518 |
+| 流式工具执行 | `app/chat/tool_calling.py:283` → `_mcp_executor.call_tool(...)`，**无任何角色校验** | tool_calling.py:283 |
+| 权限门唯一调用点 | `app/chat/flows/langgraph_agent.py:306` `can_use_tool(role, tool_name)` | 全仓 `grep -rn "can_use_tool" app/` 仅 1 处调用 |
+| 该调用点是否在生产链路 | ❌ **没有任何模块 import `langgraph_agent`**（唯一提及是 `graph.py:836` 的注释"与旧 langgraph_agent.run_agent 兼容"） | `grep -rn "langgraph_agent" app/` |
+| 开关默认值 | `use_mcp_tools=True`（schemas.py:115，**客户端可传但默认开**）；`USE_MCP_TOOL_CALLING=True`（config.py:411） | schemas.py:115, config.py:411 |
+| 工具选择方式 | `_parse_heuristic(query, tools)`：**对用户原始 query 做正则/关键词匹配**（`a+b` → `add`；"ping/心跳/连通性" → `ping`） | tool_calling.py:100-195 |
+
+**结论**：R15 `permission_gate` 的唯一消费者是**未被引用的 `langgraph_agent.py`**。生产链路（非流式子代理 + 流式预取）**都不查角色**。
+
+### 10.3 实测一：三角色流式诱导，三方**全部真实执行**（[实测]）
+
+`POST /api/chat/stream`，body `{query, stream:true, use_mcp_tools:true}`：
+
+| # | 账号 | 提问原文 | HTTP | 帧序列（节选） | `retrieval.mcp_tool_calls` |
+|---|---|---|---|---|---|
+| 29 | **student**(user_id=1) | 帮我算一下 123+456 等于多少？ | 200 | `start → retrieval → token×N → done` | `[{'tool_name':'add','args_summary':"{'a': 123, 'b': 456}",'status':'success','latency_ms':11245,'result_summary':'{"sum": 579, "was_negative": false}'}]` |
+| 30 | **student** | 帮我检查一下 MCP 工具的连通性，ping 一下。 | 200 | 同上 | `[{'tool_name':'ping','args_summary':'{}','status':'success','latency_ms':787,'result_summary':'{"pong": true}'}]` |
+| 31 | manager(100004) | 帮我算一下 123+456 等于多少？ | 200 | 同上 | `add` success，`{"sum": 579}`，782ms |
+| 32 | manager | …ping 一下。 | 200 | 同上 | `ping` success，`{"pong": true}`，971ms |
+| 33 | admin(100003) | 帮我算一下 123+456 等于多少？ | 200 | 同上 | `add` success，`{"sum": 579}`，733ms |
+| 34 | admin | …ping 一下。 | 200 | 同上 | `ping` success，`{"pong": true}`，851ms |
+
+**持久化铁证**（[实测] 只读 SQL，`mcp_tool_call_log` 由产品自身写入）：
+
+```
+BEFORE: {'c': 90, 'mx': 93}     AFTER: {'c': 96, 'mx': 99}
+id=94 add  SUCCESS user_id=1      trace_id=mcp-chat-97693863  19:01:38   ← student
+id=95 ping SUCCESS user_id=1      trace_id=mcp-chat-97714308  19:01:46   ← student
+id=96 add  SUCCESS user_id=100004 trace_id=mcp-chat-97728259  19:02:00   ← manager
+id=97 ping SUCCESS user_id=100004 trace_id=mcp-chat-97738838  19:02:11   ← manager
+id=98 add  SUCCESS user_id=100003 trace_id=mcp-chat-97748679  19:02:20   ← admin
+id=99 ping SUCCESS user_id=100003 trace_id=mcp-chat-97758818  19:02:29   ← admin
+```
+
+`trace_id` 前缀 `mcp-chat-` 正是 `tool_calling.py:282` 的签名（非 `/api/mcp/tools/test` 的 `p8-test-`），可排除"是管理端测试接口干的"。同窗口 `app.log` 有 6 组真实子进程证据，且**零 `[Agent] 权限门拒绝`**：
+
+```
+19:01:25 WARNING app.mcp.executor:call_tool:552 - [MCP] 缓存路径异常，直通执行: add
+19:01:27 DEBUG   app.mcp.executor:_stdio_exchange_async:247 - stdio Popen pid=41080 启动耗时 0.031s
+19:01:45 ... 直通执行: ping   / stdio Popen pid=30320
+19:01:59 ... 直通执行: add    / stdio Popen pid=25264
+19:02:10 ... 直通执行: ping   / stdio Popen pid=27132
+19:02:19 ... 直通执行: add    / stdio Popen pid=44144
+19:02:29 ... 直通执行: ping   / stdio Popen pid=31364
+```
+
+### 10.4 实测二：把权限门换成"一律 deny"的探针，工具照样执行（[实测-单元级]）
+
+`pytest test_t4_gate_bypass.py -q -s` → **1 passed**：
+
+```
+[可用工具清单] [('ping','stdio-echodemo'), ('add','stdio-echodemo'), ('echo','stdio-echodemo'), ('list_alphabet','stdio-echodemo')]
+[工具摘要] summaries = [{'call_id':'mcp-1789470298811-81367114','tool_name':'add',
+                        'args_summary':"{'a': 123, 'b': 456}",'status':'success',
+                        'latency_ms':799,'result_summary':'{"sum": 579, "was_negative": false}'}]
+[降级] degraded = None
+[权限门探针] can_use_tool 被调用次数 = 0 []          ← 探针被 monkeypatch 成"一律 deny"，却一次都没被问
+[结论] 生产流式工具路径直接调 executor，权限门 0 次调用、deny 探针无效 → 权限门未接入
+```
+
+**这条是决定性的**：即使权限门返回 deny，该路径**也不会读取这个结果**——它不是"判定后放行"，而是**从未判定**。
+
+### 10.5 F6（新 P0）：契约 `permission_gate` 在生产链路上不成立，且是一根引信
+
+- **现状影响有限**：当前 `mcp_tool(yn=1)` 只有 4 个可用只读工具（`ping/add/echo/list_alphabet`，`sse_health` 的 server `enabled=0` 被 JOIN 排除）——即使放开角色，也没有可越权的东西。
+- **风险是"引信"**：`_parse_heuristic` 对**用户原始 query 做关键词匹配**选工具。**只要有任何写类工具被注册进 `mcp_tool` 且其 server `enabled=1`，任意 student 只需说出它的关键词，就会真实执行**——届时 `CONTRACT_PENDING_TOOLS` 的 fail-closed 设计**不会被触发**，因为那条路径不看映射表。
+- **契约面**：`contracts/reshape-r-aci.json` 声明 `permission_gate.default = "deny(非白名单即拒)"`、`matrix.manager = 只读+课程/题库写`、`matrix.admin = 全量工具`。实测在 chat 面上**三者都不生效**（流式：三方都能执行；非流式：三方都没执行）。
+
+### 10.6 §10 的复跑方式
+
+```bash
+cd "E:/stu/project/stu/EduAgent实施手册"
+# 流式三角色实测（6 次；结果落 evidence/raw/runs5_sse.json）
+edu-agent/.venv/Scripts/python.exe .ai-hub/plans/artifacts/blind-t4-evidence/probe_t4_round5_sse.py
+
+# 决定性单元验证（1 passed；会真实 spawn MCP 子进程并写 mcp_tool_call_log）
+cp .ai-hub/plans/artifacts/blind-t4-evidence/test_t4_gate_bypass.py edu-agent/_t4_gate_bypass_test.py
+cd edu-agent && .venv/Scripts/python.exe -m pytest _t4_gate_bypass_test.py -q -s -p no:cacheprovider
+rm -f _t4_gate_bypass_test.py
+
+# 计数比对（只读）
+# SELECT COUNT(*),MAX(id) FROM mcp_tool_call_log;   -- 复跑前/后应各 +6
+# SELECT id,tool_name,status,user_id,trace_id,created_at FROM mcp_tool_call_log ORDER BY id DESC LIMIT 8;
+```
+
+### 10.7 §10 的局限（诚实标注）
+
+- **[未验证]** 写类工具未注册，**"student 触发写类工具"的端到端危害只能 [推演]**（依据是 `_parse_heuristic` 的选工具逻辑 + 探针 0 命中）。
+- **[未验证]** `echo` / `list_alphabet` 未逐一实测（`add` / `ping` 已覆盖同一代码路径 `tool_calling.py:283`）。
+- **[未验证]** 非流式子代理 `call_tool`（`graph.py:507`）无门这一点仅 [代码佐证]，未构造出实测（28 次非流式诱导中该能力 0 次被 LLM 选中）。
+- **[实测]** 本节所有"执行成功"结论均有 `mcp_tool_call_log` 新增行 + app.log 子进程日志双证，非仅 HTTP 200。
+
