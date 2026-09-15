@@ -273,11 +273,36 @@ async def update_cohort(cohort_id: int, data: CohortUpdateAdmin) -> CohortRespon
     return CohortResponseAdmin(**updated)
 
 
-async def delete_cohort(cohort_id: int) -> None:
-    """软删班次：yn = 0。"""
+async def delete_cohort(cohort_id: int, *, force: bool = False) -> None:
+    """删除班次（F-9 模块引用保护）。
+
+    - 班次仍被模块引用（series_cohort_course 无 yn 列、物理删除）且未显式 force
+      → 40908（SERIES_IN_USE），绝不静默导致整棵子树不可见；
+    - force=True（仅由路由层在 ADMIN 角色下放行）：逐个模块检查其下课次，
+      任一模块仍有课次 → 仍 40908（提示先删课次，绝不级联删课次）；
+      全部零课次才逐个物理删除模块（hard_delete）+ 软删班次；
+    - 空班次（无模块）→ 直接软删。
+    """
     row = await _cohort_repo.get_by_id(cohort_id)
     if not row:
         raise NotFoundError("班次", str(cohort_id))
+    modules = await _module_repo.list_by_cohort(cohort_id)
+    if modules and not force:
+        raise ConflictError(
+            f"班次仍被 {len(modules)} 个模块引用，无法删除（确需连同模块一并删除请加 force=true，且仅 ADMIN 可执行）",
+            code=SERIES_IN_USE,
+        )
+    if force:
+        for m in modules:
+            refs = await _module_repo.count_references(int(m["id"]))
+            if refs["total"] > 0:
+                raise ConflictError(
+                    f"模块 {m['id']} 仍被 {refs['total']} 个课次引用，无法删除；请先删除该模块下的课次",
+                    code=SERIES_IN_USE,
+                )
+        for m in modules:
+            await _module_repo.hard_delete(int(m["id"]))
+            await invalidate(f"course:cohort:detail:{cohort_id}")
     await _cohort_repo.soft_delete(cohort_id)
     # task23 写后精确 DEL：软删班次改 cohort_count/价格 → 连带失效 series:detail 聚合（R1 补）
     await invalidate(f"course:cohort:detail:{cohort_id}", f"course:cohort:seats:{cohort_id}",

@@ -124,9 +124,15 @@ async def admin_update_cohort(cohort_id: int, payload: CohortUpdateAdmin,
     return ok(data=result.model_dump(mode="json"))
 
 
-@router.delete("/cohorts/{cohort_id}", summary="管理端·软删班次（yn=0）")
-async def admin_delete_cohort(cohort_id: int, me: CurrentUser = Depends(get_current_user)):
-    await svc.delete_cohort(cohort_id)
+@router.delete("/cohorts/{cohort_id}", summary="管理端·软删班次（yn=0；含模块且非 force→40908，force 仅 ADMIN 级联删零课次模块）")
+async def admin_delete_cohort(
+    cohort_id: int,
+    force: bool = Query(False, description="true=级联物理删除班次下零课次模块（仅 ADMIN）"),
+    me: CurrentUser = Depends(get_current_user),
+):
+    if force and me.role != UserRole.ADMIN:
+        raise PermissionDeniedError("强制删除操作仅 ADMIN 可执行")
+    await svc.delete_cohort(cohort_id, force=force)
     return ok(data=None, message="班次已删除")
 
 
