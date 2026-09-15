@@ -227,6 +227,6 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 | # | commit | 内容 | 核验 |
 |---|---|---|---|
 | 1 | `00bb384` | 首版（步骤1~4 + 集成测试 + 报告初版） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves` |
-| 2 | `<第二轮 hash，见完工回执>` | 第二轮复验加固（`_norm` 归一 / executor 收口二次校验 / 备用工具门 / 类名收敛 / 19 用例 / 本报告修订版） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves`；`git rev-parse HEAD` 记录 |
+| 2 | `4deefa2` | 第二轮复验加固（`_norm` 归一 / executor 收口二次校验 / 备用工具门 / 类名收敛 / 19 用例 / 本报告修订版） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves`（实测）；`git rev-parse HEAD` = `4deefa2837397bb86046bfa9186bcaa51f402110` |
 
 > 两个 commit 均**只含归属文件**：`app/ai/permission_gate.py`、`app/mcp/executor.py`、`app/chat/tool_calling.py`、`app/chat/flows/langgraph_agent.py`、`app/chat/flows/graph_stream.py`、`tests/test_permission_gate.py`、`tests/test_wnext2_write_tools.py`、`test-reports/WNEXT2-completion-report.md`；未夹带并行写者的在途改动（`app/chat/router.py`、`app/ai/graph.py`、`app/ai/skills/registry.py`、`app/knowledge/importer/loader.py`、未跟踪 `app/ai/platform_capability.py`、`tests/test_wn_ext10_rag_internal_filter.py`）。
