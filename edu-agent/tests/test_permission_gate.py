@@ -279,6 +279,31 @@ def test_write_class_names_classified_and_not_cached(name):
     assert _is_cached_call(name, {"any": 1}) is False, f"{name} 写类操作不得被判为可缓存"
 
 
+def test_norm_eliminates_case_whitespace_dual_criterion():
+    """第二轮复验加固：**已登记名**的大小写/空格变体不得造成「HITL 判写类、权限门判非写类」双口径。
+
+    复验实测（修复前）：`classify_tool` 原为严格查表（不归一），而 `langgraph_agent._hitl_risk_level`
+    自己做 `strip().lower()` → 同一名字两种口径。修复：`permission_gate._norm` 统一归一。
+
+    边界（有意为之的不对称，非缺陷）：**契约挂起名/未登记名** `classify_tool` 仍返回 None
+    （无实物 → `can_use_tool` 一律 deny，fail-closed）；`is_write_class` 走 `classify_tool_intent`
+    （契约意图，含挂起）故判写类 —— 两条防线在「门先 deny、工具不可能执行」上方向一致。
+    """
+    from app.chat.flows.langgraph_agent import _hitl_risk_level
+
+    for variant in ("Knowledge_Import", " knowledge_import ", "KNOWLEDGE_IMPORT", "KnOwLeDgE_ImPoRt"):
+        assert classify_tool(variant) == "admin_write", f"归一后应命中映射: {variant!r}"
+        assert is_write_class(variant) is True, f"归一后应判写类: {variant!r}"
+        assert _hitl_risk_level(variant) == "high", f"HITL 同为 high（双口径消除）: {variant!r}"
+        assert can_use_tool("student", variant).allowed is False, f"写类对 student 必须 deny: {variant!r}"
+        assert can_use_tool("admin", variant).allowed is True, f"admin 不得因大小写被误拒: {variant!r}"
+
+    # fail-closed 方向不被归一放宽：未登记名对所有角色仍 deny（含 admin）
+    for variant in ("  Unknown_Tool  ", "Echo_Typo"):
+        assert classify_tool(variant) is None, f"未登记名不得被归一命中: {variant!r}"
+        assert can_use_tool("admin", variant).allowed is False, f"未登记名对 admin 也必须 deny: {variant!r}"
+
+
 # ============================================================
 # G3 图级 tool_node deny 路径（不经 LLM，直调 tool_node）
 # ============================================================

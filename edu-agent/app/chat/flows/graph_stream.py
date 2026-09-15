@@ -188,7 +188,9 @@ async def graph_stream_sse(
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(f"[graph_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
-                return [], "", f"MCP 工具阶段异常({type(exc).__name__})"
+                # degraded_reason 会经 make_stream_finalize 进用户可见的 done 帧 → 只给稳定文案，
+                # 不把内部异常类名泄给用户（类名只进 logger，见上行）。
+                return [], "", "MCP 工具阶段异常（已跳过）"
 
         mcp_task = (
             asyncio.ensure_future(_run_mcp())
@@ -213,7 +215,7 @@ async def graph_stream_sse(
                 try:
                     mcp_summaries, mcp_context, mcp_degraded = await mcp_task
                 except Exception as exc:  # noqa: BLE001 — MCP 失败不影响主响应
-                    mcp_summaries, mcp_context, mcp_degraded = [], "", f"MCP 工具阶段异常({type(exc).__name__})"
+                    mcp_summaries, mcp_context, mcp_degraded = [], "", "MCP 工具阶段异常（已跳过）"
 
         async def _emit_retrieval() -> AsyncGenerator[bytes, None]:
             """组装并发送 retrieval 帧（等 MCP 并行预取收口，保与旧路径帧内容对齐）。"""
@@ -248,7 +250,7 @@ async def graph_stream_sse(
                 logger.warning(f"[graph_stream] 落库失败，发 error 事件：{CHAT_PERSIST_FAIL} ({exc})")
                 yield sse_line(SseEventType.ERROR.value, {
                     "code": CHAT_PERSIST_FAIL,
-                    "message": f"答案生成成功但落库失败：{type(exc).__name__}（内容未保存到会话）",
+                    "message": "答案生成成功但落库失败（内容未保存到会话）",
                     "generated_tokens": len(answer_parts),
                     "session_id": session_id_out,
                     "message_id": None,
@@ -261,7 +263,7 @@ async def graph_stream_sse(
                         "final_count": len(retrieval.get("docs") or []),
                         "latency_ms": 0,
                         "rewrite_query": retrieval.get("rewrite_query"),
-                        "degraded_reason": f"答案已生成但流式落库失败({type(exc).__name__})：未入库",
+                        "degraded_reason": "答案已生成但流式落库失败：未入库",
                     },
                 })
                 return

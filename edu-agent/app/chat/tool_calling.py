@@ -246,7 +246,9 @@ async def run_chat_tool_calls(
         tools = await list_enabled_tool_metas()
     except Exception as exc:
         logger.warning(f"[MCP-TC] 加载启用工具列表失败：{type(exc).__name__}: {exc}")
-        return summaries, "", f"MCP 工具列表加载失败({type(exc).__name__})"
+        # degraded 会经 service/graph_stream 的 merged_deg 进用户可见的 done 帧 →
+        # 只给稳定文案，异常类名只进 logger（同 T4-C2「兜底文案不泄内部类名」）
+        return summaries, "", "MCP 工具列表加载失败（工具阶段已跳过）"
 
     if not tools:
         # 无工具：静默返回（不给 degraded，避免打扰正常 RAG 提示）
@@ -380,7 +382,7 @@ async def run_chat_tool_calls(
                 result_summary=f"Exception: {type(exc).__name__} ({_truncate(str(exc), 100)}) {tb}",
             ))
             degraded_extra = (degraded_extra + "；" if degraded_extra else "") + \
-                             f"MCP 工具调用失败 {plan.tool.tool_name}({type(exc).__name__})"
+                             f"MCP 工具调用失败 {plan.tool.tool_name}（工具阶段已跳过）"
 
     if not calls_any:
         return summaries, "", degraded_extra

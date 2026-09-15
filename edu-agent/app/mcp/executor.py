@@ -146,6 +146,31 @@ def _permission_denied_resp(*, tool_name: str, role: str, call_id: str,
     )
 
 
+async def _deny_if_write_class(*, name: str | None, operator_user_id: int,
+                              call_id: str, server_id: int = 0) -> "MCPToolTestResp | None":
+    """写类工具角色校验（executor 收口）：越权 → ACI 信封响应；非写类/已放行 → None。
+
+    W-NEXT-2 步骤2 纵深防御。⚠️ **必须在两处调用**：
+      ① 调用方传入的名字（快速路径，覆盖未登记名的 deny）；
+      ② registry 解析后的**真实工具名**（`call_tool(tool_id=N)` 不传 tool_name 时名字为空，
+         只校验①会让校验被整体跳过 → 越权写操作直落 HITL；HITL_ENABLED=False 时真实执行）。
+    独立复验（2026-09-16）实测该绕过口子真实存在，故补②。
+    """
+    n = str(name or "").strip().lower()
+    if not n:
+        return None
+    from app.ai.permission_gate import gate_tool_call, is_write_class, resolve_role
+
+    if not is_write_class(n):
+        return None
+    role = await resolve_role(operator_user_id)
+    if gate_tool_call(role, n).allowed:
+        return None
+    return _permission_denied_resp(
+        tool_name=n, role=role, call_id=call_id or "", server_id=int(server_id or 0),
+    )
+
+
 def _mcp_cache_key(server_id: int, tool_name: str, args: dict[str, Any]) -> str:
     """同参缓存 key：server_id + tool_name + args 排序哈希。"""
     raw = json.dumps(args, ensure_ascii=False, sort_keys=True, default=str)
@@ -548,16 +573,13 @@ async def call_tool(*,
     # W-NEXT-2 步骤2 纵深防御（T4-C1）：executor 是流式 / 六节点图 / langgraph tool_node
     # 三条执行路径的公共收口 —— 写类工具在此再做一次角色校验。越权 → ACI 信封返回，
     # **零执行 / 不落审计 / 不进 HITL 审批队列**（未授权操作不应占用人工审批资源）。
-    _eff_name = (_builtin_name or str(tool_name or "")).strip().lower()
-    if _eff_name:
-        from app.ai.permission_gate import gate_tool_call, is_write_class, resolve_role
-
-        if is_write_class(_eff_name):
-            _role = await resolve_role(operator_user_id)
-            if not gate_tool_call(_role, _eff_name).allowed:
-                return _permission_denied_resp(
-                    tool_name=_eff_name, role=_role, call_id=call_id or "", server_id=int(server_id or 0),
-                )
+    # ① 调用方传入名（含内置名与 tool_name 直传形态）
+    _denied = await _deny_if_write_class(
+        name=(_builtin_name or tool_name), operator_user_id=operator_user_id,
+        call_id=call_id or "", server_id=int(server_id or 0),
+    )
+    if _denied is not None:
+        return _denied
 
     # 内置工具：无 server / 无 mcp_tool 行 → 跳过 registry+server 解析，HITL 后直跑 handler
     if _builtin_name:
@@ -581,6 +603,14 @@ async def call_tool(*,
     tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
     server_id_eff = int(tool_row["server_id"])
     tool_name_eff = str(tool_row["tool_name"])
+    # ② registry 解析出的真实工具名再校验一次：堵 `tool_id=N`（不传 tool_name）时
+    #    名字为空 → 校验被整体跳过的绕过口子（独立复验实测，见 _deny_if_write_class）。
+    _denied = await _deny_if_write_class(
+        name=tool_name_eff, operator_user_id=operator_user_id,
+        call_id=call_id or "", server_id=server_id_eff,
+    )
+    if _denied is not None:
+        return _denied
     server = await fetch_one("SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1", (server_id_eff,))
     if not server:
         raise _raise(404, "关联 server 已删除")
@@ -1339,6 +1369,15 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
                 tool_name=original_tool_name, content_text=None,
             )
 
+    # ② 解析后的真实工具名再校验一次：堵 `tool_id=N`（不传 tool_name）时名字为空 →
+    #    上方 ① 校验被整体跳过的绕过口子（独立复验实测）。
+    _denied = await _deny_if_write_class(
+        name=original_tool_name, operator_user_id=operator_user_id,
+        call_id=call_id or "", server_id=server_id_eff,
+    )
+    if _denied is not None:
+        return _denied
+
     # task-S1 全流程 HITL 护栏：原始工具为高风险写工具时，先过 Gate 再进闭环（HITL_ENABLED 默认 False）
     if settings.HITL_ENABLED:
         _at = _classify_hitl_action(original_tool_name)
@@ -1394,6 +1433,17 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
             eff_args = dict(args)  # 规则跳级：原参透传（动作语义仍记 rewrite_args）
 
         cid = _mk_call_id(step.attempt)
+        # W-NEXT-2 加固（复验 P1）：第 3 步换备用工具的目标名来自 settings.TOOL_FALLBACK_MAP
+        # （可被环境变量 JSON 覆盖）→ 若备用名是写类工具，必须与原始名同样过写类门，
+        # 否则「读工具 → 写工具」的备用映射会成为绕过 executor 收口的通道
+        # （复验实测：student + {"calculator": ["knowledge_import"]} → 写类 handler 真实执行）。
+        if step.tool_name != original_tool_name:
+            _denied = await _deny_if_write_class(
+                name=step.tool_name, operator_user_id=operator_user_id,
+                call_id=cid, server_id=server_id_eff,
+            )
+            if _denied is not None:
+                return _denied
         outcome = await executor(
             step.tool_name, eff_args, call_id=cid, attempt=step.attempt,
             operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,

@@ -68,6 +68,11 @@ DENIED_CODE = "permission_denied"
 FALLBACK_ROLE = "student"
 
 
+def _norm(tool_name: str | None) -> str:
+    """工具名归一：去空白 + 小写（映射表键全为小写；调用方大小写不一致不得造成双口径）。"""
+    return str(tool_name or "").strip().lower()
+
+
 def _log(level: str, msg: str) -> None:
     """惰性日志（本模块保持「纯逻辑、可脱离 IO 单测」：日志依赖延迟到调用时）。"""
     try:
@@ -230,8 +235,12 @@ def audit_registry(registered: Iterable[str] | None = None) -> dict[str, list[st
 
 
 def classify_tool(tool_name: str) -> ToolClass | None:
-    """返回工具类别；未登记（非实物白名单）返回 None —— 含契约挂起工具。"""
-    return TOOL_CLASS_MAP.get(tool_name or "")
+    """返回工具类别；未登记（非实物白名单）返回 None —— 含契约挂起工具。
+
+    W-NEXT-2 复验加固：名字先归一（`strip().lower()`）再查表 —— 调用方大小写/空格不一致时
+    不得出现「HITL 判为写类、权限门判为非写类」的双口径（fail-closed 方向由本函数保证）。
+    """
+    return TOOL_CLASS_MAP.get(_norm(tool_name))
 
 
 def classify_tool_intent(tool_name: str) -> ToolClass | None:
@@ -242,7 +251,7 @@ def classify_tool_intent(tool_name: str) -> ToolClass | None:
     工具真实上线后行为开箱即用，无需再改判定处。
     权限门 `can_use_tool` 仍走严格 `classify_tool`（挂起=无实物 → 任意角色 deny，fail-closed）。
     """
-    n = tool_name or ""
+    n = _norm(tool_name)
     return TOOL_CLASS_MAP.get(n) or CONTRACT_PENDING_TOOLS.get(n)
 
 

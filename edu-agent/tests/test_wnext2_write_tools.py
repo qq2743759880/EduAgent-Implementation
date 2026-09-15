@@ -8,6 +8,8 @@
   W2-G4 真实 LangGraph 图触发 interrupt（五字段）→ confirm 真执行 / reject 零执行
   W2-G6 幻觉式成功检测：全失败/被拦截 → prompt 注入诚实约束，渲染层不 KeyError
   另：兜底文案不泄异常类名（T4-C2 末段）
+  T8-C2 无挂起续流显式收束（复验补测）+ executor 收口二次校验（tool_id-only 绕过回归防护）
+  P1 备用工具越权（TOOL_FALLBACK_MAP 可被 env 覆盖 → 读工具接写工具）回归防护
 
 说明：本文件只做「进程内真实调用」（真实权限门 + 真实 tool_node + 真实 LangGraph
 interrupt 三件套），真实 HTTP 实证见 test-reports/WNEXT2-completion-report.md。
@@ -17,6 +19,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -355,3 +358,235 @@ async def test_t4c2_run_agent_fallback_no_exception_class_leak(monkeypatch):
     out = await lga.run_agent("你好", user_id=1, session_id="t4c2")
     assert "KeyError" not in out["answer"]
     assert out["answer"] == "AI 服务异常，请稍后重试"
+
+
+# ============================================================
+# T8-C2 续流静默吞修复：Redis 有决策但图已无挂起 → 显式收束（零图执行）
+#   复验指出该分支（graph_stream.py:305-329）原为零测试覆盖，此处补齐两条
+#   （confirm 失效 / reject 无挂起），核心断言 = 绝不把 Command(resume) 丢进图静默跑完。
+# ============================================================
+class _NoPendingGraph:
+    """无挂起态的图替身：aget_state.next 为空；astream 被调用即计数（= 静默续跑缺陷）。"""
+
+    def __init__(self) -> None:
+        self.astream_calls = 0
+
+    async def aget_state(self, _cfg):
+        return SimpleNamespace(next=(), values={})
+
+    async def astream(self, *_a, **_kw):
+        self.astream_calls += 1
+        if False:  # pragma: no cover — 使其为异步生成器且零产出
+            yield None
+
+
+async def _read_sse(resp) -> str:
+    chunks: list[bytes] = []
+    async for c in resp.body_iterator:
+        chunks.append(c if isinstance(c, bytes) else str(c).encode("utf-8"))
+    return b"".join(chunks).decode("utf-8")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("action,marker,notice", [
+    ("confirm", "hitl_confirm_expired_no_pending", "该确认已失效"),
+    ("reject", "hitl_rejected_no_pending", "工具未执行"),
+])
+async def test_t8c2_resume_without_pending_never_silently_runs(monkeypatch, action, marker, notice):
+    """有决策 + 图无挂起：发显式收束文案与 degraded_reason，图 astream 零调用。"""
+    import app.ai.guard as guard_mod
+    import app.chat.flows.graph_stream as gs
+    import app.chat.tool_calling as tc
+    from app.auth import UserRole
+    from app.chat.schemas import RagQueryRequest
+
+    captured: dict = {}
+    graph = _NoPendingGraph()
+
+    async def fake_pop(_tid):
+        return {"action": action, "created_at": 1}
+
+    async def fake_ensure():
+        return graph
+
+    async def fake_tools(**_kw):
+        return [], "", None
+
+    def fake_factory(**_kw):
+        async def _fin(answer_text, *, degraded_extra=None):
+            captured["answer"] = answer_text
+            captured["degraded_extra"] = degraded_extra
+            return {"session_id": None, "message_id": None, "retrieved_count": 0,
+                    "final_count": 0, "latency_ms": 1, "rewrite_query": None,
+                    "degraded_reason": None}
+
+        return _fin
+
+    class _Guard:
+        async def acquire(self, *_a, **_kw):
+            return {"ok": True}
+
+        async def release(self, *_a, **_kw):
+            return None
+
+    monkeypatch.setattr(gs, "_pop_hitl_decision", fake_pop)
+    monkeypatch.setattr(gs, "_ensure_agent_graph", fake_ensure)
+    monkeypatch.setattr(gs, "make_stream_finalize", fake_factory)
+    monkeypatch.setattr(tc, "run_chat_tool_calls", fake_tools)
+    monkeypatch.setattr(guard_mod, "default_guard", lambda: _Guard())
+
+    req = RagQueryRequest(query="确认执行该写操作", session_id="anon-t8c2", stream=True,
+                          use_mcp_tools=False)
+    resp = await gs.graph_stream_sse(req, user_id=1001, role=UserRole.STUDENT)
+    raw = await _read_sse(resp)
+
+    assert graph.astream_calls == 0, "无挂起 → 禁止把 Command(resume) 丢进图静默按新会话跑完"
+    assert marker in raw, "degraded_reason 必须显式标注该次续流失效"
+    assert notice in raw, "必须给用户显式提示（不得静默）"
+    assert notice in captured.get("answer", ""), "收束文案即用户可见答案"
+    assert captured.get("degraded_extra") is None
+
+
+# ============================================================
+# executor 收口二次校验（P1 绕过回归防护）
+#   复验实测：`call_tool(tool_id=N)` 不传 tool_name → 调用方名校为空 → ① 校验整体跳过
+#   → 写类工具真实执行。修复后 ② registry 解析出的真实名再校验一次。
+# ============================================================
+@pytest.mark.asyncio
+async def test_executor_second_gate_blocks_tool_id_only_write_call(monkeypatch):
+    """tool_id-only（不传 tool_name）→ registry 解析出写类名 → deny + 零执行。"""
+    import app.ai.permission_gate as pg
+    import app.mcp.executor as ex
+    from app.mcp.executor import ToolCallStatusEnum, call_tool
+
+    called: dict = {}
+
+    async def fake_get_tool_by_ref(tool_id, server_id, tool_name):
+        called["ref"] = (tool_id, server_id, tool_name)
+        return {"tool_id": 77, "server_id": 5, "tool_name": "knowledge_import"}
+
+    async def fake_resolve_role(_uid):
+        return "student"
+
+    async def fake_execute_single_attempt(**_kw):  # pragma: no cover - deny 后不得触达
+        called["exec"] = True
+        raise AssertionError("deny 后不得执行")
+
+    monkeypatch.setattr("app.mcp.registry.get_tool_by_ref", fake_get_tool_by_ref)
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+    monkeypatch.setattr(ex, "_execute_single_attempt", fake_execute_single_attempt)
+
+    resp = await call_tool(operator_user_id=1001, tool_id=77)
+
+    assert called.get("ref") == (77, None, None), "必须经 registry 解析真实工具名"
+    assert called.get("exec") is None, "越权必须在执行前拦截"
+    assert resp.tool_name == "knowledge_import"
+    assert resp.status == ToolCallStatusEnum.ERROR
+    env = json.loads(resp.content_text)
+    assert {"code", "message", "action_hint"} <= set(env.keys())
+    assert env["code"] == "permission_denied"
+
+
+@pytest.mark.asyncio
+async def test_executor_second_gate_admin_tool_id_only_still_passes(monkeypatch):
+    """阳性对照：admin → ② 不得误伤，流程继续到 server 解析（以哨兵异常证明已过门）。"""
+    import app.ai.permission_gate as pg
+    import app.mcp.executor as ex
+    from app.mcp.executor import call_tool
+
+    async def fake_get_tool_by_ref(tool_id, server_id, tool_name):
+        return {"tool_id": 77, "server_id": 5, "tool_name": "knowledge_import"}
+
+    async def fake_resolve_role(_uid):
+        return "admin"
+
+    async def sentinel_fetch_one(*_a, **_kw):
+        raise RuntimeError("reached-server-resolution")
+
+    monkeypatch.setattr("app.mcp.registry.get_tool_by_ref", fake_get_tool_by_ref)
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+    monkeypatch.setattr(ex, "fetch_one", sentinel_fetch_one)
+
+    with pytest.raises(RuntimeError, match="reached-server-resolution"):
+        await call_tool(operator_user_id=1, tool_id=77)
+
+
+# ============================================================
+# P1 配置诱导越权（复验发现 → 已修）：重试闭环第 3 步的备用工具
+#   `settings.TOOL_FALLBACK_MAP` 可被环境变量 JSON 覆盖 → 注入
+#   {"calculator": ["knowledge_import"]} 即把「读工具 → 写工具」接成一条链路。
+#   修复前：student 触发 switch_tool → 写类 handler 真实执行（零门、零 HITL）；
+#   修复后：备用目标名与原始名同门 → deny + 零执行。
+# ============================================================
+def _patch_retry_closure(monkeypatch, *, role: str, called: dict, fallback: dict):
+    """替身：备用映射注入 + 角色固定 + 步进执行器只记账（不触达任何真实 handler）。"""
+    import app.ai.permission_gate as pg
+    import app.mcp.executor as ex
+    from app.mcp.executor import ToolCallStatusEnum
+    from app.mcp.retry_loop import AttemptOutcome, MemRejectStore
+
+    async def fake_attempt(tool_name, args, *, call_id, attempt, operator_user_id, tenant_id, trace_id):
+        called.setdefault("tools", []).append(tool_name)
+        return AttemptOutcome(
+            ok=False, status=ToolCallStatusEnum.ERROR.value, tool_name=tool_name,
+            args=args, latency_ms=1, error_message="boom",
+        )
+
+    async def fake_llm_rewrite(_args, _err, _name):
+        return None
+
+    async def fake_resolve_role(_uid):
+        return role
+
+    monkeypatch.setattr(ex.settings, "TOOL_FALLBACK_MAP", fallback)
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+    return fake_attempt, fake_llm_rewrite, MemRejectStore()
+
+
+@pytest.mark.asyncio
+async def test_p1_fallback_write_tool_blocked_for_student(monkeypatch):
+    """student + 备用映射指向 knowledge_import → 第 3 步 deny、备用写类工具零执行。"""
+    from app.mcp.executor import ToolCallStatusEnum, call_tool_with_retry
+
+    called: dict = {}
+    fake_attempt, fake_rewrite, store = _patch_retry_closure(
+        monkeypatch, role="student", called=called,
+        fallback={"calculator": ["knowledge_import"]},
+    )
+
+    resp = await call_tool_with_retry(
+        operator_user_id=1001, tool_name="calculator",
+        args={"a": 1, "b": 2, "op": "add"},
+        llm_rewrite_fn=fake_rewrite, _attempt_executor=fake_attempt, _reject_store=store,
+    )
+
+    assert called.get("tools") == ["calculator", "calculator"], (
+        "备用写类工具绝不得进入执行器（前两步为原工具的正常/换参）"
+    )
+    assert resp.status == ToolCallStatusEnum.ERROR
+    env = json.loads(resp.content_text)
+    assert {"code", "message", "action_hint"} <= set(env.keys())
+    assert env["code"] == "permission_denied"
+    assert env["message"] and env["action_hint"]
+
+
+@pytest.mark.asyncio
+async def test_p1_fallback_write_tool_allowed_for_admin(monkeypatch):
+    """阳性对照：admin 走同一注入映射 → 备用工具正常进入执行器（门不得误伤）。"""
+    from app.mcp.executor import call_tool_with_retry
+
+    called: dict = {}
+    fake_attempt, fake_rewrite, store = _patch_retry_closure(
+        monkeypatch, role="admin", called=called,
+        fallback={"calculator": ["knowledge_import"]},
+    )
+
+    await call_tool_with_retry(
+        operator_user_id=1, tool_name="calculator",
+        args={"a": 1, "b": 2, "op": "add"},
+        llm_rewrite_fn=fake_rewrite, _attempt_executor=fake_attempt, _reject_store=store,
+    )
+
+    assert called.get("tools") == ["calculator", "calculator", "knowledge_import"], (
+        "admin 应放行到第 3 步备用工具（全步失败 → 人工指南）"
+    )
