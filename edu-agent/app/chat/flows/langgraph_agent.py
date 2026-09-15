@@ -46,6 +46,12 @@ class AgentState(TypedDict):
     - loop_count: 循环次数（防止无限循环）
     - next_action: 下一步动作（agent_node 决策结果）
     - final_answer: 最终回答（generate_node 产出）
+    - tool_name / tool_args: agent_node 决策 call_tool 时的目标工具与参数
+    - query_rewrite: agent_node 决策 search_knowledge 时的改写检索词
+
+    W-NEXT-2 步骤2b（T4-C3 同源根因）：`tool_name/tool_args/query_rewrite` **必须显式声明**——
+    LangGraph 只为声明过的键建 channel，未声明的键在 agent_node → tool_node 流转时被直接丢弃，
+    于是 tool_node 永远读到空 tool_name → 恒返回「未指定工具名/error」（工具执行链路结构不可达）。
     """
     messages: Annotated[list[BaseMessage], add_messages]
     docs: list[dict]
@@ -54,6 +60,9 @@ class AgentState(TypedDict):
     loop_count: int
     next_action: str
     final_answer: str
+    tool_name: str
+    tool_args: dict
+    query_rewrite: str
     user_id: int
     user_role: str
 
@@ -61,11 +70,33 @@ class AgentState(TypedDict):
 # ============================================================
 # Agent System Prompt（LangGraph 版）
 # ============================================================
+_TOOL_CATALOG_CACHE: str | None = None
+
+
+def _agent_tool_catalog() -> str:
+    """按权限门实物清单动态生成「已注册工具」清单。
+
+    单一事实源 = app.ai.permission_gate（REGISTERED_BUILTIN_TOOLS ∪ REGISTERED_MCP_TOOLS），
+    禁止在 prompt 中硬编码工具名——否则 LLM 会宣称调用不存在的工具（幻觉式成功，T8-C2/W2-G6）。
+    """
+    global _TOOL_CATALOG_CACHE
+    if _TOOL_CATALOG_CACHE is not None:
+        return _TOOL_CATALOG_CACHE
+    try:
+        from app.ai import permission_gate as _pg
+        names = sorted(set(_pg.REGISTERED_BUILTIN_TOOLS) | set(_pg.REGISTERED_MCP_TOOLS))
+    except Exception as exc:
+        logger.warning(f"[Agent] 工具清单加载失败，按空清单处理: {type(exc).__name__}")
+        names = []
+    _TOOL_CATALOG_CACHE = "、".join(names) if names else "（当前无已注册工具）"
+    return _TOOL_CATALOG_CACHE
+
+
 AGENT_SYSTEM_PROMPT = """你是 EduAgent 智能学习助手，你可以使用以下能力来回答用户问题：
 
 ## 可用能力
 1. **search_knowledge**：搜索知识库（向量检索 + 图谱查询），获取课程/知识点/题库相关内容
-2. **call_tool**：调用 MCP 工具（计算、代码执行、实时查询等）
+2. **call_tool**：调用 MCP 工具（当前已注册：{tool_catalog}）
 3. **generate**：基于已有信息生成最终回答
 
 ## 决策规则
@@ -94,6 +125,9 @@ AGENT_SYSTEM_PROMPT = """你是 EduAgent 智能学习助手，你可以使用以
 - 每轮只能输出一个 action
 - query_rewrite 用于向量检索，提取关键词（如"现在完成时 用法 区别"）
 - 最多循环 3 轮（search/call_tool → 回到决策 → 再 search/call_tool → generate）
+- tool_name **只能**取上面「可用能力-2」列出的已注册工具名；不在清单内的一律不得输出（不存在即不可调用）
+- 严禁宣称「已完成/已创建/已导入/已上架」等完成态：只有工具结果标记为成功时才可以描述执行结果；
+  被权限门拦截（[已拦截]）或执行失败时，必须如实说明"没有发生任何数据变更"，不得编造成功
 """
 
 
@@ -122,7 +156,7 @@ def _parse_agent_output(raw: str) -> dict:
 
 def _build_agent_messages(state: AgentState) -> list[dict]:
     """构建发给 LLM 的消息列表。"""
-    messages = [{"role": "system", "content": AGENT_SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": AGENT_SYSTEM_PROMPT.replace("{tool_catalog}", _agent_tool_catalog())}]
 
     # 历史消息
     for msg in state.get("messages", []):
@@ -148,7 +182,7 @@ def _build_agent_messages(state: AgentState) -> list[dict]:
     if tool_results:
         tool_summary = "工具执行结果：\n"
         for tr in tool_results:
-            tool_summary += f"  - {tr.get('tool_name', 'unknown')}: {tr.get('result', '')[:300]}\n"
+            tool_summary += f"  - {tr.get('tool_name', 'unknown')}: {_tool_result_text(tr)[:300]}\n"
         messages.append({"role": "system", "content": tool_summary})
         messages.append({"role": "system", "content": "工具已执行，请输出 {\"action\": \"generate\", \"reason\": \"工具结果已就绪\"}"})
 
@@ -274,13 +308,70 @@ def _hitl_risk_level(tool_name: str) -> str | None:
 
     n = (tool_name or "").strip().lower()
     risk_map = {RiskLevel.L1.value: "low", RiskLevel.L2.value: "medium", RiskLevel.L3.value: "high"}
+    # W-NEXT-2 步骤3：ADMIN_WRITE_TOOLS/COURSE_WRITE_TOOLS = 契约挂起 ∪ **已注册实物**，
+    # 上线后的 knowledge_import（admin_write）经此命中 high → interrupt 真实可触达（T8-C1）。
     if n in ADMIN_WRITE_TOOLS:
-        return risk_map[RiskLevel.L3.value]   # write_class_tools（收藏写/积分/导入/订单）→ high
+        return risk_map[RiskLevel.L3.value]   # write_class_tools（收藏写/积分/知识库导入/订单）→ high
     if n in COURSE_WRITE_TOOLS:
         return risk_map[RiskLevel.L2.value]   # 课程/题库写类 → medium
     if _classify_hitl_action(n) is not None:
         return risk_map[RiskLevel.L3.value]   # executor 高风险类（执行/网络/退款/写前缀）→ high
     return None
+
+
+def _tool_result_from_resp(tool_name: str, resp) -> dict:
+    """executor 响应 → agent tool_result（T4-C2 末段修复）。
+
+    - 统一从 pydantic 响应取值（原实现用 `result.get(...)` 对模型对象直接 AttributeError →
+      一律落进 except 记为「工具执行异常」，真实结果被吞）。
+    - executor 收口的 ACI 拒绝信封（content_text 内嵌 {status:denied,code,message,action_hint}）
+      还原为 denied 记录，**必带 `result` 键**（generate 层与 prompt 渲染不再 KeyError）。
+    """
+    data = resp.model_dump() if hasattr(resp, "model_dump") else (resp if isinstance(resp, dict) else {})
+    raw = str(data.get("content_text") or "")
+    if raw.strip().startswith("{"):
+        try:
+            env = json.loads(raw)
+            if isinstance(env, dict) and env.get("status") == "denied":
+                msg = str(env.get("message") or "该操作已被安全拦截。")
+                hint = str(env.get("action_hint") or "")
+                return {
+                    "tool_name": tool_name, "status": "denied",
+                    "code": str(env.get("code") or "permission_denied"),
+                    "message": msg, "action_hint": hint,
+                    "result": f"[已拦截] {msg}（{hint}）",
+                }
+        except Exception:  # noqa: BLE001 — 非 JSON 内容按普通结果处理
+            pass
+    # model_dump()（python 模式）返回枚举成员本身，str() 会得到 "ToolCallStatusEnum.SUCCESS"
+    # → 必须先取 .value 再归一，否则真实成功结果被误判为 error（本轮实测暴露）。
+    _st_raw = data.get("status")
+    up = str(getattr(_st_raw, "value", _st_raw) or "").upper()
+    status = {"SUCCESS": "success", "SKIPPED": "skipped", "TIMEOUT": "timeout"}.get(up, "error")
+    text = raw or str(data.get("error_message") or "")
+    return {"tool_name": tool_name, "status": status, "result": text[:500]}
+
+
+def _tool_result_text(tr: dict) -> str:
+    """统一的工具结果文本（T4-C2 断链修复）。
+
+    denied/rejected 记录没有 `result` 键（或为空），直接 `tr['result']` 会 KeyError 并把本地
+    逻辑缺陷误分类为下游 LLM 故障；此处按 status 回退 message + action_hint，保证渲染不炸。
+    """
+    status = str(tr.get("status") or "")
+    text = str(tr.get("result") or "")
+    if status == "denied":
+        msg = str(tr.get("message") or text or "权限不足，操作被拦截，未执行。")
+        hint = str(tr.get("action_hint") or "")
+        return f"[已拦截] {msg}（{hint}）" if hint else f"[已拦截] {msg}"
+    if status == "rejected":
+        msg = str(tr.get("message") or text or "用户拒绝执行该高风险操作，工具未执行。")
+        hint = str(tr.get("action_hint") or "")
+        return f"[已拒绝] {msg}（{hint}）" if hint else f"[已拒绝] {msg}"
+    if text:
+        return text
+    # 兜底：任何无 result 的记录都不得让渲染层抛 KeyError
+    return str(tr.get("message") or "")
 
 
 async def tool_node(state: AgentState) -> dict:
@@ -300,21 +391,24 @@ async def tool_node(state: AgentState) -> dict:
     if not tool_name:
         return {"tool_results": [{"tool_name": "unknown", "status": "error", "result": "未指定工具名"}]}
 
-    # R15 权限门：call_tool 之前判定，deny 零执行
-    from app.ai.permission_gate import can_use_tool, permission_denied_message
+    # R15 权限门：call_tool 之前判定，deny 零执行（W-NEXT-2 步骤2：与流式路径同源
+    # 消费 permission_gate.gate_tool_call / build_denied_envelope —— 禁两份拷贝）
+    from app.ai.permission_gate import build_denied_envelope, gate_tool_call
     role = state.get("user_role", "") or "student"
-    decision = can_use_tool(role, tool_name)
+    decision = gate_tool_call(role, tool_name)
     if not decision.allowed:
-        logger.warning(f"[Agent] 权限门拒绝: role={role} tool={tool_name}")
+        env = build_denied_envelope(role, tool_name, decision)
         return {"tool_results": [{
             "tool_name": tool_name,
             "status": "denied",
-            "code": "permission_denied",
-            "message": permission_denied_message(role, tool_name),
-            "action_hint": decision.action_hint,
+            "code": env["code"],
+            "message": env["message"],
+            "action_hint": env["action_hint"],
+            "result": f"[已拦截] {env['message']}（{env['action_hint']}）",
         }]}
 
     # R11 HITL：写类/外发类/危险级工具执行前 interrupt（总开关 settings.HITL_ENABLED）
+    _hitl_confirmed = False
     if getattr(settings, "HITL_ENABLED", False):
         risk = _hitl_risk_level(tool_name)
         if risk is not None:
@@ -345,22 +439,24 @@ async def tool_node(state: AgentState) -> dict:
                     "action_hint": "如需执行可重新提问并确认。",
                 }]}
             logger.info(f"[Agent] HITL 确认执行工具: {tool_name}")
+            _hitl_confirmed = True
 
     logger.info(f"[Agent] 调用工具: {tool_name}({tool_args})")
 
     try:
         from app.mcp import executor as mcp_executor
-        result = await mcp_executor.call_tool(
+        resp = await mcp_executor.call_tool(
             tool_name=tool_name,
-            arguments=tool_args,
+            args=tool_args,
             operator_user_id=int(state.get("user_id", 1) or 1),  # 真实 user_id 由 run_agent 注入
+            # HITL 已在 langgraph interrupt 环节人工确认 → 告知 executor 层的 HITL 收口
+            # 「已批准」，避免同一动作被二次挂起（双重门 → admin 确认后仍不执行）。
+            hitl_decision=True if _hitl_confirmed else None,
         )
-        status = result.get("status", "success") if isinstance(result, dict) else "success"
-        text = str(result.get("result", result)) if isinstance(result, dict) else str(result)
-        tool_results = [{"tool_name": tool_name, "status": status, "result": text[:500]}]
+        tool_results = [_tool_result_from_resp(tool_name, resp)]
     except Exception as exc:
         logger.warning(f"[Agent] 工具调用失败: {type(exc).__name__}: {exc}")
-        tool_results = [{"tool_name": tool_name, "status": "error", "result": str(exc)[:300]}]
+        tool_results = [{"tool_name": tool_name, "status": "error", "result": "工具执行异常，未执行成功。"}]
 
     return {"tool_results": tool_results}
 
@@ -407,11 +503,19 @@ async def generate_node(state: AgentState) -> dict:
     if graph:
         system_prompt += "\n\n## 图谱扩展\n" + format_graph_for_prompt(graph)
 
-    # 工具结果
+    # 工具结果（T4-C2：deny/reject 记录无 result 键，必须走 _tool_result_text 回退，
+    # 否则 KeyError → 被 run_agent 兜底文案吞成「AI 服务异常」，真实拒绝上下文彻底丢失）
     if tool_results:
         system_prompt += "\n\n## 工具调用结果\n"
         for tr in tool_results:
-            system_prompt += f"- {tr['tool_name']}: {tr['result'][:300]}\n"
+            system_prompt += f"- {tr.get('tool_name', 'unknown')}: {_tool_result_text(tr)[:300]}\n"
+        if not any(str(tr.get("status")) == "success" for tr in tool_results):
+            system_prompt += (
+                "\n\n注意：本轮工具调用**没有一次成功执行**，"
+                "上面所有条目都是「未执行/被拦截/被拒绝」，**没有发生任何数据变更**。"
+                "严禁使用「已完成/已创建/已导入/已上架/已提交」等完成态描述；"
+                "若为权限拦截，请如实告知用户无权执行并给出 action_hint 建议。\n"
+            )
 
     user_prompt = CHAT_USER_PROMPT.format(history_str=history_str, query=query)
 
@@ -436,7 +540,7 @@ async def generate_node(state: AgentState) -> dict:
         logger.info(f"[Agent] 生成答案: {len(answer)} chars")
     except Exception as exc:
         logger.warning(f"[Agent] LLM 生成失败: {type(exc).__name__}: {exc}")
-        answer = f"抱歉，AI 服务暂时不可用（{type(exc).__name__}）。请稍后重试。"
+        answer = "抱歉，AI 服务暂时不可用，请稍后重试。"
 
     return {"final_answer": answer}
 
@@ -554,6 +658,9 @@ async def run_agent(query: str, user_id: int = 1, session_id: str | None = None)
         "loop_count": 0,
         "next_action": "",
         "final_answer": "",
+        "tool_name": "",
+        "tool_args": {},
+        "query_rewrite": "",
         "user_id": int(user_id),
         "user_role": user_role,
     }
@@ -564,9 +671,11 @@ async def run_agent(query: str, user_id: int = 1, session_id: str | None = None)
     try:
         final_state = await agent_graph.ainvoke(initial_state, config)
     except Exception as exc:
+        # T4-C2 末段：兜底文案不得泄异常类名（避免把本地逻辑缺陷当作下游故障暴露给用户）；
+        # 真实异常类型只进服务端日志。
         logger.error(f"[Agent] 图执行异常: {type(exc).__name__}: {exc}")
         return {
-            "answer": f"AI 服务异常（{type(exc).__name__}），请稍后重试",
+            "answer": "AI 服务异常，请稍后重试",
             "docs": [],
             "graph_entities": [],
             "tool_results": [],

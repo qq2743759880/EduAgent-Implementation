@@ -273,12 +273,57 @@ async def run_chat_tool_calls(
 
     # 逐一调用
     from app.mcp import executor as _mcp_executor  # 延迟循环 import
+    # W-NEXT-2 步骤2（T4-C1）：写类工具执行前过权限门 —— 与 graph 路径同源消费
+    # permission_gate.gate_tool_call（禁两份拷贝）；角色解析惰性且只对写类触发，
+    # 只读工具路径**零额外 DB 查询**（生产行为不变）。
+    from app.ai.permission_gate import (
+        build_denied_envelope,
+        gate_tool_call,
+        is_write_class,
+        resolve_role,
+    )
+
+    _role_cache: list[str] = []
+
+    async def _role() -> str:
+        if not _role_cache:
+            _role_cache.append(await resolve_role(operator_user_id))
+        return _role_cache[0]
 
     calls_any = False
+    success_any = False
+    denied_any = False
     for plan in plans:
         calls_any = True
         args_summary_raw = _truncate(str(plan.args), 200)
         start_ms = int(time.perf_counter() * 1000)
+
+        # 写类工具：权限门 deny → 零 executor 调用（不执行、不落审计），ACI 三字段入 summary。
+        # MCPToolCallSummary.status 只允许 success/error/timeout → 以 "error" 承载，信封放 result_summary。
+        if is_write_class(plan.tool.tool_name):
+            _tool_key = str(plan.tool.tool_name).strip().lower()
+            _decision = gate_tool_call(await _role(), _tool_key)
+            if not _decision.allowed:
+                denied_any = True
+                env = build_denied_envelope(await _role(), _tool_key, _decision)
+                summaries.append(MCPToolCallSummary(
+                    call_id=f"chat-denied-{start_ms}-{plan.tool.tool_name}",
+                    tool_name=plan.tool.tool_name,
+                    args_summary=args_summary_raw,
+                    status="error",
+                    latency_ms=0,
+                    result_summary=_truncate(json.dumps(env, ensure_ascii=False), 400),
+                ))
+                parts.append(
+                    f"## MCP 工具被权限门拦截（未执行）：{plan.tool.tool_name}\n"
+                    f"- code: {env['code']}\n"
+                    f"- message: {env['message']}\n"
+                    f"- action_hint: {env['action_hint']}\n"
+                    f"- 该操作**没有执行**：如实告知用户「操作已被安全拦截」，"
+                    f"严禁声称已完成/已创建/已导入。\n"
+                )
+                continue
+
         try:
             resp = await _mcp_executor.call_tool(
                 operator_user_id=int(operator_user_id),
@@ -292,11 +337,13 @@ async def run_chat_tool_calls(
             se_norm = str(status_enum).strip().lower()
             if se_norm == "success":
                 status_label: Any = "success"
+                success_any = True
             elif se_norm == "timeout":
                 status_label = "timeout"
-            elif se_norm == "skipped":
-                status_label = "skipped"
             else:
+                # 含 SKIPPED（HITL 待审批）——MCPToolCallSummary.status 只允许
+                # success/error/timeout，"skipped" 会触发 Pydantic ValidationError 被外层
+                # except 误记为「调用异常」，故统一归入 error（真实原因在 error_message/result_summary）。
                 status_label = "error"
             result_sum = _truncate(_extract_result_text(resp), 400)
             summaries.append(MCPToolCallSummary(
@@ -337,6 +384,16 @@ async def run_chat_tool_calls(
 
     if not calls_any:
         return summaries, "", degraded_extra
+    # T4-C4 / W2-G6 幻觉检测（生成层诚实约束）：本轮存在工具调用但**无一成功**时，
+    # 明确禁止完成态断言 —— 防「无工具调用佐证却声称已完成/已创建」（含被权限门拦截场景）。
+    if not success_any:
+        parts.append(
+            "\n## 系统诚实性约束（必须遵守）\n"
+            "本轮所有工具调用**均未成功执行**"
+            + ("（其中包含被权限门拦截的写类操作）" if denied_any else "")
+            + "：**没有发生任何数据变更**。回答中严禁出现「已完成 / 已创建 / 已导入 / 已上架 / 已提交」"
+            "等完成态断言；必须如实说明未执行成功的事实、原因（如权限不足/工具失败）与可行的替代建议。\n"
+        )
     total_ms = int((time.perf_counter() - t0) * 1000)
     header = (
         f"\n\n# MCP 工具上下文（决策器={decision_note}，本轮共 {len(plans)} 次调用，总耗时 {total_ms} ms）\n"

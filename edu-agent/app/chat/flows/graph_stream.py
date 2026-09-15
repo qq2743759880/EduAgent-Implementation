@@ -291,6 +291,42 @@ async def graph_stream_sse(
             resume_decision = await _pop_hitl_decision(thread_id)
             if resume_decision is not None:
                 logger.info(f"[graph_stream] HITL resume 续跑 thread_id={thread_id} decision={resume_decision.get('action')}")
+                # T8-C2 修复：Redis 有决策 ≠ 图仍挂起。若 checkpoint 已丢失/被其它实例消费/确认已超时，
+                # 图本身没有 pending interrupt，此时把 Command(resume=...) 丢进去只会静默按新会话跑完
+                # ——用户以为"确认执行了"，实际写类工具零执行且无任何提示（静默吞）。
+                # 这里先探明挂起态，无挂起 → 显式收束（reject 给拒绝上下文 / confirm 明确失效），绝不假装续跑。
+                _probe_cfg = {"configurable": {"thread_id": thread_id}}
+                _has_pending = False
+                try:
+                    _snap = await g.aget_state(_probe_cfg)
+                    _has_pending = bool(getattr(_snap, "next", None))
+                except Exception as exc:  # noqa: BLE001 — 探测失败按「无挂起」处置（保守：不执行写操作）
+                    logger.warning(f"[graph_stream] HITL 挂起态探测失败（按无挂起处置）: {type(exc).__name__}: {exc}")
+                if not _has_pending:
+                    _act = str(resume_decision.get("action") or "").strip().lower()
+                    if _act == "reject":
+                        _notice = "已取消该高风险操作，工具未执行，也没有发生任何数据变更。"
+                        _deg = "hitl_rejected_no_pending"
+                    else:
+                        _notice = "该确认已失效：待确认的操作已过期或不存在，本次未执行任何写操作。如需继续，请重新发起请求。"
+                        _deg = "hitl_confirm_expired_no_pending"
+                    logger.warning(
+                        f"[graph_stream] HITL 决策无可续挂起（action={_act or 'unknown'}）"
+                        f" thread_id={thread_id} → {_deg}"
+                    )
+                    retrieval_payload = {
+                        "docs": [], "graph_entities": [], "retrieved_count": 0,
+                        "rewrite_query": req.query, "degraded_reason": _deg,
+                    }
+                    async for frame in _emit_retrieval():
+                        yield frame
+                    for i in range(0, len(_notice), 8):
+                        chunk = _notice[i:i + 8]
+                        answer_parts.append(chunk)
+                        yield sse_line(SseEventType.TOKEN.value, {"delta": chunk})
+                    async for frame in _finish(degraded_extra=None):
+                        yield frame
+                    return
             state = _empty_state(req.query, user_id=int(user_id), session_id=req.session_id)
             config = {"configurable": {"thread_id": thread_id, "stream_tokens": True}}
             try:

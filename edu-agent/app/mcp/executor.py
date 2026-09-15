@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hashlib
 import json
 import os
@@ -44,6 +45,10 @@ _MCP_CACHE_TTL = 60
 # 明显写语义的工具名前缀：跳过缓存（避免缓存非幂等副作用操作）
 _WRITE_TOOL_PREFIXES = ("write_", "create_", "delete_", "update_", "send_", "broadcast_", "upload_")
 
+# W-NEXT-2 步骤3：单次工具调用的执行上下文（供内置写类 handler 取权威 tenant_id/operator）。
+# 由 call_tool / _default_attempt_executor 在入口 set；LLM 提供的同名字段仅作兜底，防越租户写入。
+_EXEC_CONTEXT: contextvars.ContextVar[dict] = contextvars.ContextVar("mcp_exec_ctx", default={})
+
 # ============================================================
 # task-S1 全流程 HITL 护栏：高风险动作分类（对齐 Claude 解释→提议→同意→行动）
 # ============================================================
@@ -59,9 +64,20 @@ def _classify_hitl_action(tool_name: str) -> str | None:
     """将工具名分类为 HITL 动作类型（字符串，避免顶层依赖 hitl_gate 枚举）。
 
     返回：write_file | exec_command | network_access | refund | None（非高风险，免护栏）。
-    仅命中写/执行/网络/退款语义前缀的工具才过 Gate；只读工具（如 web_search/get_*）放行。
+
+    W-NEXT-2 步骤1（T4-C3 根因修复）：**类别以 permission_gate 为单一事实源**——
+    契约写类名是「实体_动词」（下划线前为实体、后为动词），而旧前缀表是
+    「动词_实体」（create_/write_…）→ 契约写类 10 个全漏判 None、且被误判可缓存。
+    现在先查 `permission_gate.is_write_class`（已注册实物 + 契约挂起类别都在类别映射中），
+    **前缀判定仅作 permission_gate 未登记工具（开发机/第三方工具名）的兜底保留**。
     """
-    n = (tool_name or "").lower()
+    n = (tool_name or "").strip().lower()
+    # ① 单一事实源：permission_gate 类别（course_write / admin_write → 写类高风险）
+    from app.ai.permission_gate import is_write_class
+
+    if is_write_class(n):
+        return "write_file"
+    # ② 兜底：未登记工具名按语义前缀判定（原行为，仅对映射表外名字生效）
     if any(p in n for p in _HITL_NETWORK_PREFIXES):
         return "network_access"
     if any(p in n for p in _HITL_REFUND_MARKERS):
@@ -89,11 +105,45 @@ def _server_breaker(server_id: int) -> CircuitBreaker:
 
 
 def _is_cached_call(tool_name: str, args: dict[str, Any]) -> bool:
-    """只读工具可走 60s 同参缓存；明显写语义工具跳过（避免缓存非幂等副作用）。"""
-    lowered = (tool_name or "").lower()
+    """只读工具可走 60s 同参缓存；写类工具跳过（避免缓存非幂等副作用）。
+
+    W-NEXT-2 步骤1（T4-C3 根因修复）：写类判定以 permission_gate 类别为准
+    （`<实体>_<动词>` 契约名同样命中），前缀判定仅作未登记工具的兜底。
+    """
+    from app.ai.permission_gate import is_write_class
+
+    lowered = (tool_name or "").strip().lower()
+    if is_write_class(lowered):
+        return False
     if any(lowered.startswith(p) for p in _WRITE_TOOL_PREFIXES):
         return False
     return True
+
+
+def _permission_denied_resp(*, tool_name: str, role: str, call_id: str,
+                            server_id: int = 0) -> "MCPToolTestResp":
+    """写类工具越权拦截响应（ACI 信封三字段内嵌 content_text，**不落审计日志、不执行**）。
+
+    W-NEXT-2 步骤2 纵深防御：executor 是所有工具执行路径的公共收口
+    （流式 tool_calling / 六节点图子代理 call_tool_with_retry / langgraph tool_node），
+    在此对**写类**工具做最后一次角色校验 —— 上层门（tool_calling / tool_node）漏掉的
+    路径也不会真实执行写操作。只拦写类（course_write/admin_write）；未登记名不在此拦截
+    （保持「找不到工具 → 404」既有语义，fail-closed 由上层门负责）。
+    """
+    from app.ai.permission_gate import build_denied_envelope
+
+    env = build_denied_envelope(role, tool_name)
+    logger.warning(f"[MCP] 权限门拒绝（executor 收口）: role={role} tool={tool_name} hint={env['action_hint']}")
+    return MCPToolTestResp(
+        status=ToolCallStatusEnum.ERROR,
+        error_message=f"[{env['code']}] {env['message']}",
+        latency_ms=0,
+        call_id=call_id or f"mcp-denied-{uuid.uuid4().hex[:8]}",
+        server_id=int(server_id or 0),
+        tool_name=tool_name,
+        content_text=json.dumps(env, ensure_ascii=False),
+        rejection_limited=False,
+    )
 
 
 def _mcp_cache_key(server_id: int, tool_name: str, args: dict[str, Any]) -> str:
@@ -376,12 +426,17 @@ async def _run_hitl_seam(*, action_type: str, target: str, params: dict,
                          server_id: int | None, call_id: str,
                          human_decision: bool | None, action_id: str,
                          server: dict | None = None,
-                         store=None, reviewer_fn=None) -> "MCPToolTestResp | None":
+                         store=None, reviewer_fn=None,
+                         exec_override=None) -> "MCPToolTestResp | None":
     """高风险写工具执行前必过 HITL Gate（explain→propose→approve→execute）。
 
     调用方需先判定 settings.HITL_ENABLED。本函数假定应执行护栏。
     返回 MCPToolTestResp（pending/escalated/rejected/executed 映射）；无需护栏返回 None。
     hitl_gate 全惰性导入，避免 executor 顶层耦合 ai 子包。
+
+    exec_override（W-NEXT-2 步骤3）：批准后的真实执行体注入点。内置工具（knowledge_import 等）
+    无 mcp_server/tool 行、走 handler 而非传输层 —— 用 `_make_builtin_hitl_exec(name)` 注入，
+    保证「批准 → 真执行」对内置工具同样成立（不落传输层 404）。
     """
     from app.ai.hitl_gate import (
         run_hitl_gate, HitlAction, HitlActionType, _default_hitl_store,
@@ -401,6 +456,9 @@ async def _run_hitl_seam(*, action_type: str, target: str, params: dict,
         srv = await fetch_one("SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1", (int(server_id),))
 
     def _make_exec():
+        if exec_override is not None:
+            return exec_override
+
         async def _exec(action: HitlAction):
             cid = f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
             return await _execute_single_attempt(
@@ -477,6 +535,49 @@ async def call_tool(*,
                     _hitl_reviewer=None,
                     ) -> MCPToolTestResp:
     args = args or {}
+    _EXEC_CONTEXT.set({
+        "operator_user_id": int(operator_user_id or 0),
+        "tenant_id": str(tenant_id or ""),
+        "trace_id": str(trace_id or ""),
+    })
+
+    # W-NEXT-2 步骤3：内置工具优先解析（calculator/search_knowledge/knowledge_import 在
+    # mcp_tool 表无行 → registry 解析必失败；内置 handler 才是它们的执行事实源）。
+    _builtin_name = _resolve_builtin_name(tool_id, server_id, tool_name)
+
+    # W-NEXT-2 步骤2 纵深防御（T4-C1）：executor 是流式 / 六节点图 / langgraph tool_node
+    # 三条执行路径的公共收口 —— 写类工具在此再做一次角色校验。越权 → ACI 信封返回，
+    # **零执行 / 不落审计 / 不进 HITL 审批队列**（未授权操作不应占用人工审批资源）。
+    _eff_name = (_builtin_name or str(tool_name or "")).strip().lower()
+    if _eff_name:
+        from app.ai.permission_gate import gate_tool_call, is_write_class, resolve_role
+
+        if is_write_class(_eff_name):
+            _role = await resolve_role(operator_user_id)
+            if not gate_tool_call(_role, _eff_name).allowed:
+                return _permission_denied_resp(
+                    tool_name=_eff_name, role=_role, call_id=call_id or "", server_id=int(server_id or 0),
+                )
+
+    # 内置工具：无 server / 无 mcp_tool 行 → 跳过 registry+server 解析，HITL 后直跑 handler
+    if _builtin_name:
+        if settings.HITL_ENABLED:
+            _at = _classify_hitl_action(_builtin_name)
+            if _at is not None:
+                _gated = await _run_hitl_seam(
+                    action_type=_at, target=_builtin_name, params=args,
+                    operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+                    server_id=None, call_id=call_id,
+                    human_decision=hitl_decision, action_id=hitl_action_id or "",
+                    exec_override=_make_builtin_hitl_exec(_builtin_name),
+                )
+                if _gated is not None:
+                    return _gated
+        return await _execute_builtin_attempt(
+            tool_name=_builtin_name, args=args,
+            call_id=call_id or f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
+        )
+
     tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
     server_id_eff = int(tool_row["server_id"])
     tool_name_eff = str(tool_row["tool_name"])
@@ -629,6 +730,66 @@ def register_builtin_tool(name: str, handler) -> None:
     _BUILTIN_TOOL_HANDLERS[name] = handler
 
 
+def _resolve_builtin_name(tool_id: int | None, server_id: int | None, tool_name: str | None) -> str:
+    """内置工具解析（W-NEXT-2 步骤3）：按名字命中内置注册表，使内置工具**可经 HTTP 触达**。
+
+    内置工具（calculator/search_knowledge/knowledge_import）在 mcp_tool 表**无行**，
+    `registry.get_tool_by_ref` 对它们必然失败；内置 handler 才是其执行事实源。
+
+    优先级规则：
+      1) 指定了 tool_id → 一律走 registry（tool_id 是 DB 行的显式主键，不得被名字覆盖）；
+      2) 否则按 tool_name 命中内置注册表（允许同时带 server_id —— `POST /api/mcp/tools/test`
+         的请求体契约要求 tool_id 或 (server_id, tool_name) 二选一，若要求 server_id 为空则
+         内置工具在 HTTP 上永远不可达 = 未真正上线）。
+    当前内置名与 DB mcp_tool 名无交集（DB: add/echo/list_alphabet/ping/sse_health），
+    由 tests/test_permission_gate.py 的注册面双向对账守住。
+    """
+    if tool_id or not tool_name:
+        return ""
+    n = str(tool_name).strip().lower()
+    return n if n in _BUILTIN_TOOL_HANDLERS else ""
+
+
+async def _execute_builtin_attempt(*, tool_name: str, args: dict, call_id: str) -> "MCPToolTestResp":
+    """执行一次内置工具 handler → MCPToolTestResp。
+
+    内置工具无 mcp_server/mcp_tool 行，故 server_id=0 且**不落 mcp_tool_call_log 审计行**
+    （与既有内置路径 `_default_attempt_executor` 的 calculator/search_knowledge 行为一致）。
+    """
+    handler = _BUILTIN_TOOL_HANDLERS.get(tool_name)
+    t0 = time.perf_counter()
+    if handler is None:
+        return MCPToolTestResp(
+            status=ToolCallStatusEnum.ERROR, error_message=f"未注册的内置工具 {tool_name}",
+            latency_ms=0, call_id=call_id, server_id=0, tool_name=tool_name, content_text=None,
+        )
+    try:
+        content = await handler(dict(args))
+        return MCPToolTestResp(
+            status=ToolCallStatusEnum.SUCCESS,
+            latency_ms=int((time.perf_counter() - t0) * 1000),
+            call_id=call_id, server_id=0, tool_name=tool_name, content_text=str(content),
+        )
+    except Exception as exc:  # noqa: BLE001 — 内置执行失败按 ERROR 返回，不冒泡打崩调用方
+        logger.warning(f"[MCP] 内置工具 {tool_name} 执行失败: {type(exc).__name__}: {exc}")
+        return MCPToolTestResp(
+            status=ToolCallStatusEnum.ERROR, error_message=f"内置工具 {tool_name} 执行失败：{exc}",
+            latency_ms=int((time.perf_counter() - t0) * 1000), call_id=call_id, server_id=0,
+            tool_name=tool_name, content_text=None,
+        )
+
+
+def _make_builtin_hitl_exec(tool_name: str):
+    """HITL Gate 批准后的执行体（内置工具版）：approve → 真实跑内置 handler（非传输层）。"""
+    async def _exec(action) -> "MCPToolTestResp":
+        cid = f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
+        return await _execute_builtin_attempt(
+            tool_name=tool_name, args=dict(getattr(action, "params", None) or {}), call_id=cid,
+        )
+
+    return _exec
+
+
 # search_knowledge 后端可注入（子代理检索 / 向量检索），缺省降级
 _SEARCH_KNOWLEDGE_BACKEND = None
 
@@ -673,8 +834,105 @@ async def _search_knowledge_handler(args: dict) -> str:
     )
 
 
+# W-NEXT-2 步骤3：knowledge_import 写类内置工具（admin_write）
+_KNOWLEDGE_IMPORT_TASK_TYPE = "agent_import"
+_KNOWLEDGE_IMPORT_VISIBILITIES = ("private", "public")
+
+
+async def _knowledge_import_handler(args: dict) -> str:
+    """知识库导入（写类，admin_write）——包装既有真写入口 `task_store.create_task`。
+
+    单一执行事实源：不新增 SQL、不碰 Milvus/loader.py，只调用既有 `knowledge_import_task`
+    写入口（MySQL 真相源 + Redis 缓存双写）。
+
+    行为边界（G6 幻觉检测同源：回执如实反映真实发生的写，不谎报"已导入完成"）：
+      1) 校验 `source_files` 非空（list[dict|str]）+ `visibility` ∈ {private, public}；
+      2) tenant_id **以执行上下文为权威**（调用方注入），LLM 传入值仅作兜底 → 防越租户写入；
+      3) 落任务行（status=pending）→ 回执含 task_id/status/tenant_id/visibility/files；
+      4) 仅当条目全部带真实存在的本地路径时，才后台拉起既有导入管道（pipeline_started=true）；
+         否则仅登记任务（文件尚未落地），回执标注 pipeline_started=false 与等待说明。
+    """
+    ctx = _EXEC_CONTEXT.get() or {}
+    src = args.get("source_files") or args.get("files") or []
+    if isinstance(src, str):
+        src = [src]
+    if not isinstance(src, list) or not src:
+        raise ValueError("knowledge_import 缺少 source_files（需非空列表，元素为 {file_name, local_path|object_key}）")
+    visibility = str(args.get("visibility") or "private").strip().lower()
+    if visibility not in _KNOWLEDGE_IMPORT_VISIBILITIES:
+        raise ValueError(f"visibility 非法：{visibility}（仅允许 private/public）")
+
+    meta: list[dict] = []
+    local_paths: list[str] = []
+    for item in src:
+        if isinstance(item, str):
+            meta.append({"object_key": None, "file_name": item, "file_size": 0, "content_type": ""})
+            if os.path.exists(item):
+                local_paths.append(item)
+            continue
+        if not isinstance(item, dict):
+            raise ValueError("source_files 条目必须是 dict 或 str")
+        key = item.get("object_key") or item.get("key")
+        meta.append({
+            "object_key": key,
+            "file_name": str(item.get("file_name") or item.get("name") or key or "unnamed"),
+            "file_size": int(item.get("file_size") or 0),
+            "content_type": str(item.get("content_type") or ""),
+        })
+        lp = str(item.get("local_path") or item.get("path") or "")
+        if lp and os.path.exists(lp):
+            local_paths.append(lp)
+
+    tenant_id = str(ctx.get("tenant_id") or args.get("tenant_id") or "_default")
+    task_id = f"task_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+
+    from app.knowledge import task_store
+
+    task = await task_store.create_task(
+        task_id=task_id,
+        task_type=_KNOWLEDGE_IMPORT_TASK_TYPE,
+        tenant_id=tenant_id,
+        visibility=visibility,
+        source_files_meta=meta,
+    )
+
+    pipeline_started = False
+    if len(local_paths) == len(meta):
+        try:
+            from app.knowledge.models import Visibility
+            from app.knowledge.routers.upload import _process_import
+
+            asyncio.create_task(_process_import(
+                task_id=task_id,
+                local_paths=local_paths,
+                original_names=[m["file_name"] for m in meta],
+                tenant_id=tenant_id,
+                visibility=Visibility(visibility),
+                task_type=_KNOWLEDGE_IMPORT_TASK_TYPE,
+                source_files_meta=meta,
+            ))
+            pipeline_started = True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[builtin] knowledge_import 管道拉起失败（任务已登记，状态 pending）: {type(exc).__name__}: {exc}")
+
+    return json.dumps({
+        "task_id": task["task_id"],
+        "status": task["status"],
+        "task_type": task["task_type"],
+        "tenant_id": task["tenant_id"],
+        "visibility": task["visibility"],
+        "files": len(meta),
+        "pipeline_started": pipeline_started,
+        "operator_user_id": ctx.get("operator_user_id"),
+        "created_at": task["created_at"],
+        "note": ("导入任务已登记，后台 parse→chunk→embed→load 管道已启动" if pipeline_started
+                 else "导入任务已登记（status=pending），文件尚未落地，管道未启动"),
+    }, ensure_ascii=False)
+
+
 register_builtin_tool("calculator", _calculator_handler)
 register_builtin_tool("search_knowledge", _search_knowledge_handler)
+register_builtin_tool("knowledge_import", _knowledge_import_handler)
 
 
 async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str, attempt: int,
@@ -1017,6 +1275,11 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
     - 保留 task33 既有契约：per-server 熔断 / 只读缓存 / 审计日志（call_tool 单步路径不变）。
     """
     args = args or {}
+    _EXEC_CONTEXT.set({
+        "operator_user_id": int(operator_user_id or 0),
+        "tenant_id": str(tenant_id or ""),
+        "trace_id": str(trace_id or ""),
+    })
     fallback_map = settings.TOOL_FALLBACK_MAP
     max_attempts = settings.MAX_TOOL_ATTEMPTS
     consecutive_rej = settings.TOOL_CONSECUTIVE_REJECTIONS
@@ -1026,31 +1289,55 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
     if llm_rewrite_fn is None and use_llm_rewrite:
         llm_rewrite_fn = _default_rewrite_fn
 
-    # 解析原始工具引用
-    try:
-        tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
-    except Exception as exc:
-        return MCPToolTestResp(
-            status=ToolCallStatusEnum.ERROR, error_message=f"工具解析失败：{exc}",
-            latency_ms=0, call_id=call_id or "mcp-err", server_id=int(server_id or 0),
-            tool_name=str(tool_name or ""), content_text=None,
-        )
-    original_tool_name = str(tool_row["tool_name"])
-    server_id_eff = int(tool_row["server_id"])
-    server = await fetch_one("SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1", (server_id_eff,))
-    if not server:
-        return MCPToolTestResp(
-            status=ToolCallStatusEnum.ERROR, error_message="关联 server 已删除",
-            latency_ms=0, call_id=call_id or "mcp-err", server_id=server_id_eff,
-            tool_name=original_tool_name, content_text=None,
-        )
-    if int(server.get("enabled") or 0) != 1:
-        return MCPToolTestResp(
-            status=ToolCallStatusEnum.ERROR,
-            error_message=f"server_code={server.get('server_code')} 已禁用（enabled=0）",
-            latency_ms=0, call_id=call_id or "mcp-err", server_id=server_id_eff,
-            tool_name=original_tool_name, content_text=None,
-        )
+    # W-NEXT-2 步骤2 纵深防御：写类工具在本路径（六节点图子代理 call_tool 事实源）先过门，
+    # 越权 → ACI 信封、零执行（不进入 registry 解析 / HITL / 重试闭环）。
+    # 仅对 TOOL_CLASS_MAP 命中的写类生效 → 未登记工具名（web_search 等）保持既有 404/重试语义。
+    _req_name = str(tool_name or "").strip().lower()
+    if _req_name:
+        from app.ai.permission_gate import gate_tool_call, is_write_class, resolve_role
+
+        if is_write_class(_req_name):
+            _role = await resolve_role(operator_user_id)
+            if not gate_tool_call(_role, _req_name).allowed:
+                return _permission_denied_resp(
+                    tool_name=_req_name, role=_role, call_id=call_id or "",
+                    server_id=int(server_id or 0),
+                )
+
+    # W-NEXT-2 步骤3：内置工具优先解析（无 mcp_tool/mcp_server 行）——合成 server 元信息后
+    # 直接复用下方既有 HITL 护栏与重试闭环；真实执行仍由 _default_attempt_executor 的
+    # 内置 handler 分支完成（switch_tool 换到内置备用工具同样走得通）。
+    _builtin_name = _resolve_builtin_name(tool_id, server_id, tool_name)
+    if _builtin_name:
+        original_tool_name = _builtin_name
+        server_id_eff = int(server_id or 0)
+        server = {"id": server_id_eff, "server_code": "builtin", "enabled": 1, "yn": 1}
+    else:
+        # 解析原始工具引用
+        try:
+            tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
+        except Exception as exc:
+            return MCPToolTestResp(
+                status=ToolCallStatusEnum.ERROR, error_message=f"工具解析失败：{exc}",
+                latency_ms=0, call_id=call_id or "mcp-err", server_id=int(server_id or 0),
+                tool_name=str(tool_name or ""), content_text=None,
+            )
+        original_tool_name = str(tool_row["tool_name"])
+        server_id_eff = int(tool_row["server_id"])
+        server = await fetch_one("SELECT * FROM mcp_server WHERE id=%s AND yn=1 LIMIT 1", (server_id_eff,))
+        if not server:
+            return MCPToolTestResp(
+                status=ToolCallStatusEnum.ERROR, error_message="关联 server 已删除",
+                latency_ms=0, call_id=call_id or "mcp-err", server_id=server_id_eff,
+                tool_name=original_tool_name, content_text=None,
+            )
+        if int(server.get("enabled") or 0) != 1:
+            return MCPToolTestResp(
+                status=ToolCallStatusEnum.ERROR,
+                error_message=f"server_code={server.get('server_code')} 已禁用（enabled=0）",
+                latency_ms=0, call_id=call_id or "mcp-err", server_id=server_id_eff,
+                tool_name=original_tool_name, content_text=None,
+            )
 
     # task-S1 全流程 HITL 护栏：原始工具为高风险写工具时，先过 Gate 再进闭环（HITL_ENABLED 默认 False）
     if settings.HITL_ENABLED:
@@ -1059,9 +1346,11 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
             _gated = await _run_hitl_seam(
                 action_type=_at, target=original_tool_name, params=args,
                 operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
-                server_id=server_id_eff, call_id=call_id,
+                server_id=(None if _builtin_name else server_id_eff), call_id=call_id,
                 human_decision=hitl_decision, action_id=hitl_action_id or "",
                 server=server, store=_hitl_store, reviewer_fn=_hitl_reviewer,
+                # 内置工具（knowledge_import）批准后的执行体是 handler，不走传输层
+                exec_override=(_make_builtin_hitl_exec(_builtin_name) if _builtin_name else None),
             )
             if _gated is not None:
                 return _gated

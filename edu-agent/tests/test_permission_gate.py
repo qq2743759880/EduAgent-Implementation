@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """R15b 权限门 + ACI 错误信封测试（契约 contracts/reshape-r-aci.json 已冻结）。
 
-R15b 变更：映射表对账实物——TOOL_CLASS_MAP 只含真实注册工具（7 个），
-契约写类工具名转入 CONTRACT_PENDING_TOOLS（映射挂起，仍 fail-closed deny）。
+R15b 变更：映射表对账实物——TOOL_CLASS_MAP 只含真实注册工具，契约写类工具名转入
+CONTRACT_PENDING_TOOLS（映射挂起，仍 fail-closed deny）。
+
+W-NEXT-2 变更（步骤3 上线写类工具）：knowledge_import 从 CONTRACT_PENDING_TOOLS
+迁出 → TOOL_CLASS_MAP["knowledge_import"]="admin_write"，注册面 7 → **8**，
+挂起清单 10 → **9**；因此"实物工具全放行"不再成立，须按类别断言。
 
 覆盖：
 - G1 对账：TOOL_CLASS_MAP × executor 注册面（源码实采 + mcp_tool 表实采）逐名可比
-- G1 矩阵：真实工具 × 三角色 全组合；契约矩阵「类别→角色」语义未变
+- G1 矩阵：真实工具 × 三角色 全组合（按类别断言）；契约矩阵「类别→角色」语义未变
 - G2 fail-closed：契约挂起工具 / 未登记工具 / 空角色 → 一律 deny
 - G3 图级 tool_node deny 路径（不经过 LLM，mock executor.call_tool 零调用）
 - G4 角色注入：run_agent 经 get_user_info_by_id 注入 user_role（mock DB 层）
@@ -35,6 +39,8 @@ from app.ai.permission_gate import (
     can_use_tool,
     class_allowed_roles,
     classify_tool,
+    classify_tool_intent,
+    is_write_class,
     permission_denied_message,
 )
 import app.chat.flows.langgraph_agent as lga
@@ -42,9 +48,12 @@ from app.chat.flows.langgraph_agent import run_agent, tool_node
 
 _EXECUTOR_SRC = Path(__file__).resolve().parents[1] / "app" / "mcp" / "executor.py"
 
-# 真实注册工具代表（全部 7 个都在 PUBLIC_READ_TOOLS 里）
+# 真实注册工具（8 个）：按类别拆分——public_read 全角色放行，admin_write 仅 admin
 READ_TOOL = "search_knowledge"
-REAL_TOOLS = sorted(REGISTERED_TOOLS)          # 7 个实物工具
+REAL_TOOLS = sorted(REGISTERED_TOOLS)
+REAL_READ_TOOLS = sorted(n for n in REGISTERED_TOOLS if classify_tool(n) == "public_read")
+REAL_WRITE_TOOLS = sorted(n for n in REGISTERED_TOOLS if classify_tool(n) in ("course_write", "admin_write"))
+REAL_ADMIN_WRITE_TOOL = "knowledge_import"     # W-NEXT-2 步骤3 上线实物
 # 契约挂起（无实物）代表工具
 PENDING_COURSE_TOOL = "course_create"
 PENDING_ADMIN_TOOL = "order_create"
@@ -132,11 +141,29 @@ def test_registry_evidence_covers_every_mapped_tool():
 # G1 矩阵：真实工具 × 三角色 全组合
 # ============================================================
 @pytest.mark.parametrize("role", ALL_ROLES)
-@pytest.mark.parametrize("tool", REAL_TOOLS)
-def test_matrix_real_tools_all_roles_allowed(role, tool):
-    """真实注册工具均为公开只读 → student/manager/admin 全放行。"""
+@pytest.mark.parametrize("tool", REAL_READ_TOOLS)
+def test_matrix_real_read_tools_all_roles_allowed(role, tool):
+    """真实注册工具中的公开只读 → student/manager/admin 全放行。"""
     d = can_use_tool(role, tool)
     assert d.allowed is True, f"{role} × {tool} 应放行（public_read）"
+
+
+@pytest.mark.parametrize("tool", REAL_WRITE_TOOLS)
+def test_matrix_real_write_tools_only_admin_allowed(tool):
+    """W-NEXT-2：已注册写类实物（knowledge_import=admin_write）→ 仅 admin 放行，
+    student/manager 一律 deny + action_hint（与契约类别语义一致）。"""
+    assert can_use_tool("admin", tool).allowed is True, f"admin × {tool} 应放行"
+    for role in ("student", "manager", "teacher"):
+        d = can_use_tool(role, tool)
+        assert d.allowed is False, f"{role} × {tool} 应 deny（{classify_tool(tool)}）"
+        assert d.action_hint and d.action_hint.strip()
+
+
+def test_knowledge_import_is_registered_admin_write():
+    """W-NEXT-2 步骤3：knowledge_import 已从挂起迁入实物映射（admin_write）。"""
+    assert REAL_ADMIN_WRITE_TOOL in REGISTERED_TOOLS
+    assert classify_tool(REAL_ADMIN_WRITE_TOOL) == "admin_write"
+    assert REAL_ADMIN_WRITE_TOOL not in CONTRACT_PENDING_TOOLS
 
 
 def test_contract_matrix_class_semantics_unchanged():
@@ -145,7 +172,7 @@ def test_contract_matrix_class_semantics_unchanged():
     assert class_allowed_roles("public_read") == frozenset({"student", "manager", "admin", "teacher"})
     assert class_allowed_roles("course_write") == frozenset({"manager", "admin"})
     assert class_allowed_roles("admin_write") == frozenset({"admin"})
-    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 7, "真实工具面应为 7 个"
+    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 8, "真实工具面应为 8 个（W-NEXT-2 起）"
 
 
 # ============================================================
@@ -195,22 +222,61 @@ def test_pending_tools_denied_for_all_roles(role, tool):
 
 
 def test_pending_tools_absent_from_tool_class_map():
-    """G2：10 个虚构名已从 TOOL_CLASS_MAP 移除，转入 CONTRACT_PENDING_TOOLS。"""
-    assert len(CONTRACT_PENDING_TOOLS) == 10
+    """G2：挂起名已从 TOOL_CLASS_MAP 移除，转入 CONTRACT_PENDING_TOOLS。
+
+    W-NEXT-2 起为 **9** 个（knowledge_import 已上线迁出，转入 admin_write 实物映射）。
+    """
+    assert len(CONTRACT_PENDING_TOOLS) == 9
     assert set(TOOL_CLASS_MAP) & set(CONTRACT_PENDING_TOOLS) == set()
     for name in CONTRACT_PENDING_TOOLS:
         assert classify_tool(name) is None, f"{name} 不应出现在映射表（无实物注册）"
-    # 挂起集合与兼容别名一致（HITL 消费方共用同一事实源）
-    assert set(COURSE_WRITE_TOOLS) == {n for n, c in CONTRACT_PENDING_TOOLS.items() if c == "course_write"}
-    assert set(ADMIN_WRITE_TOOLS) == {n for n, c in CONTRACT_PENDING_TOOLS.items() if c == "admin_write"}
-    assert set(COURSE_WRITE_TOOLS) | set(ADMIN_WRITE_TOOLS) == set(CONTRACT_PENDING_TOOLS)
+        assert classify_tool_intent(name) == CONTRACT_PENDING_TOOLS[name], (
+            f"{name} 的契约意图类别应可查（HITL/缓存判定共用）"
+        )
+    # 兼容别名 = 契约挂起 ∪ 已注册实物（W-NEXT-2：写类别名不再等同于挂起清单）
+    assert set(COURSE_WRITE_TOOLS) == (
+        {n for n, c in CONTRACT_PENDING_TOOLS.items() if c == "course_write"}
+        | {n for n in REGISTERED_TOOLS if classify_tool(n) == "course_write"}
+    )
+    assert set(ADMIN_WRITE_TOOLS) == (
+        {n for n, c in CONTRACT_PENDING_TOOLS.items() if c == "admin_write"}
+        | {n for n in REGISTERED_TOOLS if classify_tool(n) == "admin_write"}
+    )
+    assert set(CONTRACT_PENDING_TOOLS) <= (set(COURSE_WRITE_TOOLS) | set(ADMIN_WRITE_TOOLS))
+    assert REAL_ADMIN_WRITE_TOOL in ADMIN_WRITE_TOOLS
 
 
 def test_all_mapping_tools_classified():
-    # 映射表每个工具都能被 classify（非 None），且全是公开只读
+    # 映射表每个工具都能被 classify（非 None），类别必须是三枚举之一
     for name, cls in TOOL_CLASS_MAP.items():
         assert classify_tool(name) == cls
         assert cls in ("public_read", "course_write", "admin_write")
+        assert classify_tool_intent(name) == cls, "已注册实物的契约意图必须与映射一致"
+
+
+# ============================================================
+# W-NEXT-2 步骤1（T4-C3/C1 根因）：写类分类单一事实源
+# ============================================================
+WRITE_CLASS_NAMES = sorted(
+    set(CONTRACT_PENDING_TOOLS)
+    | {n for n in REGISTERED_TOOLS if classify_tool(n) in ("course_write", "admin_write")}
+)
+
+
+def test_write_class_names_cover_10():
+    """W2-G1：写类名共 10 个（9 个契约挂起 + 1 个已注册实物 knowledge_import）。"""
+    assert len(WRITE_CLASS_NAMES) == 10, f"写类名应为 10 个: {WRITE_CLASS_NAMES}"
+
+
+@pytest.mark.parametrize("name", WRITE_CLASS_NAMES)
+def test_write_class_names_classified_and_not_cached(name):
+    """W2-G1：每个写类名 → is_write_class True、executor._classify_hitl_action='write_file'、
+    _is_cached_call=False（写类操作严禁走缓存/幂等短路）。"""
+    from app.mcp.executor import _classify_hitl_action, _is_cached_call
+
+    assert is_write_class(name) is True
+    assert _classify_hitl_action(name) == "write_file", f"{name} 应判为写类高风险动作"
+    assert _is_cached_call(name, {"any": 1}) is False, f"{name} 写类操作不得被判为可缓存"
 
 
 # ============================================================
