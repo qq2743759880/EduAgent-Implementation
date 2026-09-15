@@ -4,12 +4,12 @@
 // 检查项:① Milvus socket ② Redis(docker exec redis-cli ping)③ MongoDB socket
 //         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
-//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6)
+//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,三分支语义)
 //         ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
-// 全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
+// 共 9 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 // ---------- 配置(按演示机实际环境修改这里) ----------
 const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的克隆 docker.vmx";
@@ -46,13 +46,27 @@ const C = NOCOLOR
 // ---------- 工具 ----------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// 读 edu-agent/.env 判 DEBUG/ENV_NAME(A-G4 三分支判据):缺文件/缺值按安全缺省(ENV_NAME 缺省=local)
+function readDevEnv() {
+  const envPath = new URL("../.env", import.meta.url);
+  const out = { DEBUG: null, ENV_NAME: "local" }; // ENV_NAME 缺省视为 local(D-04 本机正是缺省态)
+  if (!existsSync(envPath)) return out;
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+    if (!m) continue;
+    if (m[1] === "DEBUG") out.DEBUG = m[2];
+    if (m[1] === "ENV_NAME") out.ENV_NAME = m[2] || "local";
+  }
+  return out;
+}
+
 async function timed(fn) {
   const t0 = Date.now();
   try {
     const detail = await fn();
     return { ok: true, ms: Date.now() - t0, detail: detail || "" };
   } catch (e) {
-    return { ok: false, ms: Date.now() - t0, detail: String(e?.message || e).slice(0, 160) };
+    return { ok: false, ms: Date.now() - t0, detail: String(e?.message || e).slice(0, 160), err: e };
   }
 }
 
@@ -125,13 +139,15 @@ function runCmd(cmd, cargs, timeoutMs = DOCKER_TIMEOUT_MS) {
 const results = [];
 async function check(no, name, fn) {
   const r = await timed(fn);
-  results.push({ no, name, ...r });
+  const isWarn = fn.__warn && !r.ok; // advisory 项走 WARN(软,不阻断 exit)而非 FAIL
+  results.push({ no, name, ...r, warn: isWarn });
   if (r.ok) {
     console.log(`${C.g}[PASS]${C.x} ${no}. ${name} ${C.dim}(${r.ms}ms)${C.x}${r.detail ? C.dim + "  " + r.detail + C.x : ""}`);
+  } else if (isWarn) {
+    console.log(`${C.y}[WARN]${C.x} ${no}. ${name} ${C.dim}(${r.ms}ms)${C.x}`);
+    console.log(`       ${C.y}-> ${fn.__fix ? fn.__fix(r.detail) : r.detail}${C.x}`);
   } else {
-    const isWarn = fn.__warn;
-    const tag = isWarn ? `${C.r}[WARN]${C.x}` : `${C.r}[FAIL]${C.x}`;
-    console.log(`${tag} ${no}. ${name} ${C.dim}(${r.ms}ms)${C.x}`);
+    console.log(`${C.r}[FAIL]${C.x} ${no}. ${name} ${C.dim}(${r.ms}ms)${C.x}`);
     console.log(`       ${C.y}-> ${fn.__fix ? fn.__fix(r.detail) : r.detail}${C.x}`);
   }
   return r.ok;
@@ -230,25 +246,36 @@ await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
   },
   { __fix: FIX.frontend }));
 
-// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6)
-// 无 token GET /api/admin/users:若返回 200/数据 → DEBUG=true 漏洞(红 WARN,计入 8 项,阻止 exit 0);401/403 → 安全。
+// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6,A-G4 改探真后门 + 三分支语义)
+// 分支:
+//   A) 无 token GET /api/users/me 被 401/403 拒绝 → 安全 PASS「DEBUG 安全」
+//   B) 返回 200/有数据(后门存在)且 DEBUG=true + ENV_NAME=local → WARN「开发态虚拟管理员后门存在(已知;部署前必须 DEBUG=false)」——不阻断 exit 0(本机开发态预期)
+//   C) 返回 200/有数据且 DEBUG=true + ENV_NAME≠local → 红,阻断 exit 1(真后门/非本地即危险)
+// ENV_NAME 从 edu-agent/.env 读(grep ^ENV_NAME=,缺省视为 local);fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
 const debugCheck = Object.assign(
   async () => {
+    const env = readDevEnv();
     let res;
     try {
-      res = await fetch(`${BACKEND}/api/admin/users`, { signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
+      res = await fetch(`${BACKEND}/api/users/me`, { signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
     } catch (e) {
       // 后端不可达:本项无法探测,④ 已红,不重复误报 DEBUG 漏洞
       return `跳过:后端不可达(以④红项为准),DEBUG 漏洞未探测`;
     }
     const text = await res.text();
-    if (res.status === 200 || /"code":\s*0/.test(text)) {
-      throw new Error(`无 token 返回 HTTP ${res.status} 有数据`);
+    const vuln = res.status === 200 || /"code":\s*0/.test(text);
+    if (!vuln) return `无 token 被 ${res.status} 拒绝(DEBUG 安全)`;
+    const isLocalDev = env.DEBUG === "true" && env.ENV_NAME === "local";
+    if (isLocalDev) {
+      // 开发态已知后门:WARN(软)不阻断,避免永久红=狼来了
+      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME});部署前必须 DEBUG=false,见 P1-8 ENV_NAME 门`);
+      e.__warn = true;
+      throw e;
     }
-    return `无 token 被 401 拒绝(DEBUG 安全)`;
+    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME});上线前必须 DEBUG=false`);
   },
   { __warn: true, __fix: FIX.debug });
-await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/admin/users)`, debugCheck);
+await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支)`, debugCheck);
 
 // ⑨ 抽验页(C5-D2 扩清单):admin-users-refine-proto.html 单列第 9 项,
 // 不并入 ⑦ 核心故事线(核心页 8 个口径不变);FAIL 指引同前端。
@@ -257,13 +284,17 @@ await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object
   { __fix: FIX.frontend }));
 
 // ---------- 汇总 ----------
+// warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1
 const pass = results.filter((r) => r.ok).length;
+const warn = results.filter((r) => !r.ok && r.warn).map((r) => r.no);
+const red = results.filter((r) => !r.ok && !r.warn).map((r) => r.no);
 const totalMs = results.reduce((a, r) => a + r.ms, 0);
 console.log("");
-if (pass === results.length) {
-  console.log(`${C.g}汇总: 绿 ${pass}/${results.length} —— 演示环境就绪${C.x} ${C.dim}(检查耗时 ${totalMs}ms)${C.x}`);
+if (red.length === 0) {
+  const warnNote = warn.length ? `,WARN ${warn.join("、")}` : "";
+  console.log(`${C.g}汇总: 绿 ${pass + warn.length}/${results.length}${warnNote} —— 演示环境就绪${C.x} ${C.dim}(检查耗时 ${totalMs}ms)${C.x}`);
 } else {
-  const reds = results.filter((r) => !r.ok).map((r) => r.no);
-  console.log(`${C.r}汇总: 绿 ${pass}/${results.length},红项 ${reds.join("、")} —— 请按上方指引处置后重跑${C.x} ${C.dim}(检查耗时 ${totalMs}ms)${C.x}`);
+  const warnNote = warn.length ? `,WARN ${warn.join("、")}` : "";
+  console.log(`${C.r}汇总: 绿 ${pass}/${results.length},红项 ${red.join("、")}${warnNote} —— 请按上方指引处置后重跑${C.x} ${C.dim}(检查耗时 ${totalMs}ms)${C.x}`);
 }
-process.exit(pass === results.length ? 0 : 1);
+process.exit(red.length === 0 ? 0 : 1);
