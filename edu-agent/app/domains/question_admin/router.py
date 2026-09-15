@@ -13,6 +13,7 @@ from fastapi import APIRouter, Body, Depends, Query
 
 from app.auth import CurrentUser, get_current_user, require_role
 from app.auth.schemas import UserRole
+from app.common.exceptions import PermissionDeniedError
 from app.core.resp import ok
 from app.domains.question_admin import service as svc
 from app.domains.question_admin.schemas import (
@@ -91,11 +92,15 @@ async def update_bank(bank_id: int, payload: BankUpdateAdmin):
     return ok(data=result.model_dump(mode="json"))
 
 
-@router.delete("/banks/{bank_id}", summary="删除题库（软删 yn=0；非空且非 force→40924，force→级联软删题目）")
+@router.delete("/banks/{bank_id}", summary="删除题库（软删 yn=0；非空且非 force→40924，force→级联软删题目，force 仅 ADMIN）")
 async def delete_bank(
     bank_id: int,
-    force: bool = Query(False, description="true=库内含题目时仍级联软删题目（需谨慎，仅 ADMIN）"),
+    force: bool = Query(False, description="true=库内含题目时仍级联软删题目（仅 ADMIN）"),
+    me: CurrentUser = Depends(get_current_user),
 ):
+    # T7-C1：force 级联删除角色门对齐 F9（course_admin 班次删除）——仅 ADMIN，MANAGER 只可删空库
+    if force and me.role != UserRole.ADMIN:
+        raise PermissionDeniedError("强制级联删除仅 ADMIN 可执行")
     result = await svc.delete_bank(bank_id, force=force)
     return ok(data={
         "deleted": True,

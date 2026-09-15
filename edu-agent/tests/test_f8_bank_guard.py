@@ -95,3 +95,47 @@ class TestBankDeleteGuard:
         assert ei.value.code == NOT_FOUND
         assert q_repo.soft_delete_calls == []
         assert bank_repo.soft_delete_calls == []
+
+
+# ============================================================
+# 路由层角色门（T7-C1：force 仅 ADMIN，对齐 F9 班次删除）
+# ============================================================
+from types import SimpleNamespace  # noqa: E402
+
+from app.auth.schemas import UserRole  # noqa: E402
+from app.common.error_codes import FORBIDDEN  # noqa: E402
+from app.common.exceptions import PermissionDeniedError  # noqa: E402
+from app.domains.question_admin import router as qrouter  # noqa: E402
+
+
+class TestBankDeleteForceRoleGate:
+    """delete_bank 路由层：force=true 仅 ADMIN 可执行；force=false 既有权限不变。"""
+
+    @staticmethod
+    def _patch_service(monkeypatch):
+        calls: list[dict] = []
+
+        async def _fake_delete_bank(bank_id: int, force: bool = False):
+            calls.append({"bank_id": bank_id, "force": force})
+            return {"forced": force, "questions_removed": 0}
+
+        monkeypatch.setattr(qrouter.svc, "delete_bank", _fake_delete_bank)
+        return calls
+
+    async def test_manager_force_forbidden_403(self, monkeypatch):
+        calls = self._patch_service(monkeypatch)
+        with pytest.raises(PermissionDeniedError) as ei:
+            await qrouter.delete_bank(1, force=True, me=SimpleNamespace(role=UserRole.MANAGER))
+        assert ei.value.code == FORBIDDEN
+        assert calls == []          # 服务层零调用：不触达级联软删
+
+    async def test_admin_force_allowed(self, monkeypatch):
+        calls = self._patch_service(monkeypatch)
+        resp = await qrouter.delete_bank(2, force=True, me=SimpleNamespace(role=UserRole.ADMIN))
+        assert calls == [{"bank_id": 2, "force": True}]
+        assert resp["data"]["forced"] is True
+
+    async def test_manager_without_force_still_allowed(self, monkeypatch):
+        calls = self._patch_service(monkeypatch)
+        await qrouter.delete_bank(3, force=False, me=SimpleNamespace(role=UserRole.MANAGER))
+        assert calls == [{"bank_id": 3, "force": False}]
