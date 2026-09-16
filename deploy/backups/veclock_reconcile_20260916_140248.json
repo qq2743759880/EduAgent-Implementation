@@ -1,0 +1,192 @@
+{
+  "script": "veclock_reconcile.py",
+  "created_at": "2026-09-16T06:02:30.399497+00:00",
+  "backend_config": {
+    "EMBED_BACKEND": "cuda"
+  },
+  "collections": {
+    "edu_knowledge": {
+      "meta": {
+        "total": 4417,
+        "fallback_dist": {},
+        "unmarked": 4417,
+        "blank_content": 142,
+        "dot_placeholder": 0
+      },
+      "vectors": {
+        "sampled": 200,
+        "norm_pass_rate": 0.945,
+        "norm_pass": 189,
+        "zero_vector_rows": 0,
+        "identical_cluster_rate": 0.06,
+        "identical_cluster_rows": 12,
+        "max_cluster_size": 6,
+        "distinct_vectors": 192
+      },
+      "reencode_fingerprint": {
+        "reencoded": 40,
+        "backend_now": "bge_m3",
+        "cos_ge_0999": 0.525,
+        "cos_09_0999": 0.0,
+        "cos_lt_09": 0.475,
+        "median_cos": 1.0,
+        "suspect_count": 19,
+        "suspects": [
+          {
+            "id": "_default:e2fd3b569d4edd58:2",
+            "cosine": -0.0187,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:ccc4112597129771:2",
+            "cosine": 0.0034,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:d443e859be6f2d21:2",
+            "cosine": -0.0528,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:64a7c55057f4969a:38",
+            "cosine": 0.0434,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:fa3fda5c12e8b29e:1",
+            "cosine": 0.0129,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:6186f4f64439c46d:1",
+            "cosine": 0.068,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:8dc9ebe1fbb9e45b:38",
+            "cosine": 0.0057,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:f754339f39c28440:2",
+            "cosine": -0.014,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:8dc9ebe1fbb9e45b:9",
+            "cosine": 0.0129,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:cb3f91d54eee30e5:46",
+            "cosine": 0.002,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:9892ebfe7e4683b9:1",
+            "cosine": 0.011,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:5d189bd1948820eb:2",
+            "cosine": -0.0618,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:4767090d8321cfd1:2",
+            "cosine": 0.061,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:eacf43a0b40c4f8d:1",
+            "cosine": 0.0324,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:51a312ea88e99352:1",
+            "cosine": 0.0388,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:19022800f7726ccd:10",
+            "cosine": 0.0032,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:9f322a8d1f0193da:3",
+            "cosine": 0.0076,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:7714e42f5c663c30:2",
+            "cosine": 0.029,
+            "backend_now": "bge_m3"
+          },
+          {
+            "id": "_default:c9c4dc7d0d5d6cd5:2",
+            "cosine": 0.0341,
+            "backend_now": "bge_m3"
+          }
+        ]
+      }
+    },
+    "user_memory": {
+      "meta": {
+        "total": 19,
+        "fallback_dist": {},
+        "unmarked": 19,
+        "blank_content": 0,
+        "dot_placeholder": 0
+      },
+      "vectors": {
+        "sampled": 19,
+        "norm_pass_rate": 1.0,
+        "norm_pass": 19,
+        "zero_vector_rows": 0,
+        "identical_cluster_rate": 0.0,
+        "identical_cluster_rows": 0,
+        "max_cluster_size": 1,
+        "distinct_vectors": 19
+      },
+      "reencode_fingerprint": {
+        "reencoded": 19,
+        "backend_now": "bge_m3",
+        "cos_ge_0999": 1.0,
+        "cos_09_0999": 0.0,
+        "cos_lt_09": 0.0,
+        "median_cos": 1.0,
+        "suspect_count": 0,
+        "suspects": []
+      }
+    },
+    "pf_bagu_kb": {
+      "meta": {
+        "total": 5724,
+        "fallback_dist": {},
+        "unmarked": 5724,
+        "blank_content": 0,
+        "dot_placeholder": 0
+      },
+      "vectors": {
+        "sampled": 200,
+        "norm_pass_rate": 1.0,
+        "norm_pass": 200,
+        "zero_vector_rows": 0,
+        "identical_cluster_rate": 0.0,
+        "identical_cluster_rows": 0,
+        "max_cluster_size": 1,
+        "distinct_vectors": 200
+      },
+      "reencode_fingerprint": {
+        "reencoded": 40,
+        "backend_now": "bge_m3",
+        "cos_ge_0999": 1.0,
+        "cos_09_0999": 0.0,
+        "cos_lt_09": 0.0,
+        "median_cos": 1.0,
+        "suspect_count": 0,
+        "suspects": []
+      }
+    }
+  }
+}
