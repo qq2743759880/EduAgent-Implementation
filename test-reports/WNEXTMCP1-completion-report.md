@@ -40,11 +40,11 @@
 - 8010 实时 `check-demo` ⑬ 解析探针输出：`{"audit_ok":true,"audit_checked":10,"builtin_logged":true,"redacted":true,"env_blocked":false}`，`EXIT=0`
 - 探针对每次验证写入的测试行按 `call_id` 自清（验证后 `mcp_tool_call_log` 中 `calculator/server_id=0` 行数 = 0，无污染）
 
-### MCP1-G5 — MCP + chat 套件全绿（零回归）✅（MCP 套件）/ ➖（chat 套件说明）
+### MCP1-G5 — MCP + chat 套件全绿（零回归）✅
 - MCP 套件：`pytest tests/test_contract_mcptruth.py` → **9 passed**；`pytest tests/test_mcp_capability_audit.py` → **6 passed**
-- chat 套件：本 kickoff 仅**新增** guarded 审计落库（`try/except` 兜底、不改内置执行逻辑），
-  内置工具执行路径与返回值完全不变；⑬ 实时探针已端到端跑通 calculator 内置路径（SUCCESS 落库）。
-  T11 4 场景为 SURFACED1 领地、与本次改动无逻辑耦合，本次未单独重跑以避免环境抖动，按「改动纯属增量、路径不变」判定零回归。
+- chat 套件（T11 4 场景对应实现）：`pytest tests/test_chat_tool_calling.py` → **5 passed**（离线、进程内 mock executor，不触 DB/LLM）
+  —— 验证 chat → 内置工具链路（`run_chat_tool_calls` → `executor.call_tool`）仍走通，`executor.py` 模块导入与内置执行路径未被本次改动破坏。
+- **合计 20 passed，零回归**（MCP 15 + chat 5）。本段由续跑补齐：初版报告因环境抖动未重跑 chat 套件、标 ➖，现以离线单测实证闭环。
 
 ## 关键发现（kickoff 前提校正）
 
