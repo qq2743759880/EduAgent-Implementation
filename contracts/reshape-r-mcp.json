@@ -1,0 +1,66 @@
+{
+  "planId": "reshape-r-mcp",
+  "draft": false,
+  "frozen_at": "2026-09-16",
+  "signed_by": "user(项目所有者) 2026-09-16 签字生效（CR-FE-002）",
+  "description": "W-NEXT-FE-002 G2：补冻结 20 条智能体/MCP/知识/诊断/指标 unfrozen_only 契约（MCP sessions/servers/tools/health-scan/description-review/raw-rpc/import-url，knowledge status/upload，metrics cache-context-dashboard/otel/trace）。承接 W-NEXT-FE-001 ⑩门 WARN 差集：模型可触发但前端未调的智能体域 + 运维诊断面，必须走变更单冻结。",
+  "source": "febe_contract_check.py 复跑 [③] 段 106 条 unfrozen_only 中 mcp/knowledge/metrics 子集",
+  "change_order": "handoffs/CR-FE-002-unfrozen-only.md",
+  "groups": {
+    "G2_mcp_session": [
+      "DELETE /api/mcp/sessions/{x}",
+      "GET /api/mcp/sessions",
+      "GET /api/mcp/sessions/{x}",
+      "POST /api/mcp/sessions",
+      "POST /api/mcp/sessions/{x}/touch"
+    ],
+    "G2_mcp_server_tool": [
+      "GET /api/mcp/servers/{x}",
+      "GET /api/mcp/servers/{x}/discover-live",
+      "GET /api/mcp/servers/{x}/tools",
+      "POST /api/mcp/servers/import-url",
+      "POST /api/mcp/servers/{x}/raw-rpc"
+    ],
+    "G2_mcp_health_scan": [
+      "GET /api/mcp/health-scan/{x}",
+      "POST /api/mcp/health-scan-async"
+    ],
+    "G2_mcp_call_log_audit": [
+      "GET /api/mcp/call-log/{x}",
+      "GET /api/mcp/description-review-log",
+      "POST /api/mcp/description-review"
+    ],
+    "G2_knowledge": [
+      "GET /api/knowledge/status/{x}",
+      "POST /api/knowledge/upload"
+    ],
+    "G2_metrics_otel": [
+      "GET /api/metrics/cache-context-dashboard",
+      "GET /api/metrics/otel",
+      "GET /api/metrics/trace/{x}"
+    ]
+  },
+  "endpoints": [
+    "DELETE /api/mcp/sessions/{x}",
+    "GET /api/knowledge/status/{x}",
+    "GET /api/mcp/call-log/{x}",
+    "GET /api/mcp/description-review-log",
+    "GET /api/mcp/health-scan/{x}",
+    "GET /api/mcp/servers/{x}",
+    "GET /api/mcp/servers/{x}/discover-live",
+    "GET /api/mcp/servers/{x}/tools",
+    "GET /api/mcp/sessions",
+    "GET /api/mcp/sessions/{x}",
+    "GET /api/metrics/cache-context-dashboard",
+    "GET /api/metrics/otel",
+    "GET /api/metrics/trace/{x}",
+    "POST /api/knowledge/upload",
+    "POST /api/mcp/description-review",
+    "POST /api/mcp/health-scan-async",
+    "POST /api/mcp/servers/import-url",
+    "POST /api/mcp/servers/{x}/raw-rpc",
+    "POST /api/mcp/sessions",
+    "POST /api/mcp/sessions/{x}/touch"
+  ],
+  "hash_sha256": "20dc8dcfb4756c90bc6a90886e0063a348b253bf02f9fa7d26413304c5690fca"
+}

@@ -1,0 +1,73 @@
+{
+  "planId": "reshape-r-admin",
+  "draft": false,
+  "frozen_at": "2026-09-16",
+  "signed_by": "user(项目所有者) 2026-09-16 签字生效（CR-FE-002）",
+  "description": "W-NEXT-FE-002 G1：补冻结 26 条管理端 unfrozen_only 契约（admin/内部端点，权限/审核/RAG/题库/班次/退款/记忆后台）。承接 W-NEXT-FE-001 ⑩门 WARN 差集，治理压力核心：管理端任何字段/壳改动均会影响 admin 前端表单与权限边界，必须走变更单。",
+  "source": "febe_contract_check.py 复跑 [③] 段 106 条 unfrozen_only 中 admin 子集",
+  "change_order": "handoffs/CR-FE-002-unfrozen-only.md",
+  "groups": {
+    "G1_admin_review_trade": [
+      "DELETE /api/admin/reviews/{x}",
+      "GET /api/admin/reviews",
+      "GET /api/admin/refunds",
+      "GET /api/admin/trade/overview",
+      "POST /api/admin/refunds/{x}/approve",
+      "POST /api/admin/refunds/{x}/reject"
+    ],
+    "G1_admin_course_chapter": [
+      "GET /api/admin/courses/cohorts/{x}",
+      "GET /api/admin/courses/cohorts/{x}/sessions",
+      "GET /api/admin/courses/modules/{x}",
+      "GET /api/admin/courses/sessions/{x}",
+      "PATCH /api/admin/courses/chapters/{x}"
+    ],
+    "G1_admin_question_bank": [
+      "GET /api/admin/questions/banks",
+      "GET /api/admin/questions/banks/{x}/questions",
+      "GET /api/admin/questions/exams",
+      "GET /api/admin/questions/exams/{x}",
+      "PATCH /api/admin/questions/exams/{x}",
+      "POST /api/admin/questions/exams",
+      "POST /api/admin/questions/exams/{x}/publish"
+    ],
+    "G1_admin_rag": [
+      "GET /api/admin/rag/audit-log",
+      "GET /api/admin/rag/presets",
+      "POST /api/admin/rag/collections/rebuild",
+      "POST /api/admin/rag/presets",
+      "POST /api/admin/rag/search"
+    ],
+    "G1_admin_user_memory": [
+      "GET /api/admin/users",
+      "POST /api/memory/admin/dream/run"
+    ]
+  },
+  "endpoints": [
+    "DELETE /api/admin/reviews/{x}",
+    "GET /api/admin/courses/cohorts/{x}",
+    "GET /api/admin/courses/cohorts/{x}/sessions",
+    "GET /api/admin/courses/modules/{x}",
+    "GET /api/admin/courses/sessions/{x}",
+    "GET /api/admin/questions/banks",
+    "GET /api/admin/questions/banks/{x}/questions",
+    "GET /api/admin/questions/exams",
+    "GET /api/admin/questions/exams/{x}",
+    "GET /api/admin/rag/audit-log",
+    "GET /api/admin/rag/presets",
+    "GET /api/admin/refunds",
+    "GET /api/admin/reviews",
+    "GET /api/admin/trade/overview",
+    "PATCH /api/admin/courses/chapters/{x}",
+    "PATCH /api/admin/questions/exams/{x}",
+    "POST /api/admin/questions/exams",
+    "POST /api/admin/questions/exams/{x}/publish",
+    "POST /api/admin/rag/collections/rebuild",
+    "POST /api/admin/rag/presets",
+    "POST /api/admin/rag/search",
+    "POST /api/admin/refunds/{x}/approve",
+    "POST /api/admin/refunds/{x}/reject",
+    "POST /api/memory/admin/dream/run"
+  ],
+  "hash_sha256": "130a4c4c029a7fbad7d4882a0559a4ee1e4c2a77afd1d2c74eb7f5427f9eadce"
+}
