@@ -17,6 +17,7 @@ task36 双写与留存：
 P1 pipeline 流程：parse → chunk → embed → load(Milvus) → graph_build(Neo4j)
 """
 
+import hashlib
 import os
 import time
 import uuid
@@ -85,50 +86,106 @@ def _sanitize_filename(raw: str | None) -> str:
     return name or "unnamed"
 
 
+def _make_upload_basename(user_id: int | str, safe_name: str) -> str:
+    """生成上传临时文件名（WNEXTRAG1 修复）。
+
+    旧实现用 ``uuid4().hex[:12] + ext`` 作临时 basename（如 ``a1b2c3d4e5f6.md``），
+    100% 命中 ``classify_internal`` 的来源正则 ``^[0-9a-f]{8,32}\\.(md|txt|pdf)$``
+    → 所有用户上传的 doc_chunk 被标 ``internal=True`` → 学生检索侧剔除 →
+    学生（含上传者本人）查不到自己上传的知识库（T10 实证 739/742）。
+
+    新命名带显式非 hex 前缀 ``up_{user_id}_``，保证 basename 不会被该来源正则
+    误判为内部工程文档；``safe_name`` 保留原文件名便于追溯，uuid 段仅作防碰撞。
+    向后兼容：旧 hash 命名文件（如 ``_default`` 内部文档库导出）仍会被
+    ``classify_internal`` 判为 internal（来源正则不变）。
+    """
+    return f"up_{user_id}_{uuid.uuid4().hex[:8]}_{safe_name}"
+
+
+def _make_minio_object_key(safe_name: str, content_sha256: str) -> str:
+    """为 MinIO edu-upload 构造全局唯一 object_key（W-NEXT-MINIO-001 修复）。
+
+    旧实现把 ``safe_name``（如 ``my_doc.md``）原样作为 object_key 上传 MinIO，
+    多次导入同名文件（不同用户 / 不同时刻 / 同内容/不同内容）会沿用同一 key
+    → MinIO ``put_object`` 同名静默覆盖，导致 source_files 留存错位、无法按
+    object_key 反查历史版本（T14 报告 §10 P2 观察）。
+
+    新格式：``f"{content_hash8}_{rand6}_{safe_name}"``
+      - ``content_hash8`` = sha256(文件内容) 的前 8 个 hex 字符：
+          同名同内容两次上传 → 同一 hash → 同一 object_key（合法幂等）；
+          同名不同内容（如笔记 v1 / 笔记 v2 改了几个字） → 不同 hash → 不同 key，
+          绝不互相覆盖。
+      - ``rand6`` = uuid4().hex[:6]：
+          极小概率 hash 碰撞（如攻击者构造）下第二层防御；同内容连续两次上传也
+          因 random6 不同而保留两份独立对象（默认行为：源文件按要求留存）。如果
+          需严格幂等，调用方可在外部对 ``(sha256)`` 做查重。
+      - ``safe_name`` 保留原文件名，便于运维/MinIO 控制台人眼定位。
+
+    该函数纯函数、无副作用；仅在 _upload_to_minio 内部调用。
+    """
+    h8 = (content_sha256 or "")[:8] or "0" * 8
+    return f"{h8}_{uuid.uuid4().hex[:6]}_{safe_name}"
+
+
 def _user_tenant_id(user_id: int | str) -> str:
     return f"user_{user_id}"
 
 
-async def _write_upload_to_disk(file: UploadFile) -> tuple[str, int]:
+async def _write_upload_to_disk(file: UploadFile, user_id: int | str | None = None) -> tuple[str, int, str]:
     """
     把 UploadFile 同步写磁盘（FastAPI UploadFile 是 SpooledTemporaryFile，需要读出来）。
-    返回 (absolute_path, bytes_written)。
+    返回 (absolute_path, bytes_written, content_sha256_hex) — sha256 用于 W-NEXT-MINIO-001 派生
+    唯一 object_key，避免同名文件多次上传在 MinIO edu-upload 中被同名覆盖。
     """
     upload_dir = _resolve_upload_dir()
     safe_name = _sanitize_filename(file.filename)
-    ext = Path(safe_name).suffix.lower()
-    unique = f"{uuid.uuid4().hex[:12]}{ext}"
+    uid = user_id if user_id is not None else "anon"
+    unique = _make_upload_basename(uid, safe_name)
     dest = upload_dir / unique
 
     size_written = 0
-    # 用 anyio.to_thread 避免阻塞事件循环
-    def _sync_write() -> int:
+    # 用 anyio.to_thread 避免阻塞事件循环；同时计算 sha256（流式一次读完即弃）
+    def _sync_write() -> tuple[int, str]:
         total = 0
+        h = hashlib.sha256()
         with open(dest, "wb") as f:
             while True:
                 chunk = file.file.read(1024 * 1024)
                 if not chunk:
                     break
                 f.write(chunk)
+                h.update(chunk)
                 total += len(chunk)
                 if total > _MAX_FILE_BYTES:
                     raise ValueError(f"单文件超过大小限制 {_MAX_FILE_BYTES} 字节")
-        return total
+        return total, h.hexdigest()
 
     try:
-        size_written = await anyio.to_thread.run_sync(_sync_write)
+        size_written, content_sha256 = await anyio.to_thread.run_sync(_sync_write)
     finally:
         await file.close()
-    return str(dest), size_written
+    return str(dest), size_written, content_sha256
 
 
-async def _upload_to_minio(path: str, original_name: str, content_type: str) -> dict:
+async def _upload_to_minio(
+    path: str,
+    original_name: str,
+    content_type: str,
+    content_sha256: str,
+) -> dict:
     """把本地临时文件留存到 MinIO edu-upload，返回源文件元数据（object_key 等）。
+
+    object_key 由 ``_make_minio_object_key`` 基于文件内容 sha256 派生，保证同名
+    不同内容两次上传不会互相覆盖（T14 报告 P2 观察）；同名同内容两次上传若需严格
+    幂等可由调用方对 (sha256) 做查重，这里保留两份独立对象作为源文件留存（W-NEXT-MINIO-001）。
 
     MinIO 不可用时降级：object_key=None + warn（不阻断上传主链路，但源文件留存不满足 30 天要求）。
     """
+    object_key = _make_minio_object_key(original_name, content_sha256)
     try:
-        up = get_uploader().upload_file(path, original_name, content_type=content_type)
+        up = get_uploader().upload_file(
+            path, object_key, content_type=content_type
+        )
         return {
             "object_key": up["object_key"],
             "file_name": original_name,
@@ -279,12 +336,12 @@ async def upload_knowledge(
     source_files_meta: list[dict] = []
     try:
         for f in files:
-            path, size = await _write_upload_to_disk(f)
+            path, size, sha256 = await _write_upload_to_disk(f, current_user.user_id)
             local_paths.append(path)
             safe_name = _sanitize_filename(f.filename)
             original_names.append(safe_name)
             content_type = f.content_type or "application/octet-stream"
-            meta = await _upload_to_minio(path, safe_name, content_type)
+            meta = await _upload_to_minio(path, safe_name, content_type, sha256)
             meta["file_size"] = meta.get("file_size") or size
             source_files_meta.append(meta)
     except ValueError as exc:
@@ -362,12 +419,12 @@ async def admin_upload_knowledge(
     source_files_meta: list[dict] = []
     try:
         for f in files:
-            path, size = await _write_upload_to_disk(f)
+            path, size, sha256 = await _write_upload_to_disk(f, _admin.user_id)
             local_paths.append(path)
             safe_name = _sanitize_filename(f.filename)
             original_names.append(safe_name)
             content_type = f.content_type or "application/octet-stream"
-            meta = await _upload_to_minio(path, safe_name, content_type)
+            meta = await _upload_to_minio(path, safe_name, content_type, sha256)
             meta["file_size"] = meta.get("file_size") or size
             source_files_meta.append(meta)
     except ValueError as exc:
