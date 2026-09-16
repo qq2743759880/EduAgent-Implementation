@@ -209,6 +209,18 @@ async def list_tools(server_id: int | None = None, *, category: str | None = Non
 
 
 async def get_tool_by_ref(tool_id: int | None, server_id: int | None, tool_name: str | None):
+    """工具引用解析：tool_id → server_id+tool_name → **仅 tool_name**（MCP-TRUTH 按名解析，修复 audit-rag #3）。
+
+    解析参考面固定为「已启用（S.enabled=1）server 上的 yn=1 工具」，三类引用统一返回同一行形态
+    （T.* + S.server_code + S.transport），保证调用方不必感知引用来源的差异。
+
+    新增第三形态（仅 tool_name）：
+      - 在 enabled server 工具集里按 tool_name 查；唯一命中即返回；
+      - 多 server 同名命中 → 400（含 server 列表，提示调用方显式指定 server_id）；
+      - 零命中 → 404。
+    这使得 TOOL_FALLBACK_MAP 兜底链与内置工具之外的 DB 注册工具可按名直达执行器，
+    取代此前「入口必然 400 → 闭环短路到人工指南」。
+    """
     if tool_id:
         row = await fetch_one(
             "SELECT T.*, S.server_code, S.transport FROM mcp_tool T "
@@ -229,7 +241,23 @@ async def get_tool_by_ref(tool_id: int | None, server_id: int | None, tool_name:
         if not row:
             raise _raise(404, f"server_id={server_id} tool_name={tool_name} 不存在或 server disabled/删除")
         return row
-    raise _raise(400, "必须提供 tool_id 或 server_id+tool_name")
+    if tool_name:
+        rows = await fetch_all(
+            "SELECT T.*, S.server_code, S.transport FROM mcp_tool T "
+            "JOIN mcp_server S ON S.id=T.server_id "
+            "WHERE T.tool_name=%s AND T.yn=1 AND S.yn=1 AND S.enabled=1",
+            (tool_name,),
+        )
+        if not rows:
+            raise _raise(404, f"tool_name={tool_name} 不存在或 server disabled/删除")
+        if len(rows) > 1:
+            servers = ",".join(str(r["server_code"]) for r in rows)
+            raise _raise(
+                400,
+                f"tool_name={tool_name} 在多 server 命中（{len(rows)}）：{servers}；请显式指定 server_id 消歧",
+            )
+        return rows[0]
+    raise _raise(400, "必须提供 tool_id 或 server_id+tool_name 或 tool_name")
 
 
 async def write_server_health(server_id: int, *, ok: bool, last_error: str | None) -> None:

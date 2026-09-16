@@ -183,6 +183,18 @@ async def lifespan(app: FastAPI):
             f"{type(e).__name__}: {e}"
         )
 
+    # ── MCP-TRUTH 接线（修复 audit-rag #6 search_knowledge 空壳）：应用启动给 MCP 内置
+    # search_knowledge 工具注入真实三通道检索后端。此前该注入点全仓零调用，MCP 工具永远返回
+    # 「知识检索后端未接入」降级。失败仅 WARN 不阻断（后端不可用仍走确定性降级纪律）。
+    try:
+        from app.mcp.executor import init_mcp_capabilities
+        await init_mcp_capabilities()
+    except Exception as e:
+        logger.warning(
+            f"MCP search_knowledge 后端接线失败（工具降级为「未接入」返回，不影响主服务）: "
+            f"{type(e).__name__}: {e}"
+        )
+
     # ── 运行阶段 ──
     yield
 

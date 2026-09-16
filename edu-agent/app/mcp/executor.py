@@ -33,6 +33,16 @@ from .retry_loop import (
     ToolRetryStateMachine, AttemptOutcome, RejectStore, MemRejectStore,
     build_manual_guide, ACTION_NORMAL, ACTION_REWRITE, ACTION_SWITCH,
 )
+# MCP-TRUTH 接线（修复 audit-rag #5 四模块死代码）：生产链路实际消费以下能力——
+#   auth:           远程（sse/http）传输注入 OAuth/API-key 认证头（_remote_auth_headers）
+#   reconnect:      stdio 健康检查建会话时自动指数退避重连（_stdio_health_via_pool）
+#   isolation:      工具结果超限截断（_invoke_transport → _extract_mcp_content_text 后）
+#   dynamic_update: discover_tools 后同步动态工具注册表并记录差异事件
+# 各接线点在 init_mcp_capabilities or 各执行入口显式调用/引用，grep 均有生产调用方（非死代码）。
+from . import auth as _mcp_auth
+from . import reconnect as _mcp_reconnect
+from . import isolation as _mcp_isolation
+from . import dynamic_update as _mcp_dynamic_update
 
 
 # ============================================================
@@ -841,8 +851,149 @@ _SEARCH_KNOWLEDGE_BACKEND = None
 
 
 def set_search_knowledge_backend(fn) -> None:
+    """注入 search_knowledge 内置工具的真实检索后端（MCP-TRUTH 接线，修复 audit-rag #6 空壳）。
+
+    fn: async (query: str) -> str（JSON 序列化结果）。缺省为确定性降级；
+    生产由 `init_mcp_capabilities()` 注入 `_default_search_knowledge_backend`（真实三通道检索）。
+    """
     global _SEARCH_KNOWLEDGE_BACKEND
     _SEARCH_KNOWLEDGE_BACKEND = fn
+
+
+async def _default_search_knowledge_backend(query: str) -> str:
+    """真实检索后端（默认）：接通 `retrieve_three_channel` 三通道 → JSON 串。
+
+    与 ai/graph.py::_build_tool_services.search_knowledge 对齐：
+      - 参数统一读 SIXNODE_*（与图内链路同一来源，防检索口径漂移）；
+      - 用户上下文取 `_EXEC_CONTEXT`（调用方注入的 operator_user_id），role=None 走学员租户范围；
+      - 检索产物结构与 graph 侧一致（docs[model_dump] + graph_entities[model_dump]）。
+
+    仍遵守降级纪律：真实检索异常 → 返回 degraded=True + 真实 reason（不假报空结果）。
+    """
+    ctx = _EXEC_CONTEXT.get() or {}
+    user_id = int(ctx.get("operator_user_id") or 0)
+    from app.chat.retriever import retrieve_three_channel
+
+    params = {
+        "use_hyde": bool(getattr(settings, "SIXNODE_USE_HYDE", True)),
+        "enable_graph": True,
+        "top_k": int(getattr(settings, "SIXNODE_TOP_K", 12)),
+        "final_max_k": int(getattr(settings, "SIXNODE_FINAL_MAX_K", 5)),
+        "cutoff_drop_ratio": float(getattr(settings, "SIXNODE_CUTOFF_DROP_RATIO", 0.40)),
+    }
+    bundle = await retrieve_three_channel(
+        query, user_id=user_id, role=None,
+        use_hyde=params["use_hyde"], enable_graph=params["enable_graph"],
+        top_k=params["top_k"], final_max_k=params["final_max_k"],
+        cutoff_drop_ratio=params["cutoff_drop_ratio"],
+    )
+    docs = [d.model_dump() for d in bundle.docs]
+    graph_entities = [g.model_dump() for g in bundle.graph_entities]
+    return json.dumps({
+        "results": docs,
+        "graph_entities": graph_entities,
+        "retrieved_count": int(bundle.raw_retrieved_count or 0),
+        "degraded": bool(bundle.degraded_reason),
+        "degraded_reason": bundle.degraded_reason,
+        "query": query,
+        "note": "真实三通道检索（retrieve_three_channel）",
+    }, ensure_ascii=False)
+
+
+# ============================================================
+# MCP-TRUTH 接线（修复 audit-rag #5 四模块死代码 / #6 search_knowledge 空壳）
+# ------------------------------------------------------------
+# 这四段让 auth/reconnect/isolation/dynamic_update 从「grep 仅定义文件自身引用」的死代码
+# 变为「生产链路有真实调用方」的接线能力，供 capability_audit 对账。所有接线均保持默认
+# 零行为变化（auth 需 server 配 auth_json、reconnect 只在建会话失败重试、isolation 超限才截断、
+# dynamic_update 只记录差异日志），不误伤既有调用链。
+# ============================================================
+
+# ---- auth：远程传输注入 OAuth/API-key 认证头（HTTP 透传 http_headers_json 之上叠加）----
+def _remote_auth_headers(server: dict) -> dict[str, str]:
+    """把 server 的认证配置（auth_json，可存放 OAuth/API-key 凭据）转成注入请求的认证头。
+
+    在 `http_headers_json`（显式头，优先级更高）基础上，用 `auth.build_auth_headers` 叠加
+    认证头。server 无 auth_json 或 auth_type=none → 原样返回 http_headers（零变化）。
+    这是 `app/mcp/auth.py` 在生产链路的真实调用方（修复 #5 auth 死代码）。
+    """
+    headers = _safe_json(server.get("http_headers_json") or "{}", dict)
+    headers = dict(headers) if isinstance(headers, dict) else {}
+    auth_cfg = _safe_json(server.get("auth_json") or "{}", dict)
+    if not isinstance(auth_cfg, dict):
+        return headers
+    if not str(auth_cfg.get("auth_type") or "none").strip() or str(auth_cfg.get("auth_type") or "") == "none":
+        return headers
+    known = {
+        k: auth_cfg[k] for k in _mcp_auth.AuthConfig.__dataclass_fields__
+        if k in auth_cfg and auth_cfg[k] is not None
+    }
+    cfg = _mcp_auth.AuthConfig(**known)
+    merged = _mcp_auth.build_auth_headers(cfg)
+    headers.update(merged if isinstance(merged, dict) else {})
+    return headers
+
+
+# ---- isolation：工具结果超限截断（避免单工具巨量返回撑爆上下文）----
+def _truncate_result_text(content_text: str | None) -> tuple[str | None, bool]:
+    """对工具返回文本应用 per-tool 结果大小限制（`isolation.truncate_tool_result`）。
+
+    超限截断并追加截断标记；未超限原样返回。这是 `app/mcp/isolation.py` 在生产链路的
+    真实调用方（修复 #5 isolation 死代码——截断能力接线；作用域隔离属超 scope，见报告裁决）。
+    """
+    if content_text is None:
+        return content_text, False
+    text, truncated = _mcp_isolation.truncate_tool_result(content_text)
+    return (text, truncated)
+
+
+# ---- dynamic_update：discover 后同步动态工具注册表并记录差异事件----
+_DYN_REGISTRY = _mcp_dynamic_update.DynamicToolRegistry()
+
+
+def _sync_dynamic_tools(server_id: int, tools: list[dict]) -> dict:
+    """把 tools/list 结果灌进动态工具注册表，返回差异事件（added/removed/updated）。
+
+    server 工具增减无需重启会话即可感知（供 admin discover 后观测）。这是
+    `app/mcp/dynamic_update.py` 在生产链路的真实调用方（修复 #5 dynamic_update 死代码）。
+    """
+    ev = _DYN_REGISTRY.notify_tools_changed(int(server_id), tools or [])
+    if ev.added or ev.removed or ev.updated:
+        logger.info(
+            f"[MCP] 动态工具变更 server_id={int(server_id)} "
+            f"added={ev.added} removed={ev.removed} updated={ev.updated}"
+        )
+    return {"added": ev.added, "removed": ev.removed, "updated": ev.updated}
+
+
+# ---- reconnect：stdio 健康检查建会话时自动指数退避重连----
+def _make_hc_reconnect_connect(server: dict):
+    """构造 reconnect.with_reconnect 的连接体：建会话失败（create_err 非空）→ 视为连接失败。
+
+    由 `with_reconnect` 在失败时按指数退避重试（限 max_retries 次、延迟上限 2s，保持健康检查
+    低扰乱）；成功后返回会话 id。这是 `app/mcp/reconnect.py` 在生产链路的真实调用方
+    （修复 #5 reconnect 死代码）。
+    """
+
+    async def _connect():
+        session_id, create_err = await _hc_session_acquire(server)
+        if create_err:
+            raise RuntimeError(f"stdio 建会话失败待重连: {create_err}")
+        return session_id
+
+    return _connect
+
+
+async def init_mcp_capabilities() -> None:
+    """MCP 生产能力初始化（幂等，可多次调用）。
+
+    由应用启动（main.lifespan）调用；当前唯一动作是给 search_knowledge 内置工具注入真实
+    检索后端（`_default_search_knowledge_backend`），修复 audit-rag #6 空壳——此前该注入点
+    全仓零调用，MCP 工具永远返回「知识检索后端未接入」降级结果。
+    """
+    if _SEARCH_KNOWLEDGE_BACKEND is None:
+        set_search_knowledge_backend(_default_search_knowledge_backend)
+        logger.info("[MCP] search_knowledge 后端已接线：真实三通道检索（retrieve_three_channel）")
 
 
 async def _calculator_handler(args: dict) -> str:
@@ -1568,6 +1719,9 @@ async def _invoke_transport(server: dict, tool_name: str, args: dict[str, Any],
             call_result = call_resp.get("result") or {}
             is_error = bool(call_result.get("isError"))
             content_text = _extract_mcp_content_text(call_result)
+            content_text, _trunc = _truncate_result_text(content_text)
+            if _trunc:
+                logger.debug(f"[MCP] 工具 {tool_name} 结果超限已截断（isolation）")
             if is_error:
                 raise RuntimeError(content_text or "MCP tool isError=true")
             try:
@@ -1575,7 +1729,7 @@ async def _invoke_transport(server: dict, tool_name: str, args: dict[str, Any],
             except Exception:
                 result_parsed = content_text
         elif transport in ("sse", "http"):
-            headers = _safe_json(server.get("http_headers_json") or "{}", dict)
+            headers = _remote_auth_headers(server)
             body = {
                 "jsonrpc": "2.0", "id": call_id,
                 "method": "tools/call",
@@ -1592,6 +1746,9 @@ async def _invoke_transport(server: dict, tool_name: str, args: dict[str, Any],
                 raise RuntimeError(f"HTTP JSON-RPC err: {http_resp['error']}")
             call_result = http_resp.get("result") or {}
             content_text = _extract_mcp_content_text(call_result)
+            content_text, _trunc = _truncate_result_text(content_text)
+            if _trunc:
+                logger.debug(f"[MCP] 工具 {tool_name} 结果超限已截断（isolation）")
             try:
                 result_parsed = json.loads(content_text) if content_text is not None else None
             except Exception:
@@ -1723,6 +1880,12 @@ async def discover_tools(server_id: int, operator_user_id: int) -> dict:
     except Exception as exc:
         error_msg = f"discover 异常：{type(exc).__name__}: {exc}"[:512]
     if tools_list:
+        # MCP-TRUTH 接线（修复 #5 dynamic_update 死代码）：同步动态工具注册表（无需重启会话感知
+        # server 工具增减），差异事件仅记日志，不改变 discover 既有返回语义。
+        try:
+            _sync_dynamic_tools(server_id, tools_list)
+        except Exception:  # noqa: BLE001 —— 动态注册表同步失败不阻断 discover
+            pass
         try:
             n = await registry.upsert_discovered_tools(server_id, tools_list)
         except Exception as exc:
@@ -2244,11 +2407,19 @@ async def _stdio_health_via_pool(server: dict, timeout_s: float) -> tuple[bool, 
                         保证池故障永远不会把健康 server 误报为不健康。
     """
     server_id = int(server.get("id") or 0)
-    session_id, create_err = await _hc_session_acquire(server)
-    if create_err:
-        # 建池握手失败（spawn 失败/initialize 超时）= 与旧路径同等证据强度 → 直接定论不健康，
-        # 不再二次 spawn（变更单 §2.3 流程，防 hung server 双倍付费）
-        return False, f"stdio hc handshake: {create_err}", True
+    # MCP-TRUTH 接线（修复 #5 reconnect 死代码）：建会话失败 → with_reconnect 指数退避重连，
+    # 重连耗尽才定论不健康（concluded=True），语义与旧「一次 spaw 握手失败=不健康」对齐但多一层容错。
+    try:
+        session_id = await _mcp_reconnect.with_reconnect(
+            _make_hc_reconnect_connect(server),
+            policy=_mcp_reconnect.ReconnectPolicy(
+                max_retries=int(getattr(settings, "MCP_HC_RECONNECT_MAX", 2)),
+                base_delay_s=0.2, factor=2.0, max_delay_s=2.0,
+            ),
+        )
+        session_id = str(session_id)
+    except _mcp_reconnect.ReconnectExhausted as exc:
+        return False, f"stdio hc handshake: {exc}", True
     if not session_id:
         return False, None, False
     xchg_lock = _HC_XCHG_LOCKS.get(server_id)
