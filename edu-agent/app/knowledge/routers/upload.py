@@ -228,10 +228,18 @@ async def _process_import(
 
 
 def _cleanup_paths(paths: list[str]) -> None:
+    # 只允许删除落在 knowledge_uploads 根内的本地临时文件（纵深防御，防任意文件删除）；
+    # 根外路径跳过，绝不对用户可控路径执行 os.remove
+    allowed_root = (Path(settings.DATA_DIR) / "knowledge_uploads").resolve()
     for p in paths:
         try:
-            if p and os.path.exists(p):
-                os.remove(p)
+            if not p:
+                continue
+            resolved = Path(p).resolve()
+            if not resolved.is_relative_to(allowed_root):
+                continue
+            if resolved.exists():
+                os.remove(resolved)
         except Exception as exc:
             logger.debug(f"清理上传临时文件失败（忽略）：{p} -> {exc}")
 

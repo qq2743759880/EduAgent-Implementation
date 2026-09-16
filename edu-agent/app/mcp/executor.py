@@ -17,6 +17,7 @@ import json
 import os
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 from app.common.exceptions import AppException
@@ -869,6 +870,25 @@ _KNOWLEDGE_IMPORT_TASK_TYPE = "agent_import"
 _KNOWLEDGE_IMPORT_VISIBILITIES = ("private", "public")
 
 
+def _knowledge_upload_root() -> Path:
+    """knowledge_import 允许读写本地文件的唯一根目录（与 `/api/knowledge/upload` 落盘
+    `knowledge_uploads` 一致）。所有 local_path 必须先 resolve 后仍落在本根内才放行。"""
+    return (Path(settings.DATA_DIR) / "knowledge_uploads").resolve()
+
+
+def _is_safe_knowledge_local_path(lp: str, root: Path) -> bool:
+    """路径穿越防护（Mimosa HIGH 硬门1，对齐 `_safe_upload_id` 先例 R03）：
+    resolve()（跟随符号链接）后仍 is_relative_to(允许根) 且是常规文件才放行。
+    拒绝绝对路径逃逸、`..`、符号链接逃出根、目录等——不被接受即零读取/零删除副作用。"""
+    if not lp:
+        return False
+    try:
+        resolved = Path(lp).resolve()
+    except (OSError, RuntimeError):
+        return False
+    return resolved.is_relative_to(root) and resolved.is_file()
+
+
 async def _knowledge_import_handler(args: dict) -> str:
     """知识库导入（写类，admin_write）——包装既有真写入口 `task_store.create_task`。
 
@@ -894,10 +914,11 @@ async def _knowledge_import_handler(args: dict) -> str:
 
     meta: list[dict] = []
     local_paths: list[str] = []
+    upload_root = _knowledge_upload_root()
     for item in src:
         if isinstance(item, str):
             meta.append({"object_key": None, "file_name": item, "file_size": 0, "content_type": ""})
-            if os.path.exists(item):
+            if _is_safe_knowledge_local_path(item, upload_root):
                 local_paths.append(item)
             continue
         if not isinstance(item, dict):
@@ -910,7 +931,7 @@ async def _knowledge_import_handler(args: dict) -> str:
             "content_type": str(item.get("content_type") or ""),
         })
         lp = str(item.get("local_path") or item.get("path") or "")
-        if lp and os.path.exists(lp):
+        if lp and _is_safe_knowledge_local_path(lp, upload_root):
             local_paths.append(lp)
 
     tenant_id = str(ctx.get("tenant_id") or args.get("tenant_id") or "_default")

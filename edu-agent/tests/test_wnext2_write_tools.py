@@ -185,6 +185,85 @@ async def test_w2g3_handler_argument_validation_no_write(monkeypatch):
     assert created == [], "入参非法时不得落任务行"
 
 
+async def test_w2g3_handler_path_traversal_rejected_no_pipeline(monkeypatch, tmp_path):
+    """路径穿越/任意本地文件读取防护（Mimosa 硬门1，对齐 _safe_upload_id 先例）：
+    只有 resolve 后仍落在 allowed root（DATA_DIR/knowledge_uploads）内的常规文件才进 local_paths；
+    绝对路径逃逸 / `..` / 根外文件一律不入 → 零读取、零 _process_import、零删除。"""
+    import app.mcp.executor as ex
+    from app.knowledge import task_store
+
+    data_dir = tmp_path / "data"
+    root = data_dir / "knowledge_uploads"
+    root.mkdir(parents=True)
+    monkeypatch.setattr(ex.settings, "DATA_DIR", str(data_dir))
+
+    legit = root / "legit.md"
+    legit.write_text("ok")
+
+    outside = tmp_path / "secret.txt"          # 应用数据目录之外的绝对路径
+    outside.write_text("secret")
+
+    created: list = []
+    started: list = []
+
+    async def fake_create_task(**kw):
+        created.append(kw)
+        return {"task_id": "t1", "status": "pending", "task_type": "x",
+                "tenant_id": "t", "visibility": "private", "created_at": "now"}
+
+    async def fake_process_import(**kw):
+        started.append(kw)  # 只应在「全部条目均为 safe in-root 文件」时才被调度
+
+    monkeypatch.setattr(task_store, "create_task", fake_create_task)
+    # handler 内部是 `from app.knowledge.routers.upload import _process_import`
+    monkeypatch.setattr("app.knowledge.routers.upload._process_import", fake_process_import)
+
+    # ① 合法 in-root 文件 + 逃逸绝对路径 + `..` 混合 → 只有合法路径被接受，管道不启动
+    resp = json.loads(await ex._knowledge_import_handler({
+        "source_files": [
+            {"file_name": "legit.md", "local_path": str(legit)},
+            {"file_name": "evil", "local_path": str(outside)},
+            {"file_name": "trav", "local_path": "../../../../Windows/win.ini"},
+        ],
+        "visibility": "private",
+    }))
+    assert len(created) == 1
+    assert resp["pipeline_started"] is False          # 混入逃逸路径 → 整体不启动
+    assert started == [], "含根外路径时不得触发 _process_import"
+
+    # ② 纯合法 in-root 文件 → 管道启动且 local_paths 恰为合法路径
+    started.clear()
+    created.clear()
+    resp2 = json.loads(await ex._knowledge_import_handler({
+        "source_files": [{"file_name": "legit.md", "local_path": str(legit)}],
+        "visibility": "private",
+    }))
+    import asyncio
+    await asyncio.sleep(0)                            # 让 create_task 调度的 fake 执行
+    assert resp2["pipeline_started"] is True
+    assert started and started[0]["local_paths"] == [str(legit)]
+
+
+def test_upload_cleanup_paths_only_deletes_within_root(monkeypatch, tmp_path):
+    """纵深防御：_cleanup_paths 只删 allowed root 内文件，根外任意路径绝不 os.remove。"""
+    from app.knowledge.routers import upload
+
+    data_dir = tmp_path / "data"
+    root = data_dir / "knowledge_uploads"
+    root.mkdir(parents=True)
+    monkeypatch.setattr(upload.settings, "DATA_DIR", str(data_dir))
+
+    inside = root / "tmp.md"
+    inside.write_text("in")
+    outside = tmp_path / "do_not_delete.txt"
+    outside.write_text("out")
+
+    upload._cleanup_paths([str(inside), str(outside), "../../../../Windows/win.ini"])
+
+    assert not inside.exists(), "根内临时文件应被清理"
+    assert outside.exists(), "根外文件绝不能被 os.remove"
+
+
 # ============================================================
 # W2-G4 真实 LangGraph 图触发 interrupt（五字段）→ confirm/reject
 # ============================================================

@@ -2,9 +2,9 @@
 
 > 执行者：W-NEXT-2 单写者（锁 `edu-agent/scripts/eval/wnext2.lock`，完工已删）
 > 分支：`feature/opt-waves`；日期 2026-09-16；批判源：`test-reports/critique-blind-t4-t9.md`（T4-C1 / T4-C2 / T4-C3 / T4-C4 + T8-C1 / T8-C2）
-> 交付 commit：`00bb384`（首版）+ **第二轮复验加固**（见 §0.1，commit hash 见文末回执）
+> 交付 commit：`00bb384`（首版）+ **第二轮复验加固**（见 §0.1）+ **第三轮 Mimosa 三硬门路径穿越修复**（见 §0.2，commit hash 见文末回执）
 > 环境：后端 8000 运行中（**未重启**，遵守红线）；验证用 **8010 临时实例**；契约 `contracts/reshape-r-aci.json` / `contracts/reshape-r-hitl.json` 未改（禁碰）；`app/chat/router.py`、`app/chat/sse.py`、`app/ai/hitl_gate.py`、`public/**`、`contracts/**` 未改。
-> 本报告为**第二轮修订版**：首版有 2 处夸大表述、3 处限定缺失（独立复验指出），已逐条纠正并标注（见 §10 修订记录）。
+> 本报告为**第二轮修订版 + 第三轮 Mimosa 三硬门补章**：首版有 2 处夸大表述、3 处限定缺失（独立复验指出），已逐条纠正并标注（见 §10 修订记录）；第三轮据 Mimosa 三硬门复验补路径穿越修复章（见 §0.2）。
 
 ## 0. 改动清单（文件归属内）
 
@@ -16,7 +16,8 @@
 | `edu-agent/app/chat/flows/langgraph_agent.py` | `AgentState` 补 `tool_name/tool_args/query_rewrite/user_id/user_role` 等键（LangGraph 只为声明键建 channel，缺失即断链）；`_agent_tool_catalog()` 从注册面动态生成 prompt 工具清单；`_tool_result_text()` 修 denied/rejected 断链；`generate_node` 注入「无一次成功 → 禁完成态描述」诚实约束；兜底文案不泄异常类名 | 步骤2b / T4-C2、T4-C3、T8-C2 |
 | `edu-agent/app/chat/flows/graph_stream.py` | 续流静默吞修复：Redis 有决策但图无挂起 → 显式收束（`hitl_rejected_no_pending` / `hitl_confirm_expired_no_pending`），绝不假装续跑；**加固：用户可见 `message`/`degraded_reason` 去掉 `type(exc).__name__`（含 MCP 阶段降级两处文案；保留 `落库失败` 子串以兼容既有断言）** | 步骤4 / T8-C2 |
 | `edu-agent/tests/test_permission_gate.py` | 按 8 实物 / 9 挂起重写矩阵与计数断言；新增 10 写类名分类 + 不缓存断言、knowledge_import 注册断言；**加固补测：`test_norm_eliminates_case_whitespace_dual_criterion`（大小写/空格变体双口径）** | 步骤1/3 + 复验加固 |
-| `edu-agent/tests/test_wnext2_write_tools.py`（新增，**19 用例**） | W2-G2 / G3 / G4 / G6 集成测试（13）+ **加固补测 6**：T8-C2 无挂起收束（confirm/reject 参数化）、executor 收口二次校验（tool_id-only 越权 + admin 阳性对照）、**P1 备用工具越权（student deny + admin 阳性对照）** | 步骤2/3/4 + 复验加固 |
+| `edu-agent/tests/test_wnext2_write_tools.py`（新增，**21 用例**） | W2-G2 / G3 / G4 / G6 集成测试（13）+ **加固补测 6**（T8-C2 无挂起收束（confirm/reject 参数化）、executor 收口二次校验（tool_id-only 越权 + admin 阳性对照）、**P1 备用工具越权（student deny + admin 阳性对照）**）+ **第三轮补测 2**（路径穿越 handler 拦截 + `_cleanup_paths` 根约束） | 步骤2/3/4 + 复验加固 |
+| `edu-agent/app/knowledge/routers/upload.py` | 三硬门修复（**非原 8 归属文件，但为 `_process_import`/`_cleanup_paths` 实际宿主**）：`_cleanup_paths` 只删 `resolve()` 后仍落在 `DATA_DIR/knowledge_uploads` 内的文件，根外跳过 `os.remove` → 堵任意文件删除（Mimosa 硬门1 纵深防御）；**仅此一处改动，未动链路其它逻辑** | Mimosa 硬门1（见 §0.2） |
 
 ### 0.1 第二轮复验加固（独立复验发现问题 → 已修 → 已补测试）
 
@@ -32,6 +33,35 @@
 
 未改（属其它工作流）：`app/chat/router.py`、`app/knowledge/importer/loader.py`（WNEXT10 F5-a）、`app/chat/service.py`（W-NEXT-9）、`app/domains/question_admin/router.py`（W-NEXT-5）。
 > ⚠️ 工作区存在**并行写者**的未提交改动（`app/chat/router.py`、`app/knowledge/importer/loader.py`、`app/ai/skills/registry.py`、`app/ai/graph.py`、`app/ai/platform_capability.py` 等）→ 本任务 commit **只含归属文件**，不夹带（见 §10）。
+
+### 0.2 第三轮：Mimosa 三硬门独立复验 + 路径穿越修复（P0，验收门）
+
+编排者对上线写类工具 `knowledge_import` 设了三条 **Mimosa 生成前安全硬门**（任一不满足 → 不得验收通过）。独立子代理对三条逐条真实实证，先后发现硬门1 **FAIL** 并在此轮修复后再复验 **PASS**：
+
+| 硬门 | 独立复验 | 审计处置 |
+|---|---|---|
+| **1. SSRF / 外部资源 / 路径穿越防护** | 初测 **FAIL（严重）**：`knowledge_import` 不收 URL（无 SSRF 面），但 `local_path` **零校验** → 任意本地文件读取（应用目录外文件进 Milvus、`visibility=public` 跨租户）+ **任意文件删除**（`_process_import._cleanup_paths` 无条件 `os.remove`）；且 handler 是**单一防线**（绕过调用层门+HITL 直调即整体绕过）。**修复后复验 PASS**（见下方证据） | 修复 + 2 回归测试（见 §0 两行） |
+| 2. SQL 参数绑定 | **PASS**：写路径全部 SQL 均绑定参数（`task_store` create/update + Neo4j Cypher 参数化），无 f-string/`%`/`+` 拼接用户输入 | 无改 |
+| 3. 凭据不入码 | **PASS**：3 个 commit diff + 链路无可用凭据字面量；`config.py` 的 `MYSQL_RO/NEO4J/MINIO` 默认口令无生产守卫属**既有项**，登记整改（见 §7.5-CR-env） | 登记整改 |
+
+**硬门1 修复内容**：
+- `executor.py`：新增 `_knowledge_upload_root()`/`_is_safe_knowledge_local_path()`（`resolve()` 跟随符号链接后 `is_relative_to(DATA_DIR/knowledge_uploads)` + `is_file()`）；handler 的 `local_paths` 只收允许根内常规文件，逃逸路径不入 → `len(local_paths)<len(meta)` → 管道不拉起（零读取/零删除）。
+- `upload.py`：`_cleanup_paths` 只对 `resolve()` 后仍落在允许根内的文件 `os.remove`，根外跳过（堵任意文件删除，纵深防御）。
+
+**修复后独立复验证据（子代理真实对抗，非自证）**：
+| 输入 | 复验结果 |
+|---|---|
+| `{local_path: "../../../../Windows/win.ini"}` | REJECTED，`pipeline_started=False`，`_process_import` 调用 0 |
+| 绝对路径 `C:/Windows/win.ini` / 应用数据目录外真实文件 | REJECTED，0 调用 |
+| 裸字符串 `["../../../../Windows/win.ini"]` | REJECTED，0 调用 |
+| 合法 in-root 文件（阳性对照） | ACCEPTED，`pipeline_started=True`，`_process_import` 调用 1 |
+| `_cleanup_paths([inroot, outside, "C:/Windows/win.ini"])` | inroot 删 / outside 存 / win.ini 存（不误伤系统文件） |
+| 符号链接逃逸 `evasion_link→outside/secret.txt` | **被拒**（`resolve()` 跟随后不在根内）→ 无新绕过 |
+| 大小写/尾点/`..`越层/`/`与`\`混用 | resolve 后均在根内同一文件或非文件 → 非逃逸 |
+
+**结论：三条硬门全部满足 → `knowledge_import` 具备验收通过条件。**
+
+1 passed/时序抖动说明：`test_contract_mcp_health_async` 并发轮询 P100 在组合负载下偶发超 2s，单独重跑即过，非本次引入（见 §6 注释）。
 
 ---
 
@@ -129,9 +159,9 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 
 | 套件 | 命令 | 结果 |
 |---|---|---|
-| 核心（3 文件） | `pytest tests/test_permission_gate.py tests/test_wnext2_write_tools.py tests/test_r11_hitl.py -q` | **119 passed**（首版）→ 加固后 **126 passed**（4.42s） |
+| 核心（3 文件） | `pytest tests/test_permission_gate.py tests/test_wnext2_write_tools.py tests/test_r11_hitl.py -q` | **119 passed**（首版）→ 加固后 **126 passed** → **第三轮 128 passed**（+2 路径穿越用例，4.69s） |
 | 扩展（7 文件） | `pytest tests/test_permission_gate.py tests/test_wnext2_write_tools.py tests/test_contract_task_t1.py tests/test_contract_task_t1_fallback.py tests/test_contract_r12_tool_decision.py tests/test_chat_stream_error.py tests/test_r11_hitl.py -q` | **144 passed, 1 skipped**（首版）→ 加固后 **156 passed, 1 skipped**（12.88s） |
-| **加固后影响面（14 文件）** | `pytest tests/test_permission_gate.py tests/test_wnext2_write_tools.py tests/test_r11_hitl.py tests/test_sse_envelope_contract.py tests/test_contract_r12_tool_decision.py tests/test_contract_task_r02.py tests/test_contract_mcp_health_async.py tests/test_task33_mcp_desc_review.py tests/test_contract_task_t1.py tests/test_contract_task_t1_fallback.py tests/test_contract_task_s1.py tests/test_contract_task_o1_instrumentation.py tests/test_contract_task93.py tests/test_chat_stream_error.py -q` | **234 passed, 1 skipped**（46.17s） |
+| **第三轮影响面（14 文件）** | `pytest tests/test_permission_gate.py tests/test_wnext2_write_tools.py tests/test_r11_hitl.py tests/test_sse_envelope_contract.py tests/test_contract_r12_tool_decision.py tests/test_contract_task_r02.py tests/test_contract_mcp_health_async.py tests/test_task33_mcp_desc_review.py tests/test_contract_task_t1.py tests/test_contract_task_t1_fallback.py tests/test_contract_task_s1.py tests/test_contract_task_o1_instrumentation.py tests/test_contract_task93.py tests/test_chat_stream_error.py -q` | **235 passed, 1 skipped**（48.48s）<br>† `test_contract_mcp_health_async::test_05_50_concurrent_polls_no_500_no_queue` 在组合负载下偶发 P100=2172ms>2s，**单独重跑即过**（3.0s）= 时序抖动，非本次引入（未改 MCP health 路径） |
 | 全仓扫描（`pytest tests -q`） | — | **1090 passed / 78 failed / 39 skipped**；78 项**逐项归类后与本次改动无关**，见下 |
 
 **78 failed 归类（避免误读为回归）**：
@@ -140,7 +170,7 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 |---|---|---|---|
 | 需真实 MySQL/Redis/Milvus 的 Live 契约套件（`test_contract_task15/16/18/19/20/21/22/113/23/…`） | 76 | 报错为 `RuntimeError: MySQL 连接池未初始化，请先调用 init_mysql()` / Milvus 召回为空 / AI-Hub 路径 `on_disk==0` → 全量单进程运行时的环境初始化缺失 | ❌ 非本次（环境） |
 | **其它并行写者**的在途改动：`app/ai/platform_capability.py` + `app/ai/skills/registry.py`（未提交/未跟踪） | 2 | `test_wn_ext10_rag_internal_filter.py::test_inventory_matches_tool_class_map` 断言 `len==7`；`test_contract_task94.py::test_skill_node_no_match_yields_empty` 期望 `skill_context==""` — 两者均由该写者的「平台能力清单注入」引入 | ❌ 非本次（跨写者，见 §7.5-CR2） |
-| 本任务影响面 | **0** | 14 文件集 **234 passed / 1 skipped**，含全部权限门 / HITL / chat 流错误 / MCP / 工具决策契约 | — |
+| 本任务影响面 | **0** | 14 文件集 **235 passed / 1 skipped**，含全部权限门 / HITL / chat 流错误 / MCP / 工具决策契约（唯一 1 记为时序抖动，见上） | — |
 
 `1 skipped` 为既有跳过项：`tests/test_contract_r12_tool_decision.py:365`「真 LLM 活体例：设 `R12_LIVE_LLM=1` 显式开启（默认跳过，保 CI 确定性）」，非本次改动引入（`-rs` 实测来源）。既有 `test_permission_gate.py` / `test_r11_hitl.py` / chat 契约测试**全绿，无回归**。
 
@@ -194,6 +224,10 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 - **事实**：`edu-agent/.env` 为 `DEBUG=true`（非 git 跟踪）。项目记忆第 6 条：`settings.DEBUG=true` 时无 `Authorization` 头会返回虚拟管理员 `user_id=1` → 未登录可读用户数据。
 - **本任务相关性**：本任务新增的写类门在 `DEBUG=true` 下**不构成额外风险**（门在 executor 内，与 DEBUG 降级无关），但 `DEBUG=true` 本身使「未登录 → 管理员身份」成立 → 需部署前改 `DEBUG=false`。**本任务未改 `.env`**（环境文件非代码归属），上浮为部署前检查项。
 
+#### CR-WNEXT2-config-default-secrets（P2，Mimosa 硬门3 登记，**未改**）
+- **事实**：`app/config.py` 的 `MYSQL_RO_PASSWORD="edu_ro_pwd_2026"`(:67)、`NEO4J_PASSWORD="edu_neo4j_pwd_2026"`(:111)、`MINIO_SECRET_KEY="minioadmin"`(:139) 为真实形态默认口令，**无生产 fail-fast 守卫**（对比 `JWT_SECRET`/`API_TOKEN` 在 `config.py:676` 有 DEBUG=False 拒启硬门）。属**既有项**，非本任务 3 个 commit 引入（`git diff` 已证）。
+- **建议**：对这三个真实形态默认口令补「未显式配置即拒启」硬门，或改为占位默认 + 生产强制校验；`.env` 已 gitignore（`.gitignore:1`），真实密钥不入库。
+
 ## 8. 边界与未做
 
 - 未改：`chat/router.py`、`chat/sse.py`、`ai/hitl_gate.py`、`public/**`、`contracts/**`（红线）；`chat/service.py`（W-NEXT-9）、`question_admin/router.py`（W-NEXT-5）、并行写者文件（见 §0 末）。
@@ -221,6 +255,8 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 | 9 | **复验新发现 P1-b**：`TOOL_FALLBACK_MAP` 配置诱导越权（第 3 步备用工具无门） | 代码修复（`executor.py:1436-1446`）+ 2 条回归防护用例 + 回退验证证据（§0.1 P1-b / §2-⑥） |
 | 10 | 同路径仍泄类名（`tool_calling` 两处） | 代码修复（归属内）+ §0.1 P2-d；非归属点位转 CR（§7.5 CR-WNEXT2-exc-classname-leak-remaining） |
 | 11 | §6 回归数字口径（19 用例后） | 核心 126 / 扩展 156+1skip / 影响面 **14 文件 234 passed, 1 skipped**（46.17s） |
+| 12 | **第三轮 Mimosa 三硬门**：硬门1（路径穿越/任意文件读取/任意文件删除）初测 FAIL | 修复（executor handler 门控 + `_cleanup_paths` 根约束）+ 2 回归测试 + 独立复验 PASS（见 §0.2） |
+| 13 | §6 数字口径（第三轮） | 核心 128 / 影响面 **235 passed, 1 skipped**（48.48s）；`test_contract_mcp_health_async` 并发轮询单跑回归通过（时序抖动） |
 
 ## 11. 交付 commit
 
@@ -228,5 +264,7 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 |---|---|---|---|
 | 1 | `00bb384` | 首版（步骤1~4 + 集成测试 + 报告初版） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves` |
 | 2 | `4deefa2` | 第二轮复验加固（`_norm` 归一 / executor 收口二次校验 / 备用工具门 / 类名收敛 / 19 用例 / 本报告修订版） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves`（实测）；`git rev-parse HEAD` = `4deefa2837397bb86046bfa9186bcaa51f402110` |
+| 3 | `<待填>` | 第三轮 Mimosa 三硬门修复（executor handler 路径穿越门控 + `upload.py _cleanup_paths` 根约束 + 21 用例 + 本报告 §0.2） | `git symbolic-ref HEAD` = `refs/heads/feature/opt-waves` |
 
-> 两个 commit 均**只含归属文件**：`app/ai/permission_gate.py`、`app/mcp/executor.py`、`app/chat/tool_calling.py`、`app/chat/flows/langgraph_agent.py`、`app/chat/flows/graph_stream.py`、`tests/test_permission_gate.py`、`tests/test_wnext2_write_tools.py`、`test-reports/WNEXT2-completion-report.md`；未夹带并行写者的在途改动（`app/chat/router.py`、`app/ai/graph.py`、`app/ai/skills/registry.py`、`app/knowledge/importer/loader.py`、未跟踪 `app/ai/platform_capability.py`、`tests/test_wn_ext10_rag_internal_filter.py`）。
+> 前两个 commit 均**只含归属文件**：`app/ai/permission_gate.py`、`app/mcp/executor.py`、`app/chat/tool_calling.py`、`app/chat/flows/langgraph_agent.py`、`app/chat/flows/graph_stream.py`、`tests/test_permission_gate.py`、`tests/test_wnext2_write_tools.py`、`test-reports/WNEXT2-completion-report.md`。第三轮 commit 额外含 `app/knowledge/routers/upload.py`（Mimosa 硬门1 修复的纵深防御，非原 8 归属但为 `_process_import`/`_cleanup_paths` 宿主，改动仅此一处）。
+> 未夹带并行写者的在途改动（`app/chat/router.py`、`app/ai/graph.py`、`app/ai/skills/registry.py`、`app/knowledge/importer/loader.py`、未跟踪 `app/ai/platform_capability.py`、`tests/test_wn_ext10_rag_internal_filter.py`）。
