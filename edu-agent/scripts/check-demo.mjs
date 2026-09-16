@@ -390,7 +390,7 @@ await check("⑩", `契约对账门 febe_contract_check.py（断点·在用未�
 // ⑪ VEC-LOCK：embed 一致性健康门（VEC-G5）——edu_knowledge 元数据全 = 锁定 BGE-M3 revision，
 //    无 fallback 混写/未归一化/空文本。走 venv python 探针（查 Milvus），PASS 才算绿。
 const VECLOCK_PROBE = new URL("../veclock_health_probe.py", import.meta.url).pathname;
-const EDU_PY = new URL("../../.venv/Scripts/python.exe", import.meta.url).pathname;
+const EDU_PY = new URL("../.venv/Scripts/python.exe", import.meta.url).pathname;
 await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.assign(
   async () => runCmd(EDU_PY, [VECLOCK_PROBE], 60000),
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
@@ -441,6 +441,32 @@ await check("⑫", `HITL 真实性(confirm 续流不再 42200)`, Object.assign(
     return `confirm 续流无 42200 症状`;
   },
   { __fix: (d) => `确认 HITL_ENABLED=True 且后端可达;SURFACED-1 修复见 tests/test_chat_tool_calling.py [${d}]` }));
+
+// ⑭ W-NEXT-INT-001A 内部可见性健康门：student 检索内部关键词 0 命中 + admin 命中 > 0（T14 S6 修复）
+//    走 wnextint1a_visibility_probe.py 探针（真实 HTTP login + /api/chat/search + format_docs=False），
+//    末行输出 [WINT1A] {student_hits:0, admin_hits:>0, ...}；env_blocked→WARN（不阻断，仅环境未就绪）。
+const WINT1A_PROBE = new URL("../scripts/eval/wnextint1a_visibility_probe.py", import.meta.url).pathname;
+await check("⑭", `内部可见性(student 0 内部命中 / admin >0)`, Object.assign(
+  async () => {
+    const { code, stdout } = await runPy(EDU_PY, [WINT1A_PROBE, "--base", BACKEND], 90000);
+    const m = /\[WINT1A\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      if (code === 2) {
+        const e = new Error(`环境阻塞（后端不可达，以④红项为准）: ${(stdout || "").slice(0, 200)}`);
+        e.__warn = true; throw e;
+      }
+      throw new Error(`探针未输出 [WINT1A]（exit=${code}）: ${(stdout || "").slice(0, 200)}`);
+    }
+    const j = JSON.parse(m[1]);
+    if (j.env_blocked) {
+      const e = new Error(`环境阻塞（后端/DB 不可达，跳过）: ${j.detail || ""}`);
+      e.__warn = true; throw e;
+    }
+    if (!j.student_hits_zero) throw new Error(`student 内部关键词命中 ${j.student_hits_total} 条（S6 回归保护 FAIL）`);
+    if (!(j.admin_hits_total > 0)) throw new Error(`admin 内部关键词 0 命中（admin 不被 internal 过滤失效）`);
+    return `student=${j.student_hits_total} admin=${j.admin_hits_total}（5 query 全过）`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\wnextint1a_visibility_probe.py --base ${BACKEND} 排查 [${d}]` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1
