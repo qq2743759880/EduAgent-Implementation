@@ -1,93 +1,107 @@
-/api/admin/courses/cohorts
-/api/admin/courses/cohorts/
-/api/admin/courses/materials/redirect-upload
-/api/admin/courses/modules
-/api/admin/courses/modules/
-/api/admin/courses/series
-/api/admin/courses/series/
-/api/admin/courses/sessions
-/api/admin/courses/sessions/
-/api/admin/courses/videos/
-/api/admin/courses/videos/bind-session
-/api/admin/courses/videos/finalize-chunked
-/api/admin/courses/videos/init-chunked
-/api/admin/questions
-/api/admin/questions/
-/api/admin/questions/banks
-/api/admin/questions/banks/
-/api/admin/questions/batch-import
-/api/admin/questions/import-execute
-/api/admin/questions/import-preview
-/api/admin/questions/papers/compose
-/api/admin/questions/questions/
-/api/admin/questions/tags
-/api/admin/questions/tags/
-/api/admin/questions/types
-/api/admin/rag/audit-log
-/api/admin/rag/collections
-/api/admin/rag/collections/rebuild
-/api/admin/rag/presets
-/api/admin/rag/search
-/api/admin/users
-/api/admin/users/
-/api/admin/users/dashboard/metrics
-/api/auth/login
-/api/auth/me
-/api/auth/register
-/api/chat
-/api/chat/search
-/api/chat/sessions
-/api/chat/sessions/
-/api/cohorts/
-/api/community/comments/
-/api/community/posts
-/api/community/posts/
-/api/coupons
-/api/coupons/templates
-/api/enrollments/me/cohorts
-/api/favorites
-/api/favorites/
-/api/gamification/me/badges
-/api/gamification/me/points
-/api/gamification/rankings
-/api/interactive/quiz/next
-/api/interactive/quiz/submit
-/api/interactive/quiz/wrong-book
-/api/knowledge/admin/upload
-/api/knowledge/partitions
-/api/knowledge/partitions/
-/api/knowledge/status/
-/api/knowledge/tasks
-/api/knowledge/upload
-/api/mcp/call-log
-/api/mcp/health-scan
-/api/mcp/servers
-/api/mcp/servers/
-/api/mcp/servers/import-url
-/api/mcp/tools/test
-/api/mindmap/course/
-/api/mindmap/me/
-/api/progress/courses
-/api/progress/dashboard
-/api/progress/exam/submit
-/api/progress/homework/submit
-/api/progress/video/tick-batch
-/api/series
-/api/series/
-/api/study/courses/
-/api/study/sessions/
-/api/trade/after_sales/ticket
-/api/trade/after_sales/ticket/
-/api/trade/after_sales/tickets
-/api/trade/coupon/receive
-/api/trade/order
-/api/trade/order/
-/api/trade/orders
-/api/trade/payment/
-/api/users/me
-/api/users/me/learning-summary
-/api/users/me/profile
-/api/users/me/student-profile
-/api/vocab/daily
-/api/vocab/progress
-/api/vocab/recall
+# EduAgent 前端真实调用契约清单（FE-BE-CONTRACT 自动刷新）
+# 生成时间: 2026-09-16 14:42:01
+# 生成脚本: edu-agent/scripts/eval/febe_contract_check.py --emit-frontend-list
+# 来源: 扫描 edu-frontend/public/edu-api.js + public/*.html 的 EAPI.* / fetch / xhr.open
+# 归一化: 路径参数 -> {x}，去 query，排序去重。共 101 条（每条均在后端 OpenAPI 路由内，零断点）。
+
+DELETE /api/admin/courses/chapters/{x}
+DELETE /api/admin/courses/cohorts/{x}
+DELETE /api/admin/courses/modules/{x}
+DELETE /api/admin/courses/series/{x}
+DELETE /api/admin/courses/sessions/{x}
+DELETE /api/admin/questions/banks/{x}
+DELETE /api/admin/questions/questions/{x}
+DELETE /api/chat/sessions/{x}
+DELETE /api/knowledge/partitions/{x}
+DELETE /api/mcp/servers/{x}
+GET /api/admin/courses/cohorts/{x}/modules
+GET /api/admin/courses/modules/{x}/sessions
+GET /api/admin/courses/series
+GET /api/admin/courses/series/{x}
+GET /api/admin/courses/series/{x}/cohorts
+GET /api/admin/courses/sessions/{x}/assets
+GET /api/admin/courses/videos/{x}/chapters
+GET /api/admin/courses/videos/{x}/transcode-status
+GET /api/admin/questions/banks/{x}
+GET /api/admin/questions/questions/{x}
+GET /api/admin/questions/types
+GET /api/admin/rag/collections
+GET /api/admin/users/dashboard/metrics
+GET /api/auth/me
+GET /api/chat/sessions
+GET /api/chat/sessions/{x}/history
+GET /api/community/posts/{x}
+GET /api/community/posts/{x}/comments
+GET /api/coupons
+GET /api/coupons/templates
+GET /api/courses/{x}/reviews
+GET /api/enrollments/me/cohorts
+GET /api/favorites
+GET /api/gamification/me/badges
+GET /api/gamification/me/points
+GET /api/gamification/rankings
+GET /api/interactive/quiz/next
+GET /api/interactive/quiz/question/{x}
+GET /api/interactive/quiz/wrong-book
+GET /api/knowledge/partitions
+GET /api/knowledge/tasks
+GET /api/mcp/call-log
+GET /api/mcp/servers
+GET /api/mcp/tools
+GET /api/progress/dashboard
+GET /api/series
+GET /api/series/{x}
+GET /api/series/{x}/cohorts
+GET /api/study/courses/{x}/access
+GET /api/study/courses/{x}/outline
+GET /api/study/sessions/{x}
+GET /api/users/me
+GET /api/users/me/learning-summary
+GET /api/users/me/profile
+GET /api/vocab/daily
+GET /api/vocab/progress
+PATCH /api/admin/courses/cohorts/{x}
+PATCH /api/admin/courses/modules/{x}
+PATCH /api/admin/courses/series/{x}
+PATCH /api/admin/courses/sessions/{x}
+PATCH /api/admin/questions/banks/{x}
+PATCH /api/admin/questions/questions/{x}
+PATCH /api/mcp/servers/{x}
+POST /api/admin/courses/chapters
+POST /api/admin/courses/cohorts
+POST /api/admin/courses/modules
+POST /api/admin/courses/series
+POST /api/admin/courses/series/{x}/restore
+POST /api/admin/courses/sessions
+POST /api/admin/courses/videos/bind-session
+POST /api/admin/courses/videos/finalize-chunked
+POST /api/admin/courses/videos/init-chunked
+POST /api/admin/questions/banks
+POST /api/admin/questions/import-execute
+POST /api/admin/questions/import-preview
+POST /api/admin/questions/questions
+POST /api/admin/users/{x}/role
+POST /api/admin/users/{x}/status
+POST /api/auth/login
+POST /api/auth/register
+POST /api/chat/resume
+POST /api/chat/sessions
+POST /api/chat/stream
+POST /api/community/comments/{x}/like
+POST /api/community/posts
+POST /api/community/posts/{x}/comments
+POST /api/community/posts/{x}/like
+POST /api/courses/{x}/reviews
+POST /api/favorites
+POST /api/interactive/quiz/submit
+POST /api/knowledge/admin/upload
+POST /api/mcp/health-scan
+POST /api/mcp/servers
+POST /api/mcp/servers/{x}/discover
+POST /api/mcp/servers/{x}/health
+POST /api/mcp/tools/test
+POST /api/trade/coupon/receive
+POST /api/trade/order
+POST /api/vocab/recall
+PUT /api/admin/courses/videos/upload-chunk/{x}/{x}
+PUT /api/users/me/profile
