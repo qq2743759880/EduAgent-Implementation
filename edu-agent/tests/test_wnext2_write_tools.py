@@ -669,3 +669,182 @@ async def test_p1_fallback_write_tool_allowed_for_admin(monkeypatch):
     assert called.get("tools") == ["calculator", "calculator", "knowledge_import"], (
         "admin 应放行到第 3 步备用工具（全步失败 → 人工指南）"
     )
+
+
+# ============================================================
+# 第四轮：6 条上浮 CR 处置回归（CR-1/2/3/4）
+# ============================================================
+
+async def _fake_fetch_all(rows):
+    """list_enabled_tool_metas 的 fetch_all 替身（直接返回预置行）。"""
+
+    async def _f(*_a, **_k):
+        return rows
+
+    return _f
+
+
+# --- CR-2 toolcatalog-source：内置工具并入 LLM 可选清单 ---
+@pytest.mark.asyncio
+async def test_cr2_builtin_tools_merged_in_catalog(monkeypatch):
+    """DB 无内置工具行时，清单必须并入 3 个内置工具（category=builtin, tool_id=0）。"""
+    import app.chat.tool_calling as tc
+
+    monkeypatch.setattr(tc, "fetch_all", await _fake_fetch_all([]))
+    metas = await tc.list_enabled_tool_metas()
+    names = {m.tool_name for m in metas}
+    assert {"calculator", "search_knowledge", "knowledge_import"} <= names
+    ki = next(m for m in metas if m.tool_name == "knowledge_import")
+    assert ki.tool_id == 0 and ki.server_id == 0 and ki.category == "builtin"
+    assert ki.description and ("导入" in ki.keywords), "内置工具需可被启发式命中"
+
+
+@pytest.mark.asyncio
+async def test_cr2_builtin_dedupe_against_db(monkeypatch):
+    """DB 同名（search_knowledge）→ 只保留 DB 行，内置不重复入清单。"""
+    import app.chat.tool_calling as tc
+
+    rows = [{"tool_id": 7, "server_id": 3, "tool_name": "search_knowledge",
+             "description": "db 描述", "input_schema_json": None, "server_code": "srv"}]
+    monkeypatch.setattr(tc, "fetch_all", await _fake_fetch_all(rows))
+    metas = await tc.list_enabled_tool_metas()
+    sk = [m for m in metas if m.tool_name == "search_knowledge"]
+    assert len(sk) == 1 and sk[0].tool_id == 7, "DB 同名必须去重"
+    assert any(m.tool_name == "knowledge_import" for m in metas), "其余内置工具照常并入"
+
+
+# --- CR-3 executor-gate-bypass（残留收口）：注册期强属性 ---
+@pytest.mark.asyncio
+async def test_cr3_register_write_class_strong_property(monkeypatch):
+    """写类从名单驱动升级为注册期强属性：register_builtin_tool(write_class=True) 即写类，
+    即便 TOOL_CLASS_MAP 不认识该名，_deny_if_write_class 对 student 也拦截。"""
+    import app.ai.permission_gate as pg
+    from app.mcp import executor as ex
+
+    async def fake_resolve_role(_uid):
+        return "student"
+
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+
+    name = "cr3_temp_write_tool"
+    ex.register_builtin_tool(name, lambda a: "ok", write_class=True)
+    try:
+        assert name in ex._BUILTIN_WRITE_CLASS_NAMES, "注册期强属性必须登记"
+        assert "knowledge_import" in ex._BUILTIN_WRITE_CLASS_NAMES
+        assert "calculator" not in ex._BUILTIN_WRITE_CLASS_NAMES
+        denied = await ex._deny_if_write_class(
+            name=name, operator_user_id=999, call_id="c", server_id=0)
+        assert denied is not None, "未登记映射名的写类工具（注册期强属性）也必须被拦"
+    finally:
+        ex.register_builtin_tool(name, lambda a: "ok", write_class=False)
+        assert name not in ex._BUILTIN_WRITE_CLASS_NAMES, "write_class=False 须摘除强属性"
+
+
+# --- CR-1 hitl-graph-unreachable（方案②）：流层写类挂起 ---
+@pytest.mark.asyncio
+async def test_cr1_stream_layer_write_hold_pending(monkeypatch):
+    """方案②：HITL 开启 + 流式主路径注入挂起回调 → 写类工具挂起（零执行），
+    回调收到 awaiting_confirm 负载，summary 为 error+挂起信封。"""
+    import app.ai.permission_gate as pg
+    import app.chat.tool_calling as tc
+
+    called: dict = {}
+
+    async def fake_list():
+        return [_tool_meta("knowledge_import")]
+
+    async def fake_resolve_role(_uid):
+        return "admin"
+
+    async def fake_call_tool(**kw):
+        called["n"] = called.get("n", 0) + 1
+        return None  # 挂起轮不应被调用
+
+    monkeypatch.setattr(tc, "list_enabled_tool_metas", fake_list)
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+    monkeypatch.setattr("app.mcp.executor.call_tool", fake_call_tool)
+    monkeypatch.setattr(tc, "settings", _SettingsShim())  # HITL_ENABLED=True
+
+    held_payload: dict = {}
+
+    async def hold_cb(payload: dict) -> bool:
+        held_payload.update(payload)
+        return True
+
+    summaries, ctx, _ = await tc.run_chat_tool_calls(
+        query="请调用 knowledge_import 把文件导入知识库",
+        operator_user_id=1,
+        on_write_class_pending=hold_cb,
+    )
+
+    assert called.get("n", 0) == 0, "挂起必须零 executor 调用"
+    assert held_payload.get("status") == "awaiting_confirm"
+    assert held_payload.get("tool_name") == "knowledge_import"
+    assert held_payload.get("role") == "admin"
+    assert "已挂起" in ctx and "没有发生任何数据变更" in ctx, "挂起+诚实约束上下文必须注入"
+    s = summaries[0]
+    assert s.status == "error" and "awaiting_confirm" in s.result_summary
+
+
+@pytest.mark.asyncio
+async def test_cr1_resume_approve_skips_hold_executes(monkeypatch):
+    """方案② resume approve：hitl_decision=True → 不再挂起，放行 executor 批准执行一次。"""
+    import app.ai.permission_gate as pg
+    import app.chat.tool_calling as tc
+
+    called: dict = {}
+
+    async def fake_list():
+        return [_tool_meta("knowledge_import")]
+
+    async def fake_resolve_role(_uid):
+        return "admin"
+
+    async def fake_call_tool(**kw):
+        called["n"] = called.get("n", 0) + 1
+        called["hitl_decision"] = kw.get("hitl_decision")
+        from app.mcp.executor import MCPToolTestResp, ToolCallStatusEnum
+        return MCPToolTestResp(
+            status=ToolCallStatusEnum.SUCCESS, latency_ms=1, call_id="c1",
+            server_id=0, tool_name="knowledge_import",
+            content_text='{"task_id": "t1", "status": "pending"}',
+        )
+
+    monkeypatch.setattr(tc, "list_enabled_tool_metas", fake_list)
+    monkeypatch.setattr(pg, "resolve_role", fake_resolve_role)
+    monkeypatch.setattr("app.mcp.executor.call_tool", fake_call_tool)
+    monkeypatch.setattr(tc, "settings", _SettingsShim())
+
+    held = {"fired": False}
+
+    async def hold_cb(_payload: dict) -> bool:
+        held["fired"] = True
+        return True
+
+    summaries, ctx, _ = await tc.run_chat_tool_calls(
+        query="请调用 knowledge_import 把文件导入知识库",
+        operator_user_id=1,
+        hitl_decision=True,
+        on_write_class_pending=hold_cb,
+    )
+
+    assert held["fired"] is False, "approve 续跑不得再挂起"
+    assert called.get("n", 0) == 1, "approve → executor 批准执行一次"
+    assert called.get("hitl_decision") is True
+    assert summaries[0].status == "success"
+    assert "没有发生任何数据变更" not in ctx, "执行成功轮不得注入「未执行」约束"
+
+
+# --- CR-4 exc-classname-leak-remaining（非红线修复的回归护栏）---
+def test_cr4_no_exception_classname_in_user_visible_text():
+    """service.py/generator.py 的用户可见字段不再拼异常类名（类名只进 logger）。"""
+    import re
+
+    svc = Path(__file__).resolve().parents[1] / "app" / "chat"
+    service_src = (svc / "service.py").read_text(encoding="utf-8")
+    gen_src = (svc / "generator.py").read_text(encoding="utf-8")
+
+    assert not re.search(r'mcp_degraded\s*=\s*f"[^"]*type\(exc\)\.__name__', service_src)
+    assert not re.search(r'return \[\],\s*"",\s*f"[^"]*type\(exc\)\.__name__', service_src)
+    assert "LLM 调用失败(" not in gen_src, "非流式 merged_deg 不得拼类名"
+    assert "LLM 流式失败(" not in gen_src, "流式 merged_deg 不得拼类名"

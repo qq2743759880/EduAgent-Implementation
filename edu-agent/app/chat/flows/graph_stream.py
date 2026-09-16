@@ -150,6 +150,14 @@ async def graph_stream_sse(
         t0 = time.perf_counter()
         session_id_out = session.session_id if session else None
 
+        # CR-1 方案②：resume 决策提前消费（写类挂起由流层承载，不依赖图 interrupt）。
+        # 必须在 MCP 并行预取启动前确定 hitl_decision/是否抑制 MCP，
+        # 避免「续跑确认」与「挂起/执行」竞态。
+        resume_decision = await _pop_hitl_decision(thread_id)
+        _resume_action = str((resume_decision or {}).get("action") or "").strip().lower()
+        mcp_hitl_decision: bool | None = True if _resume_action == "approve" else None
+        _suppress_mcp = _resume_action == "reject"
+
         # 0) start 帧（先建连先发，与旧路径一致）
         yield sse_line(SseEventType.START.value, {
             "session_id": session_id_out,
@@ -176,8 +184,26 @@ async def graph_stream_sse(
         mcp_context = ""
         mcp_degraded: str | None = None
 
+        # CR-1 方案②：写类挂起流层状态（不依赖图 interrupt）——
+        # held_hitl_payload 非 None → 写类工具已挂起（待 confirm/reject），流收束；
+        # stream_held 已发 pending_confirm + done，停止消费图。
+        held_hitl_payload: dict | None = None
+        stream_held = False
+
         async def _run_mcp():
             from app.chat.tool_calling import run_chat_tool_calls
+
+            nonlocal held_hitl_payload
+
+            async def _hold_for_confirm(payload: dict) -> bool:
+                nonlocal held_hitl_payload
+                await _mark_hitl_pending(thread_id, payload)
+                held_hitl_payload = payload
+                logger.info(
+                    f"[graph_stream] 写类工具挂起（方案②）thread_id={thread_id}"
+                    f" tool={payload.get('tool_name')} role={payload.get('role')}"
+                )
+                return True
 
             try:
                 return await run_chat_tool_calls(
@@ -185,6 +211,8 @@ async def graph_stream_sse(
                     operator_user_id=int(user_id),
                     session_id=session_id_out,
                     use_mcp_flag=bool(req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
+                    hitl_decision=mcp_hitl_decision,
+                    on_write_class_pending=_hold_for_confirm,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(f"[graph_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
@@ -194,7 +222,7 @@ async def graph_stream_sse(
 
         mcp_task = (
             asyncio.ensure_future(_run_mcp())
-            if not (guard_entry is not None and not guard_entry.get("ok"))
+            if not (guard_entry is not None and not guard_entry.get("ok")) and not _suppress_mcp
             else None
         )
 
@@ -219,8 +247,23 @@ async def graph_stream_sse(
 
         async def _emit_retrieval() -> AsyncGenerator[bytes, None]:
             """组装并发送 retrieval 帧（等 MCP 并行预取收口，保与旧路径帧内容对齐）。"""
-            nonlocal retrieval_emitted, ttft_retrieval_ms
+            nonlocal retrieval_emitted, ttft_retrieval_ms, held_hitl_payload, stream_held
             await _await_mcp()
+            if held_hitl_payload is not None:
+                # CR-1 方案②：写类挂起 → pending_confirm 帧 + done(awaiting_human_confirm)，
+                # 流收束待用户 confirm/reject 后同 thread_id 重开续跑（不落库，与图 interrupt 路径一致）。
+                yield sse_line("pending_confirm", held_hitl_payload)
+                yield sse_line(SseEventType.DONE.value, {"code": 0, "message": "ok", "data": {
+                    "session_id": session_id_out, "message_id": None,
+                    "retrieved_count": int((retrieval_payload or {}).get("retrieved_count") or 0),
+                    "final_count": len((retrieval_payload or {}).get("docs") or []),
+                    "latency_ms": int((time.perf_counter() - t0) * 1000),
+                    "rewrite_query": (retrieval_payload or {}).get("rewrite_query"),
+                    "degraded_reason": "awaiting_human_confirm",
+                }})
+                retrieval_emitted = True
+                stream_held = True
+                return
             payload = dict(retrieval_payload or {})
             yield sse_line(SseEventType.RETRIEVAL_DONE.value, {
                 "docs": payload.get("docs") or [],
@@ -288,15 +331,19 @@ async def graph_stream_sse(
                 return
 
             g = await _ensure_agent_graph()
-            # R11 续流驱动：同 thread_id 已有 resume 决策（confirm/reject）→ Command(resume) 续跑
-            # 挂起图（checkpoint 已保存 interrupt 状态），不再新建 state；无决策 → 正常新会话。
-            resume_decision = await _pop_hitl_decision(thread_id)
+            # R11 续流驱动 + CR-1 方案②：resume 决策已在 `_gen` 顶部提前消费
+            # （mcp_hitl_decision 据此在 MCP 预取前确定，避免竞态）。此处只判定
+            # 「图 interrupt 挂起」与「流层挂起」两种承载：
+            #   图 checkpoint 有 pending interrupt → Command(resume) 交给图续跑（旧 R11 路径）；
+            #   无图挂起 → 方案②流层承载：approve → 正常续跑（MCP 带 hitl_decision 批准执行）；
+            #                          reject → 拒绝上下文收束；其它 → 确认失效收束。
+            resume_decision_for_graph: dict | None = None
             if resume_decision is not None:
-                logger.info(f"[graph_stream] HITL resume 续跑 thread_id={thread_id} decision={resume_decision.get('action')}")
+                logger.info(f"[graph_stream] HITL resume 续跑 thread_id={thread_id} decision={_resume_action or 'unknown'}")
                 # T8-C2 修复：Redis 有决策 ≠ 图仍挂起。若 checkpoint 已丢失/被其它实例消费/确认已超时，
                 # 图本身没有 pending interrupt，此时把 Command(resume=...) 丢进去只会静默按新会话跑完
                 # ——用户以为"确认执行了"，实际写类工具零执行且无任何提示（静默吞）。
-                # 这里先探明挂起态，无挂起 → 显式收束（reject 给拒绝上下文 / confirm 明确失效），绝不假装续跑。
+                # 先探明挂起态，无挂起 → 方案②分流（approve 正常续跑 / reject 明确收束），绝不假装续跑。
                 _probe_cfg = {"configurable": {"thread_id": thread_id}}
                 _has_pending = False
                 try:
@@ -304,16 +351,21 @@ async def graph_stream_sse(
                     _has_pending = bool(getattr(_snap, "next", None))
                 except Exception as exc:  # noqa: BLE001 — 探测失败按「无挂起」处置（保守：不执行写操作）
                     logger.warning(f"[graph_stream] HITL 挂起态探测失败（按无挂起处置）: {type(exc).__name__}: {exc}")
-                if not _has_pending:
-                    _act = str(resume_decision.get("action") or "").strip().lower()
-                    if _act == "reject":
-                        _notice = "已取消该高风险操作，工具未执行，也没有发生任何数据变更。"
-                        _deg = "hitl_rejected_no_pending"
-                    else:
-                        _notice = "该确认已失效：待确认的操作已过期或不存在，本次未执行任何写操作。如需继续，请重新发起请求。"
-                        _deg = "hitl_confirm_expired_no_pending"
+                if _has_pending:
+                    resume_decision_for_graph = resume_decision
+                elif _resume_action == "reject":
+                    _notice = "已取消该高风险操作，工具未执行，也没有发生任何数据变更。"
+                    _deg = "hitl_rejected_no_pending"
+                elif _resume_action != "approve":
+                    _notice = "该确认已失效：待确认的操作已过期或不存在，本次未执行任何写操作。如需继续，请重新发起请求。"
+                    _deg = "hitl_confirm_expired_no_pending"
+                else:
+                    # 方案② approve：无图 interrupt，靠 mcp_hitl_decision=True 走 executor 批准执行
+                    _notice = None
+                    _deg = None
+                if _notice is not None:
                     logger.warning(
-                        f"[graph_stream] HITL 决策无可续挂起（action={_act or 'unknown'}）"
+                        f"[graph_stream] HITL 决策无可续挂起（action={_resume_action or 'unknown'}）"
                         f" thread_id={thread_id} → {_deg}"
                     )
                     retrieval_payload = {
@@ -333,7 +385,7 @@ async def graph_stream_sse(
             config = {"configurable": {"thread_id": thread_id, "stream_tokens": True}}
             try:
                 async for mode, payload in g.astream(
-                    Command(resume=resume_decision) if resume_decision is not None else state,
+                    Command(resume=resume_decision_for_graph) if resume_decision_for_graph is not None else state,
                     config,
                     stream_mode=["updates", "custom"],
                 ):
@@ -375,6 +427,11 @@ async def graph_stream_sse(
                         if retrieval_payload is not None and not retrieval_emitted:
                             async for frame in _emit_retrieval():
                                 yield frame
+                            if stream_held:
+                                # CR-1 方案②：写类挂起已收束（pending_confirm + done 已发），
+                                # 不继续消费图、不落库（_finish 不调用，与图 interrupt 路径一致）。
+                                logger.info(f"[graph_stream] 写类挂起，流已收束待 resume: {thread_id}")
+                                return
                             for d in pending_tokens:
                                 yield sse_line(SseEventType.TOKEN.value, {"delta": d})
                             pending_tokens.clear()
@@ -398,6 +455,13 @@ async def graph_stream_sse(
                     except Exception:  # noqa: BLE001
                         pass
                     guard_held = False
+
+            # CR-1 方案② 兜底：retrieval_payload 始终未置位（如工具意图未走 fan_out 更新）
+            # 时，挂起负载可能未在循环内被消费——补发 pending_confirm 并收束，绝不静默吞。
+            if held_hitl_payload is not None and not stream_held:
+                async for frame in _emit_retrieval():
+                    yield frame
+                return
 
             # 图内降级透传：reflect/answer 节点的 degraded_reason（llm_failed/reflect_max_iter）
             deg_updates = [final_updates.get(n, {}).get("degraded_reason") for n in ("reflect", "answer", "fan_out")]

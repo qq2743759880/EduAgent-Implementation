@@ -22,17 +22,27 @@ import re
 import time
 import traceback
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from app.chat.schemas import MCPToolCallSummary
 from app.common.logging import logger
 from app.config import settings
 from app.database import fetch_all
+# CR-WNEXT2-toolcatalog-source：内置工具（executor 注册面）并入 LLM 可选清单的唯一事实源
+from app.ai.permission_gate import REGISTERED_BUILTIN_TOOLS
 
 
 # ============================================================
-# 1. 工具加载：DB 中 enabled=1 且 yn=1 的 Server 下所有工具
+# 1. 工具加载：DB 中 enabled=1 且 yn=1 的 Server 下所有工具 + 内置工具
 # ============================================================
+
+# CR-WNEXT2-toolcatalog-source：内置工具描述（与 executor.py handler docstring 同源语义）。
+# 内置工具在 mcp_tool 表无行，DB 查询天然缺位；此处补齐描述供意图识别/LLM 使用。
+_BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
+    "calculator":       "本地四则运算计算器：对两个数字做加减乘除/取模（op=add|sub|mul|div|mod）",
+    "search_knowledge": "知识库检索：按关键词 q/query 查询已入库学习资料，返回相关片段（支持降级返回）",
+    "knowledge_import": "知识库导入（写类，管理员专用）：登记导入任务并后台拉起既有导入管道（visibility=private|public）",
+}
 @dataclass
 class ToolMeta:
     tool_id: int
@@ -46,7 +56,13 @@ class ToolMeta:
 
 
 async def list_enabled_tool_metas() -> list[ToolMeta]:
-    """返回全部启用的 MCP 工具元信息，供意图识别用。"""
+    """返回全部启用的工具元信息，供意图识别用。
+
+    CR-WNEXT2-toolcatalog-source：DB（mcp_tool 表）之外，并入 executor 注册面内置工具
+    （calculator/search_knowledge/knowledge_import）——内置工具无 DB 行，天然缺位，
+    不并入则 LLM 可选清单永远不知道这些工具存在。写类工具 knowledge_import 也进清单，
+    但放行仍由已接线的写类权限门（permission_gate/executor `_deny_if_write_class`）裁决。
+    """
     rows = await fetch_all(
         "SELECT t.id AS tool_id, t.server_id, t.tool_name, t.description, t.input_schema_json, "
         "       s.server_code AS category "
@@ -56,8 +72,10 @@ async def list_enabled_tool_metas() -> list[ToolMeta]:
         "ORDER BY s.id, t.id",
     )
     out: list[ToolMeta] = []
+    seen_names: set[str] = set()
     for r in rows:
         name = str(r["tool_name"])
+        seen_names.add(name.lower())
         meta = ToolMeta(
             tool_id=int(r["tool_id"]),
             server_id=int(r["server_id"]),
@@ -68,6 +86,20 @@ async def list_enabled_tool_metas() -> list[ToolMeta]:
             keywords=_suggest_keywords(name, r.get("description") or ""),
         )
         out.append(meta)
+    # 内置工具并入（DB 同名去重，避免重复入清单）
+    for bname in sorted(REGISTERED_BUILTIN_TOOLS):
+        if bname in seen_names:
+            continue
+        desc = _BUILTIN_TOOL_DESCRIPTIONS.get(bname, "")
+        out.append(ToolMeta(
+            tool_id=0,
+            server_id=0,
+            tool_name=bname,
+            description=desc,
+            input_schema_json=None,
+            category="builtin",
+            keywords=_suggest_keywords(bname, desc),
+        ))
     return out
 
 
@@ -84,6 +116,10 @@ def _suggest_keywords(name: str, desc: str) -> list[str]:
         base.update({"字母", "字母表", "alphabet", "a-z", "A-Z"})
     if "search" in name.lower():
         base.update({"搜索", "search", "查"})
+    if "import" in name.lower() or "导入" in desc:
+        base.update({"导入", "import", "入库", "上传"})
+    if "calc" in name.lower() or "calculator" in name.lower():
+        base.update({"计算", "算", "calculator", "calc"})
     return list(base)
 
 
@@ -225,6 +261,12 @@ async def run_chat_tool_calls(
     trace_id: str = "",
     session_id: str | None = None,
     use_mcp_flag: bool = True,
+    # CR-WNEXT2-hitl-graph-unreachable（方案②）：写类工具流层挂起的两个旋钮。
+    #   hitl_decision：resume approve 续跑时传 True → 写类工具经 executor 批准执行（不挂起）；
+    #   on_write_class_pending：graph_stream 注入的挂起回调 → HITL 开启时写类工具先挂起
+    #     （发 pending_confirm 帧 + Redis 标记），不执行，等用户 confirm/reject 后同 thread_id 续跑。
+    hitl_decision: bool | None = None,
+    on_write_class_pending: Callable[[dict], Awaitable[bool]] | None = None,
 ) -> tuple[list[MCPToolCallSummary], str, str | None]:
     """
     一轮问答内：分析 query → 选工具（启发式）→ 逐一调用 → 返回：
@@ -295,6 +337,7 @@ async def run_chat_tool_calls(
     calls_any = False
     success_any = False
     denied_any = False
+    held_any = False  # CR-1 方案②：写类工具挂起待确认（未执行）
     for plan in plans:
         calls_any = True
         args_summary_raw = _truncate(str(plan.args), 200)
@@ -326,6 +369,50 @@ async def run_chat_tool_calls(
                 )
                 continue
 
+            # CR-WNEXT2-hitl-graph-unreachable（方案②）：HITL 开启且流式主路径
+            # （graph_stream）注入了挂起回调时，写类工具在**流层**挂起 —— 不执行工具，
+            # 由回调发 pending_confirm 帧 + 写 Redis 挂起标记；用户 confirm/reject 后
+            # 以同 thread_id 重开续跑。graph 六节点无 interrupt 节点（图内挂起不可达），
+            # 故由本回调承载，不依赖图 interrupt。resume approve（hitl_decision=True）
+            # 时跳过挂起、放行到 executor 批准执行。
+            if (
+                on_write_class_pending is not None
+                and hitl_decision is None
+                and getattr(settings, "HITL_ENABLED", False)
+            ):
+                _pending_payload = {
+                    "tool_name": plan.tool.tool_name,
+                    "tool_key": _tool_key,
+                    "role": await _role(),
+                    "args": dict(plan.args or {}),
+                    "operator_user_id": int(operator_user_id),
+                    "tenant_id": str(tenant_id),
+                    "session_id": str(session_id or ""),
+                    "status": "awaiting_confirm",
+                }
+                _held = await on_write_class_pending(_pending_payload)
+                if _held:
+                    held_any = True
+                    summaries.append(MCPToolCallSummary(
+                        call_id=f"chat-hitl-{start_ms}-{plan.tool.tool_name}",
+                        tool_name=plan.tool.tool_name,
+                        args_summary=args_summary_raw,
+                        status="error",
+                        latency_ms=0,
+                        result_summary=_truncate(json.dumps({
+                            "status": "awaiting_confirm",
+                            "tool_name": plan.tool.tool_name,
+                            "message": "写类工具已挂起，等待人工确认（pending_confirm 帧）",
+                            "thread_hint": "以同 thread_id 重开并 confirm/reject 续跑",
+                        }, ensure_ascii=False), 400),
+                    ))
+                    parts.append(
+                        f"## MCP 写类工具已挂起（未执行）：{plan.tool.tool_name}\n"
+                        f"- 状态：等待人工确认（pending_confirm）\n"
+                        f"- 该操作**没有执行**、**没有发生任何数据变更**；确认后才会执行。\n"
+                    )
+                    continue
+
         try:
             resp = await _mcp_executor.call_tool(
                 operator_user_id=int(operator_user_id),
@@ -333,6 +420,7 @@ async def run_chat_tool_calls(
                 trace_id=trace_id or (f"mcp-chat-{int(start_ms)}"),
                 tool_id=int(plan.tool.tool_id),
                 args=dict(plan.args or {}),
+                hitl_decision=hitl_decision,
             )
             latency = resp.latency_ms or max(0, int(time.perf_counter() * 1000) - start_ms)
             status_enum = resp.status.value if hasattr(resp.status, "value") else str(resp.status)
@@ -389,12 +477,17 @@ async def run_chat_tool_calls(
     # T4-C4 / W2-G6 幻觉检测（生成层诚实约束）：本轮存在工具调用但**无一成功**时，
     # 明确禁止完成态断言 —— 防「无工具调用佐证却声称已完成/已创建」（含被权限门拦截场景）。
     if not success_any:
+        _not_executed_reasons = []
+        if denied_any:
+            _not_executed_reasons.append("其中包含被权限门拦截的写类操作")
+        if held_any:
+            _not_executed_reasons.append("其中包含等待人工确认的写类操作")
         parts.append(
             "\n## 系统诚实性约束（必须遵守）\n"
             "本轮所有工具调用**均未成功执行**"
-            + ("（其中包含被权限门拦截的写类操作）" if denied_any else "")
+            + (f"（{'；'.join(_not_executed_reasons)}）" if _not_executed_reasons else "")
             + "：**没有发生任何数据变更**。回答中严禁出现「已完成 / 已创建 / 已导入 / 已上架 / 已提交」"
-            "等完成态断言；必须如实说明未执行成功的事实、原因（如权限不足/工具失败）与可行的替代建议。\n"
+            "等完成态断言；必须如实说明未执行成功的事实、原因（如权限不足/等待确认/工具失败）与可行的替代建议。\n"
         )
     total_ms = int((time.perf_counter() - t0) * 1000)
     header = (

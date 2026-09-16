@@ -268,3 +268,37 @@ Start-Process .\.venv\Scripts\python.exe -ArgumentList "-m","uvicorn","app.main:
 
 > 前两个 commit 均**只含归属文件**：`app/ai/permission_gate.py`、`app/mcp/executor.py`、`app/chat/tool_calling.py`、`app/chat/flows/langgraph_agent.py`、`app/chat/flows/graph_stream.py`、`tests/test_permission_gate.py`、`tests/test_wnext2_write_tools.py`、`test-reports/WNEXT2-completion-report.md`。第三轮 commit 额外含 `app/knowledge/routers/upload.py`（Mimosa 硬门1 修复的纵深防御，非原 8 归属但为 `_process_import`/`_cleanup_paths` 宿主，改动仅此一处）。
 > 未夹带并行写者的在途改动（`app/chat/router.py`、`app/ai/graph.py`、`app/ai/skills/registry.py`、`app/knowledge/importer/loader.py`、未跟踪 `app/ai/platform_capability.py`、`tests/test_wn_ext10_rag_internal_filter.py`）。
+
+## 12. 6 条上浮 CR 处置记录（第四轮，2026-09-16）
+
+> 前置：§7 上浮的 6 条 CR 经编排者裁定后本轮逐条处置；红线文件（`router.py`/`sse.py`/`hitl_gate.py`）**仍然禁碰**，涉红线点位一律只登记。
+
+| CR | 裁定 | 处置 | 证据/位置 |
+|---|---|---|---|
+| CR-WNEXT2-hitl-graph-unreachable（P0） | 方案②（graph_stream 挂起帧，不依赖图 interrupt） | **已实施**：写类挂起由流层承载——`run_chat_tool_calls` 新增 `on_write_class_pending`/`hitl_decision` 旋钮（HITL 开启 + 流式主路径注入回调时挂起，resume approve 放行 executor 批准执行）；`graph_stream` 在 MCP 阶段检测到写类挂起 → 写 `hitl:pending:{thread_id}` 标记 + 发 `pending_confirm` 帧 + done(`awaiting_human_confirm`) 收束；resume 决策提前消费（MCP 预取前确定 `mcp_hitl_decision`，防竞态）；reject/失效分支显式收束（不静默吞） | `app/chat/tool_calling.py`（签名/写类分支/诚实性约束）、`app/chat/flows/graph_stream.py`（resume 重构 + `_emit_retrieval` 挂起分支 + 循环早退 + 兜底） |
+| CR-WNEXT2-toolcatalog-source（P1） | 本轮并入内置工具 | **已实施**：`list_enabled_tool_metas()` 在 DB 结果后并入 `permission_gate.REGISTERED_BUILTIN_TOOLS`（`tool_id=0/server_id=0/category=builtin`，DB 同名去重，描述与 handler 语义同源，`_suggest_keywords` 补 import/calc 关键词）；写类内置工具 `knowledge_import` 进清单但放行仍由已接线写类门裁决 | `app/chat/tool_calling.py` L31-45 / L58-103 / L119-122 |
+| CR-WNEXT2-executor-gate-bypass（残留，P1） | 登记残留收口 | **已实施**：写类从「名单驱动」升级为「注册期强属性」——`register_builtin_tool(..., write_class=True)` 维护 `_BUILTIN_WRITE_CLASS_NAMES`；`_deny_if_write_class` 判定 `n in _BUILTIN_WRITE_CLASS_NAMES or is_write_class(n)`（`TOOL_CLASS_MAP` 仅作未登记名兜底）；`knowledge_import` 以 `write_class=True` 注册 | `app/mcp/executor.py` L760-776 / L1001 / L166 |
+| CR-WNEXT2-exc-classname-leak-remaining（P2） | 修非红线，红线登记 | **非红线已修**：`service.py:403/683`、`generator.py:541/609` 用户可见 `degraded_reason`/`merged_deg` 去类名（类名只进 logger，稳定文案「详见服务端日志」）；**红线登记（禁碰未改）**：`router.py:351/366`（落库失败 message/degraded_reason）、`sse.py:51-74`（`map_stream_exception` 8 分支 error 帧 message） | 变更点见上；红线点位清单见 §7.5 CR-WNEXT2-exc-classname-leak-remaining |
+| CR-WNEXT2-parallel-writer-regression（P2） | 验证 7796dde 自修 | **已实证自修**：复跑 `tests/test_wn_ext10_rag_internal_filter.py` + `tests/test_contract_task94.py` → **35 passed**（并行写者 7796dde 已把两处断言对齐，本任务零改动） | 本报告 §12 附测试命令与结果 |
+| CR-WNEXT2-env-debug-redline（P0） | 登记不落地 | **登记**：`edu-agent/.env DEBUG=true` 环境红线为部署前检查项（项目记忆第 6 条），本任务未改 `.env`（环境文件非代码归属）；写类门与 DEBUG 降级无关，不构成新增风险 | §7.5 CR-WNEXT2-env-debug-redline |
+
+- **红线复查**（本轮改完）：「已修改」集合仅含 `app/chat/tool_calling.py`、`app/chat/flows/graph_stream.py`、`app/chat/service.py`、`app/chat/generator.py`、`app/mcp/executor.py`（CR-3 本轮新增）+ `test-reports/WNEXT2-completion-report.md`；`router.py`/`sse.py`/`hitl_gate.py`/`graph.py`/`public/**`/`contracts/**` 未改。
+- **本轮回归**：CR-5 定向 35 passed；核心/影响面全量回归与独立对抗复验见 §12.1（独立子代理报告）。
+
+### 12.1 独立对抗复验（general-purpose 子代理，2026-09-16）
+
+> 按工作流纪律，第四轮改动全部完成后派发独立子代理做**真实取证式对抗复验**（进程内真实调用 + 探针 + 红线 diff 核验），主对话不自行下结论。子代理未修改任何生产代码，探针用完即删。
+
+| CR | 结论 | 证据（独立取证） |
+|---|---|---|
+| CR-1 挂起链 | ✅ 通过 | 写类工具零 executor 调用；回调 payload `status=="awaiting_confirm"`、tool_name/role 正确；ctx 含「已挂起」+「没有发生任何数据变更」；summary=error+挂起信封 |
+| CR-1 续跑链 | ✅ 通过 | `hitl_decision=True` → 挂起回调未触发；executor 恰好 1 次；`hitl_decision=True` 透传到 call_tool；summary=success、无「未执行」约束 |
+| CR-1 reject 链 | ✅ 通过 | 静态：`_suppress_mcp = _resume_action=="reject"`（graph_stream.py:159）+ `mcp_task` 创建含 `not _suppress_mcp`（:225）；动态：假决策 reject + 无挂起图 → MCP 预取零调用，SSE 含 `hitl_rejected_no_pending` +「已取消该高风险操作，工具未执行」 |
+| CR-2 | ✅ 通过 | 空 DB → 清单并入 calculator/search_knowledge/knowledge_import（tool_id=0、server_id=0、category="builtin"）；DB 同名 → 只保留 DB 行，内置版不重复，其余内置照常并入 |
+| CR-3 | ✅ 通过 | `register_builtin_tool("probe_write_cr3", h, write_class=True)` → 进入 `_BUILTIN_WRITE_CLASS_NAMES`；student `call_tool(tool_id=77)`（不传名，registry 解析）被 `_deny_if_write_class` 拦截、执行器零调用、ACI code=permission_denied；摘除后 student 不再被拦截；finally 注册表完全恢复 |
+| CR-4 | ✅ 通过 | 正则扫描 service.py/generator.py：类名拼接仅存在于 logger/metrics 调用，用户可见字段零泄露；无「LLM 调用失败(」/「LLM 流式失败(」 |
+| CR-5 | ✅ 通过 | 复跑 `test_wn_ext10_rag_internal_filter.py` + `test_contract_task94.py` → **35 passed** |
+
+- **回归**：`tests/test_wnext2_write_tools.py` → **27 passed**（4.04s）。
+- **红线合规** ✅：`git diff --stat` 仅 9 文件——本轮 6 个验证对象 + WNEXT2-completion-report + 2 个并行写者在途文件（critique-backlog-tracker.md、be-task01-hit-report.md）；`router.py`/`sse.py`/`hitl_gate.py`/`edu-frontend/public`/`contracts` 的 `git diff --name-only` 输出为空；contracts 下未跟踪文件时间戳均 ≤09-15，非本轮新增。探针已删除，后端 8000 未重启。
+- **结论：6 条 CR 全部通过，红线零触碰。**

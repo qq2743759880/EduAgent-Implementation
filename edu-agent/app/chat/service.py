@@ -399,7 +399,8 @@ async def chat_answer(
             )
         except Exception as exc:
             logger.warning(f"[P2 chat_answer] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
-            mcp_degraded = f"MCP 工具阶段异常({type(exc).__name__})"
+            # CR-WNEXT2-exc-classname-leak-remaining：degraded_reason 进用户可见文案，去异常类名
+            mcp_degraded = "MCP 工具阶段异常，已跳过（详见服务端日志）"
 
         answer, merged_deg_raw = await generate_answer(
             query=gen_query,
@@ -679,7 +680,7 @@ async def chat_stream(
             )
         except Exception as exc:
             logger.warning(f"[P2 chat_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
-            return [], "", f"MCP 工具阶段异常({type(exc).__name__})"
+            return [], "", "MCP 工具阶段异常，已跳过（详见服务端日志）"
 
     mcp_future = asyncio.create_task(_run_mcp())
 

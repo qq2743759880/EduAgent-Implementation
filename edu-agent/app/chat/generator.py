@@ -538,7 +538,7 @@ async def generate_answer(
         # task39 GWT②：LLM 宕机 → 规则兜底答案（§6.4 矩阵行），指标可见
         _metrics.record_degraded("llm", f"generate:{type(e).__name__}")
         rule_ans, rule_deg = _local_rule_answer(query, docs, degraded_reason)
-        merged_deg = "；".join([x for x in [degraded_reason, f"LLM 调用失败({type(e).__name__})", rule_deg] if x])
+        merged_deg = "；".join([x for x in [degraded_reason, "LLM 调用失败，已降级规则答案（详见服务端日志）", rule_deg] if x])
         final_ans = _append_mcp_context(rule_ans, mcp_context)
         return final_ans, (merged_deg or None)
 
@@ -606,7 +606,7 @@ async def generate_stream(
         logger.warning(f"[P2 generate_stream] LLM 流式失败，降级规则答案：{type(e).__name__}: {e}")
         # task39 GWT②：流式 LLM 宕机降级，同非流式口径计入 edu_degraded_total{component="llm"}
         _metrics.record_degraded("llm", f"generate_stream:{type(e).__name__}")
-        merged_deg = "；".join([x for x in [degraded_reason, f"LLM 流式失败({type(e).__name__})"] if x])
+        merged_deg = "；".join([x for x in [degraded_reason, "LLM 流式失败，已降级规则答案（详见服务端日志）"] if x])
         rule_ans, _rule_deg = _local_rule_answer(query, docs, merged_deg)
         stream_fallback_text = _append_mcp_context(rule_ans, mcp_context)
 

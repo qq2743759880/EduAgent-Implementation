@@ -162,7 +162,9 @@ async def _deny_if_write_class(*, name: str | None, operator_user_id: int,
         return None
     from app.ai.permission_gate import gate_tool_call, is_write_class, resolve_role
 
-    if not is_write_class(n):
+    # 写类判定：注册期强属性优先（CR-WNEXT2-executor-gate-bypass 收口），名单兜底
+    write_class = n in _BUILTIN_WRITE_CLASS_NAMES or is_write_class(n)
+    if not write_class:
         return None
     role = await resolve_role(operator_user_id)
     if gate_tool_call(role, n).allowed:
@@ -755,10 +757,23 @@ async def _execute_single_attempt(*, server: dict, tool_name: str, args: dict,
 #   - search_knowledge：接子代理/降级检索（后端可注入，缺省回退确定性降级结果）。
 _BUILTIN_TOOL_HANDLERS: dict = {}
 
+# CR-WNEXT2-executor-gate-bypass（登记残留）收口：写类从「名单驱动」升级为「注册期强属性」。
+# 未来新增写类内置工具时必须在 register_builtin_tool(..., write_class=True) 显式声明；
+# 名单（permission_gate.TOOL_CLASS_MAP）仅作未登记名的兜底。
+_BUILTIN_WRITE_CLASS_NAMES: set[str] = set()
 
-def register_builtin_tool(name: str, handler) -> None:
-    """注册一个内置本地工具处理器（handler: async (args) -> str）。"""
+
+def register_builtin_tool(name: str, handler, *, write_class: bool = False) -> None:
+    """注册一个内置本地工具处理器（handler: async (args) -> str）。
+
+    write_class=True 表示该工具属写类（仅 admin 放行 + HITL 分级）——
+    注册期强属性，与 permission_gate.TOOL_CLASS_MAP 名单互为补充（CR-WNEXT2-executor-gate-bypass）。
+    """
     _BUILTIN_TOOL_HANDLERS[name] = handler
+    if write_class:
+        _BUILTIN_WRITE_CLASS_NAMES.add(name)
+    else:
+        _BUILTIN_WRITE_CLASS_NAMES.discard(name)
 
 
 def _resolve_builtin_name(tool_id: int | None, server_id: int | None, tool_name: str | None) -> str:
@@ -983,7 +998,7 @@ async def _knowledge_import_handler(args: dict) -> str:
 
 register_builtin_tool("calculator", _calculator_handler)
 register_builtin_tool("search_knowledge", _search_knowledge_handler)
-register_builtin_tool("knowledge_import", _knowledge_import_handler)
+register_builtin_tool("knowledge_import", _knowledge_import_handler, write_class=True)
 
 
 async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str, attempt: int,
