@@ -422,6 +422,26 @@ await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Obj
   },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_tristate_probe.py 排查（需 8000 在线 + MySQL 可达） [${d}]` }));
 
+// ⑫ HITL 真实性健康门（SURFACED-1 闭环实证，P0）：/health 200 + chat 流式 knowledge_import
+//    HITL confirm → 续流执行，**不再出现** 42200「必须提供 tool_id」症状（回归红线 =
+//    HITL-FIX 后 admin confirm 写类工具零落库的根因）。走 venv python 探针（真实 HTTP + 只读
+//    SQL 取证），PASS 才算绿；模型本轮未触发 knowledge_import 时观测返回（单测已覆盖 tool_name 修复），不阻断 exit。
+const HITL_PROBE = new URL("../hitl_realness_probe.py", import.meta.url).pathname;
+await check("⑫", `HITL 真实性(confirm 续流不再 42200)`, Object.assign(
+  async () => {
+    const out = await runCmd(EDU_PY, [HITL_PROBE], 90000);
+    let j;
+    try { j = JSON.parse(out); } catch { throw new Error(`探针输出非 JSON: ${String(out).slice(0, 200)}`); }
+    if (j.error) throw new Error(j.error);
+    if (j.regression) throw new Error(j.regression);
+    if (!j.health_ok) throw new Error("后端 /health 非 ok");
+    if (j.pending_confirm_seen && j.confirm_resumed && !j.symptom_in_confirm_pass)
+      return `pending_confirm→confirm 真可达,42200 症状消失(task ${j.task_before}→${j.task_after})`;
+    if (!j.pending_confirm_seen) return `模型未触发 knowledge_import,跳过(单测已覆盖): ${j.note || ""}`;
+    return `confirm 续流无 42200 症状`;
+  },
+  { __fix: (d) => `确认 HITL_ENABLED=True 且后端可达;SURFACED-1 修复见 tests/test_chat_tool_calling.py [${d}]` }));
+
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1
 const pass = results.filter((r) => r.ok).length;

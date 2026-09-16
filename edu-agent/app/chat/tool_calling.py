@@ -414,11 +414,17 @@ async def run_chat_tool_calls(
                     continue
 
         try:
+            # H1 闭环必须：内置工具(tool_id=0 的 knowledge_import/calculator/search_knowledge)
+            # 经 chat 流式触发时**必须同时传 tool_name**——否则 executor._resolve_builtin_name
+            # 因 `tool_id or not tool_name` 返回空串，跳过内置分支落到 registry 解析
+            # tool_id=0/server_id=None → 抛 AppException「必须提供 tool_id 或 server_id+tool_name」
+            # （SURFACED-1：HITL-FIX 后 admin confirm 写类工具零落库的根因）。
             resp = await _mcp_executor.call_tool(
                 operator_user_id=int(operator_user_id),
                 tenant_id=tenant_id,
                 trace_id=trace_id or (f"mcp-chat-{int(start_ms)}"),
                 tool_id=int(plan.tool.tool_id),
+                tool_name=plan.tool.tool_name,
                 args=dict(plan.args or {}),
                 hitl_decision=hitl_decision,
             )

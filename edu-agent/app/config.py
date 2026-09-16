@@ -479,6 +479,12 @@ class Settings(BaseSettings):
     #   - HITL_REJECT_BREAKER：同动作类型连续被拒上限，达到即熔断升级（AC4，对齐 Codex 3 连拒）。
     # ============================================================
     HITL_ENABLED: bool = False                 # 全局总开关；默认关闭，接入 executor 前由运维显式开启
+    # HITL_ENABLED_REQUIRED：上线守卫期望值。生产环境(ENV_NAME in prod/production)必须为 True，
+    # 否则主链路写类工具经 chat 流式触发后**静默失败**（SURFACED-1：executor 拒收缺 tool_name +
+    # HITL 关闭时写类工具直接 fail 而非挂起确认），等于 HITL 第四道防线与生产断开。
+    # 与 HITL_ENABLED 默认值区分：HITL_ENABLED 默认 False 保护 task28 退款回归 AC5（零行为变化），
+    # 但生产部署必须显式 True，否则 _hitl_prod_guard 启动硬拒（fail-fast）。
+    HITL_ENABLED_REQUIRED: bool = True         # 生产环境 HITL_ENABLED 应取值（启动守卫对照）
     HITL_RISK_THRESHOLD: str = "L2"            # 仅风险等级 >= 此值的动作过 Gate
     HITL_PENDING_TTL_S: int = 600             # pending 超时自动拒绝窗口（秒）
     HITL_AI_REVIEW: bool = False              # 是否启用 AI 审查子代理（仅测试窗口内开）
@@ -737,6 +743,36 @@ class Settings(BaseSettings):
                 f"启动拒绝：DEBUG=true 且 ENV_NAME='{self.ENV_NAME}' 为非本机环境。"
                 "DEBUG 模式存在虚拟管理员后门（未登录可读用户数据），禁止在非 local "
                 "环境开启。请改用 DEBUG=false 并配置正式鉴权，或 ENV_NAME=local 仅限本机开发。"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _hitl_prod_guard(self):
+        """HITL 上线守卫（SURFACED-1 防假闭环复发，fail-fast）。
+
+        HITL_ENABLED 默认 False 是为保护 task28 退款回归 AC5（零行为变化），但生产环境
+        若 HITL_ENABLED 仍为 False，则：
+          - chat 流式触发的写类工具（knowledge_import 等内置）直接 `_mcp_executor.call_tool`
+            而不挂起确认，叠加 SURFACED-1 的 tool_name 缺口 → executor 拒收 → 工具静默失败；
+          - 等于 HITL 第四道防线与生产实际断开（W-NEXT-2 P0-2）。
+        故生产环境(ENV_NAME in prod/production)且 HITL_ENABLED=False → 启动硬拒，强制运维
+        在 .env 显式 `HITL_ENABLED=True`。本机 local/debug 不受影响。
+        """
+        env = (self.ENV_NAME or "").strip().lower()
+        import logging
+        _log = logging.getLogger("eduguard")
+        if env in ("prod", "production") and not self.HITL_ENABLED:
+            raise RuntimeError(
+                "启动拒绝：生产环境(ENV_NAME='%s') 必须启用 HITL_ENABLED=True。"
+                "当前 HITL_ENABLED=False，chat 流式写类工具将静默失败（HITL 第四道防线断开）。"
+                "请在 .env 显式设置 HITL_ENABLED=True 后重启；本机开发用 ENV_NAME=local 不受影响。"
+                % self.ENV_NAME
+            )
+        # W-NEXT-2 写类知识库导入：生产虽显式开了 HITL_ENABLED 仍给一条告警，提示确认门已生效
+        if env in ("prod", "production") and self.HITL_ENABLED and not self.HITL_AI_REVIEW:
+            _log.warning(
+                "[HITL] 生产环境 HITL_ENABLED=True（写类工具需人工确认）；AI 审查(HITL_AI_REVIEW)"
+                "当前未开启，高风险写操作仅过人工 confirm 门。"
             )
         return self
 

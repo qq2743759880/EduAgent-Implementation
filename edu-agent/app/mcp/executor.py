@@ -800,6 +800,18 @@ def _resolve_builtin_name(tool_id: int | None, server_id: int | None, tool_name:
     当前内置名与 DB mcp_tool 名无交集（DB: add/echo/list_alphabet/ping/sse_health），
     由 tests/test_permission_gate.py 的注册面双向对账守住。
     """
+    # SURFACED-1 防御：内置工具 sentinel 为 tool_id=0（builtin 在 mcp_tool 表无行）。
+    # 若调用方仅传 tool_id=0 而不传 tool_name，旧逻辑 `tool_id or not tool_name → return ""`
+    # 会静默跳过内置分支、落到 registry 解析 tool_id=0 抛「必须提供 tool_id 或 server_id+tool_name」，
+    # 表现为 admin confirm 后写类工具零落库（HITL-FIX 批判实锤）。此处 fail-fast：明确报错，
+    # 不让上层静默吞。仅当 tool_id==0（内置哨兵）且缺 tool_name 时触发；真实 DB 工具 tool_id>0
+    # 或按 tool_name 直传的非内置工具不受影响。
+    if tool_id == 0 and not tool_name:
+        raise AppException(
+            code=42200,
+            message="内置工具（tool_id=0）必须传 tool_name=<工具名>，不能仅传 tool_id",
+            http_status=422,
+        )
     if tool_id or not tool_name:
         return ""
     n = str(tool_name).strip().lower()
