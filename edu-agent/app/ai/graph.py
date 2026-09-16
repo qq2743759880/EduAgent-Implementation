@@ -225,6 +225,19 @@ async def skill_node(state: AgentState) -> dict:
         body = loader.load_body(s)  # 按需加载（progressive disclosure）
         if body.strip():
             parts.append(f"[skill:{s.name}]\n{body}")
+
+    # WNEXT10 F5-b：平台能力清单以**实物**为准（permission_gate.TOOL_CLASS_MAP 动态生成）。
+    # 开发机 skill（deepseek-local-bridge 等）已由 SkillRegistry.default() 隔离，这里再正向注入
+    # 权威清单，杜绝模型把开发宿主工具（list_directory/read_file/…）当平台能力自述给用户。
+    try:
+        from app.ai.platform_capability import platform_capability_block
+
+        inventory = platform_capability_block()
+        if inventory:
+            parts.append(inventory)
+    except Exception as exc:  # noqa: BLE001 — 清单注入失败不阻断对话
+        logger.warning(f"[skill_node] 平台能力清单注入失败：{exc}")
+
     skill_context = "\n\n".join(parts)
     return {"skill_context": skill_context} | _record(state, "skill")
 

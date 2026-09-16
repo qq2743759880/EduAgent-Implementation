@@ -18,7 +18,7 @@ import textwrap
 import pytest
 
 import app.ai.graph as g
-from app.ai.skills.registry import SkillRegistry
+from app.ai.skills.registry import SkillRegistry, DEFAULT_AI_HUB, PROJECT_SKILLS
 from app.ai.skills.runtime import Skill
 from app.ai.skills import loader, trigger, verify
 
@@ -90,17 +90,21 @@ class TestGwt4Registry:
         assert report["dead_links"] == 0
         assert report["ok"] is True
 
-    def test_live_ai_hub_174_registered(self):
-        """LIVE：真实 AI-Hub 中心库应注册 174 个 skill，无死链。
+    def test_live_ai_hub_318_registered(self):
+        """LIVE：真实 AI-Hub 中心库应注册 318 个 skill，无死链。
 
-        task37：AI-Hub 技能库由 124 → 174（中心库持续沉淀），按真实契约更新断言；
-        该数随 center 库增长是预期，临界时由编排者刷新。
+        task37：AI-Hub 技能库由 124 → 174 → 318（中心库持续沉淀）。该数随 center 库增长是预期，
+        临界时由编排者刷新（见 AGENTS.md「该数随 center 库增长是预期」）。
+
+        WNEXT10 F5-b 注意：平台生产注册表（`SkillRegistry.default()`）已与开发机
+        AI-Hub 隔离（见 registry.py 模块说明），故此处显式扫描中心库根 DEFAULT_AI_HUB
+        （即 F5-b 前的 default 行为：`PROJECT_SKILLS` 在本环境不存在）以验证
+        **中心库本体**完整性，与生产链路隔离互不影响。
         """
-        root = r"D:\.ai-hub\skills"
-        if not os.path.exists(root):
+        if not os.path.exists(DEFAULT_AI_HUB):
             pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
-        report = verify.verify_registry()
-        assert report["total"] == 174, report
+        report = verify.verify_registry(roots=[DEFAULT_AI_HUB])
+        assert report["total"] == 318, report
         assert report["dead_links"] == 0, report["dead"]
         assert report["ok"] is True
 
@@ -204,8 +208,12 @@ class TestGwt4GraphIntegration:
         sys_msgs = [m["content"] for m in captured["messages"] if m["role"] == "system"]
         assert any("相关 skill 指引" in c and "审计步骤" in c for c in sys_msgs)
 
-    def test_skill_node_no_match_yields_empty(self, monkeypatch):
-        """无 skill 命中时不注入（不污染决策上下文）。"""
+    def test_skill_node_no_match_injects_only_platform_inventory(self, monkeypatch):
+        """无 skill 命中时不注入开发宿主 skill body（不污染决策上下文）；
+
+        但仍注入平台能力清单（WNEXT10 F5-b：以 permission_gate.TOOL_CLASS_MAP 实物为准，
+        杜绝模型把 dev-host 工具 list_directory/read_file 等当平台能力自述给用户）。
+        """
         monkeypatch.setattr(g, "_skill_registry_cache", None)
         g.set_skill_registry(_registry_of([AUDIT]))
         from langchain_core.messages import HumanMessage
@@ -213,7 +221,11 @@ class TestGwt4GraphIntegration:
         state = {"messages": [HumanMessage(content="今天天气怎么样")],
                  "active_paths": [], "nodes_executed": []}
         res = asyncio.run(g.skill_node(state))
-        assert res["skill_context"] == ""
+        # 无 skill 命中 → 不得泄漏任何开发宿主 skill body（[skill:...] 标记）
+        assert "[skill:" not in res["skill_context"]
+        # F5-b：平台能力清单（实物来源）仍应注入
+        assert "平台可用工具" in res["skill_context"]
+        assert "TOOL_CLASS_MAP" in res["skill_context"]
 
     def test_graph_topology_includes_skill_node(self):
         """编译图拓扑含 skill 节点，且 route→plan 路径经 skill。"""

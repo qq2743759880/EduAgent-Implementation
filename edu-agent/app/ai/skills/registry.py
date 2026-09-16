@@ -23,6 +23,16 @@ DEFAULT_AI_HUB = os.environ.get(
 )
 PROJECT_SKILLS = r"E:\stu\project\stu\EduAgent实施手册\.claude\skills"
 
+# WNEXT10 F5-b：平台 agent 与「开发机 skill 库」隔离。
+# 上面两个 root 是**开发机**的 skill 库（AI-Hub 中心库 / 项目 .claude），其中
+# `deepseek-local-bridge` 之类的 skill 描述的是开发宿主自身的工具
+# （list_directory / read_file / list_skills / read_command …）。它们被注入平台 agent 的
+# skill_context 后，模型会照抄成「平台可用工具」自述给用户（批判 T4-C4 / F5-b）。
+# 因此平台默认注册表**只**扫描平台自有 skill 根（环境变量 EDUAGENT_PLATFORM_SKILL_ROOTS，
+# 缺省为空 → 不消费任何开发机 skill）；平台能力改由
+# `app.ai.platform_capability.platform_capability_block()`（源自 permission_gate.TOOL_CLASS_MAP 实物）注入。
+PLATFORM_SKILL_ROOTS_ENV = "EDUAGENT_PLATFORM_SKILL_ROOTS"
+
 
 class SkillRegistry:
     """内存 skill 注册表：按目录索引全部 skill，按 name 提供首义查找。"""
@@ -41,7 +51,28 @@ class SkillRegistry:
 
     @classmethod
     def default(cls) -> "SkillRegistry":
-        """扫描默认 roots（AI-Hub + 项目 .claude/skills）。"""
+        """平台默认注册表：只扫描**平台自有** skill 根（EDUAGENT_PLATFORM_SKILL_ROOTS）。
+
+        WNEXT10 F5-b：不再默认扫描开发机 AI-Hub / 项目 .claude（详见模块顶部说明）。
+        未配置该环境变量 → 返回空注册表（平台链路零开发机 skill 注入），
+        平台能力清单由 app.ai.platform_capability 以实物（TOOL_CLASS_MAP）注入，不丢能力表述。
+        """
+        raw = os.environ.get(PLATFORM_SKILL_ROOTS_ENV, "") or ""
+        roots = [r.strip() for r in raw.split(os.pathsep) if r.strip()]
+        if not roots:
+            logger.info(
+                "[SkillRegistry] 未配置 %s → 空注册表（开发机 skill 不进平台链路，F5-b 隔离）"
+                % PLATFORM_SKILL_ROOTS_ENV
+            )
+            return cls()
+        return cls.from_roots(roots)
+
+    @classmethod
+    def dev_default(cls) -> "SkillRegistry":
+        """开发机注册表（历史行为）：扫描 AI-Hub + 项目 .claude/skills。
+
+        仅供离线工具 / 迁移脚本 / 排查显式调用；平台链路请使用 default()。
+        """
         return cls.from_roots([DEFAULT_AI_HUB, PROJECT_SKILLS])
 
     def scan(self, roots: Iterable[str | Path]) -> int:

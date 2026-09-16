@@ -47,9 +47,37 @@ from app.chat.service import (
 )
 from app.common.exceptions import AppException, NotFoundError, ValidationError
 from app.common.error_codes import CHAT_PERSIST_FAIL, DEPENDENCY_UNAVAILABLE
+from app.knowledge.importer.loader import (
+    reset_internal_visibility,
+    role_allows_internal,
+    set_internal_visibility,
+)
 
 
 router = APIRouter(prefix="/api/chat", tags=["P2-知识问答"])
+
+
+# ============================================================
+# WNEXT10 F5-a：RAG internal 文档可见性（按当前用户角色注入检索上下文）
+# ------------------------------------------------------------
+# `_default` 分区混着内部工程/运维文档，student 检索不得命中（批判 T4-C4 / F5-a）。
+# 检索链路（service → retriever → loader.hybrid_search）不改签名即可感知角色：
+# 这里按 user.role 设置请求级 ContextVar，请求结束（finally）恢复。
+# SSE 场景响应体在端点返回后才被迭代，故流式路径额外用 _guard_stream_internal 包住迭代器。
+# ============================================================
+def _internal_visibility_token(user: CurrentUser):
+    """按角色设置 internal 可见性，返回 reset token（调用方负责 finally 恢复）。"""
+    return set_internal_visibility(role_allows_internal(getattr(user, "role", None)))
+
+
+async def _guard_stream_internal(agen, allowed: bool):
+    """在流式响应体迭代期间维持 internal 可见性（端点 return 后 finally 已 reset，需重建）。"""
+    token = set_internal_visibility(allowed)
+    try:
+        async for chunk in agen:
+            yield chunk
+    finally:
+        reset_internal_visibility(token)
 
 
 # ============================================================
@@ -151,7 +179,11 @@ async def search_endpoint(
     req: RagSearchOnlyRequest,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """仅检索（不生成答案，不落库）。返回 docs / graph / raw_count / rewrite / degraded。"""
+    """仅检索（不生成答案，不落库）。返回 docs / graph / raw_count / rewrite / degraded。
+
+    WNEXT10 F5-a：按角色限制 internal 文档可见性（student 命中不到内部工程/运维文档）。
+    """
+    _internal_token = _internal_visibility_token(user)
     try:
         docs, graphs, raw_count, rewrite, degraded = await search_only(
             req, user_id=user.user_id, role=user.role,
@@ -166,6 +198,8 @@ async def search_endpoint(
         })
     except Exception as e:
         _translate_exception(e)
+    finally:
+        reset_internal_visibility(_internal_token)
 
 
 # ============================================================
@@ -177,7 +211,11 @@ async def chat_non_stream(
     user: CurrentUser = Depends(get_current_user),
     request: Request = None,  # FastAPI 注入 Request 实例（特殊类型，忽略默认值）
 ):
-    """非流式问答（直接返回最终回答 + 引用 + 图谱 + 耗时）。"""
+    """非流式问答（直接返回最终回答 + 引用 + 图谱 + 耗时）。
+
+    WNEXT10 F5-a：检索期间按角色限制 internal 文档可见性（student 检索不到内部工程/运维文档）。
+    """
+    _internal_token = _internal_visibility_token(user)
     try:
         # task-O1 AC4：会话级 trace_id —— 同一 session_id 的多次请求复用同一 trace_id，
         # 使本次完整问答（记忆召回 + LLM + 工具 + 压缩）各 span 可整链还原。
@@ -189,6 +227,8 @@ async def chat_non_stream(
         return ok(await service_chat_answer(req, user_id=user.user_id, role=user.role))
     except Exception as e:
         _translate_exception(e)
+    finally:
+        reset_internal_visibility(_internal_token)
 
 
 # ============================================================
@@ -221,6 +261,8 @@ async def chat_stream_sse(
     同一 SSE 契约）；False → 一键回旧路径 service_chat_stream（行为与本函数历史版本逐字节等同）。
     """
     try:
+        # WNEXT10 F5-a：检索期间按角色限制 internal 文档可见性（建连前检索走这段上下文）
+        _internal_token = _internal_visibility_token(user)
         # task-O1 AC4：会话级 trace_id（同 session_id 多请求复用同一 trace_id，span_id 各异）
         from app.core.trace import set_trace_context
 
@@ -232,7 +274,13 @@ async def chat_stream_sse(
         if getattr(settings, "STREAM_VIA_GRAPH", True):
             from app.chat.flows.graph_stream import graph_stream_sse
 
-            return await graph_stream_sse(req, user_id=user.user_id, role=user.role)
+            resp = await graph_stream_sse(req, user_id=user.user_id, role=user.role)
+            # WNEXT10 F5-a：响应体在 return 之后才被迭代 → 迭代期间重建 internal 可见性
+            if hasattr(resp, "body_iterator"):
+                resp.body_iterator = _guard_stream_internal(
+                    resp.body_iterator, role_allows_internal(getattr(user, "role", None))
+                )
+            return resp
 
         session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries = await service_chat_stream(
             req, user_id=user.user_id, role=user.role,
@@ -250,6 +298,9 @@ async def chat_stream_sse(
         except Exception as e2:
             logger.exception(f"[P2 stream] 初始化失败：{e2}")
             raise HTTPException(status_code=500, detail={"code": "CHAT_STREAM_INIT_FAIL", "message": "流式初始化失败"})
+    finally:
+        # 建连前的检索已结束（响应体迭代期间的可见性由 _guard_stream_internal 重建）
+        reset_internal_visibility(_internal_token)
 
     async def _gen() -> AsyncGenerator[bytes, None]:
         # 0) 先把 session_id / 临时占位发出去
@@ -324,8 +375,9 @@ async def chat_stream_sse(
             "data": final_info,
         })
 
+    # WNEXT10 F5-a：旧路径（STREAM_VIA_GRAPH=False）同样在迭代期间维持 internal 可见性
     return StreamingResponse(
-        _gen(),
+        _guard_stream_internal(_gen(), role_allows_internal(getattr(user, "role", None))),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

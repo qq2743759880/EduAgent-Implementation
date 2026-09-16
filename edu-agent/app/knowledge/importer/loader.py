@@ -19,8 +19,10 @@ Schema 规范 (与 03_P1 文档一致):
 """
 
 import hashlib
+import re
 import time
 import zlib
+from contextvars import ContextVar, Token
 from datetime import datetime, timezone
 from pymilvus import MilvusClient, DataType
 from loguru import logger
@@ -30,6 +32,146 @@ from app.knowledge.models import KnowledgeChunk
 
 
 COLLECTION_NAME = settings.MILVUS_COLLECTION
+
+
+# ============================================================
+# WNEXT10 F5-a：内部工程/运维文档（internal）标记 + 检索期角色过滤
+# ------------------------------------------------------------
+# 背景（`test-reports/critique-blind-t4-t9.md` T4-C4 / F5-a）：`_default` 分区混着
+# 业务知识与内部工程/运维文档，student 调 `/api/chat/search` 能命中内部实现细节
+# （任务编号 task09~14、脚本名 restore_admin.py、认证表结构 sys_user_auth）。
+#
+# 修法（最小侵入、不破坏检索契约）：
+#   1) 导入期打标：load_chunks 对命中 internal 特征的文档写 dynamic field `internal`（bool）。
+#      dynamic field 免 alter、免重嵌（与 R03 created_at 同款做法）。
+#   2) 检索期过滤：hybrid_search 接受 `include_internal` / `role`，student 一律
+#      `internal != true`；admin/manager 不过滤。
+#   3) 存量兜底：存量行**没有** internal 字段（回填需人工确认，未执行）→ 结果侧按
+#      同一套特征二次剔除（classify_internal），保证存量内部文档同样对 student 不可见。
+#
+# 特征来源可配置（settings 覆盖，缺省即下方常量）：
+#   RAG_INTERNAL_SOURCE_PATTERNS  —— 来源路径特征（正则，作用于 source_file）
+#   RAG_INTERNAL_CONTENT_PATTERNS —— 正文特征（正则，作用于 content）
+# ============================================================
+INTERNAL_FIELD = "internal"
+# Milvus dynamic field 过滤表达式（存量行无该字段时同样命中 → 不会误伤业务文档，已实测）
+INTERNAL_FILTER_EXPR = f"{INTERNAL_FIELD} != true"
+# 只有这两个角色可见 internal 文档（与 permission_gate 的写类角色口径一致）
+ROLES_ALLOWED_INTERNAL = ("admin", "manager")
+
+# 来源路径特征：哈希导出的内部文档（.ai-hub / 报告 / 计划 等 md 导出）+ 工程目录
+DEFAULT_INTERNAL_SOURCE_PATTERNS = (
+    r"^[0-9a-f]{8,32}\.(md|txt|pdf)$",   # 内部文档库哈希导出（实测 1789 行 doc_chunk 全为此形态）
+    r"(^|/)\.ai-hub/",
+    r"(^|/)test-reports/",
+    r"(^|/)refactor_sql/",
+    r"(^|/)plans?/artifacts/",
+    r"(^|/)scripts?/",
+    r"(^|/)deploy/",
+    r"(^|/)\.venv/",
+    r"kickoff[-_]",
+    r"restore_admin\.py",
+)
+# 正文强特征（高精：业务课程/题库语料实测误伤 <0.1%）
+# 注：不放「内部」这类口语词（业务题会出现「隐藏内部实现 / 内部草稿」等误伤）；
+# 工程内部性由「任务编号 + 系统表/脚本名 + 内部工程术语」精准锚定。
+DEFAULT_INTERNAL_CONTENT_PATTERNS = (
+    r"\btask[-_ ]?\d{1,3}\b",
+    r"sys_user_auth",
+    r"mcp_tool_call_log",
+    r"restore_admin\.py",
+    r"refactor_sql",
+    r"test-reports",
+    r"W-NEXT",
+    r"\bGWT\b",
+    r"编排者",
+    r"强制技术批判",
+    r"落点",
+    r"kickoff[-_]",
+)
+
+_PATTERN_CACHE: dict[str, tuple[re.Pattern[str], ...]] = {}
+
+
+def _internal_patterns(setting_name: str, default: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
+    """取编译好的 internal 特征正则（settings 可覆盖，缺省用模块常量）。"""
+    cached = _PATTERN_CACHE.get(setting_name)
+    if cached is not None:
+        return cached
+    raw = getattr(settings, setting_name, None) or default
+    pats = tuple(re.compile(p, re.I) for p in raw)
+    _PATTERN_CACHE[setting_name] = pats
+    return pats
+
+
+def classify_internal(
+    source_file: str | None = None,
+    content: str | None = None,
+    *,
+    internal_flag: bool | None = None,
+) -> bool:
+    """判定一个文档/分片是否属于「内部工程/运维文档」。
+
+    - `internal_flag` 显式给值（导入方 metadata / 人工指定）时以其为准；
+    - 否则按来源路径特征 + 正文强特征判定。
+    """
+    if internal_flag is not None:
+        return bool(internal_flag)
+    sf = str(source_file or "")
+    body = str(content or "")
+    for p in _internal_patterns("RAG_INTERNAL_SOURCE_PATTERNS", DEFAULT_INTERNAL_SOURCE_PATTERNS):
+        if p.search(sf):
+            return True
+    for p in _internal_patterns("RAG_INTERNAL_CONTENT_PATTERNS", DEFAULT_INTERNAL_CONTENT_PATTERNS):
+        if p.search(body):
+            return True
+    return False
+
+
+def role_allows_internal(role) -> bool:
+    """角色是否可见 internal 文档（admin/manager 可见，其余一律不可见）。"""
+    val = getattr(role, "value", role)
+    return str(val or "").strip().lower() in ROLES_ALLOWED_INTERNAL
+
+
+# 请求级上下文：由 app/chat/router.py 按当前用户角色注入（检索链路不改签名即可感知角色）
+_INTERNAL_ALLOWED: ContextVar[bool] = ContextVar("rag_internal_allowed", default=True)
+
+
+def set_internal_visibility(allowed: bool) -> Token:
+    """设置当前请求上下文的 internal 可见性，返回 reset 用的 token。"""
+    return _INTERNAL_ALLOWED.set(bool(allowed))
+
+
+def reset_internal_visibility(token: Token) -> None:
+    """恢复上一个 internal 可见性（配合 set_internal_visibility 的 finally 使用）。"""
+    try:
+        _INTERNAL_ALLOWED.reset(token)
+    except Exception:  # pragma: no cover - token 跨 context 时的兜底
+        pass
+
+
+def internal_visibility_allowed() -> bool:
+    """当前上下文是否允许检索 internal 文档（未注入时 = True，保持历史行为）。"""
+    return bool(_INTERNAL_ALLOWED.get())
+
+
+def _row_is_internal(row: dict) -> bool:
+    """结果侧判定：存量行无 internal 字段（None）→ 退回内容/来源特征兜底。"""
+    flag = row.get(INTERNAL_FIELD)
+    if flag is None:
+        return classify_internal(row.get("source_file"), row.get("content"))
+    if isinstance(flag, str):
+        return flag.strip().lower() in ("1", "true", "yes")
+    return bool(flag)
+
+
+def _and_filter(expr: str | None, clause: str) -> str:
+    """把过滤子句 AND 进既有表达式（空表达式直接返回子句）。"""
+    expr = (expr or "").strip()
+    if not expr:
+        return clause
+    return f"({expr}) and ({clause})"
 
 
 # ============================================================
@@ -246,6 +388,13 @@ def load_chunks(chunks: list[KnowledgeChunk], tenant_id: str = "_default") -> in
                 "visibility": chunk.visibility.value,
                 # R03: created_at 作为 dynamic field 承载（Milvus enable_dynamic_field=True，免 alter 免重嵌）
                 "created_at": chunk.created_at.isoformat() if chunk.created_at else datetime.now(timezone.utc).isoformat(),
+                # WNEXT10 F5-a：内部工程/运维文档标记（dynamic field，学生检索侧按角色过滤）
+                # 每条都写（True/False）——保证过滤表达式对全量行语义一致，不依赖字段缺失时的行为
+                INTERNAL_FIELD: bool(classify_internal(
+                    chunk.source_file,
+                    chunk.raw_content or chunk.content,
+                    internal_flag=chunk.extra.get("internal"),
+                )),
             }
 
             # 动态字段 (通用元数据)
@@ -318,6 +467,8 @@ def hybrid_search(
     top_k: int = 30,
     timeout: float | None = 8.0,
     filter_expr: str | None = None,
+    include_internal: bool | None = None,
+    role: str | None = None,
 ) -> list[dict]:
     """混合检索 (稠密 + 稀疏) - 支持跨 Partition 搜索
 
@@ -328,10 +479,19 @@ def hybrid_search(
         top_k: 返回结果数量
         filter_expr: Milvus 布尔过滤表达式（task31 course_public 过滤防促销/班次混入），
                     同时作用于 dense / sparse 两个 ann 请求
+        include_internal: 是否召回「内部工程/运维文档」（WNEXT10 F5-a）。
+                    None（默认）= 按 role / 请求上下文判定；False = 强制过滤（学生视角）
+        role: 调用方角色（admin/manager 可见 internal；其余不可见）。None 时读请求级
+                    上下文（由 app/chat/router.py 注入），上下文也没注入则沿用历史行为（可见）
     Returns:
         检索结果列表，包含 chunk_id, score, content 等
     """
     client = get_milvus_client()
+
+    # WNEXT10 F5-a：解析 internal 可见性（显式参数 > 角色 > 请求上下文）
+    if include_internal is None:
+        include_internal = role_allows_internal(role) if role is not None else internal_visibility_allowed()
+    include_internal = bool(include_internal)
 
     # 确定要搜索的 Partitions
     if tenant_ids is None:
@@ -348,6 +508,10 @@ def hybrid_search(
             partition_names = [p for p in partition_names if p in existing]
             if not partition_names:
                 return []
+
+    # WNEXT10 F5-a：不可见 internal 时，把过滤子句 AND 进既有 expr（dense/sparse 双通道同款）
+    if not include_internal:
+        filter_expr = _and_filter(filter_expr, INTERNAL_FILTER_EXPR)
 
     # 构建混合检索请求
     from pymilvus import AnnSearchRequest, RRFRanker
@@ -384,6 +548,8 @@ def hybrid_search(
             "question_bank_code", "question_code", "question_type",
             "raw_content", "context_prefix",
             "contextualized", "contextualize_degraded_reason",
+            # WNEXT10 F5-a：回带 internal 标记，供结果侧兜底过滤（存量行无此字段 → 键缺失）
+            INTERNAL_FIELD,
         ],
     )
 
@@ -392,7 +558,7 @@ def hybrid_search(
     for hits in results:
         for hit in hits:
             entity = hit["entity"]
-            formatted_results.append({
+            row = {
                 "chunk_id": entity.get("chunk_id") or str(hit["id"]),  # task31 修复：真实 chunk_id（原误用 crc32 主键致身份错乱）
                 "score": hit["distance"],
                 "content": entity.get("content", ""),
@@ -414,7 +580,13 @@ def hybrid_search(
                 "context_prefix": entity.get("context_prefix", ""),
                 "contextualized": entity.get("contextualized", ""),
                 "contextualize_degraded_reason": entity.get("contextualize_degraded_reason", ""),
-            })
+                INTERNAL_FIELD: entity.get(INTERNAL_FIELD),
+            }
+            # WNEXT10 F5-a：存量行无 internal 字段（回填需人工确认，尚未执行）→ 结果侧按
+            # 同一套特征（来源/正文）二次剔除，保证 student 检索不漏内部文档。
+            if not include_internal and _row_is_internal(row):
+                continue
+            formatted_results.append(row)
 
     return formatted_results
 
