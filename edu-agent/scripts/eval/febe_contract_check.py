@@ -3,13 +3,14 @@
 """
 febe_contract_check.py — EduAgent 前后端契约「三方自动对账」探针（纯只读）
 ============================================================================
-单写者门（FE-BE-CONTRACT）。全程只读：OpenAPI 路由 / 前端文件 / 契约 JSON。
+单写者门（FE-BE-CONTRACT / W-NEXT-FE-001）。全程只读：OpenAPI 路由 / 前端文件 / 契约 JSON。
 **绝不**修改任何业务代码、绝不写数据库（无 DB 查询，仅参数化读取本地 JSON）。
 
 三方对账：
-  ① 断点(breakpoint)      = 前端调用归一化路径 − 后端 OpenAPI 路由归一化路径  （必须为空）
-  ② 待接(to_connect)      = 后端路由 − 前端调用                              （逐条裁定）
-  ③ 未冻结(unfrozen)      = 后端路由 − 契约 JSON(reshape-a/a2/b/r-* 合集)     （提示补契约）
+  ① 断点(breakpoint)        = 前端调用归一化路径 − 后端 OpenAPI 路由归一化路径  （必须为空 → 红/阻断）
+  ② 在用未冻结(in_use_unfrozen) = 前端调用 ∩ 后端路由 − 冻结契约            （前端在用但无契约 → 红/阻断，治理压力核心）
+  ③ 未冻结仅后端(unfrozen_only)= 后端路由 − 冻结契约 − 在用未冻结         （后端有、前端未用、无契约 → WARN，不阻断）
+  ④ 待接(to_connect)        = 后端路由 − 前端调用                          （逐条裁定，WARN 不阻断）
 
 安全约束(Mimosa)：
   · 仅允许请求 http(s) 且目标 host 必须 == 127.0.0.1、port == 8000（写死，拒绝其他 host/port）。
@@ -17,14 +18,14 @@ febe_contract_check.py — EduAgent 前后端契约「三方自动对账」探�
   · 无数据库查询（因此不涉及 SQL 参数绑定；如未来扩展，一律参数化）。
 
 用法：
-  python febe_contract_check.py                  # 跑三方对账，打印三类差异，断点>0 退出码 1
+  python febe_contract_check.py                  # 跑四方对账，打印四类差异；断点>0 或 在用未冻结>0 → 退出码 1
   python febe_contract_check.py --quiet         # 仅打印 [SUMMARY] 行
   python febe_contract_check.py --emit-frontend-list [PATH]
                                                 # 刷新 test-reports/_frontend_real_api.txt
 
 退出码：
-  0 = 断点=0（待接/未冻结仅 WARN，不阻断）
-  1 = 断点>0（契约漂移，阻断）
+  0 = 断点=0 且 在用未冻结=0（待接/未冻结仅后端 仅 WARN，不阻断）
+  1 = 断点>0 或 在用未冻结>0（契约漂移/前端无契约在用，阻断）
   2 = 后端不可达 / host 校验失败（环境/配置问题，非契约失败）
 """
 import os
@@ -57,6 +58,10 @@ HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")
 TO_CONNECT_AHEAD = {
     ("POST", "/api/admin/rag/collections/rebuild"),
 }
+
+# 相对路径契约的已知父上下文（verified_today_batch1 的嵌套资源都挂在课程管理域下）。
+# 解析相对路径时优先拼此父上下文再回退后缀匹配，避免误匹配到 /api/cohorts 等其它资源。
+KNOWN_REL_PARENTS = ("/api/admin/courses",)
 
 
 # --------------------------------------------------------------------------- #
@@ -222,9 +227,53 @@ def backend_routes(spec):
 
 
 # --------------------------------------------------------------------------- #
+# 解析相对路径契约 → 拼全 /api/ 路径（W-NEXT-FE-001 P0-2 修复）
+# --------------------------------------------------------------------------- #
+def resolve_relative(methods, rel_path, be_routes):
+    """
+    把相对路径契约（如 'videos/init-chunked'、'cohorts/{id}/modules'）解析为完整的
+    (method, /api/...) 路由。返回解析出的 (method, path) 列表；无法可靠解析返回 None。
+
+    解析优先级（避免误匹配 /api/cohorts 等其它资源）：
+      1) 已知父上下文 /api/admin/courses/<rel> —— verified_today_batch1 的嵌套资源都在此域下；
+         只要该父路径下有任一合法 (method, path) 命中即采用（不再回退，避免误抓 video-chapters 之类）。
+      2) 裸 /api/<rel>。
+      3) 后缀匹配全部后端路由，优先取 /api/admin/courses/ 候选；仍无则 None（交由调用方标记 [MALFORMED]）。
+    """
+    rel = norm_path(rel_path).lstrip("/")
+    if not rel:
+        return None
+    method_set = {norm_method(m) for m in methods}
+
+    def _match(base):
+        return [(mm, base) for mm in method_set if (mm, base) in be_routes]
+
+    for parent in list(KNOWN_REL_PARENTS) + ["/api"]:
+        base = norm_path(parent + "/" + rel)
+        hits = _match(base)
+        if hits:
+            return hits
+        # 基路径无方法命中（如 'chapters' 仅集合 POST 存在，而契约写 GET/DELETE）
+        # → 尝试 {id} 子路由（/api/admin/courses/chapters/{x}），避免误匹配到 video-chapters 之类
+        hits_id = _match(norm_path(base + "/{x}"))
+        if hits_id:
+            return hits_id
+
+    # 后缀兜底：匹配所有以 rel 结尾的后端路由（优先 /api/admin/courses/ 候选）
+    suffix = [(m, p) for (m, p) in be_routes
+              if p.lstrip("/") == rel or p.lstrip("/").endswith("/" + rel)]
+    if not suffix:
+        return None
+    admin = [(m, p) for (m, p) in suffix if "/api/admin/courses/" in p]
+    pool = admin if admin else suffix
+    result = [(m, p) for (m, p) in pool if m in method_set]
+    return result if result else None
+
+
+# --------------------------------------------------------------------------- #
 # 读取冻结契约
 # --------------------------------------------------------------------------- #
-def _parse_endpoint_str(s, out):
+def _parse_endpoint_str(s, out, relative_out=None):
     s = s.strip()
     if not s:
         return
@@ -235,18 +284,32 @@ def _parse_endpoint_str(s, out):
     methods = [m.group(1)] + ([m.group(2)] if m.group(2) else [])
     rest = m.group(3).strip()
     path = rest.split("|")[0].strip()
-    path = re.sub(r"\[.*?\]", "", path)        # 丢弃可选段 [/{id}][/cohorts]
+    path = re.sub(r"\[.*?\]", "", path)        # 丢弃可选段 [?session_id=...][/{id}]
     path = path.rstrip()
     if not path.startswith("/api/"):
-        return  # 相对路径（如 "videos/init-chunked"）无法可靠映射，跳过
+        # 相对路径（如 "videos/init-chunked"）：不再静默丢弃，
+        # 交给调用方在已知后端路由上下文中解析；解析不了再标 [MALFORMED]。
+        if relative_out is not None:
+            relative_out.append((methods, path))
+        return
     for meth in methods:
         out.add((norm_method(meth), norm_path(path)))
 
 
-def load_contracts():
+def load_contracts(be_routes=None):
+    """
+    读取冻结契约（reshape-a/a2/b/r-* 非 draft）。
+
+    返回 (endpoints, malformed)：
+      - endpoints: 解析后的 (method, norm_path) 集合（绝对路径 + 已解析的相对路径）
+      - malformed: 相对路径契约中无法可靠解析的 [(methods, rel_path), ...]
+
+    当 be_routes 为 None（无后端上下文）时，相对路径一律计入 malformed（显式可见，不再静默丢弃）。
+    """
     endpoints = set()
+    relative = []
     if not os.path.isdir(CONTRACTS_DIR):
-        return endpoints
+        return endpoints, relative
     for fn in sorted(os.listdir(CONTRACTS_DIR)):
         if not fn.endswith(".json"):
             continue
@@ -263,11 +326,21 @@ def load_contracts():
             if isinstance(d.get(key), list):
                 for e in d[key]:
                     if isinstance(e, str):
-                        _parse_endpoint_str(e, endpoints)
+                        _parse_endpoint_str(e, endpoints, relative)
         re_ = d.get("resume_endpoint")
         if isinstance(re_, dict) and re_.get("path"):
             endpoints.add((norm_method(re_.get("method", "POST")), norm_path(re_["path"])))
-    return endpoints
+    malformed = []
+    if be_routes is None:
+        malformed.extend(relative)
+        return endpoints, malformed
+    for methods, rel_path in relative:
+        resolved = resolve_relative(methods, rel_path, be_routes)
+        if resolved is None:
+            malformed.append((methods, rel_path))
+        else:
+            endpoints.update(resolved)
+    return endpoints, malformed
 
 
 # --------------------------------------------------------------------------- #
@@ -285,12 +358,16 @@ def adjudicate_to_connect(method, path):
     return "前端当前未调用（按需接入）"
 
 
-def adjudicate_unfrozen(method, path):
+def adjudicate_unfrozen_only(method, path):
     if "/admin/" in path:
         return "管理端端点未纳入冻结契约"
     if any(k in path for k in ("/mcp/", "/knowledge/", "/rag/", "/neo4j/", "/graph/")):
         return "智能体/内部端点未纳入冻结契约"
     return "未纳入任何冻结契约（需补契约或变更单）"
+
+
+def adjudicate_in_use_unfrozen(method, path):
+    return "前端实际在用但冻结契约缺失（治理压力核心，CI 红/阻断）"
 
 
 # --------------------------------------------------------------------------- #
@@ -304,41 +381,60 @@ def run(quiet=False):
         raise
     except Exception as e:  # 后端不可达等
         print("ERROR: 无法获取后端 OpenAPI: %s" % e, file=sys.stderr)
-        print("[SUMMARY] breakpoints=? to_connect=? unfrozen=? (backend unreachable)")
+        print("[SUMMARY] breakpoints=? in_use_unfrozen=? unfrozen_only=? to_connect=? "
+              "frontend=? backend=? contracts=? malformed=? (backend unreachable)")
         return 2
     be_routes = backend_routes(spec)
-    contracts = load_contracts()
+    contracts, malformed = load_contracts(be_routes)
 
     breakpoints = sorted(fe_calls - be_routes)
     to_connect = sorted(be_routes - fe_calls)
-    # 未冻结：后端路由所在「路径」没有任何契约覆盖（按路径判定，方法无关）
     contract_paths = {p for (_, p) in contracts}
-    unfrozen = sorted(r for r in be_routes if r[1] not in contract_paths)
+    unfrozen_mp = sorted(be_routes - contracts)                       # 后端有、契约无（method+path）
+    in_use_unfrozen = sorted((fe_calls & be_routes) - contracts)       # 前端在用、契约无（method+path）
+    unfrozen_only = sorted(set(unfrozen_mp) - set(in_use_unfrozen))   # 后端有、前端未用、契约无
 
     if not quiet:
         print("=" * 78)
-        print("EduAgent 前后端契约三方对账  %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        print("EduAgent 前后端契约四方对账  %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         print("后端: %s  前端: edu-frontend/public/*  契约: contracts/reshape-* (非draft)" % BACKEND)
         print("=" * 78)
-        print("\n[① 断点] 前端调用 − 后端路由  (必须为空)  共 %d 条" % len(breakpoints))
+        print("\n[① 断点] 前端调用 − 后端路由  (必须为空)  共 %d 条  → %s"
+              % (len(breakpoints), "红/阻断" if breakpoints else "PASS"))
         if breakpoints:
             for m, p in breakpoints:
                 print("  ❌ %-6s %s" % (m, p))
         else:
             print("  ✅ 无断点（前端所有调用均能在后端 OpenAPI 找到对应路由）")
 
-        print("\n[② 待接] 后端路由 − 前端调用  共 %d 条" % len(to_connect))
+        print("\n[② 在用未冻结] 前端在用 ∩ 后端路由 − 冻结契约  共 %d 条  → %s"
+              % (len(in_use_unfrozen), "红/阻断" if in_use_unfrozen else "PASS"))
+        if in_use_unfrozen:
+            for m, p in in_use_unfrozen:
+                print("  🔴 %-6s %-52s %s" % (m, p, adjudicate_in_use_unfrozen(m, p)))
+        else:
+            print("  ✅ 前端在用的接口全部已有冻结契约")
+
+        print("\n[③ 未冻结仅后端] 后端路由 − 冻结契约 − 前端在用  共 %d 条  → WARN（不阻断）"
+              % len(unfrozen_only))
+        for m, p in unfrozen_only:
+            print("  ◦ %-6s %-52s %s" % (m, p, adjudicate_unfrozen_only(m, p)))
+
+        print("\n[④ 待接] 后端路由 − 前端调用  共 %d 条  → WARN（不阻断）" % len(to_connect))
         for m, p in to_connect:
             print("  • %-6s %-52s %s" % (m, p, adjudicate_to_connect(m, p)))
 
-        print("\n[③ 未冻结] 后端路由 − 冻结契约  共 %d 条" % len(unfrozen))
-        for m, p in unfrozen:
-            print("  ◦ %-6s %-52s %s" % (m, p, adjudicate_unfrozen(m, p)))
+        if malformed:
+            print("\n[MALFORMED] 无法可靠解析的相对路径契约  共 %d 条（未计入冻结集合）" % len(malformed))
+            for methods, p in malformed:
+                print("  ⚠️  %s %s" % ("/".join(norm_method(x) for x in methods), p))
 
-    print("\n[SUMMARY] breakpoints=%d to_connect=%d unfrozen=%d frontend=%d backend=%d contracts=%d"
-          % (len(breakpoints), len(to_connect), len(unfrozen),
-             len(fe_calls), len(be_routes), len(contracts)))
-    return 1 if breakpoints else 0
+    print("\n[SUMMARY] breakpoints=%d in_use_unfrozen=%d unfrozen_only=%d to_connect=%d "
+          "frontend=%d backend=%d contracts=%d malformed=%d"
+          % (len(breakpoints), len(in_use_unfrozen), len(unfrozen_only), len(to_connect),
+             len(fe_calls), len(be_routes), len(contracts), len(malformed)))
+    # 红/阻断：断点>0 或 前端在用却无契约>0；其余仅 WARN。
+    return 1 if (breakpoints or in_use_unfrozen) else 0
 
 
 def emit_frontend_list(path=None):

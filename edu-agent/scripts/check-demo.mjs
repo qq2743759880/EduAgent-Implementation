@@ -348,34 +348,44 @@ await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object
   () => httpProbe(`${FRONTEND}/admin-users-refine-proto.html`),
   { __fix: FIX.frontend }));
 
-// ⑩ 契约对账（FE-BE-CONTRACT 三方对账门）：跑 febe_contract_check.py
-//   断点 >0 -> FAIL；待接/未冻结 >0 -> WARN（不阻断）；后端不可达(exit 2) -> WARN(以④为准)
+// ⑩ 契约对账（FE-BE-CONTRACT 四方对账门）：跑 febe_contract_check.py（W-NEXT-FE-001 四档）
+//   断点(bp) >0                         -> FAIL 红（前端调用了后端不存在的路由）
+//   在用未冻结(in_use_unfrozen) >0        -> FAIL 红（前端实际在用但无冻结契约 = 治理压力核心，CI 阻断）
+//   未冻结仅后端(unfrozen_only) >0        -> WARN（后端有、前端未用、无契约，不阻断）
+//   待接(to_connect) >0                  -> WARN（后端有、前端未接，不阻断）
+//   后端不可达(exit 2)                   -> WARN（以④为准）
 const contractGate = Object.assign(
   async () => {
     const py = await resolvePython();
     const { code, stdout, stderr } = await runPy(py, [FEBE_SCRIPT]);
-    const summary = /\[SUMMARY\]\s*breakpoints=(\d+)\s+to_connect=(\d+)\s+unfrozen=(\d+)/.exec(stdout || "");
+    const summary = /\[SUMMARY\]\s*breakpoints=(\d+)\s+in_use_unfrozen=(\d+)\s+unfrozen_only=(\d+)\s+to_connect=(\d+)/
+      .exec(stdout || "");
     if (!summary) {
       throw new Error(`未解析到 [SUMMARY]（exit=${code}）；stderr=${(stderr || "").slice(0, 200)}`);
     }
-    const bp = +summary[1], tc = +summary[2], uf = +summary[3];
+    const bp = +summary[1], iu = +summary[2], uo = +summary[3], tc = +summary[4];
     if (code === 2) {
-      const e = new Error(`后端不可达，契约对账跳过（以④红项为准）：断点=${bp} 待接=${tc} 未冻结=${uf}`);
+      const e = new Error(`后端不可达，契约对账跳过（以④红项为准）：断点=${bp} 在用未冻结=${iu} 未冻结仅后端=${uo} 待接=${tc}`);
       e.__warn = true;
       throw e;
     }
+    // 红/阻断：断点>0 或 前端在用却无契约>0
     if (bp > 0) {
-      throw new Error(`断点 ${bp} 条（前端调用了后端不存在的路由），见 febe_contract_check.py 输出`);
+      throw new Error(`断点 ${bp} 条（前端调用了后端不存在的路由），见 febe_contract_check.py ① 段`);
     }
-    if (tc > 0 || uf > 0) {
-      const e = new Error(`待接 ${tc} / 未冻结 ${uf} 条（WARN，不阻断；详见 febe_contract_check.py 三类差异清单）`);
+    if (iu > 0) {
+      throw new Error(`在用未冻结 ${iu} 条（前端实际在用的接口无冻结契约，CI 红/阻断；详见 febe_contract_check.py ② 段，清单移交 W-NEXT-CONTRACT-001）`);
+    }
+    // WARN，不阻断：后端有前端未接 / 后端有契约无（前端未用）
+    if (tc > 0 || uo > 0) {
+      const e = new Error(`待接 ${tc} / 未冻结仅后端 ${uo} 条（WARN，不阻断；详见 febe_contract_check.py ③④ 段）`);
       e.__warn = true;
       throw e;
     }
-    return `断点0 待接${tc} 未冻结${uf}`;
+    return `断点0 在用未冻结0 未冻结仅后端0 待接0`;
   },
-  { __fix: (d) => `python edu-agent/scripts/eval/febe_contract_check.py 查看三类差异清单（断点红/待接·未冻结 WARN） [${d}]` });
-await check("⑩", `契约对账门 febe_contract_check.py（断点红/待接·未冻结 WARN）`, contractGate);
+  { __fix: (d) => `python edu-agent/scripts/eval/febe_contract_check.py 查看四方差异清单（断点·在用未冻结 红 / 待接·未冻结 WARN） [${d}]` });
+await check("⑩", `契约对账门 febe_contract_check.py（断点·在用未冻结 红 / 待接·未冻结 WARN）`, contractGate);
 
 // ⑪ VEC-LOCK：embed 一致性健康门（VEC-G5）——edu_knowledge 元数据全 = 锁定 BGE-M3 revision，
 //    无 fallback 混写/未归一化/空文本。走 venv python 探针（查 Milvus），PASS 才算绿。
@@ -384,6 +394,33 @@ const EDU_PY = new URL("../../.venv/Scripts/python.exe", import.meta.url).pathna
 await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.assign(
   async () => runCmd(EDU_PY, [VECLOCK_PROBE], 60000),
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
+
+// ⑬ W-NEXT-MCP-001「MCP 三态」健康门（能力对账 + 内置工具落审计 + 字段级脱敏）
+//   打 live 8000 + MySQL，真实调 calculator（内置）验证审计落库(server_id=0)与字段脱敏；
+//   探针末行输出 [TRISTATE] <json>，env_blocked→WARN（不阻断，仅环境未就绪），其余失败→红。
+const TRISTATE_PROBE = new URL("../scripts/eval/mcp_tristate_probe.py", import.meta.url).pathname;
+await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Object.assign(
+  async () => {
+    const { code, stdout } = await runPy(EDU_PY, [TRISTATE_PROBE], 60000);
+    const m = /\[TRISTATE\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      if (code === 2) {
+        const e = new Error(`环境阻塞（后端/DB 不可达，以④红项为准）: ${(stdout || "").slice(0, 200)}`);
+        e.__warn = true; throw e;
+      }
+      throw new Error(`探针未输出 [TRISTATE]（exit=${code}）: ${(stdout || "").slice(0, 200)}`);
+    }
+    const j = JSON.parse(m[1]);
+    if (j.env_blocked) {
+      const e = new Error(`环境阻塞（后端/DB 不可达，跳过）: ${j.detail || ""}`);
+      e.__warn = true; throw e;
+    }
+    if (!j.audit_ok) throw new Error(`能力对账未通过: ${j.detail || ""}`);
+    if (!j.builtin_logged) throw new Error(`内置工具未落审计: ${j.detail || ""}`);
+    if (!j.redacted) throw new Error(`字段脱敏未生效: ${j.detail || ""}`);
+    return `审计checked=${j.audit_checked} 内置落库✔ 脱敏✔`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_tristate_probe.py 排查（需 8000 在线 + MySQL 可达） [${d}]` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1

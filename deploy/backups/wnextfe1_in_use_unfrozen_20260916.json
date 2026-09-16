@@ -1,0 +1,193 @@
+{
+  "title": "W-NEXT-FE-001 in_use_unfrozen 差集（前端在用但无冻结契约）",
+  "generated_at": "2026-09-16T09:17:43Z",
+  "purpose": "移交 W-NEXT-CONTRACT-001 补冻结契约的优先级清单（生产链路风险，CI 红/阻断）",
+  "summary": {
+    "breakpoints": 0,
+    "in_use_unfrozen": 40,
+    "unfrozen_only": 106,
+    "to_connect": 109,
+    "frontend": 101,
+    "backend": 210,
+    "contracts_strict_baseline": 83,
+    "contracts_after_parser_fix": 90,
+    "malformed": 0
+  },
+  "notes": [
+    "in_use_unfrozen = 前端调用(101) ∩ 后端路由(210) − 冻结契约(90, 已含相对路径解析修复)",
+    "契约 parser 修复（W-NEXT-FE-001 步骤2）将冻结契约从 strict 83 提升到 90：其中 7 条此前被静默丢弃的相对路径契约被回收，",
+    "这 7 条中有 6 条属于前端在用接口，故 in_use_unfrozen 由 strict 基线的 46 条降到 40 条。",
+    "kickoff 估算的『45 条』是未计 parser 修复的粗略值；本报告以实测为准。",
+    "含生产主链路：POST /api/chat/stream、GET /api/chat/sessions/{x}/history 等（前端天在调，当前无冻结契约）。"
+  ],
+  "recovered_by_parser_fix": [
+    "DELETE /api/admin/courses/chapters/{x}",
+    "GET /api/admin/courses/cohorts/{x}/modules",
+    "GET /api/admin/courses/modules/{x}/sessions",
+    "GET /api/admin/courses/sessions/{x}/assets",
+    "GET /api/admin/courses/videos/{x}/transcode-status",
+    "PUT /api/admin/courses/videos/upload-chunk/{x}/{x}"
+  ],
+  "in_use_unfrozen": [
+    {
+      "method": "DELETE",
+      "path": "/api/admin/courses/cohorts/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/courses/modules/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/courses/series/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/courses/sessions/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/questions/banks/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/questions/questions/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/chat/sessions/{x}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/knowledge/partitions/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/courses/series/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/courses/series/{x}/cohorts"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/courses/videos/{x}/chapters"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/questions/banks/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/questions/questions/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/sessions/{x}/history"
+    },
+    {
+      "method": "GET",
+      "path": "/api/community/posts/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/community/posts/{x}/comments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/coupons/templates"
+    },
+    {
+      "method": "GET",
+      "path": "/api/courses/{x}/reviews"
+    },
+    {
+      "method": "GET",
+      "path": "/api/interactive/quiz/question/{x}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/series/{x}/cohorts"
+    },
+    {
+      "method": "GET",
+      "path": "/api/study/courses/{x}/access"
+    },
+    {
+      "method": "GET",
+      "path": "/api/study/courses/{x}/outline"
+    },
+    {
+      "method": "GET",
+      "path": "/api/study/sessions/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/courses/cohorts/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/courses/modules/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/courses/series/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/courses/sessions/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/questions/banks/{x}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/questions/questions/{x}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/courses/series/{x}/restore"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/{x}/role"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/{x}/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/stream"
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/comments/{x}/like"
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/posts/{x}/comments"
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/posts/{x}/like"
+    },
+    {
+      "method": "POST",
+      "path": "/api/courses/{x}/reviews"
+    },
+    {
+      "method": "POST",
+      "path": "/api/favorites"
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/servers/{x}/discover"
+    },
+    {
+      "method": "POST",
+      "path": "/api/trade/order"
+    }
+  ]
+}
