@@ -15,6 +15,7 @@ import contextvars
 import hashlib
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -604,13 +605,17 @@ async def call_tool(*,
                     operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
                     server_id=None, call_id=call_id,
                     human_decision=hitl_decision, action_id=hitl_action_id or "",
-                    exec_override=_make_builtin_hitl_exec(_builtin_name),
+                    exec_override=_make_builtin_hitl_exec(
+                        _builtin_name, operator_user_id=operator_user_id,
+                        tenant_id=tenant_id, trace_id=trace_id,
+                    ),
                 )
                 if _gated is not None:
                     return _gated
         return await _execute_builtin_attempt(
             tool_name=_builtin_name, args=args,
             call_id=call_id or f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
+            operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
         )
 
     tool_row = await registry.get_tool_by_ref(tool_id, server_id, tool_name)
@@ -818,41 +823,65 @@ def _resolve_builtin_name(tool_id: int | None, server_id: int | None, tool_name:
     return n if n in _BUILTIN_TOOL_HANDLERS else ""
 
 
-async def _execute_builtin_attempt(*, tool_name: str, args: dict, call_id: str) -> "MCPToolTestResp":
+async def _execute_builtin_attempt(*, tool_name: str, args: dict, call_id: str,
+                                    operator_user_id: int = 0, tenant_id: str = "",
+                                    trace_id: str = "") -> "MCPToolTestResp":
     """执行一次内置工具 handler → MCPToolTestResp。
 
-    内置工具无 mcp_server/mcp_tool 行，故 server_id=0 且**不落 mcp_tool_call_log 审计行**
-    （与既有内置路径 `_default_attempt_executor` 的 calculator/search_knowledge 行为一致）。
+    内置工具无 mcp_server/mcp_tool 行，故 server_id=0。
+    W-NEXT-MCP-001 步骤2（P0-②）：内置工具执行结果**落 mcp_tool_call_log 审计行**
+    （与远程工具路径统一，杜绝 knowledge_import 写类无痕可查、权限门形同虚设）。
+    脱敏在公共落库入口 `_write_call_log` 做（P0-③），本处只一层调用、不重复。
+    落库失败（DB 抖动/不可用）不阻断主链路 —— `_write_call_log` 内部已 try/except 兜底。
     """
     handler = _BUILTIN_TOOL_HANDLERS.get(tool_name)
     t0 = time.perf_counter()
     if handler is None:
-        return MCPToolTestResp(
+        resp = MCPToolTestResp(
             status=ToolCallStatusEnum.ERROR, error_message=f"未注册的内置工具 {tool_name}",
             latency_ms=0, call_id=call_id, server_id=0, tool_name=tool_name, content_text=None,
         )
+    else:
+        try:
+            content = await handler(dict(args))
+            resp = MCPToolTestResp(
+                status=ToolCallStatusEnum.SUCCESS,
+                latency_ms=int((time.perf_counter() - t0) * 1000),
+                call_id=call_id, server_id=0, tool_name=tool_name, content_text=str(content),
+            )
+        except Exception as exc:  # noqa: BLE001 — 内置执行失败按 ERROR 返回，不冒泡打崩调用方
+            logger.warning(f"[MCP] 内置工具 {tool_name} 执行失败: {type(exc).__name__}: {exc}")
+            resp = MCPToolTestResp(
+                status=ToolCallStatusEnum.ERROR, error_message=f"内置工具 {tool_name} 执行失败：{exc}",
+                latency_ms=int((time.perf_counter() - t0) * 1000), call_id=call_id, server_id=0,
+                tool_name=tool_name, content_text=None,
+            )
+    # P0-②：内置工具执行结果落审计行（失败也不阻断主链路，详见函数注释）
     try:
-        content = await handler(dict(args))
-        return MCPToolTestResp(
-            status=ToolCallStatusEnum.SUCCESS,
-            latency_ms=int((time.perf_counter() - t0) * 1000),
-            call_id=call_id, server_id=0, tool_name=tool_name, content_text=str(content),
+        await _write_call_log(
+            call_id=call_id, server_id=0, tool_name=tool_name,
+            args=args, result=None, content_text=resp.content_text,
+            status=resp.status, latency_ms=resp.latency_ms,
+            user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+            error_message=resp.error_message,
         )
-    except Exception as exc:  # noqa: BLE001 — 内置执行失败按 ERROR 返回，不冒泡打崩调用方
-        logger.warning(f"[MCP] 内置工具 {tool_name} 执行失败: {type(exc).__name__}: {exc}")
-        return MCPToolTestResp(
-            status=ToolCallStatusEnum.ERROR, error_message=f"内置工具 {tool_name} 执行失败：{exc}",
-            latency_ms=int((time.perf_counter() - t0) * 1000), call_id=call_id, server_id=0,
-            tool_name=tool_name, content_text=None,
-        )
+    except Exception:  # noqa: BLE001 — 审计落库失败绝不影响工具返回
+        logger.debug("[MCP] 内置工具审计落库失败，忽略（不阻断主链路）")
+    return resp
 
 
-def _make_builtin_hitl_exec(tool_name: str):
-    """HITL Gate 批准后的执行体（内置工具版）：approve → 真实跑内置 handler（非传输层）。"""
+def _make_builtin_hitl_exec(tool_name: str, *, operator_user_id: int = 0,
+                            tenant_id: str = "", trace_id: str = ""):
+    """HITL Gate 批准后的执行体（内置工具版）：approve → 真实跑内置 handler（非传输层）。
+
+    W-NEXT-MCP-001 步骤2：透传 operator_user_id/tenant_id/trace_id，使 HITL 批准后的
+    内置工具执行同样落 mcp_tool_call_log（含 operator_user_id，审计可溯源）。
+    """
     async def _exec(action) -> "MCPToolTestResp":
         cid = f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
         return await _execute_builtin_attempt(
             tool_name=tool_name, args=dict(getattr(action, "params", None) or {}), call_id=cid,
+            operator_user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
         )
 
     return _exec
@@ -1588,7 +1617,13 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
                 human_decision=hitl_decision, action_id=hitl_action_id or "",
                 server=server, store=_hitl_store, reviewer_fn=_hitl_reviewer,
                 # 内置工具（knowledge_import）批准后的执行体是 handler，不走传输层
-                exec_override=(_make_builtin_hitl_exec(_builtin_name) if _builtin_name else None),
+                exec_override=(
+                    _make_builtin_hitl_exec(
+                        _builtin_name, operator_user_id=operator_user_id,
+                        tenant_id=tenant_id, trace_id=trace_id,
+                    )
+                    if _builtin_name else None
+                ),
             )
             if _gated is not None:
                 return _gated
@@ -1943,6 +1978,40 @@ def _extract_mcp_content_text(call_result: dict) -> str | None:
     return None
 
 
+# ============================================================
+# W-NEXT-MCP-001 步骤3（P0-③）：字段级脱敏 —— 落库前对 args/result 做 key 命中脱敏，
+# 防止 admin token 泄漏 / DB 导出后含 password|token|secret|api_key|authorization 的明文裸奔。
+# 仅此一层（公共落库入口），不在每处重复；args 与 result 均经同一入口，覆盖内置/远程双路径。
+# ============================================================
+_REDACT_KEY_RE = re.compile(r"(password|token|secret|api_key|authorization)", re.IGNORECASE)
+_REDACTED = "***REDACTED***"
+_TRUNCATE_LIMIT = 4096  # 单字段 JSON 超 4KB 截断，防超长载荷撑爆审计表
+
+
+def _redact_sensitive(obj):
+    """递归脱敏：dict 的 key 命中敏感词 → 值替 ***REDACTED***（值本身不递归，避免误伤嵌套结构）。
+
+    非 dict/list 原样返回（字符串/数字/None 等）；list 逐元素脱敏。
+    """
+    if isinstance(obj, dict):
+        return {
+            k: (_REDACTED if _REDACT_KEY_RE.search(str(k)) else _redact_sensitive(v))
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list):
+        return [_redact_sensitive(v) for v in obj]
+    return obj
+
+
+def _truncate_json(s: str | None) -> str | None:
+    """单字段 JSON 超长截断（>4KB 加 ...truncated 后缀），防超长载荷。"""
+    if s is None:
+        return None
+    if len(s) > _TRUNCATE_LIMIT:
+        return s[:_TRUNCATE_LIMIT] + "...truncated"
+    return s
+
+
 async def _write_call_log(*, call_id: str, server_id: int, tool_name: str,
                           args: dict | list | None, result: Any, content_text: str | None,
                           status: ToolCallStatusEnum, latency_ms: int,
@@ -1950,19 +2019,25 @@ async def _write_call_log(*, call_id: str, server_id: int, tool_name: str,
                           error_message: str | None) -> None:
     args_s: str | None
     try:
-        args_s = json.dumps(args if args is not None else {}, ensure_ascii=False)
+        # P0-③：落库前对 args 做字段级脱敏（key 命中敏感词 → 值替 ***REDACTED***）
+        args_redacted = _redact_sensitive(args if args is not None else {})
+        args_s = json.dumps(args_redacted, ensure_ascii=False)
     except Exception:
         args_s = None
     result_s: str | None
     try:
         payload: dict[str, Any] = {}
         if result is not None:
-            payload["result"] = result
+            # P0-③：result 同样脱敏（远程工具可能回显含敏感字段的请求体）
+            payload["result"] = _redact_sensitive(result)
         if content_text is not None and "content_text" not in payload:
             payload["content_text"] = content_text
         result_s = json.dumps(payload, ensure_ascii=False) if payload else None
     except Exception:
         result_s = None
+    # P0-③：超长截断（单字段 ≤4KB），防超长载荷撑爆审计表
+    args_s = _truncate_json(args_s)
+    result_s = _truncate_json(result_s)
     try:
         await execute_write(
             "INSERT INTO mcp_tool_call_log (call_id, server_id, tool_name, args_json, result_json,"

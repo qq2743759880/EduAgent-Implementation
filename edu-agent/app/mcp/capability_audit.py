@@ -44,6 +44,17 @@ _CAPABILITY_ROWS: list[tuple[str, str, str, str]] = [
     ("search_knowledge_backend_injection", "set_search_knowledge_backend", "app/mcp/executor.py", "app/mcp/executor.py"),
     # #3 按名解析：executor 默认执行器经 get_tool_by_ref(None,None,tool_name) 按名直达 DB 工具
     ("registry_name_resolution", "get_tool_by_ref", "app/mcp/executor.py", "app/mcp/registry.py"),
+    # ---- W-NEXT-MCP-001 步骤1（P0-①）：跨模块对账 —— executor ↔ permission_gate 生产接线 ----
+    # T12 批判 P0-①：MCP-TRUTH 的 7 条声明全在 app/mcp/* 内，0 条覆盖 permission_gate 跨模块对账，
+    # 造成「executor 虽已接权限门，但审计门对其失明」。以下 3 行比对「权限门跨模块能力 = executor
+    # 真实调用」，杜绝该盲区。用「调用形态」符号（带 "("）确保是真调用而非仅 import。
+    # 实测事实（2026-09-16）：executor 经 W-NEXT-2 真实接线的跨模块符号是
+    #   is_write_class（写类判定，多处）/ gate_tool_call（统一门消费入口）/ resolve_role（角色解析）；
+    #   build_denied_envelope 与 gate_tool_call 同址同调（:144/:173）亦已接线，不单列。
+    #   can_use_tool 不经 executor 直调，而是 gate_tool_call 内部调用间接可达 → 不单列 import 行。
+    ("permgate_is_write_class_called", "is_write_class(", "app/mcp/executor.py", "app/ai/permission_gate.py"),
+    ("permgate_gate_tool_call_called", "gate_tool_call(", "app/mcp/executor.py", "app/ai/permission_gate.py"),
+    ("permgate_resolve_role_called", "resolve_role(", "app/mcp/executor.py", "app/ai/permission_gate.py"),
 ]
 
 
