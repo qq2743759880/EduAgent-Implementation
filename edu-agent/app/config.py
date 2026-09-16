@@ -399,6 +399,9 @@ class Settings(BaseSettings):
     # 云端优先（2026-08-22 用户裁定）：EMBED_BACKEND="cloud" → 先调云端 API，
     # 失败再回退本地 CUDA；"cuda" → 本地优先（旧行为）。
     EMBED_BACKEND: str = "cloud"
+    # VEC-LOCK（模型一致性锁定）：sha256 伪向量默认禁入库——宁可任务失败标记重试，
+    # 不静默混写假向量污染索引（audit-rag #10）。置 True 仅用于对账/一次性重建场景。
+    EMBED_ALLOW_FAKE_VECTOR: bool = False
     # 云端 rerank（硅基流动等 OpenAI 兼容 rerank 端点）
     RERANK_API_URL: str = ""             # 空 → 复用 EMBEDDING_API_URL
     RERANK_API_KEY: str = ""             # 空 → 复用 EMBEDDING_API_KEY
@@ -414,6 +417,24 @@ class Settings(BaseSettings):
     # False = 回滚开关：退回一次性 spawn 全握手旧路径（行为与 B1 前完全一致）。
     MCP_HC_USE_POOL: bool = True
     MCP_HC_SESSION_TTL_S: int = 600       # hc 专用会话空闲 TTL（秒），session_create 内钳制 30~1800
+
+    # ============================================================
+    # WNEXT10 F5-b / WNEXT11：平台自有 skill 根目录（生产必核对）
+    # ------------------------------------------------------------
+    # 平台默认 skill 注册表（app.ai.skills.registry.default()）只扫描本变量指向的平台
+    # **自有** skill 根目录（os.pathsep 分隔多个根），用于把平台自身维护的 skill 注入
+    # 平台 agent 的 skill_context。
+    #
+    # 安全缺省：默认空串 = 不消费任何平台 skill 根 → skill_node 只注入
+    # platform_capability_block()（源自 permission_gate.TOOL_CLASS_MAP 实物清单），
+    # 不注入任何开发机 skill body（list_directory/read_file 等 dev-host 工具绝不泄漏）。
+    #
+    # 生产部署形态：
+    #   - 不配置（保持空）→ skill_node 仅注入 platform 实物能力清单，无平台自有 skill；
+    #   - 配置为平台自有 skill 根目录 → 这些 skill 的 body 会进 skill_context。
+    # 该字段与开发机 AI-Hub（registry.dev_default）完全隔离，二者互不影响。
+    # ============================================================
+    EDUAGENT_PLATFORM_SKILL_ROOTS: str = ""
 
     # ============================================================
     # R12：图内 LLM 工具决策接管（dev-plan-reshape-r W3）

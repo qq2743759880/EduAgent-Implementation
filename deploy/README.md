@@ -129,6 +129,19 @@ copy .env.example .env    # ⚠ 仅当 .env 不存在时用；已存在先按上
 
 其余未注释键逐键说明见 `.ai-hub/plans/deploy-config-checklist.md`（含每键默认值/必填性/生产值指引，`.env.example` 未注释键 37 个，2026-09-15 实测），本 README 不重复。
 
+#### 平台自有 skill 根配置：`EDUAGENT_PLATFORM_SKILL_ROOTS`（WNEXT10/11）
+
+> 默认留空即**安全缺省**，通常生产无需配置。行为对照：
+
+| 形态 | 配置 | `skill_node`（平台 agent 系统提示 skill 段）行为 |
+|---|---|---|
+| **不配**（默认空） | `EDUAGENT_PLATFORM_SKILL_ROOTS=` | 只注入 `platform_capability_block()` 实物能力清单（源自 `permission_gate.TOOL_CLASS_MAP`，8 个真实工具）；**不**注入任何开发机 skill（`list_directory`/`read_file` 等 dev-host 工具绝不出现），也不注入平台自有 skill |
+| **配**（平台有自维护 skill 根） | 指向该目录（`os.pathsep` 分隔多根） | 在实物能力清单之外，额外把这批平台自有 SKILL.md 的 body 注入 `skill_context`（供 agent 调取平台私有 skill） |
+
+- 判定口径（`app/ai/skills/registry.py`）：只扫描本变量指向的根；`dev_default()` 仍扫开发机 AI-Hub（仅供离线/迁移/排查），两者**完全隔离**。
+- 安全边界：**未配置绝不可能引入开发机 skill**（WNEXT10 F5-b 修复的正向保障）；误把该变量指向开发机 `D:\\.ai-hub\\skills` 会重新把 dev-host 工具泄漏进平台链路——**不要**在生产指向开发机库。
+- 本字段与工具实物能力无关：无论配或不配，平台能力清单始终由 `TOOL_CLASS_MAP` 注入，不丢能力表述。
+
 ### ③ 数据库初始化（edu 库）
 
 > ⚠ **已有库判别（执行前必查，P1 数据损失风险）**
