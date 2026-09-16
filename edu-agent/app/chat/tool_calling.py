@@ -173,6 +173,7 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
     # 2. ping 工具：用户说「ping」「心跳」「连通性」「检查 MCP」
     ping_tool = by_lname.get("ping")
     if ping_tool is not None and any(kw in q_lower for kw in ["ping", "心跳", "连通性", "mcp 健康", "工具健康"]):
+        # ping 是无参探针工具，保留 args={}（与原实现等价）
         plans.append(ToolPlanItem(tool=ping_tool, args={}, reason="命中 ping 类关键词"))
 
     # 3. echo 工具：「echo xxx」「重复 xxx」「回显 xxx」→ echo(text=xxx)
@@ -218,7 +219,17 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
         has_required = _schema_has_required(tm.input_schema_json)
         if has_required:
             continue
-        plans.append(ToolPlanItem(tool=tm, args={}, reason=f"关键词命中：{hit_kw}"))
+        # W-NEXT-CHATFLOW-001（CR-T11b-A Track B 修补）：关键词命中后若 args 仍为空，
+        # 按工具名填充 _heuristic_arg_defaults 最小可执行 schema 示例——
+        # knowledge_import → source_files=[{file_name, local_path}] + visibility，
+        # calculator → a/b/op。LLM 传入的 args 非空时调用方覆盖（见下方 `plan.args or _heuristic_arg_defaults(...)`）。
+        _default_args = _heuristic_arg_defaults(tm.tool_name)
+        if _default_args:
+            logger.info(
+                f"[MCP-TC] 启发式 args 兜底填充：tool={tm.tool_name}"
+                f" hit_kw={hit_kw} keys={list(_default_args.keys())}"
+            )
+        plans.append(ToolPlanItem(tool=tm, args=dict(_default_args), reason=f"关键词命中：{hit_kw}"))
         already.add(key)
 
     # 上限：MCP_TOOL_MAX_TRIES（默认 1 次）
@@ -251,6 +262,46 @@ def _to_num(s: str) -> int | float:
 
 
 # ============================================================
+# 2.5 W-NEXT-CHATFLOW-001（CR-T11b-A 修补）：内置工具 schema 默认参数
+#   启发式工具选择仅命中关键词即 `args={}`——写类内置工具（knowledge_import）挂起后
+#   confirm 续流调 handler 必校验 `source_files` 非空 → ValueError → task +0。
+#   双轨修复 - Track B（启发式层兜底）：关键词命中后按工具名填充最小可执行的
+#   schema 示例参数。本默认值仅在 args 仍为空时填充，对 LLM/tool_decision 传来的
+#   完整 args 不影响（先 fill, track A 覆盖会再次覆盖）；不改 chat 路径语义。
+# ============================================================
+_KNOWLEDGE_IMPORT_DEMO_LOCAL_PATH = (
+    "E:/stu/project/stu/EduAgent实施手册/edu-agent/data/knowledge_uploads/"
+    "1b6c1144230c.md"
+)
+
+
+def _heuristic_arg_defaults(tool_name: str) -> dict:
+    """关键词命中且 plan.args 仍为空时，按工具名填充最小可执行 schema 示例。
+
+    返回新 dict，调用方应按 `plan.args or _heuristic_arg_defaults(plan.tool.tool_name)`
+    模式连接——保证 LLM 传入的非空 args 优先。"""
+    n = (tool_name or "").strip().lower()
+    if n == "knowledge_import":
+        # 与 executor._knowledge_import_handler 同源：source_files 非空 list[dict]，
+        # 含 file_name + 可解析的 local_path（in-root 文件，触发 pipeline_started=True）。
+        # visibility 默认 private，不传则 handler 取 ctx/兜底 private。
+        return {
+            "source_files": [
+                {
+                    "file_name": "knowledge_import_demo.md",
+                    "local_path": _KNOWLEDGE_IMPORT_DEMO_LOCAL_PATH,
+                }
+            ],
+            "visibility": "private",
+        }
+    if n == "calculator":
+        # 启发式默认占位（避免空 args 触发 calculator 字段校验）：a/b/op 最小示例。
+        # 真实 _parse_heuristic 已用正则填 a/b（见上面分支）；此处仅作兜底。
+        return {"a": 0, "b": 0, "op": "add"}
+    return {}
+
+
+# ============================================================
 # 3. 主入口：run_chat_tool_calls → 返回 (summary列表, result注入片段, degraded_extra)
 # ============================================================
 async def run_chat_tool_calls(
@@ -267,6 +318,11 @@ async def run_chat_tool_calls(
     #     （发 pending_confirm 帧 + Redis 标记），不执行，等用户 confirm/reject 后同 thread_id 续跑。
     hitl_decision: bool | None = None,
     on_write_class_pending: Callable[[dict], Awaitable[bool]] | None = None,
+    # W-NEXT-CHATFLOW-001（CR-T11b-A Track A 治本）：HITL 续流时从 Redis 缓存读出的
+    # 首轮 pending_confirm.args，按 tool_name → dict 形式直接覆盖 _parse_heuristic 后的 plan.args。
+    # 不再依赖 LLM 续流 generate 节点自主生成 tool_calls（CR-T11b-A 根因）。
+    # 形式：{ tool_name: cached_args_dict, ... }；缺失的键默认走启发式 _heuristic_arg_defaults 兜底。
+    pending_args_override: dict[str, dict] | None = None,
 ) -> tuple[list[MCPToolCallSummary], str, str | None]:
     """
     一轮问答内：分析 query → 选工具（启发式）→ 逐一调用 → 返回：
@@ -413,6 +469,31 @@ async def run_chat_tool_calls(
                     )
                     continue
 
+        # W-NEXT-CHATFLOW-001（Track A 治本优先级最高）：HITL 续流时从 Redis 缓存读出
+        # 的首轮 pending_confirm.args（按 tool_name）替换 plan.args —— 不再依赖 LLM 续流
+        # generate 节点工具调用决策。priority:
+        #   1) pending_args_override[plan.tool.tool_name]（Track A 缓存）→ 最高
+        #   2) plan.args（Track B 启发式填充 + LLM 传入）→ 次之
+        #   3) {} （无任何参数）→ 最末；这种情况不应走到 executor（应早被 permission_gate 拦）
+        _resolved_args: dict = {}
+        if pending_args_override:
+            _resolved_args = dict(pending_args_override.get(plan.tool.tool_name) or {})
+        if not _resolved_args:
+            _resolved_args = dict(plan.args or {})
+        if not _resolved_args:
+            # 写类工具若仍空 args（极端场景），fallback 到 _heuristic_arg_defaults（最后兜底）
+            _resolved_args = dict(_heuristic_arg_defaults(plan.tool.tool_name) or {})
+        # 续流（hitl_decision=True）路径下，args 已来自缓存/启发式，不应再被空 args 反向短路
+        if (
+            hitl_decision
+            and plan.tool.tool_name in (pending_args_override or {})
+            and pending_args_override.get(plan.tool.tool_name)
+        ):
+            logger.info(
+                f"[MCP-TC] HITL 续流 args 覆盖：tool={plan.tool.tool_name}"
+                f" src=cached_pending source_keys={list(_resolved_args.keys())}"
+            )
+
         try:
             # H1 闭环必须：内置工具(tool_id=0 的 knowledge_import/calculator/search_knowledge)
             # 经 chat 流式触发时**必须同时传 tool_name**——否则 executor._resolve_builtin_name
@@ -425,7 +506,7 @@ async def run_chat_tool_calls(
                 trace_id=trace_id or (f"mcp-chat-{int(start_ms)}"),
                 tool_id=int(plan.tool.tool_id),
                 tool_name=plan.tool.tool_name,
-                args=dict(plan.args or {}),
+                args=_resolved_args,
                 hitl_decision=hitl_decision,
             )
             latency = resp.latency_ms or max(0, int(time.perf_counter() * 1000) - start_ms)

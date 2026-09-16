@@ -51,10 +51,12 @@ from app.config import settings
 
 # ============================================================
 # R11 HITL（contracts/reshape-r-hitl.json）：挂起/决策 Redis 键 + 读写辅助
-#   hitl:pending:{thread_id}  → pending_confirm payload（TTL=timeout_s=300；resume 端点校验存在性）
-#   hitl:decision:{thread_id} → {"action","reason","created_at"}（TTL=300；续流时一次性消费）
+#   hitl:pending:{thread_id}        → pending_confirm payload（TTL=timeout_s=300；resume 端点校验存在性）
+#   hitl:pending_args:{thread_id}   → pending_confirm 负载中的 args（W-NEXT-CHATFLOW-001 Track A）
+#   hitl:decision:{thread_id}       → {"action","reason","created_at"}（TTL=300；续流时一次性消费）
 # ============================================================
 _HITL_PENDING_PREFIX = "hitl:pending:"
+_HITL_PENDING_ARGS_PREFIX = "hitl:pending_args:"
 _HITL_DECISION_PREFIX = "hitl:decision:"
 
 
@@ -74,18 +76,48 @@ async def _hitl_redis() -> Any | None:
 
 
 async def _mark_hitl_pending(thread_id: str, payload: dict) -> None:
-    """interrupt 捕获后写挂起标记（resume 端点据此判定 thread_id 有效/未过期）。"""
+    """interrupt 捕获后写挂起标记（resume 端点据此判定 thread_id 有效/未过期）。
+
+    W-NEXT-CHATFLOW-001 Track A（CR-T11b-A 治本）：同时把 payload['args']（=经 _enrich
+    的 pending_confirm 负载）写入独立 Redis key `hitl:pending_args:{thread_id}`，
+    同 TTL，resume 续流时由 graph_stream 直接读出 → run_chat_tool_calls 经
+    pending_args_override 优先覆盖 plan.args → handler 校验 source_files 必通过 →
+    真实落 task 行（原 chat 路径默认 task +0 的根因被堵死）。
+    """
     r = await _hitl_redis()
     if r is None:
         return
+    ttl = _hitl_resume_ttl()
     try:
         await r.set(
             f"{_HITL_PENDING_PREFIX}{thread_id}",
             json.dumps(payload, ensure_ascii=False),
-            ex=_hitl_resume_ttl(),
+            ex=ttl,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"[graph_stream.hitl] 写 pending 标记失败: {type(exc).__name__}: {exc}")
+    # Track A：把挂起时的 args 也单独缓存一份（与 pending key 同 TTL），
+    # 供 confirm 续流期（MCP 并行预取前）一次性读取。resume 端点会 delete hitl:pending:* ，
+    # 但本 args key **不被消费**，允许续流与原 hitl 解耦——多轮 / 跨进程均可读。
+    try:
+        tool_name = str(payload.get("tool_name") or "")
+        args_blob = payload.get("args") or {}
+        if tool_name and isinstance(args_blob, dict) and args_blob:
+            await r.set(
+                f"{_HITL_PENDING_ARGS_PREFIX}{thread_id}",
+                json.dumps({"tool_name": tool_name, "args": dict(args_blob)}, ensure_ascii=False),
+                ex=ttl,
+            )
+            logger.info(
+                f"[graph_stream.hitl] pending_args 缓存写入 thread_id={thread_id}"
+                f" tool={tool_name} keys={list(args_blob.keys())}"
+            )
+        else:
+            logger.info(
+                f"[graph_stream.hitl] pending_args 跳过：tool_name={tool_name} args_empty={not args_blob}"
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[graph_stream.hitl] pending_args 缓存写入失败: {type(exc).__name__}: {exc}")
 
 
 async def _pop_hitl_decision(thread_id: str) -> dict | None:
@@ -104,6 +136,97 @@ async def _pop_hitl_decision(thread_id: str) -> dict | None:
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"[graph_stream.hitl] 读决策失败: {type(exc).__name__}: {exc}")
         return None
+
+
+async def _peek_hitl_pending_args(thread_id: str) -> dict | None:
+    """W-NEXT-CHATFLOW-001 Track A：续流期（confirm/reject 任意一侧）非破坏性读
+    `hitl:pending_args:{thread_id}`，供 run_chat_tool_calls 在 _parse_heuristic 后
+    以 pending_args_override 覆盖 plan.args。读失败 / 键不存在 → None（不阻断流）。
+
+    返回 dict：`{"tool_name": str, "args": dict}` 或 None。
+    """
+    r = await _hitl_redis()
+    if r is None:
+        return None
+    key = f"{_HITL_PENDING_ARGS_PREFIX}{thread_id}"
+    try:
+        raw = await r.get(key)
+        if not raw:
+            return None
+        d = json.loads(raw)
+        if not isinstance(d, dict):
+            return None
+        return {"tool_name": str(d.get("tool_name") or ""), "args": dict(d.get("args") or {})}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[graph_stream.hitl] pending_args 读失败: {type(exc).__name__}: {exc}")
+        return None
+
+
+async def _drop_hitl_pending_args(thread_id: str) -> None:
+    """W-NEXT-CHATFLOW-001 Track A 收尾：confirm 续流成功完成（或 reject 收束后）
+    清掉 pending_args 缓存——避免悬挂 + 防同一 thread_id 后续被旧 args 覆盖新 args。
+    单写者层（互斥 variant）不强制，掉一次 best-effort；失败仅日志，绝不阻断主路径。
+    """
+    r = await _hitl_redis()
+    if r is None:
+        return
+    try:
+        await r.delete(f"{_HITL_PENDING_ARGS_PREFIX}{thread_id}")
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(f"[graph_stream.hitl] pending_args 收尾失败: {type(exc).__name__}: {exc}")
+
+
+# ── HITL 口径常量（契约 reshape-r-hitl.json 唯一词表）：confirm=执行 / reject=拒绝执行 ──
+# resume 端点 Literal 只允许 confirm|reject（router.py:397），本层必须以同一组词作续流放行
+# 判断，禁止 approve/confirm 混用（CR-T11-B：原实现认 "approve"，而契约只发 "confirm"，
+# 导致 admin 确认后永不真执行）。把"词表归一"收敛到单一常量 + 单一分类函数，口径一致
+# 由构造保证（任何调用方都只能消费同一份词表），并让分类逻辑可被集成测试直接断言。
+_RESUME_CONFIRM = "confirm"
+_RESUME_REJECT = "reject"
+
+
+def _classify_hitl_resume(action: str) -> tuple:
+    """将 resume action 归一分类为 (kind, notice, degraded_reason)。
+
+    kind  ∈ {"execute", "rejected", "expired"}
+      - execute  = confirm：批准执行（mcp_hitl_decision=True 放行写类工具）
+      - rejected = reject ：0 执行 + 拒绝上下文收束
+      - expired  = 其它   ：该确认已失效（契约只允许 confirm|reject，此为防御分支）
+    """
+    a = str(action or "").strip().lower()
+    if a == _RESUME_CONFIRM:
+        return ("execute", None, None)
+    if a == _RESUME_REJECT:
+        return (
+            "rejected",
+            "已取消该高风险操作，工具未执行，也没有发生任何数据变更。",
+            "hitl_rejected_no_pending",
+        )
+    return (
+        "expired",
+        "该确认已失效：待确认的操作已过期或不存在，本次未执行任何写操作。如需继续，请重新发起请求。",
+        "hitl_confirm_expired_no_pending",
+    )
+
+
+def _enrich_hitl_pending_payload(payload: dict, thread_id: str) -> dict:
+    """把 pending_confirm 负载补全为契约定死的五字段（CR-T11-A）。
+
+    tool_calling._pending_payload 只带 tool_name/args（缺 thread_id/risk_level/timeout_s），
+    契约 reshape-r-hitl.json 的 sse_event.payload 要求五字段 {thread_id, tool_name, args,
+    risk_level, timeout_s}。此处就地补全：
+      - thread_id ：本层已解析的线程键（影响前端能否取到它去调 /resume）；
+      - risk_level：与图路径同源用 langgraph_agent._hitl_risk_level 真实分类
+                    （写类→high/medium，只读→None），None 兜底 "low" 保契约枚举合法；
+      - timeout_s ：契约值 300。
+    """
+    from app.chat.flows.langgraph_agent import _hitl_risk_level
+
+    _enriched = dict(payload or {})
+    _enriched["thread_id"] = thread_id
+    _enriched["risk_level"] = _hitl_risk_level(str(_enriched.get("tool_name") or "")) or "low"
+    _enriched["timeout_s"] = 300
+    return _enriched
 
 
 class _DictModel(SimpleNamespace):
@@ -155,8 +278,12 @@ async def graph_stream_sse(
         # 避免「续跑确认」与「挂起/执行」竞态。
         resume_decision = await _pop_hitl_decision(thread_id)
         _resume_action = str((resume_decision or {}).get("action") or "").strip().lower()
-        mcp_hitl_decision: bool | None = True if _resume_action == "approve" else None
-        _suppress_mcp = _resume_action == "reject"
+        # CR-T11-B（契约对齐）：以 _classify_hitl_resume 单一词表归一 confirm|reject——
+        # confirm=批准执行（mcp_hitl_decision=True 放行写类工具），reject=拒绝执行（抑制 MCP）。
+        # 原实现认 "approve"，而契约/前端只发 "confirm" → admin 点确认后永不真执行（主链路断裂）。
+        _resume_kind, _resume_notice, _resume_deg = _classify_hitl_resume(_resume_action)
+        mcp_hitl_decision: bool | None = True if _resume_kind == "execute" else None
+        _suppress_mcp = _resume_kind == "rejected"
 
         # 0) start 帧（先建连先发，与旧路径一致）
         yield sse_line(SseEventType.START.value, {
@@ -197,13 +324,39 @@ async def graph_stream_sse(
 
             async def _hold_for_confirm(payload: dict) -> bool:
                 nonlocal held_hitl_payload
-                await _mark_hitl_pending(thread_id, payload)
-                held_hitl_payload = payload
+                # CR-T11-A（契约补全）：_enrich_hitl_pending_payload 把契约定死的五字段
+                # {thread_id, tool_name, args, risk_level, timeout_s} 补全，使 real 发出的
+                # pending_confirm 帧与 contract reshape-r-hitl.json 的 sse_event.payload
+                # 逐字段对齐——前端确认卡才能取到 thread_id 续流、risk_level 渲染风险级。
+                _enriched = _enrich_hitl_pending_payload(payload, thread_id)
+                await _mark_hitl_pending(thread_id, _enriched)
+                held_hitl_payload = _enriched
                 logger.info(
                     f"[graph_stream] 写类工具挂起（方案②）thread_id={thread_id}"
-                    f" tool={payload.get('tool_name')} role={payload.get('role')}"
+                    f" tool={_enriched.get('tool_name')} role={_enriched.get('role')}"
                 )
                 return True
+
+            # W-NEXT-CHATFLOW-001 Track A（CR-T11b-A 治本）：HITL confirm 续流期
+            # （mcp_hitl_decision=True 即对应 kind=="execute"）→ 主动从 Redis 读 pending_args
+            # 缓存 → 构造 pending_args_override（{tool_name: args}）→ 传给
+            # run_chat_tool_calls 优先覆盖 plan.args。
+            #   - 命中：续流不再依赖 LLM 续流 generate 节点工具调用决策；
+            #   - 未命中（首轮 / 无 HITL / args 全空）：传空 dict，启发式兜底仍生效（Track B）。
+            #   - reject / expired / Redis 不可达：均 fallback 不阻断主路径。
+            _pending_args_override: dict[str, dict] = {}
+            if mcp_hitl_decision is True:
+                _cached = await _peek_hitl_pending_args(thread_id)
+                if _cached and _cached.get("tool_name") and _cached.get("args"):
+                    _pending_args_override = {_cached["tool_name"]: _cached["args"]}
+                    logger.info(
+                        f"[graph_stream] pending_args 命中续流 thread_id={thread_id}"
+                        f" tool={_cached['tool_name']} keys={list(_cached['args'].keys())}"
+                    )
+                else:
+                    logger.info(
+                        f"[graph_stream] pending_args 未命中（fallback 启发式兜底）thread_id={thread_id}"
+                    )
 
             try:
                 return await run_chat_tool_calls(
@@ -213,6 +366,7 @@ async def graph_stream_sse(
                     use_mcp_flag=bool(req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
                     hitl_decision=mcp_hitl_decision,
                     on_write_class_pending=_hold_for_confirm,
+                    pending_args_override=(_pending_args_override or None),
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(f"[graph_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
@@ -335,7 +489,7 @@ async def graph_stream_sse(
             # （mcp_hitl_decision 据此在 MCP 预取前确定，避免竞态）。此处只判定
             # 「图 interrupt 挂起」与「流层挂起」两种承载：
             #   图 checkpoint 有 pending interrupt → Command(resume) 交给图续跑（旧 R11 路径）；
-            #   无图挂起 → 方案②流层承载：approve → 正常续跑（MCP 带 hitl_decision 批准执行）；
+            #   无图挂起 → 方案②流层承载：confirm → 正常续跑（MCP 带 hitl_decision 批准执行）；
             #                          reject → 拒绝上下文收束；其它 → 确认失效收束。
             resume_decision_for_graph: dict | None = None
             if resume_decision is not None:
@@ -343,7 +497,7 @@ async def graph_stream_sse(
                 # T8-C2 修复：Redis 有决策 ≠ 图仍挂起。若 checkpoint 已丢失/被其它实例消费/确认已超时，
                 # 图本身没有 pending interrupt，此时把 Command(resume=...) 丢进去只会静默按新会话跑完
                 # ——用户以为"确认执行了"，实际写类工具零执行且无任何提示（静默吞）。
-                # 先探明挂起态，无挂起 → 方案②分流（approve 正常续跑 / reject 明确收束），绝不假装续跑。
+                # 先探明挂起态，无挂起 → 方案②分流（confirm 正常续跑 / reject 明确收束），绝不假装续跑。
                 _probe_cfg = {"configurable": {"thread_id": thread_id}}
                 _has_pending = False
                 try:
@@ -353,16 +507,12 @@ async def graph_stream_sse(
                     logger.warning(f"[graph_stream] HITL 挂起态探测失败（按无挂起处置）: {type(exc).__name__}: {exc}")
                 if _has_pending:
                     resume_decision_for_graph = resume_decision
-                elif _resume_action == "reject":
-                    _notice = "已取消该高风险操作，工具未执行，也没有发生任何数据变更。"
-                    _deg = "hitl_rejected_no_pending"
-                elif _resume_action != "approve":
-                    _notice = "该确认已失效：待确认的操作已过期或不存在，本次未执行任何写操作。如需继续，请重新发起请求。"
-                    _deg = "hitl_confirm_expired_no_pending"
                 else:
-                    # 方案② approve：无图 interrupt，靠 mcp_hitl_decision=True 走 executor 批准执行
-                    _notice = None
-                    _deg = None
+                    # 方案②分流：kind=execute（confirm）→ 正常续跑（mcp_hitl_decision=True 已
+                    # 在顶部放行，写类工具经 executor 批准执行）；kind=rejected → 拒绝上下文收束；
+                    # kind=expired（防御）→ 确认失效收束。terminology 单一词表，杜绝口径漂移。
+                    _notice = _resume_notice
+                    _deg = _resume_deg
                 if _notice is not None:
                     logger.warning(
                         f"[graph_stream] HITL 决策无可续挂起（action={_resume_action or 'unknown'}）"
