@@ -28,6 +28,7 @@ from pymilvus import MilvusClient, DataType
 from loguru import logger
 
 from app.config import settings
+from app.knowledge.importer.embedder import is_blank_text  # VEC-LOCK：空文本过滤边界兜底
 from app.knowledge.models import KnowledgeChunk
 
 
@@ -355,6 +356,12 @@ def load_chunks(chunks: list[KnowledgeChunk], tenant_id: str = "_default") -> in
     # R03: 入库前统一改写 chunk_id 为全局唯一 canonical id（tenant + 内容 hash + seq）
     _assign_canonical_ids(chunks, tenant_id)
 
+    # VEC-LOCK：空文本/纯标点 chunk 过滤不入库（禁 '.' 占位污染；embed_node 已过滤，此处边界兜底）
+    chunks = [c for c in chunks if not is_blank_text(c.content)]
+    if not chunks:
+        logger.warning(f"load_chunks：全部 chunk 为空/纯标点，无可入库内容（tenant={tenant_id}）")
+        return 0
+
     # 确保 Collection 和 Partition 存在
     ensure_collection_exists()
     partition_name = ensure_partition_exists(tenant_id)
@@ -396,6 +403,12 @@ def load_chunks(chunks: list[KnowledgeChunk], tenant_id: str = "_default") -> in
                     internal_flag=chunk.extra.get("internal"),
                 )),
             }
+            # VEC-LOCK：入库元数据四字段（embed_node 写入 chunk.extra，供对账/机验）
+            # embedding_model（含 revision）/embed_precision/embed_normalized/embed_fallback
+            for _mf in ("embedding_model", "embed_precision", "embed_normalized", "embed_fallback"):
+                _mv = chunk.extra.get(_mf)
+                if _mv is not None:
+                    row[_mf] = _mv
 
             # 动态字段 (通用元数据)
             if chunk.tags:

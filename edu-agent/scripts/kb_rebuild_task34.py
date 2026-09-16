@@ -38,7 +38,8 @@ os.chdir(EDU_AGENT)  # noqa: E402
 
 from app.config import settings  # noqa: E402
 from app.knowledge.importer import loader  # noqa: E402
-from app.knowledge.importer.embedder import build_sparse_vector, encode_dense_batch  # noqa: E402
+from app.knowledge.importer import embedder  # noqa: E402
+from app.knowledge.importer.embedder import build_sparse_vector  # noqa: E402
 from app.knowledge.models import ContentType, KnowledgeChunk, Visibility  # noqa: E402
 
 HANDBOOK = EDU_AGENT.parent                      # EduAgent实施手册
@@ -388,20 +389,37 @@ def cmd_embed_load(resume: bool) -> None:
             print(f"[embed_load] 已入库查询失败（按全量处理）：{e}")
 
     todo = [c for c in chunks if c.chunk_id not in existing]
+    # VEC-LOCK：空文本/纯标点过滤（禁 '.' 占位污染；与 embed_node 同口径）
+    todo = [c for c in todo if not embedder.is_blank_text(c.content)]
     if not todo:
         print("[embed_load] 全部已入库，无需处理")
         return
     print(f"[embed_load] 待处理 {len(todo)} 条（EMBED_BATCH={EMBED_BATCH} LOAD_BATCH={LOAD_BATCH}）")
 
-    # dense（批 32）
+    # dense（批 32）—— VEC-LOCK 单一事实源 detailed，stamp 入库元数据 + sha256 门
     all_texts = [c.content for c in todo]
     all_dense: list[list[float]] = []
+    backends: set[str] = set()
+    last_result: embedder.DenseResult | None = None
     for i in range(0, len(all_texts), EMBED_BATCH):
         batch = all_texts[i:i + EMBED_BATCH]
-        all_dense.extend(encode_dense_batch(batch))
+        res = embedder.encode_dense_batch_detailed(batch)
+        backends.add(res.backend)
+        last_result = res
+        all_dense.extend(res.vectors)
         print(f"[embed_load] dense {min(i + EMBED_BATCH, len(all_texts))}/{len(all_texts)}", flush=True)
 
-    # sparse + 回填
+    if "sha256" in backends and not getattr(settings, "EMBED_ALLOW_FAKE_VECTOR", False):
+        raise SystemExit("[embed_load] 编码兜底为 sha256 伪向量，EMBED_ALLOW_FAKE_VECTOR=False → 拒绝入库")
+
+    # sparse + 回填 + VEC-LOCK 元数据
+    meta = {
+        "embedding_model": last_result.embedding_model if last_result else "unknown",
+        "embed_precision": last_result.precision if last_result else "unknown",
+        "embed_normalized": 1 if (last_result and last_result.normalized) else 0,
+    }
+    if last_result is not None and last_result.backend in ("cloud", "sha256"):
+        meta["embed_fallback"] = last_result.backend
     for idx, c in enumerate(todo):
         c.dense_vector = all_dense[idx]
         kw = list(dict.fromkeys([*(c.keywords or []), *(c.tags or [])]))
@@ -409,6 +427,7 @@ def cmd_embed_load(resume: bool) -> None:
         items = sorted(svec.items(), key=lambda kv: -kv[1])[:SPARSE_MAX]
         c.sparse_indices = [int(k) for k, _ in items]
         c.sparse_values = [float(v) for _, v in items]
+        c.extra.update(meta)
 
     # 入库（loader 200/批 upsert，chunk_id 幂等；tenant 公共知识 → _default）
     n = loader.load_chunks(todo, tenant_id="_default")

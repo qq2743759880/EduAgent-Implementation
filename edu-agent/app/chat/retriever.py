@@ -25,7 +25,7 @@ from app.database import get_neo4j_driver
 from app.core.db_resilience import DependencyUnavailableError, neo4j_run  # task-P1C Neo4j 断连熔断
 from app.knowledge.importer.embedder import (
     build_sparse_vector,
-    encode_dense_batch,
+    encode_dense_batch_detailed,  # VEC-LOCK：查询侧与入库侧同一编码器同参数（单一事实源）
     ensure_jieba_ready,
 )
 from app.knowledge.reranker import Reranker
@@ -210,11 +210,24 @@ def _milvus_hybrid_search_safe(
     _t_embed = _t_sparse = _t_search = _t_asm = 0.0
     try:
         ensure_jieba_ready()
-        # 稠密
+        # 稠密（VEC-LOCK：与入库侧同编码器同参数——单一事实源 encode_dense_batch_detailed）
         _t0 = time.perf_counter()
-        dense_vecs = encode_dense_batch([query])
+        embed_res = encode_dense_batch_detailed([query])
         _t_embed = time.perf_counter() - _t0
-        dense_vec = [float(x) for x in dense_vecs[0]]
+        dense_vec = [float(x) for x in embed_res.vectors[0]]
+        # VEC-LOCK：EMBED_BACKEND=cuda 时查询侧必须落在 BGE-M3 空间；若本次编码降级
+        # 到异向量空间（cloud/sha256），显式告警并在 degraded_reason 标注（禁静默混写）
+        if (
+            embed_res.backend != "bge_m3"
+            and str(getattr(settings, "EMBED_BACKEND", "")).lower() == "cuda"
+        ):
+            logger.warning(
+                f"[retriever] 查询编码降级 backend={embed_res.backend}"
+                f"（EMBED_BACKEND=cuda 期望 BGE-M3），与库内向量空间可能不一致 → 检索结果降级"
+            )
+            _query_embed_degrade = f"query_embed_fallback:{embed_res.backend}"
+        else:
+            _query_embed_degrade = None
         # 稀疏：build_sparse_vector 返回 {str(term_id): weight}，基于（HyDE 后的）contextual 文本生成
         # —— BM25 双路增益（GWT④：sparse 与入库端同样基于带上下文文本，双路互补召回）
         _t0 = time.perf_counter()
@@ -272,7 +285,8 @@ def _milvus_hybrid_search_safe(
                 (time.perf_counter() - _t_total) * 1000, _t_embed * 1000, _t_sparse * 1000,
                 _t_search * 1000, _t_asm * 1000, len(docs))
         )
-        return docs, None
+        # VEC-LOCK：查询编码降级（异向量空间）时在 degraded_reason 显式标注
+        return docs, (_query_embed_degrade if _query_embed_degrade else None)
     except Exception as e:
         reason = f"Milvus 检索跳过（{type(e).__name__}）"
         logger.warning(f"{reason}：{e}")

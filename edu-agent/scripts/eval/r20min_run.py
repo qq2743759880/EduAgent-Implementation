@@ -107,10 +107,25 @@ def _install_r03_precomputed_dense() -> dict:
             out.append(cache[t])
         return out
 
+    # VEC-LOCK：retriever 查询侧改为调用 encode_dense_batch_detailed（单一事实源），
+    # 预计算补丁须同步覆盖 detailed 入口，否则查询向量会被真实 BGE 重算（破坏 R03 显存约束）。
+    def _cached_encode_dense_batch_detailed(texts):
+        from app.knowledge.importer.embedder import DenseResult
+
+        return DenseResult(
+            vectors=_cached_encode_dense_batch(texts),
+            backend="bge_m3",
+            normalized=True,
+            precision="fp16",
+            embedding_model="r03-precomputed",
+            max_length=8192,
+        )
+
     # 两处绑定都要替换：函数内 `from ...embedder import encode_dense_batch` 在调用时
-    # 从模块属性重取；retriever.py:26 是模块加载期按名绑定，须改其本地引用。
+    # 从模块属性重取；retriever.py 是模块加载期按名绑定，须改其本地引用。
     _embedder_mod.encode_dense_batch = _cached_encode_dense_batch
-    chat_retriever.encode_dense_batch = _cached_encode_dense_batch
+    _embedder_mod.encode_dense_batch_detailed = _cached_encode_dense_batch_detailed
+    chat_retriever.encode_dense_batch_detailed = _cached_encode_dense_batch_detailed
     return cache
 
 
