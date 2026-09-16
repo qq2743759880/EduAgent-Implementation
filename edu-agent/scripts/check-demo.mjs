@@ -5,11 +5,13 @@
 //         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html + 前端形态判别(dev/prod,T5-C2)
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
 //         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,三分支语义)
-//         ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
-// 共 9 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
+// ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)  ⑩ 契约对账门 febe_contract_check.py
+// ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
+// 共 11 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // ---------- 配置(按演示机实际环境修改这里) ----------
 const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的克隆 docker.vmx";
@@ -132,6 +134,44 @@ function runCmd(cmd, cargs, timeoutMs = DOCKER_TIMEOUT_MS) {
           : out.split("\n")[0].slice(0, 120) || `退出码 ${code}`;
         reject(new Error(msg));
       } else resolve(out);
+    });
+  });
+}
+
+// ---------- 契约对账（FE-BE-CONTRACT 三方对账门）----------
+// 跑 edu-agent/scripts/eval/febe_contract_check.py，解析 [SUMMARY] 行判定：
+//   断点 >0  -> FAIL（前端调用了后端不存在的路由）
+//   待接/未冻结 >0 -> WARN（不阻断）
+//   exit 2 = 后端不可达（以④红项为准，此处降级为 WARN，避免重复误报）
+const FEBE_SCRIPT = fileURLToPath(new URL("../scripts/eval/febe_contract_check.py", import.meta.url));
+
+async function resolvePython() {
+  for (const c of ["python3", "python"]) {
+    try {
+      await runCmd(c, ["--version"], 5000);
+      return c;
+    } catch { /* try next */ }
+  }
+  // 末位兜底：本机托管 python（Git Bash 下 PATH 通常有，但保险起见）
+  const fallback = "C:\\Users\\Administrator\\.workbuddy\\binaries\\python\\versions\\3.13.12\\python.exe";
+  if (existsSync(fallback)) return fallback;
+  throw new Error("未找到 python 解释器（需 python3/python 在 PATH）");
+}
+
+function runPy(python, args) {
+  return new Promise((resolve, reject) => {
+    let stdout = "", stderr = "", settled = false;
+    const child = spawn(python, args, { windowsHide: true });
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; child.kill(); reject(new Error("契约对账超时(>60s)")); }
+    }, 60000);
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (e) => { if (!settled) { settled = true; clearTimeout(timer); reject(e); } });
+    child.on("close", (code) => {
+      if (settled) return;
+      settled = true; clearTimeout(timer);
+      resolve({ code, stdout, stderr });
     });
   });
 }
@@ -303,11 +343,47 @@ const debugCheck = Object.assign(
   { __fix: FIX.debug });
 await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支)`, debugCheck);
 
-// ⑨ 抽验页(C5-D2 扩清单):admin-users-refine-proto.html 单列第 9 项,
-// 不并入 ⑦ 核心故事线(核心页 8 个口径不变);FAIL 指引同前端。
+// ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
 await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object.assign(
   () => httpProbe(`${FRONTEND}/admin-users-refine-proto.html`),
   { __fix: FIX.frontend }));
+
+// ⑩ 契约对账（FE-BE-CONTRACT 三方对账门）：跑 febe_contract_check.py
+//   断点 >0 -> FAIL；待接/未冻结 >0 -> WARN（不阻断）；后端不可达(exit 2) -> WARN(以④为准)
+const contractGate = Object.assign(
+  async () => {
+    const py = await resolvePython();
+    const { code, stdout, stderr } = await runPy(py, [FEBE_SCRIPT]);
+    const summary = /\[SUMMARY\]\s*breakpoints=(\d+)\s+to_connect=(\d+)\s+unfrozen=(\d+)/.exec(stdout || "");
+    if (!summary) {
+      throw new Error(`未解析到 [SUMMARY]（exit=${code}）；stderr=${(stderr || "").slice(0, 200)}`);
+    }
+    const bp = +summary[1], tc = +summary[2], uf = +summary[3];
+    if (code === 2) {
+      const e = new Error(`后端不可达，契约对账跳过（以④红项为准）：断点=${bp} 待接=${tc} 未冻结=${uf}`);
+      e.__warn = true;
+      throw e;
+    }
+    if (bp > 0) {
+      throw new Error(`断点 ${bp} 条（前端调用了后端不存在的路由），见 febe_contract_check.py 输出`);
+    }
+    if (tc > 0 || uf > 0) {
+      const e = new Error(`待接 ${tc} / 未冻结 ${uf} 条（WARN，不阻断；详见 febe_contract_check.py 三类差异清单）`);
+      e.__warn = true;
+      throw e;
+    }
+    return `断点0 待接${tc} 未冻结${uf}`;
+  },
+  { __fix: (d) => `python edu-agent/scripts/eval/febe_contract_check.py 查看三类差异清单（断点红/待接·未冻结 WARN） [${d}]` });
+await check("⑩", `契约对账门 febe_contract_check.py（断点红/待接·未冻结 WARN）`, contractGate);
+
+// ⑪ VEC-LOCK：embed 一致性健康门（VEC-G5）——edu_knowledge 元数据全 = 锁定 BGE-M3 revision，
+//    无 fallback 混写/未归一化/空文本。走 venv python 探针（查 Milvus），PASS 才算绿。
+const VECLOCK_PROBE = new URL("../veclock_health_probe.py", import.meta.url).pathname;
+const EDU_PY = new URL("../../.venv/Scripts/python.exe", import.meta.url).pathname;
+await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.assign(
+  async () => runCmd(EDU_PY, [VECLOCK_PROBE], 60000),
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1

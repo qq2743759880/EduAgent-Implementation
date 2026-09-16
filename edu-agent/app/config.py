@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     MILVUS_DB: str = "default"
     MILVUS_COLLECTION: str = "edu_knowledge"
     MILVUS_SEARCH_TIMEOUT: float = 8.0    # Milvus 混合检索超时（秒），超时降级不拖死链路（P1-4）
+    # VEC-LOCK dim9：dense ANN 检索 nprobe（IVF_FLAT nlist=128 时 nprobe=32 与 FLAT 全等，
+    # 实测 nprobe=10 有 4/20 查询 top-10 重合度 <0.98 → 默认抬到 32，消除 ANN 召回缺口）
+    RAG_DENSE_NPROBE: int = 32
 
     # ============================================================
     # Neo4j 图谱数据库（P1 知识图谱 / P4 推荐 & 思维导图）

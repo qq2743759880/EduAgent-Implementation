@@ -532,7 +532,7 @@ def hybrid_search(
     dense_req = AnnSearchRequest(
         data=[dense_vec],
         anns_field="dense_vec",
-        param={"metric_type": "COSINE", "params": {"nprobe": 10}},
+        param={"metric_type": "COSINE", "params": {"nprobe": int(getattr(settings, "RAG_DENSE_NPROBE", 32))}},
         limit=top_k,
         expr=filter_expr,
     )

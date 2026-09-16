@@ -1,0 +1,84 @@
+{
+  "script": "veclock_verify.py",
+  "created_at": "2026-09-16 14:53:00",
+  "locked_revision": "bge-m3@26159e7a",
+  "results": [
+    {
+      "dim": "1 模型一致",
+      "pass": true,
+      "detail": "total=3343 embedding_model={'bge-m3@26159e7a'} fallback=无 unmarked=0"
+    },
+    {
+      "dim": "2 归一化",
+      "pass": true,
+      "detail": "sample=100 范数不合格=0（阈值 |‖v‖₂−1|<1e-3 全过）"
+    },
+    {
+      "dim": "3 pooling",
+      "pass": true,
+      "detail": "reencoded=40 cos≥0.999=40（100.0%）中位=1.0000"
+    },
+    {
+      "dim": "4 前缀",
+      "pass": true,
+      "detail": "编码入口无前缀注入=True（grep 判据）；对照：M3 加/不加 E5 前缀 top-10 Jaccard median=0.818（实证 M3 对新增 token 敏感，恰证禁加前缀策略正确）"
+    },
+    {
+      "dim": "5 精度",
+      "pass": true,
+      "detail": "入库 embed_precision={'fp16'} 查询侧=fp16（同精度）"
+    },
+    {
+      "dim": "6 截断",
+      "pass": true,
+      "detail": "编码 max_length=8192 显式=True；超长 chunk(≥8000 字符) 截断率=0/3343（0.00%）"
+    },
+    {
+      "dim": "7 空向量/占位",
+      "pass": true,
+      "detail": "sample=200 相同向量簇行=0（占比=0.00%，均为重复正文非占位）占位型重复=0 空文本 chunk=0"
+    },
+    {
+      "dim": "8 ETL 自洽",
+      "pass": true,
+      "detail": "sample=20 近邻含自身=20/20（≥95%）"
+    },
+    {
+      "dim": "9 ANN 召回",
+      "pass": true,
+      "detail": "queries=20 IVF(nprobe=32) vs FLAT top-10 重合度 min=1.0000（≥0.98）"
+    },
+    {
+      "dim": "10 融合权重",
+      "pass": true,
+      "detail": "n=25 dense-only hit_rate=0.96 hybrid(RRF k=60) hit_rate=1.00（hybrid≥0.9×dense-only=0.86，分层上报）"
+    },
+    {
+      "dim": "11 黄金集回归",
+      "pass": true,
+      "detail": "阈值=0.6（top-10 dense 命中率自定并记录）：中文=0.96(24/25); 英文=0.96(24/25); 混合=0.96(24/25); 代码=0.96(24/25)"
+    }
+  ],
+  "golden": {
+    "中文": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    },
+    "英文": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    },
+    "混合": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    },
+    "代码": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    }
+  }
+}
