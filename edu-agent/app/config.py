@@ -100,6 +100,16 @@ class Settings(BaseSettings):
     # 实测 nprobe=10 有 4/20 查询 top-10 重合度 <0.98 → 默认抬到 32，消除 ANN 召回缺口）
     RAG_DENSE_NPROBE: int = 32
 
+    # W-NEXT-INT-001B：classify_internal 内容语义判定可配置项（治本重写）。
+    #   INTERNAL_FILENAME_PATTERNS：来源文件名兜底正则；缺省由 internal_classifier 提供。
+    #   INTERNAL_KEYWORDS：5 桶关键词字典 {bucket: [(label, pattern, weight)]}；
+    #     留空用 DEFAULT_KEYWORD_BUCKETS（治本内建）。
+    #   INTERNAL_SCORE_THRESHOLD：内容打分阈值（>= 即标 internal=True）。
+    #   行为同 INTERNAL_KEYWORDS=[]：走默认桶；settings 注入空 dict = 禁用所有内容打分（仅文件名兜底）。
+    INTERNAL_FILENAME_PATTERNS: list = []         # list[str]；空 = 用 default
+    INTERNAL_KEYWORDS: dict = {}                 # dict[bucket_name, list[(label, pattern, weight)]]；空 = 用 default
+    INTERNAL_SCORE_THRESHOLD: float = 0.6
+
     # ============================================================
     # Neo4j 图谱数据库（P1 知识图谱 / P4 推荐 & 思维导图）
     # ============================================================

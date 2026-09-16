@@ -29,6 +29,10 @@ from loguru import logger
 
 from app.config import settings
 from app.knowledge.importer.embedder import is_blank_text  # VEC-LOCK：空文本过滤边界兜底
+from app.knowledge.importer.internal_classifier import (
+    classify_internal as _classify_internal_v2,
+    configure as _configure_internal_classifier,
+)
 from app.knowledge.models import KnowledgeChunk
 
 
@@ -50,9 +54,14 @@ COLLECTION_NAME = settings.MILVUS_COLLECTION
 #   3) 存量兜底：存量行**没有** internal 字段（回填需人工确认，未执行）→ 结果侧按
 #      同一套特征二次剔除（classify_internal），保证存量内部文档同样对 student 不可见。
 #
+# W-NEXT-INT-001B（治本）：classify_internal 改由 `app.knowledge.importer.internal_classifier`
+# 提供，文件名兜底（DEFAULT_FILENAME_PATTERNS）+ 内容 5 桶关键词打分（DEFAULT_KEYWORD_BUCKETS，
+# 阈值 DEFAULT_SCORE_THRESHOLD=0.6）。settings 可通过 INTERNAL_KEYWORDS / INTERNAL_SCORE_THRESHOLD
+# / INTERNAL_FILENAME_PATTERNS 覆盖。
+#
 # 特征来源可配置（settings 覆盖，缺省即下方常量）：
-#   RAG_INTERNAL_SOURCE_PATTERNS  —— 来源路径特征（正则，作用于 source_file）
-#   RAG_INTERNAL_CONTENT_PATTERNS —— 正文特征（正则，作用于 content）
+#   RAG_INTERNAL_SOURCE_PATTERNS  —— 来源路径特征（正则，作用于 source_file，向后兼容）
+#   RAG_INTERNAL_CONTENT_PATTERNS —— 正文特征（正则，作用于 content，向后兼容）
 # ============================================================
 INTERNAL_FIELD = "internal"
 # Milvus dynamic field 过滤表达式（存量行无该字段时同样命中 → 不会误伤业务文档，已实测）
@@ -111,22 +120,59 @@ def classify_internal(
     *,
     internal_flag: bool | None = None,
 ) -> bool:
-    """判定一个文档/分片是否属于「内部工程/运维文档」。
+    """判定一个文档/分片是否属于「内部工程/运维文档」（W-NEXT-INT-001B 治本重写）。
+
+    实现在 `app.knowledge.importer.internal_classifier`：
+    - 层 1 文件名兜底（hex 临时名 + .ai-hub/ + scripts/ + test-reports/ + 治本新增 internal_spec/audit_*）
+    - 层 2 内容关键词 5 桶（任务/脚本/审计合规/DB 表结构/内部流程）
+    - 层 3 启发式分数（>= INTERNAL_SCORE_THRESHOLD 即 internal=True）
 
     - `internal_flag` 显式给值（导入方 metadata / 人工指定）时以其为准；
-    - 否则按来源路径特征 + 正文强特征判定。
+    - 否则按文件名兜底 + 内容语义判定（见 internal_classifier.classify_with_detail）。
     """
-    if internal_flag is not None:
-        return bool(internal_flag)
-    sf = str(source_file or "")
-    body = str(content or "")
-    for p in _internal_patterns("RAG_INTERNAL_SOURCE_PATTERNS", DEFAULT_INTERNAL_SOURCE_PATTERNS):
-        if p.search(sf):
-            return True
-    for p in _internal_patterns("RAG_INTERNAL_CONTENT_PATTERNS", DEFAULT_INTERNAL_CONTENT_PATTERNS):
-        if p.search(body):
-            return True
-    return False
+    return _classify_internal_v2(
+        source_file, content, internal_flag=internal_flag
+    )
+
+
+def _apply_settings_to_internal_classifier() -> None:
+    """把 settings 里的 INTERNAL_* 配置注入 internal_classifier（一次性 import 期钩子）。"""
+    from app.knowledge.importer import internal_classifier as _ic
+    filename_pats = getattr(settings, "INTERNAL_FILENAME_PATTERNS", None) or None
+    keywords = getattr(settings, "INTERNAL_KEYWORDS", None) or None
+    threshold = getattr(settings, "INTERNAL_SCORE_THRESHOLD", None)
+    # tuple[str, ...] / dict / float；空值代表「不覆盖默认」
+    kwargs: dict = {}
+    if filename_pats:
+        kwargs["filename_patterns"] = tuple(filename_pats)
+    if keywords:
+        # 兼容 list[(label, pattern, weight)] 与 settings dict 形态
+        compiled: dict[str, list[tuple[str, re.Pattern[str], float]]] = {}
+        for bname, rules in keywords.items():
+            compiled_rules: list[tuple[str, re.Pattern[str], float]] = []
+            for r in rules or []:
+                # r 形态：(label, pattern, weight) | {"label": ..., "pattern": ..., "weight": ...}
+                if isinstance(r, dict):
+                    label = r.get("label", "")
+                    pattern = r.get("pattern", "")
+                    weight = float(r.get("weight", 1.0))
+                else:
+                    label, pattern, weight = r[0], r[1], float(r[2] if len(r) > 2 else 1.0)
+                compiled_rules.append((label, re.compile(pattern, re.IGNORECASE), weight))
+            compiled[bname] = compiled_rules
+        kwargs["keyword_buckets"] = compiled
+    if threshold is not None:
+        kwargs["score_threshold"] = float(threshold)
+    if kwargs:
+        _ic.configure(**kwargs)
+
+
+# import 期一次性注入 settings（settings 已加载 pydantic env）
+_apply_settings_to_internal_classifier()
+
+
+# 兼容别名：保留旧名（外部脚本/老测试可能直接 import）
+_INTERNAL_KEYWORDS_LEGACY: tuple[str, ...] = DEFAULT_INTERNAL_CONTENT_PATTERNS
 
 
 def role_allows_internal(role) -> bool:
