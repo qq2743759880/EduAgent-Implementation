@@ -74,6 +74,34 @@ _CAPABILITY_ROWS: list[tuple] = [
     #    （挡「executor 把 can_use_tool 重命名但 gate_tool_call 改了实现」的失接）
     ("permgate_can_use_tool_indirect_called", "can_use_tool",
      "app/mcp/executor.py", "app/ai/permission_gate.py", "can_use_tool_indirect"),
+    # ---- W-NEXT-MCP-003（P0-① 二次补救）：扩 5 行跨权限门对账，达标 checked=17 ----
+    # ⑥ admin-only 工具清单结构存在：permission_gate.py 内含 _CLASS_ALLOWED_ROLES["admin_write"] 类别
+    #    的允许角色定义（即"admin-only"白名单结构）—— 挡"声称有 admin-only 工具但清单不存在"虚标。
+    ("permission_gate_admin_only_tools_exist", "_CLASS_ALLOWED_ROLES",
+     "app/ai/permission_gate.py", "app/ai/permission_gate.py", "grep"),
+    # ⑦ chat 路径真用 classify_tool_intent 判定 student/manager 越权：tool_calling.py 的
+    #    run_chat_tool_calls 函数体内含 is_write_class( 直调（call 形态），且 AST 解析
+    #    permission_gate.is_write_class 函数体必须真调 classify_tool_intent —— 挡
+    #    「is_write_class 改实现不走契约意图」的失接。
+    ("permission_gate_classify_tool_intent", "is_write_class",
+     "app/chat/tool_calling.py", "app/ai/permission_gate.py", "is_write_class_chain"),
+    # ⑧ tool_calling 真用 can_use_tool 拒绝越权：tool_calling.py 的 run_chat_tool_calls
+    #    函数体内含 gate_tool_call( 直调（call 形态），且 AST 解析 permission_gate.gate_tool_call
+    #    函数体必须真调 can_use_tool —— 挡「流式路径绕过 can_use_tool」的失接（HITL-FIX 子 agent 提）。
+    ("tool_calling_can_use_tool_indirect_called", "gate_tool_call",
+     "app/chat/tool_calling.py", "app/ai/permission_gate.py", "gate_tool_call_chain"),
+    # ⑨ executor 调 build_denied_envelope 输出 ACI 信封（hitl fix 子 agent P0 关联）：
+    #    与 W-NEXT-MCP-002 permgate_build_denied_envelope_called 等价的「chat 路径」覆盖 ——
+    #    tool_calling.py run_chat_tool_calls 函数体内含 build_denied_envelope( 真调；
+    #    同时 AST 解析 permission_gate.build_denied_envelope 函数体返回 dict（三字段信封）。
+    ("tool_calling_uses_build_denied_envelope", "build_denied_envelope",
+     "app/chat/tool_calling.py", "app/ai/permission_gate.py", "build_denied_envelope_chain"),
+    # ⑩ permission_gate 在 chat 工具调用路径上被真接：tool_calling.py run_chat_tool_calls
+    #    函数体内至少有一处 permission_gate 符号（is_write_class / gate_tool_call /
+    #    build_denied_envelope / resolve_role）的真调 —— 挡"权限门做在错误位置"
+    #    （如有人把权限门判定写在了 generator.py 而绕过 tool_calling 主路径）。
+    ("permission_gate_in_tool_calling_module", "permission_gate",
+     "app/chat/tool_calling.py", "app/ai/permission_gate.py", "permission_gate_in_run"),
 ]
 
 
@@ -141,6 +169,154 @@ def _ast_can_use_tool_in_gate_tool_call(def_src: str) -> bool:
     return False
 
 
+def _ast_classify_tool_intent_in_is_write_class(def_src: str) -> bool:
+    """AST 解析 permission_gate.py：校验 classify_tool_intent 是否在 is_write_class 函数体内被真调用。
+    is_write_class 不直调 classify_tool（那是 can_use_tool 用）——它走 classify_tool_intent（契约意图），
+    保证契约挂起工具也能正确判定为写类。挡「is_write_class 改实现不再走契约意图」的失接。
+    """
+    import ast
+    try:
+        tree = ast.parse(def_src)
+    except SyntaxError:
+        return False
+    func_names = {
+        n.name: n
+        for n in tree.body
+        if isinstance(n, ast.FunctionDef)
+    }
+    if "is_write_class" not in func_names or "classify_tool_intent" not in func_names:
+        return False
+    iwc = func_names["is_write_class"]
+    for sub in ast.walk(iwc):
+        if isinstance(sub, ast.Name) and sub.id == "classify_tool_intent":
+            return True
+        if isinstance(sub, ast.Call):
+            func = sub.func
+            if isinstance(func, ast.Name) and func.id == "classify_tool_intent":
+                return True
+            if isinstance(func, ast.Attribute) and func.attr == "classify_tool_intent":
+                return True
+    return False
+
+
+def _ast_can_use_tool_in_tool_calling_run(caller_src: str, def_src: str) -> bool:
+    """AST 解析 tool_calling.py：校验 run_chat_tool_calls 函数体真调 gate_tool_call，
+    且 permission_gate.gate_tool_call 真调 can_use_tool（chat 路径间接链路）。"""
+    import ast
+    # 1) tool_calling.py 有 run_chat_tool_calls 函数 + 函数体内真调 gate_tool_call
+    try:
+        ctree = ast.parse(caller_src)
+    except SyntaxError:
+        return False
+    run_fn = None
+    for n in ctree.body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "run_chat_tool_calls":
+            run_fn = n
+            break
+    if run_fn is None:
+        return False
+    run_calls_gate_tool_call = False
+    for sub in ast.walk(run_fn):
+        if isinstance(sub, ast.Call):
+            func = sub.func
+            if isinstance(func, ast.Name) and func.id == "gate_tool_call":
+                run_calls_gate_tool_call = True
+                break
+            if isinstance(func, ast.Attribute) and func.attr == "gate_tool_call":
+                run_calls_gate_tool_call = True
+                break
+    if not run_calls_gate_tool_call:
+        return False
+    # 2) permission_gate.gate_tool_call 真调 can_use_tool（复用 W-NEXT-MCP-002 探测器）
+    return _ast_can_use_tool_in_gate_tool_call(def_src)
+
+
+def _ast_build_denied_envelope_in_tool_calling_run(caller_src: str, def_src: str) -> bool:
+    """校验 chat 路径真调 build_denied_envelope 输出 ACI 信封（HITL-FIX 子 agent P0）。
+
+    两段证据：
+      ① tool_calling.py run_chat_tool_calls 函数体内真调 build_denied_envelope( —— 产出信封；
+      ② permission_gate.build_denied_envelope 函数体返回 dict（ACI 信封三字段：code/message/tool_name 或 action_hint）—— 形态正确。
+    """
+    import ast
+    # ①
+    try:
+        ctree = ast.parse(caller_src)
+    except SyntaxError:
+        return False
+    run_fn = None
+    for n in ctree.body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "run_chat_tool_calls":
+            run_fn = n
+            break
+    if run_fn is None:
+        return False
+    found_call = False
+    for sub in ast.walk(run_fn):
+        if isinstance(sub, ast.Call):
+            func = sub.func
+            if isinstance(func, ast.Name) and func.id == "build_denied_envelope":
+                found_call = True
+                break
+            if isinstance(func, ast.Attribute) and func.attr == "build_denied_envelope":
+                found_call = True
+                break
+    if not found_call:
+        return False
+    # ② permission_gate.build_denied_envelope 函数体含 dict 字面量返回（含 code 等 ACI 字段）
+    try:
+        dtree = ast.parse(def_src)
+    except SyntaxError:
+        return False
+    bde_fn = None
+    for n in dtree.body:
+        if isinstance(n, ast.FunctionDef) and n.name == "build_denied_envelope":
+            bde_fn = n
+            break
+    if bde_fn is None:
+        return False
+    # 函数体内找 dict literal Return 或赋值 —— 含至少一个 'code' 字符串 key 即视为 ACI 信封形态
+    for sub in ast.walk(bde_fn):
+        if isinstance(sub, ast.Dict):
+            for k in sub.keys:
+                if isinstance(k, ast.Constant) and getattr(k, "value", None) == "code":
+                    return True
+        if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Dict):
+            for k in sub.value.keys:
+                if isinstance(k, ast.Constant) and getattr(k, "value", None) == "code":
+                    return True
+    return False
+
+
+def _ast_permission_gate_in_tool_calling_run(caller_src: str) -> bool:
+    """校验 permission_gate 在 tool_calling.py 工具调用路径上被真接（防"权限门做在错误位置"）。
+
+    要求 tool_calling.py run_chat_tool_calls 函数体里至少真调 1 个 permission_gate 符号
+    （is_write_class / gate_tool_call / build_denied_envelope / resolve_role 中的任一）。
+    """
+    import ast
+    _PG_SYMBOLS = ("is_write_class", "gate_tool_call", "build_denied_envelope", "resolve_role")
+    try:
+        ctree = ast.parse(caller_src)
+    except SyntaxError:
+        return False
+    run_fn = None
+    for n in ctree.body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "run_chat_tool_calls":
+            run_fn = n
+            break
+    if run_fn is None:
+        return False
+    for sub in ast.walk(run_fn):
+        if isinstance(sub, ast.Call):
+            func = sub.func
+            if isinstance(func, ast.Name) and func.id in _PG_SYMBOLS:
+                return True
+            if isinstance(func, ast.Attribute) and func.attr in _PG_SYMBOLS:
+                return True
+    return False
+
+
 def audit_mcp_capability(*, rows=None) -> dict:
     """对账声称能力 vs 生产接线实况。
 
@@ -188,6 +364,44 @@ def audit_mcp_capability(*, rows=None) -> dict:
             if not _ast_can_use_tool_in_gate_tool_call(def_src):
                 cross_module_virtual.append(
                     f"{cap_id}: gate_tool_call 函数体未真调 can_use_tool（间接路径断裂）"
+                )
+        elif mode == "is_write_class_chain":
+            # W-NEXT-MCP-003：chat 路径真用 classify_tool_intent 判定 student/manager 越权。
+            #   路径 = tool_calling.py 直调 is_write_class( → permission_gate.is_write_class
+            #   函数体真调 classify_tool_intent（保证契约挂起工具也能命中写类）
+            cleaned = _strip_comments(caller_src)
+            caller_calls = (symbol + "(") in cleaned
+            if not caller_calls:
+                cross_module_virtual.append(
+                    f"{cap_id}: 跨模块 import 但 {caller} 函数体未真调 {symbol}(（仅 import 失接）"
+                )
+            elif not _ast_classify_tool_intent_in_is_write_class(def_src):
+                cross_module_virtual.append(
+                    f"{cap_id}: is_write_class 函数体未真调 classify_tool_intent（chat 路径契约意图判定断裂）"
+                )
+        elif mode == "gate_tool_call_chain":
+            # W-NEXT-MCP-003：tool_calling 真用 can_use_tool 拒绝越权（HITL-FIX 子 agent P0）。
+            #   tool_calling.run_chat_tool_calls 直调 gate_tool_call( → permission_gate.gate_tool_call
+            #   内部真调 can_use_tool（间接链路）。
+            if not _ast_can_use_tool_in_tool_calling_run(caller_src, def_src):
+                cross_module_virtual.append(
+                    f"{cap_id}: chat 路径 gate_tool_call → can_use_tool 间接链路断裂"
+                    "（run_chat_tool_calls 未真调或 gate_tool_call 未真调 can_use_tool）"
+                )
+        elif mode == "build_denied_envelope_chain":
+            # W-NEXT-MCP-003：tool_calling 真调 build_denied_envelope 输出 ACI 信封
+            #   + permission_gate.build_denied_envelope 返回 dict 含 code（ACI 信封形态）。
+            if not _ast_build_denied_envelope_in_tool_calling_run(caller_src, def_src):
+                cross_module_virtual.append(
+                    f"{cap_id}: chat 路径 build_denied_envelope 调用或 ACI 信封形态异常"
+                    "（run_chat_tool_calls 未真调或 build_denied_envelope 返回值不含 code 字段）"
+                )
+        elif mode == "permission_gate_in_run":
+            # W-NEXT-MCP-003：permission_gate 在 chat 工具调用路径上被真接（防"权限门做在错误位置"）
+            if not _ast_permission_gate_in_tool_calling_run(caller_src):
+                cross_module_virtual.append(
+                    f"{cap_id}: tool_calling.run_chat_tool_calls 函数体未真调任一 permission_gate 符号"
+                    "（权限门做在错误位置 / 绕过 tool_calling 主路径）"
                 )
         else:
             raise ValueError(f"未知校验模式: {mode!r}")
