@@ -239,7 +239,16 @@ class MemoryWriteQueue:
         return ok
 
     async def _fetch_one(self, redis_timeout: int = 2, wait_timeout: float = 3.0) -> dict[str, Any] | None:
-        """取单：Redis BRPOP 优先，空/故障退内存队列；返回 None=本轮无单。毒消息抛 ValueError。"""
+        """取单：Redis BRPOP 优先，空/故障退内存队列；返回 None=本轮无单。毒消息抛 ValueError。
+
+        W-NEXT-LIFECYCLE-001（2026-09-17）：
+        - shutdown 阶段 asyncio.CancelledError 从外层传入时，必须让消费循环看见并优雅退出；
+        - Python 3.11+ asyncio.CancelledError **不是** Exception 子类，except Exception 无法捕获，
+          会穿透 _consume_loop → stop_consumer → lifespan → uvicorn 报
+          "Application shutdown failed"，并把栈直接 dump 到日志（uvicorn 0.52 已知行为）。
+        - 修复：显式 try/except BaseException，把 CancelledError 标记为「优雅退出」并重新 raise；
+          _consume_loop 顶层的 while self._running 检视 + stop_consumer 的捕获共同保证无 traceback。
+        """
         item: dict[str, Any] | None = None
         # 1) Redis 优先
         raw = None
@@ -247,13 +256,26 @@ class MemoryWriteQueue:
             from app.database import get_redis
 
             r = get_redis()
-            raw = await asyncio.wait_for(
-                r.brpop(self._queue_key, timeout=redis_timeout), timeout=wait_timeout
-            )
-        except asyncio.TimeoutError:
-            pass  # 轮询间隔无任务
-        except Exception:
-            pass  # Redis 故障 → 走内存队列兜底
+            # asyncio.shield 防止 cancel 直击 BRPOP 内部状态机；
+            # shield 在 cancel 到达时让内层 task 继续走完/抛 CancelledError 时再统一在外部重新 raise。
+            try:
+                raw = await asyncio.shield(
+                    asyncio.wait_for(
+                        r.brpop(self._queue_key, timeout=redis_timeout),
+                        timeout=wait_timeout,
+                    )
+                )
+            except asyncio.CancelledError:
+                # shutdown 阶段被 cancel → 重新 raise 让 _consume_loop/stop_consumer 看见，
+                # 由它们做最终清理（不打 traceback）。
+                raise
+            except asyncio.TimeoutError:
+                pass  # 轮询间隔无任务
+            except Exception:
+                pass  # Redis 故障 → 走内存队列兜底
+        except asyncio.CancelledError:
+            # 透传 CancelledError，让 _consume_loop 顶层识别为 shutdown 信号
+            raise
         if raw is not None:
             try:
                 item = json.loads(raw[1])
@@ -271,9 +293,15 @@ class MemoryWriteQueue:
         return item
 
     async def _consume_loop(self) -> None:
+        # W-NEXT-LIFECYCLE-001：显式处理 CancelledError，让 shutdown 阶段不冒泡 traceback。
         while self._running:
             try:
                 item = await self._fetch_one()
+            except asyncio.CancelledError:
+                # shutdown 信号：清零 running 标记后退出循环，让外层 stop_consumer 收尾
+                logger.info("[Memory:queue] 消费循环收到 shutdown 信号，优雅退出")
+                self._running = False
+                return
             except ValueError:
                 continue  # 毒消息已计数丢弃
             except Exception as exc:
@@ -299,15 +327,47 @@ class MemoryWriteQueue:
         self._running = True
         self._consumer = asyncio.get_running_loop().create_task(self._consume_loop())
 
-    async def stop_consumer(self) -> None:
+    async def stop_consumer(self, timeout: float = 5.0) -> None:
+        """停止消费循环。
+
+        W-NEXT-LIFECYCLE-001（2026-09-17）：
+        - 先翻 _running=False，让 while 循环在下一次 _fetch_one 之前或空转节流时自然退出；
+        - 再 cancel 兜底（处理阻塞在 wait_for/BRPOP 上的情况）；
+        - 用 asyncio.wait_for 套 await 消费 task，**显式 except BaseException**
+          捕 CancelledError（Python 3.11+ 不再是 Exception 子类，uvicorn 已知问题）；
+        - 超时未退则强制 cancel + 等待一次，**严禁让外层看到未处理 CancelledError**
+          （否则 uvicorn 会以 exit 3 + "Application shutdown failed" + 完整 traceback 结束）。
+
+        Args:
+            timeout: 最长等待秒数。默认 5s，lifespan 可传入更长（如 8s）。
+        """
         self._running = False
-        if self._consumer is not None:
-            self._consumer.cancel()
-            try:
-                await self._consumer
-            except Exception:
-                pass
+        consumer = self._consumer
+        if consumer is None:
+            return
+        # 优先让循环自然退出（_running 已翻 False，下一轮 _fetch_one 抛 CancelledError 之前
+        # 会跳出 while）。给一个短窗口等自然结束。
+        try:
+            await asyncio.wait_for(asyncio.shield(consumer), timeout=min(timeout, 2.0))
             self._consumer = None
+            return
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass
+        except Exception as exc:
+            logger.warning(f"[Memory:queue] stop_consumer 自然退出异常（忽略继续）：{exc}")
+        # 自然退出超时 → 强制 cancel + wait，并捕 BaseException 防 traceback 冒泡
+        consumer.cancel()
+        try:
+            # 二次 shield + wait_for：即使外层 cancel 透进来，也保证我们能拿到 consumer 完成态
+            await asyncio.wait_for(asyncio.shield(consumer), timeout=timeout)
+        except asyncio.CancelledError:
+            # 外层又来一次 cancel（典型 lifespan 退出阶段），吞掉不再 raise
+            logger.info("[Memory:queue] stop_consumer 二次 cancel 已吞（无 traceback）")
+        except asyncio.TimeoutError:
+            logger.warning("[Memory:queue] stop_consumer 强 cancel 后仍超时，放弃等待 task 结束")
+        except Exception as exc:
+            logger.warning(f"[Memory:queue] stop_consumer 收尾异常（忽略）：{exc}")
+        self._consumer = None
 
     # --- 测试便利 ---
     async def pump_once(self) -> bool:

@@ -7,7 +7,9 @@
 //         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,三分支语义)
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)  ⑩ 契约对账门 febe_contract_check.py
 // ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
-// 共 11 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
+// ⑫ HITL 真实性  ⑬ MCP 三态门  ⑭ 内部可见性  ⑮ Redis 端口对账  ⑯ lifecycle 健壮性
+// ⑰ MCP 跨权限门对账（chat 路径真接 4 个 API + AST 链）
+// 共 17 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -500,6 +502,56 @@ await check("⑮", `Redis 部署对账(.env REDIS_PORT vs docker 宿主端口)`,
     return `.env=${j.env_port} docker=${j.docker_port}（容器 ${j.container}, 容器内 ${j.container_internal_port}）`;
   },
   { __fix: (d) => `cd edu-agent && python scripts\\eval\\redis_port_check.py 排查；详见 deploy/README.md §1.1 [${d}]` }));
+
+// ⑯ W-NEXT-LIFECYCLE-001「8000 lifecycle 健壮性」门 —— 修复了 uvicorn shutdown 阶段
+//    asyncio.CancelledError 在 queue._fetch_one/stop_consumer 的竞态透传（uvicorn 0.52 已知
+//    行为：报 "Application shutdown failed" + 完整 traceback，进程 exit 3）。
+//    探针：edu-agent/scripts/_lifecycle_real_verify.py（Python subprocess + CTRL_BREAK_EVENT
+//    /SIGTERM 模拟 SIGTERM），跑 5 轮：每轮 start < 30s + /health 200 + 优雅 stop < 10s + 
+//    日志 0 Traceback / 0 CancelledError / 0 "Application shutdown failed"。
+//    退出码：0=PASS，1=FAIL。env_blocked（后端/DB 不可达）→ WARN 不阻断。
+const LIFECYCLE_PROBE = fileURLToPath(new URL("../scripts/_lifecycle_real_verify.py", import.meta.url));
+await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError traceback)`, Object.assign(
+  async () => {
+    const { code, stdout, stderr } = await runPy(EDU_PY, [LIFECYCLE_PROBE, "5"], 300000);
+    const m = /\[LIFECYCLE\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      throw new Error(`探针未输出 [LIFECYCLE]（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+    }
+    const j = JSON.parse(m[1]);
+    if (j.env_blocked) {
+      const e = new Error(`环境阻塞（后端/依赖不可达）: ${j.detail || ""}`);
+      e.__warn = true; throw e;
+    }
+    if (!j.pass) {
+      throw new Error(`lifecycle 失败: ${j.detail || "5 轮中存在 start>30s / stop>10s / traceback>0 / CancelledError>0 / 'shutdown failed'>0"}`);
+    }
+    return `5 轮 start ${j.avg_start_ms}ms / stop ${j.avg_stop_ms}ms / 0 traceback / 0 CancelledError`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\_lifecycle_real_verify.py 5 复跑；如失败查 logs/lifecycle_real_*.log [${d}]` }));
+
+// ⑰ W-NEXT-MCP-003「MCP 跨权限门对账」健康门——audit_mcp_capability checked=17 +
+//    5 个新对账行 + chat 路径真接 permission_gate 4 个 API + JSON serializable + AST 真接模式 ≥4。
+//    纯离线探针，不依赖 8000/DB——只走 audit 函数与 AST 解析源码；FAIL 时阻断 exit。
+//    退出码：0=PASS（全绿）；1=FAIL（代码缺陷：行缺失/未真接/返回值形态异常）。
+const CROSSPERM_PROBE = new URL("../scripts/eval/mcp_cross_perm_gate_probe.py", import.meta.url).pathname;
+await check("⑰", `MCP 跨权限门对账(audit checked=17 + 5 新对账行 + chat AST 链 + JSON serializable)`, Object.assign(
+  async () => {
+    const { code, stdout } = await runPy(EDU_PY, [CROSSPERM_PROBE], 30000);
+    const m = /\[CROSSPERM\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      throw new Error(`探针未输出 [CROSSPERM]（exit=${code}）: ${(stdout || "").slice(0, 200)}`);
+    }
+    const j = JSON.parse(m[1]);
+    if (!j.audit_ok) throw new Error(`审计未通过: ${j.detail || ""}`);
+    if (j.audit_checked < 17) throw new Error(`审计 checked 不足 17，实测 ${j.audit_checked}`);
+    if (!j.five_rows_present) throw new Error(`5 个新对账行缺失: ${j.detail || ""}`);
+    if (!j.chat_path_connected) throw new Error(`chat 路径 AST 链不全: ${j.detail || ""}`);
+    if (!j.json_serializable) throw new Error(`audit 返回非 JSON serializable: ${j.detail || ""}`);
+    if ((j.ast_modes_count || 0) < 4) throw new Error(`AST 真接模式不足 ${j.ast_modes_count}/5（≥4）`);
+    return `checked=${j.audit_checked} 5行✔ chat链✔ JSON✔ AST真接${j.ast_modes_count}/5`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_cross_perm_gate_probe.py 排查 [${d}]` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1

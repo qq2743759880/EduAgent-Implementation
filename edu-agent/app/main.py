@@ -199,11 +199,21 @@ async def lifespan(app: FastAPI):
     yield
 
     # ── 关闭阶段 ──
-    # R01：先停记忆消费者（停止取新单 + 取消 Dream/HITL 后台循环），再关存储连接，
+    # R01 + W-NEXT-LIFECYCLE-001：先停记忆消费者（停止取新单 + 取消 Dream/HITL 后台循环），再关存储连接，
     # 避免关闭途中 worker 取单访问已释放的 MySQL/Redis。
+    # 8000 死循环根治：queue.stop_consumer 内已捕 BaseException + timeout shield，
+    # 这里再裹一层 asyncio.wait_for 确保整个 stop 阶段在 10s 内完成，
+    # 不让外层（uvicorn Server.handle_exit）的 cancel 把 CancelledError 透到日志造成
+    # "Application shutdown failed" + traceback dump。
     try:
         from app.ai.memory.service import stop_memory_worker
-        await stop_memory_worker()
+        # 9s 上限：留 1s 余量给 lifespan 后续的 storage close + uvicorn 退出阶段。
+        await asyncio.wait_for(stop_memory_worker(timeout=8.0), timeout=9.0)
+    except asyncio.CancelledError:
+        # lifespan 阶段被 uvicorn SIGTERM 触发取消 → 吞掉，让 8000 干净退出
+        logger.info("[Lifespan] stop_memory_worker 收到 shutdown cancel（已吞，无 traceback）")
+    except asyncio.TimeoutError:
+        logger.warning("[Lifespan] stop_memory_worker 超时（已强制退出，继续关存储）")
     except Exception as e:
         logger.warning(f"记忆 worker 停止异常（忽略继续关闭）: {type(e).__name__}: {e}")
     if hitl_scan_task is not None:

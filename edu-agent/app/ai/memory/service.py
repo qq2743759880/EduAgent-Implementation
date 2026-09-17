@@ -101,18 +101,47 @@ async def start_memory_worker() -> None:
     logger.info("[Memory] 记忆写队列消费者已启动")
 
 
-async def stop_memory_worker() -> None:
+async def stop_memory_worker(timeout: float = 8.0) -> None:
+    """W-NEXT-LIFECYCLE-001：优雅停止后台消费者 + Dream/HITL sweep。
+
+    全部异常捕 BaseException（不仅 Exception），防止 lifespan 阶段 asyncio.CancelledError
+    透传到 uvicorn 导致 "Application shutdown failed" + 完整 traceback（uvicorn 0.52 已知问题）。
+
+    Args:
+        timeout: queue.stop_consumer 整体超时（默认 8s；lifespan stop_memory_worker 阶段目标 10s 内完成）。
+    """
     global _worker_started, _dream_scheduler_task, _hitl_sweep_task
     if not _worker_started:
         return
     queue = await get_memory_queue()
-    await queue.stop_consumer()
+    try:
+        # queue.stop_consumer 内部已捕 BaseException + timeout shield，这里再裹一层防 cancel 直击
+        await asyncio.wait_for(asyncio.shield(queue.stop_consumer(timeout=timeout)), timeout=timeout + 1.0)
+    except asyncio.CancelledError:
+        # lifespan shutdown 阶段被外层（uvicorn Server.handle_exit）cancel → 吞掉
+        logger.info("[Memory] stop_consumer 收到 lifespan cancel（已吞，无 traceback）")
+    except asyncio.TimeoutError:
+        logger.warning("[Memory] stop_consumer 超时未结束（视为完成，继续清理后续任务）")
+    except Exception as exc:
+        logger.warning(f"[Memory] stop_consumer 异常（忽略继续清理）：{type(exc).__name__}: {exc}")
     if _dream_scheduler_task is not None:
-        _dream_scheduler_task.cancel()
-        _dream_scheduler_task = None
+        try:
+            _dream_scheduler_task.cancel()
+            try:
+                await asyncio.wait_for(asyncio.shield(_dream_scheduler_task), timeout=1.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+                pass
+        finally:
+            _dream_scheduler_task = None
     if _hitl_sweep_task is not None:
-        _hitl_sweep_task.cancel()
-        _hitl_sweep_task = None
+        try:
+            _hitl_sweep_task.cancel()
+            try:
+                await asyncio.wait_for(asyncio.shield(_hitl_sweep_task), timeout=1.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+                pass
+        finally:
+            _hitl_sweep_task = None
     _worker_started = False
     logger.info("[Memory] 记忆写队列消费者已停止")
 
