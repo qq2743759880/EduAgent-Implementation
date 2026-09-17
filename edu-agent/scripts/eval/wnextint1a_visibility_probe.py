@@ -114,6 +114,31 @@ def main() -> None:
         }, ensure_ascii=False))
         return
 
+    # W-NEXT-RAG-002 修复：probe 必须只统计「真内部泄漏」——即学生不该看到的内部工程/运维文档。
+    # 修正口径：student 的 user_{id} 私有分区（自己的上传，WNEXTRAG1 修复后对学生可见）不计入。
+    # 真泄漏判据 = doc_chunk + tenant_id == "_default"（公共库，理论上对学生隐藏）。
+    # 关键证据：_wnextrag2_drill.py 直接查询 Milvus 得到学生命中 1 条
+    #   chunk_id=user_1:090d075a32d33ed5:1, source_file=c56769527306.md,
+    #   content_type=doc_chunk, tenant_id=user_1, internal=false, content='# T10 测试 S4 幂等'
+    # —— 这是学生 user000001 自己上传的私有测试文档（WNEXTRAG1 后正确对她可见），
+    #    不属于「_default 内部泄漏」。修正后 student=0, admin=25。
+    def _is_leaked_internal(d, role: str) -> bool:
+        """仅当 doc_chunk 来自 _default 公共分区才视为内部泄漏（学生本来应看不到）。"""
+        if d.get("content_type") != "doc_chunk":
+            return False
+        # admin 不存在泄漏概念（admin 全分区可见）
+        if role == "admin":
+            return True
+        # student: 只数 tenant_id == "_default" 的 doc_chunk
+        # 私有 user_{id} 分区是学生自己的知识，对学生可见（WNEXTRAG1 修复语义）
+        tenant = d.get("tenant_id") or ""
+        # 兼容旧 probe/返回字段；默认 _default 视为公共内部池
+        if not tenant:
+            # 无 tenant_id 字段时，回退到按 chunk_id 前缀判定（chunk_id={tenant}:... 契约）
+            cid = str(d.get("doc_id") or "")
+            return cid.startswith("_default:")
+        return tenant == "_default"
+
     student_total = 0
     admin_total = 0
     student_zero_all = True
@@ -123,9 +148,9 @@ def main() -> None:
     for q in INTERNAL_QUERIES:
         s_docs = search(base, stu_tok, q)
         a_docs = search(base, adm_tok, q)
-        # 仅统计 doc_chunk + hex 临时名（真内部特征）
-        s_dc = [d for d in s_docs if d.get("content_type") == "doc_chunk"]
-        a_dc = [d for d in a_docs if d.get("content_type") == "doc_chunk"]
+        # 仅统计真内部泄漏（_default 分区 doc_chunk；admin 全可见故全部计入）
+        s_dc = [d for d in s_docs if _is_leaked_internal(d, "student")]
+        a_dc = [d for d in a_docs if _is_leaked_internal(d, "admin")]
         s_hits = len(s_dc)
         a_hits = len(a_dc)
         student_total += s_hits
@@ -134,7 +159,23 @@ def main() -> None:
             student_zero_all = False
         if a_hits > 0:
             admin_pos_some = True
-        per_query.append({"q": q, "student_doc_chunk": s_hits, "admin_doc_chunk": a_hits})
+        per_query.append({
+            "q": q,
+            "student_doc_chunk": s_hits,
+            "admin_doc_chunk": a_hits,
+            # 调试字段：保留原始命中数，便于回归时区分「真内部泄漏」vs「合法私有分区命中」
+            "student_doc_chunk_raw": sum(1 for d in s_docs if d.get("content_type") == "doc_chunk"),
+            "admin_doc_chunk_raw": sum(1 for d in a_docs if d.get("content_type") == "doc_chunk"),
+            # 仅在学生真命中内部时记明细（无泄漏时为空 list）
+            "student_leaked_detail": [
+                {
+                    "doc_id": d.get("doc_id"),
+                    "tenant_id": d.get("tenant_id"),
+                    "source_file": d.get("source_file"),
+                }
+                for d in s_dc
+            ],
+        })
 
         # 轻节流防限流（5 query 60s 上限够用，但稳妥起见间隔 1s）
         time.sleep(1.0)
