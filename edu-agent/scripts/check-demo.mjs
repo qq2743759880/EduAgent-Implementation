@@ -398,10 +398,30 @@ await check("⑩", `契约对账门 febe_contract_check.py（断点·在用未�
 
 // ⑪ VEC-LOCK：embed 一致性健康门（VEC-G5）——edu_knowledge 元数据全 = 锁定 BGE-M3 revision，
 //    无 fallback 混写/未归一化/空文本。走 venv python 探针（查 Milvus），PASS 才算绿。
-const VECLOCK_PROBE = fileURLToPath(new URL("../veclock_health_probe.py", import.meta.url));
+// W-NEXT-CHECKDEMO-004 修:../veclock_health_probe.py 解析到 edu-agent/veclock_health_probe.py
+//     (错误,少了一层 scripts/)——探针实际在 edu-agent/scripts/。改用绝对 ../scripts/veclock_health_probe.py。
+const VECLOCK_PROBE = fileURLToPath(new URL("../scripts/veclock_health_probe.py", import.meta.url));
 const EDU_PY = fileURLToPath(new URL("../.venv/Scripts/python.exe", import.meta.url));
 await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.assign(
-  async () => runCmd(EDU_PY, [VECLOCK_PROBE], 60000),
+  async () => {
+    // W-NEXT-CHECKDEMO-004 修:runCmd 没有 windowsHide:true,WINDOWS 探针长 UTF-8
+    //     argv 在非 hide 模式下偶发路径截断(Python 报「can't open file 'E:\\stu\\」):
+    //     probe 路径 'E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\...py'
+    //     含中文 + 反斜杠,windowsHide:true 后稳定。改用 runPy 拿 stdout/stderr 并做
+    //     pydantic 友好报(stderr 含 Field required 即说明 cwd 没 .env)。
+    const { code, stdout, stderr } = await runPy(EDU_PY, [VECLOCK_PROBE], 60000);
+    if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
+      const m = /(\w+)\s+Field required/i.exec(stderr);
+      const field = m ? m[1] : "unknown";
+      throw new Error(`pydantic Field required: ${field} —— 子进程未加载 edu-agent/.env（stderr=${stderr.slice(0, 120)}）`);
+    }
+    const text = (stdout || "").trim();
+    // 末行格式:"edu_knowledge N 行 ... => PASS|FAIL"
+    if (!text.includes("=> PASS")) {
+      throw new Error(`exit=${code}; 探针未输出 PASS: ${text.slice(0, 200)}`);
+    }
+    return text.split("\n").pop().trim();
+  },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
 
 // ⑬ W-NEXT-MCP-001「MCP 三态」健康门（能力对账 + 内置工具落审计 + 字段级脱敏）
@@ -435,12 +455,21 @@ await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Obj
 //    HITL confirm → 续流执行，**不再出现** 42200「必须提供 tool_id」症状（回归红线 =
 //    HITL-FIX 后 admin confirm 写类工具零落库的根因）。走 venv python 探针（真实 HTTP + 只读
 //    SQL 取证），PASS 才算绿；模型本轮未触发 knowledge_import 时观测返回（单测已覆盖 tool_name 修复），不阻断 exit。
-const HITL_PROBE = fileURLToPath(new URL("../hitl_realness_probe.py", import.meta.url));
+// W-NEXT-CHECKDEMO-004 修:同 ⑪,../hitl_realness_probe.py 错指 edu-agent/ 根,改用 ../scripts/hitl_realness_probe.py
+const HITL_PROBE = fileURLToPath(new URL("../scripts/hitl_realness_probe.py", import.meta.url));
 await check("⑫", `HITL 真实性(confirm 续流不再 42200)`, Object.assign(
   async () => {
-    const out = await runCmd(EDU_PY, [HITL_PROBE], 90000);
+    // W-NEXT-CHECKDEMO-004 修:同 ⑪,改用 runPy (windowsHide:true) 防长 UTF-8 argv
+    //     截断;同时加 pydantic Field required 友好报。
+    const { code, stdout, stderr } = await runPy(EDU_PY, [HITL_PROBE], 90000);
+    if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
+      const m = /(\w+)\s+Field required/i.exec(stderr);
+      const field = m ? m[1] : "unknown";
+      throw new Error(`pydantic Field required: ${field} —— 子进程未加载 edu-agent/.env（stderr=${stderr.slice(0, 120)}）`);
+    }
+    const text = (stdout || "").trim();
     let j;
-    try { j = JSON.parse(out); } catch { throw new Error(`探针输出非 JSON: ${String(out).slice(0, 200)}`); }
+    try { j = JSON.parse(text); } catch { throw new Error(`探针输出非 JSON: ${text.slice(0, 200)}`); }
     if (j.error) throw new Error(j.error);
     if (j.regression) throw new Error(j.regression);
     if (!j.health_ok) throw new Error("后端 /health 非 ok");

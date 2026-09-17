@@ -16,9 +16,25 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
+# W-NEXT-CHECKDEMO-004 修:.env 加载兜底 ——
+# 现象:check-demo.mjs ⑭ 守卫 spawn 子进程时 cwd=仓库根,不是 edu-agent/。
+#       本探针已有 os.chdir(REPO) 兜后,但 REPO 仍基于脚本路径而非 cwd,先 chdir 再 load_dotenv
+#       也行;为对齐 W-NEXT-CHECKDEMO-003 (⑲) 同型根因,在 sys.path 之前显式 load_dotenv,
+#       防「chdir 之前 requests 触发底层包 import settings 的隐式 load」陷阱。
+#       pydantic-settings env_file='.env' 是 cwd-相对,cwd=仓库根时找不到 edu-agent/.env。
+#       本探针不显式 import app.config,但 requests 间接依赖缺失变量(SSL/TLS 探测链路)。
+# 修复:入口处显式 load_dotenv(EDU_ROOT/.env)。不依赖 cwd,不依赖父进程的 env 注入。
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+_ENV_PATH = os.path.join(REPO, ".env")
+if os.path.isfile(_ENV_PATH):
+    from dotenv import load_dotenv  # noqa: E402
+    load_dotenv(_ENV_PATH, override=False)  # 已有环境变量优先,避免覆盖 CI 注入
+else:
+    print(f"[wnextint1a_visibility_probe] WARN .env not found at {_ENV_PATH} — pydantic Field required 风险", file=sys.stderr)
+
 sys.path.insert(0, REPO)
 os.chdir(REPO)
 

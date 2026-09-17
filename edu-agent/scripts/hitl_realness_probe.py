@@ -23,10 +23,25 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# W-NEXT-CHECKDEMO-004 修:.env 加载兜底 ——
+# 现象:check-demo.mjs ⑫ 守卫 spawn 子进程时 cwd=仓库根,不是 edu-agent/。
+#       pydantic-settings 的 env_file='.env' 是相对 cwd 的相对路径,cwd=仓库根时
+#       找不到 edu-agent/.env → 启动期 ValidationError: LLM_API_KEY Field required。
+#       _count_task 走 app.database.fetch_one 间接依赖 settings.MYSQL_* 同样会崩。
+# 修复:入口处显式 load_dotenv(EDU_ROOT/.env),让进程环境变量在 import app.config 之前
+#       已经被填好。不依赖 cwd,不依赖父进程的 env 注入。
+ROOT = Path(__file__).resolve().parents[1]
+_ENV_PATH = ROOT / ".env"
+if _ENV_PATH.is_file():
+    from dotenv import load_dotenv  # noqa: E402
+    load_dotenv(_ENV_PATH, override=False)  # 已有环境变量优先,避免覆盖 CI 注入
+else:
+    print(f"[hitl_realness_probe] WARN .env not found at {_ENV_PATH} — pydantic Field required 风险", file=sys.stderr)
+
+
 BACKEND = os.environ.get("CHECK_DEMO_BACKEND", "http://127.0.0.1:8000").rstrip("/")
 ACCOUNT = "adm02test"
 PASSWORD = "Test@123456"
-ROOT = Path(__file__).resolve().parents[1]
 
 
 def _post(url: str, payload: dict, token: str | None = None, timeout: int = 60):
