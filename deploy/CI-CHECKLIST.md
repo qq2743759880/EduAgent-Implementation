@@ -133,3 +133,60 @@ git commit --no-verify -m "..."
 ---
 
 完工。W-NEXT-VEC-003 报告：`test-reports/WNEXTVEC3-completion-report.md`。
+
+---
+
+## 六、禁碰清单纪律（W-NEXT-REDLINE-001 收口，2026-09-17）
+
+> 起源：编排者盲测发现——历史 W-NEXT-* 任务常出现"误改禁碰区"（如 `app/config.py` / `app/database.py` / `app/main.py` 关键路径 / `contracts/reshape-r-*.json` 冻结契约 / `edu-agent/.env` / `deploy/docker-compose.yml` 等），单写者锁防不住"自己 task kickoff 误碰相邻关键文件"。
+>
+> 解决方案：**commit-time 阻断**——pre-commit hook 解析 commit message 的 `禁碰：<glob>` 段，与 `git diff --cached --name-only` 交集非空即阻断。
+
+### 6.1 禁碰清单机制
+
+- **入口**：`.git/hooks/pre-commit` B 段（VEC-LOCK 为 A 段，禁碰清单为 B 段，二者并存）
+- **Helper**：`edu-agent/scripts/eval/pre_commit_forbidden.py`（std-lib only，支持 `fnmatch` + `**` globstar）
+- **commit message 语法**（任选其一）：
+
+```
+禁碰：app/config.py, app/database.py
+禁碰:app/config.py
+forbidden-files: app/config.py, edu-agent/.env
+forbidden: app/main.py
+```
+
+- **pattern 语义**（POSIX glob via fnmatch + globstar 扩展）：
+  - `app/foo.py` 精确路径
+  - `app/**` 子树（含 `app` 本身与 `app/x` / `app/x/y`）
+  - `edu-agent/scripts/eval/*.py` 通配
+  - `**/foo.py` 跨目录
+
+### 6.2 阻断规则
+
+| 场景 | 行为 |
+|---|---|
+| commit message 无 `禁碰：` 段 | hook 静默放行（不读其他 marker，避免误伤） |
+| 有 `禁碰：` 段但 staged 文件无交集 | hook 静默放行 |
+| 有 `禁碰：` 段 + staged 文件命中任一 pattern | **红阻断 exit 1** + 友好错误（命中文件 + 命中 pattern） |
+| 跳过机制 | `git commit --no-verify`（hook 不被调用，是 Git built-in 唯一合法路径） |
+
+### 6.3 合法使用 `禁碰：` 段的场景
+
+1. **W-NEXT-* 任务明确要禁碰某区域**：在 kickoff / 变更单中显式登记，commit message 必带 `禁碰：` 段
+2. **多人协作分片**：A 改 `app/foo.py` 时禁碰 B 的 `app/bar.py`，避免合并冲突
+3. **冻结契约区**：改 `app/main.py` / `app/config.py` 时禁碰 `contracts/reshape-r-*.json`（契约冻结纪律）
+
+### 6.4 严禁（违反即纪律违规）
+
+| 严禁项 | 后果 |
+|---|---|
+| 用 `禁碰：` 段掩盖 commit 真实意图（如禁碰 `test-reports/` 隐藏未跑验收） | 编排者审计发现即回退 |
+| 用 `--no-verify` 绕过禁碰清单而不写理由 | PR 描述必须附 `[skip-redline]` 标签 + 理由 + 事后变更单编号 |
+| 把 `禁碰：app/main.py` 与 `feat: 改 app/main.py` 同 commit | 红阻断（自我矛盾） |
+| 禁碰清单与 VEC-LOCK 触发同时不冲突 | ✅ 二者独立运行，触发其一即跑（pre-commit §B 在 §A 之后） |
+
+### 6.5 变更记录
+
+| 日期 | 事件 | 改动文件 | 关联任务 |
+|---|---|---|---|
+| 2026-09-17 | 首版落地（禁碰清单 hook + helper + CI-CHECKLIST 纪律章节） | `.git/hooks/pre-commit`（B 段）+ `edu-agent/scripts/eval/pre_commit_forbidden.py`（已存在）+ `deploy/CI-CHECKLIST.md` §六 | W-NEXT-CHECKDEMO-001（复跑 W-NEXT-REDLINE-001） |

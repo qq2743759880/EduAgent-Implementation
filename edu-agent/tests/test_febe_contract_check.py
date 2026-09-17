@@ -135,3 +135,84 @@ def test_resolve_relative_chapters_not_video():
     paths = {p for (_, p) in r}
     assert "/api/admin/courses/videos/{x}/chapters" not in paths
     assert "/api/admin/courses/chapters/{x}" in paths
+
+
+# ---------------------------------------------------------------------------
+# W-NEXT-CHECKDEMO-001 / W-NEXT-FE-003 根路径 parser 单测（≥3 例）
+# ---------------------------------------------------------------------------
+# 背景：W-NEXT-FE-002 把 unfrozen_only 从 106 冻到 1（仅 `GET /`），原因是
+# febe_contract_check._parse_endpoint_str 的硬逻辑「不以 /api/ 开头就交给
+# resolve_relative」，而 root path 经 lstrip("/") 后变空串被短路。
+# W-NEXT-FE-003 引入 KNOWN_ROOT_PATHS 白名单，让 parser 见到 root/运维端点
+# 直接入冻结集合，不再走相对路径兜底。本节 5 例覆盖白名单与边界。
+# ---------------------------------------------------------------------------
+
+
+def test_root_path_get_root_in_set():
+    """`GET /` 必须直接入冻结集合（不进 relative_out），不再走 resolve_relative 兜底。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /", out, relative)
+    assert (F.norm_method("GET"), "/") in out, (
+        "GET / 未被识别为 KNOWN_ROOT_PATH：out=%r relative=%r" % (out, relative)
+    )
+    assert relative == [], "GET / 不应进入相对路径兜底队列"
+
+
+def test_root_path_get_health_in_set():
+    """`GET /health` 必须直接入冻结集合（运维探活端点白名单）。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /health", out, relative)
+    assert (F.norm_method("GET"), "/health") in out
+    assert relative == []
+
+
+def test_root_path_get_metrics_in_set():
+    """`GET /metrics` 必须直接入冻结集合（Prometheus 抓取端点白名单）。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /metrics", out, relative)
+    assert (F.norm_method("GET"), "/metrics") in out
+    assert relative == []
+
+
+def test_root_path_unknown_absolute_goes_relative():
+    """非白名单的绝对非 /api/ 路径仍走 relative_out（如 `/foo/bar`）。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /foo/bar", out, relative)
+    assert out == set(), "非白名单绝对路径不应直接入冻结集: out=%r" % out
+    assert relative and relative[0][1] == "/foo/bar", (
+        "非白名单绝对路径应进 relative_out 等待 resolve_relative: %r" % relative
+    )
+
+
+def test_root_path_known_set_exact_match():
+    """KNOWN_ROOT_PATHS 集合必须严格等于 5 个白名单端点（防回归白名单漂移）。"""
+    expected = frozenset({"/", "/health", "/health/detail", "/health/warmup", "/metrics"})
+    assert F.KNOWN_ROOT_PATHS == expected, (
+        "KNOWN_ROOT_PATHS 白名单漂移: 实际=%r 期望=%r" % (F.KNOWN_ROOT_PATHS, expected)
+    )
+
+
+def test_root_path_trailing_slash_normalized():
+    """`GET /health/` 经 norm_path 应归一为 `/health`（去尾斜杠），仍命中白名单。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /health/", out, relative)
+    assert (F.norm_method("GET"), "/health") in out, (
+        "GET /health/ 未归一为 /health：out=%r" % out
+    )
+    assert relative == []
+
+
+def test_root_path_with_query_string_stripped():
+    """`GET /health?bfeed4b5` 经 norm_path 应去 query 后归一为 `/health`，仍命中白名单。"""
+    out = set()
+    relative = []
+    F._parse_endpoint_str("GET /health?bfeed4b5", out, relative)
+    assert (F.norm_method("GET"), "/health") in out, (
+        "GET /health?bfeed4b5 未去 query 归一：out=%r" % out
+    )
+    assert relative == []
