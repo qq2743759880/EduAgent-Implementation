@@ -162,13 +162,18 @@ async function resolvePython() {
   throw new Error("未找到 python 解释器（需 python3/python 在 PATH）");
 }
 
-function runPy(python, args) {
+// 跑 venv/system python 探针,带超时,非零退出码抛错
+// W-NEXT-CHECKDEMO-002 修:runPy 此前是 function runPy(python, args) —— 第三参数 timeoutMs
+//    被静默丢弃,所有调用点实际都是 60000ms(⑲ 600000 / ⑯ 300000 / ⑭ 90000 等
+//    全被吞)。⑲ veclock_verify 实测 1m57s 必然撞 60s 红断(BGE-M3 mmap 重 load
+//    + 5 串行 inference batch 物理下限 ~30s+)。统一:第三参数 timeoutMs 兜底 60000。
+function runPy(python, args, timeoutMs = 60000) {
   return new Promise((resolve, reject) => {
     let stdout = "", stderr = "", settled = false;
     const child = spawn(python, args, { windowsHide: true });
     const timer = setTimeout(() => {
-      if (!settled) { settled = true; child.kill(); reject(new Error("契约对账超时(>60s)")); }
-    }, 60000);
+      if (!settled) { settled = true; child.kill(); reject(new Error(`python 探针超时(>${timeoutMs}ms)`)); }
+    }, timeoutMs);
     child.stdout.on("data", (d) => (stdout += d));
     child.stderr.on("data", (d) => (stderr += d));
     child.on("error", (e) => { if (!settled) { settled = true; clearTimeout(timer); reject(e); } });
@@ -536,10 +541,13 @@ await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError tr
 //    5 个新对账行 + chat 路径真接 permission_gate 4 个 API + JSON serializable + AST 真接模式 ≥4。
 //    纯离线探针，不依赖 8000/DB——只走 audit 函数与 AST 解析源码；FAIL 时阻断 exit。
 //    退出码：0=PASS（全绿）；1=FAIL（代码缺陷：行缺失/未真接/返回值形态异常）。
+//    W-NEXT-CHECKDEMO-002 改:BGE-M3 mmap 在 Windows 内存压力下偶发 1455,
+//    cross_perm 探针若首跑 5 个 AST 解析 + JSON 序列化 + 17 行 audit 对账超过
+//    30s 会被误杀。统一抬到 60s 与 ⑬⑱ 看齐（防 BGE-慢 类同型误杀）。
 const CROSSPERM_PROBE = fileURLToPath(new URL("../scripts/eval/mcp_cross_perm_gate_probe.py", import.meta.url));
 await check("⑰", `MCP 跨权限门对账(audit checked=17 + 5 新对账行 + chat AST 链 + JSON serializable)`, Object.assign(
   async () => {
-    const { code, stdout } = await runPy(EDU_PY, [CROSSPERM_PROBE], 30000);
+    const { code, stdout } = await runPy(EDU_PY, [CROSSPERM_PROBE], 60000);
     const m = /\[CROSSPERM\]\s*(\{.*\})/.exec(stdout || "");
     if (!m) {
       throw new Error(`探针未输出 [CROSSPERM]（exit=${code}）: ${(stdout || "").slice(0, 200)}`);
