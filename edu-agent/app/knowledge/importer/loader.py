@@ -204,13 +204,86 @@ def internal_visibility_allowed() -> bool:
 
 
 def _row_is_internal(row: dict) -> bool:
-    """结果侧判定：存量行无 internal 字段（None）→ 退回内容/来源特征兜底。"""
+    """结果侧判定：internal 字段 + classify_internal 双通道兜底（W-NEXT-RAG-002）。
+
+    防御深度：
+      - WNEXTINT1A：internal 字段缺失 → 退回 classify_internal
+      - W-NEXT-RAG-002：internal 字段显式 False 但 classify_internal 判 True →
+        以分类器为准（典型场景：WNEXTRAG1「All 742」批量重置时，hex 命名
+        的工程/测试文档被一并置 internal=False，但分类器视角它们仍是
+        内部——典型 row：source_file=c56769527306.md / fdc227fb0884.md、
+        content=# T10 测试 S4 幂等 / # T1OKE 合成课程。student 命中这些
+        行 → ⑭ 守卫 FAIL，必须按分类器兜底隐藏。）
+      - W-NEXT-RAG-002 测试标记兜底：source_file/content 含已知测试标记
+        （WNEXTRAG-001 IB-G2 / T10 盲测 / 编排者会话等工程内部测试 trace）
+        → 视为内部（不被 student 看到）。
+
+    兼容：internal=True（任何形态）→ 始终 True；internal=False 且分类器
+    也判 False 且无测试标记 → False；只有「字段=False + (分类器=True 或
+    测试标记命中)」这一矛盾态才触发兜底。Scheme A（WNEXTRAG1）上传的
+    业务 doc 不命中分类器与测试标记，不受影响。
+    """
     flag = row.get(INTERNAL_FIELD)
+    source_file = row.get("source_file") or ""
+    content = row.get("content") or ""
+
     if flag is None:
-        return classify_internal(row.get("source_file"), row.get("content"))
+        # WNEXTINT1A：存量行无 internal 字段 → 退回 classify_internal 兜底
+        return classify_internal(source_file, content)
     if isinstance(flag, str):
-        return flag.strip().lower() in ("1", "true", "yes")
-    return bool(flag)
+        flag_bool = flag.strip().lower() in ("1", "true", "yes")
+    else:
+        flag_bool = bool(flag)
+    if flag_bool:
+        # 字段显式 True → 始终 internal（兼容 WNEXT10 写入语义）
+        return True
+    # W-NEXT-RAG-002：字段显式 False 但分类器判 True → 信任分类器。
+    # 这能正确处理 WNEXTRAG1「All 742」重建后的副作用：批量重置把 hex
+    # 命名的工程/测试文档（_default 732 + user_X 测试 artifact）一并置
+    # False，但分类器视角它们仍是内部文档。检索期二次剔除保证 S6 保护
+    # 不依赖人工回填。
+    if classify_internal(source_file, content):
+        return True
+    # W-NEXT-RAG-002 测试标记兜底：分类器未命中但 source_file/content 含
+    # 已知测试 trace 标记（WNEXTRAG-001 IB-G2 / T10 盲测「T1OKE 合成课程」
+    # 等工程内部测试产物，分类器未涵盖）。这些是明显工程测试痕迹，
+    # 不应被 student 通过普通检索命中。
+    if _has_internal_test_marker(source_file, content):
+        return True
+    return False
+
+
+# W-NEXT-RAG-002：测试标记（与 S6 内部可见性守卫配合）。
+# 仅包含「明确工程内部测试 trace」标记——业务 doc 不会使用这些前缀。
+# 注意：IB-G2 业务 doc（WNI1BG2_xxx 命名）属 WNEXTRAG-001 IB-G2 测试产物，
+# 命中「IB-G2 / WNI1BG2 / ib_g2」标记；T10 测试含「T10IDEMARK / T1OKE」
+# 等 trace 标记。这些是 S6 保护下「学生不该看到的内部测试文档」标志。
+_INTERNAL_TEST_MARKER_PATTERNS: tuple[str, ...] = (
+    r"\bIB[-_ ]?G[12]\b",              # WNEXTRAG-001 IB-G2 业务 doc 标记（IB-G2 / IB-G1）
+    r"WNI1BG[12]_\d+",                  # WNEXTRAG-001 IB-G2 unique ID（文件名/内容）
+    r"\bib_g[12]\b",                    # ib_g2 / ib_g1（小写变体，IB-G2 文件名段）
+    r"\bT1OKE\b",                       # T10「T1OKE 合成课程」盲测标记
+    r"\bT10IDEMARK[A-Z0-9]+\b",         # T10 幂等测试 marker（例 T10IDEMARK8Z7Q）
+    r"\bT10UNIQ[A-Z0-9]+\b",            # T10 跨租户幂等 marker（例 T10UNIQ9X7V）
+    r"\bt10_synthetic_series\b",        # T10 合成 series 编码
+)
+
+
+def _has_internal_test_marker(source_file: str, content: str) -> bool:
+    """判断 row 是否含已知工程内部测试 trace 标记。
+
+    W-NEXT-RAG-002 兜底层：分类器没覆盖到的「明显工程测试产物」
+    （如 WNEXTRAG-001 IB-G2 测试上传 / T10 盲测「T1OKE 合成课程」）。
+    仅看「这是不是测试 doc」——业务 doc 不命中。
+    """
+    if not source_file and not content:
+        return False
+    for pat in _INTERNAL_TEST_MARKER_PATTERNS:
+        if re.search(pat, source_file, re.IGNORECASE):
+            return True
+        if re.search(pat, content, re.IGNORECASE):
+            return True
+    return False
 
 
 def _and_filter(expr: str | None, clause: str) -> str:

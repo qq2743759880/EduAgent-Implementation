@@ -291,6 +291,77 @@ class TestRowIsInternalFallback:
 
 
 # ============================================================
+# ⑦b W-NEXT-RAG-002：测试标记兜底（不依赖分类器，直接识别已知测试 trace）
+# ------------------------------------------------------------
+# 场景：WNEXTRAG-001 IB-G2 业务 doc（T10 盲测产物）经过 Scheme A 上传后
+#       internal=False，但分类器未涵盖「IB-G2 / WNI1BG2 / T1OKE」等新
+#       测试标记。检索期 _row_is_internal 必须兜底隐藏这些行，
+#       否则 student 仍能在 /api/chat/search 命中（⑭ 守卫 FAIL）。
+# ============================================================
+class TestRowIsInternalTestMarkerFallback:
+    """W-NEXT-RAG-002：测试标记兜底（IB-G2 / T10 盲测 trace）。"""
+
+    def test_ib_g2_in_source_file(self):
+        row = {
+            "source_file": "up_1_1215916b_ib_g2_WNI1BG2_1789562680.md",
+            "content": "study notes",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+    def test_ib_g2_in_content(self):
+        row = {
+            "source_file": "any.md",
+            "content": "# IB-G2 业务文档 WNI1BG2_1789562680",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+    def test_t10_synthetic_series_in_content(self):
+        row = {
+            "source_file": "any.md",
+            "content": "系列编码：t10_synthetic_series，marker: T10UNIQ9X7V",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+    def test_t1oke_synthetic_in_content(self):
+        row = {
+            "source_file": "any.md",
+            "content": "# T1OKE 合成课程：矩阵计算专项（盲测自动生成文档）",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+    def test_t10_idem_marker_in_content(self):
+        row = {
+            "source_file": "any.md",
+            "content": "T10IDEMARK8Z7Q",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+    def test_normal_user_upload_not_internal(self):
+        """业务 doc 不会触发测试标记（Scheme A + 普通内容 → 仍 False）。"""
+        row = {
+            "source_file": "up_1_a1b2c3_my_course_notes.md",
+            "content": "# 线性代数基础\n矩阵乘法是核心运算。",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is False
+
+    def test_classify_still_overrides_explicit_false(self):
+        """旧 WNEXTRAG1「All 742」批量重置副作用：hex 命名 + 内容 task09
+        即使字段=False 也被判 True（分类器视角为准）。"""
+        row = {
+            "source_file": "c56769527306.md",
+            "content": "# T10 测试 S4 幂等",
+            "internal": False,
+        }
+        assert _row_is_internal(row) is True
+
+
+# ============================================================
 # ⑧ INTERNAL_FILTER_EXPR 表达式结构
 # ============================================================
 class TestInternalFilterExpr:
