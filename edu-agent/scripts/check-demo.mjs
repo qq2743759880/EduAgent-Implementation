@@ -9,7 +9,9 @@
 // ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
 // ⑫ HITL 真实性  ⑬ MCP 三态门  ⑭ 内部可见性  ⑮ Redis 端口对账  ⑯ lifecycle 健壮性
 // ⑰ MCP 跨权限门对账（chat 路径真接 4 个 API + AST 链） ⑱ febe root path 闭环 ⑲ VEC-LOCK 守门（12 维机验 + dim0 backend）
-// 共 17 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
+// ⑳ OTLP 链路健康（endpoint 解析 + SSRF 守门 + TCP 探活；W-NEXT-OTLP-001）
+// ㉑ embed URL SSRF 守门（W-NEXT-EXE-SSRF-002）
+// 共 21 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -687,6 +689,119 @@ await check("⑲", `VEC-LOCK 守门(veclock_verify.py 12 维 + dim0 backend=bge_
     return `${passed}/${total} PASS + dim0 backend=${backend}（锁定）`;
   },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\veclock_verify.py 看 PASS/FAIL 行定位 dim；dim0 backend 失败时清内存释放 BGE-M3 mmap [${d}]` }));
+
+// ⑳ W-NEXT-OTLP-001「OTLP exporter 链路健康」门——OTLP collector 探针：
+//    endpoint 解析 + SSRF 白名单守门 + 一次性 TCP 探活。探针读 settings.OTEL_EXPORTER_OTLP_ENDPOINT：
+//      空 → state=disabled，PASS（默认 disabled 安全缺省）；
+//      非空 → state=healthy/probe_failed/ssrf_rejected/probe_skipped，按 PASS/WARN/FAIL 分级。
+//    不依赖 8000/DB，只走 venv python + app.observability.otlp.OtlpExporter + ssrf_guard.validate_url。
+//    阻断规则：state=disabled → PASS（默认安全缺省）；
+//             state=healthy → PASS（链路绿，OTel collector 实达）；
+//             state=probe_skipped → PASS（跳过启动探活 = 运维显式 false）；
+//             state=probe_failed → WARN（探活失败不阻断；配置后首启 collector 未就绪常见）；
+//             state=ssrf_rejected → FAIL 红（host 不在白名单 = 误配置 / 安全违规）。
+//    退出码 0=PASS/WARN；1=FAIL（ssrf_rejected）。env_blocked（缺 .env / OtlpExporter 抛兜底异常）→ WARN。
+const OTLP_PROBE = fileURLToPath(new URL("../scripts/eval/otlp_health_probe.py", import.meta.url));
+await check("⑳", `OTLP 链路健康(endpoint 解析 + 探活 + SSRF 守门)`, Object.assign(
+  async () => {
+    const { code, stdout, stderr } = await runPy(EDU_PY, [OTLP_PROBE], 30000);
+    if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
+      const m = /(\w+)\s+Field required/i.exec(stderr);
+      const field = m ? m[1] : "unknown";
+      throw new Error(`pydantic Field required: ${field} —— 子进程未加载 edu-agent/.env。请确认 cwd 或检查 .env 中 ${field}=...（stderr=${stderr.slice(0, 200)}）`);
+    }
+    const m = /\[OTLP\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      throw new Error(`探针未输出 [OTLP] JSON（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+    }
+    let j;
+    try { j = JSON.parse(m[1]); } catch { throw new Error(`[OTLP] JSON 解析失败: ${m[1].slice(0, 200)}`); }
+    if (j.env_blocked) {
+      const e = new Error(`环境阻塞（OtlpExporter 不可用 / .env 缺字段）: ${j.env_blocked_reason || ""}`);
+      e.__warn = true; throw e;
+    }
+    // ssrf_rejected 阻断（红）：host 不在白名单 = 误配置 / 安全违规
+    if (j.state === "ssrf_rejected") {
+      throw new Error(`endpoint host 不在 SSRF 白名单（ssrf_ok=false）：${j.endpoint} — ${(j.last_error || j.ssrf_reason || "").slice(0, 160)}`);
+    }
+    // probe_failed 仅 WARN（探活失败不阻断；配置后首启 collector 未就绪常见）
+    if (j.state === "probe_failed") {
+      const e = new Error(`OTLP 端点 TCP 探活失败（${j.endpoint}，${j.last_error || ""}）—— WARN 不阻断，配置已就位但 collector 未启`);
+      e.__warn = true; throw e;
+    }
+    // healthy / disabled / probe_skipped → PASS
+    return `state=${j.state} endpoint=${j.endpoint || "(empty/disabled)"} probe=${j.probe_ms}ms`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\otlp_health_probe.py 看 [OTLP] state；ssrf_rejected 改 .env OTEL_EXPORTER_OTLP_ENDPOINT 至白名单 host [${d}]` }));
+
+// ㉒ W-NEXT-MINIO-002 「object_key 复用历史审计」健康门——只读探针
+//    wnextminio2_audit_history.py：扫 knowledge_import_task.source_files，
+//    统计「跨多 task 复用 object_key」「同名覆盖（size drift）」两项历史指标。
+//    退出码：0=PASS（无复用，无 size drift）；1=WARN（有复用或 size drift，
+//    但不阻断 exit 0 ——历史无法回填，仅记录）；2=FAIL（DB/IO 不可达）。
+//    与 ㉑ 配套：㉑ 管「未来不覆盖」（新上传派生 {hash8}_{rand6}_{safe_name}）；
+//    ㉒ 管「历史已发生覆盖事件」留痕（只读，不修复）。
+const WNEXTMINIO2_AUDIT = fileURLToPath(new URL("../scripts/eval/wnextminio2_audit_history.py", import.meta.url));
+// W-NEXT-MINIO-002: 探针必须在 cwd=edu-agent 下跑（app.config.settings 才能
+//    加载 .env；从仓库根跑会 Field required 抛错）。EDU_PY 已固定为 venv python。
+const EDU_CWD = fileURLToPath(new URL("..", import.meta.url));
+await check("㉒", `object_key 复用历史审计(多少 key 跨多 task、最大复用次数)`, Object.assign(
+  async () => {
+    // 用 cwd=edu-agent 启 venv python，确保 .env 可被 pydantic-settings 加载。
+    const child = spawn(EDU_PY, [WNEXTMINIO2_AUDIT], { windowsHide: true, cwd: EDU_CWD });
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch {}
+    }, 60000);
+    let stdout = "", stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    const code = await new Promise((resolve) => child.on("close", resolve));
+    clearTimeout(timer);
+    if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
+      const m = /(\w+)\s+Field required/i.exec(stderr);
+      const field = m ? m[1] : "unknown";
+      throw new Error(`pydantic Field required: ${field} —— 子进程未加载 edu-agent/.env（cwd=${EDU_CWD}）。请确认 .env 中 ${field}=...（stderr=${stderr.slice(0, 200)}）`);
+    }
+    // W-NEXT-MINIO-002 探针默认输出单行 [WM2] JSON；stdout 可能含 INFO 日志，
+    // 用正则末位兜底取最后一条 [WM2] 行（容错）。
+    const matches = stdout ? stdout.match(/\[WM2\]\s*(\{[\s\S]*?\})\s*$/m) : null;
+    if (!matches) {
+      // 探针 DB 不可达（exit=2）→ 视为环境阻塞，WARN 不阻断（与 ㉑ 同语义）
+      if (code === 2) {
+        const e = new Error(`环境阻塞（DB 不可达，以 ④ 红项为准）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+        e.__warn = true; throw e;
+      }
+      throw new Error(`探针未输出 [WM2]（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+    }
+    let j;
+    try {
+      j = JSON.parse(matches[1]);
+    } catch (err) {
+      throw new Error(`[WM2] JSON 解析失败: ${err.message} raw=${matches[1].slice(0, 120)}`);
+    }
+    if (j.status === "FAIL") {
+      throw new Error(`audit 探针 FAIL: ${j.reason || ""}`);
+    }
+    // WARN 语义：复用 key 跨多 task 或 size drift。历史已发生，无法回填 —— 软告警。
+    // 但仍需保证返回关键字段存在；强校验数字格式与类型。
+    const dup = Number(j.cross_task_reused_key_count);
+    const max = Number(j.max_reuse_count);
+    const rows = Number(j.affected_task_rows);
+    const drift = Number(j.has_size_drift_count);
+    if (!Number.isFinite(dup) || dup < 0) throw new Error(`cross_task_reused_key_count 非法: ${j.cross_task_reused_key_count}`);
+    if (!Number.isFinite(max) || max < 0) throw new Error(`max_reuse_count 非法: ${j.max_reuse_count}`);
+    if (!Number.isFinite(rows) || rows < 0) throw new Error(`affected_task_rows 非法: ${j.affected_task_rows}`);
+    if (!Number.isFinite(drift) || drift < 0) throw new Error(`has_size_drift_count 非法: ${j.has_size_drift_count}`);
+    // 数组字段类型
+    if (!Array.isArray(j.duplicate_object_keys)) throw new Error(`duplicate_object_keys 非数组`);
+    if (j.status === "PASS") {
+      return `PASS 复用=0 / max=0 / 涉及行=0 / size_drift=0`;
+    }
+    // WARN：标 __warn 让汇总显示 WARN，但 exit code 不受影响（绿）
+    const e = new Error(`WARN: 跨多 task 复用 ${dup} key（最大 ${max} 次 / 涉及 ${rows} 行 / size_drift=${drift}）——历史已发生覆盖，无法回填`);
+    e.__warn = true; throw e;
+  },
+  { __fix: (d) => `cd edu-agent && PYTHONPATH=. .venv\\Scripts\\python.exe scripts\\eval\\wnextminio2_audit_history.py 排查；如 WARN:历史覆盖无法修复，需新上传路径走 ㉑ 守卫(${d})` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1

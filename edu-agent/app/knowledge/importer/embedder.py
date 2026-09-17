@@ -30,6 +30,75 @@ from loguru import logger
 from app.config import settings
 from app.knowledge.models import ImportState, KnowledgeChunk
 
+# W-NEXT-EXE-SSRF-002：embedder 出站 HTTP（embedding API）必经 SSRF 守门。
+# 设计依据：SSRF-001 §6 P2：EMBEDDING_API_URL 走白名单；默认 ark.cn-beijing.volces.com，
+# 严禁命中 IMDS（169.254.169.254）/ metadata.google.internal / RFC1918 私网等。
+# 拒绝时 log WARN 并回退 embed 失败（绝不静默降级为假向量后再被上层拒）。
+try:
+    from app.security.ssrf_guard import (
+        DEFAULT_ALLOWED_HOSTS as _SSRF_DEFAULT_ALLOWED,
+        SSRFBlockedError as _SSRFBlockedError,
+        validate_url as _ssrf_validate_url,
+    )
+    _SSRF_AVAILABLE = True
+except Exception as _ssrf_import_exc:  # pragma: no cover - 守护退化不应触发
+    # 安全缺省：ssrf_guard 不可用时**拒绝**发外部 embed 请求（fail-closed），
+    # 行为是抛 RuntimeError 让上层降级为 sha256 伪向量（默认禁入库），不静默外发。
+    _SSRF_AVAILABLE = False
+    _SSRF_DEFAULT_ALLOWED = frozenset()
+    _SSRFBlockedError = Exception  # type: ignore[assignment]
+
+    def _ssrf_validate_url(url: str, *, allowed_hosts=None) -> None:  # type: ignore[no-redef]
+        raise RuntimeError(
+            f"app.security.ssrf_guard 不可用，禁止外发 embed HTTP：{_ssrf_import_exc}"
+        )
+
+
+def _embed_ssrf_allowed_hosts() -> frozenset[str]:
+    """embedder 出站允许的 host 白名单。
+
+    设计（与 SSRF-001 默认白名单同源 + 扩展）：
+      1) 静态白名单：ark.cn-beijing.volces.com（火山 Embed API 默认生产 host）
+         + 127.0.0.1/localhost/192.168.85.101/10.0.0.1（本机项目回环/内网）
+      2) settings.EMBEDDING_API_URL_ALLOWED_HOSTS（runtime 扩展，多 host 列表/集合）
+      3) 备注：**禁止**从 EMBEDDING_API_URL 字面 host 自动放行（防 SSRF 形态 ①
+         「.env 被改 host=攻击者域就放行」——必须显式声明 EM...HOSTS 才能扩）。
+
+    取并集再 lower + 去空字符串，**绝不**做后缀通配（必须 host 字面精确匹配）。
+    """
+    hosts: set[str] = set(_SSRF_DEFAULT_ALLOWED)
+    # 火山引擎 Ark 默认生产 Embed 端点（.env 实证 EMBEDDING_API_URL=https://ark.cn-beijing.volces.com/api/plan/v3）
+    hosts.add("ark.cn-beijing.volces.com")
+    # settings 扩展覆盖（list / tuple / set / str-comma）—— 未声明字段默认空
+    custom = getattr(settings, "EMBEDDING_API_URL_ALLOWED_HOSTS", None)
+    if isinstance(custom, (list, tuple, set)):
+        for x in custom:
+            if x and isinstance(x, str):
+                hosts.add(x.strip().lower())
+    elif isinstance(custom, str) and custom.strip():
+        for x in custom.split(","):
+            x = x.strip()
+            if x:
+                hosts.add(x.lower())
+    return frozenset(hosts)
+
+
+def _gate_embed_url(url: str) -> None:
+    """embedder 出站 HTTP 前调：白名单 + 拒 IMDS + 拒私网（ssrf_guard 内置）。
+
+    拒绝语义：抛 SSRFBlockedError → 调用方 _api_embed_batch 捕获 → log WARN +
+    返回 None → embed 走本地 BGE-M3 兜底 / sha256 兜底（默认禁入库），绝不静默外发。
+    """
+    try:
+        _ssrf_validate_url(url, allowed_hosts=_embed_ssrf_allowed_hosts())
+    except _SSRFBlockedError as exc:
+        # 必 log WARN（安全审计可见），绝不静默（避免上层将失败 swallow 成 sha256 假向量）
+        logger.warning(
+            f"[W-NEXT-EXE-SSRF-002] embed 出站 URL 拒绝：{exc.reason} "
+            f"(host={exc.host!r}, scheme={exc.scheme!r}, url={url[:120]!r})"
+        )
+        raise
+
 # ---------------------------------------------------------------------------
 # 全局锁 + 单例，避免多请求重复加载模型 / 重复初始化 jieba
 # ---------------------------------------------------------------------------
@@ -179,6 +248,8 @@ def _api_embed_batch(texts: list[str]) -> list[list[float]]:
         raise RuntimeError("BGE-M3 本地模型不可用且 Embedding/LLM API key 未配置，无法生成稠密向量")
     base_url = settings.EMBEDDING_API_URL or settings.LLM_BASE_URL
     url = str(base_url).rstrip("/") + "/embeddings"
+    # W-NEXT-EXE-SSRF-002：白名单守门在 HTTP 之前。失败抛 SSRFBlockedError → RuntimeError。
+    _gate_embed_url(url)
     payload = {
         "model": settings.EMBEDDING_MODEL,
         "input": texts,
