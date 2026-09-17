@@ -623,6 +623,15 @@ await check("⑲", `VEC-LOCK 守门(veclock_verify.py 12 维 + dim0 backend=bge_
   async () => {
     // 1) 跑 12 维机验,捕获 stdout 解析「汇总:N/12 PASS」
     const { code, stdout, stderr } = await runPy(EDU_PY, [VECLOCK_VERIFY], 600000);
+    // W-NEXT-CHECKDEMO-003 修:cwd=仓库根时 pydantic-settings 找不到 .env 会抛
+    //    ValidationError(Field required),exit=1,stderr 含 "Field required"。
+    //    单独跑能 PASS 是因为 cwd=edu-agent/.env 在 cwd。
+    //    友好报:stderr 看到 pydantic Field required → 报「配置缺失」而非含糊的「未解析汇总行」。
+    if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
+      const m = /(\w+)\s+Field required/i.exec(stderr);
+      const field = m ? m[1] : "unknown";
+      throw new Error(`pydantic Field required: ${field} —— 子进程未加载 edu-agent/.env。请确认 cwd 或检查 .env 中 ${field}=...（stderr=${stderr.slice(0, 200)}）`);
+    }
     // 探针末行格式:[veclock] 汇总：12/12 PASS  / [veclock] 汇总：N/12 PASS（提早退出，backend 探测失败）
     const summary = /\[veclock\]\s*汇总[：:]\s*(\d+)\s*\/\s*(\d+)\s*PASS/.exec(stdout || "");
     if (!summary) {

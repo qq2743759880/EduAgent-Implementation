@@ -49,7 +49,24 @@ from pathlib import Path
 EDU_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(EDU_ROOT))
 
-import numpy as np
+# W-NEXT-CHECKDEMO-003 修:.env 加载兜底 ——
+# 现象:check-demo.mjs ⑲ 守卫 spawn 子进程时 cwd=仓库根,不是 edu-agent/。
+#       pydantic-settings 的 env_file='.env' 是相对 cwd 的相对路径,cwd=仓库根时
+#       找不到 edu-agent/.env → 启动期 ValidationError: LLM_API_KEY Field required,
+#       子进程 exit=1。单独跑(cd edu-agent && python scripts/eval/veclock_verify.py)
+#       时 cwd=edu-agent,.env 在 cwd,正常加载。
+# 修复:入口处显式 load_dotenv(EDU_ROOT/.env),让进程环境变量在 import app.config 之前
+#       已经被填好,绕过 pydantic-settings 的 cwd-相对 env_file 寻址陷阱。
+#       不依赖 cwd,不依赖父进程的 env 注入,不依赖 shell .env-source 习惯。
+from dotenv import load_dotenv  # noqa: E402
+
+_ENV_PATH = EDU_ROOT / ".env"
+if _ENV_PATH.is_file():
+    load_dotenv(_ENV_PATH, override=False)  # 已有环境变量优先,避免覆盖 CI 注入
+else:
+    print(f"[veclock] WARN .env not found at {_ENV_PATH} — pydantic Field required 风险", file=sys.stderr)
+
+import numpy as np  # noqa: E402
 
 from app.config import settings
 from app.knowledge.importer.embedder import (
