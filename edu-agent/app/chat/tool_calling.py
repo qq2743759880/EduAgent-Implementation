@@ -339,6 +339,18 @@ async def run_chat_tool_calls(
     if not use_mcp_flag or not getattr(settings, "USE_MCP_TOOL_CALLING", True):
         return summaries, "", None
 
+    # W-NEXT-OTLP-001：executor 入口 span（disabled 模式 no-op 零开销；sync 友好不抛）
+    try:
+        from app.observability.otlp import trace_executor_entry
+        trace_executor_entry(
+            tool="mcp.dispatch",
+            user_id=str(operator_user_id) if operator_user_id else None,
+            session_id=session_id,
+            extra={"query_len": len(query or "")},
+        )
+    except Exception:
+        pass
+
     t0 = time.perf_counter()
     try:
         tools = await list_enabled_tool_metas()

@@ -347,6 +347,19 @@ class Settings(BaseSettings):
     TRACE_SESSION_LEVEL: bool = True       # 会话级 trace_id：同一会话多次请求复用同一 trace_id（span_id 各异）
 
     # ============================================================
+    # W-NEXT-OTLP-001：标准 OTLP HTTP 导出器探针（生产连 OTel Collector 用）。
+    #   与 app/otel/exporter.py 的 OTEL_EXPORT_ENDPOINT（JSONL 兜底）并存：本字段为空时
+    #   init_otlp() 走 SKIP，仅打 INFO；非空时 init_otlp() 启动期做 SSRF 白名单守门 + 探活，
+    #   任何失败仅 WARN 不阻断（与现有 6 存储 init 同语义）。默认 disabled 防首次启动报错。
+    #   字段命名遵循 OpenTelemetry 标准环境变量（OTEL_EXPORTER_OTLP_ENDPOINT）。
+    # ============================================================
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""       # 空=disabled（不探活、不导出）；非空=OTel Collector HTTP 端点
+    OTEL_EXPORTER_OTLP_HEADERS: str = ""        # 可选：`k1=v1,k2=v2`；header 仅从环境配置读取（密钥零入库）
+    OTEL_SERVICE_NAME: str = "edu-agent"        # resource 属性 service.name（OTel 标准）
+    OTEL_EXPORTER_OTLP_TIMEOUT_S: float = 2.0   # 单次 HTTP POST 超时（秒），防 collector 慢拖累主链路
+    OTEL_EXPORTER_OTLP_PROBE_ON_START: bool = True  # 启动期是否做一次 SSRF 白名单+探活（False=跳过启动探活）
+
+    # ============================================================
     # AI 助手三层记忆 + 遗忘机制（task25 R7）
     #   Working=LangGraph state｜Short-term=Redis session history+chat_message
     #   Long-term=MySQL user_memory + Milvus/in-memory 向量（用户分区）

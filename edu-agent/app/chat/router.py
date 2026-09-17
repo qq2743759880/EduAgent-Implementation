@@ -216,6 +216,17 @@ async def chat_non_stream(
     WNEXT10 F5-a：检索期间按角色限制 internal 文档可见性（student 检索不到内部工程/运维文档）。
     """
     _internal_token = _internal_visibility_token(user)
+    # W-NEXT-OTLP-001：chat 入口 span（lifespan OTLP 探针启用时发到 OTel Collector；
+    # disabled 模式 no-op 零开销，sync 友好不抛）。
+    try:
+        from app.observability.otlp import trace_chat_entry
+        trace_chat_entry(
+            user_id=str(getattr(user, "user_id", "")),
+            query=getattr(req, "query", "") or "",
+            session_id=getattr(req, "session_id", None),
+        )
+    except Exception:
+        pass
     try:
         # task-O1 AC4：会话级 trace_id —— 同一 session_id 的多次请求复用同一 trace_id，
         # 使本次完整问答（记忆召回 + LLM + 工具 + 压缩）各 span 可整链还原。
@@ -260,6 +271,17 @@ async def chat_stream_sse(
     R02：settings.STREAM_VIA_GRAPH=True（默认）→ 走 graph.astream 适配层（flows/graph_stream.py，
     同一 SSE 契约）；False → 一键回旧路径 service_chat_stream（行为与本函数历史版本逐字节等同）。
     """
+    # W-NEXT-OTLP-001：chat 入口 span（disabled 模式 no-op 零开销）
+    try:
+        from app.observability.otlp import trace_chat_entry
+        trace_chat_entry(
+            user_id=str(getattr(user, "user_id", "")),
+            query=getattr(req, "query", "") or "",
+            session_id=getattr(req, "session_id", None),
+            extra={"path": "/api/chat/stream"},
+        )
+    except Exception:
+        pass
     try:
         # WNEXT10 F5-a：检索期间按角色限制 internal 文档可见性（建连前检索走这段上下文）
         _internal_token = _internal_visibility_token(user)

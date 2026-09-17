@@ -146,6 +146,23 @@ async def lifespan(app: FastAPI):
         if not settings.DEBUG:
             raise
 
+    # ── W-NEXT-OTLP-001：标准 OTLP HTTP 导出器探针（lifespan hook）──
+    # OTEL_EXPORTER_OTLP_ENDPOINT 空 → state=disabled（安全缺省，仅 INFO）；
+    # 非空 → 启动期做 SSRF 白名单守门 + 一次性 TCP 探活，失败仅 WARN 不阻断
+    # （与上述 6 存储 init 同语义）。探针由 scripts/eval/otlp_health_probe.py
+    # + check-demo ⑳ 段消费 [OTLP] JSON 输出。host 不在白名单=立即 ssrf_rejected 阻断
+    # （app/security/ssrf_guard.py 默认白名单 127.0.0.1 / localhost / 192.168.85.101 / 10.0.0.1）。
+    try:
+        from app.observability.otlp import init_otlp as _init_otlp
+        otlp_state = _init_otlp()
+        store_status["otlp"] = otlp_state
+    except Exception as e:
+        logger.warning(
+            f"OTLP 导出器初始化兜底异常（不阻断启动，按 disabled 处理）: "
+            f"{type(e).__name__}: {e}"
+        )
+        store_status["otlp"] = f"error: {e}"
+
     logger.info(f"=== 存储初始化完成: {store_status} ===")
 
     # ── 预热阶段：后端感知预热（不阻塞启动，避免首个用户 10~44s 冷启动） ──
@@ -223,6 +240,12 @@ async def lifespan(app: FastAPI):
         except Exception:
             hitl_scan_task.cancel()
     warmup_task.cancel()
+    # ── W-NEXT-OTLP-001：OTLP 导出器关闭（清空缓冲 + state=disabled，lifespan 兜底）──
+    try:
+        from app.observability.otlp import shutdown_otlp as _shutdown_otlp
+        _shutdown_otlp()
+    except Exception as e:
+        logger.warning(f"OTLP 导出器关闭异常（忽略）: {type(e).__name__}: {e}")
     logger.info("=== 服务正在关闭 ===")
     for close_fn, name in [
         (close_mysql,   "MySQL"),
