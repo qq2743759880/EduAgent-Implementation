@@ -6,6 +6,7 @@ RBAC：整路由 require_role([ADMIN])，与全局约束第 8 条一致。
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import uuid
@@ -17,6 +18,7 @@ from fastapi.responses import HTMLResponse
 
 from app.auth import CurrentUser, UserRole, get_current_user, require_role
 from app.common.exceptions import AppException
+from app.common.logging import logger
 from app.core.resp import ok
 
 from . import description_reviewer, executor, registry
@@ -131,6 +133,27 @@ async def p8_import_url(payload: MCPImportUrlReq, me: CurrentUser = Depends(get_
     url = (payload.url or "").strip()
     if not url:
         raise HTTPException(status_code=400, detail="url 不能为空")
+    # W-NEXT-SSRF-001：URL 入参前置 SSRF host 白名单校验（Mimosa 硬约束"host 写死 127.0.0.1"）。
+    # 仅对 http(s):// 形态生效；data://test-stdio / test-stdio:// 是本机打靶占位，不出网。
+    # 拒绝：169.254.169.254（AWS/GCP/Azure IMDS 元数据 endpoint）、RFC1918 私网段
+    # （除项目白名单 192.168.85.101）、0.0.0.0、含 username:password@ 的 userinfo 形式。
+    if url.startswith("http://") or url.startswith("https://"):
+        try:
+            from app.security.ssrf_guard import validate_url
+            validate_url(url)
+        except Exception as exc:
+            # SSRFBlockedError 触发 → 直接 400 拒绝（避免被恶意 admin/manager
+            # 用来探测内网 / IMDS 元数据 / 私网服务）。
+            reason = getattr(exc, "reason", None) or str(exc)
+            host = getattr(exc, "host", "") or ""
+            scheme = getattr(exc, "scheme", "") or ""
+            logger.warning(
+                f"[p8_import_url] SSRF 拒绝：scheme={scheme} host={host} reason={reason}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"URL 不在 SSRF 白名单（拒绝详情）：{reason}（host={host}）",
+            )
     display_name = payload.preset_name or None
     if url.startswith("data://test-stdio") or url.startswith("test-stdio://"):
         # 打靶数据协议：创建 stdio-echodemo 副本，编码唯一（加时间戳）

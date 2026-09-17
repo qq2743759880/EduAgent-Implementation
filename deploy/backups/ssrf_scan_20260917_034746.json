@@ -1,0 +1,233 @@
+{
+  "task": "W-NEXT-SSRF-001",
+  "scanned_at_utc": "2026-09-17T03:47:46.979467+00:00",
+  "trusted_hosts": [
+    "10.0.0.1",
+    "127.0.0.1",
+    "192.168.85.101",
+    "::1",
+    "localhost"
+  ],
+  "scanned_root": "app",
+  "http_call_findings": [
+    {
+      "file": "app\\chat\\retriever.py",
+      "line": 469,
+      "api": "httpx.AsyncClient",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": true,
+      "trust_env_false": false,
+      "risk": "low"
+    },
+    {
+      "file": "app\\common\\error_webhook.py",
+      "line": 40,
+      "api": "httpx.AsyncClient",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": false,
+      "trust_env_false": false,
+      "risk": "low"
+    },
+    {
+      "file": "app\\core\\warmup.py",
+      "line": 134,
+      "api": "httpx.Client",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": true,
+      "trust_env_false": true,
+      "risk": "low"
+    },
+    {
+      "file": "app\\interactive\\coding\\service.py",
+      "line": 106,
+      "api": "httpx.AsyncClient",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": false,
+      "trust_env_false": false,
+      "risk": "low"
+    },
+    {
+      "file": "app\\knowledge\\importer\\embedder.py",
+      "line": 193,
+      "api": "httpx.Client",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": false,
+      "trust_env_false": true,
+      "risk": "low"
+    },
+    {
+      "file": "app\\otel\\exporter.py",
+      "line": 187,
+      "api": "requests.post",
+      "client_style": false,
+      "url_kind": "dynamic",
+      "has_host_validation": false,
+      "trust_env_false": false,
+      "risk": "high"
+    },
+    {
+      "file": "app\\services\\__init__.py",
+      "line": 54,
+      "api": "httpx.AsyncClient",
+      "client_style": true,
+      "url_kind": "none",
+      "has_host_validation": true,
+      "trust_env_false": false,
+      "risk": "low"
+    }
+  ],
+  "url_ingest_endpoints": [
+    {
+      "file": "app\\mcp\\schemas.py",
+      "model": "MCPImportUrlReq",
+      "fields": [
+        "url"
+      ]
+    }
+  ],
+  "settings_url_fields": [
+    {
+      "file": "app\\config.py",
+      "line": 79,
+      "url": "redis://localhost:6379/0",
+      "host": "localhost"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 94,
+      "url": "http://192.168.85.101:19530",
+      "host": "192.168.85.101"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 122,
+      "url": "bolt://localhost:7687",
+      "host": "localhost"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 138,
+      "url": "mongodb://192.168.85.101:27017",
+      "host": "192.168.85.101"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 149,
+      "url": "localhost:9000",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 176,
+      "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "host": "dashscope.aliyuncs.com"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 184,
+      "url": "",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 186,
+      "url": "",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 344,
+      "url": "",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 409,
+      "url": "",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 419,
+      "url": "",
+      "host": ""
+    },
+    {
+      "file": "app\\config.py",
+      "line": 513,
+      "url": "http://127.0.0.1:8601",
+      "host": "127.0.0.1"
+    },
+    {
+      "file": "app\\config.py",
+      "line": 616,
+      "url": "",
+      "host": ""
+    }
+  ],
+  "active_probe": [
+    {
+      "host": "127.0.0.1",
+      "port": 8000,
+      "reachable": true,
+      "rtt_ms": 4
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 8601,
+      "reachable": false,
+      "rtt_ms": 600
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 6379,
+      "reachable": false,
+      "rtt_ms": 608
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 9000,
+      "reachable": false,
+      "rtt_ms": 611
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 7687,
+      "reachable": false,
+      "rtt_ms": 614
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 8080,
+      "reachable": false,
+      "rtt_ms": 613
+    },
+    {
+      "host": "192.168.85.101",
+      "port": 19530,
+      "reachable": true,
+      "rtt_ms": 15
+    },
+    {
+      "host": "192.168.85.101",
+      "port": 27017,
+      "reachable": true,
+      "rtt_ms": 15
+    }
+  ],
+  "summary": {
+    "total_http_calls": 7,
+    "high_risk": 1,
+    "medium_risk": 0,
+    "low_risk": 6,
+    "url_ingest_endpoints": 1,
+    "settings_url_fields": 13,
+    "active_probe_count": 8,
+    "total_risk_positions": 21
+  }
+}

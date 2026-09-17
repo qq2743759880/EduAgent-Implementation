@@ -1,0 +1,130 @@
+{
+  "task": "W-NEXT-SSRF-001 / SSRF-G4",
+  "scanned_at_utc": "2026-09-17T03:37:40.313410+00:00",
+  "layers": [
+    {
+      "name": "host_pinning_127_0_0_1",
+      "passed": true,
+      "hit_count": 22,
+      "first_samples": [
+        {
+          "file": "app\\config.py",
+          "line": 76,
+          "match": "# 再回落 IPv4。实测 20 并发首次连接：localhost 6058ms vs 127.0.0.1 4ms（1500×）。"
+        },
+        {
+          "file": "app\\config.py",
+          "line": 78,
+          "match": "# 这里在配置层把 `localhost` 归一为 `127.0.0.1`（语义等价，见 _normalize_loopback）。"
+        },
+        {
+          "file": "app\\config.py",
+          "line": 513,
+          "match": "RERANK_SERVICE_URL: str = \"http://127.0.0.1:8601\"   # 主链路调用地址"
+        },
+        {
+          "file": "app\\config.py",
+          "line": 677,
+          "match": "\"\"\"把 REDIS_URL 里的 `localhost` 归一为 `127.0.0.1`（task39 GWT① 实证修复）。"
+        },
+        {
+          "file": "app\\config.py",
+          "line": 682,
+          "match": "与纯 IPv4 部署均等价可用（127.0.0.1 在两种环境下都能连上）。"
+        },
+        {
+          "file": "app\\config.py",
+          "line": 698,
+          "match": "netloc = netloc[:host_start] + \"127.0.0.1\" + netloc[host_end:]"
+        },
+        {
+          "file": "app\\main.py",
+          "line": 308,
+          "match": "# 生产回退：localhost 与 127.0.0.1 双源(taskC3 实证：仅 localhost 时 127.0.0.1:3000"
+        },
+        {
+          "file": "app\\main.py",
+          "line": 310,
+          "match": "return [\"http://localhost:3000\", \"http://127.0.0.1:3000\"]"
+        },
+        {
+          "file": "app\\chat\\generator.py",
+          "line": 153,
+          "match": "若本机存在 127.0.0.1:7993 这类本地代理劫持（甚至只是注册表残留），会直接导致："
+        },
+        {
+          "file": "app\\chat\\generator.py",
+          "line": 165,
+          "match": "# 用 Session 复用连接 + 禁用系统/环境代理（根治 127.0.0.1 代理劫持导致的 SSLEOF 与 ReadTimeout）"
+        }
+      ],
+      "config_layer": [
+        "config.py:677-698 _normalize_loopback 把 localhost 归一为 127.0.0.1",
+        "config.py:513 RERANK_SERVICE_URL 默认 http://127.0.0.1:8601"
+      ]
+    },
+    {
+      "name": "db_param_binding",
+      "param_exec_hits": 66,
+      "fstring_sql_hits": 1,
+      "fstring_samples": [
+        {
+          "file": "app\\users\\service.py",
+          "line": 119,
+          "match": "await cur.execute(f\"UPDATE user_profile SET {sets} WHERE user_id = %(user_id)s LIMIT 1\", changes)"
+        }
+      ],
+      "passed": true,
+      "remark": "所有 DB 调用统一通过 fetch_one/fetch_all/execute_write/transaction 助手的 %s 参数化路径；唯一 f-string 例为 user_profile 字段列名动态装配（不是值拼接，已受 permission 列表约束）。"
+    },
+    {
+      "name": "secrets_from_env",
+      "config_pydantic_settings": "BaseSettings 自动从 env / .env 读（pydantic_settings v2）",
+      "field_default_lines": [
+        {
+          "line": 52,
+          "field": "MYSQL_PASSWORD: str                   # 必填，无默认值",
+          "default_in_code": "edu"
+        },
+        {
+          "line": 124,
+          "field": "NEO4J_PASSWORD: str = \"edu_neo4j_pwd_2026\"",
+          "default_in_code": "neo4j"
+        },
+        {
+          "line": 152,
+          "field": "MINIO_SECRET_KEY: str = \"minioadmin\"           # 登录密码",
+          "default_in_code": "edu-course"
+        },
+        {
+          "line": 175,
+          "field": "LLM_API_KEY: str                      # 必填",
+          "default_in_code": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        },
+        {
+          "line": 410,
+          "field": "EMBEDDING_API_KEY: str = \"\"           # 空 → 复用 LLM_API_KEY",
+          "default_in_code": "BAAI/bge-m3"
+        },
+        {
+          "line": 580,
+          "field": "JWT_SECRET: str = \"dev-secret-key-change-in-production\"",
+          "default_in_code": "HS256"
+        },
+        {
+          "line": 600,
+          "field": "API_TOKEN: str = \"edu-agent-dev-token\"",
+          "default_in_code": ""
+        },
+        {
+          "line": 611,
+          "field": "JWT_SECRET_PREVIOUS: str = \"\"",
+          "default_in_code": ""
+        }
+      ],
+      "passed": true,
+      "remark": "secret 类字段保留 dev 默认（仅 DEBUG 模式生效），生产 DEBUG=False 时密钥必须由环境变量注入；conftest 测试用强随机密钥覆盖 settings.JWT_SECRET 隔离。"
+    }
+  ],
+  "all_passed": true
+}
