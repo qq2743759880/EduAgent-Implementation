@@ -1,0 +1,825 @@
+{
+  "total_tasks_scanned": 129,
+  "total_object_keys": 130,
+  "cross_task_reused_key_count": 55,
+  "max_reuse_count": 4,
+  "affected_task_rows": 112,
+  "affected_task_id_count": 110,
+  "affected_task_ids_sample": [
+    "task_1788356440_a61510",
+    "task_1788356551_42df8e",
+    "task_1788356631_4bf876",
+    "task_1788356691_229c20",
+    "task_1789315973_85ee85",
+    "task_1789315973_8f08f1",
+    "task_1789315973_faa7e6",
+    "task_1789315974_5b20cd",
+    "task_1789315974_66036e",
+    "task_1789315974_c3c761",
+    "task_1789315974_e65554",
+    "task_1789315975_7f90b9",
+    "task_1789315975_8e024e",
+    "task_1789315975_c6643a",
+    "task_1789315975_fbec80",
+    "task_1789315975_ff68fb",
+    "task_1789315976_857306",
+    "task_1789315976_b45811",
+    "task_1789315976_bf8ec4",
+    "task_1789315977_b27de7"
+  ],
+  "has_size_drift_count": 0,
+  "severity_counts": {
+    "warn_reuse": 55
+  },
+  "same_task_safe_name_collisions": 0,
+  "same_task_safe_name_examples": [],
+  "duplicate_object_keys": [
+    {
+      "object_key": "ÖªÊ¶¿â²âÊÔ.md",
+      "reuse_count": 4,
+      "task_ids": [
+        "task_1788356440_a61510",
+        "task_1788356551_42df8e",
+        "task_1788356631_4bf876",
+        "task_1788356691_229c20"
+      ],
+      "safe_name": "ÖªÊ¶¿â²âÊÔ.md",
+      "file_size_set": [
+        169
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "²âÊÔËµÃ÷.docx",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1788356440_a61510",
+        "task_1788356631_4bf876"
+      ],
+      "safe_name": "²âÊÔËµÃ÷.docx",
+      "file_size_set": [
+        912
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "critique-p1-验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315973_85ee85",
+        "task_1789316265_0d930d"
+      ],
+      "safe_name": "critique-p1-验收批判.md",
+      "file_size_set": [
+        1885
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "frontend-framework-critique.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315973_faa7e6",
+        "task_1789316265_bb89d0"
+      ],
+      "safe_name": "frontend-framework-critique.md",
+      "file_size_set": [
+        4624
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task00-p0-backup.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315973_8f08f1",
+        "task_1789316265_e8cdb8"
+      ],
+      "safe_name": "task00-p0-backup.md",
+      "file_size_set": [
+        3285
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task01-66-表-DDL-重建脚本（动作-A-D，按-e.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315974_66036e",
+        "task_1789316265_d0cabf"
+      ],
+      "safe_name": "task01-66-表-DDL-重建脚本（动作-A-D，按-e.md",
+      "file_size_set": [
+        2709
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task01-db-ddl-66-tables.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315974_c3c761",
+        "task_1789316266_b6032e"
+      ],
+      "safe_name": "task01-db-ddl-66-tables.md",
+      "file_size_set": [
+        3324
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task02-db-drop-13-legacy-tables.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315974_e65554",
+        "task_1789316266_64e875"
+      ],
+      "safe_name": "task02-db-drop-13-legacy-tables.md",
+      "file_size_set": [
+        3158
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task03-db-sysuser-fk-index.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315974_5b20cd",
+        "task_1789316266_088458"
+      ],
+      "safe_name": "task03-db-sysuser-fk-index.md",
+      "file_size_set": [
+        3349
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task04-db-knowledge-import-task.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315975_fbec80",
+        "task_1789316266_9f61a3"
+      ],
+      "safe_name": "task04-db-knowledge-import-task.md",
+      "file_size_set": [
+        2794
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task05-db-schema-diff-ci.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315975_c6643a",
+        "task_1789316267_ecf9f9"
+      ],
+      "safe_name": "task05-db-schema-diff-ci.md",
+      "file_size_set": [
+        2516
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task06-data-full-generate-adapt.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315975_8e024e",
+        "task_1789316267_ad3fee"
+      ],
+      "safe_name": "task06-data-full-generate-adapt.md",
+      "file_size_set": [
+        2864
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task07-data-full-load-validate.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315975_ff68fb",
+        "task_1789316267_438b43"
+      ],
+      "safe_name": "task07-data-full-load-validate.md",
+      "file_size_set": [
+        3450
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task07-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315975_7f90b9",
+        "task_1789316267_33214e"
+      ],
+      "safe_name": "task07-技术批判.md",
+      "file_size_set": [
+        8274
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task07-修复验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315976_bf8ec4",
+        "task_1789316267_d62d98"
+      ],
+      "safe_name": "task07-修复验收批判.md",
+      "file_size_set": [
+        2442
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task07-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315976_b45811",
+        "task_1789316268_a41510"
+      ],
+      "safe_name": "task07-优化修改方案.md",
+      "file_size_set": [
+        10465
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task08-data-admin-restore-smoke.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315976_857306",
+        "task_1789316268_5eaf12"
+      ],
+      "safe_name": "task08-data-admin-restore-smoke.md",
+      "file_size_set": [
+        2601
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task08-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315977_b27de7",
+        "task_1789316268_e82ace"
+      ],
+      "safe_name": "task08-技术批判.md",
+      "file_size_set": [
+        4348
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task09-core-framework.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315978_3f85a3",
+        "task_1789316268_ea0cd3"
+      ],
+      "safe_name": "task09-core-framework.md",
+      "file_size_set": [
+        3743
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task09-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315978_830001",
+        "task_1789316269_edda83"
+      ],
+      "safe_name": "task09-技术批判.md",
+      "file_size_set": [
+        4003
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task10-middleware-response-shell.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315979_003956",
+        "task_1789316269_2c9ee7"
+      ],
+      "safe_name": "task10-middleware-response-shell.md",
+      "file_size_set": [
+        3799
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task10-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315979_d7cfde",
+        "task_1789316269_15088b"
+      ],
+      "safe_name": "task10-技术批判.md",
+      "file_size_set": [
+        6150
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task10-修复验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315979_39f10d",
+        "task_1789316269_83066f"
+      ],
+      "safe_name": "task10-修复验收批判.md",
+      "file_size_set": [
+        3295
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task10-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315980_c72788",
+        "task_1789316270_baf38b"
+      ],
+      "safe_name": "task10-优化修改方案.md",
+      "file_size_set": [
+        5464
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task11-course-domain-series.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315980_6ce6b5",
+        "task_1789316270_0dca8b"
+      ],
+      "safe_name": "task11-course-domain-series.md",
+      "file_size_set": [
+        3520
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task11-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315980_6e1ebd",
+        "task_1789316270_b2be7f"
+      ],
+      "safe_name": "task11-技术批判.md",
+      "file_size_set": [
+        5670
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task11-修复验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315981_32a0dc",
+        "task_1789316271_8ed392"
+      ],
+      "safe_name": "task11-修复验收批判.md",
+      "file_size_set": [
+        3174
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task11-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315982_fe82d2",
+        "task_1789316271_bde97e"
+      ],
+      "safe_name": "task11-优化修改方案.md",
+      "file_size_set": [
+        3822
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task12-course-admin-crud.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315982_29ef29",
+        "task_1789316272_495cd0"
+      ],
+      "safe_name": "task12-course-admin-crud.md",
+      "file_size_set": [
+        3345
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task12-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315982_502238",
+        "task_1789316272_e90aae"
+      ],
+      "safe_name": "task12-技术批判.md",
+      "file_size_set": [
+        5053
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task12-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315982_f04cf3",
+        "task_1789316273_4cacaf"
+      ],
+      "safe_name": "task12-优化修改方案.md",
+      "file_size_set": [
+        4368
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task13-question-domain.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315983_52eabb",
+        "task_1789316273_c6ab5c"
+      ],
+      "safe_name": "task13-question-domain.md",
+      "file_size_set": [
+        3311
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task13-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315983_ac61d7",
+        "task_1789316273_909ffd"
+      ],
+      "safe_name": "task13-技术批判.md",
+      "file_size_set": [
+        3242
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task14-fix-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315983_9929bf",
+        "task_1789316274_6d84ca"
+      ],
+      "safe_name": "task14-fix-优化修改方案.md",
+      "file_size_set": [
+        3555
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task14-progress-mindmap-users.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315983_565d05",
+        "task_1789316274_b4dce5"
+      ],
+      "safe_name": "task14-progress-mindmap-users.md",
+      "file_size_set": [
+        3282
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task14-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315984_dade01",
+        "task_1789316275_200e8e"
+      ],
+      "safe_name": "task14-技术批判.md",
+      "file_size_set": [
+        4732
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task14-修复验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315984_4f7270",
+        "task_1789316275_6e8080"
+      ],
+      "safe_name": "task14-修复验收批判.md",
+      "file_size_set": [
+        4561
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task14-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315984_25a4dc",
+        "task_1789316275_80a32a"
+      ],
+      "safe_name": "task14-优化修改方案.md",
+      "file_size_set": [
+        3792
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task15-legacy-modules-shell-adapt.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315985_796454",
+        "task_1789316276_30506a"
+      ],
+      "safe_name": "task15-legacy-modules-shell-adapt.md",
+      "file_size_set": [
+        2964
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task15-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315985_834138",
+        "task_1789316276_675f28"
+      ],
+      "safe_name": "task15-技术批判.md",
+      "file_size_set": [
+        2806
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task16-market-coupons-favorites.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315985_e72bad",
+        "task_1789316276_cc984b"
+      ],
+      "safe_name": "task16-market-coupons-favorites.md",
+      "file_size_set": [
+        3060
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task16-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315986_f4f252",
+        "task_1789316277_0d1214"
+      ],
+      "safe_name": "task16-技术批判.md",
+      "file_size_set": [
+        2844
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task17-trade-order.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315986_28a8a8",
+        "task_1789316277_8ae41a"
+      ],
+      "safe_name": "task17-trade-order.md",
+      "file_size_set": [
+        3470
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task17-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315986_8f79d4",
+        "task_1789316278_65c016"
+      ],
+      "safe_name": "task17-技术批判.md",
+      "file_size_set": [
+        4525
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task17-修复验收批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315987_f97bcb",
+        "task_1789316278_e0e722"
+      ],
+      "safe_name": "task17-修复验收批判.md",
+      "file_size_set": [
+        2650
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task17-优化修改方案.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315987_759de7",
+        "task_1789316278_5598cd"
+      ],
+      "safe_name": "task17-优化修改方案.md",
+      "file_size_set": [
+        2892
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task18-trade-payment.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315987_a89740",
+        "task_1789316279_b89393"
+      ],
+      "safe_name": "task18-trade-payment.md",
+      "file_size_set": [
+        3470
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task18-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315988_cbb7c2",
+        "task_1789316279_4f1c86"
+      ],
+      "safe_name": "task18-技术批判.md",
+      "file_size_set": [
+        2529
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task19-trade-refund.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315988_f864ec",
+        "task_1789316280_1625d3"
+      ],
+      "safe_name": "task19-trade-refund.md",
+      "file_size_set": [
+        3128
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task19-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315988_b0aa17",
+        "task_1789316281_aef2ed"
+      ],
+      "safe_name": "task19-技术批判.md",
+      "file_size_set": [
+        2841
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task20-enrollment.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315988_42bdd3",
+        "task_1789316281_3874d9"
+      ],
+      "safe_name": "task20-enrollment.md",
+      "file_size_set": [
+        3793
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "task20-技术批判.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789315989_eebfbf",
+        "task_1789316282_f1d582"
+      ],
+      "safe_name": "task20-技术批判.md",
+      "file_size_set": [
+        2616
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "t10_same.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789542336_91acb7",
+        "task_1789542336_40977b"
+      ],
+      "safe_name": "t10_same.md",
+      "file_size_set": [
+        749
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "t10_imp.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789542661_81f7b3",
+        "task_1789542666_4b4cb1"
+      ],
+      "safe_name": "t10_imp.md",
+      "file_size_set": [
+        354
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    },
+    {
+      "object_key": "test_s4.md",
+      "reuse_count": 2,
+      "task_ids": [
+        "task_1789545981_39fa0f",
+        "task_1789545984_873bb4"
+      ],
+      "safe_name": "test_s4.md",
+      "file_size_set": [
+        96
+      ],
+      "has_size_drift": false,
+      "severity": "warn_reuse"
+    }
+  ],
+  "thresholds": {
+    "warn_reuse_threshold": 1,
+    "warn_size_drift_threshold": 1
+  },
+  "minio_endpoint": "192.168.85.101:9000",
+  "mysql_host": "localhost",
+  "generated_at": "2026-09-18T01:30:02",
+  "status": "WARN",
+  "reason": "发现 55 个 object_key 跨多 task 复用（最大复用 4 次）——W-NEXT-MINIO-001 仅防止未来覆盖，已发生历史无法回填",
+  "summary": {
+    "duplicate_keys": 55,
+    "max_reuse_count": 4,
+    "affected_task_rows": 112,
+    "has_size_drift_count": 0
+  }
+}
