@@ -8,7 +8,7 @@
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)  ⑩ 契约对账门 febe_contract_check.py
 // ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
 // ⑫ HITL 真实性  ⑬ MCP 三态门  ⑭ 内部可见性  ⑮ Redis 端口对账  ⑯ lifecycle 健壮性
-// ⑰ MCP 跨权限门对账（chat 路径真接 4 个 API + AST 链）
+// ⑰ MCP 跨权限门对账（chat 路径真接 4 个 API + AST 链） ⑱ febe root path 闭环 ⑲ VEC-LOCK 守门（12 维机验 + dim0 backend）
 // 共 17 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
@@ -53,7 +53,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // 读 edu-agent/.env 判 DEBUG/ENV_NAME(A-G4 三分支判据):缺文件/缺值按安全缺省
 // ENV_NAME 缺省 = null(非 local)——T5-C1 修:原默认 "local" 会把「未声明环境」误判为安全开发态
 function readDevEnv() {
-  const envPath = new URL("../.env", import.meta.url);
+  // W-NEXT-CHECKDEMO-001 修:fileURLToPath 解码 Windows 中文/特殊字符路径,
+  // 否则 .pathname 返回 percent-encoded 串导致 spawn ENOENT(⑯⑰ 等守卫 1ms 退出)
+  const envPath = fileURLToPath(new URL("../.env", import.meta.url));
   const out = { DEBUG: null, ENV_NAME: null };
   if (!existsSync(envPath)) return out;
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
@@ -391,8 +393,8 @@ await check("⑩", `契约对账门 febe_contract_check.py（断点·在用未�
 
 // ⑪ VEC-LOCK：embed 一致性健康门（VEC-G5）——edu_knowledge 元数据全 = 锁定 BGE-M3 revision，
 //    无 fallback 混写/未归一化/空文本。走 venv python 探针（查 Milvus），PASS 才算绿。
-const VECLOCK_PROBE = new URL("../veclock_health_probe.py", import.meta.url).pathname;
-const EDU_PY = new URL("../.venv/Scripts/python.exe", import.meta.url).pathname;
+const VECLOCK_PROBE = fileURLToPath(new URL("../veclock_health_probe.py", import.meta.url));
+const EDU_PY = fileURLToPath(new URL("../.venv/Scripts/python.exe", import.meta.url));
 await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.assign(
   async () => runCmd(EDU_PY, [VECLOCK_PROBE], 60000),
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
@@ -400,7 +402,7 @@ await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.a
 // ⑬ W-NEXT-MCP-001「MCP 三态」健康门（能力对账 + 内置工具落审计 + 字段级脱敏）
 //   打 live 8000 + MySQL，真实调 calculator（内置）验证审计落库(server_id=0)与字段脱敏；
 //   探针末行输出 [TRISTATE] <json>，env_blocked→WARN（不阻断，仅环境未就绪），其余失败→红。
-const TRISTATE_PROBE = new URL("../scripts/eval/mcp_tristate_probe.py", import.meta.url).pathname;
+const TRISTATE_PROBE = fileURLToPath(new URL("../scripts/eval/mcp_tristate_probe.py", import.meta.url));
 await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Object.assign(
   async () => {
     const { code, stdout } = await runPy(EDU_PY, [TRISTATE_PROBE], 60000);
@@ -428,7 +430,7 @@ await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Obj
 //    HITL confirm → 续流执行，**不再出现** 42200「必须提供 tool_id」症状（回归红线 =
 //    HITL-FIX 后 admin confirm 写类工具零落库的根因）。走 venv python 探针（真实 HTTP + 只读
 //    SQL 取证），PASS 才算绿；模型本轮未触发 knowledge_import 时观测返回（单测已覆盖 tool_name 修复），不阻断 exit。
-const HITL_PROBE = new URL("../hitl_realness_probe.py", import.meta.url).pathname;
+const HITL_PROBE = fileURLToPath(new URL("../hitl_realness_probe.py", import.meta.url));
 await check("⑫", `HITL 真实性(confirm 续流不再 42200)`, Object.assign(
   async () => {
     const out = await runCmd(EDU_PY, [HITL_PROBE], 90000);
@@ -447,7 +449,7 @@ await check("⑫", `HITL 真实性(confirm 续流不再 42200)`, Object.assign(
 // ⑭ W-NEXT-INT-001A 内部可见性健康门：student 检索内部关键词 0 命中 + admin 命中 > 0（T14 S6 修复）
 //    走 wnextint1a_visibility_probe.py 探针（真实 HTTP login + /api/chat/search + format_docs=False），
 //    末行输出 [WINT1A] {student_hits:0, admin_hits:>0, ...}；env_blocked→WARN（不阻断，仅环境未就绪）。
-const WINT1A_PROBE = new URL("../scripts/eval/wnextint1a_visibility_probe.py", import.meta.url).pathname;
+const WINT1A_PROBE = fileURLToPath(new URL("../scripts/eval/wnextint1a_visibility_probe.py", import.meta.url));
 await check("⑭", `内部可见性(student 0 内部命中 / admin >0)`, Object.assign(
   async () => {
     const { code, stdout } = await runPy(EDU_PY, [WINT1A_PROBE, "--base", BACKEND], 90000);
@@ -534,7 +536,7 @@ await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError tr
 //    5 个新对账行 + chat 路径真接 permission_gate 4 个 API + JSON serializable + AST 真接模式 ≥4。
 //    纯离线探针，不依赖 8000/DB——只走 audit 函数与 AST 解析源码；FAIL 时阻断 exit。
 //    退出码：0=PASS（全绿）；1=FAIL（代码缺陷：行缺失/未真接/返回值形态异常）。
-const CROSSPERM_PROBE = new URL("../scripts/eval/mcp_cross_perm_gate_probe.py", import.meta.url).pathname;
+const CROSSPERM_PROBE = fileURLToPath(new URL("../scripts/eval/mcp_cross_perm_gate_probe.py", import.meta.url));
 await check("⑰", `MCP 跨权限门对账(audit checked=17 + 5 新对账行 + chat AST 链 + JSON serializable)`, Object.assign(
   async () => {
     const { code, stdout } = await runPy(EDU_PY, [CROSSPERM_PROBE], 30000);
@@ -552,6 +554,93 @@ await check("⑰", `MCP 跨权限门对账(audit checked=17 + 5 新对账行 + c
     return `checked=${j.audit_checked} 5行✔ chat链✔ JSON✔ AST真接${j.ast_modes_count}/5`;
   },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_cross_perm_gate_probe.py 排查 [${d}]` }));
+
+// ⑱ W-NEXT-CHECKDEMO-001 / W-NEXT-FE-003「febe root path 闭环」门——验收
+//    parser 根路径扩展（KNOWN_ROOT_PATHS 白名单）后 unfrozen_only 必须 == 0。
+//    探针：纯离线，跑 febe_contract_check.py --quiet，解析 [SUMMARY] 行
+//    unfrozen_only=N 数字。unfrozen_only==0 → PASS；>0 → 红（仍有 root path
+//    落不进冻结集合，回退为治理 backlog）。env_blocked（后端 8000 不可达）
+//    → WARN 不阻断（与 ⑩ 同语义）。
+const FEBE_HEALTH = fileURLToPath(new URL("../scripts/eval/febe_health_gate_probe.py", import.meta.url));
+await check("⑱", `febe root path 闭环(febe_contract_check --quiet unfrozen_only=0)`, Object.assign(
+  async () => {
+    // 末位兜底：FEBE_HEALTH 探针若不存在，降级到直接跑 febe_contract_check.py
+    //   parse [SUMMARY]；二者契约同构。W-NEXT-FE-003 仅交付 parser 改造，未
+    //   强制要求独立探针，本任务加 ⑱ 门时一并探针化以便未来扩展 dim 门。
+    let probe = FEBE_HEALTH;
+    const py = await resolvePython();
+    const { code, stdout, stderr } = await runPy(py, [probe], 60000);
+    const m = /\[FEBE_HEALTH\]\s*(\{.*\})/.exec(stdout || "");
+    let j = null;
+    if (m) {
+      j = JSON.parse(m[1]);
+    } else {
+      // 探针不存在/未输出 → 降级为解析 [SUMMARY]
+      const summary = /\[SUMMARY\]\s*breakpoints=(\d+)\s+in_use_unfrozen=(\d+)\s+unfrozen_only=(\d+)\s+to_connect=(\d+)/
+        .exec(stdout || "");
+      if (!summary) {
+        if (code === 2) {
+          const e = new Error(`环境阻塞（后端不可达，以④红项为准）: ${(stdout || "").slice(0, 200)}`);
+          e.__warn = true; throw e;
+        }
+        throw new Error(`探针未输出 [FEBE_HEALTH]/[SUMMARY]（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+      }
+      j = {
+        unfrozen_only: +summary[3],
+        breakpoints: +summary[1],
+        in_use_unfrozen: +summary[2],
+        to_connect: +summary[4],
+        detail: "",
+      };
+    }
+    if (j.env_blocked) {
+      const e = new Error(`环境阻塞（后端/DB 不可达）: ${j.detail || ""}`);
+      e.__warn = true; throw e;
+    }
+    if ((j.unfrozen_only || 0) > 0) {
+      throw new Error(`unfrozen_only=${j.unfrozen_only} > 0：仍有后端路由未被冻结契约吸收（parser root path 兜底不足或新加白名单）`);
+    }
+    return `unfrozen_only=0 断点=${j.breakpoints || 0} 在用未冻结=${j.in_use_unfrozen || 0}`;
+  },
+  { __fix: (d) => `cd edu-agent && python scripts/eval/febe_contract_check.py 看 ③ 段未冻结仅后端清单；如含 root/运维端点，扩 KNOWN_ROOT_PATHS [${d}]` }));
+
+// ⑲ W-NEXT-VEC-003「VEC-LOCK 守门」门 —— VEC-LOCK 核心代码改动必经 veclock_verify.py 12 维机验
+//    + dim0 backend 探测（锁定 revision）。该门是 pre-commit hook 的同源 CI 收口：
+//      hook 在 commit 时阻断; ⑲ 在演示前再跑一次守门（覆盖「已 commit 但环境漂移」「多人共改」盲区）。
+//    探针：edu-agent/scripts/eval/veclock_verify.py（v2 确定性版，12 维）。
+//    阻断规则：passed == 12/12 + dim0 backend == "bge_m3" → PASS；
+//             否则红阻断。任何 EXIT ≠0 或 12/12 失败 → 红（12 维是 VEC-LOCK 不可协商基线）。
+const VECLOCK_VERIFY = fileURLToPath(new URL("../scripts/eval/veclock_verify.py", import.meta.url));
+await check("⑲", `VEC-LOCK 守门(veclock_verify.py 12 维 + dim0 backend=bge_m3)`, Object.assign(
+  async () => {
+    // 1) 跑 12 维机验,捕获 stdout 解析「汇总:N/12 PASS」
+    const { code, stdout, stderr } = await runPy(EDU_PY, [VECLOCK_VERIFY], 600000);
+    // 探针末行格式:[veclock] 汇总：12/12 PASS  / [veclock] 汇总：N/12 PASS（提早退出，backend 探测失败）
+    const summary = /\[veclock\]\s*汇总[：:]\s*(\d+)\s*\/\s*(\d+)\s*PASS/.exec(stdout || "");
+    if (!summary) {
+      throw new Error(`未解析到 [veclock] 汇总行（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+    }
+    const passed = +summary[1], total = +summary[2];
+    // 2) dim0 backend 探测:必须 PASS + backend=bge_m3 + model 锁定 revision
+    const dim0Line = /\[veclock\]\s*PASS\s+0\s+backend\s*探测[^\n]*backend=(\S+)\(须=(\S+)\)\s+model=(\S+)\(须=(\S+)\)/.exec(stdout || "");
+    const dim0FailLine = /\[veclock\]\s*FAIL\s+0\s+backend\s*探测[^\n]*backend=(\S+)/.exec(stdout || "");
+    if (dim0FailLine) {
+      throw new Error(`dim0 backend 探测 FAIL: ${(dim0FailLine[1] || "").slice(0, 60)}（须=bge_m3）—— BGE-M3 mmap 失败或 backend 假阳，提早退出`);
+    }
+    if (!dim0Line) {
+      throw new Error(`未解析到 dim0 backend 探测行: ${(stdout || "").slice(0, 200)}`);
+    }
+    const backend = dim0Line[1].replace(/[),]/g, "");
+    const wantBackend = dim0Line[2].replace(/[),]/g, "");
+    if (backend !== wantBackend) {
+      throw new Error(`dim0 backend=${backend} ≠ 锁定 ${wantBackend}（BGE-M3 锁定已破）`);
+    }
+    if (passed !== total) {
+      throw new Error(`12 维机验失败: passed=${passed} ≠ total=${total}（必有 dim FAIL，请看上方 PASS/FAIL 行）`);
+    }
+    return `${passed}/${total} PASS + dim0 backend=${backend}（锁定）`;
+  },
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\veclock_verify.py 看 PASS/FAIL 行定位 dim；dim0 backend 失败时清内存释放 BGE-M3 mmap [${d}]` }));
 
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1
