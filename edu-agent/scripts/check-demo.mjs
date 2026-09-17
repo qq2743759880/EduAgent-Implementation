@@ -468,6 +468,39 @@ await check("⑭", `内部可见性(student 0 内部命中 / admin >0)`, Object.
   },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\wnextint1a_visibility_probe.py --base ${BACKEND} 排查 [${d}]` }));
 
+// ⑮ W-NEXT-REDIS-FIX「Redis 部署对账」门——.env REDIS_PORT vs docker 宿主端口一致性。
+//    探针：edu-agent/scripts/eval/redis_port_check.py（纯 docker + .env 探测，不依赖后端）。
+//    四态：PASS（红/绿）/ WARN（红/绿，不阻断仅提示）/ FAIL_ENV_MISSING（红/绿）/ ENV_BLOCKED（红/绿）。
+//    退出码语义：0=PASS/WARN(配置漂移)，1=FAIL_ENV_MISSING，2=ENV_BLOCKED。
+//    ⑮ 阻断规则：PASS → PASS；WARN → 红阻断（部署脱节 = 盲区再现）；FAIL_ENV_MISSING → 红阻断；ENV_BLOCKED → WARN 不阻断。
+const REDIS_PORT_CHECK = fileURLToPath(new URL("../scripts/eval/redis_port_check.py", import.meta.url));
+await check("⑮", `Redis 部署对账(.env REDIS_PORT vs docker 宿主端口)`, Object.assign(
+  async () => {
+    const py = await resolvePython();
+    const { code, stdout, stderr } = await runPy(py, [REDIS_PORT_CHECK], 30000);
+    const m = /\[PORT_CHECK\]\s*(\{.*\})/.exec(stdout || "");
+    if (!m) {
+      throw new Error(`探针未输出 [PORT_CHECK]（exit=${code}）: ${(stdout || "").slice(0, 200)}${stderr ? " | stderr=" + stderr.slice(0, 120) : ""}`);
+    }
+    const j = JSON.parse(m[1]);
+    if (j.env_blocked === undefined && j.status === "ENV_BLOCKED") {
+      // 兼容字段命名（脚本里 status="ENV_BLOCKED"，无独立 env_blocked 字段）
+      j.env_blocked = true;
+    }
+    if (j.status === "ENV_BLOCKED") {
+      const e = new Error(`docker 不可用（以②红项为准）: ${j.docker_error || "无容器"}`);
+      e.__warn = true; throw e;
+    }
+    if (j.status === "FAIL_ENV_MISSING") {
+      throw new Error(`.env 缺 REDIS_PORT/REDIS_URL: ${j.env_error || ""}——按 deploy/README.md §1.1 补齐`);
+    }
+    if (j.status === "WARN") {
+      throw new Error(`.env REDIS_PORT=${j.env_port} ≠ docker 宿主端口=${j.docker_port}（容器 ${j.container || "?"}）——部署脱节，需改 .env`);
+    }
+    return `.env=${j.env_port} docker=${j.docker_port}（容器 ${j.container}, 容器内 ${j.container_internal_port}）`;
+  },
+  { __fix: (d) => `cd edu-agent && python scripts\\eval\\redis_port_check.py 排查；详见 deploy/README.md §1.1 [${d}]` }));
+
 // ---------- 汇总 ----------
 // warn 条目(软)不阻断:绿 = ok 或 warn;仅真正 FAIL(非 ok 且非 warn)计入红项、触发 exit 1
 const pass = results.filter((r) => r.ok).length;

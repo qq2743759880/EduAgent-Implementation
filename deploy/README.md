@@ -52,6 +52,64 @@
 > 注：MinIO/Neo4j 在 VM 上是 taskC3 实测事实（生产 .env 实际指向 192.168.85.101，
 > lifespan 初始化 `'minio':'ok','neo4j':'ok'`，见 C3-e2e-report §2①）。
 
+### 1.1 Redis 部署位置（W-NEXT-REDIS-FIX，2026-09-17 闭环）
+
+> 本节由 W-NEXT-REDIS-FIX 任务新增（独立闭环），用于消除**端口/容器名漂移**导致的部署脱节盲区。
+> 任务起源：本机盲测发现 `edu-redis-standalone` 容器已被 `prisma-ai-redis-container-1` 替代，
+> 宿主端口从 `6379` 漂移到 `6377`（容器内仍是 `6379`），而 `.env` 此前**没有显式 `REDIS_URL`**——
+> 后端走 `app/config.py:79` 默认 `redis://localhost:6379/0`，与实际容器端口脱节，新人接手必踩。
+
+| 项 | 当前值 | 历史值（已弃用） | 备注 |
+|---|---|---|---|
+| 容器名 | `prisma-ai-redis-container-1` | `edu-redis-standalone` | 旧容器名已停用，**不要**回退该命名 |
+| 宿主端口 | `6377` | `6379` | Docker Desktop 端口映射 `0.0.0.0:6377->6379/tcp` |
+| 容器内端口 | `6379` | `6379` | 未变（redis 默认端口） |
+| `.env` 显式声明 | `REDIS_URL=redis://127.0.0.1:6377/0` + `REDIS_PORT=6377` | 无（隐式走 `config.py` 默认 `localhost:6379/0`） | `localhost` 已归一为 `127.0.0.1`（`config.py _normalize_loopback`） |
+
+**对账/防漂移**（强制每次发版前跑）：
+
+```bash
+# 1) 看实际容器 + 端口
+docker ps --filter "name=redis" --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
+#   期望：prisma-ai-redis-container-1  0.0.0.0:6377->6379/tcp  Up … (healthy)
+
+# 2) 跑自检脚本对账 .env 与 docker 端口
+python edu-agent/scripts/eval/redis_port_check.py
+#   期望：末行 [PORT_CHECK] env_port=6377 docker_port=6377 status=PASS
+#   不一致时 WARN（不阻断，但提示需改 .env）
+
+# 3) 单测
+pytest edu-agent/tests/test_redis_port_check.py -v
+#   期望：≥1 例 PASS（对账逻辑回归保护）
+
+# 4) check-demo ⑮ 门（演示前必跑）
+node edu-agent/scripts/check-demo.mjs
+#   期望：⑮ Redis 部署对账 PASS（实际 redis port 与 .env 一致）
+```
+
+**为什么 .env 必须显式 REDIS_URL 而不只靠 config.py 默认？**
+
+1. `app/config.py:79` 默认是 `redis://localhost:6379/0`——这条历史默认值锁死了「Redis 一定在 6379」的隐含假设，
+   漂移后**没有**任何代码层告警，仅在 lifespan `init_redis()` `ping()` 失败时才暴露（彼时 8000 已拒启/降级）。
+2. 显式 `REDIS_URL` 是**单一事实源**（single source of truth）：配置漂移时运维/新人第一时间看到正确端口，
+   避免再次出现「文档/代码/实际」三方不一致。
+3. `REDIS_PORT` 是冗余键——与 `REDIS_URL` 解耦的明示端口，便于 `redis_port_check.py` 单独断言
+   （不必正则解析 URL）。
+
+**盲测/部署脱节历史（教训登记）**：
+
+| 日期 | 事件 | 当时应对 | 根因 |
+|---|---|---|---|
+| ≤2026-09-15 | `edu-redis-standalone` 在跑，端口 6379，文档/代码/.env 三方一致 | 一切正常 | — |
+| 2026-09-15 → 2026-09-17 | 容器重建为 `prisma-ai-redis-container-1`，端口漂到 6377（盲测期间发生） | 未登记文档/.env | **部署脱节**：容器/端口变更无审计记录 |
+| 2026-09-17 W-NEXT-REDIS-FIX | `.env` 显式 `REDIS_URL=redis://127.0.0.1:6377/0` + `REDIS_PORT=6377`；本文新增 + `redis_port_check.py` + check-demo ⑮ 门 | 本任务闭环 | 见上「对账/防漂移」段 |
+
+> **未来防漂移建议（非本任务范围）**：
+> - check-demo.mjs ② 的 `REDIS_CONTAINER = "edu-redis-standalone"`（line 20）需改为容器名探测（多容器按 health 选第一个），
+>   当前脚本硬编码仍指旧名，演示验收会假红——本任务**未触** `check-demo.mjs` ②（scope 限于 ⑮），后续单独 W-NEXT 修复。
+> - 若再次发生容器/端口变更，请同步：(a) `edu-agent/.env` `REDIS_URL`/`REDIS_PORT` 两键；(b) 本节表格；
+>   (c) `edu-agent/scripts/eval/redis_port_check.py` 期望值；(d) `test-reports/` 留一份变更说明。
+
 ---
 
 ## 2. 前置清单
