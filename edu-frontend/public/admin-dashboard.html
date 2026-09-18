@@ -279,8 +279,8 @@ button{font-family:inherit;cursor:pointer}
 </header>
 <div class="page">
   <div class="demo-note">
-    <b>契约⑤ 真实聚合</b> 数据源：<code>GET /api/admin/users/dashboard/metrics</code>（用户类 KPI 全真实，无 MOCK）。
-    <span class="warn">契约缺口</span>：订单数/营收/热门课程榜 —— 后端当前无管理端全局聚合端点（trade 域均用户本人视角），榜单为示例形态 + 占位，待 <b>task70~91</b> 后端聚合端点后接线。
+    <b>平台运营总览</b> 数据实时聚合：用户规模 / 活跃 / 增长与角色分布均为真实数据。
+    <span class="warn">暂未开放</span>：订单数 / 营收 / 热门课程榜等交易统计视图，功能上线后自动呈现。
   </div>
 
   <!-- ================= 成功态（数据就绪后由 bootAdmin 显示；KPI/图表全部真实数据） ================= -->
@@ -383,8 +383,8 @@ button{font-family:inherit;cursor:pointer}
       <span class="fb-emoji" aria-hidden="true">🏆</span>
       <div class="fb-txt">
         <h3>热门课程榜</h3>
-        <p>订单数 / 营收 / 热门课程聚合依赖管理端全局交易端点。后端当前仅提供用户本人视角的交易接口，<b>无 admin 全局聚合端点</b>——本区块在聚合端点就绪前不伪造数据，由 React 契约缺口占位卡呈现。</p>
-        <span class="fb-flag">⏳ 待后端 task70~91 提供 GET /api/admin/trade/{orders|revenue|rank}/overview</span>
+        <p>订单数 / 营收 / 热门课程依赖管理端全局交易统计，功能开放后将在此呈现。</p>
+        <span class="fb-flag">⏳ 暂未开放</span>
       </div>
     </div>
   </section>

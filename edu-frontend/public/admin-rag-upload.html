@@ -304,18 +304,16 @@
   <div class="page-head">
     <div>
       <h1>RAG 控制台 · 文件上传</h1>
-      <div class="sub">知识库多文件上传 / 导入任务轮询 / 分区管理 / 集合健康闭环（FR-RAG-02）</div>
+      <div class="sub">知识库多文件上传 / 导入任务轮询 / 分区管理 / 集合健康闭环</div>
     </div>
     <div class="act">
-      <span class="chip">契约⑥（task36）<b>已冻结 ✅</b></span>
-      <span class="chip">端点 <b>4</b></span>
       <span class="chip">上传配额 50 文件 / 200MB 个</span>
     </div>
   </div>
 
   <!-- 真实接入说明（task61：契约⑥已冻结并接真实后端） -->
-  <div class="gap-note">✅ 已接入真实知识库上传闭环（契约⑥）：选择/拖入文件 → 前端预校验（扩展名白名单、≤200MB、≤50 个）→ 逐文件 <code>POST /api/knowledge/admin/upload</code> →
-    <code>GET /api/knowledge/tasks</code> 5s 轮询跟踪 pending→running→succeeded/failed；分区走 <code>GET/DELETE /api/knowledge/partitions</code>。PDF 解析依赖后端 pdfplumber 依赖。</div>
+  <div class="gap-note">✅ 已接入真实知识库上传闭环：选择/拖入文件 → 前端预校验（扩展名白名单、≤200MB、≤50 个）→ 逐文件上传 →
+    导入任务每 5s 轮询跟踪 pending→running→succeeded/failed；支持分区查看与删除。PDF 解析依赖后端 pdfplumber 依赖。</div>
 
   <!-- RAG 控制台 Tabs：新增「上传」Tab -->
   <div class="tabs">
@@ -330,7 +328,7 @@
   <div class="card" id="upCard">
     <div class="card-h">
       <h3>上传文件</h3>
-      <span class="hint">POST /api/knowledge/admin/upload · FormData 多文件 · RBAC admin/manager</span>
+      <span class="hint">支持多文件同时上传 · 仅 admin/manager 可操作</span>
     </div>
 
     <!-- 文件校验规则：扩展名白名单 + 单文件≤200MB + ≤50文件（本地即时拦截） -->
@@ -362,7 +360,7 @@
   <div class="tbl-card" id="taskCard">
     <div class="card-h pad-h">
       <h3>导入任务 <span class="poll" id="taskPoll"><span class="dot"></span>5s 轮询 · 页面隐藏时暂停</span></h3>
-      <span class="hint">GET /api/knowledge/tasks · 分页倒序（newest first）</span>
+      <span class="hint">按创建时间倒序</span>
     </div>
     <table id="taskTable">
       <thead>
@@ -371,7 +369,7 @@
         </tr>
       </thead>
       <tbody id="taskBody">
-        <tr><td colspan="8" class="box-pad"><div class="ic">⏳</div>加载任务中…（GET /api/knowledge/tasks）</td></tr>
+        <tr><td colspan="8" class="box-pad"><div class="ic">⏳</div>加载任务中…</td></tr>
       </tbody>
     </table>
     <div class="tbl-foot">
@@ -413,15 +411,14 @@
     <div class="card">
       <div class="card-h">
         <h3>分区管理</h3>
-        <span class="hint">GET/DELETE /api/knowledge/partitions</span>
       </div>
-      <div class="box-pad part-empty" id="partEmpty">分区加载中…（GET /api/knowledge/partitions）</div>
+      <div class="box-pad part-empty" id="partEmpty">分区加载中…</div>
       <div id="partList"></div>
       <div class="dlg-hint" id="defaultHint" style="display:none">🔒 公共分区 _default 不可删除：前端禁用删除按钮 + 后端拒绝兜底。删除其他分区将清空其向量/分块.</div>
     </div>
   </div>
 
-  <div class="foot-note">HTML 审核稿 · candy-playful（P18 FROZEN）· 契约⑥已冻结 ✅ · 已接入真实上传/轮询/分区</div>
+  <div class="foot-note">知识库上传 · 导入任务 · 分区管理</div>
 </div>
 </div><!-- /.glayout -->
 

@@ -308,26 +308,22 @@
   <div class="page-head">
     <div>
       <h1>MCP 控制台 · 工具管理</h1>
-      <div class="sub">MCP Server 管理 / 工具发现与测试 / 调用审计（task62 · 契约 task33 MCP 增强）</div>
+      <div class="sub">MCP Server 管理 / 工具发现与测试 / 调用审计</div>
     </div>
     <div class="act">
-      <span class="chip">契约 task33 <b>已冻结</b></span>
-      <span class="chip">端点 <b>6</b></span>
       <span class="chip">仅 admin 可见</span>
     </div>
   </div>
 
   <!-- 接入说明（已全量接线真实后端 /api/mcp/*） -->
-  <div class="gap-note" style="background:var(--ok-bg);color:var(--ok-ink)">✅ 已接入真实 MCP 管理端（task33 契约）：<code>GET/POST /api/mcp/servers</code>、
-    <code>POST /api/mcp/health-scan</code>（同步全量扫描，Server 多时耗时较长，按钮会显示扫描中）、
-    <code>GET /api/mcp/tools</code>、<code>POST /api/mcp/tools/test</code>、
-    <code>GET /api/mcp/call-log</code>、单 Server <code>健康检查 / 发现工具 / 注销</code>。</div>
+  <div class="gap-note" style="background:var(--ok-bg);color:var(--ok-ink)">✅ 已接入真实 MCP 管理端：Server 注册与管理、
+    健康扫描（同步全量扫描，Server 多时耗时较长，按钮会显示扫描中）、
+    工具清单与在线测试、调用审计，并支持单 Server <code>健康检查 / 发现工具 / 注销</code>。</div>
 
   <!-- ① Server 列表 -->
   <div class="card">
     <div class="card-h">
       <h3>MCP Server <span class="hint">健康灯 last_health_ok / last_error</span></h3>
-      <span class="hint">GET /api/mcp/servers · POST /api/mcp/health-scan</span>
     </div>
     <div class="pick-row">
       <button class="btn-ghost btn btn-mini" id="addSrvBtn">+ 新增 Server</button>
@@ -336,7 +332,7 @@
     <table id="srvTable">
       <thead><tr><th>Server</th><th>传输</th><th>健康</th><th>工具数</th><th>上次错误</th><th style="text-align:right">操作</th></tr></thead>
       <tbody>
-        <tr><td colspan="6" class="box-pad">加载中…（GET /api/mcp/servers）</td></tr>
+        <tr><td colspan="6" class="box-pad">加载中…</td></tr>
       </tbody>
     </table>
   </div>
@@ -345,12 +341,11 @@
   <div class="card">
     <div class="card-h">
       <h3>工具清单 <span class="hint">DB 注册 + live discover-live</span></h3>
-      <span class="hint">GET /api/mcp/tools</span>
     </div>
     <table id="toolTable">
       <thead><tr><th>工具名</th><th>所属 Server</th><th>描述</th><th style="text-align:right">操作</th></tr></thead>
       <tbody>
-        <tr><td colspan="4" class="box-pad">加载中…（GET /api/mcp/tools）</td></tr>
+        <tr><td colspan="4" class="box-pad">加载中…</td></tr>
       </tbody>
     </table>
   </div>
@@ -359,12 +354,11 @@
   <div class="tbl-card">
     <div class="card-h pad-h">
       <h3>调用日志 <span class="hint">分页 · 最近在前</span></h3>
-      <span class="hint">GET /api/mcp/call-log</span>
     </div>
     <table>
       <thead><tr><th>时间</th><th>Server</th><th>工具</th><th>耗时</th><th>状态</th><th>trace_id</th></tr></thead>
       <tbody id="logBody">
-        <tr><td colspan="6" class="box-pad">加载中…（GET /api/mcp/call-log）</td></tr>
+        <tr><td colspan="6" class="box-pad">加载中…</td></tr>
       </tbody>
     </table>
     <div class="tbl-foot">
@@ -406,7 +400,7 @@
     <div class="card-h"><h3 id="ttTitle">工具测试</h3><button class="btn-ghost btn btn-mini" id="ttClose">×</button></div>
     <div style="font-size:13px;display:flex;flex-direction:column;gap:10px">
       <label style="display:flex;flex-direction:column;gap:4px">参数 args（JSON 对象）<textarea id="ttArgs" rows="4" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:ui-monospace,Consolas,monospace;font-size:12px" placeholder='{"a": 1, "b": 2}'></textarea></label>
-      <button class="btn-primary btn" id="ttRun" style="align-self:flex-start">▶ 执行测试（POST /api/mcp/tools/test）</button>
+      <button class="btn-primary btn" id="ttRun" style="align-self:flex-start">▶ 执行测试</button>
       <div id="ttOut" style="display:none;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--ht-fafbff)"></div>
     </div>
   </div>
