@@ -114,4 +114,4 @@
 
 - 分支 feature/opt-waves；commit 前已删锁 `edu-agent/scripts/eval/rn1.lock`
 - 提交文件（显式路径 add，不含 data/kg_backup、不含他人工作树遗留）：app/domains/kg/{graph,service}.py、tests/test_kg_rn1.py、scripts/kg_sync.py、contracts/reshape-r-kg.json、test-reports/RN1-completion-report.md
-- 最终 commit hash：`<<RN1_COMMIT_HASH>>`（由本 agent 提交后回填）
+- 最终 commit hash：`31d623d`（feat(kg)/R-N1 收口提交；本行为其后的微提交回填——commit hash 无法自引用）
