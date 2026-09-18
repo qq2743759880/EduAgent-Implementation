@@ -7,8 +7,10 @@
 //        按「分支 0/A/B/C(+prod-gate 升级)/D/跳过/二探点异常」逐态断言 kind+关键文案。
 //   组 B ⑯ .env 变更感知附注 2 态(DEBUG-DOC-001 P0-3b)——真 statSync 路径:.env 在→打印附注;
 //        .env 缺→静默跳过。截取 try{...}catch 原文,靠 harness 落点控制 import.meta.url 解析。
-//   组 C ② detectRedisContainer 3 态(PROBE-001 P0-1/P0-4)——stub runCmd 不碰真 docker:
-//        filter 双 0→全表救回 / 全 0→干净报错 / 并存 5 连跑确定性+running 优先。
+//   组 C ② detectRedisContainer 5 态(PROBE-001 P0-1/P0-4;接手补 P0-4a drill 边界)——
+//        stub runCmd 不碰真 docker:filter 双 0→全表救回 / 全 0→干净报错 /
+//        并存 5 连跑确定性+running 优先 / drill 假端口 6380 全表无映射→干净报错
+//        3 连跑全等+不跨端口误判 / drill 6380 停机容器占口→具名诊断+不误判 6377。
 // 用法: node tests/_wnextcheckdemohard2_blind.mjs   → 全绿输出 BLIND-ALL-OK 并 exit 0
 // 零新依赖:node >= 18(fetch/Response/fs 内置)。
 import { spawn } from "node:child_process";
@@ -192,7 +194,7 @@ async function runNoteState(name, harnessDir, expectPrinted) {
   record("B:⑯附注", name, ok, `printed=${j.printed} 期望 ${expectPrinted} note=「${noteLine.slice(0, 120)}」`);
 }
 
-// ---------- 组 C:② detectRedisContainer 3 态 ----------
+// ---------- 组 C:② detectRedisContainer 5 态(含接手补的 drill 6380 边界两态) ----------
 const FNS_SRC = cut("function parseDockerPortTableMatches", "[HARD2:FNSPLIT-END]");
 
 async function runDetectStates() {
@@ -215,6 +217,15 @@ async function runCmd(cmd, cargs, timeoutMs) {
     if (cargs[1] === "--filter") return "";
     if (cargs[1] === "-a") return "";
   }
+  // W-NEXT-CHECKDEMO-HARD-002 接手补(PROBE-001 P0-4a):fail-drill 假端口 6380 边界两态
+  if (MODE === "drill6380") {
+    if (cargs[1] === "--filter") return "";
+    if (cargs[1] === "-a") return TABLE;
+  }
+  if (MODE === "drill6380_squat") {
+    if (cargs[1] === "--filter") return "";
+    if (cargs[1] === "-a") return TABLE + "\\n" + "squat-exited-redis\t0.0.0.0:6380->6379/tcp\texited";
+  }
   throw new Error("unexpected runCmd " + JSON.stringify(cargs));
 }
 const DOCKER_TIMEOUT_MS = 8000;
@@ -224,6 +235,17 @@ try { out.detect = await detectRedisContainer(6377); } catch (e) { out.detect = 
 out.five = [];
 for (let i = 0; i < 5; i++) out.five.push(JSON.stringify(parseDockerPortTableMatches(6377, TABLE)));
 out.coexist = parseDockerPortTableMatches(6377, TABLE);
+// W-NEXT-CHECKDEMO-HARD-002 接手补(PROBE-001 P0-4a):drill 假端口 6380 边界
+if (MODE === "drill6380" || MODE === "drill6380_squat") {
+  out.detect6380_runs = [];
+  for (let i = 0; i < 3; i++) {
+    try { out.detect6380_runs.push(await detectRedisContainer(6380)); }
+    catch (e) { out.detect6380_runs.push("THREW: " + e.message); }
+  }
+  out.parse6380 = parseDockerPortTableMatches(6380, MODE === "drill6380"
+    ? TABLE
+    : TABLE + "\\n" + "squat-exited-redis\\t0.0.0.0:6380->6379/tcp\\texited");
+}
 process.stdout.write("__BLIND2__" + JSON.stringify(out));
 `;
   const f = path.join(mkdtempSync(path.join(tmpdir(), "h2blind2-")), "detect.mjs");
@@ -248,6 +270,19 @@ process.stdout.write("__BLIND2__" + JSON.stringify(out));
     const r3 = await run("filters_zero");
     const det = r3.five.every((s) => s === r3.five[0]) && r3.coexist[0] === "running-redis" && r3.coexist[1] === "exited-redis" && !r3.coexist.includes("mysql-c");
     record("C:②兜底", "同宿主端口并存_5连跑全等_running优先", det, `five唯一=${r3.five.every((s) => s === r3.five[0])} order=${JSON.stringify(r3.coexist)}`);
+    // W-NEXT-CHECKDEMO-HARD-002 接手补(PROBE-001 P0-4a):fail-drill 假端口 6380 边界两态
+    const r4 = await run("drill6380");
+    const drillOk = r4.detect6380_runs
+      && r4.detect6380_runs.length === 3
+      && r4.detect6380_runs.every((s) => s === "THREW: 未找到映射宿主端口 6380 的 Redis 容器(检查 docker ps 与端口映射)")
+      && Array.isArray(r4.parse6380) && r4.parse6380.length === 0;
+    record("C:②兜底", "drill假端口6380_全表无映射_干净报错3连跑全等_不跨端口误判", drillOk, `runs=${JSON.stringify(r4.detect6380_runs)} parse=${JSON.stringify(r4.parse6380)}`);
+    const r5 = await run("drill6380_squat");
+    const squatOk = r5.detect6380_runs
+      && r5.detect6380_runs.length === 3
+      && r5.detect6380_runs.every((s) => s === "squat-exited-redis")
+      && Array.isArray(r5.parse6380) && r5.parse6380.length === 1 && r5.parse6380[0] === "squat-exited-redis";
+    record("C:②兜底", "drill假端口6380_停机容器占口_具名诊断3连跑全等_不误判6377", squatOk, `runs=${JSON.stringify(r5.detect6380_runs)} parse=${JSON.stringify(r5.parse6380)}`);
   } finally {
     rmSync(path.dirname(f), { recursive: true, force: true });
   }

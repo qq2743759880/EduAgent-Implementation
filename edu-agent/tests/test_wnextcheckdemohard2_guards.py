@@ -289,6 +289,20 @@ async function runCmd(cmd, cargs, timeoutMs) {
     if (cargs[1] === "--filter") return "";
     if (cargs[1] === "-a") return "";
   }
+  // W-NEXT-CHECKDEMO-HARD-002 接手补(PROBE-001 P0-4a):fail-drill 假端口 6380 边界。
+  //   TABLE 不含任何 6380 映射(模拟真机:只有 6377 redis/3308 mysql)→ drill 必须
+  //   干净报错,且绝不许把 6377 容器误判给 6380(跨端口漏判)。
+  if (MODE === "drill6380") {
+    if (cargs[1] === "--filter") return "";
+    if (cargs[1] === "-a") return TABLE;
+  }
+  //   对偶态:全表恰有一个「停机(exited)容器」占用 6380(外来占口)→ 兜底仍按端口
+  //   命中并给出具名诊断(P0-1 语义:停机容器命中时上层 docker exec 给「容器未运行」
+  //   类错误,诊断落到具体容器),且不许命中 6377 的 running 容器。
+  if (MODE === "drill6380_squat") {
+    if (cargs[1] === "--filter") return "";
+    if (cargs[1] === "-a") return TABLE + "\n" + "squat-exited-redis\t0.0.0.0:6380->6379/tcp\texited";
+  }
   throw new Error("unexpected runCmd " + JSON.stringify(cargs));
 }
 
@@ -319,6 +333,19 @@ try {
   out.detect_all_zero = await detectRedisContainer(6377);
 } catch (e) {
   out.detect_all_zero = "THREW: " + e.message;
+}
+
+// ---- PROBE-001 P0-4a:fail-drill 假端口 6380 边界(全路径 detect×3 + 纯函数解析) ----
+out.detect6380_runs = [];
+if (MODE === "drill6380" || MODE === "drill6380_squat") {
+  for (let i = 0; i < 3; i++) {
+    try {
+      out.detect6380_runs.push(await detectRedisContainer(6380));
+    } catch (e) {
+      out.detect6380_runs.push("THREW: " + e.message);
+    }
+  }
+  out.parse6380 = parseDockerPortTableMatches(6380, MODE === "drill6380" ? TABLE : TABLE + "\n" + "squat-exited-redis\t0.0.0.0:6380->6379/tcp\texited");
 }
 console.log(JSON.stringify(out));
 '''
@@ -389,6 +416,35 @@ def test_js_coexistence_running_first_and_deterministic():
 
 
 # ============================================================
+# 动态层 B2(接手补,PROBE-001 P0-4a):fail-drill 假端口 6380 边界
+#   PROBE-001 批判原文:「detectRedisContainer 端口 6380 边界(fail-drill 路径已
+#   验证但无单测)」——本两态把 drill 假端口路径锁进单测,防回归。
+# ============================================================
+def test_js_fail_drill_6380_boundary_clean_and_deterministic():
+    """drill 6380:全表无 6380 映射 → 干净报错含端口号,3 连跑全等,不跨端口误判。"""
+    out = _run_js_harness("drill6380")
+    runs = out["detect6380_runs"]
+    assert len(runs) == 3, f"应 3 连跑,实得 {len(runs)}"
+    expected = "THREW: 未找到映射宿主端口 6380 的 Redis 容器(检查 docker ps 与端口映射)"
+    assert all(r == expected for r in runs), f"6380 边界不确定或文案漂移: {runs}"
+    assert out["parse6380"] == [], (
+        f"跨端口漏判: 6380 查询命中了非 6380 容器 {out['parse6380']}"
+    )
+
+
+def test_js_6380_squat_exited_container_named_diagnosis():
+    """drill 6380 对偶态:全表恰有停机容器占用 6380 → 具名命中该容器(P0-1 语义:
+    诊断落到具体容器),3 连跑全等,且不许误命中 6377 的 running 容器。"""
+    out = _run_js_harness("drill6380_squat")
+    runs = out["detect6380_runs"]
+    assert all(r == "squat-exited-redis" for r in runs), (
+        f"6380 停机占口容器未被具名命中或不确定: {runs}"
+    )
+    assert out["parse6380"] == ["squat-exited-redis"], out["parse6380"]
+    assert "running-redis" not in out["parse6380"], "6377 running 容器被误判给 6380"
+
+
+# ============================================================
 # 动态层 C(真后端,可选):/api/admin/users 无 token 安全不变量
 # ============================================================
 def test_real_backend_admin_users_not_open_without_token():
@@ -429,7 +485,7 @@ def test_blind_harness_all_states_ok():
         f"stdout={proc.stdout[-2500:]}\nstderr={proc.stderr[-800:]}"
     )
     assert "BLIND-ALL-OK" in proc.stdout, proc.stdout[-500:]
-    # 15 态(⑧10 + ⑯2 + ②3)一态不许少
-    assert proc.stdout.count("PASS [") == 15, (
-        f"盲测态数量漂移(应 15): {proc.stdout[-500:]}"
+    # 17 态(⑧10 + ⑯2 + ②5,含接手补的 6380 drill 边界两态)一态不许少
+    assert proc.stdout.count("PASS [") == 17, (
+        f"盲测态数量漂移(应 17): {proc.stdout[-500:]}"
     )
