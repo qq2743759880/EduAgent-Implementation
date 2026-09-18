@@ -1,158 +1,93 @@
-# R12 完工报告：LLM 工具决策接管（dev-plan-reshape-r W3）
+# R12 完工报告：tool/learning 子代理工具调用 exact-pin 对齐（C-01）
 
-> 执行 agent：R12（独立开发）· 日期 2026-09-15 · 工作区 `E:\stu\project\stu\EduAgent实施手册`
-> 单写者锁 `edu-agent/scripts/eval/r12.lock` 已随完工删除 · 未触碰 sixnode.py / r02tail / r20b 领地
+> 执行 agent：R12（编排者逐断言独立实证验收轮）· 日期 2026-09-19 · 工作区 `E:\stu\project\stu\EduAgent实施手册`
+> 对标资产：`.ai-hub/plans/kb-deep-1-orchestration.md` §5 F-C02-002-hermes（工具名/参数逐字段精确绑定、拒绝 LLM 自由发挥的模糊调用）+ TOP10 #9/#10
+> ⚠️ 本文件为**新一轮 R12** 报告；上一轮 R12（LLM 工具决策接管）报告原件在 git `509496d:test-reports/R12-completion-report.md` 可溯，未丢失。
+> 单写者锁 `edu-agent/scripts/eval/r12.lock` 已随完工删除。
 
 ---
 
 ## 1. 交付概览
 
-R12 把图内工具决策从「玩具正则」（`tool_calling._parse_heuristic`，audit P1-5：只认 add/ping/echo/list_alphabet 字面关键词）升级为 **LLM 驱动的结构化 tool_plan 决策器**，带超时预算与规则路由 fallback；**默认 `TOOL_DECISION_MODE=rule` 生产行为零变化**，编排者验收时以 `TOOL_DECISION_MODE=llm` 显式开启。
-
-| 文件 | 变更 |
+| 项 | 内容 |
 |---|---|
-| `edu-agent/app/chat/tool_decision.py` | **新增**（218 行）：LLM 决策器核心（prompt 构建 / 超时预算 / Pydantic 校验 / fallback / 降级计数） |
-| `edu-agent/app/chat/tool_calling.py` | 修改（+20/-2）：`run_chat_tool_calls` 决策段按 mode 分流；上下文头注入 `决策器=…` 审计标记 |
-| `edu-agent/app/config.py` | 修改（+17）：`TOOL_DECISION_MODE`（默认 `rule`）/ `TOOL_DECISION_TIMEOUT`（默认 5.0s） |
-| `edu-agent/tests/test_contract_r12_tool_decision.py` | **新增**：12 例契约测试（4 验收面全覆盖） |
-| `edu-agent/scripts/eval/r12_http_probe.py` | **新增**：8011 临时实例真实 HTTP+SSE 验收探针 |
+| commit | 主体 `90f7391`（feat(r)/R12-exactpin；基线 git tip `3779142`，主循环被测代码 = 3779142 工作树 + 本轮改动） |
+| 差距清单 | 7 条（G1~G7，§2），全部收敛于 `app/ai/subagents/` |
+| 对齐实现 | 新增 `tool_schemas.py` + runner 三段 exact-pin 校验 + q 精确绑定问题本体 + definitions.yaml schema 提示（§3） |
+| 复验 | R20-b 双跑探针全量 100 样本：**残差 18 → 0**，Jaccard mean 0.8533 → **1.0**（100/100 全等），intent 分歧保持 0%（§4） |
+| 测试 | 新增 22 例全绿；相关域回归 198 过 2 skip（§5） |
 
-## 2. Registry 工具清单（真实拉取，DB mcp_tool×mcp_server，enabled=1 且 yn=1）
+## 2. 现状审计：exact-pin 差距清单（逐条 file:line）
 
-`list_enabled_tool_metas()` 实测（2026-09-15，本机 MySQL）：
+判据基准（kb-deep-1 §5 + TOP10 #9/#10）：工具名白名单精确匹配；参数逐字段精确绑定（类型/必填/域）；模糊调用 fail-closed 返结构化错误；调用可观测。
 
-| tool_id | server | tool_name | description | input_schema（要点） |
-|---|---|---|---|---|
-| 1 | stdio-echodemo | `ping` | 返回 pong=true 的心跳，用于健康检查 | `{}` 无参数 |
-| 2 | stdio-echodemo | `add` | 整数 a + b，返回 {sum, was_negative} | `a:int, b:int`（required） |
-| 3 | stdio-echodemo | `echo` | 原样回显 text，返回 {echo, length} | `text:string`（required） |
-| 4 | stdio-echodemo | `list_alphabet` | 返回 1~52 个字母序列 A..Z 循环 | `n:int 1..52`（required） |
+| # | 位置（审计时行号） | 现状 | exact-pin 差距 |
+|---|---|---|---|
+| G1 | `runner.py:42`（`_direct_tool_args`） | 正则 `（问题：(.*)）\s*$` 锚定串尾 | plan 节点（sixnode.plan）在 `（问题：X）` 后追加 skill/context_edit 块 → 正则必然失配 → 整段任务串兜底作 q。**R20-b 残差 18 条根因**（实测 new_retrieval_queries=「模板+（问题：X）+[历史上下文…]」拼接串，旧路径用原 query） |
+| G2 | `runner.py:241-248`（`_parse_action`） | JSON 解析失败 → 大括号截取片段当 final | fail-open：模糊/畸形输出被静默接受，且回退片段丢失上下文 |
+| G3 | `runner.py:361` | `action.get("tool")` 仅 truthy 检查 | 非字符串（dict/list/int）/空白/带前后缀空白的 tool 名直接进白名单比较，无类型精确校验 |
+| G4 | `runner.py:368-374` | 白名单违规/服务未注入 → 一句"跳过" + continue | 软拒绝：无结构化错误码、无 allowed_tools 提示、拒绝不记账、无 fail-closed 终止路径；assistant 的 action 不入 messages（转录不一致，LLM 难自纠错） |
+| G5 | `runner.py:377` | `handler(action.get("args") or {})` 零校验直派发 | 缺必填 q → 延迟到服务闭包才报错；别名字段（recall_memory 用 `query`）被静默接受；未知字段（search_knowledge 塞 top_k）被静默忽略；recall_profile 拼错字段 → 静默落默认关键词「学习画像 目标 偏好 规划」（检索语义被 LLM 拼写错误劫持） |
+| G6 | `definitions.yaml:17-21 等` | system prompt 只说"用 X 工具"，无参数 schema | ACI 当 HCI 缺口：LLM 无逐字段绑定依据，prefetch 关闭时必然产出模糊调用 |
+| G7 | `runner.py:396-407`（artifact payload） | 无拒绝事件记录 | 模糊调用不可观测，验收/排查无证据链 |
 
-工具清单经 `tool_specs.specs_from_metas` 映射为五要素 ToolSpec，**name/description/input_schema 全量注入决策 prompt**（`build_decision_prefix(deferred=False)` full 模式，按 name 稳定排序保前缀字节确定，预算 700 token）。
+残差定位（`dualrun_results.before.json`，R02-tail 复验态）：18 条 jaccard<1 全部 `new_subagent_n=3`、intent∈{tool:14, learning:4}（chat_history 16 + edge_tool 2）——与 R02-completion-report.md 的移交结论一致（「子代理 search 的 q 应取用户问题本体而非任务串」）。
 
-## 3. 决策器设计（app/chat/tool_decision.py）
+## 3. 对齐实现（diff 摘要）
 
-```
-query ──► build_tool_decision_messages ──► LLM(fast, temp=0, ≤200tok)
-             │  system=工具决策专用规则(防误触发条款+MCP_TOOL_MAX_TRIES)
-             │  + 真实 registry 工具清单(name/description/input_schema)
-             ▼
-        asyncio.wait_for(TOOL_DECISION_TIMEOUT, 默认 5s, 钳制 0.5~30s)
-             │
-     ┌─ 成功 ─┴─ 超时/异常 ──────────────────────────┐
-     ▼                                               ▼
- parse_decision_text (Pydantic DecisionPlan)    规则路由 fallback
-     ▼                                            (_parse_heuristic 现行为)
- 未知工具名过滤(只留 registry 真实工具)              + 降级计数入日志
- MCP_TOOL_MAX_TRIES 截断                            (WARNING 携带累计 stats)
-     ▼
- ToolPlanItem[]{tool, args, reason="llm决策(Nms)"}
-     ▼
- run_chat_tool_calls 原执行闭环（零改动）: executor.call_tool(args=) → 结果回填
- → mcp_tool_call_log 审计行 → SSE retrieval 帧 mcp_tool_calls
-```
+**文件归属备案（报编排者）**：`app/ai/subagents/runner.py`（+125/-20）、`app/ai/subagents/tool_schemas.py`（新增 ~160 行）、`app/ai/subagents/definitions.yaml`（+24/-8）、`tests/test_contract_r12_exactpin.py`（新增 22 例）。**未触碰** retriever.py / langgraph_agent.py / graph.py / app/domains/** / config.py（红线自检通过；`_build_tool_services` 闭包为绑定权威，只读核对未改）。
 
-关键决策点：
-- **新决策模块而非原地改写**：`_parse_heuristic` 原样保留＝fallback 路径＝rule 模式现行为；执行闭环（executor.call_tool / call_log / SSE 契约）零改动，R04 修复的 `args=` 签名沿用。
-- **llm_call 可注入**：生产默认 `_ChatClient(fast)` 线程池执行；测试注入 fake/慢桩（GWT② 假慢 LLM 即此通道）。
-- **空 tool_plan 是合法决策**（非工具 query 的 LLM 判定，非 fallback）——只有超时/异常/不可解析三种降级。
-- **防杜撰**：LLM 输出经 Pydantic 校验 + 未知 tool_name 丢弃（WARNING 可查）。
-- **禁改面合规**：不动 sixnode.py（R02-tail）、不动 SSE 契约（`决策器=…` 标记只进 system prompt 内部上下文头与日志，前端可见帧字段零变化）。
+1. **`tool_schemas.py`（新增，schema 独立成模块——对齐 ChatDev tool_spec 同构判据）**
+   - `TOOL_ARG_SCHEMAS`：4 工具精确字段绑定，绑定权威 = `graph._build_tool_services` 各闭包真实消费字段（search_knowledge: `q` 必填；recall_memory: `q` + 可选 `top_k`∈[1,50]；recall_profile: `profile_query` + 可选 `top_k`；call_tool: `tool_name` 必填 + 可选嵌套 `args` 对象——嵌套内 schema 由 mcp.executor.registry 二次兜底，双层防御）。
+   - `validate_tool_args`：五类拒绝 `not_an_object / missing_required / unknown_field / wrong_type / out_of_domain`，纯函数可单测。
+   - `structured_rejection`：`EXACT_PIN_REJECTED` 结构化错误（reason/detail/claimed_tool/allowed_tools/args_schema/instruction），回灌 LLM 自纠错 + fail-closed 上交主上下文双用。
+2. **`runner.py` 三段 exact-pin 校验（主循环）**：① 工具名类型/形态精确（非 str/空白/前后缀空白 → `invalid_tool_name`）② 白名单精确匹配（`unknown_tool` 携 allowed_tools）③ 参数 schema 逐字段（`invalid_args:*` 携 schema）。拒绝 → assistant+user 结构化错误对入 messages（转录一致，可自纠错）+ `rejections` 记账；连续 2 次（`MAX_CONSECUTIVE_VAGUE_REJECTS`）→ **fail-closed 终止：结构化错误作 summary 上交、ok=False、不烧剩余轮次**；成功派发重置 streak。`handler_unavailable`（环境性缺失）单独结构化告知、不计 streak。
+3. **q 精确绑定问题本体（G1 承重修复）**：`_direct_tool_args` 改块边界感知贪婪提取 `（问题：(.*)）(?=\n\n\[|\s*$)`（上下文块以 `]` 收尾、其内部 `）` 不可能后随 `\n\n[`，贪婪回溯精确落在问题收尾 `）`；问题含括号/块序变化实测均正确），旧正则保留次选，整段兜底降为最终兜底（行为下限不劣于修复前）+ debug 打点。
+4. **预执行参数同过 schema**：确定性 prefetch 的推导参数必须过 `validate_tool_args`（失败=代码缺陷 → error 日志 + 回退 LLM 决策循环，绝不把模糊参数打进检索/记忆服务）。
+5. **`_parse_action` 契约收口**：解析失败回传原文（纯文本终答=设计内完成路径，优雅接受；真正的模糊「调用」由主循环三段校验拒绝）——解析与判定分离。
+6. **`definitions.yaml`**：四个子代理 system prompt 补「参数恰为 {…}」精确 schema 行 + 头部 exact-pin 契约注释（与 tool_schemas.py 双侧同步声明）；artifact payload 增加 `exact_pin_rejections` 记账（G7）。
 
-## 4. 降级链说明（超时预算 + fallback）
+## 4. 复验：R20-b 双跑探针（全量 100 样本）
 
-| 触发 | reason（日志/ToolDecisionResult.fallback_reason） | 行为 |
+用法核对（r20b_dualrun_probe.py 头注）后执行：`cd edu-agent && .venv/Scripts/python.exe scripts/eval/r20b_dualrun_probe.py`。
+
+**环境偏差（如实登记）**：
+- 首跑 BGE-M3 CUDA 加载段**段错误**（EXIT=139，GPU 被并发进程占满 5.7/8.2GB 98%）；改进程级 `EMBED_BACKEND=cpu` 重跑（同一本地 BGE-M3/dim=1024，仅 device 变化；新旧两路径共用同进程 embedder，门槛口径不变；未改 config.py/.env）。
+- **LLM 周配额 429（AccountQuotaExceeded，重置 2026-09-21）**：子代理总结轮/HyDE 改写/judge 生成层死亡。门槛指标恰不依赖该层——intent=规则路由 0-LLM、docs=预执行确定性检索（429 不影响工具执行，日志见 docs=150）；语义 30% 抽检 judge_failed 30/30（如实登记：**答案语义面本轮无证据**）。
+- 主循环窗口（00:12:49–00:17:11）内 backend=3779142+本轮改动；summary 内 git_rev=d0fc59b 为汇总落盘时刻 HEAD（R-N2 报告 00:36 提交致 tip 前移），非主循环被测代码。R-N2 自证零分歧 + graph_expand 灰度默认关，归因不受污染。
+
+| 指标 | 修复前（R02-tail 复验基线，before 备份于 `test-reports/r12-before-backup/`） | 修复后（2026-09-19 00:50） |
 |---|---|---|
-| `asyncio.wait_for` 超时 | `timeout` | → `_parse_heuristic` 规则路由结果接管，延迟有界（预算钳制 0.5~30s） |
-| LLM 调用抛异常（网络/鉴权等） | `error` | 同上 |
-| 输出不可解析 / Pydantic 校验失败（重试语义沿用 decision_validator 单次解析口径） | `unparseable` | 同上 |
-| LLM 返回不在 registry 的工具名 | （非降级） | 丢弃该项并 WARNING，其余 plan 照常 |
+| docs Jaccard mean | 0.8533 | **1.0**（p50=p95=min=max=1.0） |
+| Jaccard=1 条数 | 82 | **100** |
+| Jaccard<0.5 条数 | 18 | **0** |
+| **tool/learning 残差（子代理面）** | **18**（tool 14 / learning 4，sub_n=3） | **0** |
+| intent 分歧率 | 0% | 0%（0/100） |
+| need_search 分歧率 | 0 | 0 |
+| error / unstable | 0 / 0 | 0 / 0 |
 
-降级计数：进程级 `_STATS = {llm_ok, llm_timeout, llm_error, llm_unparseable, rule_mode}`，每次 fallback 打 `WARNING [TOOL-DECISION] LLM 决策降级→规则路由 fallback reason=… stats={…}`；`get_tool_decision_stats()` 供监控/测试断言。
+**机制证据（因果锁定）**：修复前残差样本 new_retrieval_queries=「基于问题给出检索要点（问题：X）\n\n[历史上下文…]」（任务串）；修复后样本 34/35/41/89 实测 new_q0=X（问题本体）且 old_doc_ids==new_doc_ids 全等。产物：`dualrun-summary.json`/`dualrun_results.json`（GridFS 制品 aid=6aad6bd7…，本地同字节副本）/`test-reports/dualrun-baseline.md`；运行日志 `test-reports/r12-r20b-rerun.log`；复跑命令同上。
 
-**HTTP 层活体证据**（8011 实例，`TOOL_DECISION_TIMEOUT=0.001`→内部钳 0.5s，query=「请调用工具算一下 7 与 35 的总和」——规则路由覆盖不到、仅 LLM 能命中的样本）：
-```
-[TOOL-DECISION] LLM 决策降级→规则路由 fallback reason=timeout
-  stats={'llm_ok': 0, 'llm_timeout': 1, 'llm_error': 0, 'llm_unparseable': 0, 'rule_mode': 0}
-  detail=budget=0.5s latency_ms=509
-```
-该请求照常完成（done code=0、60 token 正常回答、mcp_calls=[]）——GWT「注入假慢 LLM 超时后按规则路由完成请求且延迟有界」在真实 HTTP 链路成立（509ms vs 0.5s 预算）。
+## 5. 测试
 
-## 5. pytest 结果（12 例全过，4 验收面全覆盖）
+新增 `tests/test_contract_r12_exactpin.py`（in-process + fake LLM/tool，不连真实依赖）：**22/22 绿**，覆盖 kickoff 四验收面——精确 pin 过（3：白名单派发逐字段断言/call_tool 嵌套透传/定义-校验双侧不漂移）、模糊拒（6：缺必填零派发+错误回灌携 schema/未知字段/别名字段/类型与取值域/空 tool 带 final 优雅收口/纯文本 final）、未知工具拒+fail-closed（5：unknown_tool 结构化携 allowed_tools 零派发/非 str tool/连续 2 次 fail-closed ok=False 且不烧轮次/streak 成功重置/拒绝记账入 artifact）、q 精确绑定（8：真实 plan 串/skill 块在前/问题含括号/旧形态/无标记兜底/learning profile_query/预执行参数过 schema/解析三态）。
 
-`tests/test_contract_r12_tool_decision.py`，实测输出：
-```
-tests/test_contract_r12_tool_decision.py::test_r12_0_decision_prompt_contains_registry_schema PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_1_llm_mode_produces_correct_tool_plan PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_1b_llm_mode_with_real_registry_tools PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_2_timeout_falls_back_to_rule_bounded PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_2b_unparseable_output_falls_back PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_2c_llm_error_falls_back PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_3_non_tool_query_no_false_trigger PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_3b_non_tool_via_run_chat_tool_calls PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_default_rule_mode_keeps_legacy_behavior PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_run_chat_tool_calls_llm_wiring PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_4_call_log_success_audit_row PASSED
-tests/test_contract_r12_tool_decision.py::test_r12_5_live_llm_end_to_end SKIPPED (默认跳过,R12_LIVE_LLM=1 显式开启)
-================== 11 passed, 1 skipped, 1 warning in 4.19s ==================
-```
-- ① llm 模式正确 tool_plan：单测（内存 registry+fake LLM）+ 集成（真 DB registry，断言绑定真实 tool_id）双覆盖
-- ② 超时→规则 fallback：假慢 LLM 1s 预算实测 1.03s 内放弃、规则结果接管（add(3,4)）+ 降级计数 +1；另覆盖 error/unparseable 两条降级支路
-- ③ 非工具 query 不误触发：LLM 判空 → executor 守卫桩零触达（触达即 fail）
-- ④ call_log SUCCESS 审计行：决策桩 + **真 executor（stdio spawn）+ 真 DB**，SELECT `mcp_tool_call_log` 断言 SUCCESS 行存在
-- 活体例（`R12_LIVE_LLM=1`，真 LLM minimax-m3 经火山 ark）：
-```
-[R12 真 LLM 证据] summaries=[('add', "{'a': 17, 'b': 25}", 'success')]
-call_log={'call_id': 'mcp-1789436306081-0380a06f', 'tool_name': 'add', 'status': 'SUCCESS'}
-1 passed in 4.94s
-```
+相关域回归：task92/93/taskP1L/task24/task_a1/task_r01/artifact_store/agent_loop **111 过 1 skip**；task_a1*/task_r02/task_e1/chat_tool_calling/r12_tool_decision **72 过 1 skip**；chat_flow_args_fix **15 过**。合计 **220 过 2 skip，全绿**。
 
-## 6. llm 模式真实工具调用证据（真实 HTTP 端到端 + call_log 行）
+## 6. P0 自批判（≥3）
 
-临时实例 8011（`TOOL_DECISION_MODE=llm TOOL_DECISION_TIMEOUT=5`；8010 被并行任务 r02tail 占用，改用 8011，用完已关），`scripts/eval/r12_http_probe.py`（登录 student user000001 → POST /api/chat/stream, stream=true）：
+1. **复验环境非 LLM 活体**：LLM 周配额 429 使 after-run 生成层死亡。门槛指标（intent/docs）与修复面（确定性 q 绑定）恰不依赖该层，且机制证据直接锁定因果；但「LLM 活体下的严格同环境复跑」未完成（配额 2026-09-21 重置后可复跑验证），语义 30% 抽检 30/30 judge 失败，答案语义面本轮零证据。若活体 HyDE 改写与 raw 分叉，Jaccard 未必严格 1.0（before 基线中 old_rewrite==raw 的实测证据削弱此虑但不归零）。
+2. **exact-pin 嵌套边界**：call_tool 嵌套 args 内部不校验（透传 executor registry 二次兜底，fail-closed 但会烧一次派发轮 + 一次 executor 解析）；嵌套 schema 机验归 MCP registry 面接管，本轮未做跨层联防测试。
+3. **q 提取的模板耦合**：`_direct_tool_args` 兜底仍保留整段 input 作 q（无标记/异常输入），且提取正则与 plan 模板（graph.py，他人领地）强耦合——plan 模板变更可能再度失配；单测 REAL_PLAN_INPUT 是当前模板快照而非契约拉取，无自动漂移检测。schema 模块已注明绑定权威与双侧同步要求，但「同步」靠纪律不靠机验。
+4. **fail-closed 上限与 maxTurns 的隐含前提**：`MAX_CONSECUTIVE_VAGUE_REJECTS=2` 需 maxTurns≥2 才可达；当前 4 个子代理定义（3~5）均满足，但未对「未来新增子代理 maxTurns<2」做防御性断言，fail-closed 会被轮次耗尽静默取代。
 
-```
-[1] login ok (student user000001)
-[2] tool-intent query -> mcp_calls=[{"call_id": "mcp-1789436455530-2a1ffb90", "tool_name": "add",
-    "args_summary": "{'a': 88, 'b': 14}", "status": "success", "latency_ms": 142,
-    "result_summary": "{\"sum\": 102, \"was_negative\": false}"}]
-    tokens=11 answer_chars=390 done_code=0
-    -> llm 决策+真执行 PASS (call_id=mcp-1789436455530-2a1ffb90)
-[3] non-tool query -> mcp_calls=[] tokens=114 done_code=0
-    -> 不误触发 PASS
-```
+## 7. 批判承接核对
 
-DB `mcp_tool_call_log`（只读 SELECT）两条 llm 模式 SUCCESS 审计行：
-```
-call_log: {'call_id': 'mcp-1789436455530-2a1ffb90', 'tool_name': 'add', 'status': 'SUCCESS',
-           'latency_ms': 142, 'trace_id': 'mcp-chat-64064569', 'args_json': '{"a": 88, "b": 14}'}   ← HTTP 探针
-call_log: {'call_id': 'mcp-1789436306081-0380a06f', 'tool_name': 'add', 'status': 'SUCCESS',
-           'latency_ms': 76,  'trace_id': 'r12-live-llm',     'args_json': '{"a": 17, "b": 25}'}   ← pytest 活体例
-```
+kickoff 明示「无承接项」。核对 `handoffs/taskR20b-kickoff.md` 与 R02-completion-report.md 移交条目：R02 报告「交由 R02-b 灰度期/W3 继续跟踪」「建议 R12/W3 接管（子代理 search 的 q 应取用户问题本体而非任务串）」——本轮 R12 即该移交项的承接执行（见 §2/§4），无其他未承接项带入。
 
-服务端决策日志（logs/app.log）：
-```
-[TOOL-DECISION] llm 决策完成 latency_ms=2837 plans=[('add', {'a': 88, 'b': 14})]      ← HTTP 工具意图
-[TOOL-DECISION] llm 决策完成 latency_ms=1811 plans=[]                                 ← HTTP 非工具
-[TOOL-DECISION] llm 决策完成 latency_ms=1855 plans=[('add', {'a': 17, 'b': 25})]      ← pytest 活体
-[TOOL-DECISION] LLM 决策降级→规则路由 fallback reason=timeout … budget=0.5s latency_ms=509 ← 超时降级活体
-```
+## 8. 资产消费证据
 
-## 7. 回归对账
-
-- 相关域（R02 流式图 / agent_loop / task27 决策校验 / tool_deferred / mcp_health / task33）：**72 passed, 8 skipped, 0 failed**。
-- 全量 `pytest tests/`：816 passed / 14 failed / 158 skipped / 11 errors。失败/error 全部在 curriculum/course/series/be_task01/task94/task_m2 等域。
-- **A/B 对账证明与 R12 无关**：摘除我的 2 个 app 改动（git stash）后同 9 文件集重跑＝**2 failed + 11 errors，与带改动重跑逐项一致**（存量：task94 需 D:\.ai-hub 活体目录、be_task01 需 DB 态等环境面；共享工作树中另有并行任务未提交改动 sixnode.py/graph_stream.py/retriever.py，未触碰）。
-- 派单基线备注：勘察时 8000 实际未监听（基线信息过期），8010 为 r02tail 活体实例——均未触碰，验证全部走自建 8011 临时实例（已关闭）+ venv 进程内测试。
-
-## 8. Commits
-
-| commit | 内容 |
-|---|---|
-| `feat(r)/R12-llm-tool-decision` | 决策器新模块 + config 开关 + run_chat_tool_calls 接线 + 12 例契约测试 + HTTP 探针（单 commit，5 文件 716 行） |
-
-## 9. 遗留与交接
-
-- `flows/agent.py:184` 旧路径 `execute_tool_plan` 仍用 R04 修复前签名 `arguments=`（死代码面，R05 删旧路径时一并清除；本次不越界改旧路径）。
-- R02 报告登记的「子代理检索 query=任务输入串」结构面属 sixnode/plan 编排（R02-tail 领地），本决策器接管的是 `run_chat_tool_calls` 工具选择段；两者在 W3 汇合后由编排者复验合并效果。
-- TOOL_DECISION_MODE 默认 rule；编排者验收 llm 模式：启动前设 `TOOL_DECISION_MODE=llm`（可选 `TOOL_DECISION_TIMEOUT`，默认 5s）。
+- `.ai-hub/plans/kb-deep-1-orchestration.md`：§5 F-C02-002-hermes（exact-pin 范式/审批三件套）+ TOP10 #9（工具调用三级权限/供应链硬约束）+ #10（自持控制流/ACI 当 HCI）+ §7 ChatDev 判据 4（tool schema 独立成 spec 文件）——对齐实现三件套的直接设计来源（开工前先读，判据落 §3）。
+- 代码定位：`app/ai/subagents/{runner.py,definitions.yaml}`（grep）、`app/ai/harness/sixnode.py`（fan_out 直连/子代理分野、plan 尾缀块格式）、`app/ai/graph.py::_build_tool_services`（schema 绑定权威，只读）、`app/mcp/executor.py::call_tool_with_retry`（嵌套兜底边界，只读）。
+- 实证基线：`scripts/eval/r20b_dualrun_probe.py`（用法节）、`dualrun_results.before.json`（18 条残差逐条定位）、`R02-completion-report.md`（根因移交）、`R02-dualrun-reverify.md`/`r02tail-dualrun-baseline.md`（before 数字 0.8533/18）。
+- `AGENTS.md`（红线/教训 9-11/测试账号）。
