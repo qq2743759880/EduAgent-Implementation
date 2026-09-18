@@ -125,7 +125,7 @@
 
 - 执行：W-NEXT-R02TAIL-001（C-01 编排者逐断言独立实证验收）｜ 2026-09-19 ｜ 分支 `feature/opt-waves`
 - 派单背景：R02 流式进图后活体 TTFT 5.27~5.32s > 冻结预算 4.51s（+18%）→ R05（删旧路径）冻结。此后两项变量落地：①LLMSWITCH（答案主模型 deepseek-flash）②R12 exact-pin（双跑 Jaccard 0.8533→1.0）。本批在两变量落地后的 HEAD 复测。
-- 测量对象 HEAD：`baa6e0a`（开工时 rev-parse 实测；commit hash 见交付记录）
+- 测量对象 HEAD：`baa6e0a`（开工时 rev-parse 实测）｜ 交付 commit：`test(r)/R02tail-C01` = **`61f2161`**（9 文件：探针脚本+data 产物×3+报告+证据日志×4）
 - 红线自检：未删旧路径、未动 STREAM_VIA_GRAPH（两值分别实测）、未执行 R05、未触 app/**、contracts/**、config.py、tests/**
 
 ## §C-0 结论速览（供编排者直读）
