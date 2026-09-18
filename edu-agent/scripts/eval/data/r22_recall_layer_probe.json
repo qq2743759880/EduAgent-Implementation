@@ -1,0 +1,1330 @@
+{
+  "generated_at": "2026-09-18T19:28:12.695389+00:00",
+  "channel": "isolated_replay(loader.hybrid_search 同参直连, 召回层口径, 不与主链混算)",
+  "recall_topk": 150,
+  "n_cases": 63,
+  "golden_in_recall": 49,
+  "golden_in_recall_ratio": 0.7778,
+  "golden_recall_rank_hist": {
+    "rank1": 0,
+    "rank2": 1,
+    "rank3": 1,
+    "rank4": 2,
+    "rank5": 1,
+    "rank6": 0,
+    "rank7": 0,
+    "rank8": 0,
+    "rank9": 1,
+    "rank10": 1,
+    "rank11": 1,
+    "rank12": 0,
+    "rank13": 0,
+    "rank14": 1,
+    "rank15": 1,
+    "rank16": 0,
+    "rank17": 0,
+    "rank18": 1,
+    "rank19": 2,
+    "rank20": 2,
+    "rank21": 1,
+    "rank22": 1,
+    "rank23": 0,
+    "rank24": 1,
+    "rank25": 0,
+    "rank26": 1,
+    "rank27": 0,
+    "rank28": 0,
+    "rank29": 2,
+    "rank30": 1,
+    "rank31": 0,
+    "rank32": 0,
+    "rank33": 0,
+    "rank34": 2,
+    "rank35": 1,
+    "rank36": 1,
+    "rank37": 0,
+    "rank38": 0,
+    "rank39": 0,
+    "rank40": 0,
+    "rank41": 0,
+    "rank42": 0,
+    "rank43": 1,
+    "rank44": 0,
+    "rank45": 0,
+    "rank46": 0,
+    "rank47": 1,
+    "rank48": 1,
+    "rank49": 0,
+    "rank50": 0,
+    "rank51": 0,
+    "rank52": 0,
+    "rank53": 1,
+    "rank54": 0,
+    "rank55": 0,
+    "rank56": 0,
+    "rank57": 0,
+    "rank58": 0,
+    "rank59": 0,
+    "rank60": 0,
+    "rank61": 0,
+    "rank62": 0,
+    "rank63": 0,
+    "rank64": 0,
+    "rank65": 0,
+    "rank66": 1,
+    "rank67": 0,
+    "rank68": 0,
+    "rank69": 0,
+    "rank70": 0,
+    "rank71": 1,
+    "rank72": 1,
+    "rank73": 2,
+    "rank74": 0,
+    "rank75": 1,
+    "rank76": 0,
+    "rank77": 0,
+    "rank78": 0,
+    "rank79": 0,
+    "rank80": 1,
+    "rank81": 0,
+    "rank82": 0,
+    "rank83": 0,
+    "rank84": 0,
+    "rank85": 0,
+    "rank86": 0,
+    "rank87": 0,
+    "rank88": 1,
+    "rank89": 0,
+    "rank90": 0,
+    "rank91": 0,
+    "rank92": 0,
+    "rank93": 0,
+    "rank94": 0,
+    "rank95": 0,
+    "rank96": 1,
+    "rank97": 0,
+    "rank98": 2,
+    "rank99": 0,
+    "rank100": 0,
+    "rank101": 1,
+    "rank102": 0,
+    "rank103": 0,
+    "rank104": 1,
+    "rank105": 0,
+    "rank106": 0,
+    "rank107": 0,
+    "rank108": 0,
+    "rank109": 0,
+    "rank110": 0,
+    "rank111": 0,
+    "rank112": 0,
+    "rank113": 0,
+    "rank114": 0,
+    "rank115": 0,
+    "rank116": 0,
+    "rank117": 0,
+    "rank118": 1,
+    "rank119": 0,
+    "rank120": 0,
+    "rank121": 0,
+    "rank122": 0,
+    "rank123": 1,
+    "rank124": 0,
+    "rank125": 0,
+    "rank126": 0,
+    "rank127": 0,
+    "rank128": 0,
+    "rank129": 1,
+    "rank130": 0,
+    "rank131": 1,
+    "rank132": 0,
+    "rank133": 0,
+    "rank134": 0,
+    "rank135": 0,
+    "rank136": 1,
+    "rank137": 0,
+    "rank138": 0,
+    "rank139": 1,
+    "rank140": 0,
+    "rank141": 0,
+    "rank142": 0,
+    "rank143": 0,
+    "rank144": 0,
+    "rank145": 0,
+    "rank146": 0,
+    "rank147": 0,
+    "rank148": 0,
+    "rank149": 0,
+    "rank150": 0,
+    "miss": 14
+  },
+  "rows": [
+    {
+      "query": "关于回归分析，下列说法正确的是： ",
+      "golden_chunk_id": "_default:b69f91611e6e8a96:1",
+      "golden_recall_rank": 34,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 3,
+        "doc_chunk": 25,
+        "question": 121
+      }
+    },
+    {
+      "query": "关于前端异步编程，哪些说法正确？",
+      "golden_chunk_id": "_default:09daca83011f4bcd:1",
+      "golden_recall_rank": 3,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "course_module",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 7,
+        "course_module": 14,
+        "doc_chunk": 17,
+        "question": 112
+      }
+    },
+    {
+      "query": "数据仓库与数据湖的核心区别之一是： ",
+      "golden_chunk_id": "_default:58ecb01f44581a06:1",
+      "golden_recall_rank": 26,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "doc_chunk",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 6,
+        "course_module": 4,
+        "doc_chunk": 31,
+        "question": 109
+      }
+    },
+    {
+      "query": "路径、账号和密钥都适合直接硬编码到脚本中。对还是错？ ",
+      "golden_chunk_id": "_default:311c71773d02c469:1",
+      "golden_recall_rank": 22,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "doc_chunk"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 9,
+        "course_module": 16,
+        "doc_chunk": 46,
+        "question": 79
+      }
+    },
+    {
+      "query": "写学习计划时，把大目标拆成小阶段的好处是？",
+      "golden_chunk_id": "_default:417ed6c2b86e6fd4:1",
+      "golden_recall_rank": 66,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 14,
+        "course_module": 8,
+        "doc_chunk": 15,
+        "question": 113
+      }
+    },
+    {
+      "query": "在汇编或底层调试中，寄存器通常指什么？",
+      "golden_chunk_id": "_default:344b2d329b7760f1:1",
+      "golden_recall_rank": 20,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 9,
+        "doc_chunk": 34,
+        "question": 104
+      }
+    },
+    {
+      "query": "客户投诉物流延迟，要求当天必须解决。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "_default:cbabcd76aaffae2a:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "doc_chunk": 3,
+        "question": 147
+      }
+    },
+    {
+      "query": "在使用文件描述符时，哪一项更接近事实？",
+      "golden_chunk_id": "_default:4e19c9e2128a9569:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 1,
+        "doc_chunk": 44,
+        "question": 104
+      }
+    },
+    {
+      "query": "关于 JavaScript 的闭包，哪一项更准确？",
+      "golden_chunk_id": "_default:07e6c9a75b13860f:1",
+      "golden_recall_rank": 43,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 5,
+        "doc_chunk": 54,
+        "question": 90
+      }
+    },
+    {
+      "query": "给出一个你认为最典型的“数学服务现实”的例子，并说明原因。 ",
+      "golden_chunk_id": "_default:7d4e9af6afb9d9a9:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "doc_chunk",
+        "doc_chunk",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 8,
+        "course_module": 1,
+        "doc_chunk": 45,
+        "question": 96
+      }
+    },
+    {
+      "query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "_default:b9e930fdae163f3e:1",
+      "golden_recall_rank": 104,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 2,
+        "question": 146
+      }
+    },
+    {
+      "query": "什么是拓扑不变量？",
+      "golden_chunk_id": "_default:da8f38eb104e6d91:1",
+      "golden_recall_rank": 118,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 2,
+        "doc_chunk": 9,
+        "question": 137
+      }
+    },
+    {
+      "query": "在你刚带一个新团队，目标是本季度提升交付效率，但成员对方向还不够清楚。的场景里，先讲清业务目标和优先级，再把结果拆成团队和个人任务。是合适的优先动作。 ",
+      "golden_chunk_id": "_default:0c672195b48bb71d:1",
+      "golden_recall_rank": 80,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 1,
+        "question": 146
+      }
+    },
+    {
+      "query": "说明一阶导数和函数单调性的关系。 ",
+      "golden_chunk_id": "_default:3c67d68cae42b97d:1",
+      "golden_recall_rank": 10,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 16,
+        "doc_chunk": 14,
+        "question": 120
+      }
+    },
+    {
+      "query": "在项目推进到一半，接口需求被反复变更，责任边界也不清楚。的场景里，补充 RACI 或责任清单，统一接口定义，并约定升级机制。是合适的优先动作。 ",
+      "golden_chunk_id": "_default:035902e3acc76406:1",
+      "golden_recall_rank": 88,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 4,
+        "doc_chunk": 16,
+        "question": 130
+      }
+    },
+    {
+      "query": "下列关于命题逻辑的说法，哪些正确？",
+      "golden_chunk_id": "_default:4b666ddb884135b9:1",
+      "golden_recall_rank": 14,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 4,
+        "doc_chunk": 6,
+        "question": 139
+      }
+    },
+    {
+      "query": "下列哪项最符合垃圾回收的作用？",
+      "golden_chunk_id": "_default:85ebb13115412cbb:1",
+      "golden_recall_rank": 21,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 1,
+        "doc_chunk": 2,
+        "question": 147
+      }
+    },
+    {
+      "query": "若两个事件互斥，则它们一定独立。 ",
+      "golden_chunk_id": "_default:7b1693486a2b6966:1",
+      "golden_recall_rank": 123,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 40,
+        "question": 108
+      }
+    },
+    {
+      "query": "游戏主循环一般会持续执行输入、更新和渲染。 ",
+      "golden_chunk_id": "_default:739e39c6da0f8b46:1",
+      "golden_recall_rank": 5,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "course_module"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 9,
+        "course_module": 21,
+        "doc_chunk": 27,
+        "question": 93
+      }
+    },
+    {
+      "query": "在前端调试网络请求时，最常查看的工具是哪一个？",
+      "golden_chunk_id": "_default:42f6c60374c20a31:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 46,
+        "question": 102
+      }
+    },
+    {
+      "query": "前后端协作中，统一接口约定可以减少大量沟通成本。对还是错？ ",
+      "golden_chunk_id": "_default:9d19c031f0940ecd:1",
+      "golden_recall_rank": 72,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 4,
+        "doc_chunk": 32,
+        "question": 111
+      }
+    },
+    {
+      "query": "面向对象设计中，哪个概念最直接体现“隐藏内部实现，只暴露必要接口”？",
+      "golden_chunk_id": "_default:967de30673647219:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 4,
+        "course_module": 18,
+        "doc_chunk": 25,
+        "question": 103
+      }
+    },
+    {
+      "query": "简述 B+ 树为什么适合数据库索引。 ",
+      "golden_chunk_id": "_default:c21015d727a5c21c:1",
+      "golden_recall_rank": 139,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 1,
+        "doc_chunk": 58,
+        "question": 88
+      }
+    },
+    {
+      "query": "深度网络越深，训练就一定越容易。 ",
+      "golden_chunk_id": "_default:0dfc462d366e47fb:1",
+      "golden_recall_rank": 18,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "course_intro",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 11,
+        "course_module": 61,
+        "doc_chunk": 10,
+        "question": 68
+      }
+    },
+    {
+      "query": "写出新员工第一周工作安排中通常应包含的三类信息。 ",
+      "golden_chunk_id": "_default:50f6bacd54efcb07:1",
+      "golden_recall_rank": 35,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "course_intro",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 6,
+        "course_module": 9,
+        "doc_chunk": 8,
+        "question": 127
+      }
+    },
+    {
+      "query": "关于解释器和编译器，哪些说法正确？",
+      "golden_chunk_id": "_default:be239f5b07d4c8a0:1",
+      "golden_recall_rank": 136,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 1,
+        "doc_chunk": 6,
+        "question": 141
+      }
+    },
+    {
+      "query": "词法分析阶段最主要的工作是什么？",
+      "golden_chunk_id": "_default:78181cc809d023d1:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "question": 150
+      }
+    },
+    {
+      "query": "逐点收敛就足以保证积分与极限可以交换。 ",
+      "golden_chunk_id": "_default:23a9792c8e140c5f:1",
+      "golden_recall_rank": 96,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 4,
+        "course_module": 17,
+        "doc_chunk": 23,
+        "question": 106
+      }
+    },
+    {
+      "query": "MVCC 的主要价值更接近哪项？",
+      "golden_chunk_id": "_default:deba45a280c7b273:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 48,
+        "doc_chunk": 14,
+        "question": 88
+      }
+    },
+    {
+      "query": "以下哪项最能体现闭环服务要跟进结果，确认客户真正接受。 ",
+      "golden_chunk_id": "_default:9509fbff664792b9:1",
+      "golden_recall_rank": 98,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 11,
+        "doc_chunk": 14,
+        "question": 123
+      }
+    },
+    {
+      "query": "哪些错误通常能在编译期尽早发现？",
+      "golden_chunk_id": "_default:78181cc809d023d1:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 2,
+        "doc_chunk": 44,
+        "question": 103
+      }
+    },
+    {
+      "query": "简述该场景下的处理顺序。 ",
+      "golden_chunk_id": "_default:46a445cb497e6003:1",
+      "golden_recall_rank": 73,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 1,
+        "course_module": 16,
+        "doc_chunk": 8,
+        "question": 125
+      }
+    },
+    {
+      "query": "当一个接口响应很慢时，前端和后端协作最合理的方向是什么？",
+      "golden_chunk_id": "_default:9d19c031f0940ecd:1",
+      "golden_recall_rank": 131,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 8,
+        "question": 140
+      }
+    },
+    {
+      "query": "在多进程与多线程的对比中，哪一项更符合线程的典型特点？",
+      "golden_chunk_id": "_default:5b6d98f21f75b7fa:1",
+      "golden_recall_rank": 4,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "course_module",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 17,
+        "doc_chunk": 29,
+        "question": 104
+      }
+    },
+    {
+      "query": "关于 TCP 的能力，哪些说法正确？",
+      "golden_chunk_id": "_default:c775ed1b5c090ad8:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 4,
+        "doc_chunk": 46,
+        "question": 100
+      }
+    },
+    {
+      "query": "说明“建模”和“优化”之间的关系。 ",
+      "golden_chunk_id": "_default:709c65694ae9a84c:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "doc_chunk",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 9,
+        "course_module": 38,
+        "doc_chunk": 32,
+        "question": 71
+      }
+    },
+    {
+      "query": "面试礼仪中最容易影响整体印象的是： ",
+      "golden_chunk_id": "_default:d4d0e5b72e738fdb:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 1,
+        "question": 147
+      }
+    },
+    {
+      "query": "说明前端为什么要关注首屏加载性能。 ",
+      "golden_chunk_id": "_default:de9fa0a0060b03d0:1",
+      "golden_recall_rank": 30,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 35,
+        "doc_chunk": 21,
+        "question": 91
+      }
+    },
+    {
+      "query": "复试自我介绍应尽量突出与报考方向相关的经历。 ",
+      "golden_chunk_id": "_default:3f2aa9b33c6e761a:1",
+      "golden_recall_rank": 47,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 15,
+        "course_module": 24,
+        "doc_chunk": 5,
+        "question": 106
+      }
+    },
+    {
+      "query": "如果本学期要兼顾竞赛和课程，最先做什么？",
+      "golden_chunk_id": "_default:6ec7dce282bbc44a:1",
+      "golden_recall_rank": 53,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 7,
+        "doc_chunk": 10,
+        "question": 131
+      }
+    },
+    {
+      "query": "NoSQL 一定比关系型数据库更快。 ",
+      "golden_chunk_id": "_default:b0bd6104e79687c6:1",
+      "golden_recall_rank": 19,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 8,
+        "doc_chunk": 37,
+        "question": 102
+      }
+    },
+    {
+      "query": "TypeScript 的静态类型检查可以减少一部分运行时类型错误。对还是错？ ",
+      "golden_chunk_id": "_default:1f37edf895a55649:1",
+      "golden_recall_rank": 19,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "doc_chunk"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 11,
+        "doc_chunk": 62,
+        "question": 74
+      }
+    },
+    {
+      "query": "同学在模拟面试中指出你表达太散，下一步更合适的是？",
+      "golden_chunk_id": "_default:6a9391ca86ee033c:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 17,
+        "doc_chunk": 4,
+        "question": 127
+      }
+    },
+    {
+      "query": "典型游戏主循环通常包括： ",
+      "golden_chunk_id": "_default:739e39c6da0f8b46:1",
+      "golden_recall_rank": 4,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "course_module",
+        "course_intro"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 17,
+        "course_module": 13,
+        "doc_chunk": 20,
+        "question": 100
+      }
+    },
+    {
+      "query": "为什么线性规划常先转化为标准型？",
+      "golden_chunk_id": "_default:9d69143ee83dd2d1:1",
+      "golden_recall_rank": 36,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 10,
+        "doc_chunk": 17,
+        "question": 123
+      }
+    },
+    {
+      "query": "复试表达中，哪些做法通常更受欢迎？",
+      "golden_chunk_id": "_default:d239f29b0c66136f:1",
+      "golden_recall_rank": 29,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 4,
+        "course_module": 24,
+        "doc_chunk": 1,
+        "question": 121
+      }
+    },
+    {
+      "query": "客户对价格有异议，认为你们比竞品贵。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "_default:4c33dba3e570d9fa:1",
+      "golden_recall_rank": 129,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 1,
+        "doc_chunk": 7,
+        "question": 142
+      }
+    },
+    {
+      "query": "在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。 ",
+      "golden_chunk_id": "_default:ca1d0e7a65965ebf:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 1,
+        "question": 149
+      }
+    },
+    {
+      "query": "在部门里有两名员工能力突出，但培养方向还不明确。的场景里，先做能力盘点，再结合岗位要求设计成长路径。是合适的优先动作。 ",
+      "golden_chunk_id": "_default:c35e8e7057bbbaaf:1",
+      "golden_recall_rank": 101,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 9,
+        "question": 139
+      }
+    },
+    {
+      "query": "渲染管线中，负责把三角形投到屏幕上的阶段通常是： ",
+      "golden_chunk_id": "_default:9466bed20e730a7f:1",
+      "golden_recall_rank": 11,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "course_intro",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 11,
+        "course_module": 23,
+        "doc_chunk": 23,
+        "question": 93
+      }
+    },
+    {
+      "query": "齐次线性方程组一定有零解。 ",
+      "golden_chunk_id": "_default:5b6b8443c1165799:1",
+      "golden_recall_rank": 20,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 26,
+        "question": 122
+      }
+    },
+    {
+      "query": "下列哪项更符合文明施工要求？",
+      "golden_chunk_id": "_default:30b05e9811fa40f5:1",
+      "golden_recall_rank": 98,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 2,
+        "doc_chunk": 49,
+        "question": 99
+      }
+    },
+    {
+      "query": "在微分几何中，曲率通常用来刻画： ",
+      "golden_chunk_id": "_default:3560b6911e730a6a:1",
+      "golden_recall_rank": 2,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "course_module",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 5,
+        "course_module": 14,
+        "doc_chunk": 26,
+        "question": 105
+      }
+    },
+    {
+      "query": "新机制先在一个小团队试点，但试点中出现了明显阻力。请结合管理场景写出你的处理方案。 ",
+      "golden_chunk_id": "_default:efd0bea6bcb57f2e:1",
+      "golden_recall_rank": 73,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 7,
+        "course_module": 19,
+        "doc_chunk": 15,
+        "question": 109
+      }
+    },
+    {
+      "query": "说明排列与组合的区别。 ",
+      "golden_chunk_id": "_default:34009115f2016dac:1",
+      "golden_recall_rank": 71,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 3,
+        "course_module": 9,
+        "doc_chunk": 16,
+        "question": 122
+      }
+    },
+    {
+      "query": "关于动态规划，哪些说法正确？",
+      "golden_chunk_id": "_default:34abd258ff51fe55:1",
+      "golden_recall_rank": 29,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "doc_chunk",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 11,
+        "doc_chunk": 9,
+        "question": 128
+      }
+    },
+    {
+      "query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。请结合管理场景写出你的处理方案。 ",
+      "golden_chunk_id": "_default:b9e930fdae163f3e:1",
+      "golden_recall_rank": 75,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 15,
+        "doc_chunk": 6,
+        "question": 129
+      }
+    },
+    {
+      "query": "关于拓扑空间，下列说法正确的是： ",
+      "golden_chunk_id": "_default:da8f38eb104e6d91:1",
+      "golden_recall_rank": 48,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 2,
+        "course_module": 4,
+        "doc_chunk": 7,
+        "question": 137
+      }
+    },
+    {
+      "query": "施工组织设计的作用更接近于： ",
+      "golden_chunk_id": "_default:30b05e9811fa40f5:1",
+      "golden_recall_rank": 9,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_intro": 12,
+        "course_module": 51,
+        "doc_chunk": 13,
+        "question": 74
+      }
+    },
+    {
+      "query": "如果样式在某个页面里失效了，你会怎么排查？",
+      "golden_chunk_id": "_default:7bd925dd47752afc:1",
+      "golden_recall_rank": 15,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 1,
+        "doc_chunk": 74,
+        "question": 75
+      }
+    },
+    {
+      "query": "函数列逐点收敛与一致收敛相比，通常更强的是： ",
+      "golden_chunk_id": "_default:fcadb9dc275ef602:1",
+      "golden_recall_rank": 34,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 4,
+        "doc_chunk": 14,
+        "question": 132
+      }
+    },
+    {
+      "query": "核心骨干总是来问你怎么做，团队已经开始等你拍板。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "_default:31981be2395401b3:1",
+      "golden_recall_rank": null,
+      "golden_in_recall": false,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "doc_chunk": 3,
+        "question": 147
+      }
+    },
+    {
+      "query": "生成函数的主要用途之一是： ",
+      "golden_chunk_id": "_default:9b7a49f7d4bb06cb:1",
+      "golden_recall_rank": 24,
+      "golden_in_recall": true,
+      "recall_top5_types": [
+        "question",
+        "question",
+        "question",
+        "question",
+        "question"
+      ],
+      "recall150_type_mix": {
+        "course_module": 6,
+        "doc_chunk": 15,
+        "question": 129
+      }
+    }
+  ]
+}

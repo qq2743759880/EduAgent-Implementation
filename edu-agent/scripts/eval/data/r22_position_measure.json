@@ -1,0 +1,149 @@
+{
+  "generated_at": "2026-09-18T19:26:58.961684+00:00",
+  "eval_set": "E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\scripts\\eval\\data\\r22_eval_set64.json",
+  "frozen_baseline_reference": {
+    "contract": "contracts/rag-baseline-eval32.json (冻结, 本轮禁改)",
+    "hit_rate@5": 0.9688,
+    "mrr@5": 0.9688,
+    "threshold_hit_rate_min": 0.9488,
+    "threshold_mrr_min": 0.9488,
+    "note": "eval_set32 为圆环自证集, 头寸仅对新集解释"
+  },
+  "primary": {
+    "tag": "r22_base_run1",
+    "mode_note": "realtime_e2e_retrieval(retrieve_three_channel 全链, 与冻结契约同参)",
+    "n": 64,
+    "hit_rate@5": 0.0312,
+    "mrr@5": 0.0195,
+    "hit@5_wilson95": [
+      0.0086,
+      0.107
+    ],
+    "mrr@5_bootstrap95": [
+      0.0,
+      0.0547
+    ],
+    "rank_hist_top5": {
+      "rank1": 1,
+      "rank2": 0,
+      "rank3": 0,
+      "rank4": 1,
+      "rank5": 0,
+      "miss": 62
+    },
+    "degeneracy": {
+      "mrr_equals_hit_rate": false,
+      "all_hits_rank1": false,
+      "verdict": "informative(有区分度)"
+    },
+    "by_independence": {
+      "manual": {
+        "n": 1,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "hit@5_wilson95": [
+          0.2065,
+          1.0
+        ]
+      },
+      "cross": {
+        "n": 63,
+        "hit_rate@5": 0.0159,
+        "mrr@5": 0.004,
+        "hit@5_wilson95": [
+          0.0028,
+          0.0846
+        ]
+      }
+    }
+  },
+  "determinism_check": {
+    "runs": [
+      "r22_base_run1",
+      "r22_base_run2"
+    ],
+    "hit_rate_equal": true,
+    "mrr_equal": true,
+    "per_query_identical": true
+  },
+  "graded_run": {
+    "tag": "r22_graded10",
+    "mode_note": "graded_widened_window(top_k=final_max_k=10, 其余同冻结契约; 分级测量专用口径)",
+    "n": 64,
+    "hit_rate@5": 0.0312,
+    "mrr@5": 0.0195,
+    "hit@5_wilson95": [
+      0.0086,
+      0.107
+    ],
+    "mrr@5_bootstrap95": [
+      0.0,
+      0.0547
+    ],
+    "rank_hist_top5": {
+      "rank1": 1,
+      "rank2": 0,
+      "rank3": 0,
+      "rank4": 1,
+      "rank5": 0,
+      "miss": 62
+    },
+    "degeneracy": {
+      "mrr_equals_hit_rate": false,
+      "all_hits_rank1": false,
+      "verdict": "informative(有区分度)"
+    },
+    "by_independence": {
+      "manual": {
+        "n": 1,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "hit@5_wilson95": [
+          0.2065,
+          1.0
+        ]
+      },
+      "cross": {
+        "n": 63,
+        "hit_rate@5": 0.0159,
+        "mrr@5": 0.004,
+        "hit@5_wilson95": [
+          0.0028,
+          0.0846
+        ]
+      }
+    },
+    "graded": {
+      "top_k": 10,
+      "hit@3": 0.0156,
+      "hit@5": 0.0312,
+      "hit@10": 0.0469,
+      "mrr@10": 0.0218,
+      "mrr@10_bootstrap95": [
+        0.0,
+        0.0592
+      ],
+      "rank_hist": {
+        "rank1": 1,
+        "rank2": 0,
+        "rank3": 0,
+        "rank4": 1,
+        "rank5": 0,
+        "rank6": 0,
+        "rank7": 1,
+        "rank8": 0,
+        "rank9": 0,
+        "rank10": 0,
+        "miss": 61
+      },
+      "distinct_golden_hit": 3,
+      "distinct_golden_hit_ratio": 0.0469
+    }
+  },
+  "headroom_verdict": {
+    "verdict": "headroom_measured(有头寸)",
+    "gap_to_ceiling": 0.9688,
+    "note": "新集 hit_rate@5=0.0312, 距天花板 0.9688; 若沿用基线-0.02 阈值规则, 本集等价阈值为 0.0112, 与冻结阈值 0.9488 的头寸差异需编排者裁定, 本任务不落门",
+    "threshold_margin_vs_frozen": -0.9176
+  }
+}
