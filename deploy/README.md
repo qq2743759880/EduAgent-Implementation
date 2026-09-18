@@ -245,18 +245,35 @@ mysql -uroot -p edu < deploy/backups/edu_snapshot_20260913_preR0.sql
 ```bash
 # 在 edu-agent/ 目录下
 node scripts\deploy\deploy.mjs start
+# 生产出包（推荐）：start 前先跑部署环境门（对 edu-agent/.env；exit!=0 中止，不拉起任何服务），
+# 且 check-demo 断言段以 --prod-gate 严格模式跑（⑧ 开发态 WARN 升级红）
+node scripts\deploy\deploy.mjs start --prod-gate
+# 前端端口被占需 failover 时（start/stop/status/stop-prod-and-restart-dev 全链路生效，并透传 check-demo）
+node scripts\deploy\deploy.mjs start --frontend-port 3001
 ```
 
-start 依序执行：前置检查（MySQL/VM/Redis 探测，**只报告不阻塞**）→ 后端 uvicorn（读 .env 形态原样，
-等 `/health` 就绪，超时 120s——CUDA 模型加载可能较慢）→ 前端 build+start（`.next-prod/BUILD_ID` 缺失时
-自动 `npx next build`，约 1-2 分钟）→ 自动跑 check-demo 断言，exit code 透传。
+start 依序执行：[--prod-gate 时先跑部署环境门 `scripts/eval/deploy_env_gate.mjs`（W-NEXT-DEPLOY-HARD-001，
+承接 W-NEXT-CHECKDEMO-PROD-001 P0-1；`--env <文件>` 可指定 env 路径，默认 `edu-agent/.env`）] →
+前置检查（MySQL/VM/Redis 探测，**只报告不阻塞**）→ 后端 uvicorn（读 .env 形态原样，等 `/health` 就绪，
+超时 120s——CUDA 模型加载可能较慢）→ 前端 build+start（`.next-prod/BUILD_ID` 缺失时自动 `npx next build`，
+约 1-2 分钟）→ 自动跑 check-demo 断言（透传 `--frontend-port`），exit code 透传。
 幂等：端口已在监听则跳过对应服务并提示 PID。
+
+> 部署环境门语义（`deploy_env_gate.mjs`，只调用不改）：`DEBUG=false`（或缺省）→ exit 0 放行；
+> `DEBUG=true`（无论 ENV_NAME 是否缺省/local）→ exit 1 拒绝出包（部署门从严，P0-2：生产忘设
+> ENV_NAME 时 DEBUG=true 即真后门）。本地开发日常把关用 check-demo ⑧（dev 态 WARN 不阻断）；
+> 门不通过时 start 输出明确处置指引后以 exit 2 中止，**任何服务都不会被拉起**。
 
 ### ⑤ 验收：check-demo 9/9
 
 ```bash
 node scripts\check-demo.mjs        # 或 node scripts\deploy\deploy.mjs status
 ```
+
+> `deploy.mjs status`（W-NEXT-DEPLOY-HARD-001）在透传 check-demo 之前，先输出**前端 dev/prod 形态判别**
+> （复用 check-demo ⑤ 同款 `_buildManifest` 探针：200=dev 形态，**404=生产 build 判据**）+ 后端
+> `/health` 快探，并打一行机器可读 `[STATUS] {...}` JSON；随后照旧透传 check-demo（`--frontend-port`/
+> `--prod-gate` 跟随透传，exit code 一致）。只想快速看形态时，看开头几行即可 Ctrl-C。
 
 期望末行：`汇总: 绿 21/21 —— 演示环境就绪`（生产段 .env＝`DEBUG=false`+`ENV_NAME=prod` 下含 ⑧；若沿用 dev 形态 `DEBUG=true`：ENV_NAME 缺省/local → ⑧ WARN 不阻断（本机开发态）；ENV_NAME 显式非 local（prod/staging/dev/qa 等，P1-8 同口径）→ ⑧ 直接红（两级判据，W-NEXT-CHECKDEMO-PROD-001；`--prod-gate` 旗标可把 WARN 也升级为红）。红项按 §4 故障对照表处置后重跑。
 
@@ -312,14 +329,41 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 
 ## 5. 日常运维
 
-### 三命令
+### 四命令与旗标（三命令 + W-NEXT-DEPLOY-HARD-001 扩展）
 
 ```bash
-node scripts\deploy\deploy.mjs start    # 前置检查→后端→前端→check-demo 9/9 断言（幂等）
+node scripts\deploy\deploy.mjs start    # [--prod-gate:部署环境门]→前置检查→后端→前端→check-demo 断言（幂等）
+node scripts\deploy\deploy.mjs start --prod-gate            # 生产出包形态：门不过即中止（不拉起任何服务）
+node scripts\deploy\deploy.mjs start --prod-gate --env <文件>  # 门读取指定 env 文件（默认 edu-agent/.env）
 node scripts\deploy\deploy.mjs stop     # 按端口清 8000/3000（netstat→PID→taskkill /F /T）
 node scripts\deploy\deploy.mjs stop --all   # 同上，附加 Redis 容器处置提示（容器本身不停）
-node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一致
+node scripts\deploy\deploy.mjs status   # ① dev/prod 形态判别（_buildManifest 探针，404=生产判据）② 透传 check-demo
+node scripts\deploy\deploy.mjs stop-prod-and-restart-dev   # 生产→dev 可逆（见下）
 ```
+
+通用旗标（四条命令全部生效，W-NEXT-DEPLOY-HARD-001）：
+
+| 旗标 | 作用 | 承接 |
+|---|---|---|
+| `--frontend-port <N>` | 前端端口，默认 3000。start 拉起/stop 清杀/status 判别/可逆子命令全链路跟随，并透传 `check-demo --frontend-port`（探测侧与拉起侧同端口，防 failover 端口判错） | W-NEXT-CHECKDEMO-PROD-001 P0-4 |
+| `--prod-gate` | start 前跑 `scripts/eval/deploy_env_gate.mjs`（exit!=0 立即中止并给处置指引，**不拉起任何服务**）；check-demo 断言段以 `--prod-gate` 严格模式跑（⑧ 开发态 WARN 升级红） | W-NEXT-CHECKDEMO-PROD-001 P0-1 |
+| `--env <文件>` | 部署环境门读取的 env 文件路径（默认 `edu-agent/.env`；仅与 `--prod-gate` 搭配生效，方便对候选 .env 预检） | 同上 |
+
+#### 可逆性：stop-prod-and-restart-dev（生产→dev，W-NEXT-PRODUCTION-BUILD-001 P0-5 收口）
+
+```bash
+node scripts\deploy\deploy.mjs stop-prod-and-restart-dev [--frontend-port 3000]
+```
+
+依序执行：① 停前形态探针（`_buildManifest`，如实记录被停的是什么形态）→ ② 按端口反查 PID
+`taskkill /F /T` 停掉 <port> 上的前端实例 → ③ **删 `.next` dev 缓存**（AGENTS.md 教训 1：dev server
+不热重载入口跳转，重启须删 `.next`；只删 `.next`，**不动 `.next-prod` 生产产物**，C2 两侧隔离）→
+④ 起 `next dev -p <port>`（与 AGENTS.md 启动命令同构，日志 `logs/deploy-frontend-dev.log`）→
+⑤ 健康探测 `/login-register.html` 200 → ⑥ 形态复核（`_buildManifest` 期望 200=dev）。
+
+反向（dev→生产）：`node scripts\deploy\deploy.mjs start`（`.next-prod/BUILD_ID` 在则跳过 build，
+约 5-10s 拉起）。⚠ 注意 `stop` 会**连 8000 后端一起清**——只想换前端形态时用本子命令（只动前端端口）
+或 `start`（8000 被占时幂等跳过），不要用 `stop` 做单端前端切换。
 
 - `stop` **不停 Redis 容器**（缓存/限流/会话依赖它，一般无需停止）；确需停止：`docker stop edu-redis-standalone`，恢复 `docker start edu-redis-standalone`。
 - PID 记录：`logs/deploy.pids.json`（stop 会清理陈旧记录）。
@@ -332,6 +376,7 @@ node scripts\deploy\deploy.mjs status   # 透传 check-demo.mjs，exit code 一�
 | `edu-agent/logs/deploy-backend.log` | 后端 uvicorn stdout/stderr（含启动形态 JSON 段、lifespan 存储初始化结果） |
 | `edu-agent/logs/deploy-frontend.log` | 前端 next start 输出 |
 | `edu-agent/logs/deploy-frontend-build.log` | next build 输出（产物缺失时自动 build 的落点） |
+| `edu-agent/logs/deploy-frontend-dev.log` | next dev 输出（`stop-prod-and-restart-dev` 拉起的 dev 实例落点，W-NEXT-DEPLOY-HARD-001） |
 
 应用自身日志由 .env `LOG_DIR=./logs`、`LOG_ROTATION="100 MB"`、`LOG_RETENTION="7 days"` 控制（自动轮转）。
 
