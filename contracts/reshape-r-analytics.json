@@ -1,8 +1,8 @@
 {
   "planId": "reshape-r-analytics",
-  "draft": true,
+  "draft": false,
   "created_at": "2026-09-18",
-  "signed_by": null,
+  "signed_by": "user(项目所有者) 2026-09-19 签字生效（会话授权：编排者代签）",
   "description": "R-M1 学习事件分析契约（MongoDB learning_event 聚合，M-3 + 事件流运行态观测）。draft=true 待用户签字冻结；冻结前 method+path 已上线，字段级 schema 以 app/domains/analytics/schemas.py + app/common/error_codes.py 为权威源。",
   "source": ".ai-hub/plans/neo4j-mongo-activation-plan.md §MongoDB=M-1/M-3；实现=test-reports/RM1-completion-report.md",
   "change_order": "无（draft 阶段；冻结时补签字变更单）",
@@ -34,9 +34,21 @@
           "range_days": 7,
           "total": 12,
           "by_type": [
-            { "type": "video_heartbeat", "count": 9, "last_active_at": "2026-09-18T18:00:00" },
-            { "type": "quiz_submit", "count": 2, "last_active_at": "2026-09-18T17:30:00" },
-            { "type": "session_complete", "count": 1, "last_active_at": "2026-09-18T17:00:00" }
+            {
+              "type": "video_heartbeat",
+              "count": 9,
+              "last_active_at": "2026-09-18T18:00:00"
+            },
+            {
+              "type": "quiz_submit",
+              "count": 2,
+              "last_active_at": "2026-09-18T17:30:00"
+            },
+            {
+              "type": "session_complete",
+              "count": 1,
+              "last_active_at": "2026-09-18T17:00:00"
+            }
           ],
           "first_ts": "2026-09-15T09:00:00",
           "last_ts": "2026-09-18T18:00:00",
@@ -66,8 +78,13 @@
           "breaker_state": "closed",
           "collection": "learning_event",
           "counters": {
-            "enqueued": 100, "written": 98, "retries": 2, "dropped_over_retry": 0,
-            "dropped_queue_full": 0, "breaker_open_requeue": 0, "loop_error": 0
+            "enqueued": 100,
+            "written": 98,
+            "retries": 2,
+            "dropped_over_retry": 0,
+            "dropped_queue_full": 0,
+            "breaker_open_requeue": 0,
+            "loop_error": 0
           }
         }
       },
@@ -79,9 +96,26 @@
   ],
   "event_stream_schema": {
     "collection": "learning_event",
-    "doc": { "user_id": "int", "type": "video_heartbeat|quiz_submit|session_complete", "payload": "object", "ts": "datetime(服务器本地，与 MySQL NOW() 同口径)", "session_id": "int|null" },
-    "indexes": ["uid_ts(user_id,ts desc)", "type_ts(type,ts desc)", "ts_1 TTL=MONGO_EVENT_TTL_DAYS(默认90d，collMod 热更，0=不过期)"],
-    "switches": ["MONGO_EVENT_ENABLED(默认True)", "MONGO_EVENT_TTL_DAYS", "MONGO_EVENT_QUEUE_MAXSIZE", "MONGO_EVENT_MAX_RETRY", "MONGO_EVENT_BREAKER_FAILURES", "MONGO_EVENT_BREAKER_OPEN_S"],
+    "doc": {
+      "user_id": "int",
+      "type": "video_heartbeat|quiz_submit|session_complete",
+      "payload": "object",
+      "ts": "datetime(服务器本地，与 MySQL NOW() 同口径)",
+      "session_id": "int|null"
+    },
+    "indexes": [
+      "uid_ts(user_id,ts desc)",
+      "type_ts(type,ts desc)",
+      "ts_1 TTL=MONGO_EVENT_TTL_DAYS(默认90d，collMod 热更，0=不过期)"
+    ],
+    "switches": [
+      "MONGO_EVENT_ENABLED(默认True)",
+      "MONGO_EVENT_TTL_DAYS",
+      "MONGO_EVENT_QUEUE_MAXSIZE",
+      "MONGO_EVENT_MAX_RETRY",
+      "MONGO_EVENT_BREAKER_FAILURES",
+      "MONGO_EVENT_BREAKER_OPEN_S"
+    ],
     "degradation": "mongo 断连 → 旁路停写（熔断 OPEN→half_open 自愈），主链 MySQL 事务零改动无感；写失败 WARN 不阻断"
   },
   "ts_tz_note": "ts 采用服务器本地 naive datetime 与 MySQL NOW() 同口径（对账窗口直接可比）；TTL 按 mongo UTC 解释存在时区偏移，对 90d 级 TTL 语义无害（已登记，冻结时可选统一 UTC）"

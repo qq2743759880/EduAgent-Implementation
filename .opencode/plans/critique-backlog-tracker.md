@@ -600,3 +600,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 低优先级待办(用户裁定):F-2 积分事件规则、F-4 徽章解锁规则核对——入低优池。
 ### 全局
 - reshape-r 已派已验:W0/R02(+tail)/R12/F 系列 ✅;**未派:R01(P0 记忆 worker)/R03(P0 chunk 迁移)/R05/R07/R10/R11/R13/R14/R15/R20-24**。
+
+
+## 契约冻结登记（2026-09-19）
+- reshape-r-kg.json 签字生效（draft:false，sha256 前缀 c99f486c，KG 3 端点：path/upstream/downstream）——R-N1 验收 PASS 后用户会话授权代签
+- reshape-r-analytics.json 签字生效（draft:false，sha256 前缀 3234109b，analytics 2 端点：summary/stream-stats）——R-M1 验收 PASS 后用户会话授权代签
+- 遗留：pay 渠道验签闸门（346 行）已派 PAY-GATE（配额中断待重派）；注释层残留处置=用户裁定删除（待派）

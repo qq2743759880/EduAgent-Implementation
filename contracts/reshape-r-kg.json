@@ -1,8 +1,8 @@
 {
   "planId": "reshape-r-kg",
-  "draft": true,
+  "draft": false,
   "created_at": "2026-09-18",
-  "signed_by": null,
+  "signed_by": "user(项目所有者) 2026-09-19 签字生效（会话授权：编排者代签）",
   "description": "R-N1 知识图谱契约（Neo4j 先修图：学习路径 + 章节 邻域）。draft=true 待用户签字冻结；冻结前 method+path 已上线，字段级 schema 以 app/domains/kg/schemas.py + app/common/error_codes.py 为权威源。",
   "source": ".ai-hub/plans/neo4j-mongo-activation-plan.md §Neo4j=KG-1/KG-2；实现=test-reports/RN1-completion-report.md",
   "change_order": "无（draft 阶段；冻结时补签字变更单）",
@@ -29,7 +29,9 @@
       "method": "GET",
       "path": "/api/kg/course/{course_id}/path",
       "auth": "匿名只读（与 course C 端一致；DEBUG=false 下无登录要求）",
-      "path_params": { "course_id": "int，series.id" },
+      "path_params": {
+        "course_id": "int，series.id"
+      },
       "query": {
         "from": "string 必填，起点知识点 code（min_length=1, max_length=64）",
         "to": "string 必填，终点知识点 code（min_length=1, max_length=64）"
@@ -38,15 +40,35 @@
         "code": 0,
         "message": "ok",
         "data": {
-          "course": { "key": "series:12", "type": "course", "code": "SER-0012", "name": "Python 编程基础" },
+          "course": {
+            "key": "series:12",
+            "type": "course",
+            "code": "SER-0012",
+            "name": "Python 编程基础"
+          },
           "from_code": "KP-PY-VAR",
           "to_code": "KP-PY-FUNC",
           "found": true,
           "hops": 2,
           "path": [
-            { "step": 1, "key": "kp:KP-PY-VAR", "code": "KP-PY-VAR", "name": "变量与类型" },
-            { "step": 2, "key": "kp:KP-PY-CTR", "code": "KP-PY-CTR", "name": "流程控制" },
-            { "step": 3, "key": "kp:KP-PY-FUNC", "code": "KP-PY-FUNC", "name": "函数" }
+            {
+              "step": 1,
+              "key": "kp:KP-PY-VAR",
+              "code": "KP-PY-VAR",
+              "name": "变量与类型"
+            },
+            {
+              "step": 2,
+              "key": "kp:KP-PY-CTR",
+              "code": "KP-PY-CTR",
+              "name": "流程控制"
+            },
+            {
+              "step": 3,
+              "key": "kp:KP-PY-FUNC",
+              "code": "KP-PY-FUNC",
+              "name": "函数"
+            }
           ],
           "cycle_checked": true
         }
@@ -64,21 +86,43 @@
       "method": "GET",
       "path": "/api/kg/chapter/{chapter_code}/upstream",
       "auth": "匿名只读",
-      "path_params": { "chapter_code": "string，module_code（如 general_purpose_programming_foundation_m1）" },
+      "path_params": {
+        "chapter_code": "string，module_code（如 general_purpose_programming_foundation_m1）"
+      },
       "resp_ok": {
         "code": 0,
         "message": "ok",
         "data": {
-          "chapter": { "key": "module:general_purpose_programming_foundation_m1", "type": "chapter", "code": "general_purpose_programming_foundation_m1", "name": "编程基础 M1" },
+          "chapter": {
+            "key": "module:general_purpose_programming_foundation_m1",
+            "type": "chapter",
+            "code": "general_purpose_programming_foundation_m1",
+            "name": "编程基础 M1"
+          },
           "direction": "upstream",
           "mentioned_kps": [
-            { "key": "kp:KP-PY-VAR", "type": "knowledge_point", "code": "KP-PY-VAR", "name": "变量与类型" }
+            {
+              "key": "kp:KP-PY-VAR",
+              "type": "knowledge_point",
+              "code": "KP-PY-VAR",
+              "name": "变量与类型"
+            }
           ],
           "neighbor_kps": [
-            { "key": "kp:KP-CS-BASE", "type": "knowledge_point", "code": "KP-CS-BASE", "name": "计算机基础" }
+            {
+              "key": "kp:KP-CS-BASE",
+              "type": "knowledge_point",
+              "code": "KP-CS-BASE",
+              "name": "计算机基础"
+            }
           ],
           "neighbor_chapters": [
-            { "key": "module:xxx_m2", "type": "chapter", "code": "xxx_m2", "name": "示例章节" }
+            {
+              "key": "module:xxx_m2",
+              "type": "chapter",
+              "code": "xxx_m2",
+              "name": "示例章节"
+            }
           ]
         }
       },
@@ -93,12 +137,19 @@
       "method": "GET",
       "path": "/api/kg/chapter/{chapter_code}/downstream",
       "auth": "匿名只读",
-      "path_params": { "chapter_code": "string，module_code" },
+      "path_params": {
+        "chapter_code": "string，module_code"
+      },
       "resp_ok": {
         "code": 0,
         "message": "ok",
         "data": {
-          "chapter": { "key": "module:general_purpose_programming_foundation_m1", "type": "chapter", "code": "general_purpose_programming_foundation_m1", "name": "编程基础 M1" },
+          "chapter": {
+            "key": "module:general_purpose_programming_foundation_m1",
+            "type": "chapter",
+            "code": "general_purpose_programming_foundation_m1",
+            "name": "编程基础 M1"
+          },
           "direction": "downstream",
           "mentioned_kps": [],
           "neighbor_kps": [],
