@@ -4,7 +4,7 @@
 > 子 agent：W-NEXT-DEBUG-DOC-001（独立闭环）
 > 派单：C-01 orchestrator 主会话
 > 完工日期：2026-09-18
-> HEAD commit：`ba268a1`（fix(check)/W-NEXT-DEBUG-DOC-001 ⑧ DEBUG 虚拟管理员守卫 FAIL→WARN 降级）
+> HEAD commit：**`8e34fac`**（fix(check)/W-NEXT-DEBUG-DOC-001 ⑧ DEBUG 虚拟管理员守卫 FAIL→WARN 降级）
 > 前置 HEAD：`1495925`（W-NEXT-PROBE-001 完工报告）
 
 ---
