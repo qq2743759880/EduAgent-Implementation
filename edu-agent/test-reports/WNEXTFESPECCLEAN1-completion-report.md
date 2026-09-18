@@ -128,3 +128,60 @@ grep `critique-backlog-tracker.md`、`.ai-hub/plans/artifacts/critique-tracker-v
 | `git show 219fce6`（WNEXT9 前批） | title 统一口径 `X · EduAgent`（refine-proto title 按此补清）、dashboard/me 已清范围对账 |
 | check-demo ⑥ 测试账号 | `adm02test/user000001` 用于识别页面泄漏的同类账号名（未新造凭据） |
 | 红线遵守 | 0 改动于 src/**、deploy.mjs、app/**、contracts/**；commit `c44768a` 经 `git diff --cached --name-only` 复核仅 18 个 public/*.html（期间曾因并行 DEPLOY-HARD 预暂存混入 3 个外来文件，已软回退摘除重提交，外来文件工作树内容原样未动） |
+
+---
+
+## 十、返工节：编排者验收抓漏 5 处 + 全量 JS 面机扫追加 6 处
+
+> 返工 commit：**`e0c8de4`**（10 文件 +12/-12，仅 public/*.html）；报告 commit：`c523432`（首版）/ 本节随返工报告 commit 更新。
+
+### 10.1 编排者 C-01 复现证伪的必修 5 处（全部认领修复）
+
+| # | 位置 | 原文（泄漏物） | 修后 |
+| --- | --- | --- | --- |
+| 1 | admin-courses.html:842 | JS 回写 `t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页"`（守卫 needle `includes("admin 账号")` 同步） | `⚠ 请用管理员账号登录后刷新本页`（needle→`"管理员账号"`，幂等语义保持） |
+| 2 | admin-dashboard.html:467 | 同型（`indexOf("admin 账号")`） | 同上 |
+| 3 | admin-questions.html:659 | 同型 | 同上 |
+| 4 | admin-users-refine-proto.html:268 | `<span class="chip">总计 <b>100,034</b> 人</span>`（真实用户总量渲染） | `总计 <b>1,024</b> 人（示例）`（与页内 demo_*/UID 881~1017 合成口径一致） |
+| 5 | admin-users-refine-proto.html:386 | `共 100,034 条 · 第 1 页 · 快照示例 8 行` | `共 1,024 条 · 第 1 页 · 示例 8 行` |
+
+### 10.2 全量 JS 面专项机扫：追加抓漏 6 处（同型盲区自证）
+
+**盲区根因（自批判 P0-6）**：首版 JS 面扫描的模式表只有 `/api/|实测|契约|task\d+|MOCK`，**漏了账号名/密码/裸数字**——「admin-mcp JS 回写」抓到 1 处后未把同型 token 加进模式并全量复扫，违反「机扫兜底」原则。返工扫描：**全部 public/*.html 的 `<script>` 块逐行 × token（adm02test/mgr01test/user000001/Test@123456/100,034/100034/taskNN/C5-D2/Gate A/C15/B3-*/契约①-⑩/FR-x-y/admin 账号）× 渲染 API 赋值分类（textContent/innerHTML/innerText/insertAdjacentHTML/setSub(/toast(/title/placeholder）**，共 102 条 token 行，分类结果 `RENDERED FAILS`：
+
+| 追加 # | 位置 | 分类 | 原文要点 | 修后 |
+| --- | --- | --- | --- | --- |
+| 6 | admin-mcp.html:591 | `setSub("…")` 渲染（非 textContent 直赋，首版 ASSIGN 正则漏网） | `setSub("⚠ 请用 admin 账号登录（adm02test / Test@123456）…")` | `setSub("⚠ 请用管理员账号登录后刷新本页")` |
+| 7 | admin-question-detail.html:537 | textContent 赋值 | 同款账号+密码 | 同 #1 |
+| 8 | admin-users.html:693 | textContent 赋值 | 同款账号+密码 | 同 #1 |
+| 9 | admin-course-detail.html:535 | textContent 赋值（弱化版：无账号密码但「admin 账号」口径不一，needle 检查抓到） | `⚠ 请用 admin 账号登录后刷新本页` | `⚠ 请用管理员账号登录后刷新本页` |
+| 10 | learning.html:734-735 | 渲染三元串（非直接赋值形态，首版漏网） | `已标记完成（后端真实写入 completed=true）` / `…播放会话未建立·缺口 task06-G1` | `🎉 已标记完成` / `…（播放会话未建立），请稍后重试` |
+| 11 | admin-courses-recycle-proto.html:508 | innerHTML 拼接渲染串 | `沿用 task56 形态（本原型不聚焦）` | `沿用正式列表形态（本原型不聚焦）` |
+
+### 10.3 返工后终态扫描证据（机扫输出原文）
+
+```
+=== JS 面专项扫（script 块逐行 × token × 渲染赋值分类）===
+FINAL: RENDERED FAILS=0 | comment=80 | code-ident/tail=21
+（comment=80：块注释 /* … */、行注释 //，按编排者裁决保持原样；
+  code-ident/tail=21：行尾注释（如 loadFavState(); /* task04 */）、
+  代码标识符（community.html:427 boards.dataset.task118Bound="1"，DOM dataset 键非渲染文案）、
+  块注释内部行（community/community-post 契约注释块），均非渲染串）
+
+=== 可见文本扫描（剔除 script/style/注释，token 含 admin 账号/Test@123456/100,034）===
+VISIBLE TOTAL: 0
+
+=== 内联 JS 语法（10 个返工页全部 <script> 块 node --check）===
+JS SYNTAX FAILS: 0
+```
+
+### 10.4 返工验证
+
+- **curl**：10 个返工页全 200（admin-courses/admin-dashboard/admin-questions/admin-users-refine-proto/admin-mcp/admin-question-detail/admin-users/learning/admin-courses-recycle-proto/admin-course-detail）。
+- **服务面探针**（3000 直出 grep）：`Test@123456` 6 页全 0；`admin 账号` 0；`100,034` 0；新文案 `1,024` ×2、`管理员账号登录后刷新本页` ×1 命中。
+- **注释层残留**（保持原样，裁决见编排者返工单）：learning task06-G1 ×3（head/JS 注释）、recycle-proto task56 ×2（注释）、refine-proto adm02test 等头部注释块——已在首版 P0-① 披露，结构性处置待用户决策。
+- **git 纪律**：`git symbolic-ref`（feature/opt-waves）+ `git rev-parse`（tip=c523432 未前移）先查后提；暂存区核空后精确 add 10 文件，`git diff --cached --name-only | wc -l`=10 复核后提交，无外来文件混入。
+
+### 10.5 返工后 diff 摘要
+
+`git show e0c8de4 --stat`：10 files changed, +12/-12。逐处见 10.1/10.2 两表；改动全部为 JS 字符串字面量与 2 处静态 chip/cnt 文本，无结构/逻辑变化（needle 同步保持幂等守卫语义），不新增 script，edu-api.js 注入模式未动。
