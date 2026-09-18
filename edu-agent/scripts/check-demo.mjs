@@ -4,7 +4,8 @@
 // 检查项:① Milvus socket ② Redis(docker exec redis-cli ping)③ MongoDB socket
 //         ④ 后端 8000 /health ⑤ 前端 /login-register.html(默认 3000,--frontend-port 可改)+ 前端形态判别(dev/prod,T5-C2)
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
-//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,两级判据 + --prod-gate,W-NEXT-CHECKDEMO-PROD-001)
+//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,两级判据 + --prod-gate,W-NEXT-CHECKDEMO-PROD-001;
+//            HARD-002:双探点 /api/users/me + /api/admin/users,管理端护栏失效任何环境直接红)
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)  ⑩ 契约对账门 febe_contract_check.py
 // ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
 // ⑫ HITL 真实性  ⑬ MCP 三态门  ⑭ 内部可见性  ⑮ Redis 端口对账  ⑯ lifecycle 健壮性
@@ -14,7 +15,7 @@
 // 共 21 项检查。全绿才 exit 0;FAIL 时逐项给一句话处置指引;--fail-drill 用假端口验证失败路径(不动真实服务)。
 import net from "node:net";
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // ---------- 配置(按演示机实际环境修改这里) ----------
@@ -57,7 +58,38 @@ function readEnvRedisPort() {
 // W-NEXT-PROBE-001 修:按宿主端口反查容器名(替代硬编码 "edu-redis-standalone")。
 //   1) docker ps --filter publish=<port> --format "{{.Names}}" 拿首个匹配的容器名;
 //   2) 0 匹配 → 退到 --filter "expose=<port>" — 防 default-bridge/network 模式 publish 字段不显;
-//   3) 仍 0 匹配 → 抛错"未找到映射端口 <port> 的 Redis 容器"。
+//   3) 仍 0 匹配 → 第 3 试全表兜底(下方 W-NEXT-CHECKDEMO-HARD-002);
+//   4) 全表仍 0 匹配 → 抛错"未找到映射端口 <port> 的 Redis 容器"。
+// W-NEXT-CHECKDEMO-HARD-002 修(PROBE-001 P0-1):publish/expose 两个 filter 在
+//   docker-compose 自定义 network 漂移(网络别名/publish 字段不显)时可能双双 0 匹配
+//   —— 补第 3 试:`docker ps -a --format {{.Names}}\t{{.Ports}}\t{{.State}}` 全表解析
+//   ports 列反查宿主端口(含 stopped 容器:命中停机容器时,上层 docker exec 会给出
+//   「容器未运行」类错误,诊断仍落到具体容器,不再是无名盲区)。
+//   解析抽成纯函数 parseDockerPortTableMatches(与 docker 子进程解耦,单测/盲测可直接锁行为)。
+// W-NEXT-CHECKDEMO-HARD-002 修(PROBE-001 P0-4):同宿主端口多容器并存时的确定性判定——
+//   命中列表按 State 排序:running 优先,组内保持 docker ps -a 表序(稳定序,新→旧),
+//   同输入必同输出(三连跑可复验),不再依赖 filter 返回顺序的偶然性。
+function parseDockerPortTableMatches(hostPort, tableText) {
+  const running = [];
+  const others = [];
+  for (const line of String(tableText || "").split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const cols = line.split("\t");
+    const name = (cols[0] || "").trim();
+    const ports = cols[1] || "";
+    const state = (cols[2] || "").trim().toLowerCase();
+    if (!name || !ports) continue;
+    // ports 形如 "0.0.0.0:6377->6379/tcp, :::6377->6379/tcp";只认「宿主IP:端口->容器端口」
+    // 映射段;裸 "6379/tcp"(仅 expose 未 publish)不算宿主端口命中。
+    let hit = false;
+    for (const m of ports.matchAll(/(?:\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:]+\]|[:0-9a-fA-F]+):(\d+)->/g)) {
+      if (parseInt(m[1], 10) === hostPort) { hit = true; break; }
+    }
+    if (!hit) continue;
+    (state === "running" ? running : others).push(name);
+  }
+  return [...running, ...others];
+}
 async function detectRedisContainer(hostPort) {
   // 第 1 试:publish 过滤
   let out;
@@ -74,9 +106,18 @@ async function detectRedisContainer(hostPort) {
     out = await runCmd("docker", ["ps", "--filter", `expose=${hostPort}`, "--format", "{{.Names}}"], DOCKER_TIMEOUT_MS);
     names = (out || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     if (names.length > 0) return names[0];
+  } catch { /* fall through to full-table */ }
+  // 第 3 试(W-NEXT-CHECKDEMO-HARD-002,PROBE-001 P0-1):docker ps -a 全表兜底。
+  //   publish/expose filter 双双 0 匹配(自定义 network 漂移)时的最后防线。
+  try {
+    out = await runCmd("docker", ["ps", "-a", "--format", "{{.Names}}\t{{.Ports}}\t{{.State}}"], DOCKER_TIMEOUT_MS);
+    names = parseDockerPortTableMatches(hostPort, out);
+    if (names.length > 0) return names[0];
   } catch { /* fall through to raise */ }
   throw new Error(`未找到映射宿主端口 ${hostPort} 的 Redis 容器(检查 docker ps 与端口映射)`);
 }
+// [HARD2:FNSPLIT-END] 单测/盲测函数抽取锚点(test_wnextcheckdemohard2_guards.py /
+// _wnextcheckdemohard2_blind.mjs 按本锚点截取上方两个函数),勿删。
 // 关键页 8 个(核心故事线页面)
 const PAGES = [
   "login-register.html",
@@ -308,8 +349,9 @@ await check("①", `Milvus 连通 ${milvusTarget.host}:${milvusTarget.port}`, Ob
 // ② Redis
 // W-NEXT-PROBE-001 修:容器名从硬编码 `edu-redis-standalone` 改为端口反查。
 //   顺序:① 端口取自 .env(REDIS_PORT 或 REDIS_URL);② docker ps --filter publish=<port>
-//   拿首个容器名;③ 0 匹配再退到 --filter expose=<port>;④ 仍 0 匹配报"未找到映射宿主端口"。
-//   拿到容器名后才发起 docker exec redis-cli ping —— 实测可达才算 PASS。
+//   拿首个容器名;③ 0 匹配再退到 --filter expose=<port>;④ 仍 0 匹配走 docker ps -a 全表
+//   兜底解析(W-NEXT-CHECKDEMO-HARD-002,防自定义 network 漂移盲区);⑤ 全空才报
+//   "未找到映射宿主端口"。拿到容器名后才发起 docker exec redis-cli ping —— 实测可达才算 PASS。
 await check("②", `Redis(按 .env REDIS_PORT=${redisHostPort} 反查容器 docker exec redis-cli ping)`, Object.assign(
   async () => {
     const container = await detectRedisContainer(redisHostPort);
@@ -393,17 +435,25 @@ await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
   { __fix: FIX.frontend }));
 
 // ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6;W-NEXT-CHECKDEMO-PROD-001:恢复 ENV_NAME 二次判据 + --prod-gate 部署门)
+// W-NEXT-CHECKDEMO-HARD-002 修(DEBUG-DOC-001 P0-3a):探测面从单点 /api/users/me 扩为双探点——
+//   补 /api/admin/users(DEBUG=true 无 token 管理端点可达性),文案同步。
+//   后端语义(2026-09-18 实测 + app/middleware/auth_middleware.py 契约):
+//   AdminAuthMiddleware 对 /api/admin/* 强制 Bearer,DEBUG 虚拟管理员/X-Force-Role 后门
+//   对管理端一律失效(task11 批判⑥ 补强)——故 /api/admin/users 无 token 可达 = 管理端
+//   护栏失效,是任何环境(含本机 DEBUG=true 开发态)都不允许的安全不变量被破坏,直接 FAIL,
+//   不吃 DEBUG=true 的 WARN 降级(WARN 降级只适用于 /api/users/me 的已知有意开发态后门)。
 // 两级判据(W-NEXT-CHECKDEMO-PROD-001 修,P0-2):
 //   W-NEXT-DEBUG-DOC-001 曾把判据简化为「DEBUG=true 即开发态 WARN」并删除 T5-C1 的 ENV_NAME 二次判据——
 //   后果:生产忘设 ENV_NAME 时 DEBUG=true 真后门被当开发态 WARN 不阻断。现恢复,且与后端 P1-8
 //   `_debug_env_gate`(app/config.py:763)同口径:ENV_NAME.strip().lower() ∈ {"", "local"} 视为本机开发态,
 //   其余(prod/production/staging/dev/qa 等,大小写不敏感)为显式生产类环境。
 //   .env 缺 ENV_NAME 键 = config.py 默认 "local"(本机 dev 态,后端实际运行口径一致)→ WARN 不变。
-// 四分支语义:
-//   A) 无 token 被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
-//   B) 后门存在 + DEBUG=true + ENV_NAME 显式非 local → FAIL 阻断(生产类环境 DEBUG=true 真后门,不再 WARN)
-//   C) 后门存在 + DEBUG=true + ENV_NAME 缺省/local(本机 dev 态) → WARN 不阻断;--prod-gate 时升级 FAIL(P0-1)
-//   D) 后门存在 + DEBUG≠true(生产态/DEBUG=false 模式) → FAIL 阻断(真后门,原分支 C 语义不变)
+// 分支语义(HARD-002 后):
+//   0) /api/admin/users 无 token 可达 → FAIL 阻断(管理端护栏失效,任何环境,优先级最高)
+//   A) 双探点均被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
+//   B) users/me 后门存在 + DEBUG=true + ENV_NAME 显式非 local → FAIL 阻断(生产类环境 DEBUG=true 真后门,不再 WARN)
+//   C) users/me 后门存在 + DEBUG=true + ENV_NAME 缺省/local(本机 dev 态) → WARN 不阻断;--prod-gate 时升级 FAIL(P0-1)
+//   D) users/me 后门存在 + DEBUG≠true(生产态/DEBUG=false 模式) → FAIL 阻断(真后门,原分支 C 语义不变)
 // fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
 const debugCheck = Object.assign(
   async () => {
@@ -420,32 +470,53 @@ const debugCheck = Object.assign(
     }
     const text = await res.text();
     const vuln = res.status === 200 || /"code":\s*0/.test(text);
+    // 第二探点(DEBUG-DOC-001 P0-3a):/api/admin/users 无 token
+    let adminStatus = null, adminVuln = false, adminProbeErr = null;
+    try {
+      const res2 = await fetch(`${BACKEND}/api/admin/users`, { signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
+      adminStatus = res2.status;
+      const adminText = await res2.text();
+      adminVuln = res2.status === 200 || /"code":\s*0/.test(adminText);
+    } catch (e) {
+      adminProbeErr = String(e?.message || e).slice(0, 80); // 二探点网络异常不另立红项(以 users/me 判据为准)
+    }
+    const adminSurface = adminVuln
+      ? `/api/admin/users 无 token 可达(HTTP ${adminStatus})`
+      : adminProbeErr !== null
+        ? `/api/admin/users 探测异常(${adminProbeErr})`
+        : `/api/admin/users 无 token 被 ${adminStatus} 拒(admin Bearer 护栏在)`;
+    if (adminVuln) {
+      // 分支 0(HARD-002 新增):管理端点护栏失效——task11 批判⑥ 安全不变量被破坏。
+      //   AdminAuthMiddleware 设计上对 /api/admin/* 无条件强制 Bearer(DEBUG 后门也拦),
+      //   无 token 可达说明中间件被绕过/未挂载,任何环境直接红,不走 WARN 降级。
+      throw new Error(`管理端点无 token 可达:/api/admin/users 返回 HTTP ${adminStatus} 有数据——AdminAuthMiddleware 对 /api/admin/* 强制 Bearer 的护栏失效(DEBUG 虚拟管理员后门设计上对管理端一律失效,task11 批判⑥),任何环境(含本机 DEBUG=true)都不允许;检查 app/middleware/auth_middleware.py 是否被绕过/未挂载。另 /api/users/me ${vuln ? `HTTP ${res.status} 可达` : `被 ${res.status} 拒`}`);
+    }
     if (!vuln) {
-      // 分支 A:被拒即 PASS;DEBUG=true 时只说明「.env 后门开关仍开启」,不得自称 DEBUG 安全
+      // 分支 A:双探点均被拒即 PASS;DEBUG=true 时只说明「.env 后门开关仍开启」,不得自称 DEBUG 安全
       return env.DEBUG === "true"
-        ? `无 token 被 ${res.status} 拒绝(DEBUG=true:.env 后门开关仍开启,生产部署前请 DEBUG=false)`
-        : `无 token 被 ${res.status} 拒绝(DEBUG 安全,生产态正确)`;
+        ? `无 token 双探点被拒(/api/users/me ${res.status} 拒、${adminSurface})(DEBUG=true:.env 后门开关仍开启,生产部署前请 DEBUG=false)`
+        : `无 token 双探点被拒(/api/users/me ${res.status} 拒、${adminSurface})(DEBUG 安全,生产态正确)`;
     }
     if (env.DEBUG === "true") {
       if (envDeclaredNonLocal) {
         // 分支 B:两级判据第 2 级命中——ENV_NAME 显式非 local(P1-8 同口径)= 生产类环境,直接红
-        throw new Error(`生产类环境虚拟管理员后门:DEBUG=true 且 ENV_NAME=${env.ENV_NAME.trim()}(显式非 local,P1-8 同口径)——生产/预发绝不允许 DEBUG=true(未登录可读用户数据),立即 .env DEBUG=false 并重启后端;后端 P1-8 门禁下该形态本不应能启动`);
+        throw new Error(`生产类环境虚拟管理员后门:DEBUG=true 且 ENV_NAME=${env.ENV_NAME.trim()}(显式非 local,P1-8 同口径)——生产/预发绝不允许 DEBUG=true(未登录可读用户数据),立即 .env DEBUG=false 并重启后端;后端 P1-8 门禁下该形态本不应能启动。管理面:${adminSurface}`);
       }
       if (PROD_GATE) {
         // 分支 C 升级:--prod-gate 部署门开启,WARN 升级 FAIL(P0-1:开发态后门不随包出生产)
-        throw new Error(`--prod-gate 部署门:虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME})——WARN 已升级为 FAIL 阻断出包;生产 .env 必须 DEBUG=false`);
+        throw new Error(`--prod-gate 部署门:虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME})——WARN 已升级为 FAIL 阻断出包;生产 .env 必须 DEBUG=false。管理面:${adminSurface}`);
       }
       // 分支 C:本机开发态已知后门 → WARN(软)不阻断,避免永久红=狼来了;
       // 明示设计意图:本地开发态保留有意,生产环境 DEBUG=False 才 PASS;两级判据见上
-      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME});两级判据:ENV_NAME 显式非 local 时直接 FAIL,当前判为本机开发态故 WARN 不阻断;生产部署前必须 DEBUG=false(--prod-gate 旗标可将本 WARN 升级为 FAIL),见 P1-8 ENV_NAME 门 / AGENTS.md 教训 6`);
+      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME};无 token /api/users/me HTTP ${res.status} 可达;${adminSurface});两级判据:ENV_NAME 显式非 local 时直接 FAIL,当前判为本机开发态故 WARN 不阻断;生产部署前必须 DEBUG=false(--prod-gate 旗标可将本 WARN 升级为 FAIL),见 P1-8 ENV_NAME 门 / AGENTS.md 教训 6`);
       e.__warn = true;
       throw e;
     }
     // 分支 D:DEBUG 未开却 200(真后门),即生产态或 DEBUG=false 模式下绝不应允许 → 红,阻断 exit 1
-    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG === null ? "缺省(≠true)" : env.DEBUG});生产态/DEBUG=false 模式下绝不应出现——真后门,部署前必须 DEBUG=false`);
+    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG === null ? "缺省(≠true)" : env.DEBUG};${adminSurface});生产态/DEBUG=false 模式下绝不应出现——真后门,部署前必须 DEBUG=false`);
   },
   { __fix: FIX.debug });
-await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,两级判据+--prod-gate,W-NEXT-CHECKDEMO-PROD-001)`, debugCheck);
+await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me + /api/admin/users 双探点,两级判据+--prod-gate,W-NEXT-CHECKDEMO-PROD-001)`, debugCheck);
 
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
 await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object.assign(
@@ -660,6 +731,16 @@ await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError tr
     return `5 轮 start ${j.avg_start_ms}ms / stop ${j.avg_stop_ms}ms / 0 traceback / 0 CancelledError`;
   },
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\_lifecycle_real_verify.py 5 复跑；如失败查 logs/lifecycle_real_*.log [${d}]` }));
+
+// W-NEXT-CHECKDEMO-HARD-002 修(DEBUG-DOC-001 P0-3b):.env 变更感知提示(⑯ 输出追加一行,不做重启自动化)。
+//   批判:⑧ 的 DEBUG/ENV_NAME 判据直读 .env 文件,而后端 settings 只在进程启动时加载一次——
+//   改 .env 不重启 8000 就跑检查单,⑧ 文件判据与后端实际运行态可能错位(误判)。
+//   在 ⑯ 输出后追加固定提示行(带 .env 最近修改时间作「感知」锚点);不自动化重启——
+//   ⑯ lifecycle 探针本身要 start/stop 8000 五轮,再加自动重启会引入新竞态。
+try {
+  const envMtime = statSync(fileURLToPath(new URL("../.env", import.meta.url))).mtime;
+  console.log(`${C.dim}       [⑯ 附注] .env 变更感知:后端 settings 仅启动时加载一次,⑧ 的 DEBUG/ENV_NAME 判据直读 .env(最近修改 ${envMtime.toLocaleString()})——若改过 .env 未重启 8000,⑧ 可能误判,请重启后端后重跑本检查单${C.x}`);
+} catch { /* .env 不存在时跳过附注(readDevEnv 亦按缺文件安全缺省处理) */ }
 
 // ⑰ W-NEXT-MCP-003「MCP 跨权限门对账」健康门——audit_mcp_capability checked=17 +
 //    5 个新对账行 + chat 路径真接 permission_gate 4 个 API + JSON serializable + AST 真接模式 ≥4。

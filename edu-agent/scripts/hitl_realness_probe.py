@@ -15,9 +15,11 @@ action=confirm → ⑤ 同 thread 续流执行 → ⑥ 断言续流**不再出�
 """
 from __future__ import annotations
 
+import http.client
 import io
 import json
 import os
+import socket
 import sys
 import time
 import urllib.error
@@ -173,6 +175,19 @@ def _stream_events(token: str, query: str, session_id: str, timeout: int = 180):
     # W-NEXT-PROBE-001 修:捕获 HTTPError(404/500/网络)→ 把诊断塞进 events + 抛 AppException,
     #   让 main() 的 _probe_print 落到 error JSON 路径而非 stderr 崩溃。这样探针边界态
     #   (后端不可达 / 路由断)仍能输出契约 JSON,守卫可降级 WARN 而非"非 JSON 解析失败"。
+    # W-NEXT-CHECKDEMO-HARD-002 修(PROBE-001 P0-3):探针永不崩 —— SSE 全链路边界态纳入 events。
+    #   批判:上方原本只兜住 urlopen 阶段的 HTTPError/URLError,三类异常仍会穿透:
+    #     a) urlopen 阶段:http.client.RemoteDisconnected / BadStatusLine(服务端不回响应直断)、
+    #        socket.timeout(连接超时)——urllib 只把 OSError 包成 URLError,这两类原样穿透;
+    #     b) 读流阶段:socket.timeout(流中途停顿)、http.client.IncompleteRead/BadStatusLine
+    #        (chunk 帧破坏)、ConnectionResetError(对端 RST)。
+    #   修复:urlopen + 读流两段各自按「timeout → protocol(HTTPException)→ connection →
+    #   兜底」序捕获,异常转伪事件(stream_timeout / stream_protocol_error /
+    #   stream_connection_error / stream_read_error),已收集事件原样保留,main() 走
+    #   「模型未触发 knowledge_import」观测分支而非顶层 error JSON。
+    #   顺序约束:RemoteDisconnected 同时继承 HTTPException 与 ConnectionResetError,
+    #   HTTPException 分支必须先于 ConnectionError/OSError 判;socket.timeout(TimeoutError,
+    #   OSError 子类)必须先于 OSError 判。
     try:
         resp_ctx = urllib.request.urlopen(req, timeout=timeout)
     except urllib.error.HTTPError as e:
@@ -194,18 +209,66 @@ def _stream_events(token: str, query: str, session_id: str, timeout: int = 180):
             "session_id": session_id,
         }))
         return events
+    except socket.timeout as e:
+        events.append(("stream_timeout", {
+            "exc": type(e).__name__,
+            "reason": str(e) or "urlopen timeout",
+            "session_id": session_id,
+        }))
+        return events
+    except http.client.HTTPException as e:
+        # RemoteDisconnected / BadStatusLine / ProtocolError 等(服务端不回响应直断)
+        events.append(("stream_protocol_error", {
+            "exc": type(e).__name__,
+            "reason": str(e)[:160],
+            "session_id": session_id,
+        }))
+        return events
+    except (ConnectionError, OSError) as e:
+        events.append(("stream_connection_error", {
+            "exc": type(e).__name__,
+            "reason": str(e)[:160],
+            "session_id": session_id,
+        }))
+        return events
     with resp_ctx as resp:
-        for raw in resp:
-            line = raw.decode("utf-8", "replace").rstrip("\r\n")
-            if line.startswith("event:"):
-                cur = line[len("event:"):].strip()
-            elif line.startswith("data:"):
-                d = line[len("data:"):].strip()
-                try:
-                    obj = json.loads(d)
-                except Exception:
-                    obj = None
-                events.append((cur, obj))
+        try:
+            for raw in resp:
+                line = raw.decode("utf-8", "replace").rstrip("\r\n")
+                if line.startswith("event:"):
+                    cur = line[len("event:"):].strip()
+                elif line.startswith("data:"):
+                    d = line[len("data:"):].strip()
+                    try:
+                        obj = json.loads(d)
+                    except Exception:  # noqa: BLE001
+                        obj = None
+                    events.append((cur, obj))
+        except socket.timeout as e:
+            events.append(("stream_timeout", {
+                "exc": type(e).__name__,
+                "reason": str(e) or "read timeout",
+                "session_id": session_id,
+            }))
+        except http.client.HTTPException as e:
+            # IncompleteRead(chunk 帧破坏/谎报 Content-Length)/BadStatusLine 等
+            events.append(("stream_protocol_error", {
+                "exc": type(e).__name__,
+                "reason": str(e)[:160],
+                "session_id": session_id,
+            }))
+        except (ConnectionError, OSError) as e:
+            events.append(("stream_connection_error", {
+                "exc": type(e).__name__,
+                "reason": str(e)[:160],
+                "session_id": session_id,
+            }))
+        except Exception as e:  # noqa: BLE001 —— 任何读流异常都不得穿透(探针永不崩)
+            events.append(("stream_read_error", {
+                "exc": type(e).__name__,
+                "reason": str(e)[:160],
+                "session_id": session_id,
+            }))
     return events
 
 
@@ -253,6 +316,13 @@ def main() -> int:
     query = "请使用 knowledge_import 工具把示例文档导入知识库（visibility=private）"
     events = _stream_events(token, query, session_id)
 
+    # W-NEXT-CHECKDEMO-HARD-002 修(PROBE-001 P0-3):边界态事件回显到契约 JSON,
+    #   check-demo ⑫ 与人工排查都能看到「流没走完」的具体原因(协议断/超时/连接重置),
+    #   而不是笼统的「模型未触发 knowledge_import」。
+    boundary = [e for (e, _d) in events if str(e).startswith("stream_") and e != "stream"]
+    if boundary:
+        out["stream_boundary_events"] = boundary
+
     pending = next((d for (e, d) in events if e == "pending_confirm" and isinstance(d, dict)), None)
     out["pending_confirm_seen"] = pending is not None
 
@@ -265,7 +335,9 @@ def main() -> int:
         out["task_after"] = before
         out["task_diff"] = 0
         out["confirm_resumed"] = False
-        out["note"] = "模型未触发 knowledge_import，跳过 HITL 续流；SURFACED-1 修复由单测覆盖"
+        out["note"] = "模型未触发 knowledge_import，跳过 HITL 续流；SURFACED-1 修复由单测覆盖" + (
+            f"；流边界态:{out['stream_boundary_events']}" if boundary else ""
+        )
         _probe_print(out)
         return 0
 
@@ -279,6 +351,10 @@ def main() -> int:
                                or rj.get("status") == "resumed")
     # ⑤ 续流执行
     events2 = _stream_events(token, query, session_id)
+    # W-NEXT-CHECKDEMO-HARD-002 修(PROBE-001 P0-3):续流段边界态同样回显(不阻断观测)
+    boundary2 = [e for (e, _d) in events2 if str(e).startswith("stream_")]
+    if boundary2:
+        out["stream_boundary_events_confirm_pass"] = boundary2
     deg2 = " ".join(str((d or {}).get("degraded_reason", ""))
                     for (e, d) in events2 if isinstance(d, dict))
     out["symptom_in_confirm_pass"] = any(s in deg2 for s in SURFACED1_SYMPTOMS)
