@@ -185,6 +185,12 @@ class Settings(BaseSettings):
     LLM_FAST_API_KEY: str = ""            # FAST 专属 key（ark-...）
     LLM_STRONG_BASE_URL: str = ""         # STRONG 专属 base（DeepSeek 官方 https://api.deepseek.com）
     LLM_STRONG_API_KEY: str = ""          # STRONG 专属 key（sk-...）
+    # W-NEXT-LLMSWITCH-001（2026-09-18，task29 批判② 收口）：DeepSeek 混合推理模型 thinking 开关。
+    # True → 非流式请求体注入 {"thinking": {"type": "disabled"}}，跳过推理 token 的端到端等待
+    # （切前非流式 P95 8.2~11.4s / 历史 14.8~19.7s 的根因=reasoning_tokens）。
+    # 仅当生效模型名以 deepseek- 开头（DeepSeek 官方混合模型）时注入——DashScope/ark 等其他
+    # 网关对未知字段可能 4xx，故按模型名前缀门控；流式路径不注入（保持 reasoning 流式语义）。
+    LLM_THINKING_DISABLED: bool = True
 
     # ============================================================
     # Agent 循环（P2 增强）：LLM 意图决策 → 按需检索 → 生成

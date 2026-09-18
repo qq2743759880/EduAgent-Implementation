@@ -197,6 +197,22 @@ class _ChatClient:
     def _model_name(self, model: str) -> str:
         return settings.LLM_MODEL_STRONG if model == "strong" else settings.LLM_MODEL_FAST
 
+    def _inject_thinking_disabled(self, body: dict, model: str) -> bool:
+        """W-NEXT-LLMSWITCH-001（task29 批判② 收口）：非流式 DeepSeek 请求注入 thinking=disabled。
+
+        - 仅 settings.LLM_THINKING_DISABLED=True 且**生效模型名**以 ``deepseek-`` 开头时注入；
+          DeepSeek 官方混合模型（deepseek-flash 等）支持 ``thinking`` 参数，其余供应商网关
+          （DashScope / 火山 ark 等）对未知字段可能 4xx，故按模型名前缀门控。
+        - 返回是否实际注入（供 HTTP 400 时的剥除容错判断）。
+        - 流式路径（call_chat_stream）不调用：保持 reasoning 流式语义与既有 TTFT 基线。
+        """
+        if not getattr(settings, "LLM_THINKING_DISABLED", False):
+            return False
+        if not self._model_name(model).startswith("deepseek-"):
+            return False
+        body["thinking"] = {"type": "disabled"}
+        return True
+
     def call_chat_with_retry(self, *, messages: list[dict], model: str, temperature: float,
                              max_tokens: int, timeout: float = 60.0) -> str:
         """task-G1-①：智能重试退避（按错误类型动态，对齐 core/retry.py）。
@@ -280,6 +296,8 @@ class _ChatClient:
             "max_tokens": max_tokens,
             "stream": False,
         }
+        # W-NEXT-LLMSWITCH-001：非流式 DeepSeek 混合模型关闭 thinking（reasoning token 端到端等待根因）
+        thinking_injected = self._inject_thinking_disabled(body, model)
         import time as _time
 
         _t0 = _time.perf_counter()
@@ -318,6 +336,20 @@ class _ChatClient:
                     trace_id=get_trace_id(), llm_model=self._model_name(model),
                     llm_latency_ms=round(_latency, 1),
                 )
+        if resp.status_code == 400 and thinking_injected and "thinking" in (resp.text or ""):
+            # W-NEXT-LLMSWITCH-001 三态③容错：网关对注入的 thinking 参数返回 400（模型不支持该
+            # 参数等）→ 剥除后同模型重试一次（避免整条链路误降级到 FAST 档），并告警登记。
+            logger.warning(
+                f"[LLM] 网关拒绝 thinking 参数（HTTP 400），剥除后同模型重试一次 (model={self._model_name(model)})",
+                trace_id=get_trace_id(), llm_model=self._model_name(model), thinking_unsupported=True,
+            )
+            retry_body = {k: v for k, v in body.items() if k != "thinking"}
+            resp = self._session.post(
+                f"{self._base_url(model)}/chat/completions",
+                headers=self._headers(model),
+                json=retry_body,
+                timeout=timeout,
+            )
         if resp.status_code != 200:
             exc = RuntimeError(f"LLM HTTP {resp.status_code}: {resp.text[:400]}")
 
