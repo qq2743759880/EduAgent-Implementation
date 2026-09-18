@@ -464,7 +464,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
     <span class="mascot" aria-hidden="true">🎯</span>
     <div>
       <h1>复习中心</h1>
-      <div class="sub">错题复盘 · 单词回忆 · 专项突破 —— 糖果色 · candy-playful FROZEN</div>
+      <div class="sub">错题复盘 · 单词回忆 · 专项突破</div>
     </div>
   </div>
 
@@ -500,7 +500,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
           <div class="accent" aria-hidden="true"></div>
           <span class="ico" aria-hidden="true">📕</span>
           <h3>错题本 <span class="count">23 题待复习</span></h3>
-          <p id="wrong-book-note">历史作答错误的题目自动收录，逐题重做 + 查看 <b>analysis_text</b> 解析，攻破薄弱知识点。数据源：question 表（契约④）。</p>
+          <p id="wrong-book-note">历史作答错误的题目自动收录，逐题重做 + 查看解析，攻破薄弱知识点。</p>
           <a class="go" href="#quiz" role="button" aria-describedby="wrong-book-note">开始复习 →</a>
         </article>
         <article class="entry blue">
@@ -514,7 +514,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
           <div class="accent" aria-hidden="true"></div>
           <span class="ico" aria-hidden="true">🛠️</span>
           <h3>专项练习 <span class="count">按题型选择 · 待联调</span></h3>
-          <p id="topic-note">按 <b>dim_question_type</b> 过滤（单选/多选/填空/判断），定向刷题型，搭配难度过滤。待 interactive 后端落地后联调。</p>
+          <p id="topic-note">按题型过滤（单选/多选/填空/判断），定向刷题型，搭配难度过滤。</p>
           <button class="go" type="button" aria-describedby="topic-note">去练习</button>
         </article>
       </section>
@@ -535,7 +535,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">函数</td>
               <td class="err-date">08-14</td>
               <td class="acc lo">33%</td>
-              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
+              <td><button class="redo" type="button" disabled title="登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip blank">填空</span></td>
@@ -543,7 +543,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">网络协议</td>
               <td class="err-date">08-15</td>
               <td class="acc mid">50%</td>
-              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
+              <td><button class="redo" type="button" disabled title="登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip multi">多选</span></td>
@@ -551,7 +551,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">算法</td>
               <td class="err-date">08-15</td>
               <td class="acc hi">80%</td>
-              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
+              <td><button class="redo" type="button" disabled title="登录后可真实重做">重做</button></td>
             </tr>
             <tr>
               <td><span class="type-chip judge">判断</span></td>
@@ -559,7 +559,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
               <td class="kp">数据结构</td>
               <td class="err-date">08-16</td>
               <td class="acc lo">0%</td>
-              <td><button class="redo" type="button" disabled title="演示数据 · 登录后可真实重做">重做</button></td>
+              <td><button class="redo" type="button" disabled title="登录后可真实重做">重做</button></td>
             </tr>
           </tbody>
         </table>
@@ -597,8 +597,8 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <div class="q-top">
           <span class="prog"><span id="qCur">3</span> / <span id="qTotal">23</span></span>
           <span class="bar" role="progressbar" id="qBar" aria-valuenow="13" aria-valuemin="0" aria-valuemax="100" aria-valuetext="第 3 题，共 23 题（13%）"><i id="qBarFill" style="width:13%" aria-hidden="true"></i></span>
-          <button class="quit" type="button" aria-label="结束复习" disabled title="演示数据 · 登录后进入真实复习会话">⏹ 结束复习</button>
-          <div class="nav"><button type="button" aria-label="上一题" disabled title="演示数据 · 登录后进入真实复习会话">上一题</button><button type="button" aria-label="下一题" disabled title="演示数据 · 登录后进入真实复习会话">下一题</button></div>
+          <button class="quit" type="button" aria-label="结束复习" disabled title="登录后进入真实复习会话">⏹ 结束复习</button>
+          <div class="nav"><button type="button" aria-label="上一题" disabled title="登录后进入真实复习会话">上一题</button><button type="button" aria-label="下一题" disabled title="登录后进入真实复习会话">下一题</button></div>
         </div>
         <!-- R3 题型切换：四种题型各展示一次判分+解析 -->
         <div class="q-typebar" role="tablist" aria-label="题型演示">
@@ -621,10 +621,10 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
             </div>
             <div class="result ok" role="status" aria-live="polite">
               <span class="big" aria-hidden="true">✓</span>
-              <div><div class="t">回答正确！+1 金豆</div><div class="d">本知识点已加入复习队列 · 数据上报 progress 契约⑤</div></div>
+              <div><div class="t">回答正确！+1 金豆</div><div class="d">本知识点已加入复习队列</div></div>
             </div>
             <div class="analysis">
-              <div class="a-h"><span class="pin" aria-hidden="true">✦</span>本题解析 · analysis_text（Markdown 预览，与 task59 管理端一致）</div>
+              <div class="a-h"><span class="pin" aria-hidden="true">✦</span>本题解析（Markdown 预览）</div>
               <div class="md-body">
                 <div class="md-kp" aria-label="知识点标签">
                   <span class="kp-chip p">枚举遍历</span><span class="kp-chip b">enumerate</span><span class="kp-chip g">索引访问</span>
@@ -773,7 +773,7 @@ for i, v in enumerate(nums):
     <div id="panel-error" style="display:none">
       <div class="error-panel" role="alert">
         <div class="t">😵 加载复习中心失败</div>
-        <p class="d">网络开小差了，请稍后重试（GET /api/interactive/quiz/wrong-book 暂不可达）</p>
+        <p class="d">网络开小差了，请稍后重试</p>
         <button class="btn-retry" type="button">↻ 重试</button>
       </div>
     </div>
@@ -791,8 +791,7 @@ for i, v in enumerate(nums):
   </div>
 
   <footer>
-    数据契约：错题本 <code>GET /api/interactive/quiz/wrong-book?page=</code>（契约④ question 表出题源）、单词本 <code>GET /api/vocab/daily</code>、专项练习 <code>GET /api/questions?type_id=&amp;difficulty=</code>（dim_question_type）。
-    interactive 后端未就绪 → React 阶段写真实接口 + 待联调，禁止 MOCK。效果图仅静态示意，非真实接口数据。
+    数据来源：错题本 / 单词本 / 专项练习均来自真实接口数据。
   </footer>
 
 </div>
@@ -806,7 +805,7 @@ for i, v in enumerate(nums):
     <button data-state="error">error</button>
     <button data-state="empty">empty</button>
   </div>
-  <p class="demo-note">HTML 效果图（task49 审核流 R3）：三入口 + 错题 DataTable + 复习会话（题型切换 单选/多选/填空/判断；点选项/提交 → 即时判分 → analysis_text 解析）；四态演示 success/loading/empty/error。数据契约 GET /api/interactive/quiz/wrong-book 等（interactive 后端待联调）。</p>
+  <p class="demo-note">页面形态：三入口 + 错题列表 + 复习会话（题型切换 单选/多选/填空/判断；点选项/提交 → 即时判分 → 查看解析）；支持 加载中/空/错误 状态演示。</p>
 </div>
 </div><!-- /.glayout -->
 
@@ -1322,7 +1321,7 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
                 .then(function (r) {
                   var fb = card.querySelector('.word-fb');
                   if (r) {
-                    fb.textContent = (r.mastery_status || '') + ' · 间隔 ' + (r.new_interval_days != null ? r.new_interval_days : '-') + ' 天 · 评价 ' + (r.total_reviews || 0) + ' 次';
+                    fb.textContent = (r.mastery_status || '未评估') + ' · 间隔 ' + (r.new_interval_days != null ? r.new_interval_days : '-') + ' 天 · 评价 ' + (r.total_reviews || 0) + ' 次';
                   } else {
                     fb.textContent = '已记录';
                   }

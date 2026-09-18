@@ -337,7 +337,7 @@
       <div class="sk-row"><span class="skld w100"></span></div>
       <div class="sk-row"><span class="skld w60"></span><span class="skld w30" style="margin-left:12px"></span></div>
       <div class="sk-row"><span class="skld w100"></span></div>
-      <p class="sk-note">GET /api/admin/questions/questions/{id} 加载中…（骨架占位）</p>
+      <p class="sk-note">加载中…（骨架占位）</p>
     </div>
   </section>
 
@@ -378,24 +378,24 @@
           <select id="f-type" onchange="onTypeChange()">
             <option value="">加载题型维表…</option>
           </select>
-          <span class="field-note">题型枚举来自 GET /types 题型维表（实测 28 项）；objective_flag 派生只读</span>
+          <span class="field-note">题型枚举来自题型维表；客观题标识由题型派生只读</span>
         </div>
         <div class="fld">
           <label>客观性 <span class="fld-tag">派生 · 只读</span></label>
           <div><span id="obj-input-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span></div>
-          <span class="field-note">objective_flag 派生于 dim_question_type，非 question 可编辑字段（PATCH 不提交，契约④权威）</span>
+          <span class="field-note">客观题标识由题型自动派生，暂不支持手动编辑</span>
         </div>
 
         <!-- 题干 Textarea（Markdown 支持） -->
         <div class="fld full">
-          <label>题干 stem <span class="req">*</span><span class="fld-tag">支持 Markdown / LaTeX</span></label>
+          <label>题干 <span class="req">*</span><span class="fld-tag">支持 Markdown / LaTeX</span></label>
           <textarea id="f-stem" class="lg"></textarea>
           <span class="err" id="err-stem"></span>
         </div>
 
         <!-- 选项编辑器（按题型联动） -->
         <div class="fld full">
-          <label>选项 options_json</label>
+          <label>选项</label>
           <!-- 单选：RadioGroup -->
           <div id="opt-single">
             <div class="opt-editor">
@@ -436,7 +436,7 @@
 
         <!-- 答案 -->
         <div class="fld full">
-          <label>答案 answer_text <span class="req">*</span></label>
+          <label>答案 <span class="req">*</span></label>
           <textarea id="f-answer" class="sm"></textarea>
           <span class="field-note" id="answer-hint">单选/多选/判断：答案填选项标号（如 B / AB）；填空：填答案文本；简答：填参考要点</span>
           <span class="err" id="err-answer"></span>
@@ -451,7 +451,7 @@
             <div class="md-body" id="analysis-preview"></div>
           </div>
           <span class="err" id="err-analysis"></span>
-          <span class="field-note">★ 重构核心：analysis_text 解析编辑为必修。为空时前端拦截提示；后端 <code>PATCH</code> 兜底校验（422 校验失败）</span>
+          <span class="field-note">★ 解析为必填：为空时前端拦截提示，保存时后端二次校验兜底</span>
         </div>
       </div>
     </div>
@@ -473,7 +473,7 @@
         <span class="hint">题干（Markdown）+ 选项（按题型控件）+ 解析（Markdown）渲染一致</span>
       </div>
       <div class="md-pre">
-        <div class="md-title">题干 stem</div>
+        <div class="md-title">题干</div>
         <div class="md-body" id="prev-stem"></div>
       </div>
       <div class="qp-options" id="prev-options"></div>
@@ -484,16 +484,16 @@
     </div>
   </div>
 
-  <!-- 观测点（契约对齐说明） -->
+  <!-- 观测点（页面行为说明） -->
   <div class="observe">
-    <b>观测点 · task59 契约对齐（契约④权威）</b>
-    <div class="ob">保存 <code>PATCH /api/admin/questions/{id}</code>（task15 已真实接线，curl 实测 200）持久化 body：<code>{ question_type_id, stem, options_json, answer_text, analysis_text }</code></div>
-    <div class="ob">★ 解析必修：<code>analysis_text</code> 为空 → 前端拦截红框 + toast「解析为必填」；后端 <code>PATCH</code> 二次兜底（422 校验失败）</div>
-    <div class="ob">题型切换联动选项控件：单选→RadioGroup / 多选→Checkbox / 判断→固定 T·F / 填空·简答→折叠无选项；<b>已填选项内容按 label 跨切换保留（不丢）</b></div>
-    <div class="ob">预览 Tab 同时渲染题干+解析，与用户端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，LaTeX 用公式占位呈现）</div>
-    <div class="ob"><code>objective_flag</code>：question 表 / PATCH schema 无该字段 → 派生自 dim_question_type（只读徽章随题型联动），PATCH 不提交；设计规范 P16「客观题开关」实披露收敛为只读派生</div>
-    <div class="ob">错误码（实测）：<code>40400</code> 题目不存在、<code>42200</code> 校验失败；本页不改题号（bank_id 内唯一只读）</div>
-    <div class="ob">本页 v0.2.0 历史遗留 <code>text-slate-500</code> 灰系已废弃 → 全部改用 candy token（var(--muted) 等）；禁止内联色/任意字号/禁闭灰系</div>
+    <b>页面行为说明</b>
+    <div class="ob">保存后题目内容（题型 / 题干 / 选项 / 答案 / 解析）将持久化到题库</div>
+    <div class="ob">★ 解析必修：解析为空时前端红框拦截并提示「解析为必填」，保存时后端二次校验兜底</div>
+    <div class="ob">题型切换联动选项控件：单选→单选组 / 多选→多选框 / 判断→固定 对·错 / 填空·简答→折叠无选项；<b>已填选项内容跨切换保留（不丢）</b></div>
+    <div class="ob">预览 Tab 同时渲染题干+解析，与用户端练习页一致（支持 Markdown / LaTeX）</div>
+    <div class="ob">客观性：由题型自动派生（只读徽章随题型联动），不支持手动开关</div>
+    <div class="ob">题目不存在或校验失败时给出明确错误提示；题号只读不可修改</div>
+    <div class="ob">界面沿用统一的糖果色设计规范，不使用内联色与任意字号</div>
   </div>
 </div>
 
@@ -725,7 +725,7 @@ window.bootAdmin=function(){
       state.optData={};
       (q.options_json||[]).forEach(function(o){ if(o&&o.label) state.optData[o.label]=o.content==null?"":String(o.content); });
       // 填充只读头 + 面包屑
-      document.getElementById("cr-code").textContent=q.question_code||"";
+      document.getElementById("cr-code").textContent=q.question_code||"—";
       document.getElementById("cr-bank").textContent=state.bankLabel||("题库 #"+q.bank_id);
       document.getElementById("ro-bank-id").textContent=state.bankLabel||("题库 #"+q.bank_id);
       document.getElementById("ro-code").textContent=q.question_code||"—";

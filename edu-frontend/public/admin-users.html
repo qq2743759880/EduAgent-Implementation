@@ -300,10 +300,10 @@
   <div class="page-head">
     <div>
       <h1>用户管理</h1>
-      <div class="sub">全量 <code>require_role(ADMIN)</code>；<b>最后 1 个可用 admin</b> 的 禁用/降级 前端禁用 + 后端拒绝（40303）</div>
+      <div class="sub">仅管理员可访问；最后 1 个可用管理员的禁用 / 降级会被拒绝（保护机制）</div>
     </div>
     <div class="act">
-      <span class="chip">列表 <code>GET /api/admin/users</code></span>
+      <span class="chip">列表实时加载</span>
       <span class="chip">总计 <b id="head-total">0</b> 人</span>
     </div>
   </div>
@@ -371,8 +371,7 @@
     <div class="stat6" id="learn-fields"></div>
     <div class="gap-note" id="learn-gap" style="margin-top:14px">
       <span>⚠️</span>
-      <span><b>契约缺口 · 实披露</b>：<code>GET /api/admin/users/{id}/learning</code> 后端当前<b>未注册</b>（user_admin router 现无 learning 端点，
-      已实测 404）。学习 6 指标面板待端点就绪后接线，本页不伪造数据。</span>
+      <span><b>暂未开放</b>：学习指标面板所需接口尚未开放，功能上线后自动呈现，本页不展示占造数据。</span>
     </div>
   </div>
   <div class="dlg-foot"><button class="btn btn-ghost" data-close>关闭</button></div>
@@ -410,7 +409,7 @@
   <div class="dlg-b">
     <div class="row">
       <div class="field">
-        <label>角色 <span class="muted">→ POST /api/admin/users/{id}/role（实测 200）</span></label>
+        <label>角色 <span class="muted">保存后生效</span></label>
         <select id="e-role">
           <option value="student">学生 · student</option>
           <option value="teacher">教师 · teacher</option>
@@ -421,7 +420,7 @@
     </div>
     <div class="row">
       <div class="field">
-        <label>状态 <span class="muted">→ POST /api/admin/users/{id}/status（实测 200）</span></label>
+        <label>状态 <span class="muted">保存后生效</span></label>
         <span class="seg" id="e-status-seg">
           <button data-st="1">启用</button><button data-st="0">禁用</button>
         </span>
@@ -435,7 +434,7 @@
     </div>
     <div class="redline hidden" id="e-redline">
       <span>🚫</span>
-      <span><b>红线保护</b>：该用户是<b>唯一可用 admin</b>。禁用（status=0）或降级（≠admin）将导致无人能进入管理端——前端已禁用操作；后端同样拒绝（40303「至少保留 1 名可用管理员账号」）。</span>
+      <span><b>保护机制</b>：该用户是<b>最后 1 个可用管理员</b>。禁用或降级将导致无人能进入管理端——操作已被禁用；后端同样会拒绝（至少保留 1 名可用管理员）。</span>
     </div>
   </div>
   <div class="dlg-foot">
@@ -581,7 +580,7 @@ document.getElementById("u-pager").addEventListener("click",function(e){
 /* ---- 用户详情（真实字段；learning 端点缺口诚实披露） ---- */
 function openDetail(id){
   var u=findRow(id); if(!u) return;
-  document.getElementById("learn-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · 数据源 GET /api/admin/users 列表项";
+  document.getElementById("learn-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · 来自用户列表数据";
   var fields=[["user_id",u.user_id],["username",u.username||"—"],["real_name",u.real_name||"—"],["phone",u.phone||"—"],
     ["email",u.email||"—"],["role_code",ROLE_LABEL[u.role_code]||u.role_code],["status",u.status?"启用":"禁用"],["yn",u.yn],
     ["created_at",u.created_at||"—"],["updated_at",u.updated_at||"—"],["last_login_at",u.last_login_at||"—"]];

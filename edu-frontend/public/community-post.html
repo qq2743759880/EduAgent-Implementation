@@ -602,7 +602,7 @@ buildComments();
       if (postTitle && p.title) { postTitle.textContent = p.title; postTitle.style.visibility = "visible"; }
       if (postMeta) {
         var who = postMeta.querySelector(".who"); if (who && p.author_name) who.textContent = p.author_name;
-        if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "").replace("T", " ").slice(0, 16);
+        if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "—").replace("T", " ").slice(0, 16);
         if (postMeta.children[4]) postMeta.children[4].textContent = "👁 " + (p.view_count || 0);
         postMeta.style.visibility = "visible";
       }

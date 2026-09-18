@@ -244,7 +244,7 @@
     <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
     <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
   </nav>
-  <div class="gnav-foot">Admin Console · task13 原型（静态）</div>
+  <div class="gnav-foot">Admin Console · 原型（静态）</div>
 </header>
 <div class="wrap">
 
@@ -252,16 +252,16 @@
   <div class="proto-note" role="note">
     <span aria-hidden="true">🧪</span>
     <div>
-      task13 原型 · <u>示例数据，接线后为真实数据</u> —— 本页为纯静态原型，不发起任何真实请求；
-      回收站 6 行为 2026-09-12 curl 实测快照（GET /api/admin/courses/series?sale_status=off_sale&amp;include_deleted=true，total=56），接线实施以 Gate A 签收为前提。
-      行内「C5非法恢复…」一行标注了「模拟 409」chip：点击其「恢复」将演示编码冲突错误态。
+      原型 · <u>示例数据，接线后为真实数据</u> —— 本页为纯静态原型，不发起任何真实请求；
+      示例数据仅用于呈现回收站与恢复 / 彻底删除的交互形态，正式版以后端真实数据为准。
+      行内「示例冲突恢复系列…」一行标注了「示例冲突」chip：点击其「恢复」将演示编码冲突错误态。
     </div>
   </div>
 
   <div class="page-head">
     <div>
       <h1>课程管理</h1>
-      <div class="sub" id="head-sub">回收站 · 已下架（软删）系列 · 恢复=POST /api/admin/courses/series/{id}/restore · 彻底删除=DELETE /api/admin/courses/series/{id}?hard=true</div>
+      <div class="sub" id="head-sub">回收站 · 已下架（软删）系列 · 支持恢复与彻底删除</div>
     </div>
     <button class="btn btn-primary" id="btn-create" style="display:none" title="回收站视图不提供新建（原型态）">＋ 新建系列</button>
   </div>
@@ -299,7 +299,7 @@
     <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetFilter()">重置</button>
   </div>
 
-  <div class="toolbar-meta"><span id="meta-count">共 <b id="total-count">56</b> 个已下架系列 · 快照示例 6 条 · 每页 20</span><span>示例数据，接线后为真实数据</span></div>
+  <div class="toolbar-meta"><span id="meta-count">已下架系列 · 示例 6 条 · 每页 20</span><span>示例数据，接线后为真实数据</span></div>
 
   <!-- 表格 -->
   <div class="tbl-card">
@@ -358,7 +358,7 @@
           <div class="c-ico" style="background:var(--ok-bg);color:var(--ok-ink)">♻</div>
           <div>
             <b>恢复系列「<span id="restore-name"></span>」？</b>
-            <p>恢复后该系列 sale_status 将置为「<b style="font-size:0.8125rem">草稿</b>」（POST /api/admin/courses/series/<span id="restore-id"></span>/restore），可在正式列表中编辑并重新上架。</p>
+            <p>恢复后该系列将置为「<b style="font-size:0.8125rem">草稿</b>」状态，可在正式列表中编辑并重新上架。</p>
           </div>
         </div>
       </div>
@@ -377,7 +377,7 @@
           <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
           <div>
             <b>彻底删除系列「<span id="purge-name"></span>」？</b>
-            <p>将执行 DELETE /api/admin/courses/series/<span id="purge-id"></span>?hard=true（物理真删，仅 ADMIN 且零引用）：该系列及其可删关联数据将被<b>永久移除</b>，若仍存在班次等关联记录将返回 409（SERIES_IN_USE）。</p>
+            <p>将彻底删除该系列（物理真删，仅管理员且零引用）：该系列及其可删关联数据将被<b>永久移除</b>；若仍存在班次等关联记录，操作将被拒绝。</p>
             <div class="c-warn">⚠ 彻底删除后数据不可恢复，请谨慎操作</div>
           </div>
         </div>
@@ -425,7 +425,7 @@
 const BIN_META = { total: 56, page: 1, page_size: 6, captured: "2026-09-12" };
 const BIN = [
   { id:2709, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181447", series_name:"C5硬删守卫rst1788614181447", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21" },
-  { id:2708, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181329", series_name:"C5非法恢复rst1788614181329", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21", __demo_conflict:true }, /* __demo_conflict 仅原型演示 409：模拟 series_code 被其它系列占用 */
+  { id:2708, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181329", series_name:"示例冲突恢复系列rst1788614181329", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21", __demo_conflict:true }, /* __demo_conflict 仅原型演示：模拟 series_code 被其它系列占用 */
   { id:2707, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181030", series_name:"C5恢复测试rst1788614181030", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21" },
   { id:2706, institution_id:1, delivery_mode:"online_live", series_code:"jsnn1788614180483", series_name:"JSON null 测试jsnn1788614180483", sale_status:"off_sale", created_at:"2026-09-05T21:16:20", updated_at:"2026-09-05T21:16:20" },
   { id:2705, institution_id:1, delivery_mode:"online_live", series_code:"jsnu1788614180344", series_name:"JSON更新jsnu1788614180344", sale_status:"off_sale", created_at:"2026-09-05T21:16:20", updated_at:"2026-09-05T21:16:20" },
@@ -476,7 +476,7 @@ function renderBinRows(){
   body.innerHTML = rows.map(function(s){
     return '<tr class="series-row">'
       +'<td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--muted-ink),var(--muted))">🗑</div><div class="min"><div class="nm">'+esc(s.series_name)+'</div><div class="cd">'+esc(s.series_code)+'</div>'
-      +(s.__demo_conflict?'<div class="tg"><span class="tag-chips" style="background:var(--ht-fdeff2);color:var(--candy-red)">模拟 409 冲突</span></div>':'')
+      +(s.__demo_conflict?'<div class="tg"><span class="tag-chips" style="background:var(--ht-fdeff2);color:var(--candy-red)">示例冲突</span></div>':'')
       +'</div></div></td>'
       +'<td>'+deliveryBadge(s.delivery_mode)+'</td>'
       +'<td>'+offSaleBadge()+'</td>'
@@ -544,11 +544,11 @@ function switchView(v){
   document.getElementById("f-ss").disabled=bin;
   document.getElementById("f-sort").disabled=bin;
   document.getElementById("meta-count").innerHTML = bin
-    ? '共 <b id="total-count">56</b> 个已下架系列 · 快照示例 6 条 · 每页 20'
-    : '共 <b id="total-count">5</b> 个系列 · 静态样例 · 每页 20';
+    ? '已下架系列 · 示例 6 条 · 每页 20'
+    : '系列 · 静态样例 · 每页 20';
   document.getElementById("head-sub").textContent = bin
-    ? "回收站 · 已下架（软删）系列 · 恢复=POST /api/admin/courses/series/{id}/restore · 彻底删除=DELETE /api/admin/courses/series/{id}?hard=true"
-    : "系列 → 班次 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series（task56 形态，本原型不聚焦）";
+    ? "回收站 · 已下架（软删）系列 · 支持恢复与彻底删除"
+    : "系列 → 班次 · 示例数据，接线后为真实数据";
   render("success");
 }
 

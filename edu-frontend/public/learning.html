@@ -554,7 +554,7 @@ a.session{text-decoration:none}
     var sp = n.querySelector(".spinner");
     if (sp) sp.style.display = "none";
     n.hidden = false;
-    $("#tickNoticeText").textContent = "播放打点暂不上报（后端缺播放会话创建端点·缺口 task06-G1）";
+    $("#tickNoticeText").textContent = "播放打点暂未上报，功能开放后自动记录";
   }
 
   /* ---- 班次选择（task06 新增：无入口参数时的学习入口）---- */
@@ -600,7 +600,7 @@ a.session{text-decoration:none}
     var bcS = $("#bcSeries");
     if (bcS) { bcS.textContent = o.series_title || "课程中心"; bcS.href = "course-detail.html?id=" + state.series_id; }
     var sn = $("#seriesName");
-    if (sn) sn.textContent = o.series_title || "";
+    if (sn) sn.textContent = o.series_title || "当前课程";
     var curSid = state.session_id;
     var html = "";
     (o.modules || []).forEach(function (m) {

@@ -359,7 +359,7 @@ select,input{font-family:inherit}
   <!-- 主内容区（状态演示会切换其 innerHTML）-->
   <div id="mainArea"></div>
 
-  <p class="demo-note">HTML 效果图（task46 审核流，<b>STYLE: candy-playful frozen</b>）：四级展示（系列→班次→模块 stage_no 升序→课次 session_no 升序 + teaching_status 徽章）；班次选择 RadioGroup、领券弹窗（GET /api/coupons?series_id=）、收藏心形（aria-pressed，未登录跳 /login?redirect=）、立即报名（POST /api/orders，携带 cohort_id + coupon_receive_record_id）。契约⑦⑧（coupons/orders 后端 task16/17）未就绪 —— 本效果图静态演示，React 阶段接真实接口。以下「状态演示」与「登录态」为审核工具条。</p>
+  <p class="demo-note">页面形态：四级展示（系列→班次→模块→课次，按序号升序，含上课状态徽章）；支持班次选择、领券、收藏（未登录跳登录）与立即报名。页面数据以登录态下的真实接口返回为准。以下「状态演示」与「登录态」为页面状态切换工具。</p>
 
   <div class="toolbar">
     <span class="rr">状态演示</span>
@@ -706,7 +706,7 @@ function bindLearn(){
 function renderBody(){
   const area=document.getElementById("mainArea");
   if(state==="loading"){
-    area.innerHTML = `<section class="hero"><div class="skeleton"></div><div class="skeleton"></div></section><div class="state-fill" style="border:none"><div class="spinner"></div><div class="d">正在加载课程详情（GET /api/series/1001 + /cohorts + /cohorts/{id}/modules）…</div></div>`;
+    area.innerHTML = `<section class="hero"><div class="skeleton"></div><div class="skeleton"></div></section><div class="state-fill" style="border:none"><div class="spinner"></div><div class="d">正在加载课程详情…</div></div>`;
     return;
   }
   if(state==="error"){
@@ -1241,7 +1241,7 @@ renderBody();
     /* task04：面包屑真实回填（原硬编码"编程/通用编程入门班"对其它课程是错误信息） */
     try {
       var crumbCur = document.querySelector(".breadcrumb .cur");
-      if (crumbCur) crumbCur.textContent = s.series_name || s.name || "";
+      if (crumbCur) crumbCur.textContent = s.series_name || s.name || "课程详情";
       var crumbCat = document.getElementById("crumbCat");
       var firstCat = (s.categories && s.categories.length && s.categories[0].category_name) || (s.category_names && s.category_names[0]) || "";
       if (crumbCat && firstCat) crumbCat.textContent = firstCat;

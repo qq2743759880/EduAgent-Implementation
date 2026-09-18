@@ -536,7 +536,7 @@ function loadTools(){
 var ttm=$("mdl-tooltest");
 function openToolTest(toolId,name){
   ttm.style.display="flex";$("ttTitle").textContent="工具测试 · "+name+"（id="+toolId+"）";
-  $("ttOut").style.display="none";$("ttArgs").value="";$("ttRun").disabled=false;$("ttRun").textContent="▶ 执行测试（POST /api/mcp/tools/test）";
+  $("ttOut").style.display="none";$("ttArgs").value="";$("ttRun").disabled=false;$("ttRun").textContent="▶ 执行测试";
   $("ttRun").onclick=function(){
     var args={};
     if($("ttArgs").value.trim()){try{args=JSON.parse($("ttArgs").value);}catch(e){alert("参数必须是合法 JSON 对象");return;}}
@@ -553,7 +553,7 @@ function openToolTest(toolId,name){
     }).catch(function(e){
       var out=$("ttOut");out.style.display="block";
       out.innerHTML='<div style="color:var(--red-ink);font-size:12px">✕ 调用失败：'+esc((e&&e.message)||"")+'</div>';
-    }).then(function(){btn.disabled=false;btn.textContent="▶ 执行测试（POST /api/mcp/tools/test）";});
+    }).then(function(){btn.disabled=false;btn.textContent="▶ 执行测试";});
   };
 }
 $("ttClose").onclick=function(){ttm.style.display="none";};

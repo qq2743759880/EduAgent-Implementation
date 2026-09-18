@@ -364,14 +364,14 @@
   <!-- ============ 题库 Tab ============ -->
   <section id="pane-banks">
     <div class="filterbar">
-      <div class="fld search"><label for="f-bank-kw">题库搜索</label><input id="f-bank-kw" class="search" type="text" placeholder="题库名称 / bank_code（防抖 400ms）"></div>
+      <div class="fld search"><label for="f-bank-kw">题库搜索</label><input id="f-bank-kw" class="search" type="text" placeholder="题库名称 / 编码"></div>
       <div class="fld"><label for="f-bank-cat">分类</label>
-        <select id="f-bank-cat" disabled title="契约缺口：后端 banks 列表仅支持 institution_id/keyword，无分类维表端点，分类筛选暂不可用">
+        <select id="f-bank-cat" disabled title="分类筛选暂不可用">
           <option value="">全部分类</option>
         </select>
       </div>
       <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetBankFilter()">重置</button>
-      <div class="ft-note">bank_code 在机构内唯一；重复时后端返回 <code>40921</code> 并在此提示。分类筛选为<b>诚实降级</b>：后端 banks 端点无分类过滤参数（实测），不做假筛选。</div>
+      <div class="ft-note">题库编码在机构内唯一，重复时在此提示。分类筛选暂不可用。</div>
     </div>
 
     <div class="toolbar-meta"><span>共 <b id="bank-count">4</b> 个题库 · 每页 10</span></div>
@@ -402,8 +402,8 @@
   <section id="pane-questions" class="hidden">
     <div class="filterbar">
       <div class="cur-bank"><span class="muted">当前题库：</span><span class="bn" id="q-cur-bank">—</span>
-        <span class="req-chip"><code>GET /banks/{id}/questions</code> 联动</span></div>
-      <div class="fld search"><label for="f-q-kw">全文检索</label><input id="f-q-kw" class="search" type="text" placeholder="题号 / 题干 / 解析（stem + analysis_text LIKE）"></div>
+        <span class="req-chip">与题库题目列表联动</span></div>
+      <div class="fld search"><label for="f-q-kw">全文检索</label><input id="f-q-kw" class="search" type="text" placeholder="题号 / 题干 / 解析"></div>
       <div class="fld"><label for="f-q-type">题型</label>
         <select id="f-q-type">
           <option value="">全部题型</option>
@@ -413,7 +413,7 @@
         <select id="f-q-obj"><option value="">全部</option><option value="1">客观</option><option value="0">主观</option></select>
       </div>
       <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetQFilter()">重置</button>
-      <div class="ft-note">已废除标签筛选：知识点按 <code>stem + analysis_text</code> 全文检索（LIKE），无标签控件。客观/主观筛选按题型维表 objective_flag 对<b>当前页</b>结果过滤（后端无该查询参数，诚实标注）。</div>
+      <div class="ft-note">搜索按题号 / 题干 / 解析全文匹配；客观 / 主观筛选按题型对<b>当前页</b>结果过滤。</div>
     </div>
 
     <div class="toolbar-meta"><span>共 <b id="q-count">0</b> 题 · 每页 10</span></div>
@@ -428,7 +428,7 @@
       <div id="q-none" class="state">
         <div class="st-ico">🧩</div>
         <div><b style="color:var(--ink)">请先在「题库」选中一个题库</b></div>
-        <p style="margin:4px 0 0">在题库 Tab 点击任一行的「管理」，题目列表将切到该题库（GET /banks/{id}/questions 联动）</p>
+        <p style="margin:4px 0 0">在题库 Tab 点击任一行的「管理」，题目列表将切到该题库</p>
       </div>
       <div id="q-empty" class="state hidden">
         <div class="st-ico">📭</div>
@@ -444,7 +444,7 @@
       <div id="q-pager" class="pager"></div>
     </div>
 
-    <div class="ft-note" style="margin-top:10px">观测点：每行「编辑 / 解析」→ 跳 task59 <code>/admin/questions/[id]</code>（Markdown/LaTeX 题干、analysis_text 必填、题型联动编辑）。</div>
+    <div class="ft-note" style="margin-top:10px">每行「编辑 / 解析」进入题目详情：支持 Markdown / LaTeX 题干、解析必填与题型联动编辑。</div>
   </section>
 
   <!-- 演示控制器已于 task15 移除（页面为真实接线页，无演示态） -->
@@ -459,7 +459,7 @@
           <div class="mff" id="bank-code-wrap"><label>题库编码 *（唯一）</label><input name="bank_code" placeholder="如：PROG-L2"></div>
           <div class="mff" id="bank-cat-wrap"><label>分类 ID *</label><input name="category_id" type="number" value="1" placeholder="如：1"></div>
           <div class="mff" id="bank-inst-wrap"><label>机构 ID *</label><input name="institution_id" type="number" value="1" placeholder="如：1"></div>
-          <div class="mff full"><span class="req-chip" id="bank-form-hint">body 字段实测(institution_id, category_id, bank_code, bank_name)；编辑仅提交 bank_name/category_id（PATCH schema）</span></div>
+          <div class="mff full"><span class="req-chip" id="bank-form-hint">创建需填写机构 / 分类 / 编码 / 名称；编辑仅可修改名称与分类</span></div>
         </div>
       </form>
       <div class="mfoot">
@@ -518,17 +518,17 @@
               <option value="1">单选题</option><option value="2">多选题</option><option value="3">判断题</option>
             </select>
           </div>
-          <div class="mff" id="qf-code-wrap"><label>题号 *（唯一 per 题库）</label><input id="qf-code" placeholder="如：T107-Q001"></div>
-          <div class="mff full"><label>题干 stem *</label><textarea id="qf-stem" placeholder="请输入题干"></textarea></div>
+          <div class="mff" id="qf-code-wrap"><label>题号 *（题库内唯一）</label><input id="qf-code" placeholder="如：Q001"></div>
+          <div class="mff full"><label>题干 *</label><textarea id="qf-stem" placeholder="请输入题干"></textarea></div>
           <div class="mff full" id="qf-options-wrap">
             <label>选项（单选/多选）</label>
             <div id="qf-options-body"></div>
             <div class="field-tip">填空/简答等其余题型本期只读展示，不在页内编辑。</div>
           </div>
-          <div class="mff full"><label>答案 answer_text *</label>
+          <div class="mff full"><label>答案 *</label>
             <input id="qf-answer" placeholder="单选/判断填选项字母(如 A)；多选填连续字母(如 AB)">
           </div>
-          <div class="mff full"><label>解析 analysis_text</label><textarea id="qf-analysis" placeholder="解析（可空）"></textarea></div>
+          <div class="mff full"><label>解析</label><textarea id="qf-analysis" placeholder="解析（可空）"></textarea></div>
           <div class="mff full"><span class="req-chip" id="qf-bank-hint"></span></div>
         </div>
       </form>
@@ -584,7 +584,7 @@
         <div class="imp-step hidden" data-idx="3">
           <div class="field-tip" style="margin-bottom:4px" id="prog-label">正在导入：已处理 <b id="prog-done">0</b> / <b id="prog-total">1752</b> 行…</div>
           <div class="up-prog"><i id="prog-bar" style="width:0%"></i></div>
-          <div class="up-meta"><span id="prog-detail">解析 & 落库（powered by POST /import-execute，幂等）</span><span id="prog-pct">0%</span></div>
+          <div class="up-meta"><span id="prog-detail">解析与入库中…</span><span id="prog-pct">0%</span></div>
           <div class="mfoot" style="padding:14px 0 0;border-top:none">
             <button class="btn btn-ghost btn-mini" data-close>最小化</button>
             <button class="btn btn-primary btn-mini" disabled>导入中…</button>
@@ -783,12 +783,12 @@ window.bootAdmin=function(){
       qs("bank-form-title").textContent="编辑题库 #"+b.id;
       f.bank_name.value=b.bank_name||""; f.bank_code.value=b.bank_code||""; f.category_id.value=b.category_id||1; f.institution_id.value=b.institution_id||1;
       qs("bank-code-wrap").style.display="none"; qs("bank-inst-wrap").style.display="none";
-      qs("bank-form-hint").textContent="编辑模式：PATCH /banks/"+b.id+" 仅提交 bank_name/category_id（bank_code/institution_id 不可变）";
+      qs("bank-form-hint").textContent="编辑模式：仅可修改名称与分类（编码与机构不可变更）";
     } else {
       qs("bank-form-title").textContent="新建题库";
       f.bank_name.value=""; f.bank_code.value=""; f.category_id.value="1"; f.institution_id.value="1";
       qs("bank-code-wrap").style.display=""; qs("bank-inst-wrap").style.display="";
-      qs("bank-form-hint").textContent="body 字段实测(institution_id, category_id, bank_code, bank_name)";
+      qs("bank-form-hint").textContent="创建需填写机构 / 分类 / 编码 / 名称";
     }
     qs("bank-form").classList.add("show");
   };
@@ -814,7 +814,7 @@ window.bootAdmin=function(){
     var b=findBank(id); if(!b) return;
     state.bankDelTarget=b;
     qs("del-bank-name").textContent=b.bank_name;
-    qs("del-bank-cnt").textContent="—（banks 列表无题量字段，以详情页实测为准）";
+    qs("del-bank-cnt").textContent="—（题量以详情页为准）";
     qs("confirm-del-bank").classList.add("show");
   };
   window.doDeleteBank=function(){

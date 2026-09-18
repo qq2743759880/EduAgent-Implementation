@@ -589,7 +589,7 @@ button{font-family:inherit;cursor:pointer}
     var tot = document.querySelector("#secPoints .total-pts");
     if (tot) tot.textContent = fmt(p.total_points);
     var pill = document.querySelector("#secPoints .lv-pill");
-    if (pill) pill.textContent = "🏅 Lv." + (p.level_no || 0) + " · " + (p.level_title || "");
+    if (pill) pill.textContent = "🏅 Lv." + (p.level_no || 0) + (p.level_title ? " · " + p.level_title : "");
     var isMax = p.next_level_min == null;
     var pc = Math.min(100, Math.round(p.level_progress_pct || 0));
     var range = document.querySelector("#secPoints .lv-range");

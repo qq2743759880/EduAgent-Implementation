@@ -275,7 +275,7 @@
   <div class="page-head">
     <div>
       <h1>课程管理</h1>
-      <div class="sub" id="head-sub">系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series</div>
+      <div class="sub" id="head-sub">系列 → 班次 · 上下架与软删管理</div>
     </div>
     <button class="btn btn-primary" data-open="series-form" id="btn-create">
       ＋ 新建系列
@@ -431,7 +431,7 @@
           <div class="c-ico" style="background:var(--ok-bg);color:var(--ok-ink)">♻</div>
           <div>
             <b>恢复系列「<span id="restore-name"></span>」？</b>
-            <p>恢复后该系列 sale_status 将置为「<b style="font-size:0.8125rem">草稿</b>」（POST /api/admin/courses/series/<span id="restore-id"></span>/restore），可在正式列表中编辑并重新上架。</p>
+            <p>恢复后该系列将置为「<b style="font-size:0.8125rem">草稿</b>」状态，可在正式列表中编辑并重新上架。</p>
           </div>
         </div>
       </div>
@@ -450,7 +450,7 @@
           <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
           <div>
             <b>彻底删除系列「<span id="purge-name"></span>」？</b>
-            <p>将执行 DELETE /api/admin/courses/series/<span id="purge-id"></span>?hard=true（物理真删，仅 ADMIN 且零引用）：该系列将被<b>永久移除</b>，若仍存在班次等关联记录将返回 409（错误码 40908：系列仍被班次/订单引用）。</p>
+            <p>将彻底删除该系列（物理真删，仅管理员且零引用）：该系列将被<b>永久移除</b>；若仍存在班次/订单引用，操作将被拒绝（系列仍被引用）。</p>
             <div class="c-warn">⚠ 彻底删除后数据不可恢复，请谨慎操作</div>
           </div>
         </div>
@@ -556,12 +556,12 @@ function applyViewChrome(){
   document.querySelectorAll("#viewTabs .vtab").forEach(function(b){ b.classList.toggle("active", b.dataset.view === activeView); });
   var btn=document.getElementById("btn-create"); if(btn) btn.style.display = bin?"none":"";
   var ss=document.getElementById("f-ss"), st=document.getElementById("f-sort");
-  if(ss){ ss.disabled = bin; ss.title = bin?"回收站内全部为「已下架」（sale_status=off_sale），状态筛选不可用":""; }
-  if(st){ st.disabled = bin; st.title = bin?"回收站内不提供排序切换（按后端默认排序）":""; }
+  if(ss){ ss.disabled = bin; ss.title = bin?"回收站内全部为「已下架」，状态筛选不可用":""; }
+  if(st){ st.disabled = bin; st.title = bin?"回收站内不提供排序切换（按默认排序）":""; }
   var sub=document.getElementById("head-sub");
   if(sub) sub.textContent = bin
-    ? "回收站 · 已下架（软删）系列 · 恢复=POST /api/admin/courses/series/{id}/restore · 彻底删除=DELETE /api/admin/courses/series/{id}?hard=true"
-    : "系列 → 班次 · 上下架与软删 · 数据来自 GET/POST/PATCH/DELETE /api/admin/courses/series";
+    ? "回收站 · 已下架（软删）系列 · 支持恢复与彻底删除"
+    : "系列 → 班次 · 上下架与软删管理";
   var ico=document.getElementById("empty-ico"); if(ico) ico.textContent = bin?"♻️":"📭";
   var et=document.getElementById("empty-title"); if(et) et.textContent = bin?"回收站为空":"暂无系列";
   var ep=document.getElementById("empty-desc"); if(ep) ep.textContent = bin?"已下架的系列会出现在这里，可一键恢复":"点击右上角「新建系列」开始搭建课程";
@@ -719,8 +719,8 @@ function openEdit(id){
     var f=document.getElementById("series-form-fields");
     /* PATCH 契约无 series_code/institution_id 字段 → 编辑态诚实置灰 */
     f.series_code.disabled=true; f.series_code.title="系列编码创建后不可修改（后端更新接口不含该字段）";
-    f.institution_id.disabled=true; f.institution_id.title="机构 ID 创建后不可修改（后端更新接口不含该字段）";
-    document.getElementById("form-title").textContent="编辑系列 · "+(row.series_name||"");
+    f.institution_id.disabled=true; f.institution_id.title="机构 ID 创建后不可修改";
+    document.getElementById("form-title").textContent=row.series_name ? ("编辑系列 · "+row.series_name) : "编辑系列";
     openModal("series-form");
   };
   if(s){ fill(s); return; }
@@ -752,12 +752,12 @@ function saveSeries(){
 /* ── 上架/下架/软删（正式列表） ── */
 function openDel(id){
   var s=(window.__rows&&window.__rows[id])||null;
-  document.getElementById("del-name").textContent = s?(s.series_name||""):("系列 #"+id);
+  document.getElementById("del-name").textContent = s?(s.series_name||"未命名系列"):("系列 #"+id);
   window.__delId=id; openModal("confirm-del");
 }
 function openOff(id){
   var s=(window.__rows&&window.__rows[id])||null;
-  document.getElementById("off-name").textContent = s?(s.series_name||""):("系列 #"+id);
+  document.getElementById("off-name").textContent = s?(s.series_name||"未命名系列"):("系列 #"+id);
   window.__offId=id; openModal("confirm-off");
 }
 function doOnSale(id){
@@ -807,7 +807,7 @@ function openPurge1(id){
 }
 function toPurgeStep2(){
   var id=window.__purgeId, s=(window.__binRows&&window.__binRows[id])||null; if(!s){ closeAll(); return; }
-  document.getElementById("purge-code-echo").textContent=s.series_code||"";
+  document.getElementById("purge-code-echo").textContent=s.series_code||"—";
   var inp=document.getElementById("purge-code-input");
   inp.value=""; onPurgeInput();
   openModal("confirm-purge-2");

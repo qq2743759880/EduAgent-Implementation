@@ -467,7 +467,7 @@
       <div class="mff"><label>开课日期</label><input id="coStart" type="date"></div>
       <div class="mff"><label>结课日期</label><input id="coEnd" type="date"></div>
     </div>
-    <div class="field-tip" style="margin-top:8px">创建必填 institution_id（默认取系列）+ head_teacher_id；编码冲突报 40902。</div></div>
+    <div class="field-tip" style="margin-top:8px">创建时默认归属当前系列与机构，并指定负责人教师；编码冲突时在此提示。</div></div>
     <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="coSave">保存</button></div>
   </div>
 </div>
@@ -479,13 +479,13 @@
     <div class="mb"><div class="mf">
       <div class="mff"><label>模块编码</label><input id="moCode" placeholder="MOD-01"></div>
       <div class="mff"><label>模块名称</label><input id="moName" placeholder="Python 基础语法"></div>
-      <div class="mff"><label>阶段 stage_no（唯一）</label><input id="moStage" type="number" value="1"></div>
+      <div class="mff"><label>阶段序号（唯一）</label><input id="moStage" type="number" value="1"></div>
       <div class="mff"><label>课次数</label><input id="moLessons" type="number" value="4"></div>
       <div class="mff"><label>总学时</label><input id="moHours" type="number" step="0.5" value="12"></div>
       <div class="mff"><label>开始日期</label><input id="moStart" type="date"></div>
       <div class="mff"><label>结束日期</label><input id="moEnd" type="date"></div>
     </div>
-    <div class="field-tip" style="margin-top:8px">Module 归属当前选中班次 cohort_id；冲突报 40903（cohort_id+stage_no）。</div></div>
+    <div class="field-tip" style="margin-top:8px">模块归属当前选中的班次；同班次内阶段序号重复时在此提示。</div></div>
     <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="moSave">保存</button></div>
   </div>
 </div>
@@ -495,7 +495,7 @@
   <div class="modal">
     <div class="mh"><h3 id="seMdlTitle">新增课次</h3><button class="m-close" data-close>×</button></div>
     <div class="mb"><div class="mf">
-      <div class="mff"><label>课次序号 session_no（唯一）</label><input id="ssNo" type="number" value="1"></div>
+      <div class="mff"><label>课次序号（唯一）</label><input id="ssNo" type="number" value="1"></div>
       <div class="mff"><label>教学状态</label><select id="ssStatus"><option value="scheduled">scheduled 未开始</option><option value="in_progress">in_progress 进行中</option><option value="completed">completed 已完成</option><option value="cancelled">cancelled 已取消</option></select></div>
       <div class="mff full"><label>课次标题</label><input id="ssTitle" placeholder="第 1 讲 · 变量与类型"></div>
       <div class="mff"><label>授课日期</label><input id="ssDate" type="date"></div>
@@ -503,7 +503,7 @@
       <div class="mff"><label>开始时间</label><input id="ssStart" type="time"></div>
       <div class="mff"><label>结束时间</label><input id="ssEnd" type="time"></div>
     </div>
-    <div class="field-tip" style="margin-top:8px">Session 归属模块（series_cohort_course_id）；冲突报 40904（module+session_no）。</div></div>
+    <div class="field-tip" style="margin-top:8px">课次归属当前选中的模块；同模块内课次序号重复时在此提示。</div></div>
     <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="ssSave">保存</button></div>
   </div>
 </div>

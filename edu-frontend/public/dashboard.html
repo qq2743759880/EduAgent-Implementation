@@ -601,7 +601,7 @@ button{font-family:inherit;cursor:pointer}
     }).join("");
     var my = d.my_rank;
     if ($("myrank-big")) $("myrank-big").textContent = my ? "#" + my.rank_no : "未上榜";
-    if ($("myrank-sub")) $("myrank-sub").textContent = my ? ("我的积分 " + fmt(my.metric_value) + " 分 · 快照 " + (d.snapshot_date || "")) : "完成学习任务即可上榜";
+    if ($("myrank-sub")) $("myrank-sub").textContent = my ? ("我的积分 " + fmt(my.metric_value) + " 分" + (d.snapshot_date ? " · 快照 " + d.snapshot_date : "")) : "完成学习任务即可上榜";
     return true;
   }
 
