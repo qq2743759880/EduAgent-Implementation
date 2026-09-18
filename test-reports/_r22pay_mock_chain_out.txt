@@ -1,0 +1,23 @@
+[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线
+[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线
+== W-NEXT-PAYGATE-001 live regression @ http://127.0.0.1:8000 ==
+admin login ok
+[PASS] A1 发起 mock 支付: {"http": 200, "payment_no": "P-1-260919023805-ba32d2", "audit_pending": false}
+[PASS] A2 mock 回调 settle: {"http": 200, "applied": true, "message": "支付成功"}
+[PASS] A3 支付/订单状态 paid: {"payment_status": "paid", "order_status": "paid"}
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.common.logging[0m:[36msetup_logging[0m:[36m95[0m | [1m日志系统已初始化，级别: DEBUG，目录: logs[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36mclose_mysql[0m:[36m132[0m | [1mMySQL 连接池已关闭[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+[32m02:38:08[0m | [1mINFO    [0m | [36mapp.database[0m:[36mclose_mysql[0m:[36m132[0m | [1mMySQL 连接池已关闭[0m
+[PASS] A4 DB 复核：paid×1 + 报名 active: {"payments": [{"payment_no": "P-1-260919023805-ba32d2", "payment_status": "paid", "third_party_trade_no": "TRD-R22PAY-P-1-260919023805-ba32d2"}], "enrolls": [{"enroll_status": "active"}]}
+[PASS] A5 mock 回调幂等（二次）: {"http": 200, "applied": false, "message": "已处理（幂等）"}
+[PASS] B1 发起 alipay 渠道支付（真实渠道，无真实流量）: {"http": 200, "payment_no": "P-1-260919023808-70245b"}
+[PASS] B2 缺 key 拒绝（无 JWT 也可打——闸门即鉴权）: {"http": 503, "code": "50301", "message": "支付渠道依赖未配置，请稍后重试"}
+[PASS] B3 渠道/记录不匹配拒绝: {"http": 403, "code": "40300", "message": "回调渠道与支付记录渠道不匹配"}
+[PASS] B4 mock 渠道不走渠道入口: {"http": 422, "code": "42200", "message": "渠道 mock 不接受渠道回调（仅 alipay/wechat_pay）"}
+[PASS] B5 未知渠道拒绝: {"http": 422, "code": "42200", "message": "渠道 crypto_pay 不接受渠道回调（仅 alipay/wechat_pay）"}
+[PASS] B6 拒绝后无副作用（仍 pending）: {"payment_status": "pending"}
+== RESULT: ALL PASS (11/11) ==

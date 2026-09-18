@@ -19,6 +19,7 @@
 - POST   /api/payments/{payment_no}/retry         alias → 重试支付
 - POST   /api/payments/reconcile / GET /api/payments/reconcile  alias → 对账
 - POST   /payment-notifications/mock              mock 回调（body {payment_no, third_party_trade_no}，仅 mock 渠道）
+- POST   /payment-notifications/channel           真实渠道回调（alipay/wechat_pay；验商户+RSA2 验签+验金额闸门，W-NEXT-PAYGATE-001）
 
 响应壳沿用契约① ok()；失败 AppException → 全局 handler。
 """
@@ -33,7 +34,9 @@ from app.auth import UserRole
 from app.config import settings
 from app.core.resp import ok
 from app.domains.trade.payment import service as svc
-from app.domains.trade.payment.schemas import MockNotifyInput, MockNotifyPathBody, PaymentLaunchInput
+from app.domains.trade.payment.schemas import (
+    ChannelNotifyInput, MockNotifyInput, MockNotifyPathBody, PaymentLaunchInput,
+)
 
 router = APIRouter(tags=["trade · 支付"])
 
@@ -83,6 +86,19 @@ async def mock_notify_body(
     if not settings.DEBUG and me.role not in (UserRole.ADMIN, UserRole.MANAGER):
         raise HTTPException(status_code=403, detail="mock 回调仅允许 ADMIN/MANAGER 角色或 DEBUG 模式调用")
     result = await svc.mock_notify(body.payment_no, third_party_trade_no=body.third_party_trade_no)
+    return ok(data=result.model_dump(mode="json"))
+
+
+@router.post("/payment-notifications/channel", summary="真实渠道回调（alipay/wechat_pay：验商户+验签+验金额闸门）")
+async def channel_notify(body: ChannelNotifyInput):
+    # 服务端对服务端回调：渠道服务器无法持 JWT，鉴权 = 闸门三关
+    # （验商户 + RSA2 验签 + 验金额；缺 key → 50301 fail closed，任何一关不过拒绝+审计）。
+    # mock 渠道不走本入口（mock 回调走既有 mock-notify 端点，鉴权语义零变化）。
+    result = await svc.channel_notify(
+        body.channel, body.payment_no,
+        payload=body.payload, signature=body.signature, merchant_id=body.merchant_id,
+        notify_amount=body.notify_amount, third_party_trade_no=body.third_party_trade_no,
+    )
     return ok(data=result.model_dump(mode="json"))
 
 

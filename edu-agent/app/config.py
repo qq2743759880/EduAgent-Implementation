@@ -647,6 +647,16 @@ class Settings(BaseSettings):
     ERROR_WEBHOOK_URL: str = ""
 
     # ============================================================
+    # 真实支付渠道回调验签（W-NEXT-PAYGATE-001，tracker 346）：全部默认空。
+    # 空 = 闸门 fail closed（50301 依赖未配置全量拒绝），接入真实渠道时从
+    # 环境变量注入即生效。公钥支持 PEM 或 base64 DER；PAY_MERCHANT_ID 为
+    # 商户号（alipay app_id / wechat mchid，当前单商户口径）。
+    # ============================================================
+    PAY_ALIPAY_PUBLIC_KEY: str = ""     # 支付宝 RSA2 验签公钥
+    PAY_WECHAT_API_V3_KEY: str = ""     # 微信支付 APIv3 平台验签公钥
+    PAY_MERCHANT_ID: str = ""           # 商户号（渠道回调 merchant 校验期望值）
+
+    # ============================================================
     # 检索参数（P2 调优时改这里，不用改代码）
     # ============================================================
     CHUNK_SIZE: int = 512

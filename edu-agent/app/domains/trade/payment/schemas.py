@@ -61,6 +61,24 @@ class MockNotifyPathBody(BaseModel):
     third_party_trade_no: str | None = Field(None, max_length=128, description="模拟渠道交易号")
 
 
+class ChannelNotifyInput(BaseModel):
+    """真实渠道回调请求体（`/payment-notifications/channel`，W-NEXT-PAYGATE-001）。
+
+    服务端对服务端回调（无 JWT），鉴权 = 闸门三关（验商户 + RSA2 验签 + 验金额）。
+    - payload：渠道回调参数全集（参与 RSA2 验签；不含 sign 本身）
+    - signature：渠道签名（base64）
+    - notify_amount：回调金额（元），与订单 payable_amount 分单位比较
+    - merchant_id：渠道商户号/app_id，与 PAY_MERCHANT_ID 精确匹配
+    """
+    channel: str = Field(..., description="回调渠道：alipay/wechat_pay（其余拒绝）")
+    payment_no: str = Field(..., description="平台支付单号")
+    payload: dict = Field(default_factory=dict, description="回调参数全集（参与验签）")
+    signature: str | None = Field(None, max_length=4096, description="渠道签名（base64）")
+    merchant_id: str | None = Field(None, max_length=128, description="渠道商户号/app_id")
+    notify_amount: float | str | None = Field(None, description="回调金额（元）")
+    third_party_trade_no: str | None = Field(None, max_length=128, description="渠道交易号")
+
+
 class MockNotifyResult(BaseModel):
     """mock 回调结果。"""
     applied: bool

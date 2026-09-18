@@ -15,6 +15,7 @@ from datetime import datetime
 from app.common.error_codes import TRADE_ORDER_NOT_FOUND
 from app.common.exceptions import AppException
 from app.database import transaction
+from app.domains.trade.channel_verify import GATE_CHANNELS, audit_reject, run_channel_gates
 from app.domains.trade.payment.repository import PaymentReconcileRepo, PaymentRepo, PaymentWriteRepo
 from app.domains.trade.payment.schemas import (
     MockNotifyResult, Payment, PaymentCancelResult, PaymentLaunchResult,
@@ -138,17 +139,13 @@ async def get_payment(user_id: int, payment_no: str) -> Payment:
     return _payment_from_row(row)
 
 
-async def mock_notify(payment_no: str, third_party_trade_no: str | None) -> MockNotifyResult:
-    """
-    mock 回调（仅模拟渠道）：单事务支付成功 + 订单 paid + 报名 active + 券 used。
-    幂等：同 payment_no 并发 → 条件更新仅一次生效。
-    """
-    p = await _payment_repo.get_payment(payment_no)
-    if p is None:
-        raise AppException("40420", "支付记录不存在")
-    if p["payment_channel"] not in _SIMULATION_CHANNELS:
-        raise AppException("40021", "mock 回调仅限 mock 模拟渠道（真实渠道不接受）")
+async def _settle_once(
+    payment_no: str, order_no: str | None, third_party_trade_no: str | None,
+) -> MockNotifyResult:
+    """回调成功单事务核心（W-NEXT-PAYGATE-001：mock_notify / channel_notify 共用）。
 
+    语义与原 mock_notify 事务体逐行等价（GWT①②）：幂等条件更新 + 三表原子一致；
+    settle_payment 本体零改动。"""
     now = datetime.now()
     try:
         async with transaction() as (conn, cur):
@@ -161,13 +158,61 @@ async def mock_notify(payment_no: str, third_party_trade_no: str | None) -> Mock
             # 并发唯一键冲突（学生报名/券核销）→ 视为已处理（事务退出自动回滚）
             result = {"applied": False, "order_status_change": False}
         else:
-            logger.exception("[payment] mock 回调事务失败：%s", exc)
+            logger.exception("[payment] 回调事务失败：%s", exc)
             raise AppException("50000", "支付回调处理失败")
 
-    order_no = p.get("order_no")
     if result["applied"]:
         return MockNotifyResult(applied=True, payment_no=payment_no, order_no=order_no, message="支付成功")
     return MockNotifyResult(applied=False, payment_no=payment_no, order_no=order_no, message="已处理（幂等）")
+
+
+async def mock_notify(payment_no: str, third_party_trade_no: str | None) -> MockNotifyResult:
+    """
+    mock 回调（仅模拟渠道）：单事务支付成功 + 订单 paid + 报名 active + 券 used。
+    幂等：同 payment_no 并发 → 条件更新仅一次生效。
+    事务体已提取至 _settle_once（与 channel_notify 共用，行为不变）。
+    """
+    p = await _payment_repo.get_payment(payment_no)
+    if p is None:
+        raise AppException("40420", "支付记录不存在")
+    if p["payment_channel"] not in _SIMULATION_CHANNELS:
+        raise AppException("40021", "mock 回调仅限 mock 模拟渠道（真实渠道不接受）")
+    return await _settle_once(payment_no, p.get("order_no"), third_party_trade_no)
+
+
+async def channel_notify(
+    channel: str, payment_no: str, *, payload: dict, signature: str | None,
+    merchant_id: str | None, notify_amount, third_party_trade_no: str | None,
+) -> MockNotifyResult:
+    """真实渠道回调（W-NEXT-PAYGATE-001，承接 tracker 346）：按渠道分派闸门。
+
+    分派规则（确定性，无旁路）：
+    - 仅 alipay/wechat_pay 接受本入口；mock 走既有 mock_notify（鉴权/语义零变化）；
+      未知/线下渠道一律拒绝
+    - 回调渠道必须与支付记录渠道一致（防跨渠道冒用）
+    - 闸门三关（验商户→验签→验金额，见 channel_verify.run_channel_gates）：
+      任何一关不过 = 拒绝 + 审计日志；缺 key → 50301 fail closed
+    - 闸门全过后走与 mock 相同的单事务结算（_settle_once，幂等）
+    """
+    if channel not in GATE_CHANNELS:
+        # 入口白名单拒绝同样审计（确定性策略：任何拒绝都有 [PAY-GATE-AUDIT]）
+        audit_reject("ENTRY_CHANNEL_NOT_ALLOWED", channel=channel, payment_no=payment_no)
+        raise AppException("42200", f"渠道 {channel} 不接受渠道回调（仅 alipay/wechat_pay）")
+    p = await _payment_repo.get_payment(payment_no)
+    if p is None:
+        raise AppException("40420", "支付记录不存在")
+    record_channel = p["payment_channel"]
+    if record_channel != channel:
+        audit_reject("CHANNEL_RECORD_MISMATCH", channel=channel,
+                     record_channel=record_channel, payment_no=payment_no)
+        raise AppException("40300", "回调渠道与支付记录渠道不匹配")
+    # 闸门三关：验商户 / 验签 / 验金额（内部各自审计；失败抛 AppException 拒绝）
+    run_channel_gates(
+        channel=channel, payload=payload, signature=signature,
+        merchant_id=merchant_id, notify_amount=notify_amount,
+        payable_amount=p.get("payable_amount"),
+    )
+    return await _settle_once(payment_no, p.get("order_no"), third_party_trade_no)
 
 
 async def cancel_payment(user_id: int, payment_no: str) -> PaymentCancelResult:
