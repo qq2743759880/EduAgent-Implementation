@@ -4,18 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>我的收藏 · EduAgent</title>
-<!--
-  ============================================================
-  我的收藏页（fe-html 糖果色静态页）
-  接口契约（curl 实测 2026-09-05，user000001）：
-    GET /api/favorites?page=1&page_size=20
-      → data: {total, page, page_size, items:[
-        {favorite_id, user_id, target_type:"series", series_id, series_title, cover_url, created_at}]}
-  卡片点击 → course-detail.html?id={series_id}（course-detail.html L791 用 EAPI.pageId("id") 取参）
-  空态 → "暂无收藏，去课程中心逛逛" + 跳 courses.html 按钮
-  未登录（无 token）→ EAPI.buildLoginUrl 跳登录；依赖共享客户端 /edu-api.js。
-  ============================================================
--->
 <style>
 /* ===== 糖果色 tokens（对齐 me.html，禁硬编码业务 hex）===== */
 :root{

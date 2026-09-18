@@ -4,36 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端用户管理原型 · EduAgent</title>
-<!--
-  B3-proto · admin-users Refine 版 HTML 原型（Gate A 送审件 · 仅原型不接线）
-  原型目的：为 B3-impl（admin-users Refine 版实施）送审【布局壳 + 权限口径可视化】——
-    Refine v5 headless 组合下的页面形态先于代码定稿；Gate A APPROVED 后才允许出 B3-impl 开工单。
-  权限口径（D-H3 决策：A 方案并入 B3，manager 权限对齐直接在 Refine 版实现）：
-    · 后端权威：user_admin 路由 require_role([ADMIN])——2026-09-12 curl 实测 manager(mgr01test)
-      GET /api/admin/users → HTTP 403 {"code":"40300","message":"角色无权限。当前角色=manager，允许角色=['admin']"}
-    · 前端口径：manager=整页例外——顶部只读横幅「该模块仅 ADMIN 可用」+导航例外灰显（H3-temp 过渡措施，
-      edu-guard.js 对 users/mcp/dashboard 三页链接 pointer-events:none+opacity+title）；ADMIN=全量
-    · GWT③ 签字口径：manager 完整可用 4 页（courses/course-detail/questions/question-detail）；
-      例外 4 处=users/mcp/dashboard 整页 + rag collections 卡；例外处理=导航灰显+横幅/诚实空态
-  契约权威（与现状页 admin-users.html 同源）：
-    列表 GET /api/admin/users?keyword&role_code&status&yn&page&page_size → {total,page,page_size,items[AdminUserItem]}
-    状态 POST /api/admin/users/{id}/status body{status:0|1,yn?,reason?} → {updated,user_id,status,yn}
-    角色 POST /api/admin/users/{id}/role  body{target_role,reason?}    → {updated,user_id,target_role}
-    红线 40303「至少保留 1 名可用管理员账号」后端权威兜底；前端以 metrics.role_breakdown.admin 尽力提示
-  交互态清单（ADMIN 视角全量）：正常列表（搜索防抖 400ms + 角色/状态筛选 + 窗口化分页）/ loading 骨架 /
-    空态 / 403 40300 错误态 / 启停二次确认弹窗 / 编辑 diff 弹窗（正常态 + 40303 红线提示态）。
-  数据：本页纯静态原型——零 script 标签（无 script src / fetch / XHR / 内联事件处理器），不发起任何真实请求；
-    示例行 = 2026-09-12 curl 实测 GET /api/admin/users 快照（adm02test/Test@123456，后端 127.0.0.1:8000，
-    全量 total=100034），字段与 AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,
-    created_at,updated_at,last_login_at} 逐字一致；页面显著标注「示例数据，实施后为真实数据」。
-  样式：复用 admin-users.html 糖果 token（:root 逐字同源）+ 同源组件类（filterbar/tbl/badge/dlg/sk/gnav），
-    不引入新视觉语言；仅新增"场景卡排版"类（scene/toc/diff/payload，颜色全部取自既有 token）。
-  C15 判据（入 B3-impl 开工单）：Refine 实施版代码行数 ≤214 行（admin-users.html 642/3），超=证伪回滚选型。
-  AUDIT LOG: DRAFT
-    [2026-09-12 B3-proto v1] 初稿（派发方案 reshape-b §四 B3-proto 专项）：
-    布局壳（gnav 顶栏 + 页头 + 筛选栏 + 表格 + 窗口化分页 + 弹窗形态）+ 权限口径可视化
-    （S1 manager 视角态 = 只读横幅 + 导航灰显示意；S2 ADMIN 视角态 = 全交互态 8 场景）→ 待 Gate A 送审
--->
 <style>
   :root{ --htc-0-0-0-0.18: rgba(0,0,0,0.18); --htc-25-28-38-0.42: rgba(25,28,38,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-5b647b: #5b647b; --ht-7c4bd6: #7c4bd6; --ht-a78bfa: #a78bfa; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff;
     --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;

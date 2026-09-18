@@ -4,53 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端系列回收站 · EduAgent</title>
-<!--
-  task13 HTML 原型（审核稿 · 仅原型，不接线真实数据）
-  - 原型目的：系列「回收站」Tab 交互形态送审——已下架（软删）系列列表 + 行内「恢复」（确认弹窗）
-    + 行内「彻底删除」（?hard=true 红色危险态两步确认，含"不可恢复"警告）+ 空回收站空态 /
-    恢复成功 toast / 409 编码冲突错误态。Gate A 签收后才允许接线 admin-courses.html。
-  - 依赖端点（2026-09-12 curl 实测，adm02test/Test@123456，后端 127.0.0.1:8000）：
-    ① GET /api/admin/courses/series?page=1&page_size=10
-       · 响应壳 {code:0,message:"ok",data:{items:[...],total,page,page_size}}（外层分页 triple）
-       · item 字段（实测）：id, institution_id, delivery_mode, series_code, series_name, description,
-         cover_url, target_learner_identity_codes, target_learning_goal_codes, target_grade_codes,
-         sale_status, created_by, created_at, updated_at
-       · openapi 文档化参数：keyword(1~64) / institution_id / delivery_mode / sale_status(draft|on_sale|off_sale)
-         / include_deleted(bool 默认 false) / sort(default|newest|name_asc|name_desc)
-         / page(min 1 默认 1) / page_size(min 1 max 100 默认 20)
-       · 过滤实测：status=off_sale 参数无效（被忽略，total 仍 2629 含 draft/on_sale）；
-         sale_status=off_sale 有效（total 2629→56，全部 off_sale）
-       · include_deleted 语义实测（重要）：true = 不过滤 off_sale 的【全量】（total 2685=2629+56），
-         不是"仅软删"——回收站只看已下架需叠加 sale_status=off_sale（现状 admin-courses.html C5 bin
-         视图仅传 include_deleted=true，接线实施时应修正为叠加过滤，见接线清单）
-       · 软删语义（repo 实读）：series 表无 yn 列，软删 = DELETE 置 sale_status='off_sale'；
-         item 无 deleted_at 专用字段，回收站行时间仅 created_at/updated_at（updated_at=软删下架刷新时间）
-         ——契约缺口实披露，本原型"最近变更"列用 updated_at，不做 MOCK
-    ② POST /api/admin/courses/series/{series_id}/restore（路由存在性只读确认，未对真实数据执行 restore）
-       · openapi：POST，path 参数 series_id:integer，无 requestBody
-       · 运行时探测：POST 不存在 id 99999999 → HTTP 404 {"code":"40400","message":"系列不存在：99999999"}；
-         同路径 GET → HTTP 405（证实 POST-only 路由存在）
-       · 语义（service.restore_series 实读）：off_sale→draft（恢复为草稿）；系列不存在/非软删态 → 404；
-         series_code 被其它系列占用（institution_id+series_code 唯一）→ HTTP 409
-         {"code":"40901","message":"系列编码 'xxx' 已被其它系列占用，无法恢复"}；
-         成功 data：{"series_id":..,"status":"restored"}
-    ③ DELETE /api/admin/courses/series/{series_id}?hard=true（openapi 确认 query 参数 hard:bool 默认 false，
-       描述"true=物理真删（仅 ADMIN，且零引用）"；存在关联记录 → 409 SERIES_IN_USE
-       "系列仍存在其它关联记录，无法彻底删除"——硬删失败态原型以文案披露）
-  - 契约状态：列表/恢复/硬删三端点均实测存在；无"回收站专用"端点（复用列表+过滤组合）；
-    无 deleted_at 字段（"最近变更"用 updated_at 代）——均为实披露，不做 MOCK
-  - 数据：本页纯静态原型（不引 edu-api.js / edu-guard.js，不发起任何真实请求）；回收站 6 行为
-    2026-09-12 curl 实测 GET /series?page=1&page_size=6&sale_status=off_sale&include_deleted=true
-    原样快照（total=56），页面显著标注「示例数据，接线后为真实数据」；正式列表 Tab 沿用 task56 静态样例。
-  - 接线实施清单（Gate A 后）：补 task109 管理端守卫 + bootAdmin 注入；bin 视图改传
-    sale_status=off_sale&include_deleted=true；恢复接 EAPI.post /restore（409/404 走 em-toast errMsg）；
-    硬删接 EAPI.del ?hard=true（两步确认保留）
-  AUDIT LOG: APPROVED
-    [2026-09-12] Gate A 用户签收 APPROVED;task13 按此实施
-    [2026-09-12 task13 v1] 初稿（完整克隆 admin-courses + 回收站 Tab 深化：恢复确认弹窗 / 彻底删除
-    两步确认（编码输入确认+"不可恢复"警告）/ 空回收站空态 / 恢复成功 toast / 409 冲突错误态 /
-    demo 控制器交互形态直达）→ DRAFT 待编排者验收 + Gate A
--->
 <style>
   :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-6a4fd0: #6a4fd0; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
     --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
@@ -419,9 +372,6 @@
 
 <script>
 /* ============ task13 静态原型数据（不接线；接线后为真实数据） ============ */
-/* 回收站 6 行 = 2026-09-12 curl 实测原样快照：
-   GET /api/admin/courses/series?page=1&page_size=6&sale_status=off_sale&include_deleted=true
-   （total=56, page=1, page_size=6；字段名与实测响应逐字一致） */
 const BIN_META = { total: 56, page: 1, page_size: 6, captured: "2026-09-12" };
 const BIN = [
   { id:2709, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181447", series_name:"C5硬删守卫rst1788614181447", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21" },

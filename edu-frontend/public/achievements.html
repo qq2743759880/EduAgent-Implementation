@@ -1,22 +1,4 @@
 <!DOCTYPE html>
-<!--
-  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
-  task53 v1 效果图 · /achievements 成就中心
-  > Hero 成就横幅 + 徽章墙（已解锁高亮 / 未解锁置灰+解锁进度+稀有度 + 满级判定）
-    + 积分总览（等级徽标 / 总积分 / 等级进度 → 下一级 / 已达最高等级）
-    + 积分流水分页（C2，delta±色 + 余额 + point_type 文案映射 + 空态）
-    + 排行榜（双 tablist：时间范围 日/周/月/总 × 维度 积分/时长/徽章数，APG Tabs；前三奖牌 + is_myself 高亮 + 我的排名 + source 实时）
-    + 五态(success/loading/empty/error) + 桌面/移动响应式
-  > 数据形状对齐契约⑬（2026-09-06 curl 实测校准，contracts/reshape-a.json 冻结 hash 30aeddbe）：
-    GET /api/gamification/me/badges           → 壳 data: {total, unlocked_count, next_milestone("下一目标：…"), items:[{badge_code,badge_name,badge_desc,category,icon_emoji,rarity(COMMON/RARE/EPIC/LEGENDARY),trigger_rule,rule_value,reward_points,unlocked,unlocked_at,progress_current,progress_required,progress_pct}]}
-    GET /api/gamification/me/points?page&page_size → 壳 data: {user_id, total_points, level_no, level_title, level_min, next_level_min, level_progress_pct, logs_total, recent_logs:[{log_id,point_type,delta,balance_after,note,created_at}]}（实测 user000001：total_points=314, logs_total=15）
-    GET /api/gamification/rankings?scope&dimension&top_n → 壳 data: {scope, dimension, snapshot_date, top:[{rank_no,user_id,user_name,metric_value,level_no,is_myself,badge_count}], my_rank(可为 null 或不在 top 内), source:"ZSET"}
-  > 徽章墙/积分/排行均真实 API（task09 清零 MOCK 行/演示控制器；未登录诚实登录引导，无演示兜底数据）；排行来自 ZSET（task15 已验证 4 周期 key）
-  FR 编号: 前端页面清单 /achievements（task53）
-  AUDIT LOG:
-    [2026-08-22 v1 R1] 初稿提交（徽章墙已解锁/未解锁+进度 + 积分总览/流水/分页 + 排行双 tab + 空/载/错态 + @container 响应式）→ SUBMITTED
-    [2026-09-06 task09 reshape-a] 清零全部演示数据行（徽章 8 卡/积分 Lv.5·2,330/流水 6 条/排行 6 行/我的排名#1）与演示控制器（data-st 演示态、task122「演示数据」角标、respbar 残留脚本）；三区块独立状态机（loading/ok/empty/error+重试）；未登录诚实登录引导；字段按 curl 实测回填
--->
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">

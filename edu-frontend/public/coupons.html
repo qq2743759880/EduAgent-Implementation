@@ -4,42 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>我的优惠券 · EduAgent</title>
-<!--
-  ============================================================
-  我的优惠券 + 领券中心 + 下单页（fe-html 糖果色静态页，task05）
-  接口契约（curl 实测 2026-09-05/06，user000001）：
-    GET /api/coupons?status=unused|used|expired&page=1&page_size=20
-      → data: {total, page, page_size, items:[
-        {coupon_id, coupon_template_id, coupon_name, coupon_type(cash|discount|trial|gift),
-         face_value, min_spend, status(unused|used|expired),
-         valid_from, valid_to, received_at, used_at, order_no}]}
-      不带 status → 全部我的券；coupon_id = 领券记录 id（coupon_receive_record.id）
-    GET /api/coupons/templates → data: [CouponTemplate]（裸数组）：
-      {coupon_template_id, coupon_name, coupon_type, face_value, min_spend,
-       valid_from, valid_to, total_count, received_count, per_user_limit}
-    POST /api/trade/coupon/receive  body {coupon_template_id} → data: Coupon（同上我的券单条）
-      幂等：重复领取 code=0 返回原券记录（同 coupon_id，实测 51001 两次一致），非错误码；
-      已领完 → 40920（"该优惠券已被领完"）；券不存在 → NOT_FOUND
-    POST /api/trade/order  必带请求头 Idempotency-Key（缺失 → 40021）；
-      body {series_id, cohort_id, coupon_id?}（coupon_id=领券记录 id）
-      → data: Order {order_no, user_id, series_id, cohort_id, series_title,
-         order_amount, discount_amount, pay_amount, coupon_id, status(pending|paid|
-         completed|cancelled|partial_refunded|refunded), created_at, ...}
-      金额服务端重算；实测 6-260906172441-86dcaa（1999-100=1899, pending）
-      错误码：40023 券过期/已用/未达门槛；40920 班次满员；40021 缺幂等头
-    GET /api/trade/orders?page=&page_size=&status= → data: {total,page,page_size,items:[Order]}
-    GET /api/series?page=&page_size=&keyword= → data: {total,...,items:[{id, series_name,
-      sale_status(on_sale), min_price, ...}]}（C 端匿名可访问）
-    GET /api/series/{series_id}/cohorts → data: {total,...,items:[{id, cohort_code,
-      cohort_name, sale_price, max_student_count, current_student_count, yn, start_date}]}
-    face_value 语义（market/service.py _template_from_row）：
-      cash → discount_amount（元）；discount → discount_rate（0.8=8折）；trial/gift → 0
-  实现注：EAPI.post 不支持自定义请求头 → 下单（需 Idempotency-Key）走页面内
-  postWithHeaders 局部封装（shell 解包/401 语义与 EAPI 对齐），edu-api.js 未改动。
-  未登录（无 token）→ EAPI.buildLoginUrl 跳登录；
-  认证/跳转依赖共享客户端 /edu-api.js（EAPI）。
-  ============================================================
--->
 <style>
 /* ===== 糖果色 tokens（对齐 me.html，禁硬编码业务 hex）===== */
 :root{
