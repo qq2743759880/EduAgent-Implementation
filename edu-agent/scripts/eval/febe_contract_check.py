@@ -222,6 +222,12 @@ NEXTJS_UNASSIGNED = frozenset({
     ("POST", "/api/refunds"),
     ("POST", "/api/refunds/{x}/cancel"),
     ("POST", "/api/study/sessions/{x}/complete"),
+    # 2026-09-18 后端新增（KG + Analytics 域）——前端暂未接入
+    ("GET", "/api/analytics/learning-events/stream-stats"),
+    ("GET", "/api/analytics/learning-events/summary"),
+    ("GET", "/api/kg/chapter/{x}/downstream"),
+    ("GET", "/api/kg/chapter/{x}/upstream"),
+    ("GET", "/api/kg/course/{x}/path"),
 })
 
 # 相对路径契约的已知父上下文（verified_today_batch1 的嵌套资源都挂在课程管理域下）。
