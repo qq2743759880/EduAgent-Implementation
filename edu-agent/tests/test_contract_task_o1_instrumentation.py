@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-"""O1-① 契约测试：memory / executor / compaction 用 record_* 一行接入 OTel 埋点。
+"""O1-① 契约测试：memory / compaction 用 record_* 一行接入 OTel 埋点。
 
 验收点（对应 P1 批判「埋点接入」）：
 1. memory：store.recall / store.write 触发 memory_event（recall 带 adopted 标记）。
-2. executor：execute_tool_plan 每工具执行触发 tool_result（SUCCESS / ERROR）。
-3. compaction：compact_messages 触发 compaction_event（含 before/after tokens + policy）。
+2. compaction：compact_messages 触发 compaction_event（含 before/after tokens + policy）。
+
+W-NEXT-DEADCODE-001 退役说明：原验收点 2「execute_tool_plan 每工具执行触发 tool_result」
+随该函数删除而退役——execute_tool_plan 全仓零生产调用方（审计 P1-3），其内的
+record_tool_result 是全仓唯一 tool_result 事件生产者；生产工具执行统一走
+tool_calling.run_chat_tool_calls → MCP executor（该链路无 tool_result 埋点，与删除前
+生产行为一致，无埋点覆盖损失）。
 
 实现约定：各模块通过 `get_otel_exporter().record_*(...)` 一行写入；埋点失败不影响主流程。
 本测试用 spy 拦截 OtelExporter.record，断言对应 event_type 被发出且携带关键 payload。
@@ -97,37 +102,7 @@ def test_memory_recall_and_write_emit_memory_event(captured):
 
 
 # ------------------------------------------------------------
-# 2. executor 埋点
-# ------------------------------------------------------------
-def test_executor_emits_tool_result(captured, monkeypatch: pytest.MonkeyPatch):
-    from app.chat.flows import agent as agent_mod
-    import app.mcp.executor as mcp_executor
-
-    async def fake_call_tool(*, tool_name, arguments, operator_user_id):
-        return {"status": "SUCCESS", "result": "ok"}
-
-    async def fake_call_tool_err(*, tool_name, arguments, operator_user_id):
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr(mcp_executor, "call_tool", fake_call_tool)
-    summaries, _ = asyncio.run(
-        agent_mod.execute_tool_plan([{"tool_name": "x", "args": {}}], operator_user_id=1)
-    )
-    assert summaries and summaries[0]["status"] == "SUCCESS"
-    assert "tool_result" in _types(captured), "executor 应发出 tool_result（SUCCESS）"
-
-    # 错误分支也应发出 tool_result（ERROR）
-    monkeypatch.setattr(mcp_executor, "call_tool", fake_call_tool_err)
-    asyncio.run(
-        agent_mod.execute_tool_plan([{"tool_name": "y", "args": {}}], operator_user_id=1)
-    )
-    tool_results = [e for e in captured if e["event_type"] == "tool_result"]
-    assert len(tool_results) >= 2, "executor 错误分支也应发出 tool_result（ERROR）"
-    assert tool_results[-1]["payload"].get("outcome") == "ERROR"
-
-
-# ------------------------------------------------------------
-# 3. compaction 埋点
+# 2. compaction 埋点
 # ------------------------------------------------------------
 def test_compaction_emits_compaction_event(captured):
     from app.ai.compaction import compact_messages

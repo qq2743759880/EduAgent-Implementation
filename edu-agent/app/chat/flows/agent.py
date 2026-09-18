@@ -10,7 +10,9 @@ Agent 循环决策层（P2 增强）：从「检索先行」升级为「LLM 意�
          "tool_plan": [{"tool_name": "...", "args": {...}}],  # 需要调用的 MCP 工具（可空）
          "answer_direct": "无需检索/工具时的直接回答（可空，need_search=false 且有把握时）"
        }
-  2. 执行：按 need_search 调 retrieve_three_channel；按 tool_plan 调 MCP executor.call_tool
+  2. 执行：按 need_search 调 retrieve_three_channel（工具执行不在本模块——历史上曾有的
+     execute_tool_plan 已按 W-NEXT-DEADCODE-001 删除：全仓零生产调用方，仅 O1 测试引用；
+     生产工具执行统一走 tool_calling.run_chat_tool_calls → MCP executor）
   3. 生成：检索结果 + 工具结果 + 原始问题 → LLM 组织最终回答（复用 generator.build_messages / generate_*）
 
 设计原则：
@@ -22,7 +24,6 @@ Agent 循环决策层（P2 增强）：从「检索先行」升级为「LLM 意�
 from __future__ import annotations
 
 import asyncio
-import time
 from typing import Any
 
 from loguru import logger
@@ -145,74 +146,7 @@ async def decide_agent_plan(
 
 
 # ============================================================
-# 2. 工具执行（按 LLM 决策的 tool_plan 调用 MCP executor）
-# ============================================================
-
-async def execute_tool_plan(
-    tool_plan: list[dict],
-    *,
-    operator_user_id: int,
-    session_id: str | None = None,
-) -> tuple[list[dict], str]:
-    """
-    按决策执行工具。返回 (summaries, context_fragment)。
-    summaries 供落库/响应；context_fragment 供生成阶段注入。
-    """
-    if not tool_plan:
-        return [], ""
-
-    try:
-        from app.mcp import executor as _mcp_executor
-    except Exception as exc:
-        logger.warning(f"[Agent] MCP executor 导入失败：{type(exc).__name__}: {exc}")
-        return [], ""
-
-    try:
-        from app.otel.exporter import get_otel_exporter as _get_otel
-    except Exception:
-        _get_otel = None
-
-    summaries: list[dict] = []
-    parts: list[str] = []
-    for item in tool_plan:
-        tool_name = str(item.get("tool_name") or "").strip()
-        args = item.get("args") if isinstance(item.get("args"), dict) else {}
-        if not tool_name:
-            continue
-        t0 = time.perf_counter()
-        try:
-            result = await _mcp_executor.call_tool(
-                tool_name=tool_name,
-                arguments=args,
-                operator_user_id=operator_user_id,
-            )
-            latency_ms = int((time.perf_counter() - t0) * 1000)
-            status = result.get("status", "SUCCESS") if isinstance(result, dict) else "SUCCESS"
-            text = ""
-            if isinstance(result, dict):
-                text = str(result.get("result") or result.get("error_message") or "")
-            summaries.append({"tool_name": tool_name, "status": status, "result_summary": text[:500], "latency_ms": latency_ms})
-            parts.append(f"- 工具 {tool_name} 结果（{status}）：{text[:300]}")
-            if _get_otel is not None:
-                try:
-                    _get_otel().record_tool_result(status, tool=tool_name, user_id=str(operator_user_id), latency_ms=latency_ms)
-                except Exception:
-                    pass
-        except Exception as exc:
-            logger.warning(f"[Agent] 工具 {tool_name} 调用失败：{type(exc).__name__}: {exc}")
-            summaries.append({"tool_name": tool_name, "status": "ERROR", "result_summary": str(exc)[:200], "latency_ms": 0})
-            parts.append(f"- 工具 {tool_name} 调用失败：{str(exc)[:200]}")
-            if _get_otel is not None:
-                try:
-                    _get_otel().record_tool_result("ERROR", tool=tool_name, user_id=str(operator_user_id))
-                except Exception:
-                    pass
-    fragment = "\n".join(parts)
-    return summaries, fragment
-
-
-# ============================================================
-# 3. 编排：单轮 Agent 问答
+# 2. 编排：单轮 Agent 问答
 # ============================================================
 
 async def run_agent_turn(

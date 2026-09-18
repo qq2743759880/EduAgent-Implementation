@@ -12,9 +12,14 @@ W-NEXT-2 变更（步骤3 上线写类工具）：knowledge_import 从 CONTRACT_
 - G1 对账：TOOL_CLASS_MAP × executor 注册面（源码实采 + mcp_tool 表实采）逐名可比
 - G1 矩阵：真实工具 × 三角色 全组合（按类别断言）；契约矩阵「类别→角色」语义未变
 - G2 fail-closed：契约挂起工具 / 未登记工具 / 空角色 → 一律 deny
-- G3 图级 tool_node deny 路径（不经过 LLM，mock executor.call_tool 零调用）
-- G4 角色注入：run_agent 经 get_user_info_by_id 注入 user_role（mock DB 层）
+- G4 注入源守护：get_user_info_by_id 是真实 async DB 查询（防注入点被改名后测试空转）
 - G6 信封质量抽查：message 全中文无 traceback；action_hint 可执行
+
+W-NEXT-DEADCODE-001 退役说明：原 G3（langgraph_agent.tool_node 图级 deny 路径六用例）
+与 G4 角色注入四用例（langgraph_agent.run_agent + agent_graph 替身）随该文件死代码图机器
+删除而退役；活路径等价覆盖：权限门单元矩阵（本文件 G1/G2/G6）+ 流式路径权限门
+（test_wnext2_write_tools W2-G2）+ HITL 风险分级归一（本文件
+test_norm_eliminates_case_whitespace_dual_criterion，经活符号 _hitl_risk_level）。
 """
 import asyncio
 import re
@@ -43,8 +48,6 @@ from app.ai.permission_gate import (
     is_write_class,
     permission_denied_message,
 )
-import app.chat.flows.langgraph_agent as lga
-from app.chat.flows.langgraph_agent import run_agent, tool_node
 
 _EXECUTOR_SRC = Path(__file__).resolve().parents[1] / "app" / "mcp" / "executor.py"
 
@@ -305,197 +308,17 @@ def test_norm_eliminates_case_whitespace_dual_criterion():
 
 
 # ============================================================
-# G3 图级 tool_node deny 路径（不经 LLM，直调 tool_node）
+# G3 图级 tool_node deny 路径 —— W-NEXT-DEADCODE-001 已随 langgraph_agent
+# 死代码图机器（tool_node）删除退役；活路径 deny 零执行语义见
+# test_wnext2_write_tools.py W2-G2（tool_calling 流式权限门）。
 # ============================================================
-async def _build_state(tool_name, role):
-    return {
-        "tool_name": tool_name,
-        "tool_args": {"a": 1},
-        "user_role": role,
-        "user_id": 1,
-        "messages": [],
-    }
-
-
-def _patch_executor(monkeypatch, called: dict):
-    async def fake_call_tool(**kw):
-        called["n"] += 1
-        called["tool"] = kw.get("tool_name")
-        return {"status": "success", "result": "should-not-run"}
-
-    monkeypatch.setattr("app.mcp.executor.call_tool", fake_call_tool)
-
-
-@pytest.mark.asyncio
-async def test_tool_node_denied_student_write(monkeypatch):
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state(PENDING_COURSE_TOOL, "student"))
-
-    trs = out["tool_results"]
-    assert len(trs) == 1
-    tr = trs[0]
-    assert tr["tool_name"] == PENDING_COURSE_TOOL
-    assert tr["status"] == "denied"
-    assert tr["code"] == "permission_denied"
-    assert tr["message"]
-    assert tr["action_hint"]
-    assert called["n"] == 0   # deny 零执行
-
-
-@pytest.mark.asyncio
-async def test_tool_node_denied_manager_admin_write(monkeypatch):
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state("favorite_add", "manager"))
-    assert out["tool_results"][0]["status"] == "denied"
-    assert called["n"] == 0
-
-
-@pytest.mark.asyncio
-async def test_tool_node_denied_admin_pending_tool(monkeypatch):
-    """admin 也拦：契约挂起工具无实物，管理员同样 fail-closed。"""
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state(PENDING_ADMIN_TOOL, "admin"))
-    assert out["tool_results"][0]["status"] == "denied"
-    assert called["n"] == 0
-
-
-@pytest.mark.asyncio
-async def test_tool_node_denied_unregistered(monkeypatch):
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state("nonexistent_tool", "admin"))
-    assert out["tool_results"][0]["status"] == "denied"
-    assert called["n"] == 0
-
-
-@pytest.mark.asyncio
-async def test_tool_node_allowed_admin_public_read_passes_to_executor(monkeypatch):
-    # 阳性对照：admin × 公开只读 → 正常路径最终调用 executor.call_tool
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state("search_knowledge", "admin"))
-    tr = out["tool_results"][0]
-    assert tr["status"] == "success"
-    assert called["n"] == 1 and called["tool"] == "search_knowledge"
-
-
-@pytest.mark.asyncio
-async def test_tool_node_allowed_student_real_tool_passes_to_executor(monkeypatch):
-    # 阳性对照：student × 真实只读工具（非 search_knowledge）→ 放行并真实调用
-    called = {"n": 0}
-    _patch_executor(monkeypatch, called)
-    out = await tool_node(await _build_state("echo", "student"))
-    tr = out["tool_results"][0]
-    assert tr["status"] == "success"
-    assert called["n"] == 1 and called["tool"] == "echo"
 
 
 # ============================================================
-# G4 角色注入（R15 P0-3 反哺）：run_agent ← get_user_info_by_id
-#     mock DB 层，断言 user_role 注入逻辑；真实 DB 冒烟见完成报告
+# G4 注入源守护（R15 P0-3 反哺；W-NEXT-DEADCODE-001 后仅保留活符号守护）
+#     mock DB 层的 run_agent 角色注入四用例随 langgraph_agent 死代码退役；
+#     活路径角色解析（tool_calling.resolve_role → 权限门）由 W2-G2 用例覆盖。
 # ============================================================
-class _FakeGraph:
-    """替身图：捕获 run_agent 传入的 initial_state，不跑 LLM / 不碰 DB。"""
-
-    def __init__(self):
-        self.captured: dict | None = None
-        self.config: dict | None = None
-
-    async def ainvoke(self, state, config):
-        self.captured = dict(state)
-        self.config = config
-        return {**state, "final_answer": "ok", "loop_count": 0}
-
-
-def _user_info(role):
-    from app.auth.schemas import UserInfo
-
-    return UserInfo(
-        user_id=7, account="u000007", username="u000007", nickname="测试用户",
-        real_name=None, mobile=None, email=None, gender=None, avatar_url=None, role=role,
-    )
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("role_value,expected", [
-    ("manager", "manager"),
-    ("admin", "admin"),
-    ("student", "student"),
-])
-async def test_run_agent_injects_role_from_get_user_info_by_id(monkeypatch, role_value, expected):
-    """G4：run_agent 查 get_user_info_by_id → 把 info.role.value 注入 AgentState.user_role。"""
-    from app.auth.schemas import UserRole
-
-    seen = {}
-    fake = _FakeGraph()
-    monkeypatch.setattr(lga, "agent_graph", fake)
-
-    async def fake_get_user_info_by_id(uid):
-        seen["uid"] = uid
-        return _user_info(UserRole(role_value))
-
-    monkeypatch.setattr("app.auth.service.get_user_info_by_id", fake_get_user_info_by_id)
-
-    out = await run_agent("你好", user_id=7, session_id="s-g4")
-
-    assert seen["uid"] == 7
-    assert fake.captured is not None
-    assert fake.captured["user_role"] == expected
-    assert fake.captured["user_id"] == 7
-    assert fake.config == {"configurable": {"thread_id": "s-g4"}}
-    assert out["answer"] == "ok"
-
-
-@pytest.mark.asyncio
-async def test_run_agent_role_missing_falls_back_to_student(monkeypatch):
-    """G4：用户查不到（None）→ user_role 兜底 student（fail-closed 侧兜底）。"""
-    fake = _FakeGraph()
-    monkeypatch.setattr(lga, "agent_graph", fake)
-
-    async def fake_none(uid):
-        return None
-
-    monkeypatch.setattr("app.auth.service.get_user_info_by_id", fake_none)
-    await run_agent("你好", user_id=999999, session_id="s-g4-none")
-    assert fake.captured["user_role"] == "student"
-
-
-@pytest.mark.asyncio
-async def test_run_agent_role_lookup_error_falls_back_to_student(monkeypatch):
-    """G4：角色查询抛错 → 不冒泡、兜底 student（服务不因角色查询失败而挂）。"""
-    fake = _FakeGraph()
-    monkeypatch.setattr(lga, "agent_graph", fake)
-
-    async def fake_boom(uid):
-        raise RuntimeError("db down")
-
-    monkeypatch.setattr("app.auth.service.get_user_info_by_id", fake_boom)
-    await run_agent("你好", user_id=7, session_id="s-g4-err")
-    assert fake.captured["user_role"] == "student"
-
-
-@pytest.mark.asyncio
-async def test_injected_role_actually_drives_gate(monkeypatch):
-    """G4 闭环：注入的 manager 角色直接决定权限门判定（实物放行 / 挂起写类 deny）。"""
-    from app.auth.schemas import UserRole
-
-    fake = _FakeGraph()
-    monkeypatch.setattr(lga, "agent_graph", fake)
-
-    async def fake_manager(uid):
-        return _user_info(UserRole.MANAGER)
-
-    monkeypatch.setattr("app.auth.service.get_user_info_by_id", fake_manager)
-    await run_agent("你好", user_id=7, session_id="s-g4-gate")
-
-    role = fake.captured["user_role"]
-    assert can_use_tool(role, "echo").allowed is True            # 真实只读工具放行
-    assert can_use_tool(role, PENDING_ADMIN_TOOL).allowed is False  # 无实物写类仍 deny
-
-
 def test_get_user_info_by_id_symbol_is_real_db_lookup():
     """G4：注入源确实存在且是 async DB 查询（防注入点被改名/移除后测试空转）。"""
     from app.auth.service import get_user_info_by_id
