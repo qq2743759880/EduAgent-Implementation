@@ -612,10 +612,23 @@ async def run_probe(limit: int | None) -> int:
 
 
 def _dump_results(results, unstable, sem_records, *, partial: bool) -> None:
-    with open(safe_w(OUT_RESULTS), "w", encoding="utf-8") as f:
-        json.dump({"ran_at": datetime.now().isoformat(timespec="seconds"), "results": results,
-                   "unstable": unstable, "semantic": sem_records, "partial": partial},
-                  f, ensure_ascii=False, indent=2)
+    # M-2 收口: dualrun 全量 results（249KB 级大 JSON, 曾被迫 force-add 进 git 的教训）
+    # 真身入 GridFS 制品库, 本地留同字节工作副本; mongo 不可达自动降级
+    # test-reports/artifacts_local/, 归档层自身失败回退直接落盘——均不阻断探针主流程。
+    payload = {"ran_at": datetime.now().isoformat(timespec="seconds"), "results": results,
+               "unstable": unstable, "semantic": sem_records, "partial": partial}
+    try:
+        from app.common.artifact_store import save_artifact
+        _arch = save_artifact("eval/r20b/dualrun_results.json", payload,
+                              metadata={"kind": "r20b_dualrun_results", "partial": partial,
+                                        "n_results": len(results)},
+                              local_copy=str(safe_w(OUT_RESULTS)))
+        print(f"[artifact] backend={_arch['backend']} aid={_arch['aid']} "
+              f"sha256={_arch['sha256'][:16]} size={_arch['size']}")
+    except Exception as _e:  # noqa: BLE001
+        print(f"[artifact] 归档失败(忽略, 回退直接落盘): {type(_e).__name__}: {_e}")
+        with open(safe_w(OUT_RESULTS), "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 def _by_source(results: list[dict], key: str) -> dict:

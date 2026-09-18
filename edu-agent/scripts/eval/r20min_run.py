@@ -407,8 +407,21 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
     }
     os.makedirs(RUNS_DIR, exist_ok=True)
     out_path = os.path.join(RUNS_DIR, f"{tag}.json")
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
+    # M-2 收口: run 报告（含 per_query 全量）真身入 GridFS 制品库, 本地留同字节工作副本
+    # （r03b_verify._baseline_reference 等下游读者依赖该路径）; mongo 不可达自动降级
+    # test-reports/artifacts_local/, 归档层自身失败回退直接落盘——均不阻断评估主流程。
+    try:
+        from app.common.artifact_store import save_artifact
+        _arch = save_artifact(f"eval/runs/{tag}.json", report,
+                              metadata={"kind": "r20min_run_report", "tag": tag,
+                                        "n_cases": n, "hit_rate@5": hit_rate, "mrr@5": mrr},
+                              local_copy=out_path)
+        print(f"[artifact] backend={_arch['backend']} aid={_arch['aid']} "
+              f"sha256={_arch['sha256'][:16]} size={_arch['size']}")
+    except Exception as _e:  # noqa: BLE001
+        print(f"[artifact] 归档失败(忽略, 回退直接落盘): {type(_e).__name__}: {_e}")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"[eval:{tag}] hit_rate@5={hit_rate} mrr@5={mrr} n={n} wall={wall_s}s → {out_path}")
     return report
 

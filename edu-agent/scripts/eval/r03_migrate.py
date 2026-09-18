@@ -162,8 +162,20 @@ def write_id_map(plan: list[dict], mode: str, window_start: str | None, window_e
         },
         "rows": plan,
     }
-    with open(safe_w(ID_MAP_PATH), "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+    # M-2 收口: 51K 行 id_map（1.87MB 大文件教训的反面落地）真身入 GridFS 制品库,
+    # 本地留同字节工作副本（r03b_verify 等下游读者依赖该路径）; mongo 不可达自动降级
+    # test-reports/artifacts_local/, 归档层自身失败回退直接落盘——均不阻断迁移主流程。
+    try:
+        from app.common.artifact_store import save_artifact
+        _arch = save_artifact("eval/r03/id_map.json", payload,
+                              metadata={"kind": "r03_id_map", "rows": len(plan)},
+                              local_copy=safe_w(ID_MAP_PATH))
+        print(f"[artifact] backend={_arch['backend']} aid={_arch['aid']} "
+              f"sha256={_arch['sha256'][:16]} size={_arch['size']}")
+    except Exception as _e:  # noqa: BLE001
+        print(f"[artifact] 归档失败(忽略, 回退直接落盘): {type(_e).__name__}: {_e}")
+        with open(safe_w(ID_MAP_PATH), "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 def impact_summary(rows: list[dict], plan: list[dict]) -> dict:

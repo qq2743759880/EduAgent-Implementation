@@ -470,8 +470,20 @@ def main() -> int:
         import _safeio
         out = os.path.join(_EVAL_DIR, args.result) if not os.path.isabs(args.result) else args.result
         result_path = _safeio.safe_w(os.path.relpath(out, _EVAL_DIR))
-        with open(result_path, "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
+        # M-2 收口: 核验结果真身入 GridFS 制品库（不可达自动降级本地, 不抛异常断流程）,
+        # 本地留同字节工作副本; git 只留 <1MB 摘要（neo4j-mongo-activation-plan §M-2）
+        try:
+            from app.common.artifact_store import save_artifact
+            _arch = save_artifact("eval/r03b/verify_result.json", result,
+                                  metadata={"kind": "r03b_verify_result",
+                                            "all_pass": result.get("all_pass")},
+                                  local_copy=result_path)
+            print(f"[artifact] backend={_arch['backend']} aid={_arch['aid']} "
+                  f"sha256={_arch['sha256'][:16]} size={_arch['size']}")
+        except Exception as _e:  # noqa: BLE001 归档失败不阻断核验, 回退直接落盘
+            print(f"[artifact] 归档失败(忽略): {type(_e).__name__}: {_e}")
+            with open(result_path, "w", encoding="utf-8") as f:
+                json.dump(result, f, ensure_ascii=False, indent=2)
         print(f"[result] → {result_path}")
     return 0 if result["all_pass"] else 1
 
