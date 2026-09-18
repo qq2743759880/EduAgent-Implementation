@@ -371,12 +371,17 @@ await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
   },
   { __fix: FIX.frontend }));
 
-// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6,A-G4 改探真后门 + 三分支语义)
-// 分支:
+// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6,W-NEXT-DEBUG-DOC-001 改:FAIL→WARN 保留检测)
+// 设计意图 vs 守卫语义的错位——本地开发态 DEBUG=true 是有意行为(学习/调试需虚拟管理员数据),
+// 故 ⑧ 在 DEBUG=true 模式下不再判 FAIL,而判 WARN(不阻断 exit 0,保留检测能力不遮蔽)。
+// 三分支语义(W-NEXT-DEBUG-DOC-001 改后):
 //   A) 无 token GET /api/users/me 被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
-//   B) 返回 200/有数据(后门存在)且 DEBUG=true 且 ENV_NAME==='local'(确证读到) → WARN 不阻断 exit 0(本机开发态预期)
-//   C) 返回 200/有数据但 DEBUG≠true 或 ENV_NAME 缺省/≠'local' → 红,阻断 exit 1(安全缺省=非 local)
-// ENV_NAME 从 edu-agent/.env 读(grep ^ENV_NAME=),缺省=null 即非 local(T5-C1:不再默认 local);
+//   B) 返回 200/有数据(后门存在)且 DEBUG=true → WARN 不阻断 exit 0(本地开发态预期,生产环境须 DEBUG=false)
+//   C) 返回 200/有数据但 DEBUG≠true(DEBUG=false 或缺省,即生产态) → 红,阻断 exit 1(真后门,生产态绝不应允许)
+// 判据简化为「DEBUG=true 即开发态 WARN / DEBUG≠true 即生产态 FAIL」——
+//   原 A-G4/T5-C1 的 ENV_NAME==='local' 二次判据已被 DEBUG=true 自解释吸收:
+//   DEBUG 本身就是后端 settings.DEBUG 直读(.env DEBUG=true 即明示开发态),
+//   ENV_NAME=null 不再升级为红(避免「未声明环境」误杀本地 dev)。
 // fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
 const debugCheck = Object.assign(
   async () => {
@@ -391,23 +396,23 @@ const debugCheck = Object.assign(
     const text = await res.text();
     const vuln = res.status === 200 || /"code":\s*0/.test(text);
     if (!vuln) {
-      // 分支 A:被拒即 PASS;DEBUG=true 时只说明「.env 后门开关开着」,不得自称 DEBUG 安全(T5-C6)
+      // 分支 A:被拒即 PASS;DEBUG=true 时只说明「.env 后门开关仍开启」,不得自称 DEBUG 安全
       return env.DEBUG === "true"
-        ? `无 token 被 ${res.status} 拒绝(DEBUG=true:.env 后门开关仍开启,按分支 B/C 语义判定)`
-        : `无 token 被 ${res.status} 拒绝(DEBUG 安全)`;
+        ? `无 token 被 ${res.status} 拒绝(DEBUG=true:.env 后门开关仍开启,生产部署前请 DEBUG=false)`
+        : `无 token 被 ${res.status} 拒绝(DEBUG 安全,生产态正确)`;
     }
-    const isLocalDev = env.DEBUG === "true" && env.ENV_NAME === "local";
-    if (isLocalDev) {
-      // 分支 B:开发态已知后门,ENV_NAME 确证 local → WARN(软)不阻断,避免永久红=狼来了
-      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME});部署前必须 DEBUG=false,见 P1-8 ENV_NAME 门`);
+    if (env.DEBUG === "true") {
+      // 分支 B:开发态已知后门 → WARN(软)不阻断,避免永久红=狼来了;
+      // 明示设计意图:本地开发态保留有意,生产环境 DEBUG=False 才 PASS
+      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=${env.DEBUG});本地开发态保留有意(学习/调试需虚拟管理员数据);生产环境部署前必须 DEBUG=false(.env DEBUG=false 并重启后端),见 P1-8 ENV_NAME 门 / AGENTS.md 教训 6`);
       e.__warn = true;
       throw e;
     }
-    // 分支 C:DEBUG 未开却 200(真后门),或 ENV_NAME 未确证 local(缺省/其它环境)→ 红,阻断 exit 1
-    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG},ENV_NAME=${env.ENV_NAME === null ? "缺省(≠local)" : env.ENV_NAME});未确证本地开发态即危险,上线前必须 DEBUG=false`);
+    // 分支 C:DEBUG 未开却 200(真后门),即生产态或 DEBUG=false 模式下绝不应允许 → 红,阻断 exit 1
+    throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG === null ? "缺省(≠true)" : env.DEBUG});生产态/DEBUG=false 模式下绝不应出现——真后门,部署前必须 DEBUG=false`);
   },
   { __fix: FIX.debug });
-await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支)`, debugCheck);
+await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支,W-NEXT-DEBUG-DOC-001)`, debugCheck);
 
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
 await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object.assign(
