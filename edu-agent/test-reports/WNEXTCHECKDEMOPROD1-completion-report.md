@@ -10,8 +10,8 @@
 
 ## 1. HEAD commit + 文件清单
 
-- 基线 HEAD：`896030f274b6d78f515e42504cee70a01af4ea10`（3 probe 稳定，见 §6）
-- 本任务 commit：见 §6 提交记录（commit 后回填）
+- 基线 HEAD：`896030f274b6d78f515e42504cee70a01af4ea10`（4 probe t/+3s/+6s/+9s 全一致，见 §6）
+- 本任务交付 commit：**`f84eec925f4550ecbde86ae7315d0cff97ec836b`**（parent=896030f，纯前向）；报告 hash 回填 commit：见 §6
 - 变更文件（全部在本任务文件域内）：
 
 | 文件 | 状态 | 内容 |
@@ -154,9 +154,11 @@ deploy-env-gate:
 
 ## 6. Git 纪律 + lock
 
-- commit 前 3 probe（t / t+3s / t+6s / t+9s）：回填实测值
-- commit 后 HEAD：回填实测值；parent 纯前向校验：回填
-- lock `edu-agent/scripts/eval/wnextcheckdemoprod1.lock`：**commit 前已删**（本节 commit 记录可证）
+- commit 前 4 probe（t / +3s / +6s / +9s）：`896030f274b6d78f515e42504cee70a01af4ea10` 四次全一致（HEAD STABLE）
+- 分支确认：`refs/heads/feature/opt-waves`
+- 交付 commit：`f84eec925f4550ecbde86ae7315d0cff97ec836b`（6 files, +553/-27）；`git rev-parse HEAD~1` = `896030f...` == probe 稳定 tip → **parent 纯前向，无 merge/无覆盖他 agent 提交**
+- 报告 hash 回填：独立 commit（本 commit），仍纯前向
+- lock `edu-agent/scripts/eval/wnextcheckdemoprod1.lock`：commit 前 `rm` + `ls` 复核 **absent confirmed**；`git status` 该路径无痕、commit 内容无此文件
 - 只 staged 本任务 6 文件（显式 git add 路径清单，未 `git add -A`）；工作区他 agent 变更（wnextrag2.lock 删除、WNEXTDEBUGDOC1 报告、next-env.d.ts 等）未触碰
 
 ## 7. 终态 check-demo（无参数全量，21 项真跑）
