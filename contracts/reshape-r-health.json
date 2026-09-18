@@ -8,6 +8,7 @@
   "change_order": "handoffs/CR-FE-002-unfrozen-only.md",
   "groups": {
     "G3_health_probe": [
+      "GET /",
       "GET /health",
       "GET /health/detail",
       "GET /health/warmup",
@@ -116,6 +117,7 @@
     "GET /api/trade/payments",
     "GET /api/trade/payments/reconcile",
     "GET /api/users/me/student-profile",
+    "GET /",
     "GET /health",
     "GET /health/detail",
     "GET /health/warmup",
@@ -150,5 +152,5 @@
     "POST /api/trade/payments/reconcile",
     "POST /payment-notifications/mock"
   ],
-  "hash_sha256": "12d18de27e14e6f2301460815cfcfcdaefa47022095bc17f93ddde04cee8c073"
+  "hash_sha256": "a3c53c5c61672b50c27214c61aaa18f480464745d1c2a386d9745b70363d87cc"
 }

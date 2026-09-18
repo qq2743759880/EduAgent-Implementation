@@ -63,6 +63,18 @@ TO_CONNECT_AHEAD = {
 # 解析相对路径时优先拼此父上下文再回退后缀匹配，避免误匹配到 /api/cohorts 等其它资源。
 KNOWN_REL_PARENTS = ("/api/admin/courses",)
 
+# 根路径/运维端点白名单（W-NEXT-FE-003 + W-NEXT-FE-CONTRACT-002）：这些绝对路径
+# 不以 /api/ 开头但属于运维探活/landing/监控语义，契约里可以直接写「GET /」/「GET /health」等。
+# 经归一化（去 query / 去尾斜杠）后命中此集合即直接入冻结集合，不再走相对路径兜底（避免
+# lstrip("/") 后变空串被短路的漏洞）。新增运维端点必须显式加入此白名单——禁止泛化。
+KNOWN_ROOT_PATHS = frozenset({
+    "/",                  # 根 landing（app.name/version/message/docs）
+    "/health",            # 健康检查
+    "/health/detail",     # 健康检查详情
+    "/health/warmup",     # 模型/依赖预热
+    "/metrics",           # Prometheus 抓取
+})
+
 
 # --------------------------------------------------------------------------- #
 # 归一化
@@ -287,6 +299,14 @@ def _parse_endpoint_str(s, out, relative_out=None):
     path = re.sub(r"\[.*?\]", "", path)        # 丢弃可选段 [?session_id=...][/{id}]
     path = path.rstrip()
     if not path.startswith("/api/"):
+        # 根路径/运维端点白名单（KNOWN_ROOT_PATHS）：不以 /api/ 开头但仍属业务可观测面，
+        # 经归一化（去尾斜杠/去 query）后命中即直接入冻结集合，避免走相对路径兜底导致
+        # root path 在 lstrip("/") 后变空串被短路漏检（⑱ 门要求 unfrozen_only=0）。
+        normalized = norm_path(path)
+        if normalized in KNOWN_ROOT_PATHS:
+            for meth in methods:
+                out.add((norm_method(meth), normalized))
+            return
         # 相对路径（如 "videos/init-chunked"）：不再静默丢弃，
         # 交给调用方在已知后端路由上下文中解析；解析不了再标 [MALFORMED]。
         if relative_out is not None:
