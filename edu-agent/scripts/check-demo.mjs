@@ -1,10 +1,10 @@
 // EduAgent 演示前检查单(task18 七件套 + DEBUG advisory)
-// 用法: node scripts/check-demo.mjs [--fail-drill] [--no-color]
+// 用法: node scripts/check-demo.mjs [--fail-drill] [--no-color] [--frontend-port <N>] [--prod-gate]
 // 零新依赖:Node >= 18(fetch / net / child_process 均内置)。
 // 检查项:① Milvus socket ② Redis(docker exec redis-cli ping)③ MongoDB socket
-//         ④ 后端 8000 /health ⑤ 前端 3000 /login-register.html + 前端形态判别(dev/prod,T5-C2)
+//         ④ 后端 8000 /health ⑤ 前端 /login-register.html(默认 3000,--frontend-port 可改)+ 前端形态判别(dev/prod,T5-C2)
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
-//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,三分支语义)
+//         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,两级判据 + --prod-gate,W-NEXT-CHECKDEMO-PROD-001)
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)  ⑩ 契约对账门 febe_contract_check.py
 // ⑪ VEC-LOCK embed 一致性健康门（edu_knowledge 元数据全=锁定 BGE-M3 revision）
 // ⑫ HITL 真实性  ⑬ MCP 三态门  ⑭ 内部可见性  ⑮ Redis 端口对账  ⑯ lifecycle 健壮性
@@ -22,7 +22,8 @@ const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的�
 const MILVUS = { host: "192.168.85.101", port: 19530 };
 const MONGO = { host: "192.168.85.101", port: 27017 };
 const BACKEND = process.env.CHECK_DEMO_BACKEND || "http://127.0.0.1:8000"; // env 覆盖仅用于 ⑧ WARN 分支自测
-const FRONTEND = "http://127.0.0.1:3000";
+// W-NEXT-CHECKDEMO-PROD-001 尾巴①:FRONTEND 从硬编码 3000 改为 --frontend-port 参数派生,
+//   定义移至下方「参数」段(args 解析之后)。8000 后端端口不动(④⑥⑧ 等仍指 BACKEND)。
 const ADMIN = { account: "adm02test", password: "Test@123456" };
 const STUDENT = { account: "user000001", password: "Test@123456" };
 // W-NEXT-PROBE-001 修:② 容器名不再硬编码。原 `REDIS_CONTAINER="edu-redis-standalone"`
@@ -95,6 +96,26 @@ const DOCKER_TIMEOUT_MS = 8000;
 const args = process.argv.slice(2);
 const DRILL = args.includes("--fail-drill");
 const NOCOLOR = args.includes("--no-color") || !process.stdout.isTTY;
+// W-NEXT-CHECKDEMO-PROD-001 尾巴②:--prod-gate 部署门旗标——⑧ 的 WARN(开发态后门)升级为 FAIL(exit 1)。
+//   动机(P0-1):⑧ WARN 不阻断 exit 0,CI/出包流水线默认放行,DEBUG=true 随包进生产。
+//   显式升级旗标而非删检测:检测能力保留,只在部署把关场景收紧。
+const PROD_GATE = args.includes("--prod-gate");
+// W-NEXT-CHECKDEMO-PROD-001 尾巴①:--frontend-port <N>(默认 3000)。
+//   动机:W-NEXT-PRODUCTION-BUILD-001 盲测态C 实证——next start 端口被占 failover 到 3001 时,
+//   ⑤⑦⑨ 仍探硬编码 3000 判错。⑤⑦⑨ 全部改用 FRONTEND_PORT 派生;只动前端端口,8000 不动。
+function cliPort(name, fallback) {
+  const i = args.indexOf(name);
+  if (i === -1) return fallback;
+  const raw = args[i + 1];
+  const p = Number.parseInt(raw, 10);
+  if (raw === undefined || !Number.isFinite(p) || p < 1 || p > 65535) {
+    console.error(`参数错误: ${name} 需 1-65535 整数端口,得到 "${raw ?? "(缺值)"}"`);
+    process.exit(2);
+  }
+  return p;
+}
+const FRONTEND_PORT = cliPort("--frontend-port", 3000);
+const FRONTEND = `http://127.0.0.1:${FRONTEND_PORT}`;
 const C = NOCOLOR
   ? { g: "", r: "", y: "", b: "", dim: "", x: "" }
   : { g: "\x1b[32m", r: "\x1b[31m", y: "\x1b[33m", b: "\x1b[36m", dim: "\x1b[2m", x: "\x1b[0m" };
@@ -262,13 +283,13 @@ const FIX = {
   vm: (d) => `开启 VMware 虚拟机: vmrun start "${VMX_PATH}" nogui,等 60s${existsSync(VMX_PATH) ? "" : `(注意:配置的 vmx 路径不存在,请确认虚拟机实际路径)`} [${d}]`,
   redis: (d) => `按 .env REDIS_PORT 端口反查容器名,docker start <容器>(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
   backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000 [${d}]`,
-  frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000 [${d}]`,
-  debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端) [${d}]`,
+  frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p ${FRONTEND_PORT}(或 deploy.mjs start 生产形态;--frontend-port 已选 ${FRONTEND_PORT}) [${d}]`,
+  debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据) [${d}]`,
 };
 
 // ---------- 主流程 ----------
 console.log(`${C.b}=== EduAgent 演示前检查单 check-demo.mjs ===${C.x}`);
-console.log(`${C.dim}模式: ${DRILL ? "fail-drill(假端口演练,结果仅验证失败路径)" : "normal"}  时间: ${new Date().toLocaleString()}${C.x}\n`);
+console.log(`${C.dim}模式: ${DRILL ? "fail-drill(假端口演练,结果仅验证失败路径)" : "normal"}  前端端口: ${FRONTEND_PORT}${PROD_GATE ? "  [prod-gate:⑧ WARN 升级 FAIL(部署门)]" : ""}  时间: ${new Date().toLocaleString()}${C.x}\n`);
 if (DRILL) {
   console.log(`${C.y}${C.dim}--fail-drill:① Milvus→127.0.0.1:19531 ② Redis→容器内 6380 假端口 ③ Mongo→127.0.0.1:27018(必然失败,验证 FAIL 输出与指引)${C.x}\n`);
 }
@@ -314,7 +335,7 @@ await check("④", `后端 8000 /health`, Object.assign(
 
 // ⑤ 前端登录页 + 前端形态判别(T5-C2:dev 开发形态从未被验收门覆盖的假绿)
 // 判别法:next dev 会暴露 /_next/static/development/_buildManifest.js(200),生产 build 无此路径(404)
-await check("⑤", `前端 3000 /login-register.html(+生产形态判别)`, Object.assign(
+await check("⑤", `前端 ${FRONTEND_PORT} /login-register.html(+生产形态判别)`, Object.assign(
   async () => {
     await httpProbe(`${FRONTEND}/login-register.html`);
     let devForm = false;
@@ -331,7 +352,7 @@ await check("⑤", `前端 3000 /login-register.html(+生产形态判别)`, Obje
     }
     return "生产 build 形态(_buildManifest dev 探针 404)";
   },
-  { __fix: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000(验生产形态:deploy.mjs stop 后 start,先 build 再起)[${d}]` }));
+  { __fix: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p ${FRONTEND_PORT}(验生产形态:deploy.mjs stop 后 start,先 build 再起)[${d}]` }));
 
 // ⑥ 登录链路(admin + student 各一次 login + /api/auth/me)
 await check("⑥", `登录链路 login×2 + /api/auth/me×2`, Object.assign(
@@ -371,21 +392,25 @@ await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
   },
   { __fix: FIX.frontend }));
 
-// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6,W-NEXT-DEBUG-DOC-001 改:FAIL→WARN 保留检测)
-// 设计意图 vs 守卫语义的错位——本地开发态 DEBUG=true 是有意行为(学习/调试需虚拟管理员数据),
-// 故 ⑧ 在 DEBUG=true 模式下不再判 FAIL,而判 WARN(不阻断 exit 0,保留检测能力不遮蔽)。
-// 三分支语义(W-NEXT-DEBUG-DOC-001 改后):
-//   A) 无 token GET /api/users/me 被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
-//   B) 返回 200/有数据(后门存在)且 DEBUG=true → WARN 不阻断 exit 0(本地开发态预期,生产环境须 DEBUG=false)
-//   C) 返回 200/有数据但 DEBUG≠true(DEBUG=false 或缺省,即生产态) → 红,阻断 exit 1(真后门,生产态绝不应允许)
-// 判据简化为「DEBUG=true 即开发态 WARN / DEBUG≠true 即生产态 FAIL」——
-//   原 A-G4/T5-C1 的 ENV_NAME==='local' 二次判据已被 DEBUG=true 自解释吸收:
-//   DEBUG 本身就是后端 settings.DEBUG 直读(.env DEBUG=true 即明示开发态),
-//   ENV_NAME=null 不再升级为红(避免「未声明环境」误杀本地 dev)。
+// ⑧ advisory:DEBUG 虚拟管理员漏洞(教训 6;W-NEXT-CHECKDEMO-PROD-001:恢复 ENV_NAME 二次判据 + --prod-gate 部署门)
+// 两级判据(W-NEXT-CHECKDEMO-PROD-001 修,P0-2):
+//   W-NEXT-DEBUG-DOC-001 曾把判据简化为「DEBUG=true 即开发态 WARN」并删除 T5-C1 的 ENV_NAME 二次判据——
+//   后果:生产忘设 ENV_NAME 时 DEBUG=true 真后门被当开发态 WARN 不阻断。现恢复,且与后端 P1-8
+//   `_debug_env_gate`(app/config.py:763)同口径:ENV_NAME.strip().lower() ∈ {"", "local"} 视为本机开发态,
+//   其余(prod/production/staging/dev/qa 等,大小写不敏感)为显式生产类环境。
+//   .env 缺 ENV_NAME 键 = config.py 默认 "local"(本机 dev 态,后端实际运行口径一致)→ WARN 不变。
+// 四分支语义:
+//   A) 无 token 被 401/403 拒绝 → PASS(文案按 DEBUG 动态:DEBUG=true 时不自称「安全」)
+//   B) 后门存在 + DEBUG=true + ENV_NAME 显式非 local → FAIL 阻断(生产类环境 DEBUG=true 真后门,不再 WARN)
+//   C) 后门存在 + DEBUG=true + ENV_NAME 缺省/local(本机 dev 态) → WARN 不阻断;--prod-gate 时升级 FAIL(P0-1)
+//   D) 后门存在 + DEBUG≠true(生产态/DEBUG=false 模式) → FAIL 阻断(真后门,原分支 C 语义不变)
 // fail-drill 行为不变(①②③红,④-⑨按假端口语义)。
 const debugCheck = Object.assign(
   async () => {
     const env = readDevEnv();
+    // P1-8 同口径归一化:strip + lower;缺键/空值 = 本机开发态(config.py 默认 "local")
+    const envName = (env.ENV_NAME || "").trim().toLowerCase();
+    const envDeclaredNonLocal = envName !== "" && envName !== "local";
     let res;
     try {
       res = await fetch(`${BACKEND}/api/users/me`, { signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
@@ -402,17 +427,25 @@ const debugCheck = Object.assign(
         : `无 token 被 ${res.status} 拒绝(DEBUG 安全,生产态正确)`;
     }
     if (env.DEBUG === "true") {
-      // 分支 B:开发态已知后门 → WARN(软)不阻断,避免永久红=狼来了;
-      // 明示设计意图:本地开发态保留有意,生产环境 DEBUG=False 才 PASS
-      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=${env.DEBUG});本地开发态保留有意(学习/调试需虚拟管理员数据);生产环境部署前必须 DEBUG=false(.env DEBUG=false 并重启后端),见 P1-8 ENV_NAME 门 / AGENTS.md 教训 6`);
+      if (envDeclaredNonLocal) {
+        // 分支 B:两级判据第 2 级命中——ENV_NAME 显式非 local(P1-8 同口径)= 生产类环境,直接红
+        throw new Error(`生产类环境虚拟管理员后门:DEBUG=true 且 ENV_NAME=${env.ENV_NAME.trim()}(显式非 local,P1-8 同口径)——生产/预发绝不允许 DEBUG=true(未登录可读用户数据),立即 .env DEBUG=false 并重启后端;后端 P1-8 门禁下该形态本不应能启动`);
+      }
+      if (PROD_GATE) {
+        // 分支 C 升级:--prod-gate 部署门开启,WARN 升级 FAIL(P0-1:开发态后门不随包出生产)
+        throw new Error(`--prod-gate 部署门:虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME})——WARN 已升级为 FAIL 阻断出包;生产 .env 必须 DEBUG=false`);
+      }
+      // 分支 C:本机开发态已知后门 → WARN(软)不阻断,避免永久红=狼来了;
+      // 明示设计意图:本地开发态保留有意,生产环境 DEBUG=False 才 PASS;两级判据见上
+      const e = new Error(`WARN 开发态虚拟管理员后门存在(DEBUG=true, ENV_NAME=${env.ENV_NAME === null ? "缺省(=config.py 默认 local)" : env.ENV_NAME});两级判据:ENV_NAME 显式非 local 时直接 FAIL,当前判为本机开发态故 WARN 不阻断;生产部署前必须 DEBUG=false(--prod-gate 旗标可将本 WARN 升级为 FAIL),见 P1-8 ENV_NAME 门 / AGENTS.md 教训 6`);
       e.__warn = true;
       throw e;
     }
-    // 分支 C:DEBUG 未开却 200(真后门),即生产态或 DEBUG=false 模式下绝不应允许 → 红,阻断 exit 1
+    // 分支 D:DEBUG 未开却 200(真后门),即生产态或 DEBUG=false 模式下绝不应允许 → 红,阻断 exit 1
     throw new Error(`无 token 返回 HTTP ${res.status} 有数据(DEBUG=${env.DEBUG === null ? "缺省(≠true)" : env.DEBUG});生产态/DEBUG=false 模式下绝不应出现——真后门,部署前必须 DEBUG=false`);
   },
   { __fix: FIX.debug });
-await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,三分支,W-NEXT-DEBUG-DOC-001)`, debugCheck);
+await check("⑧", `advisory: DEBUG 虚拟管理员探测(无 token /api/users/me,两级判据+--prod-gate,W-NEXT-CHECKDEMO-PROD-001)`, debugCheck);
 
 // ⑨ 抽验页 /admin-users-refine-proto.html 200(C5-D2 扩清单)
 await check("⑨", `抽验页 200 /admin-users-refine-proto.html(C5-D2)`, Object.assign(

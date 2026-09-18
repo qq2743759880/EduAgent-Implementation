@@ -258,7 +258,7 @@ start 依序执行：前置检查（MySQL/VM/Redis 探测，**只报告不阻塞
 node scripts\check-demo.mjs        # 或 node scripts\deploy\deploy.mjs status
 ```
 
-期望末行：`汇总: 绿 9/9 —— 演示环境就绪`（生产段 .env＝`DEBUG=false`+`ENV_NAME=prod` 下含 ⑧；若沿用 dev 形态 `DEBUG=true`，⑧ 按分支 B/C 走 WARN/红——`.env` 写明 `ENV_NAME=local` 才是 WARN，缺省视为非 local 判红）。红项按 §4 故障对照表处置后重跑。
+期望末行：`汇总: 绿 21/21 —— 演示环境就绪`（生产段 .env＝`DEBUG=false`+`ENV_NAME=prod` 下含 ⑧；若沿用 dev 形态 `DEBUG=true`：ENV_NAME 缺省/local → ⑧ WARN 不阻断（本机开发态）；ENV_NAME 显式非 local（prod/staging/dev/qa 等，P1-8 同口径）→ ⑧ 直接红（两级判据，W-NEXT-CHECKDEMO-PROD-001；`--prod-gate` 旗标可把 WARN 也升级为红）。红项按 §4 故障对照表处置后重跑。
 
 ---
 
@@ -275,7 +275,7 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 | ⑤ | 前端 3000 `/login-register.html`（+生产形态判别） | 拒绝连接 / 非 200；或 dev 形态（`_buildManifest` dev 探针 200） | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000(验生产形态:deploy.mjs stop 后 start,先 build 再起)`。生产形态优先 `node scripts\deploy\deploy.mjs start`（自动 build+start `.next-prod`）；build 失败看 `logs/deploy-frontend-build.log`。⚠ dev 形态为 **WARN**（不阻断 exit），提示「生产形态未验收」 |
 | ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / `fetch failed` / 账号不存在 | **先等 60 秒重跑**（登录限流 42900/60s 窗口，密集连跑必红，12-25ms 快失败即限流特征）。脚本原文指引：`先过 ④ 后端: cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000(若账号失效查 DB 种子)`。**勿直接恢复快照**——§3③ 仅适用全新空库，本机非空库执行＝破坏性覆盖＋数据回滚。耗时：约 1.0-1.3s，冷启动/限流重试时 6-10s（整轮巡检见 §5） |
 | ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`（`FIX.frontend`，与 ⑦⑨ 同源；⑤ 另带生产形态判别后缀）；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
-| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me，三分支） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME 缺省/≠local | `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端)`。三分支：**A** 被 401/403 拒绝 → PASS（DEBUG=true 时文案不再自称「安全」）；**B** 有数据 + DEBUG=true + `ENV_NAME=local`（确证）→ WARN 不阻断；**C** 有数据 + DEBUG≠true 或 ENV_NAME 缺省/≠local → **红，阻断 exit 1**（安全缺省＝非 local，`.env` 不写 `ENV_NAME=local` 即走此支） |
+| ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me，两级判据 + `--prod-gate`，W-NEXT-CHECKDEMO-PROD-001） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME 显式非 local | `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据)`。四分支（与后端 P1-8 `_debug_env_gate` 同口径：ENV_NAME strip+lower ∈ {"", "local"}＝本机开发态）：**A** 被 401/403 拒绝 → PASS（DEBUG=true 时文案不再自称「安全」）；**B** 有数据 + DEBUG=true + ENV_NAME 显式非 local → **红，阻断 exit 1**（生产类环境 DEBUG=true 真后门）；**C** 有数据 + DEBUG=true + ENV_NAME 缺省/local → WARN 不阻断（本机 dev 态；`--prod-gate` 旗标下升级为红）；**D** 有数据 + DEBUG≠true → **红，阻断 exit 1**（真后门） |
 | ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤（脚本原文＝`FIX.frontend`：`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`） |
 
 **测试账号（快照内种子，check-demo ⑥ 使用）**：
@@ -438,6 +438,14 @@ docker compose -f deploy/docker-compose.yml down -v
 #    - DEBUG 必须为 false（生产缺省即 false；确认未被显式写成 true）
 #    - JWT_SECRET 必须是强随机值（非默认 dev-secret-key-change-in-production）
 #      （config.py 582-606 已有 fail-fast：DEBUG=False 且 JWT_SECRET 为公开默认值 → 拒绝启动）
+
+# 0.5) 部署环境门（W-NEXT-CHECKDEMO-PROD-001，机验两级判据，出包前必跑）：对真实 .env 把关
+node scripts/eval/deploy_env_gate.mjs
+#    期望：末行 [DEPLOY_GATE] decision=allow +「部署门 PASS」exit 0
+#    DEBUG=true → exit 1 阻断出包（含 ENV_NAME 缺省/local 的本机 dev 形态——部署门从严，P0-2：
+#    生产忘设 ENV_NAME 时 DEBUG=true 即真后门）；ENV_NAME 显式非 local + DEBUG=true 同样 exit 1（P1-8 同口径）。
+#    本地开发日常把关用 check-demo ⑧（对本机 dev 态为 WARN 不阻断）；CI 已对 .env.example 跑同门（必须 exit 0）。
+#    自回归：node scripts/eval/test_deploy_env_gate.mjs（期望 10/10 PASS）
 
 # 1) 无 token 访问 /api/users/me → 必须 401（禁虚拟管理员 / DEBUG_超级管理员）
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/api/users/me

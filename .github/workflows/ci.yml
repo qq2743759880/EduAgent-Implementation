@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: edu-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      - name: Install deps (no GPU extras)
+        run: |
+          pip install -e ".[dev]" --no-deps
+          pip install fastapi "pydantic>=2.7" "pydantic-settings>=2.3" \
+            pyjwt bcrypt httpx motor pymysql asyncmy sqlalchemy \
+            "pymilvus>=3.0" "minio>=7.2" "neo4j>=5.0" jieba "rank-bm25" \
+            sqlglot sqlparse python-docx jinja2 pyyaml email-validator \
+            python-multipart sse-starlette "langchain-core>=1.5" \
+            "loguru>=0.7" "prometheus-client>=0.19" "alembic>=1.13"
+      - name: "Lint (ruff: critical only)"
+        # 只查严重规则（未定义名/未用 import/未用变量）—— 风格类(UP/I/BLE 等)存量多，P2-D 后逐步放开
+        run: pip install ruff && ruff check app tests --select F821,F401,F841
+      - name: Compile check (catch syntax/import errors)
+        run: python -m compileall app tests -q
+      - name: Run unit tests (skip integration/E2E)
+        run: |
+          export JWT_SECRET=$(python -c "import secrets;print(secrets.token_hex(32))")
+          export API_TOKEN=$(python -c "import secrets;print(secrets.token_hex(16))")
+          export LLM_API_KEY=ci-placeholder MYSQL_PASSWORD=ci-placeholder
+          python -m pytest tests/ -m "not integration" -q
+
+  migration:
+    name: Alembic migration check
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: edu_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -prootpw"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: edu-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install alembic pymysql sqlalchemy
+      - name: Run migrations on fresh DB
+        env:
+          ALEMBIC_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/edu_ci
+        run: |
+          # 用 CI 连接串覆盖 alembic.ini 的 url（alembic 支持 -x 或 env 注入，此处直接 sed 到临时 ini）
+          cp alembic.ini alembic.ci.ini
+          python - <<'EOF'
+          from alembic.config import Config
+          from alembic import command
+          import os
+          cfg = Config("alembic.ci.ini")
+          cfg.set_main_option("sqlalchemy.url", os.environ["ALEMBIC_URL"])
+          command.upgrade(cfg, "head")
+          print("upgrade head OK")
+          EOF
+      - name: Verify table count
+        run: |
+          python - <<'EOF'
+          import pymysql
+          conn = pymysql.connect(host="127.0.0.1", user="root", password="rootpw", database="edu_ci", charset="utf8mb4")
+          cur = conn.cursor()
+          cur.execute("SHOW TABLES")
+          n = len(cur.fetchall())
+          print(f"tables: {n}")
+          assert n >= 100, f"expected >=100 tables, got {n}"
+          cur.execute("SELECT version_num FROM alembic_version")
+          print("alembic_version:", cur.fetchone()[0])
+          conn.close()
+          print("migration check PASS")
+          EOF
+
+  frontend:
+    name: Frontend lint + test + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: edu-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: edu-frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test -- --run
+      - name: Build (Next.js production)
+        run: npm run build
+
+  # W-NEXT-CHECKDEMO-PROD-001 尾巴②(P0-1/P0-2):部署环境门进 CI。
+  # 独立 job(不嵌入既有 backend/migration/frontend 三 job,避免改动现有步骤引入破坏面):
+  #   ① 对 edu-agent/.env.example 跑 deploy_env_gate.mjs,必须 exit 0——防示例文件带 DEBUG=true 误导部署;
+  #   ② 跑 gate 自测试(10 决策分支回归),防 gate 本身被改坏。
+  # 本地部署前把关:deploy/README.md task123 检查单要求对真实 .env 跑同门(DEBUG=true → exit 1 阻断出包)。
+  deploy-env-gate:
+    name: Deploy env gate (.env.example deploy-safe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run deploy_env_gate on .env.example (must exit 0)
+        run: node edu-agent/scripts/eval/deploy_env_gate.mjs edu-agent/.env.example
+      - name: Gate self-test (decision branches)
+        run: node edu-agent/scripts/eval/test_deploy_env_gate.mjs
