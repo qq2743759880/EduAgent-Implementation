@@ -22,6 +22,7 @@ from app.common.error_codes import (
 )
 from app.common.exceptions import AppException, DependencyUnavailableError
 from app.domains.kg import graph as kg_graph
+from app.domains.kg.sync_core import KG_SOURCE  # 修复（接手 R-N1）：前任遗漏导入，运行期 NameError → 50000
 from app.domains.kg.schemas import (
     KgChapterNeighborsData,
     KgCoursePathData,
