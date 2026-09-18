@@ -71,6 +71,7 @@ def test_debug_false_prod_allowed():
             ENV_NAME="prod",
             JWT_SECRET=_STRONG_JWT,
             API_TOKEN=_STRONG_TOKEN,
+            HITL_ENABLED=True,
         ),
         _env_file=None,
     )

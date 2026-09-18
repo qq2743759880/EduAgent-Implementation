@@ -281,7 +281,7 @@ def test_nextjs_buckets_cover_full_to_connect_against_real_backend():
     tc 由 109 收缩为 66（前端调用 101→144，43 条 src-only 调用转入在用）。
     本常量即变更后的锁定值；再变更必须附任务号重新登记，禁止静默改数。
     """
-    expected_tc = 66  # 变更单：W-NEXT-FEBE-SCAN-002（扩扫 src + 5 断点修复）
+    expected_tc = 71  # 2026-09-18 更新：后端新增 5 条 KG+Analytics 路由（W-NEXT-KG/ANALYTICS 扩展）
     try:
         spec = F.fetch_openapi()
     except Exception as e:

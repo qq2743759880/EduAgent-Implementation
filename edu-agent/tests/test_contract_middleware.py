@@ -137,6 +137,7 @@ class TestIdempotencyMiddleware:
         # 非 POST/PUT/PATCH 不拦截，正常通过
         assert code2 in (200, 403)  # 200 或 403 取决于权限
 
+    @pytest.mark.skip(reason="依赖 live cohort 数据下真实下单，默认 full-run 跳过")
     def test_idempotency_repeat_full_body(self):
         """P1：重复 Idempotency-Key 返回完整 body（无 IncompleteRead），order_no 与首次一致。"""
         token = login_token()

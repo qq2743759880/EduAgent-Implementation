@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.skip(reason="外部脚本依赖（kb311 venv + uvicorn 重启 + 真实 MySQL），默认 full-run 跳过")
+
 AGENT_ROOT = Path(r"E:\stu\project\stu\EduAgent实施手册\edu-agent")
 PROJECT_ROOT = AGENT_ROOT.parent
 

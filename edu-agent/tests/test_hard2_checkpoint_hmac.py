@@ -32,8 +32,21 @@ import uuid
 import pytest
 from loguru import logger as loguru_logger
 
+import redis as _redis
+
 from app.ai.checkpoint_redis import PlainRedisSaver
 from app.config import settings
+
+
+def _redis_ok() -> bool:
+    try:
+        r = _redis.Redis(host="127.0.0.1", port=6379, socket_connect_timeout=2)
+        return r.ping()
+    except Exception:
+        return False
+
+
+pytestmark = pytest.mark.skipif(not _redis_ok(), reason="Redis 不可用")
 
 REDIS_URL = "redis://127.0.0.1:6379/0"
 _TEST_HMAC_KEY = "hard2-hmac-test-key-" + uuid.uuid4().hex[:16]

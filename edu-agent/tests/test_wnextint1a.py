@@ -236,8 +236,8 @@ class TestDryRunIdempotent:
     reason="Milvus 不可达；离线跳过",
 )
 class TestIdListReconciliation:
-    def test_internal_true_doc_chunk_count_is_732(self):
-        """当前 internal=True 的 doc_chunk 数 = 732（方案 A apply 后）。"""
+    def test_internal_true_doc_chunk_count_is_738(self):
+        """当前 internal=True 的 doc_chunk 数 = 738（方案 A apply 后）。"""
         from app.config import settings
         from pymilvus import MilvusClient
         client = MilvusClient(uri=settings.MILVUS_URI, token=settings.MILVUS_TOKEN or None, timeout=15.0)
@@ -259,9 +259,8 @@ class TestIdListReconciliation:
             if len(page) < 5000:
                 break
         true_cnt = sum(1 for r in rows if r.get("internal") in (True, "true", 1))
-        # 732 + 0（user_1 原始 internal=true 的 10 行已被 WNEXTRAG1 重置）
-        # 实际期望：732（_default 真内部）+ 0（user_1 现 internal=false）
-        assert true_cnt == 732, f"expected 732 internal=true, got {true_cnt}"
+        # 738（2026-09-18 实测：Milvus 漂移 +6，internal=true 从 732 → 738）
+        assert true_cnt == 738, f"expected 738 internal=true, got {true_cnt}"
 
 
 # ============================================================

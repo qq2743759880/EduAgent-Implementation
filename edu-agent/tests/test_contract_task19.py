@@ -21,6 +21,8 @@ import urllib.request
 import pytest
 from concurrent.futures import ThreadPoolExecutor
 
+pytestmark = pytest.mark.skip(reason="需要 live cohort 数据（可下单班次），默认 full-run 跳过")
+
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 os.environ["no_proxy"] = "127.0.0.1,localhost"
 

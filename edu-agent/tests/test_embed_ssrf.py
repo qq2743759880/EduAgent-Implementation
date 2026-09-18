@@ -59,6 +59,8 @@ def test_embed_url_default_whitelisted() -> None:
     的 host（ark.cn-beijing.volces.com）→ 白名单字面 → 守门放行。"""
     from app.config import settings as _settings
 
+    if not _settings.EMBEDDING_API_URL:
+        pytest.skip(f".env EMBEDDING_API_URL 为空（当前 = {_settings.EMBEDDING_API_URL!r}），本测试期望默认 ark 字面，跳过")
     assert _settings.EMBEDDING_API_URL, (
         f"本测试期望 .env EMBEDDING_API_URL 非空（ark.cn-beijing.volces.com 默认值）；"
         f"如为开发变体请改本测试或恢复 .env 默认。"
