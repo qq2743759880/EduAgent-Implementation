@@ -3,7 +3,7 @@
 - 变更单：W-NEXT-QUESTIONFORM-FIX-001（FEBE-SCAN-002 报告 follow-up 第 1 条销项）
 - 执行：ZCode 独立会话，分支 `feature/opt-waves`（起点 5059246）
 - 日期：2026-09-18
-- **代码提交：`<COMMIT_HASH>`（本行由收尾 chore 提交补登）**
+- **代码提交：`fc6f856`**（feature/opt-waves；本报告随 chore 提交补登该 hash）
 - lock：`edu-agent/scripts/eval/wnextqform1.lock` 已于 commit 前删除
 
 ---
