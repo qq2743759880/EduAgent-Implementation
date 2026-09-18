@@ -3,8 +3,9 @@
  *  - NativeSelect：原生 select 的 shadcn 风格包装（UI 库无 Select 组件，用原生保 a11y）
  *  - FieldRow：表单行（label + 控件 + 错误）
  *  - LoadingState / ErrorState / EmptyState：列表三态复用
- *  - TagChip：标签多选 chip（D-10：QuestionForm / ComposePaperDialog 共用单一形态）
- *  - NO_TAG_HINT：标签为空提示文案共享常量（D-22）
+ *
+ * W-NEXT-QUESTIONFORM-FIX-001（2026-09-18）：TagChip / NO_TAG_HINT 已删除 ——
+ * 唯一消费者 legacy QuestionForm 整体删除（全仓库 grep 零挂载零活引用）。
  */
 "use client";
 
@@ -13,9 +14,6 @@ import { useId, type ReactNode } from "react";
 import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-/** D-22：标签为空提示文案（QuestionForm / ComposePaperDialog 共用） */
-export const NO_TAG_HINT = "暂无标签，可在题库页创建";
 
 /* ---------------- NativeSelect ---------------- */
 export function NativeSelect({
@@ -117,34 +115,6 @@ export function focusFirstFieldError(
   const selector = fieldSelectors[firstKey];
   if (!selector) return;
   document.querySelector<HTMLElement>(selector)?.focus();
-}
-
-/* ---------------- 标签多选 chip（D-10 统一形态） ---------------- */
-export function TagChip({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cn(
-        "rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-          ? "bg-indigo-600 text-white"
-          : "border border-slate-200 text-slate-600 hover:bg-slate-50",
-      )}
-    >
-      {children}
-    </button>
-  );
 }
 
 /* ---------------- 列表三态 ---------------- */

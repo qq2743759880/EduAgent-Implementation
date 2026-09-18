@@ -111,6 +111,6 @@ PASS GET  /api/progress/courses                                     -> 200  (同
 
 ## 8. 遗留 / follow-up 登记
 
-- legacy 题库簇（`QuestionForm.tsx` + `questions.test.ts` 的 body 契约差距，见 P0-1）：建议后续任务整体删除或按 QuestionAdminCreate 重写；
+- ~~legacy 题库簇（`QuestionForm.tsx` + `questions.test.ts` 的 body 契约差距，见 P0-1）：建议后续任务整体删除或按 QuestionAdminCreate 重写~~；✅ **已销（W-NEXT-QUESTIONFORM-FIX-001，2026-09-18，删除路线）**：全仓 git grep 确证 QuestionForm 零挂载零活 import（唯一 import 为组件自身测试 QuestionForm.test.tsx；questions.ts 模块唯二 importer = QuestionForm.tsx + 其自身测试）→ 整删 `QuestionForm.tsx` + `QuestionForm.test.tsx`，并同步删除 questions.ts 死封装 `createQuestion`/`updateQuestion`/`QuestionCreateInput` 及仅其消费的 `listQuestionTags`/`QuestionTag`/`QuestionAdminDetail`/`QuestionOption`（与后端 QuestionAdminCreate 真实必填 bank_id/question_type_id/stem/answer_text 的 body 契约差距随之消灭，不再存在 422 风险面）；controls.tsx 的 TagChip/NO_TAG_HINT（唯一消费者 QuestionForm）一并删除。验证：`tsc --noEmit` exit 0 + vitest 全量 79 文件/538 用例全绿 + 全仓 grep 死符号零代码残留。证据与自批判见 `test-reports/WNEXTQFORM1-completion-report.md`；
 - `test-reports/_frontend_real_api.txt`（旧 public-only 口径 93 条）与 144 的新口径存在代差——不在本任务文件域（派单仅列 `_frontend_migration_status.json` 重生成），建议下次 `--emit-frontend-list` 时一并刷新；
 - `GET /api/admin/users/{id}/learning` 后端开放后：按 users.ts 注释恢复封装与 UserLearningDialog 真实渲染（变更单驱动）。
