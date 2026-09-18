@@ -216,3 +216,124 @@ def test_root_path_with_query_string_stripped():
         "GET /health?bfeed4b5 未去 query 归一：out=%r" % out
     )
     assert relative == []
+
+
+# ---------------------------------------------------------------------------
+# W-NEXT-FRONTEND-CONTRACT-001: 待接 109 治理分类（plan/deferred/ops/unassigned）
+# ---------------------------------------------------------------------------
+# 背景：⑩ 门 WARN 待接 109 条 = 后端路由 − 前端真实调用，是迁移期 backlog。
+# 本任务治理策略 = 显式分类（plan/deferred/ops/unassigned 4 桶），不修改 tc 计数。
+# 5 例覆盖：①4 桶集合互不重叠 + ②ops 含 5 KNOWN_ROOT_PATHS + ③ops 含 payment-mock +
+# ④emit_migration_status 写出 109/0 uncategorized + ⑤四桶集合变更后必须 ≥3 桶平衡
+# （防"全塞 deferred"的偷懒）。
+# ---------------------------------------------------------------------------
+
+
+def test_nextjs_buckets_mutually_exclusive():
+    """4 桶（plan/deferred/ops/unassigned）必须互不重叠（防重复计数）。"""
+    buckets = [
+        F.NEXTJS_PLANNED_ENDPOINTS,
+        F.NEXTJS_DEFERRED_ENDPOINTS,
+        F.NEXTJS_OPS_ENDPOINTS,
+        F.NEXTJS_UNASSIGNED,
+    ]
+    for i in range(len(buckets)):
+        for j in range(i + 1, len(buckets)):
+            inter = buckets[i] & buckets[j]
+            assert not inter, (
+                "桶 #%d 与 #%d 存在交集 %r"
+                % (i, j, sorted(inter))
+            )
+
+
+def test_nextjs_ops_bucket_includes_known_root_paths():
+    """ops 桶必须包含 5 个 KNOWN_ROOT_PATHS 端点（root/health/health-detail/
+    health-warmup/metrics）+ payment-mock。运维端点是设计性永不接入，需显式登记。"""
+    expected_ops = {
+        ("GET", "/"),
+        ("GET", "/health"),
+        ("GET", "/health/detail"),
+        ("GET", "/health/warmup"),
+        ("GET", "/metrics"),
+        ("POST", "/payment-notifications/mock"),
+    }
+    missing = expected_ops - F.NEXTJS_OPS_ENDPOINTS
+    assert not missing, "ops 桶缺失 %r" % sorted(missing)
+
+
+def test_nextjs_planned_bucket_has_real_nextjs_refs():
+    """plan 桶条目必须有 Next.js 真实调用现场支撑（community.ts / admin/rag/page.tsx
+    / dashboard 等）。任一条未对应真实页面即视为虚假「plan」。"""
+    # 校验 plan 桶非空且覆盖 admin/community/learning 三个域
+    plan = F.NEXTJS_PLANNED_ENDPOINTS
+    admin = [(m, p) for (m, p) in plan if "/api/admin/" in p]
+    community = [(m, p) for (m, p) in plan if "/api/community/" in p]
+    learning = [(m, p) for (m, p) in plan if "/api/users/" in p]
+    assert len(admin) >= 1, "plan 桶缺 admin 域端点"
+    assert len(community) >= 1, "plan 桶缺 community 域端点"
+    assert len(learning) >= 1, "plan 桶缺 user 域端点"
+
+
+def test_nextjs_buckets_sum_to_109_against_real_backend():
+    """真实后端 OpenAPI 跑出待接 tc 后，4 桶并集必须完全覆盖（uncategorized=0）。
+    若契约新增/后端新增了端点导致 uncategorized>0，必须新增到桶里（不允许沉默通过）。
+    """
+    try:
+        spec = F.fetch_openapi()
+    except Exception as e:
+        pytest.skip("后端 8000 不可达，跳过真实后端桶覆盖用例: %s" % e)
+    be = F.backend_routes(spec)
+    fe = F.scan_frontend()
+    tc = be - fe
+    classified = (
+        F.NEXTJS_PLANNED_ENDPOINTS
+        | F.NEXTJS_DEFERRED_ENDPOINTS
+        | F.NEXTJS_OPS_ENDPOINTS
+        | F.NEXTJS_UNASSIGNED
+    )
+    uncategorized = tc - classified
+    assert not uncategorized, (
+        "桶未覆盖 %d 条 tc 项（必须全部归桶）：%r"
+        % (len(uncategorized), sorted(uncategorized))
+    )
+    # 必须 109（不增不减；增删端点需要走变更单重写）
+    assert len(tc) == 109, (
+        "tc 数 ≠ 109（契约或后端变化导致）：实际=%d（plan=%d deferred=%d ops=%d unassigned=%d）"
+        % (
+            len(tc),
+            len(F.NEXTJS_PLANNED_ENDPOINTS & tc),
+            len(F.NEXTJS_DEFERRED_ENDPOINTS & tc),
+            len(F.NEXTJS_OPS_ENDPOINTS & tc),
+            len(F.NEXTJS_UNASSIGNED & tc),
+        )
+    )
+
+
+def test_emit_migration_status_writes_4_buckets_with_zero_uncategorized(tmp_path):
+    """--emit-migration-status 必须写出 4 桶+ uncategorized 子段，uncategorized.count=0。"""
+    out_path = tmp_path / "status.json"
+    rc = F.emit_migration_status(path=str(out_path))
+    assert rc == 0, "emit_migration_status 退出码非 0：%d" % rc
+    assert out_path.exists(), "未生成 status.json"
+    import json as _json
+    d = _json.loads(out_path.read_text(encoding="utf-8"))
+    # 4 桶键齐
+    assert set(d["buckets"].keys()) == {"plan", "deferred", "ops", "unassigned"}
+    # uncategorized 必须为 0
+    assert d["uncategorized"]["count"] == 0, (
+        "uncategorized=%d（必须为 0）：%r"
+        % (d["uncategorized"]["count"], d["uncategorized"]["items"])
+    )
+    # classified == total
+    assert d["summary"]["classified"] == d["total_to_connect"], (
+        "classified=%d ≠ total_to_connect=%d"
+        % (d["summary"]["classified"], d["total_to_connect"])
+    )
+    # 桶 item 必须形如 "<METHOD> <path>"
+    for k, b in d["buckets"].items():
+        for item in b["items"]:
+            assert " " in item, "桶 %s 的 item %r 不是 '<METHOD> <path>' 格式" % (k, item)
+            method, path = item.split(" ", 1)
+            assert method in F.HTTP_METHODS, (
+                "桶 %s 的 item %r method 不在 HTTP_METHODS 内" % (k, item)
+            )

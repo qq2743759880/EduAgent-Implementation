@@ -22,6 +22,9 @@ febe_contract_check.py — EduAgent 前后端契约「三方自动对账」探�
   python febe_contract_check.py --quiet         # 仅打印 [SUMMARY] 行
   python febe_contract_check.py --emit-frontend-list [PATH]
                                                 # 刷新 test-reports/_frontend_real_api.txt
+  python febe_contract_check.py --emit-migration-status [PATH]
+                                                # 刷新 test-reports/_frontend_migration_status.json
+                                                # (W-NEXT-FRONTEND-CONTRACT-001 治理分类：plan/deferred/ops/unassigned)
 
 退出码：
   0 = 断点=0 且 在用未冻结=0（待接/未冻结仅后端 仅 WARN，不阻断）
@@ -58,6 +61,166 @@ HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")
 TO_CONNECT_AHEAD = {
     ("POST", "/api/admin/rag/collections/rebuild"),
 }
+
+# ---------------------------------------------------------------------------
+# W-NEXT-FRONTEND-CONTRACT-001 待接清单 109 治理分类（plan/deferred/ops/unknown）
+# ---------------------------------------------------------------------------
+# ⑩ 门 WARN 待接 109 条 = 后端路由 − 前端真实调用。落地治理时按"前端接入计划"
+# 拆 4 桶，避免把"已知规划的待接"与"真正的契约漂移"混在一起误导治理节奏：
+#
+#   plan     = Next.js 已有对应路由页面/组件、但具体端点暂未挂接（前端迁移进行中）
+#   deferred = 后端 admin/MCP/交易域端点，Next.js 暂未迁移该域页面（按阶段计划）
+#   ops      = 运维端点（健康检查/Prometheus 抓取/支付回调 mock），前端永不接入
+#   unknown  = 当前无明确接入计划（需用户裁定）
+#
+# 设计约束（防遮蔽）：
+#   · 仅做**分类输出**，不修改 to_connect 集合、不降低 to_connect 计数；
+#   · 集合在此处显式列出，每条带 `// why/接入计划` 注释，便于人工/变更单追溯；
+#   · 与 KNOWN_ROOT_PATHS / TO_CONNECT_AHEAD 风格一致——纯只读白名单；
+#   · 不允许"批量加进 unknown 自动覆盖"——任一未列入集合的 tc 项会被标记 unknown。
+#
+# 列出顺序：方法 + 路径（与 ⑩ 门输出对齐）。任何修改必须附 PR 链接 + 用户签字。
+# ---------------------------------------------------------------------------
+NEXTJS_PLANNED_ENDPOINTS = frozenset({
+    # ---- plan: Next.js 已有页面/组件、仅具体方法未挂接 ----
+    # admin 课程域（page.tsx 已存在但 GET 单条/chapters/modules 未接入）
+    ("GET", "/api/admin/courses/chapters/{x}"),         # src/app/(admin)/admin/courses/[seriesId]/page.tsx
+    ("GET", "/api/admin/courses/modules/{x}"),          # 同上
+    ("GET", "/api/admin/courses/sessions/{x}"),         # 同上
+    # admin 题库（questions.ts 已有 wrapper，但 banks 集合细节未全部挂接）
+    ("GET", "/api/admin/questions/banks"),              # question-bank.ts wrapper
+    ("GET", "/api/admin/questions/banks/{x}/questions"),# question-bank.ts wrapper
+    ("GET", "/api/admin/questions/exams"),               # 考试列表（待 admin/questions 页面实装）
+    ("GET", "/api/admin/questions/exams/{x}"),          # 考试详情
+    # community（community.ts 有完整 wrapper，但部分子资源未挂接）
+    ("PATCH", "/api/community/posts/{x}"),               # post 编辑（待 admin 工具）
+    # admin RAG 收集重建（TO_CONNECT_AHEAD；admin/rag 页面待实装）
+    ("POST", "/api/admin/rag/collections/rebuild"),      # TO_CONNECT_AHEAD
+    # user side：favorites/me/student-profile 等（lib/api/me.ts 已部分接入）
+    ("GET", "/api/users/me/student-profile"),           # 学生画像（dashboard 阶段实装）
+})
+
+NEXTJS_DEFERRED_ENDPOINTS = frozenset({
+    # ---- deferred: 后端域管理/MCP/交易/智能体 — Next.js 暂未迁移该域页面 ----
+    # admin 课程域暂未接入的 GET 单条/聚合
+    ("GET", "/api/admin/courses/cohorts/{x}"),
+    ("GET", "/api/admin/courses/cohorts/{x}/sessions"),
+    # admin 评价/退款/审核/概览
+    ("DELETE", "/api/admin/reviews/{x}"),
+    ("GET", "/api/admin/reviews"),
+    ("GET", "/api/admin/refunds"),
+    ("GET", "/api/admin/trade/overview"),
+    ("POST", "/api/admin/refunds/{x}/approve"),
+    ("POST", "/api/admin/refunds/{x}/reject"),
+    # admin RAG / 题库发布 / 收集重建
+    ("GET", "/api/admin/rag/audit-log"),
+    ("GET", "/api/admin/rag/presets"),
+    ("POST", "/api/admin/rag/presets"),
+    ("POST", "/api/admin/rag/search"),
+    ("POST", "/api/admin/questions/exams"),
+    ("POST", "/api/admin/questions/exams/{x}/publish"),
+    ("PATCH", "/api/admin/questions/exams/{x}"),
+    # admin 用户/记忆
+    ("GET", "/api/admin/users"),
+    ("POST", "/api/memory/admin/dream/run"),
+    # admin 章节 PATCH（page.tsx 有 button 但 PATCH 暂未挂）
+    ("PATCH", "/api/admin/courses/chapters/{x}"),
+    # MCP 域（智能体/内部端点 — Next.js 暂未迁移）
+    ("DELETE", "/api/mcp/sessions/{x}"),
+    ("GET", "/api/mcp/servers/{x}"),
+    ("GET", "/api/mcp/servers/{x}/discover-live"),
+    ("GET", "/api/mcp/servers/{x}/tools"),
+    ("GET", "/api/mcp/sessions"),
+    ("GET", "/api/mcp/sessions/{x}"),
+    ("POST", "/api/mcp/servers/{x}/raw-rpc"),
+    ("POST", "/api/mcp/sessions"),
+    ("POST", "/api/mcp/sessions/{x}/touch"),
+    ("POST", "/api/mcp/description-review"),
+    ("POST", "/api/mcp/health-scan-async"),
+    ("POST", "/api/mcp/servers/import-url"),
+    ("GET", "/api/mcp/health-scan/{x}"),
+    ("GET", "/api/mcp/call-log/{x}"),
+    ("GET", "/api/mcp/description-review-log"),
+    # knowledge 域（内部/智能体）
+    ("POST", "/api/knowledge/upload"),
+    ("GET", "/api/knowledge/status/{x}"),
+    # 交易域（trade/after_sales/ticket/payment） — Next.js 暂未迁移交易 UI
+    ("GET", "/api/trade/after_sales/ticket/{x}"),
+    ("GET", "/api/trade/after_sales/tickets"),
+    ("GET", "/api/trade/order/{x}"),
+    ("GET", "/api/trade/orders"),
+    ("GET", "/api/trade/payment/{x}"),
+    ("GET", "/api/trade/payments"),
+    ("GET", "/api/trade/payments/reconcile"),
+    ("POST", "/api/trade/after_sales/ticket"),
+    ("POST", "/api/trade/after_sales/ticket/{x}/satisfaction"),
+    ("POST", "/api/trade/order/{x}/cancel"),
+    ("POST", "/api/trade/payment/{x}"),
+    ("POST", "/api/trade/payment/{x}/cancel"),
+    ("POST", "/api/trade/payment/{x}/mock-notify"),
+    ("POST", "/api/trade/payment/{x}/retry"),
+    ("POST", "/api/trade/payments/reconcile"),
+})
+
+NEXTJS_OPS_ENDPOINTS = frozenset({
+    # ---- ops: 运维端点（前端永不接入） ----
+    # health/metrics 已在 KNOWN_ROOT_PATHS 收录（contract 冻结），但 ⑩ 门 WARN
+    # 待接仍会逐条列出。这里集中登记让分类完整（plan/deferred/ops/unknown = 109）。
+    ("GET", "/"),                                       # 根 landing — KNOWN_ROOT_PATHS
+    ("GET", "/health"),                                 # 健康检查 — KNOWN_ROOT_PATHS
+    ("GET", "/health/detail"),                          # 健康检查详情 — KNOWN_ROOT_PATHS
+    ("GET", "/health/warmup"),                          # 模型/依赖预热 — KNOWN_ROOT_PATHS
+    ("GET", "/metrics"),                                # Prometheus 抓取 — KNOWN_ROOT_PATHS
+    ("POST", "/payment-notifications/mock"),            # 支付回调 mock — 仅测试夹具
+})
+
+NEXTJS_UNASSIGNED = frozenset({
+    # ---- unknown: 当前无明确接入计划、需用户裁定 ----
+    # 学端非 admin/非 MCP/非 trade 的资源 — 多数是规划中但暂未排期。
+    ("DELETE", "/api/favorites/{x}"),
+    ("GET", "/api/coding/challenges"),
+    ("GET", "/api/coding/challenges/{x}"),
+    ("GET", "/api/cohorts/{x}"),
+    ("GET", "/api/cohorts/{x}/modules"),
+    ("GET", "/api/community/posts"),
+    ("GET", "/api/enrollments/me/cohorts/{x}"),
+    ("GET", "/api/enrollments/me/cohorts/{x}/progress"),
+    ("GET", "/api/enrollments/me/cohorts/{x}/status"),
+    ("GET", "/api/interactive/quiz/types"),
+    ("GET", "/api/interactive/quiz/wrong-next"),
+    ("GET", "/api/math/practice"),
+    ("GET", "/api/memory/history/{x}"),
+    ("GET", "/api/metrics/cache-context-dashboard"),
+    ("GET", "/api/metrics/otel"),
+    ("GET", "/api/metrics/trace/{x}"),
+    ("GET", "/api/mindmap/course/{x}"),
+    ("GET", "/api/mindmap/me/{x}"),
+    ("GET", "/api/mindmap/prerequisite"),
+    ("GET", "/api/mindmap/subject/{x}"),
+    ("GET", "/api/progress/courses"),
+    ("GET", "/api/recommend/next"),
+    ("GET", "/api/recommend/path"),
+    ("GET", "/api/refunds"),
+    ("POST", "/api/auth/refresh"),
+    ("POST", "/api/chat"),
+    ("POST", "/api/chat/search"),
+    ("POST", "/api/coding/hint"),
+    ("POST", "/api/coding/run"),
+    ("POST", "/api/coding/submit"),
+    ("POST", "/api/community/posts/{x}/favorite"),
+    ("POST", "/api/gamification/me/award"),
+    ("POST", "/api/gamification/me/check-badges"),
+    ("POST", "/api/math/explain"),
+    ("POST", "/api/math/step-check"),
+    ("POST", "/api/memory/rewind"),
+    ("POST", "/api/progress/exam/submit"),
+    ("POST", "/api/progress/homework/submit"),
+    ("POST", "/api/progress/video/tick-batch"),
+    ("POST", "/api/recommend/feedback"),
+    ("POST", "/api/refunds"),
+    ("POST", "/api/refunds/{x}/cancel"),
+    ("POST", "/api/study/sessions/{x}/complete"),
+})
 
 # 相对路径契约的已知父上下文（verified_today_batch1 的嵌套资源都挂在课程管理域下）。
 # 解析相对路径时优先拼此父上下文再回退后缀匹配，避免误匹配到 /api/cohorts 等其它资源。
@@ -444,6 +607,30 @@ def run(quiet=False):
         for m, p in to_connect:
             print("  • %-6s %-52s %s" % (m, p, adjudicate_to_connect(m, p)))
 
+        # ---- [PLANNED-BREAKDOWN] W-NEXT-FRONTEND-CONTRACT-001 治理分类 ----
+        # 不修改 to_connect，仅按 4 桶分类输出，便于治理节奏追踪（plan/in_progress
+        # vs ops/deferred vs unknown）。
+        tc_set = set(to_connect)
+        buckets = {
+            "plan": (NEXTJS_PLANNED_ENDPOINTS & tc_set, "Next.js 页面已实装/迁移进行中"),
+            "deferred": (NEXTJS_DEFERRED_ENDPOINTS & tc_set, "Next.js 暂未迁移该域（admin/MCP/交易）"),
+            "ops": (NEXTJS_OPS_ENDPOINTS & tc_set, "运维端点·前端永不接入"),
+            "unassigned": (NEXTJS_UNASSIGNED & tc_set, "无明确接入计划·待用户裁定"),
+        }
+        classified = sum(len(v[0]) for v in buckets.values())
+        # 兜底：未归入任何桶的 to_connect 项也单独列出（理论上 0）
+        all_classified = NEXTJS_PLANNED_ENDPOINTS | NEXTJS_DEFERRED_ENDPOINTS | NEXTJS_OPS_ENDPOINTS | NEXTJS_UNASSIGNED
+        uncategorized = sorted(tc_set - all_classified)
+        print("\n[PLANNED-BREAKDOWN] 待接 109 治理分类（plan/deferred/ops/unassigned）")
+        print("  分类源：febe_contract_check.py 顶部的 NEXTJS_*_ENDPOINTS 显式清单（注释逐条 why）")
+        for k, (items, label) in buckets.items():
+            print("  %-10s %d 条  → %s" % (k, len(items), label))
+        print("  --------  合计: %d / 109" % classified)
+        if uncategorized:
+            print("  ⚠️ 未分类（理论应为 0）: %d 条" % len(uncategorized))
+            for m, p in uncategorized:
+                print("    - %-6s %s" % (m, p))
+
         if malformed:
             print("\n[MALFORMED] 无法可靠解析的相对路径契约  共 %d 条（未计入冻结集合）" % len(malformed))
             for methods, p in malformed:
@@ -476,12 +663,119 @@ def emit_frontend_list(path=None):
     return 0
 
 
+# --------------------------------------------------------------------------- #
+# W-NEXT-FRONTEND-CONTRACT-001: emit_migration_status
+# --------------------------------------------------------------------------- #
+# 输出待接清单的治理分类 JSON（含 plan/deferred/ops/unassigned 四桶 + uncategorized
+# 兜底），写入 test-reports/_frontend_migration_status.json。便于 governance 跟进。
+DEFAULT_MIGRATION_STATUS = os.path.join(REPO_ROOT, "test-reports", "_frontend_migration_status.json")
+
+
+def emit_migration_status(path=None):
+    path = path or DEFAULT_MIGRATION_STATUS
+    try:
+        spec = fetch_openapi()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print("ERROR: 无法获取后端 OpenAPI: %s" % e, file=sys.stderr)
+        return 2
+    be_routes = backend_routes(spec)
+    fe_calls = scan_frontend()
+    to_connect = sorted(be_routes - fe_calls)
+    tc_set = set(to_connect)
+
+    all_classified = (
+        NEXTJS_PLANNED_ENDPOINTS
+        | NEXTJS_DEFERRED_ENDPOINTS
+        | NEXTJS_OPS_ENDPOINTS
+        | NEXTJS_UNASSIGNED
+    )
+    uncategorized = sorted(tc_set - all_classified)
+
+    out = {
+        "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "source": "edu-agent/scripts/eval/febe_contract_check.py --emit-migration-status",
+        "task_id": "W-NEXT-FRONTEND-CONTRACT-001",
+        "total_to_connect": len(to_connect),
+        "buckets": {
+            "plan": {
+                "label": "Next.js 页面已实装/迁移进行中",
+                "count": len(NEXTJS_PLANNED_ENDPOINTS & tc_set),
+                "items": sorted(_method_path_list(NEXTJS_PLANNED_ENDPOINTS & tc_set)),
+            },
+            "deferred": {
+                "label": "Next.js 暂未迁移该域（admin/MCP/交易）",
+                "count": len(NEXTJS_DEFERRED_ENDPOINTS & tc_set),
+                "items": sorted(_method_path_list(NEXTJS_DEFERRED_ENDPOINTS & tc_set)),
+            },
+            "ops": {
+                "label": "运维端点·前端永不接入",
+                "count": len(NEXTJS_OPS_ENDPOINTS & tc_set),
+                "items": sorted(_method_path_list(NEXTJS_OPS_ENDPOINTS & tc_set)),
+            },
+            "unassigned": {
+                "label": "无明确接入计划·待用户裁定",
+                "count": len(NEXTJS_UNASSIGNED & tc_set),
+                "items": sorted(_method_path_list(NEXTJS_UNASSIGNED & tc_set)),
+            },
+        },
+        "uncategorized": {
+            "label": "理论应为 0（未归入任何桶的待接）",
+            "count": len(uncategorized),
+            "items": [_method_path_str(m, p) for (m, p) in uncategorized],
+        },
+        "summary": {
+            "classified": sum(
+                len(b & tc_set)
+                for b in (
+                    NEXTJS_PLANNED_ENDPOINTS,
+                    NEXTJS_DEFERRED_ENDPOINTS,
+                    NEXTJS_OPS_ENDPOINTS,
+                    NEXTJS_UNASSIGNED,
+                )
+            ),
+            "uncategorized": len(uncategorized),
+            "expected_total": len(to_connect),
+        },
+    }
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    print(
+        "已写入前端接入计划分类: %s (total=%d, plan=%d, deferred=%d, ops=%d, unassigned=%d, uncategorized=%d)"
+        % (
+            path,
+            out["total_to_connect"],
+            out["buckets"]["plan"]["count"],
+            out["buckets"]["deferred"]["count"],
+            out["buckets"]["ops"]["count"],
+            out["buckets"]["unassigned"]["count"],
+            out["uncategorized"]["count"],
+        )
+    )
+    return 0
+
+
+def _method_path_str(m, p):
+    return "%s %s" % (m, p)
+
+
+def _method_path_list(items):
+    return [_method_path_str(m, p) for (m, p) in items]
+
+
 def main(argv):
     args = argv[1:]
     if "--emit-frontend-list" in args:
         idx = args.index("--emit-frontend-list")
         path = args[idx + 1] if idx + 1 < len(args) else None
         return emit_frontend_list(path)
+    if "--emit-migration-status" in args:
+        idx = args.index("--emit-migration-status")
+        path = args[idx + 1] if idx + 1 < len(args) else None
+        return emit_migration_status(path)
     quiet = "--quiet" in args
     return run(quiet=quiet)
 
