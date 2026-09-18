@@ -13,6 +13,7 @@ import logging
 
 from app.common.exceptions import AppException
 from app.database import transaction
+from app.domains.analytics.event_stream import emit_learning_event
 from app.domains.learning.repository import StudyRepo, StudyWriteRepo
 from app.domains.learning.schemas import (
     StudyAccessResult, StudyAssetItem, StudyModuleOutlineItem, StudyOutline,
@@ -147,6 +148,13 @@ async def complete_session(user_id: int, session_id: int) -> SessionCompleteResu
             raise AppException("40330", "该课次为报名专属内容，需先报名本班次", http_status=403)
     async with transaction() as (conn, cur):
         affected = await _write.mark_session_completed(cur=cur, user_id=user_id, session_id=session_id)
+    # R-M1 旁路异步写（Mongo learning_event，章节/课次完成事件）：失败 WARN 不阻断主链
+    emit_learning_event(
+        "session_complete",
+        user_id=user_id,
+        session_id=session_id,
+        payload={"completed": affected > 0, "series_id": series_id},
+    )
     # 未产生播放会话 → 仍返回 completed=False（未真正看）
     return SessionCompleteResult(session_id=session_id, completed=affected > 0)
 

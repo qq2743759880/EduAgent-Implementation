@@ -212,6 +212,16 @@ async def lifespan(app: FastAPI):
             f"{type(e).__name__}: {e}"
         )
 
+    # ── R-M1：学习事件流 worker 通电（Mongo learning_event 旁路异步写，M-1）──
+    # 旁路纪律：启动失败/索引失败仅 WARN 不阻断主服务；写失败熔断自愈（event_stream 内）。
+    try:
+        from app.domains.analytics.event_stream import start_event_worker
+        await start_event_worker()
+    except Exception as e:
+        logger.warning(
+            f"学习事件 worker 启动失败（事件旁路降级停写，主链无感）: {type(e).__name__}: {e}"
+        )
+
     # ── 运行阶段 ──
     yield
 
@@ -239,6 +249,16 @@ async def lifespan(app: FastAPI):
             await asyncio.wait_for(hitl_scan_task, timeout=10)
         except Exception:
             hitl_scan_task.cancel()
+    # R-M1：先停学习事件 worker（停止 mongo 侧写入），再关存储连接（与记忆 worker 同序语义）
+    try:
+        from app.domains.analytics.event_stream import stop_event_worker
+        residual = await asyncio.wait_for(stop_event_worker(timeout=4.0), timeout=5.0)
+        if residual:
+            logger.warning(f"[Lifespan] 学习事件 worker 停止时队列残留 {residual} 条（旁路事件，允许丢弃）")
+    except asyncio.CancelledError:
+        logger.info("[Lifespan] stop_event_worker 收到 shutdown cancel（已吞）")
+    except Exception as e:
+        logger.warning(f"学习事件 worker 停止异常（忽略继续关闭）: {type(e).__name__}: {e}")
     warmup_task.cancel()
     # ── W-NEXT-OTLP-001：OTLP 导出器关闭（清空缓冲 + state=disabled，lifespan 兜底）──
     try:
@@ -561,6 +581,8 @@ app.include_router(chat_router)                        # AI 问答（P2 用户�
 from app.admin.rag_admin.router import router as rag_admin_router
 app.include_router(rag_admin_router)                   # 管理端 RAG 控制台（P7 路径 B）
 
+from app.domains.kg.router import router as kg_router
+app.include_router(kg_router)                          # 知识图谱 KG-2（R-N1，Neo4j 先修图）
 from app.domains.course_admin.router import router as course_admin_router
 from app.domains.course_admin.router import restore_router as course_admin_restore_router
 app.include_router(course_admin_router)                # 管理端 课程管理 CRUD（task12）
@@ -607,6 +629,8 @@ from app.domains.learning.router import router as learning_router
 app.include_router(learning_router)                                # 学习/study（task21 契约⑪task21段）
 from app.domains.after_sales.router import router as after_sales_router
 app.include_router(after_sales_router)                             # 售后工单（task22 契约⑫）
+from app.domains.analytics.router import router as analytics_router
+app.include_router(analytics_router)                               # 学习事件分析（R-M1：Mongo learning_event 聚合 M-3）
 from app.mcp.router import router as mcp_router
 from app.ai.memory.router import router as memory_router
 app.include_router(mcp_router)                                     # MCP 导入与集成（P8：server 注册/import/工具列表/测试/日志，管理员专用）

@@ -8,6 +8,7 @@ from typing import Any
 
 from app.common.exceptions import AppException as BizError
 from app.database import fetch_all, fetch_one, execute_write
+from app.domains.analytics.event_stream import emit_learning_event
 from app.progress.schemas import (
     CourseProgressOut, DashboardOut, DailyStatItem, ExamSubmitIn,
     HomeworkSubmitIn, ModuleProgressItem, SessionProgressItem,
@@ -86,6 +87,15 @@ async def record_video_ticks(user_id: int, payload: VideoTickBatchIn) -> VideoTi
             " updated_at = NOW() WHERE id=%s",
             (study_seconds_delta, payload.play_session_id),
         )
+
+    # R-M1 旁路异步写（Mongo learning_event，视频心跳事件）：失败 WARN 不阻断主链；
+    # 一条 tick-batch 请求 = 一条事件，payload.rows_inserted 供对账（scripts/eval/mevent_reconcile.py）
+    emit_learning_event(
+        "video_heartbeat",
+        user_id=user_id,
+        session_id=payload.play_session_id,
+        payload={"rows_inserted": rows_inserted, "study_seconds_delta": study_seconds_delta},
+    )
 
     return VideoTickBatchOut(
         inserted=rows_inserted,

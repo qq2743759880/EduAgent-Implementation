@@ -411,6 +411,18 @@ class Settings(BaseSettings):
     DREAM_MODEL: str = "fast"                 # Dream 巩固子代理模型（cost 友好；生产可切 opus）
 
     # ============================================================
+    # MongoDB 学习事件流（R-M1，对齐 neo4j-mongo-activation-plan §M-1/M-3）
+    #   集合 learning_event = {user_id, type, payload, ts, session_id}，append-only；
+    #   旁路异步写：主链 MySQL 事务零改动，写失败 WARN 不阻断；MySQL 仍是事务事实源。
+    # ============================================================
+    MONGO_EVENT_ENABLED: bool = True          # 学习事件旁路总开关（False=挂点空转零开销）
+    MONGO_EVENT_QUEUE_MAXSIZE: int = 10000    # 进程内队列上限（满即丢弃计数，绝不阻塞主链）
+    MONGO_EVENT_MAX_RETRY: int = 3            # 单事件写失败重试上限（超限丢弃 WARN）
+    MONGO_EVENT_TTL_DAYS: int = 90            # ts TTL 过期天数（0=不过期；collMod 热更）
+    MONGO_EVENT_BREAKER_FAILURES: int = 5     # 连续写失败 N 次 → 熔断 OPEN（复用 core/breaker）
+    MONGO_EVENT_BREAKER_OPEN_S: float = 30.0  # 熔断持续秒数，到点半开探针自愈
+
+    # ============================================================
     # 缓存前缀达标（task-C2，对齐 production-upgrade-plan P7）
     #   对齐 Claude prompt caching：最小可缓存前缀 2048 token（火山 ark 实测 2048 分块）；
     #   工具延迟展开（defer_loading）保前缀稳定；命中率当 uptime 监控（Glean：低即 SEV）。

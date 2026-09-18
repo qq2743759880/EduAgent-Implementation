@@ -8,6 +8,7 @@ from typing import Any
 
 from app.common.exceptions import AppException as BizError
 from app.database import execute_write, fetch_all, fetch_one
+from app.domains.analytics.event_stream import emit_learning_event
 from app.interactive.quiz.schemas import (
     FILL, JUDGE, MATCH, MULTI, Question, SubmitAnswer, SubmitResult,
     WrongBookEntry, WrongBookList, Choice, MatchPair, DRAG_SORT, SINGLE,
@@ -384,6 +385,20 @@ async def submit(user_id: int, payload: SubmitAnswer) -> SubmitResult:
                 added_to_wrong_book = False
 
     mastery_change: dict[str, float] = {}
+    # R-M1 旁路异步写（Mongo learning_event，quiz 提交事件）：失败 WARN 不阻断主链
+    emit_learning_event(
+        "quiz_submit",
+        user_id=user_id,
+        payload={
+            "question_id": int(q.question_id),
+            "custom_code": q.custom_code,
+            "subject_code": q.subject_code,
+            "question_type": q.question_type,
+            "is_correct": bool(is_correct),
+            "score": float(score),
+            "session_id_mongo": int(sid) if sid else None,
+        },
+    )
     return SubmitResult(
         session_id=int(sid) if sid else 0,
         is_correct=is_correct,

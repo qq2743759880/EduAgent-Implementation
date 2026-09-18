@@ -164,6 +164,23 @@ COMMUNITY_BOARD_INVALID = "40020"      # 非法版块
 COMMUNITY_REACT_INVALID = "40024"      # 非法反应类型（原 40021 与 TRADE_ORDER_STATUS_INVALID 一码两用，已拆分）
 
 # ═══════════════════════════════════════════
+# 学习事件分析域（analytics）— R-M1（contracts/reshape-r-analytics.json，draft:true 2026-09-18）
+# 数据面 = MongoDB learning_event（旁路异步写，M-1）；对账基线 = MySQL 进度表。
+# ═══════════════════════════════════════════
+ANALYTICS_RANGE_INVALID = "40030"      # 非法 range 时间窗（支持 1d/7d/30d/90d）
+ANALYTICS_FORBIDDEN = "40320"          # student 查询他人学习事件聚合（越权）
+
+# ═══════════════════════════════════════════
+# 知识图谱域（kg）— R-N1（contracts/reshape-r-kg.json，draft:true 2026-09-18）
+# 语义：Neo4j 先修图 KG-2 端点的资源缺失与脏数据防御码；依赖不可达复用 50301。
+# 纯增量注册（40460~40462 / 40910 均为未占用码位），回滚=revert 单 commit。
+# ═══════════════════════════════════════════
+KG_COURSE_NOT_FOUND = "40460"        # 图谱课程不存在（course_id 未同步进 Neo4j）
+KG_CHAPTER_NOT_FOUND = "40461"       # 图谱章节不存在（chapter_code 未同步进 Neo4j）
+KG_NODE_NOT_FOUND = "40462"          # 知识点不存在（path 的 from/to code 非法）
+KG_PREREQUISITE_CYCLE = "40910"      # 先修图存在环（脏数据防御，拓扑语义失效，fail-closed）
+
+# ═══════════════════════════════════════════
 # 字符串子码 → 数字码 映射（内部用，保留兼容）
 # ═══════════════════════════════════════════
 SUBCODE_MAP = {
