@@ -15,6 +15,7 @@ action=confirm → ⑤ 同 thread 续流执行 → ⑥ 断言续流**不再出�
 """
 from __future__ import annotations
 
+import io
 import json
 import os
 import sys
@@ -22,6 +23,69 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+# W-NEXT-PROBE-001 修:loguru 在 DEBUG 模式下把 INFO 日志写到 sys.stdout
+#   (app/common/logging.py:55),而本探针用 print(json.dumps(...)) 走同一 stdout —— 结果:
+#   check-demo.mjs ⑫ 守卫拿到的 stdout 是 loguru INFO 行 + 我们的 JSON,JSON.parse 失败。
+#   修复:probe 入口把 sys.stdout 替换成 StagedJsonOnlyWriter —— 把"非契约字节"(loguru 等污染)
+#   全部重定向到 stderr,只让带 _PROBE_JSON_OUT 旗标的 JSON 行放行到真 stdout。
+#   配合 init_mysql() 在 _count_task() 前调用(原 bug 已被 stdout 污染掩盖)。
+#   边界态:loguru 抛异常 / 子进程崩 → _safe_emit 兜底输出 error JSON,守卫不会卡死。
+_STAGED = None  # 占位:由 _install_json_only_stdout 赋值
+
+# Stage 标记:只有携带本哨兵串的 print 才被允许到达真 stdout。
+_PROBE_JSON_OUT = "__PROBE_JSON_OUT__:"
+
+
+class JsonOnlyStdout:
+    """Wrap 真实 sys.stdout:把非契约字节转 stderr,只放 JSON 行通过。
+
+    - 任何不包含 _PROBE_JSON_OUT 哨兵的写入 → 转发到 stderr(prefixed)
+    - 包含 _PROBE_JSON_OUT 哨兵的写入 → 剥哨兵 + 走真 stdout
+    """
+
+    def __init__(self, real_stdout):
+        self._real = real_stdout
+
+    def write(self, s):
+        if not s:
+            return 0
+        if _PROBE_JSON_OUT in s:
+            return self._real.write(s.replace(_PROBE_JSON_OUT, ""))
+        # 走 stderr(避免污染契约流)
+        try:
+            sys.stderr.write(f"[probe:redirect] {s}")
+            sys.stderr.flush()
+        except Exception:
+            pass
+        return len(s)
+
+    def flush(self):
+        try:
+            self._real.flush()
+        except Exception:
+            pass
+
+    def isatty(self):
+        return False
+
+    def writable(self):
+        return True
+
+
+def _install_json_only_stdout():
+    """probe 入口调:把 sys.stdout 替换成 JsonOnlyStdout。"""
+    global _STAGED
+    if _STAGED is not None:
+        return  # 已替换,幂等
+    _STAGED = JsonOnlyStdout(sys.stdout)
+    sys.stdout = _STAGED
+
+
+def _probe_print(payload: dict):
+    """契约输出:走真 stdout(其他 print 仍被 JsonOnlyStdout 吞到 stderr)。"""
+    sys.stdout.write(_PROBE_JSON_OUT + json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
 
 # W-NEXT-CHECKDEMO-004 修:.env 加载兜底 ——
 # 现象:check-demo.mjs ⑫ 守卫 spawn 子进程时 cwd=仓库根,不是 edu-agent/。
@@ -34,14 +98,49 @@ ROOT = Path(__file__).resolve().parents[1]
 _ENV_PATH = ROOT / ".env"
 if _ENV_PATH.is_file():
     from dotenv import load_dotenv  # noqa: E402
-    load_dotenv(_ENV_PATH, override=False)  # 已有环境变量优先,避免覆盖 CI 注入
+    # W-NEXT-PROBE-001 修:.env 在 Windows PowerShell 写入历史中混入 NEL(0x85)等非 UTF-8 字节,
+    #   强制 encoding="latin-1" 容错读取(dotnet 默认沿 utf-8 → UnicodeDecodeError 整个 probe 崩)。
+    #   字段值不受影响(REDIS_URL/REDIS_PORT 等关键值用 ASCII)。
+    load_dotenv(_ENV_PATH, override=False, encoding="latin-1")
 else:
     print(f"[hitl_realness_probe] WARN .env not found at {_ENV_PATH} — pydantic Field required 风险", file=sys.stderr)
+
+# W-NEXT-PROBE-001 修:.env 加载后立刻装 stdout 拦截器 —— 必须先于任何 app.* import。
+#   触发链:load_dotenv → 不触发;但本模块下一行 from app.database ... 会间接 import
+#   app.common.logging → 自动 setup_logging() → loguru 加 sys.stdout sink → DEBUG INFO
+#   行污染。拦截器装在 import 之前,污染会被自动重定向到 stderr。
+_install_json_only_stdout()
 
 
 BACKEND = os.environ.get("CHECK_DEMO_BACKEND", "http://127.0.0.1:8000").rstrip("/")
 ACCOUNT = "adm02test"
 PASSWORD = "Test@123456"
+
+
+def _create_session(token: str, title: str = "surfaced1_probe") -> str:
+    """POST /api/chat/sessions → 拿 session_id。/api/chat/stream 需要已存在的 session_id。
+
+    W-NEXT-PROBE-001 修:此前直接用 `surfaced1_probe_<ts>` 当 session_id 发到 /api/chat/stream,
+    后端返 404 CHAT_SESSION_NOT_FOUND,urllib 抛 HTTPError,probe 整体崩 → stdout 一行 error。
+    该 bug 在 W-NEXT-PROBE-001 前一直被 stdout JSON 污染掩盖 —— check-demo ⑫ 一红即从未真
+    跑到 _stream_events 成功路径。本任务一并修根因(同 P0 教训)。
+    """
+    try:
+        with _post(f"{BACKEND}/api/chat/sessions",
+                   {"title": title, "visibility": "private"}, token=token) as r:
+            j = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", "replace")[:200]
+        except Exception:  # noqa: BLE001
+            pass
+        raise RuntimeError(f"create_session HTTP {e.code}: {body}") from e
+    sid = ((j.get("data") or {}).get("session_id")
+           or (j.get("data") or {}).get("id"))
+    if not sid:
+        raise RuntimeError(f"create_session 未返回 session_id: {j}")
+    return str(sid)
 
 
 def _post(url: str, payload: dict, token: str | None = None, timeout: int = 60):
@@ -71,7 +170,31 @@ def _stream_events(token: str, query: str, session_id: str, timeout: int = 180):
     req.add_header("Authorization", f"Bearer {token}")
     events: list[tuple[str, object]] = []
     cur = ""
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    # W-NEXT-PROBE-001 修:捕获 HTTPError(404/500/网络)→ 把诊断塞进 events + 抛 AppException,
+    #   让 main() 的 _probe_print 落到 error JSON 路径而非 stderr 崩溃。这样探针边界态
+    #   (后端不可达 / 路由断)仍能输出契约 JSON,守卫可降级 WARN 而非"非 JSON 解析失败"。
+    try:
+        resp_ctx = urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", "replace")[:200]
+        except Exception:  # noqa: BLE001
+            pass
+        events.append(("stream_http_error", {
+            "status": e.code,
+            "reason": e.reason,
+            "body": body,
+            "session_id": session_id,
+        }))
+        return events
+    except urllib.error.URLError as e:
+        events.append(("stream_url_error", {
+            "reason": str(e.reason),
+            "session_id": session_id,
+        }))
+        return events
+    with resp_ctx as resp:
         for raw in resp:
             line = raw.decode("utf-8", "replace").rstrip("\r\n")
             if line.startswith("event:"):
@@ -88,10 +211,16 @@ def _stream_events(token: str, query: str, session_id: str, timeout: int = 180):
 
 def _count_task() -> int:
     sys.path.insert(0, str(ROOT))
-    from app.database import fetch_one
+    from app.database import init_mysql, fetch_one
     import asyncio
-    row = asyncio.run(fetch_one("SELECT COUNT(*) AS c FROM knowledge_import_task"))
-    return int((row or {}).get("c", 0)) if row else 0
+    # W-NEXT-PROBE-001 修:原代码漏调 init_mysql(),fetch_one() 抛 "MySQL 连接池未初始化"。
+    #   该 bug 在 W-NEXT-PROBE-001 前一直被 stdout JSON 污染掩盖(check-demo ⑫ 一红一绿从未
+    #   真跑到 _count_task 成功路径),本任务一并修根因。
+    async def _q():
+        await init_mysql()
+        row = await fetch_one("SELECT COUNT(*) AS c FROM knowledge_import_task")
+        return int((row or {}).get("c", 0)) if row else 0
+    return asyncio.run(_q())
 
 
 SURFACED1_SYMPTOMS = (
@@ -110,14 +239,17 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         out["health_ok"] = False
         out["error"] = f"health: {e}"
-        print(json.dumps(out, ensure_ascii=False))
+        _probe_print(out)
         return 1
 
     token = _login()
     before = _count_task()
     out["task_before"] = before
 
-    session_id = f"surfaced1_probe_{int(time.time())}"
+    # W-NEXT-PROBE-001 修:先建 session 再发流(原 probe 跳过这步,直接拿 f"surfaced1_probe_{ts}"
+    #   当 session_id → /api/chat/stream 404 → probe 整体崩)
+    session_id = _create_session(token)
+    out["session_id"] = session_id
     query = "请使用 knowledge_import 工具把示例文档导入知识库（visibility=private）"
     events = _stream_events(token, query, session_id)
 
@@ -134,7 +266,7 @@ def main() -> int:
         out["task_diff"] = 0
         out["confirm_resumed"] = False
         out["note"] = "模型未触发 knowledge_import，跳过 HITL 续流；SURFACED-1 修复由单测覆盖"
-        print(json.dumps(out, ensure_ascii=False))
+        _probe_print(out)
         return 0
 
     tid = pending.get("thread_id") or session_id
@@ -157,10 +289,10 @@ def main() -> int:
     # 回归红线：confirm 续流仍出现 42200 症状 = SURFACED-1 未修
     if out["symptom_in_confirm_pass"]:
         out["regression"] = "SURFACED-1 症状仍在：confirm 续流仍报「必须提供 tool_id」"
-        print(json.dumps(out, ensure_ascii=False))
+        _probe_print(out)
         return 2
     out["ok"] = True
-    print(json.dumps(out, ensure_ascii=False))
+    _probe_print(out)
     return 0
 
 
@@ -168,5 +300,7 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:  # noqa: BLE001
-        print(json.dumps({"error": f"{type(e).__name__}: {e}"}, ensure_ascii=False))
+        # W-NEXT-PROBE-001 修:同样走 _probe_print,保证契约流只有 JSON。
+        #   兜底:即使主流程 raise 也不会污染 stdout。
+        _probe_print({"error": f"{type(e).__name__}: {e}"})
         sys.exit(1)

@@ -21,11 +21,61 @@ import { fileURLToPath } from "node:url";
 const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的克隆 docker.vmx";
 const MILVUS = { host: "192.168.85.101", port: 19530 };
 const MONGO = { host: "192.168.85.101", port: 27017 };
-const REDIS_CONTAINER = "edu-redis-standalone";
 const BACKEND = process.env.CHECK_DEMO_BACKEND || "http://127.0.0.1:8000"; // env 覆盖仅用于 ⑧ WARN 分支自测
 const FRONTEND = "http://127.0.0.1:3000";
 const ADMIN = { account: "adm02test", password: "Test@123456" };
 const STUDENT = { account: "user000001", password: "Test@123456" };
+// W-NEXT-PROBE-001 修:② 容器名不再硬编码。原 `REDIS_CONTAINER="edu-redis-standalone"`
+//   与当前演示机实际容器 `prisma-ai-redis-container-1`（宿主 6377→容器 6379）漂移,
+//   硬编码碰上容器重命名 / 端口重映射即永远红。同型风险:硬编码容器名 = 部署拓扑漂移即盲区。
+//   改为端口反查容器名（.env REDIS_PORT/REDIS_URL → docker ps --filter publish=<port>）。
+//   fail-drill 假端口（6380）走 `--fail-drill` 路径覆盖,与 normal 互不污染。
+// 解析优先级:.env REDIS_PORT > REDIS_URL 端口 > 默认 6377
+function readEnvRedisPort() {
+  try {
+    const envPath = fileURLToPath(new URL("../.env", import.meta.url));
+    if (!existsSync(envPath)) return 6377;
+    for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+      const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+      if (!m) continue;
+      if (m[1] === "REDIS_PORT" && m[2]) {
+        const p = parseInt(m[2], 10);
+        if (Number.isFinite(p) && p > 0 && p < 65536) return p;
+      }
+      if (m[1] === "REDIS_URL" && m[2]) {
+        const um = /^redis:\/\/[^:/]+(?::(\d+))?/.exec(m[2]);
+        if (um && um[1]) {
+          const p = parseInt(um[1], 10);
+          if (Number.isFinite(p) && p > 0 && p < 65536) return p;
+        }
+      }
+    }
+  } catch { /* fall through */ }
+  return 6377;
+}
+// W-NEXT-PROBE-001 修:按宿主端口反查容器名(替代硬编码 "edu-redis-standalone")。
+//   1) docker ps --filter publish=<port> --format "{{.Names}}" 拿首个匹配的容器名;
+//   2) 0 匹配 → 退到 --filter "expose=<port>" — 防 default-bridge/network 模式 publish 字段不显;
+//   3) 仍 0 匹配 → 抛错"未找到映射端口 <port> 的 Redis 容器"。
+async function detectRedisContainer(hostPort) {
+  // 第 1 试:publish 过滤
+  let out;
+  try {
+    out = await runCmd("docker", ["ps", "--filter", `publish=${hostPort}`, "--format", "{{.Names}}"], DOCKER_TIMEOUT_MS);
+  } catch (e) {
+    // docker 引擎未起/命令不存在 → 让上层 FIX.redis 指引处置
+    throw e;
+  }
+  let names = (out || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  if (names.length > 0) return names[0];
+  // 第 2 试:expose 过滤(兜底)
+  try {
+    out = await runCmd("docker", ["ps", "--filter", `expose=${hostPort}`, "--format", "{{.Names}}"], DOCKER_TIMEOUT_MS);
+    names = (out || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    if (names.length > 0) return names[0];
+  } catch { /* fall through to raise */ }
+  throw new Error(`未找到映射宿主端口 ${hostPort} 的 Redis 容器(检查 docker ps 与端口映射)`);
+}
 // 关键页 8 个(核心故事线页面)
 const PAGES = [
   "login-register.html",
@@ -210,7 +260,7 @@ async function check(no, name, fn) {
 // 处置指引(FAIL 时一句话)
 const FIX = {
   vm: (d) => `开启 VMware 虚拟机: vmrun start "${VMX_PATH}" nogui,等 60s${existsSync(VMX_PATH) ? "" : `(注意:配置的 vmx 路径不存在,请确认虚拟机实际路径)`} [${d}]`,
-  redis: (d) => `docker start ${REDIS_CONTAINER}(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
+  redis: (d) => `按 .env REDIS_PORT 端口反查容器名,docker start <容器>(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
   backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000 [${d}]`,
   frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000 [${d}]`,
   debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端) [${d}]`,
@@ -225,9 +275,9 @@ if (DRILL) {
 
 const milvusTarget = DRILL ? { host: "127.0.0.1", port: 19531 } : MILVUS;
 const mongoTarget = DRILL ? { host: "127.0.0.1", port: 27018 } : MONGO;
-const redisArgs = DRILL
-  ? ["exec", REDIS_CONTAINER, "redis-cli", "-p", "6380", "ping"]
-  : ["exec", REDIS_CONTAINER, "redis-cli", "ping"];
+// W-NEXT-PROBE-001 修:② 容器名从硬编码改为运行时按端口反查(detectRedisContainer)。
+//   fail-drill 模式:端口 6380 → 必然 0 容器命中,验证「未找到映射宿主端口 <port> 的 Redis 容器」失败路径。
+const redisHostPort = DRILL ? 6380 : readEnvRedisPort();
 
 // ① Milvus
 await check("①", `Milvus 连通 ${milvusTarget.host}:${milvusTarget.port}`, Object.assign(
@@ -235,11 +285,16 @@ await check("①", `Milvus 连通 ${milvusTarget.host}:${milvusTarget.port}`, Ob
   { __fix: FIX.vm }));
 
 // ② Redis
-await check("②", `Redis(docker exec ${REDIS_CONTAINER} redis-cli ping)`, Object.assign(
+// W-NEXT-PROBE-001 修:容器名从硬编码 `edu-redis-standalone` 改为端口反查。
+//   顺序:① 端口取自 .env(REDIS_PORT 或 REDIS_URL);② docker ps --filter publish=<port>
+//   拿首个容器名;③ 0 匹配再退到 --filter expose=<port>;④ 仍 0 匹配报"未找到映射宿主端口"。
+//   拿到容器名后才发起 docker exec redis-cli ping —— 实测可达才算 PASS。
+await check("②", `Redis(按 .env REDIS_PORT=${redisHostPort} 反查容器 docker exec redis-cli ping)`, Object.assign(
   async () => {
-    const out = await runCmd("docker", redisArgs);
+    const container = await detectRedisContainer(redisHostPort);
+    const out = await runCmd("docker", ["exec", container, "redis-cli", "ping"]);
     if (!/PONG/i.test(out)) throw new Error(`ping 返回异常: ${out.slice(0, 80)}`);
-    return "PONG";
+    return `PONG(容器 ${container})`;
   },
   { __fix: FIX.redis }));
 
