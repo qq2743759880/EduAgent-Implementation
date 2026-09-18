@@ -495,14 +495,16 @@ async def chat_answer(
             assistant_message_id=message_id_assistant,
         )
 
-    # task25 R7 / R01-b：会话结束异步记忆 ingest——传对话窗（用户 query + assistant 回复成对），
+    # task25 R7 / R01-b：会话结束异步记忆 ingest——R08 起传**完整对话窗**
+    # （会话历史轮 + 本轮 query/answer 成对，防上下文缺 assistant 半边），
     # worker 内规则+LLM 抽取（显式触发/纠正/目标偏好 + 助手事实性陈述）。
     # 不 await、不 try-raise：无论如何都不阻塞应答链路（GWT①④ 异步隔离）
     # T9-C3：answer 为空串（LLM 空响应，sixnode.answer 仅异常兜底）→ 调用侧短路，不入记忆窗
     if answer and answer.strip():
         try:
-            from app.ai.memory.service import enqueue_turn
-            asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=answer))
+            from app.ai.memory.service import build_turn_window, enqueue_turn
+            window = build_turn_window(history_turns, query=req.query, answer=answer)
+            asyncio.create_task(enqueue_turn(int(user_id), messages=window))
         except Exception:
             pass
 
@@ -531,6 +533,7 @@ def make_stream_finalize(
     mcp_summaries: list[MCPToolCallSummary],
     mcp_degraded: str | None,
     t0: float,
+    memory_history_window: list[tuple[str, str]] | None = None,
 ):
     """构造流式收束函数 build_finalize(answer_text, *, degraded_extra)（R02 抽取为工厂）。
 
@@ -540,6 +543,8 @@ def make_stream_finalize(
     旧路径（service.chat_stream）与新路径（flows/graph_stream.py）共用本工厂，
     保证两执行体的落库/审计/done 语义单一事实源（audit P2-23 防漂移）。
     函数体 = 原 chat_stream.build_finalize 闭包原样迁移（行为逐字节一致）。
+    R08：memory_history_window = 会话历史轮 [(role, content)]（chat_stream 传入）；
+    graph_stream 旧调用不传 → None，记忆窗退化为本轮 query+answer 成对（行为兼容）。
     """
 
     async def build_finalize(answer_text: str, *, degraded_extra: str | None) -> dict:
@@ -622,12 +627,14 @@ def make_stream_finalize(
             assistant_message_id=message_id_assistant,
         )
 
-        # task25 R7 / R01-b：流式会话结束异步记忆 ingest——对话窗含助手最终回复（与应答解耦）
+        # task25 R7 / R01-b：流式会话结束异步记忆 ingest——R08 起传完整对话窗
+        # （会话历史轮 + 本轮 query/answer 成对，防上下文缺 assistant 半边，与应答解耦）
         # T9-C3：收束 answer 为空串（模型零 token / 空响应）→ 调用侧短路，不入记忆窗
         if final_answer and final_answer.strip():
             try:
-                from app.ai.memory.service import enqueue_turn
-                asyncio.create_task(enqueue_turn(int(user_id), req.query, assistant_reply=final_answer))
+                from app.ai.memory.service import build_turn_window, enqueue_turn
+                window = build_turn_window(memory_history_window, query=req.query, answer=final_answer)
+                asyncio.create_task(enqueue_turn(int(user_id), messages=window))
             except Exception:
                 pass
 
@@ -732,9 +739,11 @@ async def chat_stream(
     )
 
     # R02：finalize 落库逻辑抽取为模块级工厂 make_stream_finalize（与图路径适配层共用同一实现）
+    # R08：memory_history_window 传入会话历史轮 → 记忆窗=历史+本轮成对（完整对话窗）
     build_finalize = make_stream_finalize(
         req=req, user_id=user_id, role=role, session=session, bundle=bundle,
         mcp_summaries=mcp_summaries, mcp_degraded=mcp_degraded_stream, t0=t0,
+        memory_history_window=history_turns,
     )
 
     return session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries

@@ -1,4 +1,4 @@
-"""三层记忆 - 异步写队列 + 遗忘任务（task25 R7；R01 升级：对话窗 turn 载荷）。
+"""三层记忆 - 异步写队列 + 遗忘任务（task25 R7；R01 升级：对话窗 turn 载荷；R04-b/R08 增强）。
 
 - **异步隔离（GWT①④）**：`enqueue_candidate` / `enqueue_turn_window` 只入队即返回
   （LPUSH→Redis，或 in-memory asyncio.Queue），绝不阻塞/抛错到应答链路；
@@ -9,6 +9,11 @@
   - turn（R01-b）：对话窗原始载荷，worker 内做「规则抽取 + LLM 抽取（mem0 式）」，
     LLM 失败显式落 degraded 键（不伪装空列表），抽出的候选再入同一队列走 candidate 路径，
     重试/丢弃计数单一事实源。
+- **R04-b 入库前脱敏**：candidate.content / turn 窗内 content 入队前经
+  `sanitize` 模式级掩码（高熵 token/密钥前缀/JWT/Bearer/手机号/身份证/邮箱），
+  只损内容不损结构；命中计数入日志。检索/HEAD 逻辑零改动。
+- **R08 载荷版本**：turn 载荷带 v=2；消费端 `_detect_payload_shape` 形状探测兼容
+  v1（无 v 的 turn）/ v2 / 旧 candidate（无 kind）三种载荷。
 - **broker 双实现**：Redis list（生产，复用 app.database.get_redis）+ 内存 asyncio.Queue（降级/测试）。
 - worker 生命周期 `start_consumer` / `stop_consumer`；由应用 lifespan 启动（service 门面）。
 - **自愈（R01）**：消费循环内单条处理异常只计数入日志、不炸 worker；毒消息（JSON 不可解析）
@@ -24,6 +29,7 @@ from typing import Any
 from loguru import logger
 
 from app.ai.memory.ingest import detect_memories_window
+from app.ai.memory.sanitize import sanitize_memory_text, sanitize_turn_messages
 from app.ai.memory.schemas import MemoryCandidate
 
 
@@ -72,9 +78,12 @@ class MemoryWriteQueue:
                 return False
 
     async def enqueue_candidate(self, user_id: int, candidate: MemoryCandidate) -> bool:
+        # R04-b：入库前脱敏（模式级掩码）——candidate.content 是落库 user_memory_event.content
+        # 的最终来源，先脱敏再截断（防截断处留半截敏感串）。只损内容不损结构。
+        content, _hits = sanitize_memory_text(candidate.content or "")
         payload = {
             "user_id": int(user_id),
-            "content": (candidate.content or "")[:2000],
+            "content": content[:2000],
             "memory_type": candidate.memory_type[:32],
             "topic": (candidate.topic or "general")[:64],
             "importance": max(1, min(5, int(candidate.importance or 4))),
@@ -89,15 +98,24 @@ class MemoryWriteQueue:
         *,
         threshold: int | None = None,
     ) -> bool:
-        """R01-b：对话窗整窗入队（抽取在 worker 内做，enqueue 侧零 LLM、毫秒级快返）。"""
+        """R01-b：对话窗整窗入队（抽取在 worker 内做，enqueue 侧零 LLM、毫秒级快返）。
+
+        R08：载荷升级 v=2（收含 assistant 回复的完整对话窗）；v=1 旧载荷（无 v 字段）
+        形状兼容——worker 侧按 kind/messages 形状探测，版本字段仅作观测不改路由语义。
+        R04-b：窗内每条 content 入队前脱敏（Redis 载荷/degraded 预览/LLM 抽取输入同步最小化），
+        消息条数与 {role, content} 键结构完整保留。
+        """
         from app.config import settings
 
+        # R04-b：入队前脱敏（只损内容不损结构：条数/键集不变）
+        masked_messages, _win_hits = sanitize_turn_messages(list(messages or []))
         payload = {
             "kind": "turn",
+            "v": 2,
             "user_id": int(user_id),
             "messages": [
                 {"role": str(m.get("role"))[:16], "content": str(m.get("content") or "")[:2000]}
-                for m in (messages or [])
+                for m in masked_messages
                 if isinstance(m, dict)
             ][:20],
             "threshold": int(threshold if threshold is not None else settings.MEMORY_IMPORTANCE_THRESHOLD),
@@ -227,8 +245,37 @@ class MemoryWriteQueue:
         )
         return True
 
+    # --- 消费端载荷路由（R08：新旧载荷形状探测兼容） ---
+    @staticmethod
+    def _detect_payload_shape(payload: dict[str, Any]) -> str:
+        """载荷形状探测（R08 消费端兼容）：
+
+        - ``turn``：kind=turn 且 messages 为非空 list（v1 旧载荷无 v 字段 / v2 新载荷 v=2
+          均走此路——版本字段仅观测，路由以形状为准）；
+        - ``candidate``：无 kind（R7 原始 candidate 载荷），或残缺 turn（messages 丢失但
+          有 content——防御性兜底按 candidate 写，避免整条丢弃）；
+        - ``poison``：两者皆非（无法消费），交由上层按毒消息计数处理。
+        """
+        kind = payload.get("kind")
+        messages = payload.get("messages")
+        if kind == "turn" and isinstance(messages, list) and messages:
+            return "turn"
+        if payload.get("content"):
+            return "candidate"
+        return "poison"
+
     async def _process(self, payload: dict[str, Any]) -> bool:
-        if payload.get("kind") == "turn":
+        shape = self._detect_payload_shape(payload)
+        if shape == "poison":
+            self.stats["poison"] += 1
+            logger.error(
+                f"[Memory:queue] 载荷形状无法消费（无 content/kind=turn+messages），计数丢弃："
+                f"keys={sorted(list(payload.keys()))[:8]}"
+            )
+            return False
+        if shape == "turn":
+            if "v" not in payload:
+                logger.debug("[Memory:queue] 消费 v1 turn 载荷（无版本字段，形状兼容）")
             ok = await self._process_turn(payload)
             if ok:
                 self.stats["turn"] += 1

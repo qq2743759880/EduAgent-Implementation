@@ -33,6 +33,22 @@ from app.auth.dependencies import get_current_user as _dep_gcu
 from app.auth.schemas import UserRole, UserInfo
 
 
+@pytest.fixture(autouse=True)
+def _restore_memory_service_state():
+    """W-NEXT-R-MEM-001：隔离 service 模块级单例状态，防测试间污染。
+
+    本文件 `_make_client` 会直接覆盖 `svc._ensure_instances`（fake 返回 (store, None)）
+    且历史上不恢复——同进程后续文件（r01/rmem1 的 service 层用例）会拿到 None queue，
+    以 "'NoneType' object has no attribute 'enqueue_turn_window'" 失败。此处 autouse
+    快照/恢复四项模块级状态（既修污染外溢，也不影响本文件内用例语义）。
+    """
+    import app.ai.memory.service as svc
+
+    saved = (svc._ensure_instances, svc._store, svc._queue, svc._worker_started)
+    yield
+    (svc._ensure_instances, svc._store, svc._queue, svc._worker_started) = saved
+
+
 # ---------------------------------------------------------------------------
 # 测试夹具
 # ---------------------------------------------------------------------------

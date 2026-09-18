@@ -3,8 +3,9 @@
 对外统一入口，供 chat service / graph 工具 / 管理接口调用：
 - `get_memory_store()` / `get_memory_queue()`：单例
 - `start_memory_worker()` / `stop_memory_worker()`：应用 lifespan 启停后台消费
-- `enqueue_turn(user_id, text, *, messages=, assistant_reply=)`：R01-b 起改收**对话窗**
-  （用户 query + assistant 回复成对，mem0 式最近 N 条）→ 整窗异步入队，抽取在 worker 内完成
+- `enqueue_turn(user_id, text, *, messages=, assistant_reply=)`：R01-b 起收**对话窗**；
+  R08 起目标态=完整对话窗（历史轮+本轮用户/AI 成对，`build_turn_window` 拼装），
+  旧单 query 调用兼容保留（半窗显式告警）
 - `recall_topk(user_id, query, top_k)`：GWT② 向量召回 top-3（返回体**不含内部 id**，
   防原始记忆 ID 泄入 LLM prompt）
 - `format_memories_for_prompt()` / `recall_topk_mapped()`：R01 防幻觉 ID→序号映射（mem0 同款）
@@ -149,6 +150,31 @@ async def stop_memory_worker(timeout: float = 8.0) -> None:
 # ---------------------------------------------------------------------------
 # 对上层接口（chat service / graph 工具调用）
 # ---------------------------------------------------------------------------
+def build_turn_window(
+    history_turns: list[tuple[str, str]] | list[dict] | None,
+    *,
+    query: str,
+    answer: str | None,
+) -> list[dict[str, str]]:
+    """R08：拼装「完整对话窗」= 会话历史轮（正序 [(role, content)] 或 [{role, content}]）
+    + 本轮 (query, answer) 成对收尾——防止记忆窗缺 assistant 半边上下文。
+
+    纯函数零 I/O；非法角色/空内容由 normalize_window 二次过滤。answer 为空串/None 时
+    只拼到本轮 user 消息（T9-C3 语义：空 answer 轮不入窗）。
+    """
+    msgs: list[dict[str, str]] = []
+    for t in history_turns or []:
+        if isinstance(t, dict):
+            msgs.append({"role": str(t.get("role") or ""), "content": str(t.get("content") or "")})
+        elif isinstance(t, (tuple, list)) and len(t) >= 2:
+            msgs.append({"role": str(t[0]), "content": str(t[1])})
+    if query and str(query).strip():
+        msgs.append({"role": "user", "content": str(query)})
+    if answer and str(answer).strip():
+        msgs.append({"role": "assistant", "content": str(answer)})
+    return msgs
+
+
 async def enqueue_turn(
     user_id: int,
     text: str | None = None,
@@ -157,12 +183,14 @@ async def enqueue_turn(
     assistant_reply: str | None = None,
     threshold: int | None = None,
 ) -> int:
-    """单轮对话结束触发记忆（R01-b 起收**对话窗**，兼容旧的单 query 调用）。
+    """单轮对话结束触发记忆（R01-b 起收**对话窗**，R08 起首选完整对话窗含 assistant 回复）。
 
     入参三选一/组合：
-    - `messages`：完整对话窗（[{role, content}]，取最近 MEMORY_INGEST_WINDOW=10 条）；
-    - `text`（+可选 `assistant_reply`）：合成「用户问→助手答」最小窗口；
-    整窗作为 turn 载荷异步入队（毫秒级快返），规则+LLM 抽取均在 worker 内完成。
+    - `messages`：完整对话窗（[{role, content}]，历史轮+本轮成对，取最近
+      MEMORY_INGEST_WINDOW=10 条）——R08 目标态，chat 两侧调用点已对齐；
+    - `text`（+可选 `assistant_reply`）：合成「用户问→助手答」最小窗口（旧调用兼容）；
+    整窗作为 turn 载荷异步入队（毫秒级快返），规则+LLM 抽取均在 worker 内完成；
+    载荷带 v=2 版本字段，消费端按形状探测兼容 v1/v2/旧 candidate 载荷。
     importance < threshold 的候选在 worker 侧过滤（默认 MEMORY_IMPORTANCE_THRESHOLD=4）。
     全程不阻塞/不抛错到应答链路（GWT①④）。
 
@@ -181,6 +209,14 @@ async def enqueue_turn(
         )
         if not window:
             return 0
+        # R08：半窗守卫——有 user 发言但整窗零 assistant 回复 = 上下文缺半边。
+        # 兼容旧「单 query」调用不硬拒（保持旧契约可入队），但显式告警暴露调用点缺口。
+        has_user = any(m["role"] == "user" for m in window)
+        has_assistant = any(m["role"] == "assistant" for m in window)
+        if has_user and not has_assistant:
+            logger.warning(
+                "[Memory] 记忆窗缺 assistant 半边（仅 user 发言）——R08 完整对话窗目标态未对齐的调用点请改为传 messages 完整窗"
+            )
         queue = await get_memory_queue()
         return 1 if await queue.enqueue_turn_window(
             int(user_id), window, threshold=threshold
