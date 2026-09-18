@@ -385,18 +385,20 @@ async def submit(user_id: int, payload: SubmitAnswer) -> SubmitResult:
                 added_to_wrong_book = False
 
     mastery_change: dict[str, float] = {}
-    # R-M1 旁路异步写（Mongo learning_event，quiz 提交事件）：失败 WARN 不阻断主链
+    # R-M1 旁路异步写（Mongo learning_event，quiz 提交事件）：失败 WARN 不阻断主链。
+    # P0 教训：payload 实参在主链帧求值，emit 内部 try/except 管不到——mock 题库题
+    # question_id=None 会让 int(None) 炸主链（quiz submit 500），None 字段必须就地护栏。
     emit_learning_event(
         "quiz_submit",
         user_id=user_id,
         payload={
-            "question_id": int(q.question_id),
+            "question_id": int(q.question_id) if q.question_id is not None else None,
             "custom_code": q.custom_code,
             "subject_code": q.subject_code,
             "question_type": q.question_type,
             "is_correct": bool(is_correct),
             "score": float(score),
-            "session_id_mongo": int(sid) if sid else None,
+            "quiz_answer_session_id": int(sid) if sid else None,  # MySQL quiz_answer_session.id（仅溯源冗余，非 mongo id）
         },
     )
     return SubmitResult(
