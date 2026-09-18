@@ -51,7 +51,8 @@ const FRONTEND_DEV_LOG = path.join(LOG_DIR, "deploy-frontend-dev.log"); // W-NEX
 
 // ---------- 常量(与 check-demo 同口径) ----------
 const BACKEND_PORT = 8000;
-const REDIS_CONTAINER = "edu-redis-standalone";
+// Redis 容器名不再硬编码(0f566ef 半成品=edu-redis-standalone 已漂移;W-NEXT-PROBE-001 同款按 .env
+// REDIS_PORT 宿主端口反查运行中容器,见 preflight/detectRedisContainer)
 const MYSQL_DEFAULT = { host: "127.0.0.1", port: 3306 };
 const PROD_DIST_DIR = ".next-prod"; // C2 结论:NEXT_PROD_DIST_DIR 隔离 dev .next,build/start 两侧一致
 const BACKEND_HEALTH_TIMEOUT_MS = 120_000; // CUDA 模型加载可能较慢
@@ -93,6 +94,7 @@ function cliPort(name, fallback) {
 const FRONTEND_PORT = cliPort("--frontend-port", 3000);
 // W-NEXT-DEPLOY-HARD-001 ②:--prod-gate 部署门总开关(start 前跑 deploy_env_gate + check-demo 严格模式)
 const PROD_GATE = args.includes("--prod-gate");
+const ENV_FLAG = args.includes("--env");
 // --env <路径>:部署环境门读取的 env 文件(默认 edu-agent/.env;仅与 --prod-gate 搭配生效)
 const GATE_ENV_PATH = (() => {
   const v = cliFlagValue("--env");
@@ -197,8 +199,17 @@ function parseUriHostPort(uri, fallbackPort) {
   } catch { return null; }
 }
 
+// 按宿主发布端口反查运行中容器名(docker ps --filter publish=<port>;W-NEXT-PROBE-001 同款)
+function detectRedisContainer(port) {
+  const r = spawnSync("docker", ["ps", "--filter", `publish=${port}`, "--format", "{{.Names}}"], { encoding: "utf8", timeout: 8000 });
+  if (r.status !== 0) throw new Error((r.stderr || r.stdout || `docker ps 退出码 ${r.status}`).split("\n")[0].slice(0, 120));
+  const name = (r.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0];
+  if (!name) throw new Error(`未找到映射宿主端口 ${port} 的运行中容器`);
+  return name;
+}
+
 async function preflight() {
-  const env = readEnvKeys(["DEBUG", "ENV_NAME", "MYSQL_HOST", "MYSQL_PORT", "MILVUS_URI", "MONGO_URI"]);
+  const env = readEnvKeys(["DEBUG", "ENV_NAME", "MYSQL_HOST", "MYSQL_PORT", "MILVUS_URI", "MONGO_URI", "REDIS_URL", "REDIS_PORT"]);
   log(`\n${C.b}=== ① 前置检查(报告口径,不阻塞硬启——与 check-demo 同口径)===${C.x}`);
 
   // 形态报告(部署形态要求用户 .env 已按 .env.example 生产段配置;脚本只检查并报告)
@@ -227,14 +238,18 @@ async function preflight() {
     catch (e) { fail(`${name} 不可达 — ${desc} [${e.message}]`); warn(`  -> 处置: ${fix}`); }
   }
 
-  // Redis:docker exec ping,失败给指引但不阻塞(与 check-demo 同口径)
+  // Redis:按 .env REDIS_PORT(缺省回退 REDIS_URL 端口/6379)反查容器名后 docker exec ping,
+  //   失败给指引但不阻塞(W-NEXT-PROBE-001 同款端口反查——0f566ef 半成品硬编码 edu-redis-standalone,
+  //   而本机活容器已漂移为按 REDIS_PORT=6377 映射的容器,硬编码会假红,2026-09-18 实测修正)
+  const redisPort = Number(env.REDIS_PORT) || parseUriHostPort(env.REDIS_URL || "", 6379)?.port || 6379;
   try {
-    const r = spawnSync("docker", ["exec", REDIS_CONTAINER, "redis-cli", "ping"], { encoding: "utf8", timeout: 8000 });
-    if (r.status === 0 && /PONG/i.test(r.stdout || "")) ok(`Redis 可达 — docker exec ${REDIS_CONTAINER} redis-cli ping = PONG`);
+    const container = detectRedisContainer(redisPort);
+    const r = spawnSync("docker", ["exec", container, "redis-cli", "ping"], { encoding: "utf8", timeout: 8000 });
+    if (r.status === 0 && /PONG/i.test(r.stdout || "")) ok(`Redis 可达 — docker exec ${container} redis-cli ping = PONG(宿主端口 ${redisPort})`);
     else throw new Error((r.stderr || r.stdout || `退出码 ${r.status}`).split("\n")[0].slice(0, 120));
   } catch (e) {
-    fail(`Redis 不可达 — docker exec ${REDIS_CONTAINER} redis-cli ping [${e.message}]`);
-    warn(`  -> 处置: docker start ${REDIS_CONTAINER}(若 docker 引擎未运行,先启动 Docker Desktop)`);
+    fail(`Redis 不可达 — 宿主端口 ${redisPort} 反查容器 docker exec redis-cli ping [${e.message}]`);
+    warn(`  -> 处置: 按 .env REDIS_PORT=${redisPort} 反查容器名,docker start <容器名>(若 docker 引擎未运行,先启动 Docker Desktop)`);
   }
   return env;
 }
@@ -367,6 +382,7 @@ async function cmdStart() {
     ok(`部署环境门 PASS——继续部署`);
   } else {
     info(`${C.dim}未启用 --prod-gate:跳过部署环境门(生产出包请加 --prod-gate;check-demo 断言段也将以常规模式跑)${C.x}`);
+    if (ENV_FLAG) warn(`--env 已传但未搭配 --prod-gate,本次不生效(部署环境门仅在 --prod-gate 下运行)`);
   }
   try { await preflight(); } catch (e) { warn(`前置检查异常(不阻塞): ${e.message}`); }
 
@@ -408,8 +424,8 @@ function cmdStop() {
     if (Object.keys(j).length) writeFileSync(PIDS_FILE, JSON.stringify(j, null, 2)); else rmSync(PIDS_FILE, { force: true });
   } catch { /* 无记录 */ }
   if (ALL) {
-    log(`\n${C.dim}[--all] Redis 容器 ${REDIS_CONTAINER} 保留运行(不停)——缓存/限流/会话依赖它,一般无需停止;` +
-      `如确需停止: docker stop ${REDIS_CONTAINER}(重启: docker start ${REDIS_CONTAINER};docker 引擎未运行先启动 Docker Desktop)${C.x}`);
+    log(`\n${C.dim}[--all] Redis 容器(按 .env REDIS_PORT 宿主端口反查)保留运行(不停)——缓存/限流/会话依赖它,一般无需停止;` +
+      `如确需停止: docker stop <按 REDIS_PORT 反查的容器名>(重启: docker start <同容器名>;docker 引擎未运行先启动 Docker Desktop)${C.x}`);
   }
   const cleared = (b.killed.length || b.none) && (f.killed.length || f.none);
   log(cleared ? `\n${C.g}stop 完成:8000/${FRONTEND_PORT} 已清零或原本无监听${C.x}` : `\n${C.r}stop 部分失败,请复核 netstat -ano | findstr ":8000 :${FRONTEND_PORT}"${C.x}`);
@@ -425,7 +441,15 @@ async function cmdStopProdAndRestartDev() {
   // ② 按端口反查 PID → taskkill /F /T(与 stop 同机制)
   const r = killPort(FRONTEND_PORT, "前端");
   if (!r.none && !r.killed.length) { fail(`端口 ${FRONTEND_PORT} 存在监听但终止失败——中止(防止 next dev failover 到错误端口)`); process.exit(1); }
-  if (portBusy(FRONTEND_PORT)) { fail(`端口 ${FRONTEND_PORT} 仍被占用——中止`); process.exit(1); }
+  // ②b 等待端口释放(有界 10s;盲测③实测:taskkill 报成功后进程 teardown/套接字关闭有秒级窗口,
+  //     0f566ef 半成品立即 portBusy 曾误判"仍被占用"而中止——轮询到 LISTENING 消失再放行)
+  let released = false;
+  for (let i = 0; i < 20; i++) {
+    if (!portBusy(FRONTEND_PORT)) { released = true; break; }
+    await sleep(500);
+  }
+  if (!released) { fail(`端口 ${FRONTEND_PORT} 在 10s 内仍未释放——中止(防止 next dev failover 到错误端口)`); process.exit(1); }
+  ok(`端口 ${FRONTEND_PORT} 已释放`);
   // ③ 删 .next dev 缓存(AGENTS.md 教训 1:dev server 不热重载入口跳转,重启须删 .next;
   //    只删 .next,不动 .next-prod 生产产物——C2 结论两侧隔离)
   const devCache = path.join(FRONTEND_DIR, ".next");
@@ -435,8 +459,9 @@ async function cmdStopProdAndRestartDev() {
   } else {
     info(`无 .next dev 缓存,跳过删除`);
   }
-  // ④ 起 next dev(与 AGENTS.md 启动命令同构:node next/dist/bin/next dev -p <port>)
-  const nextBin = path.join(FRONTEND_DIR, "next", "dist", "bin", "next");
+  // ④ 起 next dev(实证 2026-09-18:活生产实例命令行 = `node node_modules/next/dist/bin/next start -p 3000`,
+  //    vendored next 真实入口在 node_modules/next/dist/bin/next——0f566ef 半成品误写 FRONTEND_DIR/next/... 已修)
+  const nextBin = path.join(FRONTEND_DIR, "node_modules", "next", "dist", "bin", "next");
   if (!existsSync(nextBin)) { fail(`未找到 next 可执行入口: ${nextBin}`); process.exit(2); }
   const pid = spawnDetached(process.execPath, [nextBin, "dev", "-p", String(FRONTEND_PORT)], FRONTEND_DIR, FRONTEND_DEV_LOG);
   recordPid("frontend", pid, { cmd: `next dev -p ${FRONTEND_PORT}`, form: "next dev(stop-prod-and-restart-dev)" });

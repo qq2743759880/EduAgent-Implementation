@@ -104,9 +104,9 @@ node edu-agent/scripts/check-demo.mjs
 | 2026-09-15 → 2026-09-17 | 容器重建为 `prisma-ai-redis-container-1`，端口漂到 6377（盲测期间发生） | 未登记文档/.env | **部署脱节**：容器/端口变更无审计记录 |
 | 2026-09-17 W-NEXT-REDIS-FIX | `.env` 显式 `REDIS_URL=redis://127.0.0.1:6377/0` + `REDIS_PORT=6377`；本文新增 + `redis_port_check.py` + check-demo ⑮ 门 | 本任务闭环 | 见上「对账/防漂移」段 |
 
-> **未来防漂移建议（非本任务范围）**：
-> - check-demo.mjs ② 的 `REDIS_CONTAINER = "edu-redis-standalone"`（line 20）需改为容器名探测（多容器按 health 选第一个），
->   当前脚本硬编码仍指旧名，演示验收会假红——本任务**未触** `check-demo.mjs` ②（scope 限于 ⑮），后续单独 W-NEXT 修复。
+> **防漂移状态（2026-09-18 更新）**：
+> - check-demo.mjs ② 已由 W-NEXT-PROBE-001 改为「按 .env REDIS_PORT 宿主端口反查容器名」（不再硬编码旧名）；
+>   deploy.mjs 前置检查的 Redis 探测亦已在 W-NEXT-DEPLOY-HARD-001 对齐同款反查（本机实测 PONG=prisma-ai-redis-container-1:6377）。
 > - 若再次发生容器/端口变更，请同步：(a) `edu-agent/.env` `REDIS_URL`/`REDIS_PORT` 两键；(b) 本节表格；
 >   (c) `edu-agent/scripts/eval/redis_port_check.py` 期望值；(d) `test-reports/` 留一份变更说明。
 
@@ -356,18 +356,24 @@ node scripts\deploy\deploy.mjs stop-prod-and-restart-dev [--frontend-port 3000]
 ```
 
 依序执行：① 停前形态探针（`_buildManifest`，如实记录被停的是什么形态）→ ② 按端口反查 PID
-`taskkill /F /T` 停掉 <port> 上的前端实例 → ③ **删 `.next` dev 缓存**（AGENTS.md 教训 1：dev server
-不热重载入口跳转，重启须删 `.next`；只删 `.next`，**不动 `.next-prod` 生产产物**，C2 两侧隔离）→
-④ 起 `next dev -p <port>`（与 AGENTS.md 启动命令同构，日志 `logs/deploy-frontend-dev.log`）→
+`taskkill /F /T` 停掉 <port> 上的前端实例 + **等待端口释放**（有界 10s 轮询——taskkill 报成功后进程
+teardown/套接字关闭有秒级窗口，立即探测会误判"仍被占用"而中止，盲测实证后加）→ ③ **删 `.next` dev 缓存**
+（AGENTS.md 教训 1：dev server 不热重载入口跳转，重启须删 `.next`；只删 `.next`，**不动 `.next-prod`
+生产产物**，C2 两侧隔离）→ ④ 起 `next dev -p <port>`（真实入口
+`node_modules/next/dist/bin/next`，实证活生产实例命令行同源，日志 `logs/deploy-frontend-dev.log`）→
 ⑤ 健康探测 `/login-register.html` 200 → ⑥ 形态复核（`_buildManifest` 期望 200=dev）。
 
-反向（dev→生产）：`node scripts\deploy\deploy.mjs start`（`.next-prod/BUILD_ID` 在则跳过 build，
-约 5-10s 拉起）。⚠ 注意 `stop` 会**连 8000 后端一起清**——只想换前端形态时用本子命令（只动前端端口）
-或 `start`（8000 被占时幂等跳过），不要用 `stop` 做单端前端切换。
+反向（dev→生产，2026-09-18 盲测实证路径）：**先清掉 <port> 上的 dev 实例再 start**——`start` 对已在
+监听的端口是幂等跳过（不会替换 dev 实例），单跑 `start` 切不回生产形态。单清前端端口 =
+`for /f "PID" %p in ('netstat -ano -p tcp ^| findstr ":3000.*LISTENING"') do taskkill /F /T /PID %p`
+（或 `taskkill /F /T /PID <dev PID>`）；`stop` 也可用但**会连 8000 后端一起清**。随后
+`node scripts\deploy\deploy.mjs start --frontend-port 3000`：8000 在跑则幂等跳过、3000 空闲则
+`.next-prod/BUILD_ID` 在即跳过 build（实测 ~4-5s 拉起）并自动跑 check-demo 断言。
 
-- `stop` **不停 Redis 容器**（缓存/限流/会话依赖它，一般无需停止）；确需停止：`docker stop edu-redis-standalone`，恢复 `docker start edu-redis-standalone`。
-- PID 记录：`logs/deploy.pids.json`（stop 会清理陈旧记录）。
+- `stop` **不停 Redis 容器**（缓存/限流/会话依赖它，一般无需停止）；容器名按 .env `REDIS_PORT` 宿主端口反查（不要按旧名硬编码），确需停止：`docker stop <反查容器名>`，恢复 `docker start <同容器名>`。
+- PID 记录：`logs/deploy.pids.json`（stop 会清理陈旧记录；记录的是 spawn 包装层 PID，实际监听 PID 以 `netstat -ano` 为准——清杀一律按端口反查，不依赖该记录）。
 - 幂等提示：start 时若 3000 已被监听会跳过并提示「可能是 dev 形态，如需生产形态请先 stop」。
+- 可逆性三态盲测（--frontend-port 3001 全流程 / --prod-gate 拦 DEBUG=true / 往返后恢复生产 21/21）实证记录：`edu-agent/test-reports/WNEXTDEPLOYHARD1-completion-report.md`。
 
 ### 日志位置（均为追加式 append）
 
