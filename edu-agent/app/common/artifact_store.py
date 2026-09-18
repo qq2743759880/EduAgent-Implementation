@@ -195,8 +195,8 @@ def _index_append(rec: dict) -> None:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
-def _write_local(name: str, data: bytes, desc: dict, dedup: bool) -> str:
-    """降级写本地（幂等: 同 name+sha 复用 aid 不重复追加索引）。返回 aid。"""
+def _write_local(name: str, data: bytes, desc: dict) -> tuple[str, bool]:
+    """降级写本地（幂等: 同 name+sha 复用 aid 不重复追加索引）。返回 (aid, dedup)。"""
     flat = _local_flat_name(name)
     path = os.path.join(local_fallback_dir(), flat)
     existing = next((r for r in _index_read()
@@ -207,14 +207,14 @@ def _write_local(name: str, data: bytes, desc: dict, dedup: bool) -> str:
         f.write(data)
     os.replace(tmp, path)  # 原子替换, 防半写
     if existing:
-        return existing["aid"]
+        return existing["aid"], True
     aid = f"local-{uuid.uuid4().hex}"
     _index_append({
         "aid": aid, "name": name, "sha256": desc["sha256"], "size": desc["size"],
         "created_at": desc["created_at"], "source": desc["source"],
         "metadata": _safe_meta(desc.get("metadata")), "path": path,
     })
-    return aid
+    return aid, False
 
 
 def _write_local_copy(local_copy: str, data: bytes) -> bool:
@@ -262,8 +262,8 @@ def save_artifact(name: str, content, metadata: dict | None = None,
         logger.warning("MongoDB 不可达(%s: %s)，制品 %s 降级落本地 %s",
                        type(e).__name__, e, sane, local_fallback_dir())
         try:
-            aid = _write_local(sane, data, desc, dedup=True)
-            desc.update({"aid": aid, "backend": "local", "dedup": False})
+            aid, deduped = _write_local(sane, data, desc)
+            desc.update({"aid": aid, "backend": "local", "dedup": deduped})
             if local_copy:
                 desc["local_copy_written"] = _write_local_copy(local_copy, data)
             return desc
@@ -308,6 +308,7 @@ def list_artifacts(prefix: str | None = None, limit: int = 200) -> list[dict]:
     """列出制品（新→旧）。mongo 不可达时降级返回本地索引。绝不抛异常。"""
     out: list[dict] = []
     try:
+        _get_gridfs()  # 首调用时懒初始化 _client/_db（否则 _db=None 误降级本地索引）
         files = _db[f"{_GRIDFS_PREFIX}.files"]
         q = {"filename": {"$regex": "^" + re.escape(prefix)}} if prefix else {}
         cur = files.find(q).sort("uploadDate", -1).limit(int(limit))

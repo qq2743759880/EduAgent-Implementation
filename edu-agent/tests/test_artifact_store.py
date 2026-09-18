@@ -51,15 +51,35 @@ def _isolate_env(monkeypatch, tmp_path):
     st._reset_client()
 
 
+def _drop_test_db_explicit() -> None:
+    """用显式 client 只删 TEST_DB——绝不走 _mongo_config() 的库名回落:
+    P0 教训(前任 skip 根因): module 级 fixture 里 ARTIFACT_MONGO_DB 未设( monkeypatch
+    仅函数级生效) → _mongo_config() 回落 settings.MONGO_DB='edu_agent'(生产库) →
+    收尾 drop 竟删生产库; rm2_test 永不清理 → 残留制品致 dedup 断言假失败。"""
+    from pymongo import MongoClient  # noqa: PLC0415
+
+    uri, _ = st._mongo_config()
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    try:
+        client.drop_database(TEST_DB)
+    finally:
+        client.close()
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _drop_test_db():
-    """模块收尾: 清空专用测试库。"""
+    """模块开始/收尾均清空专用测试库——开始清库防「上次中断运行残留」（前任 skip 根因:
+    崩溃运行无 teardown, 重跑时同名同 sha 制品已存在 → dedup 断言失败）。"""
+    try:
+        _drop_test_db_explicit()
+    except Exception:
+        pass
+    st._reset_client()
     yield
-    if _mongo_reachable():
-        try:
-            st._client.drop_database(st._db.name)
-        except Exception:
-            pass
+    try:
+        _drop_test_db_explicit()
+    except Exception:
+        pass
     st._reset_client()
 
 
@@ -96,7 +116,6 @@ def test_roundtrip_large_artifact_over_1mb():
 
 
 @mongo_needed
-@pytest.mark.skip(reason="幂等断言异常：同名不同内容 dedup=False 断言不满足，待排查")
 def test_idempotent_same_name_and_content():
     data = b"rm2-idempotent-payload"
     d1 = st.save_artifact("eval/test/idem.json", {"k": 1})
@@ -132,6 +151,18 @@ def test_list_artifacts_prefix_filter_mongo():
     st.save_artifact("other/c.json", {"n": 3})
     names = {a["name"] for a in st.list_artifacts(prefix="eval/runs/")}
     assert names == {"eval/runs/a.json", "eval/runs/b.json"}
+
+
+@mongo_needed
+def test_list_artifacts_first_call_mongo():
+    """回归: list_artifacts 进程内首调用（无先导 save）必须走 mongo 而非误降级本地
+    （WIP 2e216e8 缺陷: 直接用 _db 未先 _get_gridfs() → _db=None → TypeError → 静默回退本地空索引）。"""
+    st._reset_client()  # 模拟进程首调: 客户端懒加载缓存为空
+    desc = st.save_artifact("eval/first/call.json", {"first": True})
+    st._reset_client()
+    names = [a["name"] for a in st.list_artifacts(prefix="eval/first/")]
+    assert names == ["eval/first/call.json"]
+    assert st.load_artifact_json(desc["aid"]) == {"first": True}
 
 
 def test_sanitize_and_type_errors():
@@ -176,6 +207,7 @@ def test_degraded_local_idempotent(monkeypatch, tmp_path):
     d1 = st.save_artifact("eval/deg/idem.json", {"same": 1})
     d2 = st.save_artifact("eval/deg/idem.json", {"same": 1})
     assert d1["aid"] == d2["aid"]
+    assert d2["dedup"] is True  # 本地降级路径的 dedup 标志如实上报
     assert len(st._index_read()) == 1  # 索引不翻倍
 
 
@@ -209,16 +241,18 @@ def test_list_degraded_prefix_filter(monkeypatch, tmp_path):
 
 
 @mongo_needed
-@pytest.mark.skip(reason="Mongo 恢复测试：UNREACHABLE_URI 降级后 reset 仍连旧 URI，待排查")
 def test_mongo_recovered_after_degradation(monkeypatch, tmp_path):
-    """降级后恢复: 新 save 回到 mongo; 同内容制品不因降级/恢复重复存两份。"""
+    """降级后恢复: 新 save 回到 mongo; 后端切换后首次入库 dedup=False。
+    name 带随机后缀: 防外部写入者/残留库干扰（前任 skip + 本次复跑 flake 根因）,
+    同名同 sha 去重语义已由 test_idempotent_same_name_and_content 覆盖。"""
+    name = f"eval/rec/x-{uuid.uuid4().hex[:8]}.bin"
     data = b"rm2-recovery"
     monkeypatch.setenv("ARTIFACT_MONGO_URI", UNREACHABLE_URI)
     st._reset_client()
-    d_local = st.save_artifact("eval/rec/x.bin", data)
+    d_local = st.save_artifact(name, data)
     assert d_local["backend"] == "local"
     monkeypatch.delenv("ARTIFACT_MONGO_URI")
     st._reset_client()
-    d_mongo = st.save_artifact("eval/rec/x.bin", data)
+    d_mongo = st.save_artifact(name, data)
     assert d_mongo["backend"] == "mongo" and d_mongo["dedup"] is False  # 后端切换后首次入库
     assert st.load_artifact(d_mongo["aid"]) == data
