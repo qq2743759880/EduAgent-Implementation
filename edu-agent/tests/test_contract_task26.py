@@ -257,15 +257,29 @@ def _run(coro):
 # 真 Redis 可选：大 key 治理实证（无 Redis 时跳过）
 @pytest.mark.asyncio
 async def test_bigkey_scan_on_real_redis():
+    # TEST-BASE 2026-09-19 两段教训：
+    # ① 原探测 get_redis() 在测试进程未 init 必抛 RuntimeError → 恒假"Redis 不可达"跳过；
+    # ② 若改用 init_redis() 修，会把全局 _redis 单例（绑定当轮 asyncio.run 的 loop）
+    #    泄漏给同进程后续用例，打穿 task_m2/task_vec/task92 的「redis 缺失→回退 memory」
+    #    假设（run6 实证新增 3 例失败）。故此处自建独立客户端，生命周期本用例内闭环，
+    #    不触全局单例。
+    from app.config import settings
+
+    import redis.asyncio as aioredis
+
+    r = aioredis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2)
     try:
-        from app.database import get_redis
-        r = get_redis()
         await r.ping()
-    except Exception:
-        pytest.skip("Redis 不可用，跳过真库 bigkey 扫描")
-    g = ConcurrencyGuard(redis=r)
-    await r.set("task26_bigkey_probe", "x" * (1024 * 1024 + 10))
-    big = await g.scan_bigkeys(threshold=1024 * 1024)
-    await r.delete("task26_bigkey_probe")
-    keys = [b["key"] for b in big]
-    assert any("task26_bigkey_probe" in k for k in keys), f"应扫描到超过 1MB 的 key: {keys}"
+        g = ConcurrencyGuard(redis=r)
+        await r.set("task26_bigkey_probe", "x" * (1024 * 1024 + 10))
+        big = await g.scan_bigkeys(threshold=1024 * 1024)
+        keys = [
+            b["key"].decode() if isinstance(b["key"], bytes) else b["key"]
+            for b in big
+        ]
+        # 客户端未开 decode_responses → key 为 bytes，断言前统一 decode（原用例从未真正跑过）
+        assert any("task26_bigkey_probe" in k for k in keys), (
+            f"应扫描到超过 1MB 的 key: {keys}"
+        )
+    finally:
+        await r.aclose()

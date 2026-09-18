@@ -351,13 +351,22 @@ def test_service_neo4j_error_wrapped_50301(monkeypatch: pytest.MonkeyPatch):
 
 
 # ══════════════════════════════════════════════════════════════
-# ⑤ 契约一致性（draft）
+# ⑤ 契约一致性（freeze 生命周期锁）
 # ══════════════════════════════════════════════════════════════
-def test_contract_draft_matches_router():
+def test_contract_frozen_matches_router():
+    """契约生命周期锁：reshape-r-kg 已于 2026-09-19 由用户签字冻结
+    （commit 2c192e2 contract(frozen)/用户签字生效，draft=false + signed_by）。
+
+    前任 WIP 断言 draft is True 是起草期快照——冻结后合法失效（C 类测试腐化：
+    断言停在生命周期旧阶段）。本用例现锁冻结态：draft 必须为 false（防回退到
+    无签字 draft）+ signed_by 必填 + 端点集与 router 注册仍一致（冻结后端点集
+    即契约，变更必须走变更单）。
+    """
     assert CONTRACT_PATH.exists(), "contracts/reshape-r-kg.json 缺失"
     contract = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     assert contract["planId"] == "reshape-r-kg"
-    assert contract["draft"] is True
+    assert contract["draft"] is False, "契约已签字冻结（2026-09-19），draft 不得回退为 true"
+    assert contract.get("signed_by"), "冻结契约必须有 signed_by 签字记录"
     contract_eps = {(e["method"], e["path"]) for e in contract["endpoint_details"]}
     assert contract_eps == {
         ("GET", "/api/kg/course/{course_id}/path"),

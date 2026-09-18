@@ -1,0 +1,2658 @@
+...................................................ss................... [  4%]
+........................................................................ [  8%]
+..................sssssssssss.......sssssss.........ssssssssssssssss.... [ 12%]
+.................................s....ssss.............................. [ 16%]
+.......EEEE.........ssssssss.......sssssssssssssssssssssssssssssssssssss [ 20%]
+ssssssssssssssF..F.FFF.FFFFF...F........s....s.......................... [ 24%]
+.......s................................................................ [ 28%]
+.............................F.......................................... [ 32%]
+........................................................................ [ 36%]
+........................................................................ [ 40%]
+.........................s.............................................. [ 44%]
+.......s.................s.............................................. [ 48%]
+s....................................................sssssssssssssssssss [ 52%]
+EEEEEEsEsssssssssssssssssssssssssss............................s........ [ 56%]
+.........................................s............ss...sss.......... [ 61%]
+.................sssssss.........ssss................................... [ 65%]
+.......................................................................s [ 69%]
+...............................F........................................ [ 73%]
+........................................................................ [ 77%]
+........................................................................ [ 81%]
+.....ssssssssss......................................................... [ 85%]
+............................................FFF..FF..................... [ 89%]
+........................................................................ [ 93%]
+...................ss...............................s................... [ 97%]
+.........................................                                [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of TestRestoreCodeConflict40901.test_softdel_retains_code_and_restore_no_false_conflict _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 30, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_contract_series_restore_conflicts.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_contract_series_restore_conflicts.py:70: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_contract_series_restore_conflicts.py:59: in api
+    with _OPENER.open(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_ ERROR at setup of TestHardDeleteConflict40908.test_hard_delete_with_cohort_reference_40908 _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 30, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_contract_series_restore_conflicts.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_contract_series_restore_conflicts.py:70: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_contract_series_restore_conflicts.py:59: in api
+    with _OPENER.open(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_ ERROR at setup of TestHardDeleteZeroReference.test_hard_delete_zero_reference_succeeds _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 30, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_contract_series_restore_conflicts.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_contract_series_restore_conflicts.py:70: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_contract_series_restore_conflicts.py:59: in api
+    with _OPENER.open(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_ ERROR at setup of TestUploadIdPathTraversal.test_traversal_upload_id_rejected _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 30, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_contract_series_restore_conflicts.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_contract_series_restore_conflicts.py:70: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_contract_series_restore_conflicts.py:59: in api
+    with _OPENER.open(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DB92A4D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x00000226DB87A590>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x00000226E39D9290>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_______ ERROR at setup of test_create_with_json_list_columns_roundtrip ________
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        """登录 admin，返回带 Authorization 头 + user_id。"""
+>       code, _, body = api("POST", "/api/auth/login",
+                            body={"account": _ADMIN, "password": _ADMIN_PWD})
+
+tests\test_course_admin_json_columns.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_json_columns.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_______ ERROR at setup of test_patch_update_json_list_columns_roundtrip _______
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        """登录 admin，返回带 Authorization 头 + user_id。"""
+>       code, _, body = api("POST", "/api/auth/login",
+                            body={"account": _ADMIN, "password": _ADMIN_PWD})
+
+tests\test_course_admin_json_columns.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_json_columns.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+____________ ERROR at setup of test_create_with_null_json_columns _____________
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        """登录 admin，返回带 Authorization 头 + user_id。"""
+>       code, _, body = api("POST", "/api/auth/login",
+                            body={"account": _ADMIN, "password": _ADMIN_PWD})
+
+tests\test_course_admin_json_columns.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_json_columns.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE1890>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748BD7C90>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748C7CA10>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+________ ERROR at setup of TestRestoreSuccess.test_restore_full_cycle _________
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_course_admin_restore.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_restore.py:65: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_course_admin_restore.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+______ ERROR at setup of TestRestoreErrors.test_restore_nonexistent_404 _______
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_course_admin_restore.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_restore.py:65: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_course_admin_restore.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+____ ERROR at setup of TestRestoreErrors.test_restore_not_soft_deleted_404 ____
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_course_admin_restore.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_restore.py:65: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_course_admin_restore.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+_ ERROR at setup of TestHardDeleteGuardUnchanged.test_hard_delete_with_reference_still_40908 _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+>               h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1323: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1369: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1318: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1078: in _send_output
+    self.send(msg)
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:1016: in send
+    self.connect()
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\http\client.py:982: in connect
+    self.sock = self._create_connection(
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:863: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 8000), timeout = 20, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\socket.py:848: ConnectionRefusedError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.fixture(scope="module")
+    def admin():
+        try:
+>           tok, uid = _login()
+                       ^^^^^^^^
+
+tests\test_course_admin_restore.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_course_admin_restore.py:65: in _login
+    code, _, body = api("POST", "/api/auth/login", body={"account": _ADMIN, "password": _ADMIN_PWD})
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_course_admin_restore.py:53: in api
+    with _OPENER.open(req, timeout=20) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:519: in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:536: in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:496: in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1377: in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <urllib.request.HTTPHandler object at 0x00000226DBFE03D0>
+http_class = <class 'http.client.HTTPConnection'>
+req = <urllib.request.Request object at 0x0000022748DBDFD0>, http_conn_args = {}
+host = '127.0.0.1:8000'
+h = <http.client.HTTPConnection object at 0x0000022748DBD710>
+
+    def do_open(self, http_class, req, **http_conn_args):
+        """Return an HTTPResponse object for the request, using http_class.
+    
+        http_class must implement the HTTPConnection API from http.client.
+        """
+        host = req.host
+        if not host:
+            raise URLError('no host given')
+    
+        # will parse host:port
+        h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
+    
+        headers = dict(req.unredirected_hdrs)
+        headers.update({k: v for k, v in req.headers.items()
+                        if k not in headers})
+    
+        # TODO(jhylton): Should this be redesigned to handle
+        # persistent connections?
+    
+        # We want to make an HTTP/1.1 request, but the addinfourl
+        # class isn't prepared to deal with a persistent connection.
+        # It will try to read all remaining data from the socket,
+        # which will block while the server waits for the next request.
+        # So make sure the connection gets closed after the (only)
+        # request.
+        headers["Connection"] = "close"
+        headers = {name.title(): val for name, val in headers.items()}
+    
+        if req._tunnel_host:
+            tunnel_headers = {}
+            proxy_auth_hdr = "Proxy-Authorization"
+            if proxy_auth_hdr in headers:
+                tunnel_headers[proxy_auth_hdr] = headers[proxy_auth_hdr]
+                # Proxy-Authorization should not be sent to origin
+                # server.
+                del headers[proxy_auth_hdr]
+            h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+    
+        try:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
+            except OSError as err: # timeout error
+>               raise URLError(err)
+E               urllib.error.URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>
+
+C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\urllib\request.py:1351: URLError
+================================== FAILURES ===================================
+________________ TestMeCohorts.test_list_active_with_progress _________________
+
+self = <tests.test_contract_task20.TestMeCohorts object at 0x00000226DB9D2250>
+
+    def test_list_active_with_progress(self):
+        r = _call("/api/enrollments/me/cohorts?status=active")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["code"] == 0
+        items = body["data"]
+        assert isinstance(items, list)
+        target = [it for it in items if it["cohort_id"] == FI["cohort_id"]]
+>       assert target, f"夹具班次 {FI['cohort_id']} 应出现在 active 列表"
+E       AssertionError: 夹具班次 997 应出现在 active 列表
+E       assert []
+
+tests\test_contract_task20.py:85: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[c6979f90] GET /api/enrollments/me/cohorts → 200 (41ms)[0m
+______________________ TestEnrollmentDetail.test_detail _______________________
+
+self = <tests.test_contract_task20.TestEnrollmentDetail object at 0x00000226DB9D36D0>
+
+    def test_detail(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:106: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[67650631] GET /api/enrollments/me/cohorts/997 → 404 (7ms)[0m
+______________________ TestEnrollmentStatus.test_status _______________________
+
+self = <tests.test_contract_task20.TestEnrollmentStatus object at 0x00000226DB9DC750>
+
+    def test_status(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}/status")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:119: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[8ec50468] GET /api/enrollments/me/cohorts/997/status → 404 (7ms)[0m
+_________________ TestProgressSnapshot.test_snapshot_modules __________________
+
+self = <tests.test_contract_task20.TestProgressSnapshot object at 0x00000226DB9DD1D0>
+
+    def test_snapshot_modules(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}/progress")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:128: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[63c9645b] GET /api/enrollments/me/cohorts/997/progress → 404 (6ms)[0m
+-------------------------- Captured stdout teardown ---------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.database[0m:[36mclose_mysql[0m:[36m132[0m | [1mMySQL 连接池已关闭[0m
+__________________ TestAccessAuthz.test_enrolled_accessible ___________________
+
+self = <tests.test_contract_task21.TestAccessAuthz object at 0x00000226DB9D2110>
+
+    def test_enrolled_accessible(self):
+        """已报名用户 access → accessible=true。"""
+        r = _call("GET", f"/api/study/courses/{FI['series_id']}/access", user_id=FI["user_id"])
+        assert r.status_code == 200 and r.json()["code"] == 0
+        d = r.json()["data"]
+>       assert d["accessible"] is True and d["series_id"] == FI["series_id"]
+E       assert (False is True)
+
+tests\test_contract_task21.py:118: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[bdfe9f8d] GET /api/study/courses/333/access → 200 (15ms)[0m
+________________ TestAccessAuthz.test_enrolled_can_view_detail ________________
+
+self = <tests.test_contract_task21.TestAccessAuthz object at 0x00000226DB9EC310>
+
+    def test_enrolled_can_view_detail(self):
+        """已报名用户课次详情 → 200，assets/video 返回。"""
+        if not FI.get("session_id"):
+            pytest.skip("无 enrolled_only 视频课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_contract_task21.py:133: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b0e9fbc9] GET /api/study/sessions/26725 → 403 (8ms)[0m
+____________ TestSessionDetailAssets.test_assets_filtered_by_scope ____________
+
+self = <tests.test_contract_task21.TestSessionDetailAssets object at 0x00000226DB9ECB10>
+
+    def test_assets_filtered_by_scope(self):
+        """GWT③：课次详情 assets 仅含该用户可访问 scope（不含 internal_only）。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+        d = r.json()["data"]
+>       scopes = {a["access_scope"] for a in d["assets"]}
+                                             ^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests\test_contract_task21.py:146: TypeError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[1941163d] GET /api/study/sessions/26725 → 403 (8ms)[0m
+_____________ TestSessionDetailAssets.test_transcode_status_valid _____________
+
+self = <tests.test_contract_task21.TestSessionDetailAssets object at 0x00000226DB9ED110>
+
+    def test_transcode_status_valid(self):
+        """GWT④：video.transcode_status ∈ {pending,in_progress,completed,failed}；url 仅 completed 给。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+        d = r.json()["data"]
+>       v = d.get("video")
+            ^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'get'
+
+tests\test_contract_task21.py:158: AttributeError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b1132bab] GET /api/study/sessions/26725 → 403 (8ms)[0m
+_____________________ TestOutline.test_outline_structure ______________________
+
+self = <tests.test_contract_task21.TestOutline object at 0x00000226DB9EDA90>
+
+    def test_outline_structure(self):
+        """GWT②：outline 模块/课次/进度 + 资源过滤 + homework_done。"""
+        r = _call("GET", f"/api/study/courses/{FI['series_id']}/outline", user_id=FI["user_id"])
+        assert r.status_code == 200 and r.json()["code"] == 0
+        d = r.json()["data"]
+        assert d["series_id"] == FI["series_id"]
+>       assert d["total_sessions"] >= 1
+E       assert 0 >= 1
+
+tests\test_contract_task21.py:172: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[c1fe4af2] GET /api/study/courses/333/outline → 200 (24ms)[0m
+______________________ TestSessionComplete.test_complete ______________________
+
+self = <tests.test_contract_task21.TestSessionComplete object at 0x00000226DB9EE550>
+
+    def test_complete(self):
+        """课次完成态（有播放会话 → completed=true）。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("POST", f"/api/study/sessions/{FI['session_id']}/complete", user_id=FI["user_id"])
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_contract_task21.py:192: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[22cc9d9b] POST /api/study/sessions/26725/complete → 403 (8ms)[0m
+________________ TestUserIsolation.test_cross_user_detail_404 _________________
+
+self = <tests.test_contract_task22.TestUserIsolation object at 0x00000226DB9F6AD0>
+
+    def test_cross_user_detail_404(self):
+        """GWT②：用户 B 请求用户 A 的工单 → 404。"""
+        if "ticket_a" not in FI:
+            pytest.skip("无 A 工单")
+        r = _call_b("GET", f"/api/trade/after_sales/ticket/{FI['ticket_a']}")
+>       assert r.status_code == 404 and r.json()["code"] == "40441"
+E       assert (200 == 404)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_contract_task22.py:112: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:41:31[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[1712a00b] GET /api/trade/after_sales/ticket/11229 → 200 (7ms)[0m
+______________ TestGwt4Registry.test_live_ai_hub_180_registered _______________
+
+self = <tests.test_contract_task94.TestGwt4Registry object at 0x00000226DBC9C650>
+
+    def test_live_ai_hub_180_registered(self):
+        """LIVE：真实 AI-Hub 中心库应注册 >=150 个 skill，无死链。
+    
+        task37：AI-Hub 技能库数随 center 库变化是预期（结构重构会减少、持续沉淀会增加）。
+        临界值由编排者刷新。当前下限改为 150（避免死链漂移假红）。
+    
+        WNEXT10 F5-b 注意：平台生产注册表已与开发机 AI-Hub 隔离，
+        故此处显式扫描中心库根 DEFAULT_AI_HUB 以验证中心库本体完整性。
+        """
+        if not os.path.exists(DEFAULT_AI_HUB):
+            pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
+        report = verify.verify_registry(roots=[DEFAULT_AI_HUB])
+>       assert report["total"] >= 150, f"AI-Hub skills 异常偏少（<150）: {report}"
+E       AssertionError: AI-Hub skills 异常偏少（<150）: {'total': 93, 'on_disk': 93, 'dead_links': 0, 'dead': [], 'parse_errors': 2, 'parse_error_names': ['discord', 'composio'], 'with_paths_trigger': 0, 'with_paths_names': [], 'with_body': 93, 'stats': {'total': 93, 'context_fork': 4, 'disable_model_invocation': 7, 'with_paths_trigger': 0, 'with_allowed_tools': 1, 'parse_errors': 2}, 'ok': True}
+E       assert 93 >= 150
+
+tests\test_contract_task94.py:105: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:42:28[0m | [1mINFO    [0m | [36mapp.ai.skills.registry[0m:[36mscan[0m:[36m107[0m | [1m[SkillRegistry] 扫描完成，索引 93 个 skills（来自 1 个 root，本次新增 93）[0m
+_____________________ test_contract_draft_matches_router ______________________
+
+    def test_contract_draft_matches_router():
+        assert CONTRACT_PATH.exists(), "contracts/reshape-r-kg.json 缺失"
+        contract = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+        assert contract["planId"] == "reshape-r-kg"
+>       assert contract["draft"] is True
+E       assert False is True
+
+tests\test_kg_rn1.py:360: AssertionError
+_______________________ test_summary_admin_any_user_ok ________________________
+
+client = <starlette.testclient.TestClient object at 0x0000022748841750>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022748842750>
+
+    async def test_summary_admin_any_user_ok(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl(
+            [{"_id": "quiz_submit", "count": 2, "last_active_at": datetime(2026, 9, 18, 10, 0, 0)}],
+            [{"_id": None, "count": 2, "first_ts": datetime(2026, 9, 18, 9, 0, 0),
+              "last_ts": datetime(2026, 9, 18, 10, 0, 0)}],
+        )
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.ADMIN, 1)
+        resp = client.get("/api/analytics/learning-events/summary?user_id=42&range=30d", headers=h)
+>       assert resp.status_code == 200
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:329: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:43:22[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[2a5b9ea3] GET /api/analytics/learning-events/summary → 403 (8ms)[0m
+_________________ test_summary_student_self_ok_and_other_403 __________________
+
+client = <starlette.testclient.TestClient object at 0x0000022748843110>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002274856EB50>
+
+    def test_summary_student_self_ok_and_other_403(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl([], [])
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.STUDENT, 7)
+        resp = client.get("/api/analytics/learning-events/summary", headers=h)  # 缺省=本人
+>       assert resp.status_code == 200 and resp.json()["data"]["user_id"] == 7
+E       assert (200 == 200 and 1 == 7)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_rm1_analytics.py:343: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:43:22[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[2170029d] GET /api/analytics/learning-events/summary → 200 (5ms)[0m
+______________________ test_summary_manager_any_user_ok _______________________
+
+client = <starlette.testclient.TestClient object at 0x0000022748B3EFD0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022748B3D510>
+
+    def test_summary_manager_any_user_ok(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl([], [])
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.MANAGER, 3)
+        resp = client.get("/api/analytics/learning-events/summary?user_id=55", headers=h)
+>       assert resp.status_code == 200 and resp.json()["data"]["user_id"] == 55
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:356: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:43:22[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[163ad2db] GET /api/analytics/learning-events/summary → 403 (7ms)[0m
+___________________ test_stream_stats_admin_ok_student_403 ____________________
+
+client = <starlette.testclient.TestClient object at 0x00000226DEF08C90>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022748932090>
+
+    def test_stream_stats_admin_ok_student_403(client, monkeypatch: pytest.MonkeyPatch):
+        ha = _headers_for(monkeypatch, UserRole.ADMIN, 1)
+        resp = client.get("/api/analytics/learning-events/stream-stats", headers=ha)
+>       assert resp.status_code == 200
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:384: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:43:22[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[1d5d1802] GET /api/analytics/learning-events/stream-stats → 403 (9ms)[0m
+__________________ test_summary_anonymous_401_when_debug_off __________________
+
+client = <starlette.testclient.TestClient object at 0x0000022748A1E850>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022748A1C2D0>
+
+    def test_summary_anonymous_401_when_debug_off(client, monkeypatch: pytest.MonkeyPatch):
+        """匿名 401 契约：仅 DEBUG=False 生效（DEBUG=true 走平台级虚拟管理员后门，
+        AGENTS.md 教训6 已登记；live 8000 实例 DEBUG=true 故匿名 200 属已知门禁语义）。
+        本用例关 DEBUG 锁生产门禁。"""
+        monkeypatch.setattr(settings, "DEBUG", False)
+        resp = client.get("/api/analytics/learning-events/summary")
+>       assert resp.status_code == 401
+E       assert 503 == 401
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\test_rm1_analytics.py:400: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m03:43:23[0m | [31m[1mERROR   [0m | [36mapp.domains.analytics.service[0m:[36msummarize_learning_events[0m:[36m59[0m | [31m[1m[LearningEvent] 聚合查询失败（mongo 不可达?）: RuntimeError[0m
+[33m[1mTraceback (most recent call last):[0m
+
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+    │    └ <function Thread._bootstrap_inner at 0x00000226B0DC67A0>
+    └ <Thread(asyncio-portal-227488102d0, started daemon 32228)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+    │    └ <function Thread.run at 0x00000226B0DC6480>
+    └ <Thread(asyncio-portal-227488102d0, started daemon 32228)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+    │    │        │    │        │    └ {}
+    │    │        │    │        └ <Thread(asyncio-portal-227488102d0, started daemon 32228)>
+    │    │        │    └ ()
+    │    │        └ <Thread(asyncio-portal-227488102d0, started daemon 32228)>
+    │    └ <function start_blocking_portal.<locals>.run_blocking_portal at 0x00000227E1F2F9C0>
+    └ <Thread(asyncio-portal-227488102d0, started daemon 32228)>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\from_thread.py", line 536, in run_blocking_portal
+    run_eventloop(
+    └ <function run at 0x00000226B20062A0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_core\_eventloop.py", line 83, in run
+    return async_backend.run(func, args, {}, backend_options)
+           │             │   │     │         └ {}
+           │             │   │     └ ()
+           │             │   └ <function start_blocking_portal.<locals>.run_portal at 0x00000227E1F2FEC0>
+           │             └ <classmethod(<function AsyncIOBackend.run at 0x00000226B3B11F80>)>
+           └ <class 'anyio._backends._asyncio.AsyncIOBackend'>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2481, in run
+    return runner.run(wrapper())
+           │      │   └ <function start_blocking_portal.<locals>.run_portal at 0x00000227E1F2C220>
+           │      └ <function Runner.run at 0x00000226B3A549A0>
+           └ <asyncio.runners.Runner object at 0x00000227488119D0>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           │    │     │                  └ <Task pending name='anyio.from_thread.start_blocking_portal.<locals>.run_portal' coro=<start_blocking_portal.<locals>.run_por...
+           │    │     └ <function BaseEventLoop.run_until_complete at 0x00000226B3A5A480>
+           │    └ <ProactorEventLoop running=True closed=False debug=False>
+           └ <asyncio.runners.Runner object at 0x00000227488119D0>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 641, in run_until_complete
+    self.run_forever()
+    │    └ <function ProactorEventLoop.run_forever at 0x00000226B3AFC0E0>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\windows_events.py", line 321, in run_forever
+    super().run_forever()
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 608, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x00000226B3A54220>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 1936, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x00000226B21CFEC0>
+    └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_core\_tasks.py", line 275, in _run_coro
+    retval = await self._coro
+                   │    └ <member '_coro' of 'TaskHandle' objects>
+                   └ <TaskHandle pending name='starlette.middleware.base.BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.coro' coro=<corou...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+          │    │   │      │                      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x00000227E1FC6340>
+          │    │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │    │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000226E34D9B50>
+          └ <app.common.security_headers.SecurityHeadersMiddleware object at 0x00000226E34D9BD0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+          │                            │    │    │     │      │        └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x00000227E1FC6340>
+          │                            │    │    │     │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │                            │    │    │     └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │                            │    │    └ <starlette.requests.Request object at 0x0000022748949910>
+          │                            │    └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x00000226E34D9B10>
+          │                            └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000226E34D9B50>
+          └ <function wrap_app_handling_exceptions at 0x00000226B6844180>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x00000226E34D9B10>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │    │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │    │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <fastapi.routing.APIRouter object at 0x00000226B6D08F10>
+          └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x00000226E34D9B10>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │    │                │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │    │                └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <bound method APIRouter.app of <fastapi.routing.APIRouter object at 0x00000226B6D08F10>>
+          └ <fastapi.routing.APIRouter object at 0x00000226B6D08F10>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │     │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │     │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │     └ <function _IncludedRouter.handle at 0x00000226B6856AC0>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x00000226DB757750>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+          │    │               │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │    │               │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │    │               │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    │               └ <function APIRouter.handle at 0x00000226B686CB80>
+          │    └ <fastapi.routing.APIRouter object at 0x00000226DB757750>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x00000226DB757750>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+          │               │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │               │                │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │               │                └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │               └ <function _IncludedRouter._handle_selected at 0x00000226B6856B60>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x00000226DB757750>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+          │              │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │              │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │              │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │              └ <function APIRoute.handle at 0x00000226B6854C20>
+          └ APIRoute(path='/api/analytics/learning-events/summary', name='learning_events_summary', methods=['GET'])
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <function request_response.<locals>.app at 0x00000227E1FC4D60>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+          │                            │    │        │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC5800>
+          │                            │    │        │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │                            │    │        └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │                            │    └ <starlette.requests.Request object at 0x000002274858CA50>
+          │                            └ <function request_response.<locals>.app.<locals>.app at 0x00000227E1FC4AE0>
+          └ <function wrap_app_handling_exceptions at 0x00000226B6844180>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000227E1FC4CC0>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x00000227E1FC51C0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <function request_response.<locals>.app.<locals>.app at 0x00000227E1FC4AE0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+                     │ └ <starlette.requests.Request object at 0x000002274858CA50>
+                     └ <function get_request_handler.<locals>.app at 0x00000227E1FC5440>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x00000226B6847E20>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 352, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'current_user': UserInfo(user_id=1, account=None, username=None, nickname='t', real_name='t', mobile=None, email='t@e', gend...
+                 │         └ <member 'call' of 'Dependant' objects>
+                 └ Dependant(path_params=[], query_params=[ModelField(field_info=Query(None), name='user_id', mode='validation', config=None), M...
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mrouter.py[0m", line [33m36[0m, in [35mlearning_events_summary[0m
+    [1mdata[0m [35m[1m=[0m [35m[1mawait[0m [1mservice[0m[35m[1m.[0m[1msummarize_learning_events[0m[1m([0m[1mtarget_id[0m[1m,[0m [1mrange[0m[1m)[0m
+    [36m             │       │                         │          └ [0m[36m[1m'7d'[0m
+    [36m             │       │                         └ [0m[36m[1m1[0m
+    [36m             │       └ [0m[36m[1m<function summarize_learning_events at 0x00000226DB7398A0>[0m
+    [36m             └ [0m[36m[1m<module 'app.domains.analytics.service' from 'E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\app\\domains\\analytics\\servic...[0m
+
+> File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mservice.py[0m", line [33m49[0m, in [35msummarize_learning_events[0m
+    [1mcoll[0m [35m[1m=[0m [1m_get_collection[0m[1m([0m[1m)[0m
+    [36m       └ [0m[36m[1m<function _get_collection at 0x00000226DB347380>[0m
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mevent_stream.py[0m", line [33m44[0m, in [35m_get_collection[0m
+    [35m[1mreturn[0m [1mget_mongo_db[0m[1m([0m[1m)[0m[1m[[0m[1mCOLLECTION[0m[1m][0m
+    [36m       │              └ [0m[36m[1m'learning_event'[0m
+    [36m       └ [0m[36m[1m<function get_mongo_db at 0x00000226D8B09760>[0m
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\[0m[32m[1mdatabase.py[0m", line [33m258[0m, in [35mget_mongo_db[0m
+    [35m[1mraise[0m [1mRuntimeError[0m[1m([0m[36m"MongoDB 未初始化，请先调用 init_mongo()"[0m[1m)[0m
+
+[31m[1mRuntimeError[0m:[1m MongoDB 未初始化，请先调用 init_mongo()[0m
+[32m03:43:23[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[7a8d261d] GET /api/analytics/learning-events/summary → 503 (42ms)[0m
+============================== warnings summary ===============================
+tests\test_check_demo_timeouts.py:136
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\tests\test_check_demo_timeouts.py:136: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app\rerank_service\main.py:115
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:115: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\rerank_service\main.py:128
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_breaker_db_resilience.py::test_graph_expand_degrades_fast_after_open
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/test_contract_r12_tool_decision.py::test_r12_4_call_log_success_audit_row
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\mcp\executor.py:702: RuntimeWarning: coroutine 'call_tool.<locals>._run_once_cached' was never awaited
+    return await _run_once_guarded()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_core.py::TestCache::test_cache_hit
+tests/test_core.py::TestCache::test_short_polling_gets_value
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\core\breaker.py:144: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_bypasses_in_recent_window_without_blocking
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_bypasses_in_recent_window_without_blocking.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_passes_through_during_outage
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_passes_through_during_outage.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_contract_task20.py::TestMeCohorts::test_list_active_with_progress
+FAILED tests/test_contract_task20.py::TestEnrollmentDetail::test_detail - ass...
+FAILED tests/test_contract_task20.py::TestEnrollmentStatus::test_status - ass...
+FAILED tests/test_contract_task20.py::TestProgressSnapshot::test_snapshot_modules
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_accessible
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_can_view_detail
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_assets_filtered_by_scope
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_transcode_status_valid
+FAILED tests/test_contract_task21.py::TestOutline::test_outline_structure - a...
+FAILED tests/test_contract_task21.py::TestSessionComplete::test_complete - as...
+FAILED tests/test_contract_task22.py::TestUserIsolation::test_cross_user_detail_404
+FAILED tests/test_contract_task94.py::TestGwt4Registry::test_live_ai_hub_180_registered
+FAILED tests/test_kg_rn1.py::test_contract_draft_matches_router - assert Fals...
+FAILED tests/test_rm1_analytics.py::test_summary_admin_any_user_ok - assert 4...
+FAILED tests/test_rm1_analytics.py::test_summary_student_self_ok_and_other_403
+FAILED tests/test_rm1_analytics.py::test_summary_manager_any_user_ok - assert...
+FAILED tests/test_rm1_analytics.py::test_stream_stats_admin_ok_student_403 - ...
+FAILED tests/test_rm1_analytics.py::test_summary_anonymous_401_when_debug_off
+ERROR tests/test_contract_series_restore_conflicts.py::TestRestoreCodeConflict40901::test_softdel_retains_code_and_restore_no_false_conflict
+ERROR tests/test_contract_series_restore_conflicts.py::TestHardDeleteConflict40908::test_hard_delete_with_cohort_reference_40908
+ERROR tests/test_contract_series_restore_conflicts.py::TestHardDeleteZeroReference::test_hard_delete_zero_reference_succeeds
+ERROR tests/test_contract_series_restore_conflicts.py::TestUploadIdPathTraversal::test_traversal_upload_id_rejected
+ERROR tests/test_course_admin_json_columns.py::test_create_with_json_list_columns_roundtrip
+ERROR tests/test_course_admin_json_columns.py::test_patch_update_json_list_columns_roundtrip
+ERROR tests/test_course_admin_json_columns.py::test_create_with_null_json_columns
+ERROR tests/test_course_admin_restore.py::TestRestoreSuccess::test_restore_full_cycle
+ERROR tests/test_course_admin_restore.py::TestRestoreErrors::test_restore_nonexistent_404
+ERROR tests/test_course_admin_restore.py::TestRestoreErrors::test_restore_not_soft_deleted_404
+ERROR tests/test_course_admin_restore.py::TestHardDeleteGuardUnchanged::test_hard_delete_with_reference_still_40908
+18 failed, 1554 passed, 186 skipped, 12 warnings, 11 errors in 331.76s (0:05:31)
+E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\neo4j\_sync\driver.py:547: DeprecationWarning: Relying on Driver's destructor to close the session is deprecated. Please make sure to close the session. Use it as a context (`with` statement) or make sure to call `.close()` explicitly. Future versions of the driver will not close drivers automatically.

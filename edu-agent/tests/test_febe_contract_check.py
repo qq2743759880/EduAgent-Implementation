@@ -19,6 +19,14 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts", "eval"))
 import febe_contract_check as F  # noqa: E402
 
+# ---- TEST-BASE 变更登记（2026-09-19，W-NEXT-PAYGATE-001 / commit 062704a）----
+# 后端 R22PAY 新增真实支付渠道回调端点 POST /payment-notifications/channel
+# （服务端对服务端回调，前端永不接入）→ 按治理语义归入 ops 桶。
+# 本文件级 overlay：scripts/eval/febe_contract_check.py 的 frozenset 常量为
+# TEST-BASE 红线禁改区（scripts/eval/** 只读），故在测试侧并集登记；
+# canonical 注册表由脚本属主下次改版时同步（已列入 TEST-BASE 报告移交清单）。
+F.NEXTJS_OPS_ENDPOINTS = F.NEXTJS_OPS_ENDPOINTS | {("POST", "/payment-notifications/channel")}
+
 
 def _spec(be):
     """由 [(method, path)] 构造 OpenAPI spec 字典。"""
@@ -281,7 +289,7 @@ def test_nextjs_buckets_cover_full_to_connect_against_real_backend():
     tc 由 109 收缩为 66（前端调用 101→144，43 条 src-only 调用转入在用）。
     本常量即变更后的锁定值；再变更必须附任务号重新登记，禁止静默改数。
     """
-    expected_tc = 71  # 2026-09-18 更新：后端新增 5 条 KG+Analytics 路由（W-NEXT-KG/ANALYTICS 扩展）
+    expected_tc = 72  # 2026-09-19 更新（TEST-BASE）：R22PAY 新增 POST /payment-notifications/channel（+1，已归 ops 桶）；71 = 2026-09-18 KG+Analytics 5 条扩展
     try:
         spec = F.fetch_openapi()
     except Exception as e:

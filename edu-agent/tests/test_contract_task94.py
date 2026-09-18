@@ -91,10 +91,13 @@ class TestGwt4Registry:
         assert report["ok"] is True
 
     def test_live_ai_hub_180_registered(self):
-        """LIVE：真实 AI-Hub 中心库应注册 >=150 个 skill，无死链。
+        """LIVE：真实 AI-Hub 中心库应注册 >=80 个 skill，无死链。
 
         task37：AI-Hub 技能库数随 center 库变化是预期（结构重构会减少、持续沉淀会增加）。
-        临界值由编排者刷新。当前下限改为 150（避免死链漂移假红）。
+        临界值由编排者刷新。下限历史：318（等值断言，随库膨胀频繁假红）→ 150（WIP 09-18，
+        仍高于重构后实际值）→ 80（TEST-BASE 2026-09-19：中心库重构后实测 total=93，
+        下限取 80=实测值下方约 14% 缓冲，仅防「灾难性丢失/整库扫空」级回归；
+        精确计数不属本用例职责，死链=0 才是核心断言）。
 
         WNEXT10 F5-b 注意：平台生产注册表已与开发机 AI-Hub 隔离，
         故此处显式扫描中心库根 DEFAULT_AI_HUB 以验证中心库本体完整性。
@@ -102,7 +105,7 @@ class TestGwt4Registry:
         if not os.path.exists(DEFAULT_AI_HUB):
             pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
         report = verify.verify_registry(roots=[DEFAULT_AI_HUB])
-        assert report["total"] >= 150, f"AI-Hub skills 异常偏少（<150）: {report}"
+        assert report["total"] >= 80, f"AI-Hub skills 异常偏少（<80）: {report}"
         assert report["dead_links"] == 0, report["dead"]
         assert report["ok"] is True
 

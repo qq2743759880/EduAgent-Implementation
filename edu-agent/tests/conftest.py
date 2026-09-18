@@ -47,6 +47,60 @@ def _isolate_redis_outage_window():
     redis_outage.reset_for_test()
 
 
+def _flush_rate_limit_keys() -> None:
+    """清空共享 Redis 里的限流计数器（rl:* 前缀，仅限流窗口，不碰业务键）。
+
+    RateLimitMiddleware 按 IP+uid 滑动窗口计数（app/middleware/rate_limit.py，
+    login 10 次/60s），计数器落在本机 Redis；full-run 数十次 login 全来自同一 IP，
+    窗口必然击穿 → 429 假红级联（TEST-BASE 清场实测 37 例）。逐用例清零后，
+    每个用例都从干净窗口起步（test_rate_limit_429_shell 这类「用例内部自行击穿
+    窗口」的用例不受影响——清理只发生在用例边界之前）。
+    Redis 不可达时静默放行：此时限流器自身也走降级路径。
+    """
+    try:
+        import redis as _redis
+
+        client = _redis.Redis.from_url(
+            settings.REDIS_URL, socket_connect_timeout=0.5, socket_timeout=0.5
+        )
+        if not client.ping():
+            return
+        keys = list(client.scan_iter(match="rl:*", count=1000))
+        if keys:
+            client.delete(*keys)
+        client.close()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True)
+def _isolate_shared_rate_limit_window():
+    """TEST-BASE 防再污染护栏①（2026-09-19）：每用例前清零共享限流窗口。"""
+    _flush_rate_limit_keys()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _isolate_dependency_overrides():
+    """TEST-BASE 防再污染护栏②（2026-09-19）：每用例后清空全局 dependency_overrides。
+
+    FastAPI 的 app.dependency_overrides 是 app 对象上的进程级全局字典。多个测试文件
+    （test_contract_task113._client_with 等）直接 app.dependency_overrides[get_current_user]
+    = fake 而不 teardown，污染会泄漏给同进程后续所有 in-process 用例——清场实测：
+    task113 前缀 + task20/21/22 + rm1_analytics 复现 16 例失败（403/404/accessible=False/
+    user_id=1），隔离跑 39 例全绿； 加入该护栏后全绿。
+    注意：清理发生在用例结束之后，用例自身在其内部设置/使用的 override 不受影响；
+    跨用例依赖 override 存续属反模式（50301 文件已示范 pop 正确姿势）。
+    """
+    yield
+    try:
+        from app.main import app as _app
+
+        _app.dependency_overrides.clear()
+    except Exception:
+        pass
+
+
 # ════════════════════════════════════════════════════════════════
 # task37 GWT③：live-backend 集成测试「标注 expected」机制
 # ────────────────────────────────────────────────────────────────

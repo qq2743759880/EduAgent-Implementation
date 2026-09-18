@@ -32,9 +32,12 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 import app.database as db
+from app.config import settings
 from app.middleware.idempotency import IdempotencyMiddleware  # noqa: E402
 
-_REDIS_URL = "redis://localhost:6379/0"
+# TEST-BASE 2026-09-19：硬编码 6379 与本环境 .env REDIS_URL(redis://127.0.0.1:6377/0)
+# 漂移 → 4 例真实幂等中间件用例被假"Redis 不可达"静默跳过。改随 settings，与环境同源。
+_REDIS_URL = settings.REDIS_URL
 
 
 def _new_client() -> aioredis.Redis:

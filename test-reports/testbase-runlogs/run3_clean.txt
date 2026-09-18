@@ -1,0 +1,1360 @@
+...................................................ss................... [  4%]
+........................................................................ [  8%]
+..............................................................s.F.F..... [ 12%]
+.................................s....FF.F.............................. [ 16%]
+.......ssss..........FF.FFFF.......FFFF.FFFFFFFFFFFsFFFFFFF.FFFFssss.ss. [ 20%]
+ssssssssssssssF..F.FFF.FFFFF...F........s....s.......................... [ 24%]
+.......s................................................................ [ 28%]
+.............................F.......................................... [ 32%]
+........................................................................ [ 36%]
+........................................................................ [ 40%]
+.........................s.............................................. [ 44%]
+.......s.................s.............................................. [ 48%]
+s........................................................sssssssssssssss [ 52%]
+...............................................................s........ [ 56%]
+......................................................FF................ [ 61%]
+.................sssssss.........ssss................................... [ 65%]
+.......................................................................s [ 69%]
+...............................F........................................ [ 73%]
+........................................................................ [ 77%]
+........................................................................ [ 81%]
+.....sssssss.ss......................................................... [ 85%]
+............................................FFF..FF..................... [ 89%]
+........................................................................ [ 93%]
+...................ss................................................... [ 97%]
+.........................................                                [100%]
+================================== FAILURES ===================================
+_______________ TestRateLimitMiddleware.test_rate_limit_on_auth _______________
+
+self = <tests.test_contract_middleware.TestRateLimitMiddleware object at 0x00000217377CA810>
+
+    def test_rate_limit_on_auth(self):
+        """登录接口限流不崩溃"""
+        for i in range(3):
+            code, headers, body = login()
+>           assert code == 200
+E           assert 429 == 200
+
+tests\test_contract_middleware.py:193: AssertionError
+________________ TestSecurityHeaders.test_admin_forbidden_403 _________________
+
+self = <tests.test_contract_middleware.TestSecurityHeaders object at 0x00000217377CB850>
+
+    def test_admin_forbidden_403(self):
+        """student 访问管理端点 → 403 壳（require_role 拦截）"""
+        # 以 student 身份登录
+>       token = login_token(account="stu01test", password="Test@123456")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_middleware.py:212: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'stu01test', password = 'Test@123456'
+
+    def login_token(account="adm02test", password="Test@123456"):
+        """登录并解壳取出 access_token（契约①：登录成功 data 内嵌令牌）。"""
+        _, _, body = login(account=account, password=password)
+>       return body.get("data", {}).get("access_token") if isinstance(body, dict) else None
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'get'
+
+tests\test_contract_middleware.py:38: AttributeError
+________________ TestTradeOverviewLive.test_admin_overview_200 ________________
+
+self = <tests.test_contract_review.TestTradeOverviewLive object at 0x000002173781EB50>
+
+    def test_admin_overview_200(self):
+>       tok = _token("adm02test")
+              ^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_review.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'adm02test'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 adm02test: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_review.py:144: AssertionError
+____________ TestTradeOverviewLive.test_student_overview_forbidden ____________
+
+self = <tests.test_contract_review.TestTradeOverviewLive object at 0x000002173781EED0>
+
+    def test_student_overview_forbidden(self):
+>       tok = _token("user000001")
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_review.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_review.py:144: AssertionError
+___________________ TestReviewCrudLive.test_full_crud_chain ___________________
+
+self = <tests.test_contract_review.TestReviewCrudLive object at 0x000002173781FA90>
+
+    def test_full_crud_chain(self):
+        self._cleanup()  # 清残留，保证可重复
+>       student_tok = _token("user000001")
+                      ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_review.py:194: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_review.py:144: AssertionError
+_________________ TestMetricsAuthLive.test_student_forbidden __________________
+
+self = <tests.test_contract_task113.TestMetricsAuthLive object at 0x0000021737890350>
+
+    def test_student_forbidden(self):
+>       tok = _token("user000001")
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+___________________ TestMetricsAuthLive.test_admin_allowed ____________________
+
+self = <tests.test_contract_task113.TestMetricsAuthLive object at 0x0000021737890A50>
+
+    def test_admin_allowed(self):
+>       tok = _token("adm02test")
+              ^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'adm02test'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 adm02test: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+______________ TestMemoryAdminPrefixLive.test_student_forbidden _______________
+
+self = <tests.test_contract_task113.TestMemoryAdminPrefixLive object at 0x0000021737891AD0>
+
+    def test_student_forbidden(self):
+>       tok = _token("user000001")
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+________________ TestMemoryAdminPrefixLive.test_admin_allowed _________________
+
+self = <tests.test_contract_task113.TestMemoryAdminPrefixLive object at 0x00000217378921D0>
+
+    def test_admin_allowed(self):
+>       tok = _token("adm02test")
+              ^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:244: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'adm02test'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 adm02test: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+____________________ TestAwardLive.test_student_forbidden _____________________
+
+self = <tests.test_contract_task113.TestAwardLive object at 0x0000021737892BD0>
+
+    def test_student_forbidden(self):
+>       tok = _token("user000001")
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:251: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+_________________ TestQuizNextLive.test_next_excludes_correct _________________
+
+self = <tests.test_contract_task113.TestQuizNextLive object at 0x0000021737893690>
+
+    def test_next_excludes_correct(self):
+>       tok = _token("user000001")
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_contract_task113.py:258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+account = 'user000001'
+
+    def _token(account):
+        s, j = _login(account)
+>       assert s == 200 and isinstance(j, dict) and j.get("code") == 0, f"登录失败 {account}: {s} {j}"
+E       AssertionError: 登录失败 user000001: 429 {'code': '42900', 'message': '请求过于频繁，请 60 秒后再试', 'data': None}
+E       assert (429 == 200)
+
+tests\test_contract_task113.py:207: AssertionError
+___________________ TestAuthShell.test_login_success_shell ____________________
+
+self = <tests.test_contract_task15.TestAuthShell object at 0x00000217378B2250>
+
+    def test_login_success_shell(self):
+        """GWT③：登录成功 → 壳 data 内含 access_token/refresh_token/user，JWT 语义不变"""
+        s, j = login()
+>       assert s == 200
+E       assert 429 == 200
+
+tests\test_contract_task15.py:97: AssertionError
+___________________ TestAuthShell.test_login_failure_shell ____________________
+
+self = <tests.test_contract_task15.TestAuthShell object at 0x00000217378B2990>
+
+    def test_login_failure_shell(self):
+        """登录失败 → 字符串错误码 + data null（40111）"""
+        s, j = login(password="wrong-password-xx")
+>       assert s == 401
+E       assert 429 == 401
+
+tests\test_contract_task15.py:108: AssertionError
+______________________ TestAuthShell.test_refresh_shell _______________________
+
+self = <tests.test_contract_task15.TestAuthShell object at 0x0000021737899590>
+
+    def test_refresh_shell(self):
+        """refresh → 壳 data 内含新双 token"""
+        _, j = login()
+>       refresh_token = j["data"]["refresh_token"]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests\test_contract_task15.py:114: TypeError
+_________________________ TestAuthShell.test_me_shell _________________________
+
+self = <tests.test_contract_task15.TestAuthShell object at 0x00000217378B2F10>
+
+    def test_me_shell(self):
+        """GET /me → 壳 data.user_id 存在"""
+        tok = login_token()
+>       assert tok, "登录失败无法继续"
+E       AssertionError: 登录失败无法继续
+E       assert None
+
+tests\test_contract_task15.py:123: AssertionError
+______________________ TestChatShell.test_sessions_shell ______________________
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B3850>
+
+    def test_sessions_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B3850>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:161: AssertionError
+____________________ TestChatShell.test_session_crud_shell ____________________
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B3D50>
+
+    def test_session_crud_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:171: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B3D50>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:161: AssertionError
+_______________________ TestChatShell.test_search_shell _______________________
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B83D0>
+
+    def test_search_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:184: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B83D0>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:161: AssertionError
+_________________ TestChatShell.test_stream_done_embeds_shell _________________
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B8A50>
+
+    def test_stream_done_embeds_shell(self):
+        """GWT① SSE：done 事件 data 内嵌 {code:0, message:'ok', data:{...}}"""
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:191: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestChatShell object at 0x00000217378B8A50>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:161: AssertionError
+_____________________ TestCommunityShell.test_posts_shell _____________________
+
+self = <tests.test_contract_task15.TestCommunityShell object at 0x00000217378B9490>
+
+    def test_posts_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestCommunityShell object at 0x00000217378B9490>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:219: AssertionError
+_______________ TestCommunityShell.test_post_create_like_shell ________________
+
+self = <tests.test_contract_task15.TestCommunityShell object at 0x00000217378B9AD0>
+
+    def test_post_create_like_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestCommunityShell object at 0x00000217378B9AD0>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:219: AssertionError
+_______________ TestGamificationShell.test_badges_points_shell ________________
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BA4D0>
+
+    def test_badges_points_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:261: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BA4D0>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:257: AssertionError
+____________ TestGamificationShell.test_award_updates_zset_ranking ____________
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BAB10>
+
+    def test_award_updates_zset_ranking(self):
+        """GWT②：打靶加积分 → ZSET 写入侧增量 → 1s 内 /rankings 可查（source=ZSET）"""
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:271: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BAB10>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:257: AssertionError
+__________ TestGamificationShell.test_rankings_badge_dimension_shell __________
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BB150>
+
+    def test_rankings_badge_dimension_shell(self):
+>       tok = self._tok()
+              ^^^^^^^^^^^
+
+tests\test_contract_task15.py:289: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.test_contract_task15.TestGamificationShell object at 0x00000217378BB150>
+
+    def _tok(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:257: AssertionError
+____________________ TestMcpShell.test_admin_servers_shell ____________________
+
+self = <tests.test_contract_task15.TestMcpShell object at 0x00000217378BBC10>
+
+    def test_admin_servers_shell(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:301: AssertionError
+______________________ TestMcpShell.test_call_log_shell _______________________
+
+self = <tests.test_contract_task15.TestMcpShell object at 0x00000217378C0390>
+
+    def test_call_log_shell(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:317: AssertionError
+__________________ TestRagAdminShell.test_collections_shell ___________________
+
+self = <tests.test_contract_task15.TestRagAdminShell object at 0x00000217378C14D0>
+
+    def test_collections_shell(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:338: AssertionError
+____________________ TestRagAdminShell.test_presets_shell _____________________
+
+self = <tests.test_contract_task15.TestRagAdminShell object at 0x00000217378C1C10>
+
+    def test_presets_shell(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:345: AssertionError
+___________________ TestRagAdminShell.test_audit_log_shell ____________________
+
+self = <tests.test_contract_task15.TestRagAdminShell object at 0x00000217378BAC90>
+
+    def test_audit_log_shell(self):
+        tok = login_token()
+>       assert tok, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task15.py:352: AssertionError
+_________________________ TestCoupons.test_templates __________________________
+
+self = <tests.test_contract_task16.TestCoupons object at 0x00000217378C3890>
+
+    def test_templates(self):
+>       s, j = api("GET", "/api/coupons/templates", token=tok())
+                                                          ^^^^^
+
+tests\test_contract_task16.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+___________________ TestCoupons.test_my_coupons_empty_shell ___________________
+
+self = <tests.test_contract_task16.TestCoupons object at 0x00000217378C3C10>
+
+    def test_my_coupons_empty_shell(self):
+        # 用未领券用户查询，返回空列表但壳完整（status 过滤也走壳)
+>       s, j = api("GET", "/api/coupons", token=tok())
+                                                ^^^^^
+
+tests\test_contract_task16.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+__________________ TestCoupons.test_my_coupons_status_filter __________________
+
+self = <tests.test_contract_task16.TestCoupons object at 0x00000217378C3F90>
+
+    def test_my_coupons_status_filter(self):
+>       s, j = api("GET", "/api/coupons?status=unused", token=tok())
+                                                              ^^^^^
+
+tests\test_contract_task16.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+______________________ TestCoupons.test_series_templates ______________________
+
+self = <tests.test_contract_task16.TestCoupons object at 0x00000217378D44D0>
+
+    def test_series_templates(self):
+        # 用一个已知券模板 id 当 series 链接测路由可达（存在该 rel 才返回列表）
+>       s, j = api("GET", "/api/coupons/templates", token=tok())
+                                                          ^^^^^
+
+tests\test_contract_task16.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+_____________________ TestFavorites.test_list_empty_shell _____________________
+
+self = <tests.test_contract_task16.TestFavorites object at 0x00000217378D55D0>
+
+    def test_list_empty_shell(self):
+>       s, j = api("GET", "/api/favorites", token=tok())
+                                                  ^^^^^
+
+tests\test_contract_task16.py:124: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+______________ TestFavorites.test_add_duplicate_dedup_idempotent ______________
+
+self = <tests.test_contract_task16.TestFavorites object at 0x00000217378D5C10>
+
+    def test_add_duplicate_dedup_idempotent(self):
+        """GWT②：POST /favorites 幂等，重复收藏返回原记录（同一 favorite_id）。"""
+        # 取一个 on_sale 系列
+>       s, j = api("GET", "/api/series?page_size=1", token=tok())
+                                                           ^^^^^
+
+tests\test_contract_task16.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+____________________ TestFavorites.test_delete_idempotent _____________________
+
+self = <tests.test_contract_task16.TestFavorites object at 0x00000217378D6250>
+
+    def test_delete_idempotent(self):
+        """GWT②：DELETE 幂等，重复删除返回 deleted=True。"""
+>       s, j = api("GET", "/api/series?page_size=1", token=tok())
+                                                           ^^^^^
+
+tests\test_contract_task16.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+____________ TestReceiveIdempotent.test_receive_unknown_coupon_404 ____________
+
+self = <tests.test_contract_task16.TestReceiveIdempotent object at 0x00000217378D6D10>
+
+    def test_receive_unknown_coupon_404(self):
+>       s, j = api("POST", "/api/trade/coupon/receive", {"coupon_template_id": 999999}, token=tok())
+                                                                                              ^^^^^
+
+tests\test_contract_task16.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tok():
+        global _TOKEN
+        if not _TOKEN:
+            _TOKEN = login_token()
+>       assert _TOKEN, "登录失败"
+E       AssertionError: 登录失败
+E       assert None
+
+tests\test_contract_task16.py:61: AssertionError
+________________ TestMeCohorts.test_list_active_with_progress _________________
+
+self = <tests.test_contract_task20.TestMeCohorts object at 0x0000021737912290>
+
+    def test_list_active_with_progress(self):
+        r = _call("/api/enrollments/me/cohorts?status=active")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["code"] == 0
+        items = body["data"]
+        assert isinstance(items, list)
+        target = [it for it in items if it["cohort_id"] == FI["cohort_id"]]
+>       assert target, f"夹具班次 {FI['cohort_id']} 应出现在 active 列表"
+E       AssertionError: 夹具班次 997 应出现在 active 列表
+E       assert []
+
+tests\test_contract_task20.py:85: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[0f4ef5bd] GET /api/enrollments/me/cohorts → 200 (20ms)[0m
+______________________ TestEnrollmentDetail.test_detail _______________________
+
+self = <tests.test_contract_task20.TestEnrollmentDetail object at 0x0000021737913690>
+
+    def test_detail(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:106: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[c2fc5d55] GET /api/enrollments/me/cohorts/997 → 404 (7ms)[0m
+______________________ TestEnrollmentStatus.test_status _______________________
+
+self = <tests.test_contract_task20.TestEnrollmentStatus object at 0x000002173791C6D0>
+
+    def test_status(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}/status")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:119: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[a0cf6f28] GET /api/enrollments/me/cohorts/997/status → 404 (6ms)[0m
+_________________ TestProgressSnapshot.test_snapshot_modules __________________
+
+self = <tests.test_contract_task20.TestProgressSnapshot object at 0x000002173791D090>
+
+    def test_snapshot_modules(self):
+        r = _call(f"/api/enrollments/me/cohorts/{FI['cohort_id']}/progress")
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\test_contract_task20.py:128: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[422a531e] GET /api/enrollments/me/cohorts/997/progress → 404 (6ms)[0m
+-------------------------- Captured stdout teardown ---------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.database[0m:[36mclose_mysql[0m:[36m132[0m | [1mMySQL 连接池已关闭[0m
+__________________ TestAccessAuthz.test_enrolled_accessible ___________________
+
+self = <tests.test_contract_task21.TestAccessAuthz object at 0x0000021737912150>
+
+    def test_enrolled_accessible(self):
+        """已报名用户 access → accessible=true。"""
+        r = _call("GET", f"/api/study/courses/{FI['series_id']}/access", user_id=FI["user_id"])
+        assert r.status_code == 200 and r.json()["code"] == 0
+        d = r.json()["data"]
+>       assert d["accessible"] is True and d["series_id"] == FI["series_id"]
+E       assert (False is True)
+
+tests\test_contract_task21.py:118: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[e5e634a0] GET /api/study/courses/333/access → 200 (9ms)[0m
+________________ TestAccessAuthz.test_enrolled_can_view_detail ________________
+
+self = <tests.test_contract_task21.TestAccessAuthz object at 0x000002173792C190>
+
+    def test_enrolled_can_view_detail(self):
+        """已报名用户课次详情 → 200，assets/video 返回。"""
+        if not FI.get("session_id"):
+            pytest.skip("无 enrolled_only 视频课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_contract_task21.py:133: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b5cef413] GET /api/study/sessions/26725 → 403 (10ms)[0m
+____________ TestSessionDetailAssets.test_assets_filtered_by_scope ____________
+
+self = <tests.test_contract_task21.TestSessionDetailAssets object at 0x000002173792C910>
+
+    def test_assets_filtered_by_scope(self):
+        """GWT③：课次详情 assets 仅含该用户可访问 scope（不含 internal_only）。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+        d = r.json()["data"]
+>       scopes = {a["access_scope"] for a in d["assets"]}
+                                             ^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests\test_contract_task21.py:146: TypeError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[7a2431c0] GET /api/study/sessions/26725 → 403 (9ms)[0m
+_____________ TestSessionDetailAssets.test_transcode_status_valid _____________
+
+self = <tests.test_contract_task21.TestSessionDetailAssets object at 0x000002173792CF10>
+
+    def test_transcode_status_valid(self):
+        """GWT④：video.transcode_status ∈ {pending,in_progress,completed,failed}；url 仅 completed 给。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("GET", f"/api/study/sessions/{FI['session_id']}", user_id=FI["user_id"])
+        d = r.json()["data"]
+>       v = d.get("video")
+            ^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'get'
+
+tests\test_contract_task21.py:158: AttributeError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[e21b1d04] GET /api/study/sessions/26725 → 403 (8ms)[0m
+_____________________ TestOutline.test_outline_structure ______________________
+
+self = <tests.test_contract_task21.TestOutline object at 0x000002173792D850>
+
+    def test_outline_structure(self):
+        """GWT②：outline 模块/课次/进度 + 资源过滤 + homework_done。"""
+        r = _call("GET", f"/api/study/courses/{FI['series_id']}/outline", user_id=FI["user_id"])
+        assert r.status_code == 200 and r.json()["code"] == 0
+        d = r.json()["data"]
+        assert d["series_id"] == FI["series_id"]
+>       assert d["total_sessions"] >= 1
+E       assert 0 >= 1
+
+tests\test_contract_task21.py:172: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[ac41a817] GET /api/study/courses/333/outline → 200 (18ms)[0m
+______________________ TestSessionComplete.test_complete ______________________
+
+self = <tests.test_contract_task21.TestSessionComplete object at 0x000002173792E310>
+
+    def test_complete(self):
+        """课次完成态（有播放会话 → completed=true）。"""
+        if not FI.get("session_id"):
+            pytest.skip("无课次")
+        r = _call("POST", f"/api/study/sessions/{FI['session_id']}/complete", user_id=FI["user_id"])
+>       assert r.status_code == 200 and r.json()["code"] == 0
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_contract_task21.py:192: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[1f174895] POST /api/study/sessions/26725/complete → 403 (8ms)[0m
+________________ TestUserIsolation.test_cross_user_detail_404 _________________
+
+self = <tests.test_contract_task22.TestUserIsolation object at 0x0000021737936910>
+
+    def test_cross_user_detail_404(self):
+        """GWT②：用户 B 请求用户 A 的工单 → 404。"""
+        if "ticket_a" not in FI:
+            pytest.skip("无 A 工单")
+        r = _call_b("GET", f"/api/trade/after_sales/ticket/{FI['ticket_a']}")
+>       assert r.status_code == 404 and r.json()["code"] == "40441"
+E       assert (200 == 404)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_contract_task22.py:112: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:19:35[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[42e6dcd2] GET /api/trade/after_sales/ticket/11238 → 200 (8ms)[0m
+______________ TestGwt4Registry.test_live_ai_hub_180_registered _______________
+
+self = <tests.test_contract_task94.TestGwt4Registry object at 0x0000021737BDC290>
+
+    def test_live_ai_hub_180_registered(self):
+        """LIVE：真实 AI-Hub 中心库应注册 >=150 个 skill，无死链。
+    
+        task37：AI-Hub 技能库数随 center 库变化是预期（结构重构会减少、持续沉淀会增加）。
+        临界值由编排者刷新。当前下限改为 150（避免死链漂移假红）。
+    
+        WNEXT10 F5-b 注意：平台生产注册表已与开发机 AI-Hub 隔离，
+        故此处显式扫描中心库根 DEFAULT_AI_HUB 以验证中心库本体完整性。
+        """
+        if not os.path.exists(DEFAULT_AI_HUB):
+            pytest.skip("AI-Hub skills 目录不可用，跳过 LIVE 校验")
+        report = verify.verify_registry(roots=[DEFAULT_AI_HUB])
+>       assert report["total"] >= 150, f"AI-Hub skills 异常偏少（<150）: {report}"
+E       AssertionError: AI-Hub skills 异常偏少（<150）: {'total': 93, 'on_disk': 93, 'dead_links': 0, 'dead': [], 'parse_errors': 2, 'parse_error_names': ['discord', 'composio'], 'with_paths_trigger': 0, 'with_paths_names': [], 'with_body': 93, 'stats': {'total': 93, 'context_fork': 4, 'disable_model_invocation': 7, 'with_paths_trigger': 0, 'with_allowed_tools': 1, 'parse_errors': 2}, 'ok': True}
+E       assert 93 >= 150
+
+tests\test_contract_task94.py:105: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:20:38[0m | [1mINFO    [0m | [36mapp.ai.skills.registry[0m:[36mscan[0m:[36m107[0m | [1m[SkillRegistry] 扫描完成，索引 93 个 skills（来自 1 个 root，本次新增 93）[0m
+_______ test_nextjs_buckets_cover_full_to_connect_against_real_backend ________
+
+    def test_nextjs_buckets_cover_full_to_connect_against_real_backend():
+        """真实后端 OpenAPI 跑出待接 tc 后，4 桶并集必须完全覆盖（uncategorized=0）。
+        若契约新增/后端新增了端点导致 uncategorized>0，必须新增到桶里（不允许沉默通过）。
+    
+        W-NEXT-FEBE-SCAN-002 变更登记（2026-09-18）：前端扫描扩到 edu-frontend/src 后，
+        tc 由 109 收缩为 66（前端调用 101→144，43 条 src-only 调用转入在用）。
+        本常量即变更后的锁定值；再变更必须附任务号重新登记，禁止静默改数。
+        """
+        expected_tc = 71  # 2026-09-18 更新：后端新增 5 条 KG+Analytics 路由（W-NEXT-KG/ANALYTICS 扩展）
+        try:
+            spec = F.fetch_openapi()
+        except Exception as e:
+            pytest.skip("后端 8000 不可达，跳过真实后端桶覆盖用例: %s" % e)
+        be = F.backend_routes(spec)
+        fe = F.scan_frontend()
+        tc = be - fe
+        classified = (
+            F.NEXTJS_PLANNED_ENDPOINTS
+            | F.NEXTJS_DEFERRED_ENDPOINTS
+            | F.NEXTJS_OPS_ENDPOINTS
+            | F.NEXTJS_UNASSIGNED
+        )
+        uncategorized = tc - classified
+>       assert not uncategorized, (
+            "桶未覆盖 %d 条 tc 项（必须全部归桶）：%r"
+            % (len(uncategorized), sorted(uncategorized))
+        )
+E       AssertionError: 桶未覆盖 1 条 tc 项（必须全部归桶）：[('POST', '/payment-notifications/channel')]
+E       assert not {('POST', '/payment-notifications/channel')}
+
+tests\test_febe_contract_check.py:299: AssertionError
+______ test_emit_migration_status_writes_buckets_with_zero_uncategorized ______
+
+tmp_path = WindowsPath('C:/Users/Administrator/AppData/Local/Temp/pytest-of-Administrator/pytest-297/test_emit_migration_status_wri0')
+
+    def test_emit_migration_status_writes_buckets_with_zero_uncategorized(tmp_path):
+        """--emit-migration-status 必须写出 4 桶 + plan_broken + uncategorized 子段，
+        uncategorized.count=0、plan_broken.count=0（真实后端）。"""
+        out_path = tmp_path / "status.json"
+        rc = F.emit_migration_status(path=str(out_path))
+        assert rc == 0, "emit_migration_status 退出码非 0：%d" % rc
+        assert out_path.exists(), "未生成 status.json"
+        import json as _json
+        d = _json.loads(out_path.read_text(encoding="utf-8"))
+        # 5 桶键齐（4 治理桶 + plan_broken 校验桶，W-NEXT-FEBE-SCAN-002 尾巴③）
+        assert set(d["buckets"].keys()) == {"plan", "deferred", "ops", "unassigned", "plan_broken"}
+        # uncategorized 必须为 0
+>       assert d["uncategorized"]["count"] == 0, (
+            "uncategorized=%d（必须为 0）：%r"
+            % (d["uncategorized"]["count"], d["uncategorized"]["items"])
+        )
+E       AssertionError: uncategorized=1（必须为 0）：['POST /payment-notifications/channel']
+E       assert 1 == 0
+
+tests\test_febe_contract_check.py:328: AssertionError
+---------------------------- Captured stdout call -----------------------------
+已写入前端接入计划分类: C:\Users\Administrator\AppData\Local\Temp\pytest-of-Administrator\pytest-297\test_emit_migration_status_wri0\status.json (total=72, plan=6, deferred=28, ops=6, unassigned=31, uncategorized=1, plan_broken=0)
+_____________________ test_contract_draft_matches_router ______________________
+
+    def test_contract_draft_matches_router():
+        assert CONTRACT_PATH.exists(), "contracts/reshape-r-kg.json 缺失"
+        contract = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+        assert contract["planId"] == "reshape-r-kg"
+>       assert contract["draft"] is True
+E       assert False is True
+
+tests\test_kg_rn1.py:360: AssertionError
+_______________________ test_summary_admin_any_user_ok ________________________
+
+client = <starlette.testclient.TestClient object at 0x00000217BCDB89D0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002173AE67990>
+
+    async def test_summary_admin_any_user_ok(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl(
+            [{"_id": "quiz_submit", "count": 2, "last_active_at": datetime(2026, 9, 18, 10, 0, 0)}],
+            [{"_id": None, "count": 2, "first_ts": datetime(2026, 9, 18, 9, 0, 0),
+              "last_ts": datetime(2026, 9, 18, 10, 0, 0)}],
+        )
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.ADMIN, 1)
+        resp = client.get("/api/analytics/learning-events/summary?user_id=42&range=30d", headers=h)
+>       assert resp.status_code == 200
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:329: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:21:29[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[9dfb92e5] GET /api/analytics/learning-events/summary → 403 (6ms)[0m
+_________________ test_summary_student_self_ok_and_other_403 __________________
+
+client = <starlette.testclient.TestClient object at 0x000002173FB59ED0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000217BCE94A50>
+
+    def test_summary_student_self_ok_and_other_403(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl([], [])
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.STUDENT, 7)
+        resp = client.get("/api/analytics/learning-events/summary", headers=h)  # 缺省=本人
+>       assert resp.status_code == 200 and resp.json()["data"]["user_id"] == 7
+E       assert (200 == 200 and 1 == 7)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_rm1_analytics.py:343: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:21:29[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[b86bdc6a] GET /api/analytics/learning-events/summary → 200 (5ms)[0m
+______________________ test_summary_manager_any_user_ok _______________________
+
+client = <starlette.testclient.TestClient object at 0x0000021773D78C90>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000217BD7B1A90>
+
+    def test_summary_manager_any_user_ok(client, monkeypatch: pytest.MonkeyPatch):
+        fake = _FakeColl([], [])
+        monkeypatch.setattr("app.domains.analytics.service._get_collection", lambda: fake)
+        h = _headers_for(monkeypatch, UserRole.MANAGER, 3)
+        resp = client.get("/api/analytics/learning-events/summary?user_id=55", headers=h)
+>       assert resp.status_code == 200 and resp.json()["data"]["user_id"] == 55
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:356: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:21:29[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[86eb001a] GET /api/analytics/learning-events/summary → 403 (5ms)[0m
+___________________ test_stream_stats_admin_ok_student_403 ____________________
+
+client = <starlette.testclient.TestClient object at 0x00000217BD5BF5D0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000217BD5BC410>
+
+    def test_stream_stats_admin_ok_student_403(client, monkeypatch: pytest.MonkeyPatch):
+        ha = _headers_for(monkeypatch, UserRole.ADMIN, 1)
+        resp = client.get("/api/analytics/learning-events/stream-stats", headers=ha)
+>       assert resp.status_code == 200
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\test_rm1_analytics.py:384: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:21:29[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[996158be] GET /api/analytics/learning-events/stream-stats → 403 (5ms)[0m
+__________________ test_summary_anonymous_401_when_debug_off __________________
+
+client = <starlette.testclient.TestClient object at 0x00000217BD5F9790>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002173FAA2150>
+
+    def test_summary_anonymous_401_when_debug_off(client, monkeypatch: pytest.MonkeyPatch):
+        """匿名 401 契约：仅 DEBUG=False 生效（DEBUG=true 走平台级虚拟管理员后门，
+        AGENTS.md 教训6 已登记；live 8000 实例 DEBUG=true 故匿名 200 属已知门禁语义）。
+        本用例关 DEBUG 锁生产门禁。"""
+        monkeypatch.setattr(settings, "DEBUG", False)
+        resp = client.get("/api/analytics/learning-events/summary")
+>       assert resp.status_code == 401
+E       assert 503 == 401
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\test_rm1_analytics.py:400: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[32m04:21:29[0m | [31m[1mERROR   [0m | [36mapp.domains.analytics.service[0m:[36msummarize_learning_events[0m:[36m59[0m | [31m[1m[LearningEvent] 聚合查询失败（mongo 不可达?）: RuntimeError[0m
+[33m[1mTraceback (most recent call last):[0m
+
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+    │    └ <function Thread._bootstrap_inner at 0x000002170CD467A0>
+    └ <Thread(asyncio-portal-217bd2ab3d0, started daemon 13368)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+    │    └ <function Thread.run at 0x000002170CD46480>
+    └ <Thread(asyncio-portal-217bd2ab3d0, started daemon 13368)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+    │    │        │    │        │    └ {}
+    │    │        │    │        └ <Thread(asyncio-portal-217bd2ab3d0, started daemon 13368)>
+    │    │        │    └ ()
+    │    │        └ <Thread(asyncio-portal-217bd2ab3d0, started daemon 13368)>
+    │    └ <function start_blocking_portal.<locals>.run_blocking_portal at 0x000002185B6FFBA0>
+    └ <Thread(asyncio-portal-217bd2ab3d0, started daemon 13368)>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\from_thread.py", line 536, in run_blocking_portal
+    run_eventloop(
+    └ <function run at 0x000002170DF462A0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_core\_eventloop.py", line 83, in run
+    return async_backend.run(func, args, {}, backend_options)
+           │             │   │     │         └ {}
+           │             │   │     └ ()
+           │             │   └ <function start_blocking_portal.<locals>.run_portal at 0x000002185B6FF600>
+           │             └ <classmethod(<function AsyncIOBackend.run at 0x0000021710251F80>)>
+           └ <class 'anyio._backends._asyncio.AsyncIOBackend'>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2481, in run
+    return runner.run(wrapper())
+           │      │   └ <function start_blocking_portal.<locals>.run_portal at 0x000002185B6FF240>
+           │      └ <function Runner.run at 0x000002170F9949A0>
+           └ <asyncio.runners.Runner object at 0x00000217BCD4C850>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           │    │     │                  └ <Task pending name='anyio.from_thread.start_blocking_portal.<locals>.run_portal' coro=<start_blocking_portal.<locals>.run_por...
+           │    │     └ <function BaseEventLoop.run_until_complete at 0x000002170F99A480>
+           │    └ <ProactorEventLoop running=True closed=False debug=False>
+           └ <asyncio.runners.Runner object at 0x00000217BCD4C850>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 641, in run_until_complete
+    self.run_forever()
+    │    └ <function ProactorEventLoop.run_forever at 0x000002171023C0E0>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\windows_events.py", line 321, in run_forever
+    super().run_forever()
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 608, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x000002170F994220>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 1936, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x000002170E10FEC0>
+    └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+  File "C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finis...: 'student'>)>)>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\anyio\_core\_tasks.py", line 275, in _run_coro
+    retval = await self._coro
+                   │    └ <member '_coro' of 'TaskHandle' objects>
+                   └ <TaskHandle pending name='starlette.middleware.base.BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.coro' coro=<corou...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+          │    │   │      │                      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x000002185B6FC7C0>
+          │    │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │    │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x000002173F402F50>
+          └ <app.common.security_headers.SecurityHeadersMiddleware object at 0x000002173F402A50>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+          │                            │    │    │     │      │        └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x000002185B6FC7C0>
+          │                            │    │    │     │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │                            │    │    │     └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │                            │    │    └ <starlette.requests.Request object at 0x00000217BD5BFC50>
+          │                            │    └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x000002173F403990>
+          │                            └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x000002173F402F50>
+          └ <function wrap_app_handling_exceptions at 0x0000021712784180>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x000002173F403990>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │    │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │    │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <fastapi.routing.APIRouter object at 0x0000021736FD0910>
+          └ <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x000002173F403990>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │    │                │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │    │                └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    └ <bound method APIRouter.app of <fastapi.routing.APIRouter object at 0x0000021736FD0910>>
+          └ <fastapi.routing.APIRouter object at 0x0000021736FD0910>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │     │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │     │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │     └ <function _IncludedRouter.handle at 0x0000021712796AC0>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x0000021737449490>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1780, in handle
+    await self.original_router.handle(scope, receive, send)
+          │    │               │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │    │               │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │    │               │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │    │               └ <function APIRouter.handle at 0x00000217127ACB80>
+          │    └ <fastapi.routing.APIRouter object at 0x0000021737449490>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x0000021737449490>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 2789, in handle
+    await included_router._handle_selected(scope, receive, send)
+          │               │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │               │                │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │               │                └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │               └ <function _IncludedRouter._handle_selected at 0x0000021712796B60>
+          └ _IncludedRouter(original_router=<fastapi.routing.APIRouter object at 0x0000021737449490>, include_context=_RouterIncludeConte...
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1800, in _handle_selected
+    await original_route.handle(scope, receive, send)
+          │              │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │              │      │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │              │      └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │              └ <function APIRoute.handle at 0x0000021712794C20>
+          └ APIRoute(path='/api/analytics/learning-events/summary', name='learning_events_summary', methods=['GET'])
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 1279, in handle
+    await app(scope, receive, send)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <function request_response.<locals>.app at 0x000002185B6999E0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+          │                            │    │        │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6984A0>
+          │                            │    │        │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │                            │    │        └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          │                            │    └ <starlette.requests.Request object at 0x00000217BD5BF250>
+          │                            └ <function request_response.<locals>.app.<locals>.app at 0x000002185B698220>
+          └ <function wrap_app_handling_exceptions at 0x0000021712784180>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002185B6985E0>
+          │   │      └ <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002185B6FF1A0>
+          │   └ {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/api/analytics/learning-events/summary', 'raw_path': b'/api...
+          └ <function request_response.<locals>.app.<locals>.app at 0x000002185B698220>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+                     │ └ <starlette.requests.Request object at 0x00000217BD5BF250>
+                     └ <function get_request_handler.<locals>.app at 0x000002185B699EE0>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x0000021712787E20>
+  File "E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\routing.py", line 352, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'current_user': UserInfo(user_id=1, account=None, username=None, nickname='t', real_name='t', mobile=None, email='t@e', gend...
+                 │         └ <member 'call' of 'Dependant' objects>
+                 └ Dependant(path_params=[], query_params=[ModelField(field_info=Query(None), name='user_id', mode='validation', config=None), M...
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mrouter.py[0m", line [33m36[0m, in [35mlearning_events_summary[0m
+    [1mdata[0m [35m[1m=[0m [35m[1mawait[0m [1mservice[0m[35m[1m.[0m[1msummarize_learning_events[0m[1m([0m[1mtarget_id[0m[1m,[0m [1mrange[0m[1m)[0m
+    [36m             │       │                         │          └ [0m[36m[1m'7d'[0m
+    [36m             │       │                         └ [0m[36m[1m1[0m
+    [36m             │       └ [0m[36m[1m<function summarize_learning_events at 0x00000217376798A0>[0m
+    [36m             └ [0m[36m[1m<module 'app.domains.analytics.service' from 'E:\\stu\\project\\stu\\EduAgent实施手册\\edu-agent\\app\\domains\\analytics\\servic...[0m
+
+> File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mservice.py[0m", line [33m49[0m, in [35msummarize_learning_events[0m
+    [1mcoll[0m [35m[1m=[0m [1m_get_collection[0m[1m([0m[1m)[0m
+    [36m       └ [0m[36m[1m<function _get_collection at 0x0000021737287380>[0m
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\domains\analytics\[0m[32m[1mevent_stream.py[0m", line [33m44[0m, in [35m_get_collection[0m
+    [35m[1mreturn[0m [1mget_mongo_db[0m[1m([0m[1m)[0m[1m[[0m[1mCOLLECTION[0m[1m][0m
+    [36m       │              └ [0m[36m[1m'learning_event'[0m
+    [36m       └ [0m[36m[1m<function get_mongo_db at 0x0000021734A55760>[0m
+
+  File "[32mE:\stu\project\stu\EduAgent实施手册\edu-agent\app\[0m[32m[1mdatabase.py[0m", line [33m258[0m, in [35mget_mongo_db[0m
+    [35m[1mraise[0m [1mRuntimeError[0m[1m([0m[36m"MongoDB 未初始化，请先调用 init_mongo()"[0m[1m)[0m
+
+[31m[1mRuntimeError[0m:[1m MongoDB 未初始化，请先调用 init_mongo()[0m
+[32m04:21:29[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[2c4b369c] GET /api/analytics/learning-events/summary → 503 (28ms)[0m
+============================== warnings summary ===============================
+tests\test_check_demo_timeouts.py:136
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\tests\test_check_demo_timeouts.py:136: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app\rerank_service\main.py:115
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:115: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\rerank_service\main.py:128
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_breaker_db_resilience.py::test_graph_expand_degrades_fast_after_open
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/test_contract_r12_tool_decision.py::test_r12_4_call_log_success_audit_row
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\mcp\executor.py:702: RuntimeWarning: coroutine 'call_tool.<locals>._run_once_cached' was never awaited
+    return await _run_once_guarded()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_core.py::TestCache::test_cache_hit
+tests/test_core.py::TestCache::test_short_polling_gets_value
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\core\breaker.py:144: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_bypasses_in_recent_window_without_blocking
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_bypasses_in_recent_window_without_blocking.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_passes_through_during_outage
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_passes_through_during_outage.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_contract_middleware.py::TestRateLimitMiddleware::test_rate_limit_on_auth
+FAILED tests/test_contract_middleware.py::TestSecurityHeaders::test_admin_forbidden_403
+FAILED tests/test_contract_review.py::TestTradeOverviewLive::test_admin_overview_200
+FAILED tests/test_contract_review.py::TestTradeOverviewLive::test_student_overview_forbidden
+FAILED tests/test_contract_review.py::TestReviewCrudLive::test_full_crud_chain
+FAILED tests/test_contract_task113.py::TestMetricsAuthLive::test_student_forbidden
+FAILED tests/test_contract_task113.py::TestMetricsAuthLive::test_admin_allowed
+FAILED tests/test_contract_task113.py::TestMemoryAdminPrefixLive::test_student_forbidden
+FAILED tests/test_contract_task113.py::TestMemoryAdminPrefixLive::test_admin_allowed
+FAILED tests/test_contract_task113.py::TestAwardLive::test_student_forbidden
+FAILED tests/test_contract_task113.py::TestQuizNextLive::test_next_excludes_correct
+FAILED tests/test_contract_task15.py::TestAuthShell::test_login_success_shell
+FAILED tests/test_contract_task15.py::TestAuthShell::test_login_failure_shell
+FAILED tests/test_contract_task15.py::TestAuthShell::test_refresh_shell - Typ...
+FAILED tests/test_contract_task15.py::TestAuthShell::test_me_shell - Assertio...
+FAILED tests/test_contract_task15.py::TestChatShell::test_sessions_shell - As...
+FAILED tests/test_contract_task15.py::TestChatShell::test_session_crud_shell
+FAILED tests/test_contract_task15.py::TestChatShell::test_search_shell - Asse...
+FAILED tests/test_contract_task15.py::TestChatShell::test_stream_done_embeds_shell
+FAILED tests/test_contract_task15.py::TestCommunityShell::test_posts_shell - ...
+FAILED tests/test_contract_task15.py::TestCommunityShell::test_post_create_like_shell
+FAILED tests/test_contract_task15.py::TestGamificationShell::test_badges_points_shell
+FAILED tests/test_contract_task15.py::TestGamificationShell::test_award_updates_zset_ranking
+FAILED tests/test_contract_task15.py::TestGamificationShell::test_rankings_badge_dimension_shell
+FAILED tests/test_contract_task15.py::TestMcpShell::test_admin_servers_shell
+FAILED tests/test_contract_task15.py::TestMcpShell::test_call_log_shell - Ass...
+FAILED tests/test_contract_task15.py::TestRagAdminShell::test_collections_shell
+FAILED tests/test_contract_task15.py::TestRagAdminShell::test_presets_shell
+FAILED tests/test_contract_task15.py::TestRagAdminShell::test_audit_log_shell
+FAILED tests/test_contract_task16.py::TestCoupons::test_templates - Assertion...
+FAILED tests/test_contract_task16.py::TestCoupons::test_my_coupons_empty_shell
+FAILED tests/test_contract_task16.py::TestCoupons::test_my_coupons_status_filter
+FAILED tests/test_contract_task16.py::TestCoupons::test_series_templates - As...
+FAILED tests/test_contract_task16.py::TestFavorites::test_list_empty_shell - ...
+FAILED tests/test_contract_task16.py::TestFavorites::test_add_duplicate_dedup_idempotent
+FAILED tests/test_contract_task16.py::TestFavorites::test_delete_idempotent
+FAILED tests/test_contract_task16.py::TestReceiveIdempotent::test_receive_unknown_coupon_404
+FAILED tests/test_contract_task20.py::TestMeCohorts::test_list_active_with_progress
+FAILED tests/test_contract_task20.py::TestEnrollmentDetail::test_detail - ass...
+FAILED tests/test_contract_task20.py::TestEnrollmentStatus::test_status - ass...
+FAILED tests/test_contract_task20.py::TestProgressSnapshot::test_snapshot_modules
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_accessible
+FAILED tests/test_contract_task21.py::TestAccessAuthz::test_enrolled_can_view_detail
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_assets_filtered_by_scope
+FAILED tests/test_contract_task21.py::TestSessionDetailAssets::test_transcode_status_valid
+FAILED tests/test_contract_task21.py::TestOutline::test_outline_structure - a...
+FAILED tests/test_contract_task21.py::TestSessionComplete::test_complete - as...
+FAILED tests/test_contract_task22.py::TestUserIsolation::test_cross_user_detail_404
+FAILED tests/test_contract_task94.py::TestGwt4Registry::test_live_ai_hub_180_registered
+FAILED tests/test_febe_contract_check.py::test_nextjs_buckets_cover_full_to_connect_against_real_backend
+FAILED tests/test_febe_contract_check.py::test_emit_migration_status_writes_buckets_with_zero_uncategorized
+FAILED tests/test_kg_rn1.py::test_contract_draft_matches_router - assert Fals...
+FAILED tests/test_rm1_analytics.py::test_summary_admin_any_user_ok - assert 4...
+FAILED tests/test_rm1_analytics.py::test_summary_student_self_ok_and_other_403
+FAILED tests/test_rm1_analytics.py::test_summary_manager_any_user_ok - assert...
+FAILED tests/test_rm1_analytics.py::test_stream_stats_admin_ok_student_403 - ...
+FAILED tests/test_rm1_analytics.py::test_summary_anonymous_401_when_debug_off
+57 failed, 1637 passed, 75 skipped, 12 warnings in 438.81s (0:07:18)
+E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\neo4j\_sync\driver.py:547: DeprecationWarning: Relying on Driver's destructor to close the session is deprecated. Please make sure to close the session. Use it as a context (`with` statement) or make sure to call `.close()` explicitly. Future versions of the driver will not close drivers automatically.

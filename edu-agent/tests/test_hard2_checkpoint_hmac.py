@@ -10,7 +10,7 @@
   兼容：旧无签名裸 pickle 快照按「无签名=不可信」丢弃走重建。
   回滚开关：CHECKPOINT_SIGN=False → 旧裸 pickle 行为。
 
-用例（全部真 Redis 127.0.0.1:6379）：
+用例（全部真 Redis，地址随 settings.REDIS_URL）：
   T1 写入→读出 roundtrip（新 saver 实例 = 模拟进程重启后恢复）
   T2 篡改 payload → 校验拒 → 丢弃走重建（aget_tuple=None，不抛 500）
   T3 篡改 hmac → 同上
@@ -39,16 +39,19 @@ from app.config import settings
 
 
 def _redis_ok() -> bool:
+    """守卫探针随 settings.REDIS_URL（TEST-BASE 2026-09-19 修正：前任 WIP 硬编码
+    6379 与本环境 .env REDIS_URL=redis://127.0.0.1:6377/0 不符 → 13 例被静默跳过，
+    守卫形同虚设）。探针与用例统一走 settings.REDIS_URL。"""
     try:
-        r = _redis.Redis(host="127.0.0.1", port=6379, socket_connect_timeout=2)
-        return r.ping()
+        r = _redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2, socket_timeout=2)
+        return bool(r.ping())
     except Exception:
         return False
 
 
-pytestmark = pytest.mark.skipif(not _redis_ok(), reason="Redis 不可用")
+pytestmark = pytest.mark.skipif(not _redis_ok(), reason=f"Redis 不可用（{settings.REDIS_URL}）")
 
-REDIS_URL = "redis://127.0.0.1:6379/0"
+REDIS_URL = settings.REDIS_URL
 _TEST_HMAC_KEY = "hard2-hmac-test-key-" + uuid.uuid4().hex[:16]
 
 

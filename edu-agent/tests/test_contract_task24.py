@@ -2,7 +2,7 @@
 """task24 契约测试：AI 助手 LangGraph 图重构（GWT ①②③）。
 
 执行方式：in-process + monkeypatch LLM（_llm_call）与子代理 runner（run_subagents），
-验证路由 / durable execution（AsyncRedisSaver，需 Redis 6379 在线）/ 并行 fan-out + 真实 user_id。
+验证路由 / durable execution（AsyncRedisSaver，需 Redis 在线，地址随 settings.REDIS_URL）/ 并行 fan-out + 真实 user_id。
 
 GWT：
 ① Given 四类意图样本，When 请求，Then route 正确分发；chitchat 直连 answer；knowledge 走
@@ -144,12 +144,15 @@ class TestDurableExecution:
     @pytest.mark.asyncio
     async def test_resume_same_thread_skips_completed_nodes(self, monkeypatch):
         """图中途抛异常（模拟 kill）→ 同 thread_id 重新 ainvoke → 从 checkpoint 续跑，
-        已完成节点（route/plan/fan_out/merge/reflect）不重复执行。需 Redis 6379 在线。"""
+        已完成节点（route/plan/fan_out/merge/reflect）不重复执行。需 Redis 在线
+        （地址随 settings.REDIS_URL；TEST-BASE 2026-09-19 修正硬编码 6379 漂移）。"""
         import redis.asyncio as ar
+
+        from app.config import settings as _settings
 
         # 探测 Redis
         try:
-            r = ar.Redis(host="localhost", port=6379, db=0)
+            r = ar.Redis.from_url(_settings.REDIS_URL, socket_connect_timeout=2)
             await r.ping()
             await r.aclose()
         except Exception:
@@ -160,7 +163,7 @@ class TestDurableExecution:
         install_fake_llm(monkeypatch, {"现在完成时": "knowledge"}, {"现在完成时": "FINAL_ANSWER"})
         install_fake_run_subagents(monkeypatch)
         # 原生 Redis（无 RediSearch 模块）→ 用 PlainRedisSaver 做 Redis durable execution
-        saver = PlainRedisSaver(redis_url="redis://localhost:6379/0", ttl=3600)
+        saver = PlainRedisSaver(redis_url=_settings.REDIS_URL, ttl=3600)
         await saver.asetup()
         g = graph_mod.build_graph().compile(checkpointer=saver)
         tid = TEST_TID + "-durable"
@@ -179,7 +182,7 @@ class TestDurableExecution:
         # 恢复到真实 answer_node，同 thread_id 续跑
         monkeypatch.setattr(graph_mod, "answer_node", real_answer)
         # 用「全新 saver 实例」模拟进程重启：仅靠 Redis 快照重建 state，证明 durable execution
-        saver2 = PlainRedisSaver(redis_url="redis://localhost:6379/0", ttl=3600)
+        saver2 = PlainRedisSaver(redis_url=_settings.REDIS_URL, ttl=3600)
         await saver2.asetup()
         g2 = graph_mod.build_graph().compile(checkpointer=saver2)
         final = await g2.ainvoke(st, {"configurable": {"thread_id": tid}})
