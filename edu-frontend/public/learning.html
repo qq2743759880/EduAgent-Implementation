@@ -731,8 +731,8 @@ a.session{text-decoration:none}
     btn.onclick = function () {
       btn.disabled = true;
       E.post("/api/study/sessions/" + state.session_id + "/complete").then(function (r) {
-        flag.textContent = (r && r.completed) ? "🎉 已标记完成（后端真实写入 completed=true）"
-          : "⚠️ 后端返回未完成：该课次暂无学习记录（播放会话未建立·缺口 task06-G1）";
+        flag.textContent = (r && r.completed) ? "🎉 已标记完成"
+          : "⚠️ 后端返回未完成：该课次暂无学习记录（播放会话未建立），请稍后重试";
         refreshOutline();
       }).catch(function (err) {
         btn.disabled = false;

@@ -464,7 +464,7 @@ window.bootAdmin=function(){
   if(!window.EAPI) return;
   if(!EAPI.store.getToken()){
     var sub=document.querySelector(".page-head .sub, .demo-note");
-    if(sub && sub.textContent.indexOf("admin 账号")<0) sub.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    if(sub && sub.textContent.indexOf("管理员账号")<0) sub.textContent="⚠ 请用管理员账号登录后刷新本页";
     return; // 守卫第一段已跳登录，此处静默降级不发请求
   }
   window.loadDashboardMetrics();

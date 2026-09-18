@@ -588,7 +588,7 @@ $("logPrev").onclick=function(){if(logPage>1){logPage--;loadLog();}};
 $("logNext").onclick=function(){logPage++;loadLog();};
 
 /* ---------- 初始化 ---------- */
-if(!EAPI.store.getToken()){setSub("⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页");return;}
+if(!EAPI.store.getToken()){setSub("⚠ 请用管理员账号登录后刷新本页");return;}
 EAPI.TIMEOUT_MS=120000;  /* 健康扫描/工具调用耗时可达 30-60s，默认 15s 会误超时 */
 loadServers();loadTools();loadLog();
 };

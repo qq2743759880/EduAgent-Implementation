@@ -656,7 +656,7 @@ window.bootAdmin=function(){
   /* ---- token 闸门：无 token 提示 admin 账号，不发任何请求 ---- */
   if(!EAPI.store.getToken()){
     var sub=document.querySelector(".page-head .sub");
-    if(sub && sub.textContent.indexOf("admin 账号")<0) sub.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";
+    if(sub && sub.textContent.indexOf("管理员账号")<0) sub.textContent="⚠ 请用管理员账号登录后刷新本页";
     qs("bank-body").innerHTML=""; qs("q-body").innerHTML="";
     var bc=qs("bank-count"); if(bc) bc.textContent="0";
     return;

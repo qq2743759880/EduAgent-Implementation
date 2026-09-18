@@ -532,7 +532,7 @@ window.bootAdmin=function(){
 if(!window.EAPI)return;
 var $=function(id){return document.getElementById(id)};
 var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
-if(!EAPI.store.getToken()){$("pageSub").textContent="⚠ 请用 admin 账号登录后刷新本页";return;}
+if(!EAPI.store.getToken()){$("pageSub").textContent="⚠ 请用管理员账号登录后刷新本页";return;}
 EAPI.TIMEOUT_MS=120000;
 
 var S={id:EAPI.pageId("id"),series:null,cohorts:[],cohortId:null,modules:[],sessions:{},moduleId:null,sessionId:null,videos:[],videoId:null,uploading:false,poll:null,editCohort:null,editModule:null,editSession:null,editVideo:null};

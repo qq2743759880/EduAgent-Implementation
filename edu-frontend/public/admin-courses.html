@@ -839,7 +839,7 @@ applyViewChrome();
 <script>
 window.bootAdmin=function(){
 if(!window.EAPI)return;
-if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("admin 账号")){t.textContent="⚠ 请用 admin 账号登录（adm02test / Test@123456）后刷新本页";}return;}
+if(!EAPI.store.getToken()){var t=document.querySelector(".toolbar-meta,.page-head .sub");if(t&&!t.textContent.includes("管理员账号")){t.textContent="⚠ 请用管理员账号登录后刷新本页";}return;}
 /* 守卫通过后：loadSeries() 真实拉取并渲染（三态：loading 骨架 / 空态 / 错误态） */
 loadSeries();
 };
