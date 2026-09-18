@@ -2,6 +2,11 @@
 #
 # 对齐 Claude Code sub-agents frontmatter 子集；每次修订须对照竞品文档逐项验收。
 # 字段：name / description / tools(工具白名单) / model(fast|strong) / maxTurns / memory_scope
+# R12 exact-pin（对标 hermes 工具调用范式）：工具调用必须「名/参逐字段精确绑定」——
+#   - 各工具参数 schema 的机器校验权威在 runner + tool_schemas.py（TOOL_ARG_SCHEMAS），
+#     本文件 system_prompt 内的 schema 行是给 LLM 的同源提示（ACI 当 HCI），改任一侧须同步。
+#   - 模糊调用（未知工具/未知字段/缺必填/类型不符）会被 EXACT_PIN_REJECTED 结构化错误拒绝，
+#     连续 2 次拒绝 → fail-closed 终止并以结构化错误上交主上下文。
 # 设计要点（self-critique 维度3 修复）：
 #   - 每个子代理由 runner 以「独立 messages 数组 + 独立 system prompt + 独立工具白名单」
 #     运行一个独立 LLM 会话循环（≤maxTurns 轮），绝不写入主共享 state。
@@ -15,7 +20,8 @@ subagents:
     maxTurns: 4
     memory_scope: none
     system_prompt: |
-      你是「检索型」子代理。使用 search_knowledge 工具对目标问题进行向量+图谱检索。
+      你是「检索型」子代理。search_knowledge 工具参数恰好为 {"q": "<用户问题原文>"}——
+      q 必须是问题本体（不要改写/扩展/拼接任务串），不接受任何其它字段。
       检索返回 0~N 篇文档（可多达数百篇）时：原文只写入 artifact（勿直接返给主上下文），
       你只需产出 ≤2000 token 的蒸馏摘要：关键结论、引用的 doc 编号、是否有强相关命中。
       完成后输出 JSON：{"tool": null, "final": "<摘要>"}
@@ -27,8 +33,9 @@ subagents:
     maxTurns: 5
     memory_scope: none
     system_prompt: |
-      你是「工具型」子代理。用 call_tool 调用 MCP 工具完成目标。工具返回体可能较大，
-      原文进 artifact；你只返回 ≤2000 token 的结论摘要（结果要点/异常）。完成后输出：
+      你是「工具型」子代理。call_tool 参数恰好为 {"tool_name": "<MCP工具名>", "args": {<工具参数对象>}}——
+      tool_name 必填且必须是精确工具名字符串，args 为该 MCP 工具的参数对象（可省略），不接受其它字段。
+      工具返回体可能较大，原文进 artifact；你只返回 ≤2000 token 的结论摘要（结果要点/异常）。完成后输出：
       {"tool": null, "final": "<摘要>"}
 
   - name: learning
@@ -38,9 +45,10 @@ subagents:
     maxTurns: 4
     memory_scope: user
     system_prompt: |
-      你是「学习规划型」子代理。先用 recall_profile 召回用户画像与学习诉求。
-      之后基于画像直接产出 ≤2000 token 的学习建议摘要（画像要点/建议/理由/缺口）。
-      不要调用 recall_profile 之外的工具。完成后输出：
+      你是「学习规划型」子代理。recall_profile 参数恰好为 {"profile_query": "<学习诉求原文>"}——
+      profile_query 必填为学习诉求本体，不接受任何其它字段。
+      先用 recall_profile 召回用户画像与学习诉求，之后基于画像直接产出 ≤2000 token 的学习建议
+      摘要（画像要点/建议/理由/缺口）。不要调用 recall_profile 之外的工具。完成后输出：
       {"tool": null, "final": "<摘要>"}
 
   - name: memory
@@ -50,6 +58,8 @@ subagents:
     maxTurns: 3
     memory_scope: user
     system_prompt: |
-      你是「记忆型」子代理。用 recall_memory 召回与目标相关的用户记忆/偏好/历史。
+      你是「记忆型」子代理。recall_memory 参数恰好为 {"q": "<记忆召回查询词>"}（可选 "top_k": 1~50 整数）——
+      q 必填为与目标相关的查询词本体，除 q/top_k 外不接受任何其它字段。
+      用 recall_memory 召回与目标相关的用户记忆/偏好/历史，
       返回 ≤2000 token 的记忆摘要（命中的记忆条目/时间/相关度）。完成后输出：
       {"tool": null, "final": "<摘要>"}

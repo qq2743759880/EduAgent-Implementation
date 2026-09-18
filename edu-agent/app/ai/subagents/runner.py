@@ -26,6 +26,13 @@ from loguru import logger
 
 from app.config import settings
 
+from app.ai.subagents.tool_schemas import (
+    MAX_CONSECUTIVE_VAGUE_REJECTS,
+    schema_hint,
+    structured_rejection,
+    validate_tool_args,
+)
+
 # task-P1L 优化H3：可确定性预执行的单工具子代理（工具入参可由 input_text 推导，无需 LLM 决策轮）。
 # search/memory/learning 各只有 1 个工具且入参为查询词；tool 子代理的 call_tool 入参开放
 # （tool_name/args 依赖 LLM 决策），不在其列——对齐 Anthropic Building Effective Agents 取舍。
@@ -35,13 +42,25 @@ _DIRECT_PREFETCH_TOOLS: frozenset[str] = frozenset({"search_knowledge", "recall_
 def _direct_tool_args(subagent: str, input_text: str) -> dict:
     """推导单工具子代理的确定性入参（对齐 _build_tool_services 的工具签名）。
 
-    plan 节点注入的 input 形如 ``<模板>（问题：<query>）``，此处取 ``（问题：…）`` 尾部为查询词；
-    提取失败（query 含异常括号等）→ 整段 input_text 作查询词兜底（检索对输入不敏感，可容忍）。
+    plan 节点注入的 input 形如 ``<模板>（问题：<query>）``，此处取 ``（问题：…）`` 内为查询词。
+    R12 exact-pin：q 必须精确绑定「问题本体」——plan 节点（sixnode.plan）会在 （问题：…） 之后
+    追加 ``\n\n[相关 skill 指引…]`` / ``\n\n[历史上下文（经 context_edit 编辑…）]`` 块，旧正则
+    ``（问题：(.*)）\s*$`` 因锚定串尾必然失配 → 整段任务串兜底作 q（R20-b 残差 18 条根因：
+    子代理检索 query=模板+上下文块拼接串而非用户问题）。
+
+    现按「（问题： 起始 → 后随 ``\n\n[`` 块边界或串尾的 ）」贪婪提取（上下文块以 ``]`` 收尾，
+    其内部 ）不可能后随 ``\n\n[``，故贪婪回溯精确落在问题收尾 ）上）；两种提取均失败才整段兜底
+    （行为下限不劣于修复前），并对兜底打点 debug 日志。
     """
     q = input_text or ""
-    m = re.search(r"（问题：(.*)）\s*$", q, re.S)
+    m = re.search(r"（问题：(.*)）(?=\n\n\[|\s*$)", q, re.S)
+    if not (m and m.group(1).strip()):
+        # 旧正则保留为次选（兼容无块尾缀的历史形态）；仍失败才整段兜底
+        m = re.search(r"（问题：(.*)）\s*$", q, re.S)
     if m and m.group(1).strip():
         q = m.group(1).strip()
+    elif input_text and "（问题：" in input_text:
+        logger.debug(f"[Subagent:{subagent}] exact-pin q 提取失败（无）收尾），整段 input 兜底作查询词")
     if subagent == "learning":
         return {"profile_query": q}
     return {"q": q}
@@ -230,10 +249,18 @@ async def _default_llm(messages: list[dict], model: str) -> str:
 
 
 def _parse_action(raw: str) -> dict:
+    """解析 LLM 决策输出为 action dict（R12 exact-pin：解析与校验分离，此处只解析不判定）。
+
+    - ```json 围栏 > 宽松大括号截取 > json.loads；解析成功返回原 dict（tool/args 合法性由
+      主循环 exact-pin 三段校验判定，此处不做语义放行）。
+    - 解析失败 → ``{"tool": None, "final": <原始去空白文本>}``：纯文本终答按 final 契约优雅
+      接受（设计内完成路径，非模糊调用）；真正的模糊「调用」在主循环按结构化错误拒绝。
+      R12 修正：原实现失败时回退大括号截取片段（丢失上下文），现回传原文更忠实。
+    """
     if not raw:
         return {"tool": None, "final": ""}
     text = raw.strip()
-    import re
+    original = text
     m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.S)
     if m:
         text = m.group(1)
@@ -245,7 +272,7 @@ def _parse_action(raw: str) -> dict:
         obj = json.loads(text)
         return obj
     except Exception:
-        return {"tool": None, "final": text}
+        return {"tool": None, "final": original}
 
 
 # ═══════════════════════════════════════════
@@ -325,8 +352,15 @@ async def run_subagent(
     ):
         prefetch_tool = spec.tools[0]
         handler = tool_services.get(prefetch_tool)
-        if handler is not None:
-            prefetch_args = _direct_tool_args(spec.name, input_text)
+        prefetch_args = _direct_tool_args(spec.name, input_text)
+        # R12 exact-pin：确定性推导参数同样必须过工具参数 schema（推导失败=代码缺陷，
+        # 拒绝预执行并回退 LLM 决策循环，绝不把不过校验的模糊参数打进检索/记忆服务）
+        args_ok, args_reason, args_detail = validate_tool_args(prefetch_tool, prefetch_args)
+        if handler is not None and not args_ok:
+            logger.error(
+                f"[Subagent:{spec.name}] 确定性预执行参数未过 exact-pin schema（{args_reason}: {args_detail}），"
+                "回退 LLM 决策循环")
+        if handler is not None and args_ok:
             try:
                 prefetch_result = await handler(prefetch_args)
             except Exception as exc:
@@ -351,6 +385,10 @@ async def run_subagent(
             )
             logger.info(f"[Subagent:{spec.name}] 单工具确定性预执行完成（0 决策 LLM），LLM 仅总结轮")
 
+    # R12 exact-pin 记账：模糊调用拒绝事件（入 artifact 供验收排查）+ 连续拒绝计数（fail-closed）
+    rejections: list[dict] = []
+    vague_streak = 0
+
     for turn in range(spec.maxTurns):
         raw = await _call_llm_with_retry(llm, messages, spec.model)
         if raw is None:
@@ -359,18 +397,78 @@ async def run_subagent(
 
         action = _parse_action(raw)
         tool_name = action.get("tool")
-        if not tool_name:
-            final_text = str(action.get("final") or raw).strip()
+        final_cand = str(action.get("final") or "").strip()
+        if tool_name is None or (not tool_name and final_cand):
+            # final 契约路径：tool 显式 null/缺省；tool 空值但携带 final 亦视为完成意图（优雅收口）
+            final_text = final_cand or str(raw).strip()
             ok = True
             break
 
-        # —— 工具白名单校验 + 本会话局部调用 ——
-        if tool_name not in spec.tools:
-            messages.append({"role": "user", "content": f"[工具 {tool_name} 不在白名单 {list(spec.tools)}，跳过]"})
+        # —— R12 exact-pin 三段校验（对标 hermes 范式：拒绝 LLM 自由发挥的模糊调用）——
+        reject_msg: str | None
+        if not isinstance(tool_name, str) or not tool_name.strip() or tool_name != tool_name.strip():
+            # ① 工具名类型/形态精确校验（非字符串/空白/带前后缀空白 = 模糊调用）
+            reject_msg = structured_rejection(
+                reason="invalid_tool_name",
+                detail=f"tool 必须是白名单内工具名的精确字符串（不接受 {type(tool_name).__name__}/空白/前后缀空白）",
+                claimed_tool=tool_name,
+                allowed_tools=list(spec.tools),
+            )
+        elif tool_name not in spec.tools:
+            # ② 白名单精确匹配
+            reject_msg = structured_rejection(
+                reason="unknown_tool",
+                detail=f"工具 {tool_name!r} 不在本子代理白名单",
+                claimed_tool=tool_name,
+                allowed_tools=list(spec.tools),
+                schema=schema_hint(tool_name),
+            )
+        else:
+            # ③ 参数 schema 逐字段校验（exact-pin：字段名/类型/必填/取值域精确绑定）
+            args_ok, args_reason, args_detail = validate_tool_args(tool_name, action.get("args"))
+            if args_ok:
+                reject_msg = None
+            else:
+                reject_msg = structured_rejection(
+                    reason=f"invalid_args:{args_reason}",
+                    detail=args_detail,
+                    claimed_tool=tool_name,
+                    allowed_tools=list(spec.tools),
+                    schema=schema_hint(tool_name),
+                )
+
+        if reject_msg is not None:
+            vague_streak += 1
+            rejections.append({"turn": turn + 1, "action": action, "error": reject_msg})
+            messages.append({"role": "assistant", "content": json.dumps(action, ensure_ascii=False)})
+            messages.append({"role": "user", "content": reject_msg})
+            logger.warning(
+                f"[Subagent:{spec.name}] exact-pin 拒绝模糊调用（turn={turn + 1}, streak={vague_streak}）: "
+                f"{reject_msg[:200]}")
+            if vague_streak >= MAX_CONSECUTIVE_VAGUE_REJECTS:
+                # fail-closed：连续模糊调用达上限 → 结构化错误作 summary 上交主上下文（不烧剩余轮次）
+                final_text = reject_msg
+                ok = False
+                logger.warning(
+                    f"[Subagent:{spec.name}] 连续 {vague_streak} 次模糊调用 → fail-closed 终止（结构化错误上交）")
+                break
             continue
+
+        vague_streak = 0
+
+        # —— 工具可用性 + 本会话局部调用 ——
         handler = tool_services.get(tool_name)
         if handler is None:
-            messages.append({"role": "user", "content": f"[工具 {tool_name} 不可用（未注入），跳过]"})
+            # 环境性缺失（非 LLM 模糊调用，不计 vague_streak）：结构化告知以便改道其它白名单工具
+            unavailable_msg = structured_rejection(
+                reason="handler_unavailable",
+                detail=f"工具 {tool_name!r} 本会话未注入服务（环境性缺失，非调用格式问题）",
+                claimed_tool=tool_name,
+                allowed_tools=[t for t in spec.tools if t in tool_services] or list(spec.tools),
+            )
+            rejections.append({"turn": turn + 1, "action": action, "error": unavailable_msg})
+            messages.append({"role": "assistant", "content": json.dumps(action, ensure_ascii=False)})
+            messages.append({"role": "user", "content": unavailable_msg})
             continue
         tool_calls += 1
         try:
@@ -403,6 +501,7 @@ async def run_subagent(
         "artifact_ttl": ttl,
         "tool_outputs": full_tool_outputs,   # 完整工具返回体（如检索的 100 篇原文）
         "messages": messages,               # 子代理全消息（含截断视图）
+        "exact_pin_rejections": rejections,  # R12：模糊调用拒绝记账（验收/排查证据链）
     }
     artifact_ref = await _default_store.write(payload, ttl)
 

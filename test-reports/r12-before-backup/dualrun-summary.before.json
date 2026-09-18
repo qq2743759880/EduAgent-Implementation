@@ -1,7 +1,7 @@
 {
-  "ran_at": "2026-09-19T00:50:31",
+  "ran_at": "2026-09-14T21:56:43",
   "seed": 20260914,
-  "git_rev": "d0fc59b",
+  "git_rev": "57491e5",
   "probe_user": {
     "user_id": 1,
     "role_sent": "UserRole.STUDENT（对齐生产非 admin 租户范围）"
@@ -75,36 +75,36 @@
   },
   "docs_jaccard": {
     "n": 100,
-    "mean": 1.0,
-    "p50": 1.0,
+    "mean": 0.6411,
+    "p50": 0.6667,
     "p95": 1.0,
-    "min": 1.0,
+    "min": 0.0,
     "max": 1.0,
-    "eq1_count": 100,
-    "lt0.5_count": 0,
-    "eq0_count": 0
+    "eq1_count": 47,
+    "lt0.5_count": 43,
+    "eq0_count": 7
   },
   "ttft_proxy": {
     "old": {
       "n": 100,
-      "mean": 1.1534,
-      "p50": 1.041,
-      "p95": 1.7,
-      "min": 0.101,
-      "max": 9.192,
-      "eq1_count": 56,
-      "lt0.5_count": 7,
+      "mean": 3.5492,
+      "p50": 3.412,
+      "p95": 4.103,
+      "min": 0.209,
+      "max": 13.774,
+      "eq1_count": 99,
+      "lt0.5_count": 1,
       "eq0_count": 0
     },
     "new": {
       "n": 100,
-      "mean": 1.2995,
-      "p50": 1.149,
-      "p95": 1.886,
-      "min": 0.218,
-      "max": 9.456,
-      "eq1_count": 78,
-      "lt0.5_count": 4,
+      "mean": 3.6716,
+      "p50": 3.512,
+      "p95": 4.513,
+      "min": 0.276,
+      "max": 13.891,
+      "eq1_count": 99,
+      "lt0.5_count": 1,
       "eq0_count": 0
     },
     "note": "旧=决策完成→检索完成；新=start→hook 首检索完成；无检索路径（chitchat 直连/降级）为 None 不计入——两路径事件源不同，近似口径，供 R02 TTFT 预算立项参考"
@@ -112,9 +112,9 @@
   "semantic_30pct": {
     "n_planned": 30,
     "n_done": 30,
-    "equivalent": 0,
-    "not_equivalent": 0,
-    "judge_failed": 30,
+    "equivalent": 27,
+    "not_equivalent": 1,
+    "judge_failed": 2,
     "gate_note": "答案语义仅入报告，不作灰度门槛（详档 v1.2 终审 A1）"
   },
   "five_conditions_current": {
@@ -128,11 +128,11 @@
       "当前值": "0.0%"
     },
     "docsJaccard>0.9": {
-      "当前值": 1.0
+      "当前值": 0.6411
     },
     "P95TTFT容差": {
-      "旧P95_s": 1.7,
-      "新P95_s": 1.886,
+      "旧P95_s": 4.103,
+      "新P95_s": 4.513,
       "阈值说明": "旧路径实测 P95 + 10%；阈值裁定属用户/编排者，本探针只报数"
     }
   }
