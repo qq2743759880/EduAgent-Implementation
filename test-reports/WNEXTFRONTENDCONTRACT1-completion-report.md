@@ -5,6 +5,7 @@
 > 工作区：`E:\stu\project\stu\EduAgent实施手册`
 > 完成时间：2026-09-18
 > 分支：`feature/opt-waves`
+> HEAD：`f3d57f255fc0dded1e8b603c20a1612acb55a3ca`
 
 ---
 
@@ -211,7 +212,7 @@ timeout 90 node scripts/check-demo.mjs 2>&1 | grep -E "⑩|SUMMARY"
 
 | 维度 | 数字 |
 |------|------|
-| HEAD commit hash | 待 commit 后填入（git rev-parse HEAD） |
+| HEAD commit hash | `f3d57f255fc0dded1e8b603c20a1612acb55a3ca`（feature/opt-waves，父 commit `042b293`，纯前向） |
 | febe SUMMARY | `breakpoints=0 in_use_unfrozen=0 unfrozen_only=0 to_connect=109 frontend=101 backend=210 contracts=236 malformed=0` |
 | check-demo | 18 PASS + 2 WARN + 0 FAIL |
 | 分类制品 | `test-reports/_frontend_migration_status.json` total=109/plan=10/deferred=50/ops=6/unassigned=43/uncategorized=0 |
