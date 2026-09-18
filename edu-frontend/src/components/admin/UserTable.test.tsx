@@ -2,13 +2,14 @@
  * UserTable 单测（task60 /admin/users 重构）
  *  - 渲染用户行（头像/姓名/角色徽章/状态/查看/编辑按钮）
  *  - 最后 1 个可用 admin 红线：行内「最后admin」徽章；多个有效 admin 时不标记
- *  - 「查看」打开学习详情 Dialog；端点未注册（GET /learning 404）→ 契约缺口如实披露（非 MOCK）
+ *  - 「查看」打开学习详情 Dialog；端点未注册（后端无 GET /learning，实测 404）→ 契约缺口
+ *    如实披露（非 MOCK），且不发必 404 死请求（W-NEXT-FEBE-SCAN-002 删死调用）
  *  - 角色/状态写操作已收敛至 EditUserDialog（见 EditUserDialog.test.tsx）
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { http, ApiError } from "@/lib/api-client";
+import { http } from "@/lib/api-client";
 import { UserTable } from "./UserTable";
 import type { AdminUserItem } from "@/lib/api/admin/users";
 
@@ -85,14 +86,15 @@ describe("UserTable", () => {
     expect(screen.getByText("已禁用")).toBeInTheDocument();
   });
 
-  it("点击「查看」打开学习详情；端点未注册（404）→ 契约缺口实披露（不写 MOCK）", async () => {
+  it("点击「查看」打开学习详情；端点未注册 → 契约缺口实披露且不发必 404 死请求（W-NEXT-FEBE-SCAN-002）", async () => {
     const mockGet = vi.mocked(http.get);
-    mockGet.mockRejectedValue(new ApiError(404, { code: "40403", message: "learning endpoint not registered" }));
+    mockGet.mockClear();
     renderTable(ADMIN_ONLY);
     fireEvent.click(screen.getByTestId("view-2"));
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith("/api/admin/users/2/learning", expect.anything());
-    });
+    // 死调用已删除：GET /api/admin/users/{id}/learning 后端从未注册（实测 404 code 40400），
+    // 弹窗直接渲染缺口占位（字段结构预览），不再发起注定失败的请求
+    expect(mockGet).not.toHaveBeenCalled();
     expect(await screen.findByText(/契约缺口/)).toBeInTheDocument();
+    expect(screen.getByText(/active_cohorts_count/)).toBeInTheDocument();
   });
 });

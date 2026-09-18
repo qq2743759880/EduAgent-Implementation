@@ -2,7 +2,7 @@
  * 管理端题库 API（task03，G3 题库管理）
  *
  * 契约来源（L1：以 edu-agent 后端代码为准，design-guide §4.4 仅是摘要）：
- *  - app/admin/question_admin/router.py + schemas.py（P7 管理端题库管理）
+ *  - app/domains/question_admin/router.py + schemas.py（P7 管理端题库管理）
  *
  * ⚠️ 与 design-guide 摘要的关键差异（后端代码为权威）：
  *  - 题型枚举是 single_choice / multi_choice / true_false / fill_blank / short_answer
@@ -10,10 +10,18 @@
  *  - options_json 是 [{label, content}] 数组（非 {A:"..."} 对象）
  *  - 批量导入走后端两段式 /import-preview + /import-execute（旧 /batch-import 契约已移除）
  *
+ * W-NEXT-FEBE-SCAN-002 断点根因修复（2026-09-18，OpenAPI 实测对账）：
+ *  - 真实路由是 /api/admin/questions/questions（题目集合）与
+ *    /api/admin/questions/questions/{question_id}（单题）——旧代码写的
+ *    /api/admin/questions(/{id}) 后端从未注册（404 断点），已对齐。
+ *  - 后端无跨题库"题目总列表"端点：题目列表只能按题库查
+ *    GET /api/admin/questions/banks/{bank_id}/questions（见 question-bank.ts listBankQuestions，
+ *    /admin/questions 页面在用）。旧的跨库 listQuestions/getQuestion/deleteQuestion
+ *    死封装已删除（全仓库 grep 零引用，活引用全部在 question-bank.ts 同名封装）。
+ *
  * 错误契约（R-7）：所有写操作失败一律向上抛 ApiError，由 useMutation onError → toast。
  */
-import { adminDelete, adminGet, adminPatch, adminPost } from "@/lib/api/admin";
-import type { AdminPage, AdminPageParams } from "@/lib/admin-api-types";
+import { adminPatch, adminPost } from "@/lib/api/admin";
 
 /* ============================================================
  * 枚举
@@ -74,20 +82,6 @@ export interface QuestionOption {
   content: string;
 }
 
-export interface QuestionAdminItem {
-  id: number;
-  question_code: string;
-  subject_code: string;
-  question_type: string;
-  difficulty_level: string;
-  stem_preview: string;
-  default_score: number;
-  yn: number;
-  created_at: string;
-  updated_at: string;
-  tags: QuestionTag[];
-}
-
 export interface QuestionAdminDetail {
   id: number;
   question_code: string;
@@ -125,48 +119,30 @@ export interface QuestionCreateInput {
 }
 
 /* ============================================================
- * 题目
+ * 题目（W-NEXT-FEBE-SCAN-002 对齐 question_admin 真实路由）
+ *
+ * ⚠️ 遗留 body 契约缺口（如实披露，非本次引入）：QuestionAdminCreate 后端真实
+ *    必填是 bank_id/question_type_id/stem/answer_text（app/domains/question_admin/
+ *    schemas.py:57），而本文件 QuestionCreateInput 仍是 task03 草稿形状
+ *    （question_code/subject_code/tag_ids/...）。二者不匹配 —— 即便路径正确，
+ *    旧 payload 也会 422。唯一下游 QuestionForm（task03 legacy 表单）当前未挂载
+ *    （全仓库 grep 零 import，活 UI：/admin/questions 页两级管理 + BankImportDialog
+ *    批量导入 + QuestionDetailEditor 走 question-bank.ts），故无运行时影响。
+ *    后续处置（follow-up）：整体删除 legacy QuestionForm + 本文件死封装，
+ *    或按 QuestionAdminCreate 重写 payload —— 需任务单裁决，不在断点修复范围。
  * ============================================================ */
-export interface ListQuestionsParams extends AdminPageParams {
-  subject_code?: string;
-  question_type?: string;
-  difficulty_level?: string;
-  tag_id?: number;
-}
-
-export async function listQuestions(
-  params: ListQuestionsParams = {},
-): Promise<AdminPage<QuestionAdminItem>> {
-  const query: Record<string, unknown> = {
-    page: params.page ?? 1,
-    page_size: params.page_size ?? 20,
-  };
-  if (params.subject_code) query.subject_code = params.subject_code;
-  if (params.question_type) query.question_type = params.question_type;
-  if (params.difficulty_level) query.difficulty_level = params.difficulty_level;
-  if (params.keyword?.trim()) query.keyword = params.keyword.trim();
-  if (typeof params.tag_id === "number") query.tag_id = params.tag_id;
-  if (typeof params.yn === "number") query.yn = params.yn;
-  return adminGet<AdminPage<QuestionAdminItem>>("/api/admin/questions", query);
-}
-
-export async function getQuestion(questionId: number): Promise<QuestionAdminDetail> {
-  return adminGet<QuestionAdminDetail>(`/api/admin/questions/${questionId}`);
-}
-
 export async function createQuestion(input: QuestionCreateInput): Promise<{ id: number }> {
-  return adminPost<{ id: number }>("/api/admin/questions", input);
+  return adminPost<{ id: number }>("/api/admin/questions/questions", input);
 }
 
 export async function updateQuestion(
   questionId: number,
   input: Partial<QuestionCreateInput>,
 ): Promise<{ updated: boolean; id: number }> {
-  return adminPatch<{ updated: boolean; id: number }>(`/api/admin/questions/${questionId}`, input);
-}
-
-export async function deleteQuestion(questionId: number): Promise<{ deleted: boolean; id: number }> {
-  return adminDelete<{ deleted: boolean; id: number }>(`/api/admin/questions/${questionId}`);
+  return adminPatch<{ updated: boolean; id: number }>(
+    `/api/admin/questions/questions/${questionId}`,
+    input,
+  );
 }
 
 /* ============================================================

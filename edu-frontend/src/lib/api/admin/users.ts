@@ -140,37 +140,11 @@ export function formatDateTime(iso?: string | null): string {
 /* ============================================================
  * 学习详情（task60 /admin/users 重构）
  *
- * ⚠ 契约缺口 · 实披露：GET /api/admin/users/{id}/learning 后端当前未注册
- *   （user_admin/router.py 现仅 list/role/status/dashboard-metrics）。下方字段为
- *   task60 契约定义（snake_case，聚合 student_cohort_rel + progress），前端照常发起
- *   该 GET；端点未接线时返回 404，由 UserLearningDialog 显示缺口占位（不写 MOCK），
- *   待后端开放后自动渲染真实数据。
+ * ⚠ 契约缺口 · 实披露 + W-NEXT-FEBE-SCAN-002 死调用删除（2026-09-18）：
+ *   GET /api/admin/users/{id}/learning 后端从未注册（user_admin/router.py 现仅
+ *   list/role/status/dashboard-metrics，OpenAPI 实测确认无等价路由）。原
+ *   getAdminUserLearning 死调用每次打开弹窗必 404（code 40400），已删除；
+ *   UserLearningDialog 直接渲染缺口占位（6 指标字段结构预览，不写 MOCK），
+ *   待后端开放该端点后由变更单恢复封装与真实数据渲染。
  * ============================================================ */
-export interface LearningActivityItem {
-  /** 动态类型：video/cohort/homework/exam/favorite 等 */
-  activity_type: string;
-  detail: string;
-  occurred_at: string;
-}
 
-/** 学习详情 6 指标 + 最近动态（字段 snake_case，对齐 /me/learning-summary 聚合口径） */
-export interface AdminUserLearning {
-  user_id: number;
-  /** 报名班次（active_cohorts_count） */
-  active_cohorts_count: number;
-  /** 平均进度 % */
-  avg_progress_pct: number;
-  /** 累计观看秒 */
-  total_watched_seconds: number;
-  /** 作业正确率 % */
-  homework_accuracy_pct: number;
-  /** 考试平均分 */
-  exam_avg_score: number;
-  /** 收藏数 */
-  favorite_count: number;
-  recent_activities: LearningActivityItem[];
-}
-
-export async function getAdminUserLearning(userId: number): Promise<AdminUserLearning> {
-  return adminGet<AdminUserLearning>(`/api/admin/users/${userId}/learning`);
-}

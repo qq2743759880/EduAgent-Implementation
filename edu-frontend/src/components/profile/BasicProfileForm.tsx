@@ -35,8 +35,8 @@ import { UpdateProfileSchema } from "@/lib/validators/profile-schemas";
 const BasicSchema = UpdateProfileSchema.pick({ nickname: true, avatar: true }).strip();
 type BasicInput = z.infer<typeof BasicSchema>;
 
-/** PATCH /api/users/me 返回（拦截器已解包）：{ok, updated[], profile} */
-type PatchMeResp = { ok?: boolean; updated?: string[]; profile?: Partial<UserInfo> };
+/** PUT /api/users/me/profile 返回（拦截器已解包）：UserProfile 子集（edu-agent app/users/schemas.py） */
+type PutProfileResp = { nickname?: string | null; avatar_url?: string | null };
 
 export function BasicProfileForm() {
   const me: UserInfo | null = useAuthStore((s) => s.me);
@@ -60,23 +60,28 @@ export function BasicProfileForm() {
   const mutation = useMutation({
     mutationKey: ["profile", "basic"],
     mutationFn: async (body: BasicInput) => {
-      const data = await http.patch<PatchMeResp>("/api/users/me", body);
-      return { updated: (data?.profile ?? null) as Partial<UserInfo> | null };
+      /* W-NEXT-FEBE-SCAN-002 断点根因修复：真实契约是 PUT /api/users/me/profile
+       * （UserProfileUpdate 全 Optional，None=不改）；旧 PATCH /api/users/me 后端从未注册
+       * （OpenAPI 实测 404 断点）。avatar 表单字段 → avatar_url 契约字段映射；空串=清空。 */
+      const data = await http.put<PutProfileResp>("/api/users/me/profile", {
+        nickname: body.nickname,
+        avatar_url: body.avatar ?? null,
+      });
+      return { profile: (data ?? null) as PutProfileResp | null };
     },
     onSuccess: async (result) => {
-      const { updated } = result;
-      if (updated && (updated.id || updated.nickname)) {
+      const { profile } = result;
+      if (profile && (profile.nickname || profile.avatar_url)) {
         useAuthStore.getState().setAuth({
           token: useAuthStore.getState().token || "",
           tenantId: useAuthStore.getState().tenantId,
           me: {
             id: me?.id ?? "",
-            nickname: me?.nickname || "",
+            nickname: profile.nickname ?? me?.nickname ?? "",
             email: me?.email || "",
-            avatar: me?.avatar ?? null,
+            avatar: profile.avatar_url ?? me?.avatar ?? null,
             roles: me?.roles ?? [],
             tenantId: me?.tenantId ?? null,
-            ...(updated as Partial<UserInfo>),
           },
         });
       }

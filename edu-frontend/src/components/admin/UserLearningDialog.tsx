@@ -1,22 +1,21 @@
 /**
  * UserLearningDialog — 学习详情弹窗（task60 /admin/users 重构）
- *  - 6 StatCard：报名班次 / 平均进度 / 累计观看 / 作业正确率 / 考试均分 / 收藏
- *  - 最近动态列表（recent_activities）
- *  - 数据源 GET /api/admin/users/{id}/learning（契约⑤用户域，task60 契约定义）
- *  - ⚠ 契约缺口：端点后端当前未注册 → 404 时如实披露缺口 + 渲染字段结构（label + snake_case 字段名 + '—'），
- *    不写 MOCK 假数据；待后端开放后自动渲染真实聚合。其余错误走 ErrorState。
+ *  - 账号摘要（角色/状态/账号名）
+ *  - 6 指标字段结构预览（报名班次 / 平均进度 / 累计观看 / 作业正确率 / 考试均分 / 收藏）
+ *  - ⚠ 契约缺口 · 实披露（W-NEXT-FEBE-SCAN-002 死调用删除）：数据源
+ *    GET /api/admin/users/{id}/learning 后端从未注册（user_admin/router.py 暂无
+ *    learning 端点，OpenAPI 实测确认）。原实现每次打开弹窗都发起必 404 的死请求，
+ *    现已删除该调用，直接渲染缺口占位（label + snake_case 字段名 + '—'，不写 MOCK
+ *    假数据）；待后端开放该端点后由变更单恢复封装（lib/api/admin/users.ts）与真实聚合渲染。
  */
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { BookOpen, CalendarClock, ClipboardCheck, GraduationCap, Heart, Hourglass } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LoadingState } from "@/components/admin/controls";
-import { getAdminUserLearning, userDisplayName, userRoleLabel, type AdminUserItem } from "@/lib/api/admin/users";
-import { ApiError } from "@/lib/api-client";
+import { userDisplayName, userRoleLabel, type AdminUserItem } from "@/lib/api/admin/users";
 import { cn } from "@/lib/utils";
 
 /** 6 指标字段结构（缺口占位时展示 label + 字段名，非真实值） */
@@ -38,15 +37,6 @@ export function UserLearningDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const learning = useQuery({
-    queryKey: ["admin", "users", user?.user_id, "learning"] as const,
-    queryFn: () => getAdminUserLearning(user!.user_id),
-    enabled: open && Boolean(user),
-    retry: false,
-  });
-
-  const isGap = learning.isError && learning.error instanceof ApiError && learning.error.status === 404;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl sm:max-h-[88vh] sm:overflow-y-auto">
@@ -54,7 +44,7 @@ export function UserLearningDialog({
           <DialogTitle>学习详情 · {user ? userDisplayName(user) : ""}</DialogTitle>
           {user && (
             <p className="text-xs text-muted-foreground">
-              UID {user.user_id} · 数据源 GET /api/admin/users/{user.user_id}/learning
+              UID {user.user_id} · 数据源 GET /api/admin/users/{user.user_id}/learning（后端未注册 · 缺口披露）
             </p>
           )}
         </DialogHeader>
@@ -68,56 +58,7 @@ export function UserLearningDialog({
               <span className="text-xs text-muted-foreground">{user.username || user.phone || user.email || "—"}</span>
             </div>
 
-            {learning.isLoading ? (
-              <LoadingState label="聚合学习指标…" />
-            ) : isGap ? (
-              <LearningGap user={user} />
-            ) : learning.isError ? (
-              <LearnError message={learning.error instanceof Error ? learning.error.message : ""} onRetry={() => learning.refetch()} />
-            ) : learning.data ? (
-              <>
-                {/* 6 指标 */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {FIELD_SPECS.map((f) => {
-                    const Icon = f.icon;
-                    const raw = learning.data[f.key as keyof typeof learning.data] as number;
-                    const value = f.format ? f.format(raw) : String(raw ?? "—");
-                    return (
-                      <div key={f.key} className="rounded-xl border border-border bg-card p-3">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Icon className="h-3.5 w-3.5" /> {f.label}
-                        </div>
-                        <div className="mt-1.5 text-xl font-extrabold text-foreground">
-                          {value}
-                          <span className="ml-0.5 text-xs font-semibold text-muted-foreground">{f.unit}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* 最近动态 */}
-                <div>
-                  <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                    最近动态
-                    <span className="font-mono text-xs font-normal text-muted-foreground">recent_activities[]</span>
-                  </div>
-                  {learning.data.recent_activities.length === 0 ? (
-                    <p className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">暂无最近动态</p>
-                  ) : (
-                    <ul className="space-y-2 border-l-2 border-primary-border pl-3">
-                      {learning.data.recent_activities.map((a, i) => (
-                        <li key={i} className="flex items-baseline gap-2 text-sm">
-                          <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                            {formatDate(a.occurred_at)}
-                          </span>
-                          <span className="text-foreground">{a.detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
-            ) : null}
+            <LearningGap user={user} />
           </div>
         )}
       </DialogContent>
@@ -125,7 +66,7 @@ export function UserLearningDialog({
   );
 }
 
-/** 契约缺口：端点未接线 → 如实披露 + 渲染字段结构（不造假数据） */
+/** 契约缺口：端点未接线 → 如实披露 + 渲染字段结构（不造假数据，不发必 404 的死请求） */
 function LearningGap({ user }: { user: AdminUserItem }) {
   return (
     <div className="space-y-3">
@@ -170,32 +111,5 @@ export function UserStatusPill({ status, yn }: { status: number; yn: number }) {
       <span className={cn("h-1.5 w-1.5 rounded-full", disabled ? "bg-candy-red" : "bg-candy-green")} />
       {disabled ? "已禁用" : "启用"}
     </span>
-  );
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-/** 学习详情加载失败态（非契约缺口；candy 风格，禁用任意字号/灰色系/内联色） */
-function LearnError({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="rounded-xl border border-candy-red/30 bg-candy-red/10 p-4 text-center">
-      <p className="text-sm font-semibold text-candy-red">学习详情加载失败</p>
-      <p className="mt-1 break-all font-mono text-xs text-candy-red/80">{message}</p>
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-3 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-        >
-          重试
-        </button>
-      )}
-    </div>
   );
 }

@@ -47,8 +47,8 @@ type PrefsOutput = z.output<typeof PrefsSchema>;
 
 const MAX_GOAL = 500;
 
-/** PATCH /api/users/me 返回（拦截器已解包）：{ok, updated[], profile} */
-type PatchResp = { ok?: boolean; updated?: string[] };
+/** PUT /api/users/me/profile 返回（拦截器已解包）：UserProfile（edu-agent app/users/schemas.py） */
+type PutProfileResp = { nickname?: string | null; avatar_url?: string | null };
 
 export function PreferencesForm() {
   const queryClient = useQueryClient();
@@ -81,12 +81,21 @@ export function PreferencesForm() {
   const mutation = useMutation({
     mutationKey: ["profile", "preferences"],
     mutationFn: async (body: PrefsInput) => {
-      const patchBody = {
-        learningGoal: body.learningGoal || "",
-        subjectPreferences: body.subjectPreferences || [],
+      /* W-NEXT-FEBE-SCAN-002 断点根因修复：真实契约是 PUT /api/users/me/profile
+       * （UserProfileUpdate 全 Optional）；旧 PATCH /api/users/me 后端从未注册（404 断点）。
+       * 字段映射（对齐 app/users/schemas.py）：learningGoal（单串）→ learning_goals 单元素数组；
+       * 感兴趣学科（表单无分值概念）→ subject_preferences[{subject_code, preference_score:5=特别喜欢}]。
+       * 读回缺口（既有，非本次引入）：auth/me 合并视图 learning_goal 是 list[str]，
+       * UserInfo 未承载该字段 → 表单回显恒为空，持久化本身已真实生效（见 me.ts handoff 标注）。 */
+      const putBody = {
+        learning_goals: body.learningGoal ? [body.learningGoal] : [],
+        subject_preferences: (body.subjectPreferences ?? []).map((code) => ({
+          subject_code: code,
+          preference_score: 5,
+        })),
       };
-      const resp = await http.patch<PatchResp>("/api/users/me", patchBody);
-      return { ok: resp ?? null };
+      const resp = await http.put<PutProfileResp>("/api/users/me/profile", putBody);
+      return { ok: Boolean(resp) };
     },
     onSuccess: async () => {
       await useAuthStore.getState().refreshMe().catch(() => undefined);

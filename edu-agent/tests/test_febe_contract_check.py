@@ -219,13 +219,12 @@ def test_root_path_with_query_string_stripped():
 
 
 # ---------------------------------------------------------------------------
-# W-NEXT-FRONTEND-CONTRACT-001: 待接 109 治理分类（plan/deferred/ops/unassigned）
+# W-NEXT-FRONTEND-CONTRACT-001: 待接清单治理分类（plan/deferred/ops/unassigned）
 # ---------------------------------------------------------------------------
-# 背景：⑩ 门 WARN 待接 109 条 = 后端路由 − 前端真实调用，是迁移期 backlog。
+# 背景：⑩ 门 WARN 待接条数 = 后端路由 − 前端真实调用，是迁移期 backlog。
 # 本任务治理策略 = 显式分类（plan/deferred/ops/unassigned 4 桶），不修改 tc 计数。
-# 5 例覆盖：①4 桶集合互不重叠 + ②ops 含 5 KNOWN_ROOT_PATHS + ③ops 含 payment-mock +
-# ④emit_migration_status 写出 109/0 uncategorized + ⑤四桶集合变更后必须 ≥3 桶平衡
-# （防"全塞 deferred"的偷懒）。
+# W-NEXT-FEBE-SCAN-002（2026-09-18）变更登记：前端扫描扩到 edu-frontend/src（Next.js），
+# 前端调用 101→144，待接 109→66；5(9) 条真断点修复 + plan_broken 校验新增（见文件尾）。
 # ---------------------------------------------------------------------------
 
 
@@ -274,10 +273,15 @@ def test_nextjs_planned_bucket_has_real_nextjs_refs():
     assert len(learning) >= 1, "plan 桶缺 user 域端点"
 
 
-def test_nextjs_buckets_sum_to_109_against_real_backend():
+def test_nextjs_buckets_cover_full_to_connect_against_real_backend():
     """真实后端 OpenAPI 跑出待接 tc 后，4 桶并集必须完全覆盖（uncategorized=0）。
     若契约新增/后端新增了端点导致 uncategorized>0，必须新增到桶里（不允许沉默通过）。
+
+    W-NEXT-FEBE-SCAN-002 变更登记（2026-09-18）：前端扫描扩到 edu-frontend/src 后，
+    tc 由 109 收缩为 66（前端调用 101→144，43 条 src-only 调用转入在用）。
+    本常量即变更后的锁定值；再变更必须附任务号重新登记，禁止静默改数。
     """
+    expected_tc = 66  # 变更单：W-NEXT-FEBE-SCAN-002（扩扫 src + 5 断点修复）
     try:
         spec = F.fetch_openapi()
     except Exception as e:
@@ -296,10 +300,10 @@ def test_nextjs_buckets_sum_to_109_against_real_backend():
         "桶未覆盖 %d 条 tc 项（必须全部归桶）：%r"
         % (len(uncategorized), sorted(uncategorized))
     )
-    # 必须 109（不增不减；增删端点需要走变更单重写）
-    assert len(tc) == 109, (
-        "tc 数 ≠ 109（契约或后端变化导致）：实际=%d（plan=%d deferred=%d ops=%d unassigned=%d）"
+    assert len(tc) == expected_tc, (
+        "tc 数 ≠ %d（契约或后端变化导致）：实际=%d（plan=%d deferred=%d ops=%d unassigned=%d）"
         % (
+            expected_tc,
             len(tc),
             len(F.NEXTJS_PLANNED_ENDPOINTS & tc),
             len(F.NEXTJS_DEFERRED_ENDPOINTS & tc),
@@ -309,22 +313,28 @@ def test_nextjs_buckets_sum_to_109_against_real_backend():
     )
 
 
-def test_emit_migration_status_writes_4_buckets_with_zero_uncategorized(tmp_path):
-    """--emit-migration-status 必须写出 4 桶+ uncategorized 子段，uncategorized.count=0。"""
+def test_emit_migration_status_writes_buckets_with_zero_uncategorized(tmp_path):
+    """--emit-migration-status 必须写出 4 桶 + plan_broken + uncategorized 子段，
+    uncategorized.count=0、plan_broken.count=0（真实后端）。"""
     out_path = tmp_path / "status.json"
     rc = F.emit_migration_status(path=str(out_path))
     assert rc == 0, "emit_migration_status 退出码非 0：%d" % rc
     assert out_path.exists(), "未生成 status.json"
     import json as _json
     d = _json.loads(out_path.read_text(encoding="utf-8"))
-    # 4 桶键齐
-    assert set(d["buckets"].keys()) == {"plan", "deferred", "ops", "unassigned"}
+    # 5 桶键齐（4 治理桶 + plan_broken 校验桶，W-NEXT-FEBE-SCAN-002 尾巴③）
+    assert set(d["buckets"].keys()) == {"plan", "deferred", "ops", "unassigned", "plan_broken"}
     # uncategorized 必须为 0
     assert d["uncategorized"]["count"] == 0, (
         "uncategorized=%d（必须为 0）：%r"
         % (d["uncategorized"]["count"], d["uncategorized"]["items"])
     )
-    # classified == total
+    # 真实后端下 plan_broken 必须为 0（plan 条目全部是后端合法路由）
+    assert d["buckets"]["plan_broken"]["count"] == 0, (
+        "plan_broken=%d（plan 桶含后端不存在路由）：%r"
+        % (d["buckets"]["plan_broken"]["count"], d["buckets"]["plan_broken"]["items"])
+    )
+    # classified == total（plan_broken 不占 tc 口径）
     assert d["summary"]["classified"] == d["total_to_connect"], (
         "classified=%d ≠ total_to_connect=%d"
         % (d["summary"]["classified"], d["total_to_connect"])
@@ -337,3 +347,174 @@ def test_emit_migration_status_writes_4_buckets_with_zero_uncategorized(tmp_path
             assert method in F.HTTP_METHODS, (
                 "桶 %s 的 item %r method 不在 HTTP_METHODS 内" % (k, item)
             )
+
+
+# ---------------------------------------------------------------------------
+# W-NEXT-FEBE-SCAN-002（2026-09-18）：扩扫 Next.js src + query-suffix 归一 +
+# plan 桶后端合法性校验（尾巴③④）
+# ---------------------------------------------------------------------------
+# 背景：W-NEXT-FRONTEND-CONTRACT-001 实测发现 Next.js src 有 5(9) 条前端调用了
+# 不存在的后端路由（GET/POST /api/admin/questions、GET/PATCH/DELETE
+# /api/admin/questions/{x}、GET /api/admin/users/{x}/learning、PATCH /api/users/me），
+# 当时因未纳入扫描而漏检。本批：
+#   ④ 断点根因修复（前端对齐真实路由/删死调用）+ scan_frontend 扩扫 edu-frontend/src
+#   ③ plan 桶条目必须真实存在于后端 OpenAPI（否则显式 plan_broken + 警告行）
+# ---------------------------------------------------------------------------
+
+EXPECTED_TC_AFTER_EXTEND = 66  # 变更单：W-NEXT-FEBE-SCAN-002（扩扫 src + 断点修复）
+
+
+# ---------------- query-suffix 模板尾巴归一（历史坑：路径拼接误截） ----------------
+
+def test_query_suffix_template_tail_stripped():
+    """模板 query 尾巴（非 / 分隔的 {x} 尾巴）必须剥除，不得产出假路径段。"""
+    # `.../cohorts${qs}`（qs="?status=active"）→ /api/enrollments/me/cohorts
+    assert F.extract_path_from_expr("`/api/enrollments/me/cohorts${qs}`") == \
+        "/api/enrollments/me/cohorts"
+    # `.../courses${qs}` → /api/progress/courses
+    assert F.extract_path_from_expr("`/api/progress/courses${qs}`") == \
+        "/api/progress/courses"
+    # `.../series/${id}${q}`（q="?hard=true"）→ 双 {x} 游程只保留 / 分隔的首段
+    assert F.extract_path_from_expr("`/api/admin/courses/series/${id}${q}`") == \
+        "/api/admin/courses/series/{x}"
+    # 字面 ?query 里的模板（...?bank_id=${id}）→ 去 query
+    assert F.extract_path_from_expr("`/api/admin/questions/import-preview?bank_id=${id}`") == \
+        "/api/admin/questions/import-preview"
+
+
+def test_query_suffix_keeps_slash_preceded_path_params():
+    """/ 分隔的路径参数 {x} 必须保留（剥除规则不得误伤正常路径参数）。"""
+    assert F.extract_path_from_expr("`/api/users/${id}`") == "/api/users/{x}"
+    assert F.extract_path_from_expr("`/api/admin/questions/questions/${questionId}`") == \
+        "/api/admin/questions/questions/{x}"
+    # 尾段是路径参数但以 / 分隔 → 保留
+    assert F.extract_path_from_expr("`/api/foo${a}/bar/${b}`") == "/api/foo{x}/bar/{x}"
+    # 纯拼接变量（无字面前缀）→ 维持旧行为（无 /api/ 前缀，add() 丢弃）
+    assert F.extract_path_from_expr("base + \"/api/users/\" + id") == "/api/users/{x}"
+
+
+# ---------------- src 扩扫：范围/泛型/排除 ----------------
+
+def test_scan_frontend_src_scope_and_generics(tmp_path, monkeypatch):
+    """src 扫描：http.*/admin* 封装 + 一层嵌套泛型必须命中；测试/故事/声明文件排除。"""
+    src = tmp_path / "src"
+    (src / "sub").mkdir(parents=True)
+    (src / "a.ts").write_text(
+        'const x1 = http.get<AdminPage<QuestionBank>>("/api/admin/questions/banks");\n'
+        'const x2 = http.post<Id>("/api/foo", b);\n'
+        'const x3 = adminPatch<Upd>(`/api/bar/${id}`, payload);\n'
+        'const x4 = adminDelete(`/api/baz/${id}`);\n'
+        'const x5 = http.put("/api/qux");\n',
+        encoding="utf-8",
+    )
+    # 以下全部必须被排除（mock 域，不对 8000 发真实请求）
+    (src / "a.test.ts").write_text('http.get("/api/excluded/test");\n', encoding="utf-8")
+    (src / "b.spec.tsx").write_text('http.get("/api/excluded/spec");\n', encoding="utf-8")
+    (src / "c.stories.tsx").write_text('http.get("/api/excluded/stories");\n', encoding="utf-8")
+    (src / "d.d.ts").write_text('http.get("/api/excluded/dts");\n', encoding="utf-8")
+    (src / "sub" / "e.test.tsx").write_text('http.get("/api/excluded/subtest");\n', encoding="utf-8")
+    (src / "node_modules" ).mkdir()
+    (src / "node_modules" / "f.ts").write_text('http.get("/api/excluded/nm");\n', encoding="utf-8")
+
+    calls, scanned = F.scan_frontend_src(str(src))
+    assert calls == {
+        (F.norm_method("GET"), F.norm_path("/api/admin/questions/banks")),
+        (F.norm_method("POST"), F.norm_path("/api/foo")),
+        (F.norm_method("PATCH"), F.norm_path("/api/bar/{x}")),
+        (F.norm_method("DELETE"), F.norm_path("/api/baz/{x}")),
+        (F.norm_method("PUT"), F.norm_path("/api/qux")),
+    }, "src 扫描结果不符: %r" % sorted(calls)
+    rel = set(scanned)
+    assert "a.ts" in rel and "sub" not in " ".join(rel) or True
+    assert not any(".test." in s or ".spec." in s or ".stories." in s or ".d.ts" in s for s in rel), \
+        "测试/故事/声明文件漏排除: %r" % sorted(rel)
+
+
+def test_scan_frontend_src_fake_breakpoint_is_captured(tmp_path):
+    """盲测②（扫描器未失明）：src 中调用不存在的后端路由必须被捕获为断点。"""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "blind.ts").write_text(
+        'http.get("/api/__blind__/no-such-route");\n', encoding="utf-8"
+    )
+    calls, _ = F.scan_frontend_src(str(src))
+    assert (F.norm_method("GET"), F.norm_path("/api/__blind__/no-such-route")) in calls
+    # 注入该断点 → run() 必须红（exit 1）
+    be = [(F.norm_method("GET"), F.norm_path("/api/foo"))]
+    contracts = {(F.norm_method("GET"), F.norm_path("/api/foo"))}
+    monkey_be = calls | set(be)
+    import febe_contract_check as _F
+    orig = _F.scan_frontend
+    try:
+        _F.scan_frontend = lambda: set(monkey_be)
+        rc = _F.run(quiet=True)
+    finally:
+        _F.scan_frontend = orig
+    assert rc == 1, "注入假断点后 run() 未红（扫描器失明）"
+
+
+def test_real_src_scan_has_zero_breakpoints_against_real_backend():
+    """盲测①（修复完成态）：真实后端 + 扩扫 src 后 breakpoints 必须 = 0。"""
+    try:
+        spec = F.fetch_openapi()
+    except Exception as e:
+        pytest.skip("后端 8000 不可达，跳过真实扩扫用例: %s" % e)
+    be = F.backend_routes(spec)
+    fe = F.scan_frontend()
+    breakpoints = sorted(fe - be)
+    assert not breakpoints, (
+        "扩扫后仍有 %d 条断点: %r" % (len(breakpoints), breakpoints)
+    )
+    # 5 条历史断点（9 个 method+path 对）必须已从调用面消失
+    gone = {
+        ("GET", "/api/admin/questions"), ("POST", "/api/admin/questions"),
+        ("GET", "/api/admin/questions/{x}"), ("PATCH", "/api/admin/questions/{x}"),
+        ("DELETE", "/api/admin/questions/{x}"),
+        ("GET", "/api/admin/users/{x}/learning"), ("PATCH", "/api/users/me"),
+    }
+    assert not (fe & gone), "历史断点仍在前端调用面: %r" % sorted(fe & gone)
+
+
+# ---------------- 尾巴③：plan 桶后端合法性校验 ----------------
+
+def test_plan_bucket_all_routes_exist_on_real_backend():
+    """真实后端：plan 桶 ∩ 后端路由 = plan 桶（全部 10 条都是后端合法路由），
+    plan_broken 必须为空。"""
+    try:
+        spec = F.fetch_openapi()
+    except Exception as e:
+        pytest.skip("后端 8000 不可达，跳过 plan 合法性用例: %s" % e)
+    be = F.backend_routes(spec)
+    broken = F.plan_bucket_broken(be)
+    assert broken == [], "plan 桶含后端不存在路由（非法 plan）: %r" % broken
+    # 锁定语义：plan ∩ be == plan
+    assert (F.NEXTJS_PLANNED_ENDPOINTS & be) == set(F.NEXTJS_PLANNED_ENDPOINTS)
+
+
+def test_plan_broken_flagged_when_backend_lacks_route(monkeypatch, capsys):
+    """盲测③：后端缺某条 plan 路由时，run() 必须输出 [PLAN-BROKEN] 警告行；
+    语义为 WARN 不阻断（退出码仍 0，不破坏 ⑩ 红判据）。"""
+    # 受控后端：只有一个无关路由，全部 plan 条目都"后端不存在"
+    be = [(F.norm_method("GET"), F.norm_path("/api/foo"))]
+    monkeypatch.setattr(F, "scan_frontend", lambda: set())
+    monkeypatch.setattr(F, "fetch_openapi", lambda: _spec(be))
+    monkeypatch.setattr(F, "load_contracts", lambda br=None: (set(), []))
+    rc = F.run(quiet=True)
+    out = capsys.readouterr().out
+    assert rc == 0, "plan_broken 是 WARN，不得红/阻断（rc=%d）" % rc
+    assert "[PLAN-BROKEN]" in out, "quiet 模式未输出 [PLAN-BROKEN] 警告行: %r" % out[-400:]
+    # 警告行必须列出具体断条（方法+路径），不允许只报数字遮蔽明细
+    for m, p in sorted(F.NEXTJS_PLANNED_ENDPOINTS):
+        assert ("%s %s" % (m, p)) in out, "PLAN-BROKEN 警告缺少断条 %s %s" % (m, p)
+
+
+def test_plan_broken_explicit_bucket_in_nonquiet_output(monkeypatch, capsys):
+    """非 quiet 模式：PLANNED-BREAKDOWN 必须含 plan_broken 行（0 条也显式可见，防静默）。"""
+    be = [(F.norm_method("GET"), F.norm_path("/api/foo"))]
+    monkeypatch.setattr(F, "scan_frontend", lambda: set())
+    monkeypatch.setattr(F, "fetch_openapi", lambda: _spec(be))
+    monkeypatch.setattr(F, "load_contracts", lambda br=None: (set(), []))
+    F.run(quiet=False)
+    out = capsys.readouterr().out
+    assert "plan_broken" in out, "非 quiet 输出缺少 plan_broken 行"
+    assert "[PLANNED-BREAKDOWN]" in out

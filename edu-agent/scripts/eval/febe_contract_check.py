@@ -46,6 +46,7 @@ SCRIPTS_DIR = os.path.dirname(HERE)            # edu-agent/scripts
 EDU_AGENT_DIR = os.path.dirname(SCRIPTS_DIR)   # edu-agent
 REPO_ROOT = os.path.dirname(EDU_AGENT_DIR)     # 工作区根
 PUB_DIR = os.path.join(REPO_ROOT, "edu-frontend", "public")
+SRC_DIR = os.path.join(REPO_ROOT, "edu-frontend", "src")  # Next.js 迁移面（W-NEXT-FEBE-SCAN-002 扩扫）
 CONTRACTS_DIR = os.path.join(REPO_ROOT, "contracts")
 DEFAULT_FRONTEND_LIST = os.path.join(REPO_ROOT, "test-reports", "_frontend_real_api.txt")
 
@@ -63,10 +64,11 @@ TO_CONNECT_AHEAD = {
 }
 
 # ---------------------------------------------------------------------------
-# W-NEXT-FRONTEND-CONTRACT-001 待接清单 109 治理分类（plan/deferred/ops/unknown）
+# W-NEXT-FRONTEND-CONTRACT-001 待接清单治理分类（plan/deferred/ops/unknown）
 # ---------------------------------------------------------------------------
-# ⑩ 门 WARN 待接 109 条 = 后端路由 − 前端真实调用。落地治理时按"前端接入计划"
-# 拆 4 桶，避免把"已知规划的待接"与"真正的契约漂移"混在一起误导治理节奏：
+# ⑩ 门 WARN 待接条数 = 后端路由 − 前端真实调用（W-NEXT-FEBE-SCAN-002 起前端含
+# Next.js src 扩扫，条数由 109 收缩为实测值，见 [SUMMARY] to_connect；此处不再写死）。
+# 落地治理时按"前端接入计划"拆桶，避免把"已知规划的待接"与"真正的契约漂移"混在一起：
 #
 #   plan     = Next.js 已有对应路由页面/组件、但具体端点暂未挂接（前端迁移进行中）
 #   deferred = 后端 admin/MCP/交易域端点，Next.js 暂未迁移该域页面（按阶段计划）
@@ -284,7 +286,20 @@ def extract_path_from_expr(expr):
     idx = path.find("/api/")
     if idx >= 0:
         path = path[idx:]
+    # Query-suffix 模板尾巴归一（W-NEXT-FEBE-SCAN-002）：JS 模板串常把 query string
+    # 以变量拼在路径尾（`.../cohorts${qs}`、`.../series/${id}${q}`），字面量归一化后
+    # 会产出「非 / 分隔的 {x} 尾巴」。合法 URL 的路径参数必以 / 分隔，因此把结尾处
+    # 不以 / 分隔的 {x} 游程剥掉（它们是 query/片段尾巴，不是路径段）。
+    # 反遮蔽：被剥尾巴的路径逐条记录进 _QUERY_SUFFIX_STRIPPED，非 quiet 输出可见。
+    stripped = re.sub(r"(?:(?<!/)\{x\})+$", "", path)
+    if stripped != path:
+        _QUERY_SUFFIX_STRIPPED.append(path)
+    path = stripped
     return norm_path(path)
+
+
+# 反遮蔽诊断：本次扫描中被「query-suffix 尾巴归一」剥掉 {x} 尾巴的路径（归一化前形态）
+_QUERY_SUFFIX_STRIPPED = []
 
 
 # --------------------------------------------------------------------------- #
@@ -294,6 +309,20 @@ API_RE = re.compile(r"\bEAPI\.(get|post|put|patch|del)\s*\(\s*")
 FETCH_RE = re.compile(r"\bfetch\s*\(\s*")
 # 注意：字符类里的引号需用三引号原始串，避免 " 提前结束字符串字面量
 XHR_RE = re.compile(r'''\.open\s*\(\s*([\'"])(GET|POST|PUT|PATCH|DELETE)\1\s*,''')
+# Next.js src 客户端封装（W-NEXT-FEBE-SCAN-002）：lib/api-client.ts http.* 与
+# lib/api/admin.ts admin* 系列。泛型允许一层嵌套（adminGet<AdminPage<QuestionBank>>(...)）。
+HTTP_CLIENT_RE = re.compile(
+    r"\bhttp\.(get|post|put|patch|delete|del)\b\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*\(\s*"
+)
+ADMIN_CLIENT_RE = re.compile(
+    r"\badmin(Get|Post|Put|Patch|Delete)\b\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*\(\s*"
+)
+
+# src 扫描范围：Next.js 运行源码；排除测试/故事/类型声明（mock 域，不对 8000 发真实请求，
+# 其中的假路径（/api/auth/anything 等）不是契约断点）。
+SRC_FILE_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+SRC_SKIP_DIRS = {"node_modules", ".next", "__tests__", "e2e", "stories", "coverage"}
+SRC_SKIP_FILE_MARKERS = (".test.", ".spec.", ".stories.", ".d.ts")
 
 
 def _find_arg(src, start):
@@ -312,64 +341,123 @@ def _find_arg(src, start):
     return None
 
 
-def scan_frontend():
-    calls = set()
-    files = [os.path.join(PUB_DIR, f) for f in os.listdir(PUB_DIR) if f.endswith(".html")]
-    files.append(os.path.join(PUB_DIR, "edu-api.js"))
+def _iter_src_files(src_dir):
+    for root, dirs, files in os.walk(src_dir):
+        dirs[:] = [d for d in dirs if d not in SRC_SKIP_DIRS]
+        for fn in sorted(files):
+            if not fn.endswith(SRC_FILE_EXTS):
+                continue
+            if any(mk in fn for mk in SRC_SKIP_FILE_MARKERS):
+                continue
+            yield os.path.join(root, fn)
+
+
+def _scan_file_calls(fp, calls):
+    """单文件扫描全部调用族（EAPI / fetch / xhr / http.* / admin*），命中并入 calls。"""
+    try:
+        src = open(fp, encoding="utf-8", errors="ignore").read()
+    except OSError:
+        return
 
     def add(method, path):
         if not path or "/api/" not in path:
             return
         calls.add((norm_method(method), norm_path(path)))
 
-    for fp in files:
-        try:
-            src = open(fp, encoding="utf-8", errors="ignore").read()
-        except OSError:
+    # EAPI.* 调用
+    for m in API_RE.finditer(src):
+        arg = _find_arg(src, m.end())
+        if not arg:
             continue
-        # EAPI.* 调用
-        for m in API_RE.finditer(src):
-            arg = _find_arg(src, m.end())
-            if not arg:
-                continue
-            expr = arg.split(",", 1)[0].strip()
-            add(m.group(1), extract_path_from_expr(expr))
-        # fetch( 调用
-        for m in FETCH_RE.finditer(src):
-            arg = _find_arg(src, m.end())
-            if not arg:
-                continue
-            method = "GET"
-            mm = re.search(r"method\s*:\s*['\"](GET|POST|PUT|PATCH|DELETE)", arg)
-            if mm:
-                method = mm.group(1)
-            expr = arg.split(",", 1)[0].strip()
-            add(method, extract_path_from_expr(expr))
-        # xhr.open("METHOD", url, ...)
-        for m in XHR_RE.finditer(src):
-            method = norm_method(m.group(2))
-            start = m.end()
-            depth = 0
-            n = len(src)
-            i = start
-            end = None
-            while i < n:
-                c = src[i]
-                if c == "(":
-                    depth += 1
-                elif c == ")":
-                    if depth == 0:
-                        end = i
-                        break
-                    depth -= 1
-                elif c == ",":
+        expr = arg.split(",", 1)[0].strip()
+        add(m.group(1), extract_path_from_expr(expr))
+    # fetch( 调用
+    for m in FETCH_RE.finditer(src):
+        arg = _find_arg(src, m.end())
+        if not arg:
+            continue
+        method = "GET"
+        mm = re.search(r"method\s*:\s*['\"](GET|POST|PUT|PATCH|DELETE)", arg)
+        if mm:
+            method = mm.group(1)
+        expr = arg.split(",", 1)[0].strip()
+        add(method, extract_path_from_expr(expr))
+    # xhr.open("METHOD", url, ...)
+    for m in XHR_RE.finditer(src):
+        method = norm_method(m.group(2))
+        start = m.end()
+        depth = 0
+        n = len(src)
+        i = start
+        end = None
+        while i < n:
+            c = src[i]
+            if c == "(":
+                depth += 1
+            elif c == ")":
+                if depth == 0:
                     end = i
                     break
-                i += 1
-            if end is None:
-                continue
-            expr = src[start:end].strip()
-            add(method, extract_path_from_expr(expr))
+                depth -= 1
+            elif c == ",":
+                end = i
+                break
+            i += 1
+        if end is None:
+            continue
+        expr = src[start:end].strip()
+        add(method, extract_path_from_expr(expr))
+    # http.get<T>(...) / http.post(...)（Next.js lib/api-client.ts 封装）
+    for m in HTTP_CLIENT_RE.finditer(src):
+        arg = _find_arg(src, m.end())
+        if not arg:
+            continue
+        expr = arg.split(",", 1)[0].strip()
+        add(m.group(1), extract_path_from_expr(expr))
+    # adminGet<T>(...) / adminPost<T>(...)（Next.js lib/api/admin.ts 封装）
+    for m in ADMIN_CLIENT_RE.finditer(src):
+        arg = _find_arg(src, m.end())
+        if not arg:
+            continue
+        expr = arg.split(",", 1)[0].strip()
+        add(m.group(1).lower(), extract_path_from_expr(expr))
+
+
+def _scan_public_frontend():
+    """静态糖果页（public/*.html + edu-api.js）——W-NEXT-FE-001 原扫描面。"""
+    calls = set()
+    files = [os.path.join(PUB_DIR, f) for f in os.listdir(PUB_DIR) if f.endswith(".html")]
+    files.append(os.path.join(PUB_DIR, "edu-api.js"))
+    for fp in files:
+        _scan_file_calls(fp, calls)
+    return calls
+
+
+def scan_frontend_src(src_dir=None):
+    """Next.js src 扫描（W-NEXT-FEBE-SCAN-002 扩扫）。
+
+    返回 (calls, scanned_files)：
+      calls          —— (method, norm_path) 集合（与 public 扫描同口径）
+      scanned_files  —— 实际扫描的文件相对路径列表（诊断/报告用）
+    测试/故事/声明文件被排除（mock 域不对 8000 发真实请求）。
+    """
+    src_dir = src_dir or SRC_DIR
+    calls = set()
+    scanned = []
+    if not os.path.isdir(src_dir):
+        return calls, scanned
+    for fp in _iter_src_files(src_dir):
+        scanned.append(os.path.relpath(fp, src_dir))
+        _scan_file_calls(fp, calls)
+    return calls, scanned
+
+
+def scan_frontend():
+    """前端真实调用 = 静态糖果页(public) ∪ Next.js src（W-NEXT-FEBE-SCAN-002 扩扫）。"""
+    _QUERY_SUFFIX_STRIPPED.clear()
+    calls = _scan_public_frontend()
+    src_calls, _ = scan_frontend_src()
+    calls |= src_calls
     return calls
 
 
@@ -529,6 +617,17 @@ def load_contracts(be_routes=None):
 # --------------------------------------------------------------------------- #
 # 裁定
 # --------------------------------------------------------------------------- #
+def plan_bucket_broken(be_routes):
+    """尾巴③（W-NEXT-FEBE-SCAN-002）plan 桶后端合法性校验。
+
+    plan 桶语义 = 「后端已有、前端计划接入」——每一条都必须真实存在于后端
+    OpenAPI 路由集合。若某条 plan 条目不在 be_routes 中，它是**非法 plan**
+    （后端根本没有该路由，永远不可能从 to_connect 进入在用集合，此前会被
+    `NEXTJS_PLANNED_ENDPOINTS ∩ to_connect` 静默吞掉）。返回 sorted 断条列表。
+    """
+    return sorted(NEXTJS_PLANNED_ENDPOINTS - set(be_routes))
+
+
 def adjudicate_to_connect(method, path):
     if (method, path) in TO_CONNECT_AHEAD:
         return "后端先行·待前端接入"
@@ -580,8 +679,12 @@ def run(quiet=False):
     if not quiet:
         print("=" * 78)
         print("EduAgent 前后端契约四方对账  %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        print("后端: %s  前端: edu-frontend/public/*  契约: contracts/reshape-* (非draft)" % BACKEND)
+        print("后端: %s  前端: edu-frontend/public/* + src/**（W-NEXT-FEBE-SCAN-002 扩扫）  契约: contracts/reshape-* (非draft)" % BACKEND)
         print("=" * 78)
+        if _QUERY_SUFFIX_STRIPPED:
+            print("[QUERY-SUFFIX] 模板 query 尾巴归一（非 / 分隔的 {x} 尾巴被剥除，反遮蔽可见） 共 %d 处" % len(_QUERY_SUFFIX_STRIPPED))
+            for p in sorted(set(_QUERY_SUFFIX_STRIPPED)):
+                print("  ◦ %s" % p)
         print("\n[① 断点] 前端调用 − 后端路由  (必须为空)  共 %d 条  → %s"
               % (len(breakpoints), "红/阻断" if breakpoints else "PASS"))
         if breakpoints:
@@ -621,20 +724,34 @@ def run(quiet=False):
         # 兜底：未归入任何桶的 to_connect 项也单独列出（理论上 0）
         all_classified = NEXTJS_PLANNED_ENDPOINTS | NEXTJS_DEFERRED_ENDPOINTS | NEXTJS_OPS_ENDPOINTS | NEXTJS_UNASSIGNED
         uncategorized = sorted(tc_set - all_classified)
-        print("\n[PLANNED-BREAKDOWN] 待接 109 治理分类（plan/deferred/ops/unassigned）")
+        # 尾巴③（W-NEXT-FEBE-SCAN-002）：plan 桶后端合法性校验——plan 条目必须真实
+        # 存在于后端 OpenAPI；不合法项显式入 plan_broken 并输出警告行（WARN，不改 ⑩ 红判据）。
+        plan_broken = plan_bucket_broken(be_routes)
+        print("\n[PLANNED-BREAKDOWN] 待接 %d 治理分类（plan/deferred/ops/unassigned/plan_broken）" % len(tc_set))
         print("  分类源：febe_contract_check.py 顶部的 NEXTJS_*_ENDPOINTS 显式清单（注释逐条 why）")
         for k, (items, label) in buckets.items():
             print("  %-10s %d 条  → %s" % (k, len(items), label))
-        print("  --------  合计: %d / 109" % classified)
+        print("  --------  合计: %d / %d" % (classified, len(tc_set)))
         if uncategorized:
             print("  ⚠️ 未分类（理论应为 0）: %d 条" % len(uncategorized))
             for m, p in uncategorized:
                 print("    - %-6s %s" % (m, p))
+        print("  %-10s %d 条  → plan 桶含后端不存在路由（非法 plan·警告，非阻断）"
+              % ("plan_broken", len(plan_broken)))
+        for m, p in plan_broken:
+            print("    ⚠️ %-6s %-52s 不在后端 OpenAPI（禁止保留为 plan，移出桶或走变更单）" % (m, p))
 
         if malformed:
             print("\n[MALFORMED] 无法可靠解析的相对路径契约  共 %d 条（未计入冻结集合）" % len(malformed))
             for methods, p in malformed:
                 print("  ⚠️  %s %s" % ("/".join(norm_method(x) for x in methods), p))
+
+    # 尾巴③：plan_broken 即便 quiet 也必须可见（WARN，不进 ⑩ 红判据；⑩/⑱ 只解析
+    # [SUMMARY] 行，此行不影响其解析）。
+    _pb = plan_bucket_broken(be_routes)
+    if _pb:
+        print("[PLAN-BROKEN] %d 条 plan 桶端点不在后端 OpenAPI（非法 plan·警告）: %s"
+              % (len(_pb), ", ".join("%s %s" % (m, p) for m, p in _pb)))
 
     print("\n[SUMMARY] breakpoints=%d in_use_unfrozen=%d unfrozen_only=%d to_connect=%d "
           "frontend=%d backend=%d contracts=%d malformed=%d"
@@ -652,8 +769,8 @@ def emit_frontend_list(path=None):
     lines.append("# EduAgent 前端真实调用契约清单（FE-BE-CONTRACT 自动刷新）")
     lines.append("# 生成时间: %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     lines.append("# 生成脚本: edu-agent/scripts/eval/febe_contract_check.py --emit-frontend-list")
-    lines.append("# 来源: 扫描 edu-frontend/public/edu-api.js + public/*.html 的 EAPI.* / fetch / xhr.open")
-    lines.append("# 归一化: 路径参数 -> {x}，去 query，排序去重。共 %d 条（每条均在后端 OpenAPI 路由内，零断点）。" % len(calls))
+    lines.append("# 来源: 扫描 edu-frontend/public/edu-api.js + public/*.html + src/**（Next.js，W-NEXT-FEBE-SCAN-002 扩扫，排除 *.test./*.spec./*.stories./.d.ts） 的 EAPI.* / fetch / xhr.open / http.* / admin*")
+    lines.append("# 归一化: 路径参数 -> {x}，去 query，模板 query 尾巴剥除，排序去重。共 %d 条。" % len(calls))
     lines.append("")
     for m, p in calls:
         lines.append("%s %s" % (m, p))
@@ -684,6 +801,8 @@ def emit_migration_status(path=None):
     fe_calls = scan_frontend()
     to_connect = sorted(be_routes - fe_calls)
     tc_set = set(to_connect)
+    # 尾巴③（W-NEXT-FEBE-SCAN-002）：plan 桶后端合法性校验
+    plan_broken = plan_bucket_broken(be_routes)
 
     all_classified = (
         NEXTJS_PLANNED_ENDPOINTS
@@ -719,6 +838,11 @@ def emit_migration_status(path=None):
                 "count": len(NEXTJS_UNASSIGNED & tc_set),
                 "items": sorted(_method_path_list(NEXTJS_UNASSIGNED & tc_set)),
             },
+            "plan_broken": {
+                "label": "plan 桶含后端不存在路由（非法 plan·警告；不在 to_connect 内，历史上被 ∩ 静默吞掉）",
+                "count": len(plan_broken),
+                "items": sorted(_method_path_list(plan_broken)),
+            },
         },
         "uncategorized": {
             "label": "理论应为 0（未归入任何桶的待接）",
@@ -737,6 +861,7 @@ def emit_migration_status(path=None):
             ),
             "uncategorized": len(uncategorized),
             "expected_total": len(to_connect),
+            "plan_broken": len(plan_broken),
         },
     }
 
@@ -744,7 +869,8 @@ def emit_migration_status(path=None):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(
-        "已写入前端接入计划分类: %s (total=%d, plan=%d, deferred=%d, ops=%d, unassigned=%d, uncategorized=%d)"
+        "已写入前端接入计划分类: %s (total=%d, plan=%d, deferred=%d, ops=%d, unassigned=%d, "
+        "uncategorized=%d, plan_broken=%d)"
         % (
             path,
             out["total_to_connect"],
@@ -753,6 +879,7 @@ def emit_migration_status(path=None):
             out["buckets"]["ops"]["count"],
             out["buckets"]["unassigned"]["count"],
             out["uncategorized"]["count"],
+            out["buckets"]["plan_broken"]["count"],
         )
     )
     return 0

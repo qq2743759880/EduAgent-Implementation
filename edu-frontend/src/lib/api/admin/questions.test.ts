@@ -3,13 +3,17 @@
  * 验证：题型枚举（后端权威：single_choice/multi_choice/...）、批量导入 body 为 list、
  * 组卷 body 形状、过滤参数、写操作失败必须抛（R-7）
  * mock http.* 直接返回业务体（契约冻结①：拦截器已解包，无 .data 壳）
+ *
+ * W-NEXT-FEBE-SCAN-002（2026-09-18）：题目集合真实路由是 /api/admin/questions/questions
+ * （POST 创建 / PATCH /api/admin/questions/questions/{id} 更新，OpenAPI 实测对账）；
+ * 旧断言的 /api/admin/questions(/{id}) 后端从未注册（404 断点），已同步更新；
+ * 跨库 listQuestions 死封装已删除（题目列表唯一入口 = question-bank.listBankQuestions）。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { http, ApiError } from "@/lib/api-client";
 import {
   QUESTION_TYPE_OPTIONS,
   createQuestion,
-  listQuestions,
   questionTypeLabel,
   updateQuestion,
   type QuestionCreateInput,
@@ -23,7 +27,6 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
   };
 });
 
-const mockGet = vi.mocked(http.get);
 const mockPost = vi.mocked(http.post);
 const mockPatch = vi.mocked(http.patch);
 
@@ -47,27 +50,6 @@ describe("题型枚举（后端契约，非 design-guide 摘要）", () => {
   });
 });
 
-describe("题目列表过滤", () => {
-  it("subject/type/difficulty/keyword/tag_id 全部透传", async () => {
-    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 20, items: [] });
-    await listQuestions({ subject_code: "math", question_type: "single_choice", difficulty_level: "L2", keyword: "函数", tag_id: 3, page: 1, page_size: 20 });
-    expect(mockGet).toHaveBeenCalledWith("/api/admin/questions", {
-      params: {
-        page: 1, page_size: 20, subject_code: "math", question_type: "single_choice",
-        difficulty_level: "L2", keyword: "函数", tag_id: 3,
-      },
-    });
-  });
-
-  it("空过滤只传分页", async () => {
-    mockGet.mockResolvedValueOnce({ total: 0, page: 1, page_size: 20, items: [] });
-    await listQuestions();
-    expect(mockGet).toHaveBeenCalledWith("/api/admin/questions", {
-      params: { page: 1, page_size: 20 },
-    });
-  });
-});
-
 describe("题目创建/更新", () => {
   it("createQuestion options_json 数组 + tag_ids + knowledge_point_codes 透传", async () => {
     mockPost.mockResolvedValueOnce({ id: 10, question_code: "Q-01" });
@@ -84,13 +66,13 @@ describe("题目创建/更新", () => {
       tag_ids: [1, 2],
     };
     await createQuestion(input);
-    expect(mockPost).toHaveBeenCalledWith("/api/admin/questions", input);
+    expect(mockPost).toHaveBeenCalledWith("/api/admin/questions/questions", input);
   });
 
-  it("updateQuestion PATCH /questions/{id}", async () => {
+  it("updateQuestion PATCH /questions/questions/{id}", async () => {
     mockPatch.mockResolvedValueOnce({ updated: true, id: 10 });
     await updateQuestion(10, { stem_html: "2+2=?" });
-    expect(mockPatch).toHaveBeenCalledWith("/api/admin/questions/10", { stem_html: "2+2=?" });
+    expect(mockPatch).toHaveBeenCalledWith("/api/admin/questions/questions/10", { stem_html: "2+2=?" });
   });
 
   it("写操作失败必须抛（题目创建 409 编码重复）", async () => {

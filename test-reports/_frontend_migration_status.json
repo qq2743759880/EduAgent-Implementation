@@ -1,78 +1,52 @@
 {
-  "generated_at": "2026-09-18T11:13:55",
+  "generated_at": "2026-09-18T12:27:02",
   "source": "edu-agent/scripts/eval/febe_contract_check.py --emit-migration-status",
   "task_id": "W-NEXT-FRONTEND-CONTRACT-001",
-  "total_to_connect": 109,
+  "total_to_connect": 66,
   "buckets": {
     "plan": {
       "label": "Next.js 页面已实装/迁移进行中",
-      "count": 10,
+      "count": 6,
       "items": [
         "GET /api/admin/courses/chapters/{x}",
         "GET /api/admin/courses/modules/{x}",
         "GET /api/admin/courses/sessions/{x}",
-        "GET /api/admin/questions/banks",
-        "GET /api/admin/questions/banks/{x}/questions",
         "GET /api/admin/questions/exams",
         "GET /api/admin/questions/exams/{x}",
-        "GET /api/users/me/student-profile",
-        "PATCH /api/community/posts/{x}",
-        "POST /api/admin/rag/collections/rebuild"
+        "PATCH /api/community/posts/{x}"
       ]
     },
     "deferred": {
       "label": "Next.js 暂未迁移该域（admin/MCP/交易）",
-      "count": 50,
+      "count": 28,
       "items": [
         "DELETE /api/admin/reviews/{x}",
         "DELETE /api/mcp/sessions/{x}",
         "GET /api/admin/courses/cohorts/{x}",
         "GET /api/admin/courses/cohorts/{x}/sessions",
-        "GET /api/admin/rag/audit-log",
-        "GET /api/admin/rag/presets",
         "GET /api/admin/refunds",
         "GET /api/admin/reviews",
         "GET /api/admin/trade/overview",
-        "GET /api/admin/users",
-        "GET /api/knowledge/status/{x}",
         "GET /api/mcp/call-log/{x}",
         "GET /api/mcp/description-review-log",
         "GET /api/mcp/health-scan/{x}",
         "GET /api/mcp/servers/{x}",
-        "GET /api/mcp/servers/{x}/discover-live",
-        "GET /api/mcp/servers/{x}/tools",
         "GET /api/mcp/sessions",
         "GET /api/mcp/sessions/{x}",
-        "GET /api/trade/after_sales/ticket/{x}",
-        "GET /api/trade/after_sales/tickets",
-        "GET /api/trade/order/{x}",
-        "GET /api/trade/orders",
-        "GET /api/trade/payment/{x}",
-        "GET /api/trade/payments",
         "GET /api/trade/payments/reconcile",
         "PATCH /api/admin/courses/chapters/{x}",
         "PATCH /api/admin/questions/exams/{x}",
         "POST /api/admin/questions/exams",
         "POST /api/admin/questions/exams/{x}/publish",
-        "POST /api/admin/rag/presets",
-        "POST /api/admin/rag/search",
         "POST /api/admin/refunds/{x}/approve",
         "POST /api/admin/refunds/{x}/reject",
-        "POST /api/knowledge/upload",
         "POST /api/mcp/description-review",
         "POST /api/mcp/health-scan-async",
-        "POST /api/mcp/servers/import-url",
         "POST /api/mcp/servers/{x}/raw-rpc",
         "POST /api/mcp/sessions",
         "POST /api/mcp/sessions/{x}/touch",
         "POST /api/memory/admin/dream/run",
-        "POST /api/trade/after_sales/ticket",
-        "POST /api/trade/after_sales/ticket/{x}/satisfaction",
-        "POST /api/trade/order/{x}/cancel",
-        "POST /api/trade/payment/{x}",
-        "POST /api/trade/payment/{x}/cancel",
         "POST /api/trade/payment/{x}/mock-notify",
-        "POST /api/trade/payment/{x}/retry",
         "POST /api/trade/payments/reconcile"
       ]
     },
@@ -90,14 +64,10 @@
     },
     "unassigned": {
       "label": "无明确接入计划·待用户裁定",
-      "count": 43,
+      "count": 26,
       "items": [
-        "DELETE /api/favorites/{x}",
         "GET /api/coding/challenges",
         "GET /api/coding/challenges/{x}",
-        "GET /api/cohorts/{x}",
-        "GET /api/cohorts/{x}/modules",
-        "GET /api/community/posts",
         "GET /api/enrollments/me/cohorts/{x}",
         "GET /api/enrollments/me/cohorts/{x}/progress",
         "GET /api/enrollments/me/cohorts/{x}/status",
@@ -108,34 +78,26 @@
         "GET /api/metrics/cache-context-dashboard",
         "GET /api/metrics/otel",
         "GET /api/metrics/trace/{x}",
-        "GET /api/mindmap/course/{x}",
-        "GET /api/mindmap/me/{x}",
         "GET /api/mindmap/prerequisite",
         "GET /api/mindmap/subject/{x}",
-        "GET /api/progress/courses",
         "GET /api/recommend/next",
         "GET /api/recommend/path",
-        "GET /api/refunds",
         "POST /api/auth/refresh",
-        "POST /api/chat",
-        "POST /api/chat/search",
         "POST /api/coding/hint",
         "POST /api/coding/run",
         "POST /api/coding/submit",
-        "POST /api/community/posts/{x}/favorite",
         "POST /api/gamification/me/award",
         "POST /api/gamification/me/check-badges",
         "POST /api/math/explain",
         "POST /api/math/step-check",
         "POST /api/memory/rewind",
-        "POST /api/progress/exam/submit",
-        "POST /api/progress/homework/submit",
-        "POST /api/progress/video/tick-batch",
-        "POST /api/recommend/feedback",
-        "POST /api/refunds",
-        "POST /api/refunds/{x}/cancel",
-        "POST /api/study/sessions/{x}/complete"
+        "POST /api/recommend/feedback"
       ]
+    },
+    "plan_broken": {
+      "label": "plan 桶含后端不存在路由（非法 plan·警告；不在 to_connect 内，历史上被 ∩ 静默吞掉）",
+      "count": 0,
+      "items": []
     }
   },
   "uncategorized": {
@@ -144,8 +106,9 @@
     "items": []
   },
   "summary": {
-    "classified": 109,
+    "classified": 66,
     "uncategorized": 0,
-    "expected_total": 109
+    "expected_total": 66,
+    "plan_broken": 0
   }
 }
