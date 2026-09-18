@@ -165,6 +165,41 @@ def test_list_artifacts_first_call_mongo():
     assert st.load_artifact_json(desc["aid"]) == {"first": True}
 
 
+@mongo_needed
+def test_metadata_reserved_keys_cannot_poison_dedup():
+    """回归(R-M2 收口修复): 调用方 metadata 携带保留字(如伪造 sha256)不得污染
+    GridFS files.metadata 的完整性/去重键字段——否则后续同 (name, 真 sha) 保存
+    的 dedup 查询(metadata.sha256)永久失效, 重复副本翻倍。"""
+    data = b"rm2-poison-guard"
+    d1 = st.save_artifact("eval/test/poison.json", data,
+                          metadata={"sha256": "FAKE", "size": -1, "source": "evil", "kind": "k"})
+    assert d1["backend"] == "mongo"
+    doc = st._db["artifacts.files"].find_one({"filename": "eval/test/poison.json"})
+    assert doc["metadata"]["sha256"] == d1["sha256"]       # 真 sha 保留, 未被 FAKE 覆盖
+    assert doc["metadata"]["size"] == len(data)            # 真 size 保留
+    assert doc["metadata"]["source"] == "evil"             # 非保留字段的覆盖语义不变
+    d2 = st.save_artifact("eval/test/poison.json", data)   # 同名同内容 → 仍可去重
+    assert d2["dedup"] is True and d2["aid"] == d1["aid"]
+
+
+@mongo_needed
+def test_load_local_aid_never_touches_mongo(monkeypatch, caplog):
+    """回归(R-M2 收口修复): mongo 健康时读 local-* aid 直查本地索引, 不触发
+    ObjectId 解析 → 不再误报「MongoDB 读取不可达(InvalidId...)」WARN。"""
+    name = f"eval/loc/x-{uuid.uuid4().hex[:8]}.bin"
+    monkeypatch.setenv("ARTIFACT_MONGO_URI", UNREACHABLE_URI)
+    st._reset_client()
+    d = st.save_artifact(name, b"local-aid-payload")
+    assert d["backend"] == "local"
+    monkeypatch.delenv("ARTIFACT_MONGO_URI")
+    st._reset_client()
+    assert _mongo_reachable()  # 前提: mongo 健康
+    with caplog.at_level(logging.WARNING, logger="app.common.artifact_store"):
+        back = st.load_artifact(d["aid"])
+    assert back == b"local-aid-payload"
+    assert not [r for r in caplog.records if "读取不可达" in r.getMessage()]
+
+
 def test_sanitize_and_type_errors():
     assert st._sanitize_name("/eval//a b/怪名.json") == "eval/a_b/怪名.json".replace("怪名", "_")
     with pytest.raises(TypeError):

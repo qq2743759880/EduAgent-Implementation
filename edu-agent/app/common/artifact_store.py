@@ -54,6 +54,9 @@ DEFAULT_MONGO_DB = "edu_agent"
 _GRIDFS_PREFIX = "artifacts"          # 集合: artifacts.files / artifacts.chunks
 _INDEX_FILE = "_index.jsonl"
 _NAME_RE = re.compile(r"[^A-Za-z0-9._/\-]+")   # name 白名单外字符 → '_'
+_LOCAL_AID_PREFIX = "local-"                   # 本地降级制品 aid 前缀
+_RESERVED_META_KEYS = {"sha256", "size", "created_at", "source", "aid",
+                       "backend", "dedup", "error", "local_copy_written"}
 
 
 def local_fallback_dir() -> str:
@@ -249,10 +252,14 @@ def save_artifact(name: str, content, metadata: dict | None = None,
         if existing:
             desc.update({"aid": str(existing["_id"]), "backend": "mongo", "dedup": True})
         else:
+            # 保留字过滤: 调用方 metadata 不得覆盖 sha256/size 等完整性/去重键字段
+            # （否则 files.metadata.sha256 被污染 → 后续同 (name, sha) 保存去重永久失效）
+            user_meta = {k: v for k, v in (desc["metadata"] or {}).items()
+                         if k not in _RESERVED_META_KEYS}
             fid = gfs.put(data, filename=sane, metadata={
                 "sha256": desc["sha256"], "size": desc["size"],
                 "created_at": desc["created_at"], "source": desc["source"],
-                **(desc["metadata"] or {}),
+                **user_meta,
             })
             desc.update({"aid": str(fid), "backend": "mongo", "dedup": False})
         if local_copy:
@@ -279,6 +286,8 @@ def save_artifact(name: str, content, metadata: dict | None = None,
 def load_artifact(aid: str) -> bytes:
     """按 aid 取回字节。mongo 连接异常自动降级查本地索引; 真不存在抛 KeyError。"""
     aid_s = str(aid)
+    if aid_s.startswith(_LOCAL_AID_PREFIX):
+        return _load_local(aid_s)  # 本地 aid 直查本地索引, 不触碰 mongo（免误导性 WARN）
     try:
         from bson import ObjectId  # noqa: PLC0415
         from gridfs import NoFile  # noqa: PLC0415
@@ -293,6 +302,10 @@ def load_artifact(aid: str) -> bytes:
     except Exception as e:  # noqa: BLE001 连接级故障 → 降级
         logger.warning("MongoDB 读取不可达(%s: %s)，制品 %s 降级查本地索引",
                        type(e).__name__, e, aid_s)
+    return _load_local(aid_s)
+
+
+def _load_local(aid_s: str) -> bytes:
     for rec in _index_read():
         if rec.get("aid") == aid_s:
             with open(rec["path"], "rb") as f:
