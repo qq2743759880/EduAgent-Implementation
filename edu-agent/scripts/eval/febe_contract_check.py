@@ -174,6 +174,7 @@ NEXTJS_OPS_ENDPOINTS = frozenset({
     ("GET", "/health/warmup"),                          # 模型/依赖预热 — KNOWN_ROOT_PATHS
     ("GET", "/metrics"),                                # Prometheus 抓取 — KNOWN_ROOT_PATHS
     ("POST", "/payment-notifications/mock"),            # 支付回调 mock — 仅测试夹具
+    ("POST", "/payment-notifications/channel"),         # 真实渠道回调（服务端对服务端，前端永不接入）— R22PAY 062704a/tracker 346；canonical 同步（W-NEXT-FEBE-CANON-SYNC-001，原 TEST-BASE tests 侧 overlay 移交），冻结条目见 contracts/reshape-b.json PAY-GATE-346 amendment
 })
 
 NEXTJS_UNASSIGNED = frozenset({

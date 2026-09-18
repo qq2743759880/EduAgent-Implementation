@@ -28,7 +28,8 @@
    "method": "POST",
    "path": "/api/mcp/health-scan",
    "compat": "旧同步端点保留 30 天兼容窗口,此后下线"
-  }
+  },
+  "POST /payment-notifications/channel"
  ],
  "amendments": [
   {
@@ -50,11 +51,20 @@
     "affected": "全局异常处理器 + knowledge/mcp 等依赖型端点",
     "compat": "纯增量,回滚=revert 单 commit"
    }
+  },
+  {
+   "id": "PAY-GATE-346",
+   "signed": "用户会话授权流水线内冻结(W-NEXT-FEBE-CANON-SYNC-001 canonical 同步,2026-09-18)",
+   "method": "POST",
+   "path": "/payment-notifications/channel",
+   "source": "PAY-GATE commit 062704a 承接 tracker 346(真实支付渠道回调验签闸门)",
+   "auth": "闸门三关:验商户+RSA2 验签+分单位验金额(run_channel_gates;缺 key=50301 fail closed,任何一关不过=拒绝+[PAY-GATE-AUDIT] 审计,无旁路)",
+   "note": "服务端对服务端回调,前端永不接入(febe ops 桶);mock 渠道走既有 mock-notify 端点,鉴权语义零变化;机器可解析冻结条目=本文件 endpoints 数组的字符串形态(febe parser 只解析 endpoints/verified_* 字符串列表,不解析 amendments)"
   }
  ],
  "acceptance": {
   "health_p95_ms": 500,
   "scan_concurrent": 50
  },
- "hash_sha256": "b7b506b79a4db83bee3cc13ed270f6021073ce833139f4a1c8c5e7e0b9dd5c24"
+ "hash_sha256": "f398d7a9e7faa1654a1b930c8e0ac9c46a4bae8a9ad520dd9c9d4cb546aeba25"
 }

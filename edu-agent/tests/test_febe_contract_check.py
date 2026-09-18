@@ -19,13 +19,13 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts", "eval"))
 import febe_contract_check as F  # noqa: E402
 
-# ---- TEST-BASE 变更登记（2026-09-19，W-NEXT-PAYGATE-001 / commit 062704a）----
-# 后端 R22PAY 新增真实支付渠道回调端点 POST /payment-notifications/channel
-# （服务端对服务端回调，前端永不接入）→ 按治理语义归入 ops 桶。
-# 本文件级 overlay：scripts/eval/febe_contract_check.py 的 frozenset 常量为
-# TEST-BASE 红线禁改区（scripts/eval/** 只读），故在测试侧并集登记；
-# canonical 注册表由脚本属主下次改版时同步（已列入 TEST-BASE 报告移交清单）。
-F.NEXTJS_OPS_ENDPOINTS = F.NEXTJS_OPS_ENDPOINTS | {("POST", "/payment-notifications/channel")}
+# ---- TEST-BASE 移交项已闭环（2026-09-18，W-NEXT-FEBE-CANON-SYNC-001）----
+# 原 tests 侧文件级 overlay（TEST-BASE 65b1b81 登记）：
+#   F.NEXTJS_OPS_ENDPOINTS = F.NEXTJS_OPS_ENDPOINTS | {("POST", "/payment-notifications/channel")}
+# 已由 canonical 注册表接管并删除——scripts/eval/febe_contract_check.py 的
+# NEXTJS_OPS_ENDPOINTS 现直接含该端点（脚本属主 canonical 同步，overlay 并集冗余）。
+# 回归保护：test_nextjs_ops_bucket_includes_known_root_paths 的 expected_ops 已纳入该端点，
+# 若 canonical 登记被回退，本套件将红（uncategorized=1 / ops 桶缺失断言）。
 
 
 def _spec(be):
@@ -255,7 +255,8 @@ def test_nextjs_buckets_mutually_exclusive():
 
 def test_nextjs_ops_bucket_includes_known_root_paths():
     """ops 桶必须包含 5 个 KNOWN_ROOT_PATHS 端点（root/health/health-detail/
-    health-warmup/metrics）+ payment-mock。运维端点是设计性永不接入，需显式登记。"""
+    health-warmup/metrics）+ payment-mock + payment-channel。运维端点是设计性
+    永不接入，需显式登记（channel 为 R22PAY 062704a canonical 同步，防回退）。"""
     expected_ops = {
         ("GET", "/"),
         ("GET", "/health"),
@@ -263,6 +264,7 @@ def test_nextjs_ops_bucket_includes_known_root_paths():
         ("GET", "/health/warmup"),
         ("GET", "/metrics"),
         ("POST", "/payment-notifications/mock"),
+        ("POST", "/payment-notifications/channel"),
     }
     missing = expected_ops - F.NEXTJS_OPS_ENDPOINTS
     assert not missing, "ops 桶缺失 %r" % sorted(missing)
