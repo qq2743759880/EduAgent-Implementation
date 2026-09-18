@@ -10,7 +10,7 @@
 
 | 项 | 值 |
 |----|-----|
-| commit | `（见 git log 首行，W-NEXT-FEBE-CANON-SYNC-001）` |
+| commit | **`e22a1c2`**（`fix(contract)/W-NEXT-FEBE-CANON-SYNC-001: PAY-GATE 端点契约冻结+febe canonical 桶同步+TEST-BASE overlay 移交清偿`，分支 feature/opt-waves，父=65b1b81） |
 | 基线（任务起点） | 65b1b81（TEST-BASE），PAY-GATE 端点=062704a |
 | 变更文件 | 3 个代码/契约文件 + 本报告，共 4 个 |
 
