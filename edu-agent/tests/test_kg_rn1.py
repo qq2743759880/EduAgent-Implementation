@@ -144,10 +144,11 @@ def test_build_chunk_graph_keyword_scoring_and_cap():
     chapters = [{"key": "module:m1", "props": {"code": "m1"}}]
     out = sc.build_chunk_graph(chunks, kps, chapters, courses)
     assert out["chunks"][0]["key"] == "chunk:c1"
-    # keywords 命中（score=2）排前：变量、函数；正文命中（score=1）：类
+    # keywords 命中（score=2）+ 正文命中（score=1）为加法打分：变量、函数=3；仅正文命中：类=1
+    # （修复：接手 R-N1 实测——前任断言写 keyword_match:2，与实现加法打分语义不符）
     rules = [(m["b"], m["rule"]) for m in out["mentions_chunk"]]
-    assert ("kp:KP-A", "keyword_match:2") in rules
-    assert ("kp:KP-B", "keyword_match:2") in rules
+    assert ("kp:KP-A", "keyword_match:3") in rules
+    assert ("kp:KP-B", "keyword_match:3") in rules
     assert ("kp:KP-C", "keyword_match:1") in rules
     # 未命中的知识点不产生 MENTIONS
     assert all(b not in {"kp:KP-D", "kp:KP-E", "kp:KP-F", "kp:KP-G"} for b, _ in rules)

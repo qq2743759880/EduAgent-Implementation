@@ -51,15 +51,18 @@ def find_cycle(edges: Edges) -> list[str] | None:
                 if st == GRAY:
                     if nxt == node:
                         return [node, node]  # 自环
-                    # 回溯 DFS 树 parent 链：node → ... → nxt（GRAY=当前路径上的祖先）
+                    # 回溯 DFS 树 parent 链：nxt（环入口/祖先）→ ... → node，
+                    # 闭合环 = nxt → ... → node → nxt（首尾相同，修复：接手 R-N1 实测
+                    # 前任版本返回未闭合路径 [a,b] 而非 [a,b,a]，GWT 断言 cyc[0]==cyc[-1]）
                     cycle = [node]
                     cur = parent.get(node)
                     while cur is not None and cur != nxt:
                         cycle.append(cur)
                         cur = parent.get(cur)
                     if cur == nxt:
-                        cycle.append(nxt)
-                        cycle.reverse()
+                        cycle.append(nxt)   # 补链尾：[node, ..., nxt]
+                        cycle.reverse()     # [nxt, ..., node]
+                        cycle.append(nxt)   # 闭合：回到环入口
                         return cycle
                     # parent 链兜底（理论不可达）：给最小环表达
                     return [nxt, node, nxt]

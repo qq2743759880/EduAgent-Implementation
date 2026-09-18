@@ -1,0 +1,128 @@
+{
+  "planId": "reshape-r-kg",
+  "draft": true,
+  "created_at": "2026-09-18",
+  "signed_by": null,
+  "description": "R-N1 知识图谱契约（Neo4j 先修图：学习路径 + 章节 邻域）。draft=true 待用户签字冻结；冻结前 method+path 已上线，字段级 schema 以 app/domains/kg/schemas.py + app/common/error_codes.py 为权威源。",
+  "source": ".ai-hub/plans/neo4j-mongo-activation-plan.md §Neo4j=KG-1/KG-2；实现=test-reports/RN1-completion-report.md",
+  "change_order": "无（draft 阶段；冻结时补签字变更单）",
+  "data_model": {
+    "store": "Neo4j（bolt，写入口唯一 = scripts/kg_sync.py，先备份后幂等 MERGE）",
+    "nodes": "Course(key=series:<id>) / Chapter(key=module:<module_code>) / KnowledgePoint(key=kp:<code>) / DocChunk(key=chunk:<chunk_id>)，均带 source='kg_sync' 隔离属性",
+    "rels": "PREREQUISITE(KP→KP) / BELONGS_TO(Chapter→Course、DocChunk→Course|Chapter) / MENTIONS(Chapter|DocChunk→KP) / RELATED(KP→KP)",
+    "isolation": "查询一律限定 source='kg_sync'；P1 遗留子图（CourseModule/CourseSeries/QuestionTag/旧 KnowledgePoint，无 source 属性）天然排除且不被写删"
+  },
+  "groups": {
+    "G1_kg_learning_path": [
+      "GET /api/kg/course/{course_id}/path",
+      "GET /api/kg/chapter/{chapter_code}/upstream",
+      "GET /api/kg/chapter/{chapter_code}/downstream"
+    ]
+  },
+  "endpoints": [
+    "GET /api/kg/course/{course_id}/path",
+    "GET /api/kg/chapter/{chapter_code}/upstream",
+    "GET /api/kg/chapter/{chapter_code}/downstream"
+  ],
+  "endpoint_details": [
+    {
+      "method": "GET",
+      "path": "/api/kg/course/{course_id}/path",
+      "auth": "匿名只读（与 course C 端一致；DEBUG=false 下无登录要求）",
+      "path_params": { "course_id": "int，series.id" },
+      "query": {
+        "from": "string 必填，起点知识点 code（min_length=1, max_length=64）",
+        "to": "string 必填，终点知识点 code（min_length=1, max_length=64）"
+      },
+      "resp_ok": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "course": { "key": "series:12", "type": "course", "code": "SER-0012", "name": "Python 编程基础" },
+          "from_code": "KP-PY-VAR",
+          "to_code": "KP-PY-FUNC",
+          "found": true,
+          "hops": 2,
+          "path": [
+            { "step": 1, "key": "kp:KP-PY-VAR", "code": "KP-PY-VAR", "name": "变量与类型" },
+            { "step": 2, "key": "kp:KP-PY-CTR", "code": "KP-PY-CTR", "name": "流程控制" },
+            { "step": 3, "key": "kp:KP-PY-FUNC", "code": "KP-PY-FUNC", "name": "函数" }
+          ],
+          "cycle_checked": true
+        }
+      },
+      "resp_fail": {
+        "course_not_found": "HTTP 404 code=40460 KG_COURSE_NOT_FOUND（course_id 未同步进 Neo4j）",
+        "node_not_found": "HTTP 404 code=40462 KG_NODE_NOT_FOUND（from/to code 不在知识点集）",
+        "cycle": "HTTP 409 code=40910 KG_PREREQUISITE_CYCLE（先修图带环，fail-closed，message 含环节点 code 序列）",
+        "neo4j_unavailable": "HTTP 503 code=50301 DEPENDENCY_UNAVAILABLE（driver 未初始化或运行期故障；原始异常仅入日志，data=null）"
+      },
+      "semantics": "先修图 BFS 最短路（边数最少）；found=false 时 hops=0、path=[]；环检测先于寻路（拓扑语义失效即拒绝，不做近似）",
+      "data_source": "Neo4j kg_sync 子图（source='kg_sync'）；PREREQUISITE 边源自 MySQL graph_edge（规则抽取）"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kg/chapter/{chapter_code}/upstream",
+      "auth": "匿名只读",
+      "path_params": { "chapter_code": "string，module_code（如 general_purpose_programming_foundation_m1）" },
+      "resp_ok": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "chapter": { "key": "module:general_purpose_programming_foundation_m1", "type": "chapter", "code": "general_purpose_programming_foundation_m1", "name": "编程基础 M1" },
+          "direction": "upstream",
+          "mentioned_kps": [
+            { "key": "kp:KP-PY-VAR", "type": "knowledge_point", "code": "KP-PY-VAR", "name": "变量与类型" }
+          ],
+          "neighbor_kps": [
+            { "key": "kp:KP-CS-BASE", "type": "knowledge_point", "code": "KP-CS-BASE", "name": "计算机基础" }
+          ],
+          "neighbor_chapters": [
+            { "key": "module:xxx_m2", "type": "chapter", "code": "xxx_m2", "name": "示例章节" }
+          ]
+        }
+      },
+      "resp_fail": {
+        "chapter_not_found": "HTTP 404 code=40461 KG_CHAPTER_NOT_FOUND",
+        "neo4j_unavailable": "HTTP 503 code=50301"
+      },
+      "semantics": "upstream = 本章 MENTIONS 知识点的直接前置（沿 PREREQUISITE 反向 1 跳并集，剔除本章已覆盖）；neighbor_chapters = 邻接知识点被哪些其他章节 MENTIONS",
+      "data_source": "Neo4j kg_sync 子图"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kg/chapter/{chapter_code}/downstream",
+      "auth": "匿名只读",
+      "path_params": { "chapter_code": "string，module_code" },
+      "resp_ok": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "chapter": { "key": "module:general_purpose_programming_foundation_m1", "type": "chapter", "code": "general_purpose_programming_foundation_m1", "name": "编程基础 M1" },
+          "direction": "downstream",
+          "mentioned_kps": [],
+          "neighbor_kps": [],
+          "neighbor_chapters": []
+        }
+      },
+      "resp_fail": {
+        "chapter_not_found": "HTTP 404 code=40461 KG_CHAPTER_NOT_FOUND",
+        "neo4j_unavailable": "HTTP 503 code=50301"
+      },
+      "semantics": "downstream = 本章 MENTIONS 知识点的直接后续（沿 PREREQUISITE 正向 1 跳并集，剔除本章已覆盖）；字段结构与 upstream 完全一致（direction 回显不同）",
+      "data_source": "Neo4j kg_sync 子图"
+    }
+  ],
+  "acceptance_gwt": [
+    "Given kg_sync 全量同步已执行两轮 When 对比两轮后计数 Then 节点/关系计数逐项相等（幂等，重跑不翻倍）",
+    "Given 先修图无环 When 请求 course path from→to Then 返回 BFS 最短路且 cycle_checked=true",
+    "Given 先修图被注入环（离线单测）When 请求 course path Then HTTP 409 code=40910，不做拓扑近似",
+    "Given Neo4j 不可达（URI 指向死端口）When 请求任一 KG 端点 Then HTTP 503 code=50301 且主链（chat/交易）无感",
+    "Given 不存在的 course_id/chapter_code/kp code When 请求 Then 40460/40461/40462 精确区分",
+    "Given Milvus 不可达 When 执行 kg_sync --skip-milvus Then 主体 Course/Chapter/KP 同步不受影响，DocChunk 计数保持"
+  ],
+  "known_data_limits": [
+    "mentions 当前=0：P1 graph_edge CONTAINS 的 module code 命名空间（MOD-EN-PHON-VOWEL 等）与线上 series_cohort_course.module_code（general_purpose_programming_foundation_m1 等）不相交，规则抽取按精确 code 关联诚实产出 0；Milvus doc_chunk 无 keywords/tags/series_code/module_codes 元数据且内容为内部工程文档，keyword_match 命中 0。LLM 批量抽取（plan KG-1 可后置项）落地后 mentions 才能非零——不影响路径/幂等/降级验收。",
+    "related=0：MySQL graph_edge 无 RELATED_TO/RELATED 的 KP→KP 有效边（8357 条 RELATED_TO 均为 P1 遗留图 other label 对，不满足 KP↔KP 过滤）。"
+  ]
+}

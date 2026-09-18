@@ -59,13 +59,48 @@ def _read(session: Any, cypher: str, **params: Any) -> list[dict[str, Any]]:
         raise DependencyUnavailableError() from exc
 
 
+def _session_block(driver: Any) -> Any:
+    """session 作用域包装（修复：接手 R-N1 实测——前任版本只包 _read，
+    driver.session() 创建/with 进入期异常（SessionExpired/AuthError/连接复位）
+    裸抛 RuntimeError → 全局 50000。此处统一包 50301；AppException（40460 等）
+    透传不吞。DependencyUnavailableError 是 AppException 子类，二次包装无害。"""
+    class _Ctx:
+        def __enter__(self) -> Any:
+            try:
+                self._s = driver.session()
+            except AppException:
+                raise
+            except Exception as exc:
+                logger.exception("[kg] Neo4j session 创建失败: %s", type(exc).__name__)
+                raise DependencyUnavailableError() from exc
+            return self._s
+
+        def __exit__(self, exc_type: Any, exc_val: Any, tb: Any) -> bool:
+            try:
+                return bool(self._s.__exit__(exc_type, exc_val, tb))
+            except AppException:
+                raise
+            except Exception as exc:
+                if exc_val is not None:
+                    # body 已有异常在途：close 期故障只记日志，不遮蔽原异常
+                    logger.warning(
+                        "[kg] Neo4j session 关闭失败（body 异常在途，不遮蔽）: %s",
+                        type(exc).__name__,
+                    )
+                    return False
+                logger.exception("[kg] Neo4j session 关闭失败: %s", type(exc).__name__)
+                raise DependencyUnavailableError() from exc
+
+    return _Ctx()
+
+
 # ══════════════════════════════════════════════════════════════
 # 课程先修路径（含环检测）
 # ══════════════════════════════════════════════════════════════
 def course_path(course_id: int, from_code: str, to_code: str) -> KgCoursePathData:
     """课程内最短先修路径；先修环 → 40910（fail-closed，不做拓扑近似）。"""
     driver = _get_driver()
-    with driver.session() as session:
+    with _session_block(driver) as session:
         course_rows = _read(
             session,
             "MATCH (c:Course {series_id:$cid}) WHERE c.source=$src RETURN c LIMIT 1",
@@ -150,7 +185,7 @@ def chapter_neighbors(chapter_code: str, direction: str) -> KgChapterNeighborsDa
       neighbor_chapters = 邻接知识点被哪些章节 MENTIONS（剔除本章自身）
     """
     driver = _get_driver()
-    with driver.session() as session:
+    with _session_block(driver) as session:
         chapter_rows = _read(
             session,
             "MATCH (ch:Chapter {code:$code}) WHERE ch.source=$src RETURN ch LIMIT 1",
