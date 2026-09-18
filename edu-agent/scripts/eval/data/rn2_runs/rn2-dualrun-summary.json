@@ -1,0 +1,844 @@
+{
+  "ran_at": "2026-09-18T16:22:19.178639+00:00",
+  "git_rev": "8f5b527",
+  "baseline_ref": {
+    "hit_rate@5": 0.9688,
+    "source": "R20-min 冻结基线（blind-t14-rag-e2e / critique-R03-R15b 登记）"
+  },
+  "params": {
+    "recall_topk": 150,
+    "rerank_topk": 20,
+    "final_max_k": 5,
+    "cutoff_drop_ratio": 0.4,
+    "use_hyde": false,
+    "enable_graph": true,
+    "nprobe": 10,
+    "rrf_k": 60,
+    "embed_backend": "cuda",
+    "rerank_sidecar": "http://127.0.0.1:8601",
+    "role": "student",
+    "kg_expand": {
+      "KG_EXPAND_ENABLED_off_then_on": true,
+      "KG_EXPAND_SEED_TOPK": 10,
+      "KG_EXPAND_HOPS": 2,
+      "KG_EXPAND_TIMEOUT_MS": 800,
+      "KG_EXPAND_RRF_K": 60,
+      "KG_EXPAND_RRF_WEIGHT": 0.5
+    }
+  },
+  "n_cases": 32,
+  "intent_divergence": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "docs_divergence": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "hit_rate@5": {
+    "off": 0.9688,
+    "on": 0.9688,
+    "delta": 0.0,
+    "vs_baseline": 0.0,
+    "not_degraded_vs_baseline": true,
+    "not_degraded_vs_off": true
+  },
+  "mrr@5": {
+    "off": 0.9688,
+    "on": 0.9688,
+    "delta": 0.0
+  },
+  "kg_expand_channel": {
+    "neighbors_fused_expected": 0,
+    "degrade_events_on": 0,
+    "degrade_reasons_sample": [],
+    "note": "当前 kg_sync 子图 MENTIONS/RELATED=0（R-N1 已披露）→ 通道预期产出 0 邻居（零增益）"
+  },
+  "conclusion": "零分歧零增益",
+  "pairs": [
+    {
+      "idx": 0,
+      "query": "化学方程式总是写错时，最该加强的是？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:f3b54bdeeb7573a9:1",
+        "_default:09a291472107a00e:1"
+      ],
+      "on_top5": [
+        "_default:f3b54bdeeb7573a9:1",
+        "_default:09a291472107a00e:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1533.1,
+      "on_lat_ms": 996.8
+    },
+    {
+      "idx": 1,
+      "query": "在多学科并行时，最能提升效率的是？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:0b8d94a5327a1e44:1",
+        "_default:ecb05042fb0a2ea9:1"
+      ],
+      "on_top5": [
+        "_default:0b8d94a5327a1e44:1",
+        "_default:ecb05042fb0a2ea9:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 898.6,
+      "on_lat_ms": 880.7
+    },
+    {
+      "idx": 2,
+      "query": "限流可以帮助保护接口免受突发流量或恶意请求冲击。对还是错？ ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:1efbcd91f4eb3499:1",
+        "_default:7d133ee7f2de85d5:1"
+      ],
+      "on_top5": [
+        "_default:1efbcd91f4eb3499:1",
+        "_default:7d133ee7f2de85d5:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 883.4,
+      "on_lat_ms": 885.7
+    },
+    {
+      "idx": 3,
+      "query": "如果缓存数据和数据库数据不一致，常见的处理思路是什么？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:8627e30844db7514:1",
+        "_default:5a29ac41f36ccaa1:1"
+      ],
+      "on_top5": [
+        "_default:8627e30844db7514:1",
+        "_default:5a29ac41f36ccaa1:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 936.1,
+      "on_lat_ms": 942.1
+    },
+    {
+      "idx": 4,
+      "query": "异步请求失败时仍然应该考虑显式捕获错误。对还是错？ ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:a0ff4694fb7d53a5:1",
+        "_default:85eccc08fd1b9492:1"
+      ],
+      "on_top5": [
+        "_default:a0ff4694fb7d53a5:1",
+        "_default:85eccc08fd1b9492:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 943.6,
+      "on_lat_ms": 928.7
+    },
+    {
+      "idx": 5,
+      "query": "在 Web 语言相关开发中，为什么要注意数据编码？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:6fb37f368788774f:1",
+        "_default:58c14730d537f09b:1"
+      ],
+      "on_top5": [
+        "_default:6fb37f368788774f:1",
+        "_default:58c14730d537f09b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 849.7,
+      "on_lat_ms": 854.8
+    },
+    {
+      "idx": 6,
+      "query": "请分析公司准备建立后备干部梯队，但很多岗位的接班人还没有被识别出来。中的主要风险点，并说明如何闭环。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:13d60acc312b1752:1",
+        "_default:cfd8814d0e5673ff:1",
+        "_default:81828876addf5459:1",
+        "_default:018cdd5e3ecf427a:1",
+        "_default:b08e7e462a0ae23a:1"
+      ],
+      "on_top5": [
+        "_default:13d60acc312b1752:1",
+        "_default:cfd8814d0e5673ff:1",
+        "_default:81828876addf5459:1",
+        "_default:018cdd5e3ecf427a:1",
+        "_default:b08e7e462a0ae23a:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1027.8,
+      "on_lat_ms": 1040.4
+    },
+    {
+      "idx": 7,
+      "query": "关于部门里有两名员工能力突出，但培养方向还不明确。的处理，以下做法正确的是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:f920447dc5bcc336:1",
+        "_default:6ca6d409e6353510:1",
+        "_default:5f0bc2a926c8d42c:1",
+        "_default:055e3340173da577:1",
+        "_default:eca76b8af4cd80bc:1"
+      ],
+      "on_top5": [
+        "_default:f920447dc5bcc336:1",
+        "_default:6ca6d409e6353510:1",
+        "_default:5f0bc2a926c8d42c:1",
+        "_default:055e3340173da577:1",
+        "_default:eca76b8af4cd80bc:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1079.8,
+      "on_lat_ms": 1103.1
+    },
+    {
+      "idx": 8,
+      "query": "你会怎样回答？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:71d80e901ac8436e:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0cfe1706b7ac36be:1",
+        "_default:694b00d344e777df:1",
+        "_default:33f973ab0c24c480:1"
+      ],
+      "on_top5": [
+        "_default:71d80e901ac8436e:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0cfe1706b7ac36be:1",
+        "_default:694b00d344e777df:1",
+        "_default:33f973ab0c24c480:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 865.6,
+      "on_lat_ms": 894.8
+    },
+    {
+      "idx": 9,
+      "query": "复试中只要答案正确，表达方式不重要。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:89131f53d00854dd:1",
+        "_default:3ff516e787c41edf:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0fc4e3fc9b7655d6:1",
+        "_default:46ecfcf77dfd067a:1"
+      ],
+      "on_top5": [
+        "_default:89131f53d00854dd:1",
+        "_default:3ff516e787c41edf:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0fc4e3fc9b7655d6:1",
+        "_default:46ecfcf77dfd067a:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 883.2,
+      "on_lat_ms": 899.7
+    },
+    {
+      "idx": 10,
+      "query": "关于模型验证与模型评估，下列说法正确的是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:f7ed73c579b695b7:1",
+        "_default:e6f6c7f57f0b126e:1",
+        "_default:78aa1d254b033f39:1",
+        "_default:6ce44e88938b6426:1",
+        "_default:19f8e42746c4236e:1"
+      ],
+      "on_top5": [
+        "_default:f7ed73c579b695b7:1",
+        "_default:e6f6c7f57f0b126e:1",
+        "_default:78aa1d254b033f39:1",
+        "_default:6ce44e88938b6426:1",
+        "_default:19f8e42746c4236e:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 883.4,
+      "on_lat_ms": 909.5
+    },
+    {
+      "idx": 11,
+      "query": "某产品月销量依次为 120、128、131、140、149。若用简单线性趋势描述，请判断其总体变化并给出一句分析。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:2b719a69195d9fd1:1",
+        "_default:24dc7f1fcc899a02:1"
+      ],
+      "on_top5": [
+        "_default:2b719a69195d9fd1:1",
+        "_default:24dc7f1fcc899a02:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 968.2,
+      "on_lat_ms": 984.3
+    },
+    {
+      "idx": 12,
+      "query": "为什么要关注 TCP 的 TIME_WAIT 状态？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:60e00f8d266c98ff:1",
+        "_default:ad21d61f88405e29:1"
+      ],
+      "on_top5": [
+        "_default:60e00f8d266c98ff:1",
+        "_default:ad21d61f88405e29:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1229.2,
+      "on_lat_ms": 1215.9
+    },
+    {
+      "idx": 13,
+      "query": "TLS 证书在安全通信中的关键作用更接近哪一项？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:9e63100408e0c5b9:1",
+        "_default:e992f4ed6d20681f:1"
+      ],
+      "on_top5": [
+        "_default:9e63100408e0c5b9:1",
+        "_default:e992f4ed6d20681f:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 895.7,
+      "on_lat_ms": 915.0
+    },
+    {
+      "idx": 14,
+      "query": "关于假设检验，下列说法正确的是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:3adc5068ac73fc4c:1",
+        "_default:78aa1d254b033f39:1",
+        "_default:ed02d98f10d2efbf:1",
+        "_default:6ce44e88938b6426:1",
+        "_default:1cdfcabff2f734df:1"
+      ],
+      "on_top5": [
+        "_default:3adc5068ac73fc4c:1",
+        "_default:78aa1d254b033f39:1",
+        "_default:ed02d98f10d2efbf:1",
+        "_default:6ce44e88938b6426:1",
+        "_default:1cdfcabff2f734df:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 903.7,
+      "on_lat_ms": 932.4
+    },
+    {
+      "idx": 15,
+      "query": "说明方差和标准差之间的关系。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:a8b60df90279a079:1",
+        "_default:d262f3365d4ffe8b:1"
+      ],
+      "on_top5": [
+        "_default:a8b60df90279a079:1",
+        "_default:d262f3365d4ffe8b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 958.3,
+      "on_lat_ms": 989.4
+    },
+    {
+      "idx": 16,
+      "query": "在工程里如何理解 CAP，而不是只背概念？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:8daa80cd05678c11:1",
+        "_default:76e938e6c763e6f5:1"
+      ],
+      "on_top5": [
+        "_default:8daa80cd05678c11:1",
+        "_default:76e938e6c763e6f5:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 872.4,
+      "on_lat_ms": 891.1
+    },
+    {
+      "idx": 17,
+      "query": "写出一个指数退避加随机抖动的重试伪代码。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:00778542d0b23eb1:1",
+        "_default:d9dcdfd0cee2dcb6:1",
+        "_default:b75d665a3219b538:1",
+        "_default:a1df4c0903c246e2:1",
+        "_default:5974ba0702ccb72b:1"
+      ],
+      "on_top5": [
+        "_default:00778542d0b23eb1:1",
+        "_default:d9dcdfd0cee2dcb6:1",
+        "_default:b75d665a3219b538:1",
+        "_default:a1df4c0903c246e2:1",
+        "_default:5974ba0702ccb72b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 823.4,
+      "on_lat_ms": 888.8
+    },
+    {
+      "idx": 18,
+      "query": "关于车间巡检时发现地面有油渍，旁边还有行走通道。的处理，以下做法正确的是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:9b1bf7ee4ad0da67:1",
+        "_default:a914107b465b725c:1",
+        "_default:ec93fc50ab1cc102:1",
+        "_default:3e5c47c6a849ff42:1",
+        "_default:279a7091502b6363:1"
+      ],
+      "on_top5": [
+        "_default:9b1bf7ee4ad0da67:1",
+        "_default:a914107b465b725c:1",
+        "_default:ec93fc50ab1cc102:1",
+        "_default:3e5c47c6a849ff42:1",
+        "_default:279a7091502b6363:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1710.2,
+      "on_lat_ms": 1031.9
+    },
+    {
+      "idx": 19,
+      "query": "员工要进行有粉尘的操作，但嫌佩戴防护用品麻烦。在这种情况下，最优先的做法是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:b044b645b9a8580d:1",
+        "_default:f01fd47cc0bb6c03:1",
+        "_default:2de9c8f9aac6a24b:1",
+        "_default:3f014fedfcb59fec:1",
+        "_default:401adbf55ac1dac9:1"
+      ],
+      "on_top5": [
+        "_default:b044b645b9a8580d:1",
+        "_default:f01fd47cc0bb6c03:1",
+        "_default:2de9c8f9aac6a24b:1",
+        "_default:3f014fedfcb59fec:1",
+        "_default:401adbf55ac1dac9:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1673.3,
+      "on_lat_ms": 1098.1
+    },
+    {
+      "idx": 20,
+      "query": "半径为 3 的圆的面积是： ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:c7abc3b29d512d9c:1",
+        "_default:775e6de0d561b748:1",
+        "_default:f415499bc3d3f61a:1"
+      ],
+      "on_top5": [
+        "_default:c7abc3b29d512d9c:1",
+        "_default:775e6de0d561b748:1",
+        "_default:f415499bc3d3f61a:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 951.1,
+      "on_lat_ms": 1634.1
+    },
+    {
+      "idx": 21,
+      "query": "解方程 x^2-7x+10=0。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:2eac18381fbcdbcb:1",
+        "user_1:0b92bd8c540c54d0:1"
+      ],
+      "on_top5": [
+        "_default:2eac18381fbcdbcb:1",
+        "user_1:0b92bd8c540c54d0:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1133.1,
+      "on_lat_ms": 1157.3
+    },
+    {
+      "idx": 22,
+      "query": "简述该场景下的处理顺序。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:20d3ce7bab1bca11:1",
+        "_default:ddd0b9fdc1865105:1",
+        "_default:9f0590c84554de82:1",
+        "_default:29fbcc866b6d1be0:1",
+        "_default:622d3991321d4cec:1"
+      ],
+      "on_top5": [
+        "_default:20d3ce7bab1bca11:1",
+        "_default:ddd0b9fdc1865105:1",
+        "_default:9f0590c84554de82:1",
+        "_default:29fbcc866b6d1be0:1",
+        "_default:622d3991321d4cec:1"
+      ],
+      "off_hit": false,
+      "on_hit": false,
+      "off_rr": 0.0,
+      "on_rr": 0.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 829.3,
+      "on_lat_ms": 883.2
+    },
+    {
+      "idx": 23,
+      "query": "请分析门店早班迎宾时，客户刚进门，前台还在低头整理文件。中的主要风险点，并说明如何闭环。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:4f59c31e8452eb99:1",
+        "_default:38ab1090ad9b1def:1",
+        "_default:5c548b91b960da05:1",
+        "_default:302a5b446796fd7b:1",
+        "_default:cd9f217d08f60d3d:1"
+      ],
+      "on_top5": [
+        "_default:4f59c31e8452eb99:1",
+        "_default:38ab1090ad9b1def:1",
+        "_default:5c548b91b960da05:1",
+        "_default:302a5b446796fd7b:1",
+        "_default:cd9f217d08f60d3d:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1064.5,
+      "on_lat_ms": 1083.8
+    },
+    {
+      "idx": 24,
+      "query": "材料六：共同富裕不是少数人的富裕，也不是整齐划一的平均主义，而是全体人民共同富裕的渐进过程。 作答要避免把共同富裕理解成平均主义。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:764df29a68273f5b:1",
+        "user_1:adb078bf3017153b:1"
+      ],
+      "on_top5": [
+        "_default:764df29a68273f5b:1",
+        "user_1:adb078bf3017153b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1062.5,
+      "on_lat_ms": 1048.0
+    },
+    {
+      "idx": 25,
+      "query": "网上出现关于食品安全的谣言，引发居民恐慌。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:3be16756c6ad8ad5:1",
+        "user_1:adb078bf3017153b:1"
+      ],
+      "on_top5": [
+        "_default:3be16756c6ad8ad5:1",
+        "user_1:adb078bf3017153b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 880.5,
+      "on_lat_ms": 872.5
+    },
+    {
+      "idx": 26,
+      "query": "某初中班级中，一名学生连续两周作业拖延，课堂上也不愿回答问题。班主任在与其谈话后发现，他担心自己基础差、回答错误会被同学笑话。请结合教育心理学知识，说明班主任可以采取的两类支持措施，并简要说明理由。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:41e6cb6760983471:1",
+        "_default:bfe520e850452498:1"
+      ],
+      "on_top5": [
+        "_default:41e6cb6760983471:1",
+        "_default:bfe520e850452498:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 1191.2,
+      "on_lat_ms": 1410.1
+    },
+    {
+      "idx": 27,
+      "query": "关于班级管理，哪些说法正确？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:318349f00fa3e8df:1",
+        "_default:f756462b8a31eb4b:1"
+      ],
+      "on_top5": [
+        "_default:318349f00fa3e8df:1",
+        "_default:f756462b8a31eb4b:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 866.8,
+      "on_lat_ms": 839.2
+    },
+    {
+      "idx": 28,
+      "query": "关于前后端联调，哪些做法通常有效？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:82fde9da2ffd59fc:1",
+        "_default:42c1d9f1d8f59511:1",
+        "_default:b75d665a3219b538:1",
+        "_default:60aa70ab99d7dd5f:1",
+        "_default:ee0d06f09b12aacd:1"
+      ],
+      "on_top5": [
+        "_default:82fde9da2ffd59fc:1",
+        "_default:42c1d9f1d8f59511:1",
+        "_default:b75d665a3219b538:1",
+        "_default:60aa70ab99d7dd5f:1",
+        "_default:ee0d06f09b12aacd:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 908.3,
+      "on_lat_ms": 877.4
+    },
+    {
+      "idx": 29,
+      "query": "关于跨域请求，哪一项更准确？",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:cf8c7407cabe6f64:1",
+        "_default:d198171a794952cb:1"
+      ],
+      "on_top5": [
+        "_default:cf8c7407cabe6f64:1",
+        "_default:d198171a794952cb:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 923.6,
+      "on_lat_ms": 933.4
+    },
+    {
+      "idx": 30,
+      "query": "企业月末应计提工资 36000 元，若全部计入管理费用，问本月应确认的管理费用金额。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:8ee587fc9147c625:1",
+        "_default:a6991f393b48f077:1"
+      ],
+      "on_top5": [
+        "_default:8ee587fc9147c625:1",
+        "_default:a6991f393b48f077:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 910.9,
+      "on_lat_ms": 937.0
+    },
+    {
+      "idx": 31,
+      "query": "权责发生制下，收入一定要等到现金收到后才能确认。 ",
+      "intent_match": true,
+      "docs_match": true,
+      "off_top5": [
+        "_default:c4176aede3898523:1",
+        "_default:618dcc38708e427a:1",
+        "_default:a6991f393b48f077:1",
+        "_default:bae502e905cfb5f8:1",
+        "_default:7c5a19059ac1cb41:1"
+      ],
+      "on_top5": [
+        "_default:c4176aede3898523:1",
+        "_default:618dcc38708e427a:1",
+        "_default:a6991f393b48f077:1",
+        "_default:bae502e905cfb5f8:1",
+        "_default:7c5a19059ac1cb41:1"
+      ],
+      "off_hit": true,
+      "on_hit": true,
+      "off_rr": 1.0,
+      "on_rr": 1.0,
+      "off_degraded": null,
+      "on_degraded": null,
+      "off_lat_ms": 909.7,
+      "on_lat_ms": 946.6
+    }
+  ]
+}

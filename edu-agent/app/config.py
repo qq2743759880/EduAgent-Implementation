@@ -671,6 +671,23 @@ class Settings(BaseSettings):
     )
 
     # ============================================================
+    # R-N2 KG-3 GraphRAG 第四通道 graph_expand（Neo4j 图扩展，灰度位）
+    #   语义：融合候选 top-KG_EXPAND_SEED_TOPK chunk → MENTIONS/所属章节实体 →
+    #   实体图 RELATED/PREREQUISITE 1..HOPS 跳邻居 → 反向 MENTIONS 邻居 chunk
+    #   → RRF（同 RRFRanker k=60 范式，通道权重乘子）并入候选池一起 rerank。
+    #   KG_EXPAND_ENABLED 默认 False：灰度位，双跑对账（off vs on 零分歧）后由编排者裁定开启。
+    #   任何 Neo4j 断连/熔断/超时（KG_EXPAND_TIMEOUT_MS 预算）→ 通道静默跳过 WARN，
+    #   绝不拖垮检索主链（app/ai/kg_bridge.py，对齐 50301 降级范式）。
+    # ============================================================
+    KG_EXPAND_ENABLED: bool = False
+    KG_EXPAND_SEED_TOPK: int = 10             # 取融合候选前 N 个 chunk 作为图谱扩展种子
+    KG_EXPAND_HOPS: int = 2                   # 实体图扩展跳数（KP-RELATED/PREREQUISITE-KP）
+    KG_EXPAND_TIMEOUT_MS: int = 800           # 通道预算（毫秒）：超时静默跳过
+    KG_EXPAND_MAX_NEIGHBORS: int = 30         # 单次扩展并入候选上限（防 clique 爆炸）
+    KG_EXPAND_RRF_K: int = 60                 # RRF k，与 Milvus RRFRanker(k=60) 同范式
+    KG_EXPAND_RRF_WEIGHT: float = 0.5         # 通道权重（RRF 项乘子，配置化）
+
+    # ============================================================
     # P7 管理端 RAG：rebuild 状态机（task04 #3/#8）
     # ============================================================
     RAG_REBUILD_TIMEOUT_SECONDS: int = 120   # rebuilding 超过此时长（秒）未完成 → list_collections 自动回置 error

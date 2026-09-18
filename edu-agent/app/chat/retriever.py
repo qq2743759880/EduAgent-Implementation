@@ -293,6 +293,33 @@ def _milvus_hybrid_search_safe(
         return [], reason
 
 
+def _milvus_fetch_contents(chunk_ids: list[str]) -> dict[str, str]:
+    """R-N2 KG-3 graph_expand 通道内容回填：按 chunk_id 批量取 Milvus 正文。
+
+    仅通道开启且图扩展产出新邻居时触发；失败 → 返回空 dict（调用方回退
+    kg_bridge previews 兜底正文），绝不抛异常、不拖垮主链。
+    """
+    if not chunk_ids:
+        return {}
+    try:
+        import json as _json
+
+        from app.knowledge.importer.loader import COLLECTION_NAME, get_milvus_client
+
+        client = get_milvus_client()
+        id_list = ", ".join(_json.dumps(str(i)) for i in chunk_ids)
+        rows = client.query(
+            collection_name=COLLECTION_NAME,
+            filter=f"chunk_id in [{id_list}]",
+            output_fields=["chunk_id", "content"],
+            limit=len(chunk_ids),
+        )
+        return {str(r.get("chunk_id")): str(r.get("content") or "") for r in rows or []}
+    except Exception as exc:  # noqa: BLE001 - 回填失败走 preview 兜底，不影响主链
+        logger.warning(f"[kg_expand] Milvus 内容回填失败（回退 preview 兜底）：{type(exc).__name__}: {exc}")
+        return {}
+
+
 # ============================================================
 # 5. 通道 3：Neo4j 图谱扩展（连不上返回空）
 # ============================================================
@@ -633,6 +660,54 @@ async def retrieve_three_channel(
         seen.add(d.doc_id)
         merged.append(d)
 
+    # 4b) R-N2 KG-3 第四通道 graph_expand（灰度开关 KG_EXPAND_ENABLED，默认 False → 结构性零开销）
+    #     种子=融合候选前 KG_EXPAND_SEED_TOPK → kg_bridge 查 Neo4j 邻居 chunk（只读，
+    #     MENTIONS/章节实体 → RELATED|PREREQUISITE 2-hop → 反向 MENTIONS DocChunk）→
+    #     RRF（与 RRFRanker k=60 同范式，通道权重配置化）并入候选池，与既有候选一起
+    #     rerank 公平竞争。任何断连/熔断/超时 → 通道静默跳过（WARN 留痕），
+    #     主链结果与开关关闭时逐位一致（对账零分歧的结构保证）。
+    kg_degrade: str | None = None
+    _prof_kg = 0.0
+    if getattr(settings, "KG_EXPAND_ENABLED", False) and merged:
+        from app.ai import kg_bridge
+
+        _prof_t2 = time.perf_counter()
+        seed_ids = [d.doc_id for d in merged[: int(getattr(settings, "KG_EXPAND_SEED_TOPK", 10))]]
+        kg_res = await kg_bridge.fetch_neighbor_chunks(
+            seed_ids,
+            hops=int(getattr(settings, "KG_EXPAND_HOPS", 2)),
+            timeout_s=float(getattr(settings, "KG_EXPAND_TIMEOUT_MS", 800)) / 1000.0,
+            max_neighbors=int(getattr(settings, "KG_EXPAND_MAX_NEIGHBORS", 30)),
+        )
+        _prof_kg = time.perf_counter() - _prof_t2
+        if kg_res.degraded_reason:
+            kg_degrade = kg_res.degraded_reason
+            logger.warning(f"[kg_expand] 图谱扩展通道降级跳过：{kg_degrade}")
+        if kg_res.neighbors:
+            fresh_ids = [cid for cid, _h in kg_res.neighbors if cid and cid not in seen]
+            _contents = _milvus_fetch_contents(fresh_ids) if fresh_ids else {}
+            weight = float(getattr(settings, "KG_EXPAND_RRF_WEIGHT", 0.5))
+            rrf_k = int(getattr(settings, "KG_EXPAND_RRF_K", 60))
+            rank = 0
+            for cid, _hops in kg_res.neighbors:
+                if not cid or cid in seen:
+                    continue  # 已在候选中的邻居不重复并入、不改动原分（off==on 语义保真）
+                seen.add(cid)
+                rank += 1
+                raw_rrf = kg_bridge.rrf_channel_score(rank, weight=weight, k=rrf_k)
+                merged.append(RetrievedDoc(
+                    doc_id=cid,
+                    # 与 Milvus 通道同款 0~1 归一（(x+1)/2）：RRF 量纲对齐，rerank 前分数可比
+                    score=max(0.0, min(1.0, (raw_rrf + 1.0) / 2.0)),
+                    content=_contents.get(cid) or kg_res.previews.get(cid, ""),
+                    source_channel="graph",  # 契约 Literal 冻结：通道3=实体渲染、通道4=chunk 扩展共用 graph 溯源
+                ))
+            if rank:
+                logger.info(
+                    f"[kg_expand] 图谱扩展并入 {rank} 个邻居 chunk（种子 {len(seed_ids)}，"
+                    f"耗时 {_prof_kg * 1000:.0f}ms）"
+                )
+
     raw_retrieved_count = len(merged)
     _prof_merge = time.perf_counter() - _prof_t3
 
@@ -646,13 +721,13 @@ async def retrieve_three_channel(
     final_docs = _cliff_cutoff(merged, final_max_k=final_max_k, drop_ratio=cutoff_drop_ratio)
     _prof_cliff = time.perf_counter() - _prof_t4 - _prof_rerank
 
-    # R02-tail profile：三通道主链路分段汇总（一次检索一行）
+    # R02-tail profile：三通道主链路分段汇总（一次检索一行；kg_expand=R-N2 第四通道段）
     logger.info(
         "[retrieval-profile] pipeline total={:.0f}ms | hyde={:.0f} milvus={:.0f} graph={:.0f} "
-        "merge={:.0f} rerank={:.0f} cliff={:.0f} | raw={} final={}".format(
+        "kg_expand={:.0f} merge={:.0f} rerank={:.0f} cliff={:.0f} | raw={} final={}".format(
             (time.perf_counter() - _prof_t0) * 1000,
             _prof_hyde * 1000, _prof_milvus * 1000, _prof_graph * 1000,
-            _prof_merge * 1000, _prof_rerank * 1000, max(0.0, _prof_cliff) * 1000,
+            _prof_kg * 1000, _prof_merge * 1000, _prof_rerank * 1000, max(0.0, _prof_cliff) * 1000,
             raw_retrieved_count, len(final_docs))
     )
 
@@ -660,11 +735,13 @@ async def retrieve_three_channel(
     #    组件归属按「变量出处」判定（非字符串匹配）：
     #      hyde  → llm（HyDE 改写走 LLM）  milvus → milvus
     #      graph → neo4j                  rerank → reranker
+    #      kg_expand → neo4j 图扩展第四通道（R-N2，仅开关开启且降级时非空）
     degrade_parts: list[str] = []
     for _comp, _p in (
         ("llm", hyde_degrade),
         ("milvus", milvus_degrade),
         ("neo4j", graph_degrade),
+        ("kg_expand", kg_degrade),
         ("reranker", rerank_degrade),
     ):
         if _p:
