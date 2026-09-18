@@ -122,12 +122,23 @@ class CircuitBreaker:
             data = await r.hgetall(self._redis_key)
             if not data:
                 return
-            self._state = BreakerState(data.get(b"state", b"closed").decode())
-            self._requests = int(data.get(b"requests", 0))
-            self._errors = int(data.get(b"errors", 0))
-            self._consecutive_errors = int(data.get(b"consecutive_errors", 0))
-            self._opened_at = float(data.get(b"opened_at", 0))
-            self._half_open_successes = int(data.get(b"half_open_successes", 0))
+            # P0 修复（R-M1 故障注入实测发现，2026-09-18）：共享客户端
+            # （app/database.init_redis）是 decode_responses=True，hgetall 返回 str 键值；
+            # 旧代码按 bytes 键取值全部 miss → state/consecutive_errors 每次同步被静默
+            # 清零 → consecutive_failures 阈值永远达不到（熔断器永不 OPEN）、OPEN 态
+            # 同步后即蒸发。改为 str/bytes 双兼容读取（对 bytes 客户端语义不变）。
+            def _hget(key: str):
+                v = data.get(key, data.get(key.encode("utf-8")))
+                if isinstance(v, bytes):
+                    return v.decode("utf-8")
+                return v
+
+            self._state = BreakerState(_hget("state") or "closed")
+            self._requests = int(_hget("requests") or 0)
+            self._errors = int(_hget("errors") or 0)
+            self._consecutive_errors = int(_hget("consecutive_errors") or 0)
+            self._opened_at = float(_hget("opened_at") or 0.0)
+            self._half_open_successes = int(_hget("half_open_successes") or 0)
         except Exception:
             # Redis 不可用（含 task-P1C：Redis 自身就是被测依赖）→ 退化本地状态，绝不阻断熔断逻辑
             pass
