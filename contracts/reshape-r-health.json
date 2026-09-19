@@ -30,7 +30,8 @@
       "POST /api/trade/payment/{x}/mock-notify",
       "POST /api/trade/payment/{x}/retry",
       "POST /api/trade/payments/reconcile",
-      "POST /payment-notifications/mock"
+      "POST /payment-notifications/mock",
+      "POST /payment-notifications/channel"
     ],
     "G3_refund": [
       "GET /api/refunds",
@@ -150,7 +151,18 @@
     "POST /api/trade/payment/{x}/mock-notify",
     "POST /api/trade/payment/{x}/retry",
     "POST /api/trade/payments/reconcile",
-    "POST /payment-notifications/mock"
+    "POST /payment-notifications/mock",
+    "POST /payment-notifications/channel"
   ],
-  "hash_sha256": "a3c53c5c61672b50c27214c61aaa18f480464745d1c2a386d9745b70363d87cc"
+  "amendments": [
+    {
+      "id": "PAY-GATE-346",
+      "signed": "用户会话授权流水线内冻结(2026-09-18 CANON-SYNC e22a1c2;2026-09-19 语义归位 W-NEXT-RESHAPEB-MOVE-001)",
+      "method": "POST",
+      "path": "/payment-notifications/channel",
+      "source": "PAY-GATE commit 062704a 承接 tracker 346(真实支付渠道回调验签闸门);root 路径端点(无 /api 前缀)",
+      "auth": "闸门三关:验商户+RSA2 验签+分单位验金额(run_channel_gates;缺 key=50301 fail closed)"
+    }
+  ],
+  "hash_sha256": "c9ccf7b670b5734696e08e577e4b10bf5ac53bdb98dad2d5abbe7bb76edb2e63"
 }

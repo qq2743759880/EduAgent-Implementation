@@ -1,70 +1,72 @@
 {
- "planId": "reshape-b",
- "draft": false,
- "frozen_at": "2026-09-06",
- "change_order": ".ai-hub/plans/contract-change-reshape-b-health-scan.md(用户已签字)",
- "endpoints": [
-  {
-   "method": "POST",
-   "path": "/api/mcp/health-scan-async",
-   "resp": {
-    "job_id": "string"
-   },
-   "status": 202,
-   "idempotency": "同参数重复 POST 返回同一 job_id(用户签字①)"
+  "planId": "reshape-b",
+  "draft": false,
+  "frozen_at": "2026-09-06",
+  "change_order": ".ai-hub/plans/contract-change-reshape-b-health-scan.md(用户已签字)",
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/mcp/health-scan-async",
+      "resp": {
+        "job_id": "string"
+      },
+      "status": 202,
+      "idempotency": "同参数重复 POST 返回同一 job_id(用户签字①)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mcp/health-scan/{job_id}",
+      "resp": {
+        "status": "running|done",
+        "result": "MCPHealthScanResp"
+      },
+      "errors": {
+        "40450": "job 不存在(用户签字②)"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/health-scan",
+      "compat": "旧同步端点保留 30 天兼容窗口,此后下线"
+    }
+  ],
+  "amendments": [
+    {
+      "method": "POST",
+      "path": "/api/favorites",
+      "body": {
+        "series_id": "int"
+      },
+      "note": "实测幂等;原遗漏于 reshape-a 冻结清单,本轮补登(2026-09-06 验收 A4)"
+    },
+    {
+      "id": "T19-3",
+      "signed": "2026-09-12 用户签字",
+      "add": {
+        "error_code": "50301",
+        "name": "DEPENDENCY_UNAVAILABLE",
+        "semantics": "依赖不可达的业务语义码(替代 500/50300 直泄)",
+        "sanitization": "message 面向用户(依赖服务暂不可用),原始异常仅入日志",
+        "affected": "全局异常处理器 + knowledge/mcp 等依赖型端点",
+        "compat": "纯增量,回滚=revert 单 commit"
+      }
+    },
+    {
+      "id": "PAY-GATE-346",
+      "signed": "用户会话授权流水线内冻结(W-NEXT-FEBE-CANON-SYNC-001 canonical 同步,2026-09-18)",
+      "method": "POST",
+      "path": "/payment-notifications/channel",
+      "source": "PAY-GATE commit 062704a 承接 tracker 346(真实支付渠道回调验签闸门)",
+      "auth": "闸门三关:验商户+RSA2 验签+分单位验金额(run_channel_gates;缺 key=50301 fail closed,任何一关不过=拒绝+[PAY-GATE-AUDIT] 审计,无旁路)",
+      "note": "服务端对服务端回调,前端永不接入(febe ops 桶);mock 渠道走既有 mock-notify 端点,鉴权语义零变化;机器可解析冻结条目=本文件 endpoints 数组的字符串形态(febe parser 只解析 endpoints/verified_* 字符串列表,不解析 amendments)",
+      "status": "moved",
+      "moved_to": "contracts/reshape-r-health.json G3_trade_payment",
+      "moved_at": "2026-09-19（W-NEXT-RESHAPEB-MOVE-001，CANON-SYNC 披露语义错位，用户裁定归位）"
+    }
+  ],
+  "acceptance": {
+    "health_p95_ms": 500,
+    "scan_concurrent": 50
   },
-  {
-   "method": "GET",
-   "path": "/api/mcp/health-scan/{job_id}",
-   "resp": {
-    "status": "running|done",
-    "result": "MCPHealthScanResp"
-   },
-   "errors": {
-    "40450": "job 不存在(用户签字②)"
-   }
-  },
-  {
-   "method": "POST",
-   "path": "/api/mcp/health-scan",
-   "compat": "旧同步端点保留 30 天兼容窗口,此后下线"
-  },
-  "POST /payment-notifications/channel"
- ],
- "amendments": [
-  {
-   "method": "POST",
-   "path": "/api/favorites",
-   "body": {
-    "series_id": "int"
-   },
-   "note": "实测幂等;原遗漏于 reshape-a 冻结清单,本轮补登(2026-09-06 验收 A4)"
-  },
-  {
-   "id": "T19-3",
-   "signed": "2026-09-12 用户签字",
-   "add": {
-    "error_code": "50301",
-    "name": "DEPENDENCY_UNAVAILABLE",
-    "semantics": "依赖不可达的业务语义码(替代 500/50300 直泄)",
-    "sanitization": "message 面向用户(依赖服务暂不可用),原始异常仅入日志",
-    "affected": "全局异常处理器 + knowledge/mcp 等依赖型端点",
-    "compat": "纯增量,回滚=revert 单 commit"
-   }
-  },
-  {
-   "id": "PAY-GATE-346",
-   "signed": "用户会话授权流水线内冻结(W-NEXT-FEBE-CANON-SYNC-001 canonical 同步,2026-09-18)",
-   "method": "POST",
-   "path": "/payment-notifications/channel",
-   "source": "PAY-GATE commit 062704a 承接 tracker 346(真实支付渠道回调验签闸门)",
-   "auth": "闸门三关:验商户+RSA2 验签+分单位验金额(run_channel_gates;缺 key=50301 fail closed,任何一关不过=拒绝+[PAY-GATE-AUDIT] 审计,无旁路)",
-   "note": "服务端对服务端回调,前端永不接入(febe ops 桶);mock 渠道走既有 mock-notify 端点,鉴权语义零变化;机器可解析冻结条目=本文件 endpoints 数组的字符串形态(febe parser 只解析 endpoints/verified_* 字符串列表,不解析 amendments)"
-  }
- ],
- "acceptance": {
-  "health_p95_ms": 500,
-  "scan_concurrent": 50
- },
- "hash_sha256": "f398d7a9e7faa1654a1b930c8e0ac9c46a4bae8a9ad520dd9c9d4cb546aeba25"
+  "hash_sha256": "677f038880d843b7c6594f114d1863798cba9674d5c0d0dbf5b0a695d3996374"
 }
