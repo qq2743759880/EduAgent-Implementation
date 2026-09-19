@@ -6,7 +6,7 @@
 
 ## 0. 主提交 hash（补记）
 
-**`（待补记 commit 回填）`**
+**`b04e32d`**（eval(r64v2)/W-NEXT-EVAL64V2-001 收口主提交，feature/opt-waves，父 `8d33ced`）
 
 ## 0b. 交付概览
 
