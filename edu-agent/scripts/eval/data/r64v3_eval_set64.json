@@ -1,0 +1,2203 @@
+{
+  "meta": {
+    "builder": "build_eval_set64.py --mode buildv3",
+    "purpose": "EVAL64V3（承接 EVAL64V2 P0-①）：V2 尺贴天花板根因=golden 取自 query 源块（子串保底乐观）。V3 改写 query 面（同义不同形），golden 不变——创造真实 headroom，让检索质量差异可测量",
+    "built_at": "2026-09-19T18:15:29.974370+00:00",
+    "git_rev": "2786bef6def9643169b35a9c62e2410f2d98bef9",
+    "in_set": {
+      "file": "scripts/eval/data/r64v2_eval_set64.json",
+      "n": 64,
+      "sha256": null,
+      "builder": "build_eval_set64.py --mode buildv2"
+    },
+    "rewrite_records": "scripts/eval/data/r64v3_rewrite_records.json",
+    "query_face_policy": "LLM 改写（deepseek-flash，thinking disabled，温度0.3，风格口语/正式按 idx 轮换）；golden/gt_content/provenance 逐位继承；case 顺序=V2 文件顺序",
+    "n_cases": 63,
+    "guardrail_stats": {
+      "in_v2": 64,
+      "rewrite_pass": 63,
+      "dropped_rewrite_violation": 1,
+      "dropped_rewrite_failed": 0,
+      "dropped_build_stage": 0,
+      "dropped_detail": [],
+      "final": 63,
+      "floor": 58,
+      "below_floor": false,
+      "no_padding": "剔除条不补位不凑数"
+    },
+    "golden_double_key": [
+      "chunk_id",
+      "doc_sha256(sha256(gt_content utf-8))"
+    ],
+    "golden_inheritance": "golden/gt_content 与 V2 集逐位相同（建集时活体 sha 复核）",
+    "anti_circle_invariants": [
+      "V3 query 面由 LLM 改写，禁与 v2_query 字面重叠 ≥60%（护栏②）",
+      "W3' 反向不变量：v3 query 不得仍是 golden 子串（假改写拒绝）",
+      "G1：golden 双键与 V2 集逐键相等（query 改写不得改变 golden 归属）"
+    ],
+    "wall_seconds": 2.2
+  },
+  "cases": [
+    {
+      "query": "回归分析这块儿，下面哪种说法是对的？",
+      "golden": {
+        "chunk_id": "_default:6ce44e88938b6426:1",
+        "doc_sha256": "6ce44e88938b6426330237c93afc41fbe432514a4909cc95ec82a7e1efa54e0c"
+      },
+      "gt_content": "【多选题】题目：关于回归分析，下列说法正确的是：\n选项：\nA. 可以用于刻画变量之间的关系\nB. 回归方程只能是直线\nC. 残差可用于诊断拟合质量\nD. 回归结果一定意味着因果关系\n答案：A,C\n解析：回归既可线性也可非线性，残差分析很重要，但回归本身不自动推出因果。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:6ce44e88938b6426:1",
+      "source_bank": "data_and_quantitative_analysis_bank",
+      "series_code": "data_and_quantitative_analysis",
+      "matched_terms": [
+        "分析",
+        "回归"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:b69f91611e6e8a96:1",
+      "v1_idx": 0,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于回归分析，下列说法正确的是： ",
+      "rewrite_v3": {
+        "v3_query": "回归分析这块儿，下面哪种说法是对的？",
+        "rewrite_rationale": "换口语化句式与同义词，语义不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "前端异步编程中，哪些表述是准确的？",
+      "golden": {
+        "chunk_id": "_default:7447d3504fcbd6dc:1",
+        "doc_sha256": "7447d3504fcbd6dc7d1e16ebeed8fd71f5686f337b4c4e2f7053ae99b70ddd42"
+      },
+      "gt_content": "【多选题】题目：关于前端异步编程，哪些说法正确？\n选项：\nA. Promise 可以表示一个未来才确定结果的操作\nB. async/await 可以提升异步代码的可读性\nC. 异步代码完全不需要错误处理\nD. 多个异步请求可以并行发起\n答案：A、B、D\n解析：异步编程的重点是组织等待关系，并合理处理成功和失败。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:7447d3504fcbd6dc:1",
+      "source_bank": "web_programming_languages_bank",
+      "series_code": "web_programming_languages",
+      "matched_terms": [
+        "异步",
+        "编程"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:09daca83011f4bcd:1",
+      "v1_idx": 1,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于前端异步编程，哪些说法正确？",
+      "rewrite_v3": {
+        "v3_query": "前端异步编程中，哪些表述是准确的？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 2,
+        "literal_overlap": 0.4667,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "数据湖和数据仓库最关键的差异在哪？",
+      "golden": {
+        "chunk_id": "_default:0a5c60df7a4f4c0b:1",
+        "doc_sha256": "0a5c60df7a4f4c0bd16af0d957aafb4d161027e81622f69d472030919373c621"
+      },
+      "gt_content": "【单选题】题目：数据仓库与数据湖的核心区别之一是：\n选项：\nA. 数据湖更强调原始和半结构化数据保存\nB. 数据仓库只能存图片\nC. 数据湖一定更适合 OLTP\nD. 两者完全没有差别\n答案：A\n解析：数据湖通常更强调保留原始数据和多种格式。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:0a5c60df7a4f4c0b:1",
+      "source_bank": "data_engineering_bank",
+      "series_code": "data_engineering",
+      "matched_terms": [
+        "数据仓库",
+        "数据"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:58ecb01f44581a06:1",
+      "v1_idx": 2,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "数据仓库与数据湖的核心区别之一是： ",
+      "rewrite_v3": {
+        "v3_query": "数据湖和数据仓库最关键的差异在哪？",
+        "rewrite_rationale": "同义替换核心区别与差异，调整语序，口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2667,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "将路径、账号及密钥直接写入脚本是否恰当？请判断正误。",
+      "golden": {
+        "chunk_id": "_default:f1f8e69c41d0f6df:1",
+        "doc_sha256": "f1f8e69c41d0f6df2c71f8e7a6fc706eb4235449b344c43a3aaae2a018ba7839"
+      },
+      "gt_content": "【判断题】题目：路径、账号和密钥都适合直接硬编码到脚本中。对还是错？\n选项：\nA. 对\nB. 错\n答案：错\n解析：这些信息通常应通过配置、环境变量或密钥管理系统注入。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:f1f8e69c41d0f6df:1",
+      "source_bank": "scripting_and_automation_bank",
+      "series_code": "scripting_and_automation",
+      "matched_terms": [
+        "脚本",
+        "配置"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:311c71773d02c469:1",
+      "v1_idx": 3,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "路径、账号和密钥都适合直接硬编码到脚本中。对还是错？ ",
+      "rewrite_v3": {
+        "v3_query": "将路径、账号及密钥直接写入脚本是否恰当？请判断正误。",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.28,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "做学习规划的时候，为啥要把大目标分成一个个小步骤呢？",
+      "golden": {
+        "chunk_id": "_default:cc48b843110c25ed:1",
+        "doc_sha256": "cc48b843110c25ed111d42cbb50a785e61f0f042052b62334b3b54a740b29caf"
+      },
+      "gt_content": "【单选题】题目：写学习计划时，把大目标拆成小阶段的好处是？\n选项：\nA. 按轻重缓急排序，并给任务设定截止时间。\nB. 想到什么就先做什么。\nC. 把所有任务都拖到最后一天。\nD. 只处理最容易的任务。\n答案：A\n解析：阶段化更容易执行和检查。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:cc48b843110c25ed:1",
+      "source_bank": "academic_planning_bank",
+      "series_code": "academic_planning",
+      "matched_terms": [
+        "执行",
+        "阶段"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:417ed6c2b86e6fd4:1",
+      "v1_idx": 4,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "写学习计划时，把大目标拆成小阶段的好处是？",
+      "rewrite_v3": {
+        "v3_query": "做学习规划的时候，为啥要把大目标分成一个个小步骤呢？",
+        "rewrite_rationale": "同义替换拆分与好处，句式口语化，语义完全一致",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "于汇编语言及底层调试场景里，寄存器一般被定义为何物？",
+      "golden": {
+        "chunk_id": "_default:b0a2df12d4091003:1",
+        "doc_sha256": "b0a2df12d4091003dd53bdd54df00bdd41260e1c165154b3f68e73cacf1ca1f3"
+      },
+      "gt_content": "【单选题】题目：在汇编或底层调试中，寄存器通常指什么？\n选项：\nA. 用于临时保存 CPU 内部数据的小型高速存储单元\nB. 磁盘上的大型文件区域\nC. 只在浏览器中使用的对象\nD. 网络请求头\n答案：A\n解析：寄存器数量少但访问快，是 CPU 执行过程中最核心的临时工作区。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:b0a2df12d4091003:1",
+      "source_bank": "low_level_programming_bank",
+      "series_code": "low_level_programming",
+      "matched_terms": [
+        "底层",
+        "执行",
+        "汇编"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:344b2d329b7760f1:1",
+      "v1_idx": 5,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在汇编或底层调试中，寄存器通常指什么？",
+      "rewrite_v3": {
+        "v3_query": "于汇编语言及底层调试场景里，寄存器一般被定义为何物？",
+        "rewrite_rationale": "同义替换，句式调整，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3889,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "碰到客户因为物流慢了来投诉，还非得当天就搞定，这种时候第一步该先干啥？",
+      "golden": {
+        "chunk_id": "_default:683c88907fc736e1:1",
+        "doc_sha256": "683c88907fc736e12046f2c01ff0f35d897885c4354fa2b58100f64775ea6c34"
+      },
+      "gt_content": "【单选题】题目：客户投诉物流延迟，要求当天必须解决。在这种情况下，最优先的做法是：\n选项：\nA. 先给出可执行的处理时点，再同步升级与回访安排。\nB. 只说“我帮你看看”但不落时间\nC. 先不处理，等情况更明显再说\nD. 只口头提醒，不确认执行结果\n答案：A\n解析：投诉处理要明确时限、责任和下一步动作。。先给出可执行的处理时点，再同步升级与回访安排。，这样才能先控制住 客户失去耐心、满意度下降。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:683c88907fc736e1:1",
+      "source_bank": "customer_service_training_bank",
+      "series_code": "customer_service_training",
+      "matched_terms": [
+        "处理",
+        "投诉"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:cbabcd76aaffae2a:1",
+      "v1_idx": 6,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "客户投诉物流延迟，要求当天必须解决。在这种情况下，最优先的做法是： ",
+      "rewrite_v3": {
+        "v3_query": "碰到客户因为物流慢了来投诉，还非得当天就搞定，这种时候第一步该先干啥？",
+        "rewrite_rationale": "同义换词换句式，意图与限定条件不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1562,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "就文件描述符的应用而言，何种说法更符合实际情况？",
+      "golden": {
+        "chunk_id": "_default:634479beaff5d1ca:1",
+        "doc_sha256": "634479beaff5d1ca9639137a1bb6de4030fcc6eb0773e64add952d4b2289d637"
+      },
+      "gt_content": "【单选题】题目：在使用文件描述符时，哪一项更接近事实？\n选项：\nA. 文件描述符是进程打开文件的引用句柄\nB. 文件描述符只能用于标准输入输出\nC. 文件描述符和文件名是一回事\nD. 文件描述符一定是字符串\n答案：A\n解析：文件描述符是进程访问打开文件、套接字等资源时使用的整数句柄。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:634479beaff5d1ca:1",
+      "source_bank": "systems_programming_bank",
+      "series_code": "systems_programming",
+      "matched_terms": [
+        "文件",
+        "进程"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:4e19c9e2128a9569:1",
+      "v1_idx": 7,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在使用文件描述符时，哪一项更接近事实？",
+      "rewrite_v3": {
+        "v3_query": "就文件描述符的应用而言，何种说法更符合实际情况？",
+        "rewrite_rationale": "同义替换，语义完全一致，句式调整",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2222,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "JavaScript 里说的闭包，到底哪个说法才对？",
+      "golden": {
+        "chunk_id": "_default:7fa2738f21f2d843:1",
+        "doc_sha256": "7fa2738f21f2d8437b58582a3b6be74afc4baa6785e19c95f89df024020b0b63"
+      },
+      "gt_content": "【单选题】题目：关于 JavaScript 的闭包，哪一项更准确？\n选项：\nA. 闭包只是一种语法错误\nB. 闭包让函数可以访问其外部词法作用域中的变量\nC. 闭包只能用于数字运算\nD. 闭包和作用域没有关系\n答案：B\n解析：闭包的关键是函数与其创建时的词法环境绑定，常用于封装状态。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:7fa2738f21f2d843:1",
+      "source_bank": "web_programming_languages_bank",
+      "series_code": "web_programming_languages",
+      "matched_terms": [
+        "JavaScript"
+      ],
+      "match_note": "single_long_term=JavaScript",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:07e6c9a75b13860f:1",
+      "v1_idx": 8,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于 JavaScript 的闭包，哪一项更准确？",
+      "rewrite_v3": {
+        "v3_query": "JavaScript 里说的闭包，到底哪个说法才对？",
+        "rewrite_rationale": "同义替换，保留原意与限定，句式口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.5455,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "请举出一个你眼中最能体现数学为现实生活提供助益的案例，并阐述理由。",
+      "golden": {
+        "chunk_id": "_default:1cf28364aed8ca48:1",
+        "doc_sha256": "1cf28364aed8ca48ce3b60d0f511a730d936000ad4a40434b79c7c0276155e03"
+      },
+      "gt_content": "【简答题】题目：给出一个你认为最典型的“数学服务现实”的例子，并说明原因。\n答案：例如疫苗接种策略可以用优化和微分方程联合建模，因为它既涉及传播过程，也涉及资源分配和风险控制。\n解析：这类题没有唯一答案，重点是能把数学工具和现实问题对接起来。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:1cf28364aed8ca48:1",
+      "source_bank": "interdisciplinary_mathematics_bank",
+      "series_code": "interdisciplinary_mathematics",
+      "matched_terms": [
+        "工具",
+        "数学"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:7d4e9af6afb9d9a9:1",
+      "v1_idx": 9,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "给出一个你认为最典型的“数学服务现实”的例子，并说明原因。 ",
+      "rewrite_v3": {
+        "v3_query": "请举出一个你眼中最能体现数学为现实生活提供助益的案例，并阐述理由。",
+        "rewrite_rationale": "同义替换，句式调整，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2143,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "客户那边已经收到服务处理结果了，可几个同事跟人家解释得不一样，这种时候最先该干啥？",
+      "golden": {
+        "chunk_id": "_default:0eeff521bbad9f4d:1",
+        "doc_sha256": "0eeff521bbad9f4dd356c3ff602f60df34e12dd27d42b2b89467472ad3861970"
+      },
+      "gt_content": "【单选题】题目：一个服务问题已经处理完，但不同员工给客户的说法前后不一致。在这种情况下，最优先的做法是：\n选项：\nA. 统一处理口径并复核记录，避免不同员工口径冲突。\nB. 各说各话，按个人习惯处理\nC. 先不处理，等情况更明显再说\nD. 只口头提醒，不确认执行结果\n答案：A\n解析：服务标准要统一口径、统一动作、统一留痕。。统一处理口径并复核记录，避免不同员工口径冲突。，这样才能先控制住 客户困惑、信任下降。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:0eeff521bbad9f4d:1",
+      "source_bank": "service_standard_bank",
+      "series_code": "service_standard",
+      "matched_terms": [
+        "处理",
+        "客户",
+        "服务"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:b9e930fdae163f3e:1",
+      "v1_idx": 10,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。在这种情况下，最优先的做法是： ",
+      "rewrite_v3": {
+        "v3_query": "客户那边已经收到服务处理结果了，可几个同事跟人家解释得不一样，这种时候最先该干啥？",
+        "rewrite_rationale": "同义改写，保留服务完成、说法不一、最优先做法三要素",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1395,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "刚接手一个新团队，这季度想提高交付效率，可大家还不太清楚该往哪走。这种情况下，是不是应该先把业务目标和轻重缓急说明白，然后把成果分到团队和每个人头上？",
+      "golden": {
+        "chunk_id": "_default:a936a6808b1a8b50:1",
+        "doc_sha256": "a936a6808b1a8b5033d03ae3ba1c41ff7453e0bb0bc29d160b2b1a7bcd194e1e"
+      },
+      "gt_content": "【判断题】题目：在你刚带一个新团队，目标是本季度提升交付效率，但成员对方向还不够清楚。的场景里，先讲清业务目标和优先级，再把结果拆成团队和个人任务。是合适的优先动作。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：正确。题干描述的做法符合先控风险、再推进后续动作的原则。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:a936a6808b1a8b50:1",
+      "source_bank": "leadership_growth_bank",
+      "series_code": "leadership_growth",
+      "matched_terms": [
+        "团队",
+        "场景",
+        "目标"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:0c672195b48bb71d:1",
+      "v1_idx": 12,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在你刚带一个新团队，目标是本季度提升交付效率，但成员对方向还不够清楚。的场景里，先讲清业务目标和优先级，再把结果拆成团队和个人任务。是合适的优先动作。 ",
+      "rewrite_v3": {
+        "v3_query": "刚接手一个新团队，这季度想提高交付效率，可大家还不太清楚该往哪走。这种情况下，是不是应该先把业务目标和轻重缓急说明白，然后把成果分到团队和每个人头上？",
+        "rewrite_rationale": "保留场景与动作，改为口语疑问句式",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2535,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "阐述函数的单调性与一阶导数之间存在何种关联。",
+      "golden": {
+        "chunk_id": "_default:d31d77e6bf01a4ff:1",
+        "doc_sha256": "d31d77e6bf01a4ff4df57a90687b87208348344fc377b65bf1057b1a7fa1dff0"
+      },
+      "gt_content": "【简答题】题目：说明一阶导数和函数单调性的关系。\n答案：在区间内若 f'(x)>0，则 f 递增；若 f'(x)<0，则 f 递减。若导数变号，则可以用来判断极值。\n解析：导数符号表是核心工具。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:d31d77e6bf01a4ff:1",
+      "source_bank": "calculus_and_sequences_bank",
+      "series_code": "calculus_and_sequences",
+      "matched_terms": [
+        "函数",
+        "导数"
+      ],
+      "match_note": "overlap=2_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:3c67d68cae42b97d:1",
+      "v1_idx": 13,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "说明一阶导数和函数单调性的关系。 ",
+      "rewrite_v3": {
+        "v3_query": "阐述函数的单调性与一阶导数之间存在何种关联。",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "项目做到一半的时候，接口需求老是变来变去，谁该负责什么也搞不清。这种情况下，先把 RACI 或者责任清单补上，把接口定义统一起来，再定好升级机制，是不是应该优先做的事？",
+      "golden": {
+        "chunk_id": "_default:8304f7016b8d35af:1",
+        "doc_sha256": "8304f7016b8d35af1954c5c870378a78bdef1b61fda9cf2df7122eb1bb57bfb8"
+      },
+      "gt_content": "【判断题】题目：在项目推进到一半，接口需求被反复变更，责任边界也不清楚。的场景里，补充 RACI 或责任清单，统一接口定义，并约定升级机制。是合适的优先动作。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：正确。题干描述的做法符合先控风险、再推进后续动作的原则。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:8304f7016b8d35af:1",
+      "source_bank": "cross_team_collaboration_bank",
+      "series_code": "cross_team_collaboration",
+      "matched_terms": [
+        "场景",
+        "责任",
+        "边界"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:035902e3acc76406:1",
+      "v1_idx": 14,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在项目推进到一半，接口需求被反复变更，责任边界也不清楚。的场景里，补充 RACI 或责任清单，统一接口定义，并约定升级机制。是合适的优先动作。 ",
+      "rewrite_v3": {
+        "v3_query": "项目做到一半的时候，接口需求老是变来变去，谁该负责什么也搞不清。这种情况下，先把 RACI 或者责任清单补上，把接口定义统一起来，再定好升级机制，是不是应该优先做的事？",
+        "rewrite_rationale": "同义改写，保留全部限定与动作，仅调整句式语序",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在命题逻辑的范畴内，哪些陈述是准确的？",
+      "golden": {
+        "chunk_id": "_default:ed02d98f10d2efbf:1",
+        "doc_sha256": "ed02d98f10d2efbf2524d6657fbc57f6d9de2e506540a868a23f7d846caee0dd"
+      },
+      "gt_content": "【多选题】题目：下列关于命题逻辑的说法，哪些正确？\n选项：\nA. P→Q 与 ¬Q→¬P 等价\nB. P→Q 与 Q→P 等价\nC. P∧Q 与 Q∧P 等价\nD. P∨Q 与 P∧Q 等价\n答案：A,C\n解析：A、C 正确。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:ed02d98f10d2efbf:1",
+      "source_bank": "proof_and_logic_bank",
+      "series_code": "proof_and_logic",
+      "matched_terms": [
+        "命题逻辑"
+      ],
+      "match_note": "single_long_term=命题逻辑",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:4b666ddb884135b9:1",
+      "v1_idx": 15,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "下列关于命题逻辑的说法，哪些正确？",
+      "rewrite_v3": {
+        "v3_query": "在命题逻辑的范畴内，哪些陈述是准确的？",
+        "rewrite_rationale": "同义替换，句式调整，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.375,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "垃圾回收主要是用来干嘛的？",
+      "golden": {
+        "chunk_id": "_default:43c246db4e5705d3:1",
+        "doc_sha256": "43c246db4e5705d35cf9275421387bfa0eec1246e9d358a5c9982dab7374c43c"
+      },
+      "gt_content": "【单选题】题目：下列哪项最符合垃圾回收的作用？\n选项：\nA. 自动释放不再可达的对象\nB. 自动提升线程优先级\nC. 自动生成网络协议\nD. 自动消除所有锁竞争\n答案：A\n解析：垃圾回收管理对象生命周期，回收不再被引用的内存，减轻手动释放负担。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:43c246db4e5705d3:1",
+      "source_bank": "operating_and_runtime_systems_bank",
+      "series_code": "operating_and_runtime_systems",
+      "matched_terms": [
+        "回收",
+        "垃圾"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:85ebb13115412cbb:1",
+      "v1_idx": 16,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "下列哪项最符合垃圾回收的作用？",
+      "rewrite_v3": {
+        "v3_query": "垃圾回收主要是用来干嘛的？",
+        "rewrite_rationale": "口语化同义改写，保留选择疑问意图",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2143,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "互斥的两个事件是否必然相互独立？",
+      "golden": {
+        "chunk_id": "_default:3911b16778b3b797:1",
+        "doc_sha256": "3911b16778b3b79782b24575a40e1e447599238cbdcbcfc4c7181d51845200fa"
+      },
+      "gt_content": "【判断题】题目：若两个事件互斥，则它们一定独立。\n选项：\nA. 正确\nB. 错误\n答案：B\n解析：互斥通常不独立，除非有特殊概率为 0 的情形。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:3911b16778b3b797:1",
+      "source_bank": "probability_and_statistics_bank",
+      "series_code": "probability_and_statistics",
+      "matched_terms": [
+        "事件",
+        "概率"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:7b1693486a2b6966:1",
+      "v1_idx": 17,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "若两个事件互斥，则它们一定独立。 ",
+      "rewrite_v3": {
+        "v3_query": "互斥的两个事件是否必然相互独立？",
+        "rewrite_rationale": "同义改写，保持原意与限定条件",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "游戏的主循环通常一直重复做哪几件事？",
+      "golden": {
+        "chunk_id": "_default:bf37261d0ca40efb:1",
+        "doc_sha256": "bf37261d0ca40efbd7d358d2ee5e10fc27a39264da7980764d2860b97813e1fc"
+      },
+      "gt_content": "【判断题】题目：游戏主循环一般会持续执行输入、更新和渲染。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：这就是游戏循环的基础模式。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:bf37261d0ca40efb:1",
+      "source_bank": "interactive_media_and_games_bank",
+      "series_code": "interactive_media_and_games",
+      "matched_terms": [
+        "基础",
+        "循环",
+        "游戏"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:739e39c6da0f8b46:1",
+      "v1_idx": 18,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "游戏主循环一般会持续执行输入、更新和渲染。 ",
+      "rewrite_v3": {
+        "v3_query": "游戏的主循环通常一直重复做哪几件事？",
+        "rewrite_rationale": "换句式与同义词，保留输入更新渲染三要素",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 2,
+        "literal_overlap": 0.15,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "进行前端网络请求排查时，通常优先使用哪款工具？",
+      "golden": {
+        "chunk_id": "_default:128dca05d0714732:1",
+        "doc_sha256": "128dca05d0714732cbba49d9957dd9e1774ab0b85aae454a2cc20b001fbf303f"
+      },
+      "gt_content": "【单选题】题目：在前端调试网络请求时，最常查看的工具是哪一个？\n选项：\nA. 浏览器开发者工具的 Network 面板\nB. 系统回收站\nC. 文本编辑器主题设置\nD. 打印机队列\n答案：A\n解析：Network 面板可以查看请求方法、状态码、响应体和耗时，是排查接口问题的核心工具。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:128dca05d0714732:1",
+      "source_bank": "web_programming_languages_bank",
+      "series_code": "web_programming_languages",
+      "matched_terms": [
+        "接口",
+        "调试"
+      ],
+      "match_note": "overlap=2_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:42f6c60374c20a31:1",
+      "v1_idx": 19,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在前端调试网络请求时，最常查看的工具是哪一个？",
+      "rewrite_v3": {
+        "v3_query": "进行前端网络请求排查时，通常优先使用哪款工具？",
+        "rewrite_rationale": "同义替换调试为排查，工具换款，语序调整，语义不变",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2727,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在前后端一起干活的时候，把接口规范统一起来能省掉很多来回沟通的麻烦，这说法对不对？",
+      "golden": {
+        "chunk_id": "_default:57d66966501107ad:1",
+        "doc_sha256": "57d66966501107add437624fc444893e603293e764ef820df611615f8022dc98"
+      },
+      "gt_content": "【判断题】题目：前后端协作中，统一接口约定可以减少大量沟通成本。对还是错？\n选项：\nA. 对\nB. 错\n答案：对\n解析：清晰契约是全栈协作效率的重要保障。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:57d66966501107ad:1",
+      "source_bank": "fullstack_development_bank",
+      "series_code": "fullstack_development",
+      "matched_terms": [
+        "全栈",
+        "协作",
+        "接口"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9d19c031f0940ecd:1",
+      "v1_idx": 20,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "前后端协作中，统一接口约定可以减少大量沟通成本。对还是错？ ",
+      "rewrite_v3": {
+        "v3_query": "在前后端一起干活的时候，把接口规范统一起来能省掉很多来回沟通的麻烦，这说法对不对？",
+        "rewrite_rationale": "同义替换并调整语序，意图与限定条件不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1786,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在面向对象设计里，何种概念最能直接反映“将内部实现加以隐藏，仅对外提供必要接口”这一原则？",
+      "golden": {
+        "chunk_id": "_default:2680fdc18ccfded0:1",
+        "doc_sha256": "2680fdc18ccfded044f3b23420ebe0164d8c0a4b809f7109777d978bc2b81b6f"
+      },
+      "gt_content": "【单选题】题目：面向对象设计中，哪个概念最直接体现“隐藏内部实现，只暴露必要接口”？\n选项：\nA. 封装\nB. 继承\nC. 多态\nD. 重载\n答案：A\n解析：封装强调把内部状态和外部访问方式隔离开，降低耦合。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:2680fdc18ccfded0:1",
+      "source_bank": "general_purpose_programming_bank",
+      "series_code": "general_purpose_programming",
+      "matched_terms": [
+        "面向对象"
+      ],
+      "match_note": "single_long_term=面向对象",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:967de30673647219:1",
+      "v1_idx": 21,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "面向对象设计中，哪个概念最直接体现“隐藏内部实现，只暴露必要接口”？",
+      "rewrite_v3": {
+        "v3_query": "在面向对象设计里，何种概念最能直接反映“将内部实现加以隐藏，仅对外提供必要接口”这一原则？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4848,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "数据库索引为啥会选用 B+ 树呢？",
+      "golden": {
+        "chunk_id": "_default:81d831f8e6290e07:1",
+        "doc_sha256": "81d831f8e6290e0734e5dd3d7ada16ce6a65c6626e5508058215c7e21d5a732c"
+      },
+      "gt_content": "【简答题】题目：简述 B+ 树为什么适合数据库索引。\n答案：B+ 树高度较低，查找复杂度稳定；叶子节点有序且便于范围扫描，因此很适合作为磁盘索引结构。\n解析：答案要体现“低树高”和“适合范围查询”两个关键词。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:81d831f8e6290e07:1",
+      "source_bank": "data_storage_systems_bank",
+      "series_code": "data_storage_systems",
+      "matched_terms": [
+        "查询",
+        "索引"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:c21015d727a5c21c:1",
+      "v1_idx": 22,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "简述 B+ 树为什么适合数据库索引。 ",
+      "rewrite_v3": {
+        "v3_query": "数据库索引为啥会选用 B+ 树呢？",
+        "rewrite_rationale": "同义改写，保留原因询问，口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "网络层次的增加是否必然导致训练过程更加简便？",
+      "golden": {
+        "chunk_id": "_default:e9c0427934a772fb:1",
+        "doc_sha256": "e9c0427934a772fb782baa4e40409f39b70d98a756feb619fc0caf252a95b2b2"
+      },
+      "gt_content": "【判断题】题目：深度网络越深，训练就一定越容易。\n选项：\nA. 正确\nB. 错误\n答案：B\n解析：过深网络若无合适结构，训练反而更难。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e9c0427934a772fb:1",
+      "source_bank": "deep_learning_and_perception_bank",
+      "series_code": "deep_learning_and_perception",
+      "matched_terms": [
+        "深度",
+        "网络",
+        "训练"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:0dfc462d366e47fb:1",
+      "v1_idx": 23,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "深度网络越深，训练就一定越容易。 ",
+      "rewrite_v3": {
+        "v3_query": "网络层次的增加是否必然导致训练过程更加简便？",
+        "rewrite_rationale": "同义改写，保留原意与限定，句式调整，书面正式",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "新员工入职头一周的日程里，一般会有哪三种内容？",
+      "golden": {
+        "chunk_id": "_default:2e8214ee6184f248:1",
+        "doc_sha256": "2e8214ee6184f248b861dfa322273b8cc8b3bc9ec81400d3720fbfad86b6c11f"
+      },
+      "gt_content": "【简答题】题目：写出新员工第一周工作安排中通常应包含的三类信息。\n答案：通常应包含工作目标、每日/每周任务安排，以及需要对接的人和事项。\n解析：第一周安排的重点是让新人知道做什么、找谁、什么时候完成。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:2e8214ee6184f248:1",
+      "source_bank": "new_employee_training_bank",
+      "series_code": "new_employee_training",
+      "matched_terms": [
+        "员工",
+        "新人"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:50f6bacd54efcb07:1",
+      "v1_idx": 24,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "写出新员工第一周工作安排中通常应包含的三类信息。 ",
+      "rewrite_v3": {
+        "v3_query": "新员工入职头一周的日程里，一般会有哪三种内容？",
+        "rewrite_rationale": "同义替换，保留三类信息与第一周限定",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1304,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在解释器与编译器的相关描述中，哪些表述是准确的？",
+      "golden": {
+        "chunk_id": "_default:e467f5fbefed8e1d:1",
+        "doc_sha256": "e467f5fbefed8e1df031eb80c2cd88a2a9f6e6850c4ab8a0ea0283902ed75918"
+      },
+      "gt_content": "【多选题】题目：关于解释器和编译器，哪些说法正确？\n选项：\nA. 解释器通常逐步执行程序\nB. 编译器通常先翻译再执行\nC. 很多语言会采用混合方案\nD. 解释器一定不能优化\n答案：A,B,C\n解析：解释、编译和 JIT 常常组合使用，性能与灵活性可以同时兼顾。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e467f5fbefed8e1d:1",
+      "source_bank": "compiler_and_language_systems_bank",
+      "series_code": "compiler_and_language_systems",
+      "matched_terms": [
+        "编译器",
+        "性能",
+        "编译"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:be239f5b07d4c8a0:1",
+      "v1_idx": 25,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于解释器和编译器，哪些说法正确？",
+      "rewrite_v3": {
+        "v3_query": "在解释器与编译器的相关描述中，哪些表述是准确的？",
+        "rewrite_rationale": "同义替换核心词并调整句式，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.375,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在词法分析这个环节里，最核心的任务是干啥？",
+      "golden": {
+        "chunk_id": "_default:d543840277f8f190:1",
+        "doc_sha256": "d543840277f8f1907b6f1c1ee654e14d867df4407aa208528a8fa92304cd7d1b"
+      },
+      "gt_content": "【单选题】题目：词法分析阶段最主要的工作是什么？\n选项：\nA. 把源代码切分成 token\nB. 直接生成机器码\nC. 执行程序逻辑\nD. 自动运行测试用例\n答案：A\n解析：词法分析负责把字符流转换成有意义的记号，为后续语法分析做准备。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:d543840277f8f190:1",
+      "source_bank": "compiler_and_language_systems_bank",
+      "series_code": "compiler_and_language_systems",
+      "matched_terms": [
+        "语法分析",
+        "分析",
+        "词法"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:78181cc809d023d1:1",
+      "v1_idx": 26,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "词法分析阶段最主要的工作是什么？",
+      "rewrite_v3": {
+        "v3_query": "在词法分析这个环节里，最核心的任务是干啥？",
+        "rewrite_rationale": "同义替换，意图与限定条件不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "逐点收敛能否确保积分与极限可交换？",
+      "golden": {
+        "chunk_id": "_default:03cdb9e7bf564d54:1",
+        "doc_sha256": "03cdb9e7bf564d5486339f2590cb2c014b9569cd5d1ab5d9b0a68304b278e5b8"
+      },
+      "gt_content": "【判断题】题目：逐点收敛就足以保证积分与极限可以交换。\n选项：\nA. 正确\nB. 错误\n答案：B\n解析：交换极限和积分通常需要更强条件，如一致收敛或支配收敛定理。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:03cdb9e7bf564d54:1",
+      "source_bank": "modern_analysis_bank",
+      "series_code": "modern_analysis",
+      "matched_terms": [
+        "定理",
+        "收敛"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:23a9792c8e140c5f:1",
+      "v1_idx": 27,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "逐点收敛就足以保证积分与极限可以交换。 ",
+      "rewrite_v3": {
+        "v3_query": "逐点收敛能否确保积分与极限可交换？",
+        "rewrite_rationale": "同义替换并改为疑问句式，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 2,
+        "literal_overlap": 0.5,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "哪一项跟 MVCC 最核心的作用更贴近？",
+      "golden": {
+        "chunk_id": "_default:bcbe5ae50641919a:1",
+        "doc_sha256": "bcbe5ae50641919a624f527ae6fc6033bd513a43c62a238c350b422a95260c02"
+      },
+      "gt_content": "【单选题】题目：MVCC 的主要价值更接近哪项？\n选项：\nA. 让读写互相完全阻塞\nB. 为同一行保存多个版本以提升并发\nC. 把索引自动转成 JSON\nD. 替代所有日志机制\n答案：B\n解析：多版本并发控制通过版本链减少读写冲突，让一致性读更高效。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:bcbe5ae50641919a:1",
+      "source_bank": "data_storage_systems_bank",
+      "series_code": "data_storage_systems",
+      "matched_terms": [
+        "并发",
+        "控制"
+      ],
+      "match_note": "overlap=2_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:deba45a280c7b273:1",
+      "v1_idx": 28,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "MVCC 的主要价值更接近哪项？",
+      "rewrite_v3": {
+        "v3_query": "哪一项跟 MVCC 最核心的作用更贴近？",
+        "rewrite_rationale": "同义替换主要价值为核心作用，换句式，语义不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2143,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在闭环服务中，哪一项最能表明需追踪成效并核实客户已实际接纳？",
+      "golden": {
+        "chunk_id": "_default:adf8eb5f4ada3e55:1",
+        "doc_sha256": "adf8eb5f4ada3e555cee479d36e7c5b47f8c742a71140c24566d497153bc2b9b"
+      },
+      "gt_content": "【单选题】题目：以下哪项最能体现闭环服务要跟进结果，确认客户真正接受。\n选项：\nA. 把工单关掉就结束\nB. 主动回访\nC. 先把事情放一放，等有空再处理\nD. 确认问题是否解决\n答案：B\n解析：题目考的是原则落地。主动回访更符合 闭环服务要跟进结果，确认客户真正接受。 的要求。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:adf8eb5f4ada3e55:1",
+      "source_bank": "customer_service_training_bank",
+      "series_code": "customer_service_training",
+      "matched_terms": [
+        "回访",
+        "服务",
+        "闭环"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9509fbff664792b9:1",
+      "v1_idx": 29,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "以下哪项最能体现闭环服务要跟进结果，确认客户真正接受。 ",
+      "rewrite_v3": {
+        "v3_query": "在闭环服务中，哪一项最能表明需追踪成效并核实客户已实际接纳？",
+        "rewrite_rationale": "同义替换，句式调整，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2308,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "一般哪些毛病在编译的时候就能早点查出来？",
+      "golden": {
+        "chunk_id": "_default:e463ac2dc9448047:1",
+        "doc_sha256": "e463ac2dc94480475efb66eecd275e9b4848666b7d672baba4c723ec377c11df"
+      },
+      "gt_content": "【多选题】题目：哪些错误通常能在编译期尽早发现？\n选项：\nA. 非法字符或词法错误\nB. 不符合文法的语句\nC. 明显的类型不匹配\nD. 断网导致的超时\n答案：A,B,C\n解析：词法、语法和静态语义层面的错误，通常都可以在编译阶段尽早拦截。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e463ac2dc9448047:1",
+      "source_bank": "compiler_and_language_systems_bank",
+      "series_code": "compiler_and_language_systems",
+      "matched_terms": [
+        "编译",
+        "词法",
+        "语法"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:78181cc809d023d1:1",
+      "v1_idx": 30,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "哪些错误通常能在编译期尽早发现？",
+      "rewrite_v3": {
+        "v3_query": "一般哪些毛病在编译的时候就能早点查出来？",
+        "rewrite_rationale": "同义替换，语义一致，句式口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "请概述此情形中的处置先后次序。",
+      "golden": {
+        "chunk_id": "_default:482454bc109d453c:1",
+        "doc_sha256": "482454bc109d453c7705d9ede4e14cb2ed61bc61ec35c52b5081ad5007211453"
+      },
+      "gt_content": "【简答题】题目：简述该场景下的处理顺序。\n答案：列出具体返工事实；说明对交付和成本的影响；约定改进与复盘时间。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:482454bc109d453c:1",
+      "source_bank": "first_line_management_bank",
+      "series_code": "first_line_management",
+      "matched_terms": [
+        "场景",
+        "处理"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:46a445cb497e6003:1",
+      "v1_idx": 31,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 33,
+      "v2_query": "简述该场景下的处理顺序。 ",
+      "rewrite_v3": {
+        "v3_query": "请概述此情形中的处置先后次序。",
+        "rewrite_rationale": "同义替换场景、处理、顺序，长度合规",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 2,
+        "literal_overlap": 0.1818,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "如果某个接口反应特别慢，前后端一起配合的话，往哪个方向走最合适？",
+      "golden": {
+        "chunk_id": "_default:a95d9c3b4a0ec2b5:1",
+        "doc_sha256": "a95d9c3b4a0ec2b55ce2328be254a3b7adb7a57a03bef5d7ab356c084cc5b4ce"
+      },
+      "gt_content": "【单选题】题目：当一个接口响应很慢时，前端和后端协作最合理的方向是什么？\n选项：\nA. 只怪前端或只怪后端\nB. 一起看请求链路、数据库耗时和缓存命中率\nC. 直接删掉接口\nD. 忽略用户体验\n答案：B\n解析：全栈问题通常要从链路整体看，包括前端请求、服务端处理和数据库依赖。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:a95d9c3b4a0ec2b5:1",
+      "source_bank": "fullstack_development_bank",
+      "series_code": "fullstack_development",
+      "matched_terms": [
+        "数据库",
+        "全栈",
+        "协作",
+        "接口"
+      ],
+      "match_note": "overlap=4_margin=3",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9d19c031f0940ecd:1",
+      "v1_idx": 32,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "当一个接口响应很慢时，前端和后端协作最合理的方向是什么？",
+      "rewrite_v3": {
+        "v3_query": "如果某个接口反应特别慢，前后端一起配合的话，往哪个方向走最合适？",
+        "rewrite_rationale": "同义替换接口响应慢与前后端协作，保持原意",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2222,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "相较于多进程，多线程通常具备哪一特征？",
+      "golden": {
+        "chunk_id": "_default:aee7ae8ea62bfb29:1",
+        "doc_sha256": "aee7ae8ea62bfb29da99a2faebd5e2bb27cb844b03c72b3f6d2657af79be6ca7"
+      },
+      "gt_content": "【单选题】题目：在多进程与多线程的对比中，哪一项更符合线程的典型特点？\n选项：\nA. 线程拥有独立的地址空间\nB. 线程共享同一进程的地址空间\nC. 线程之间完全不能共享数据\nD. 线程启动成本一定高于进程\n答案：B\n解析：线程通常共享进程的内存空间，因此通信更方便，但同步也更复杂。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:aee7ae8ea62bfb29:1",
+      "source_bank": "systems_programming_bank",
+      "series_code": "systems_programming",
+      "matched_terms": [
+        "线程",
+        "进程"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:5b6d98f21f75b7fa:1",
+      "v1_idx": 33,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在多进程与多线程的对比中，哪一项更符合线程的典型特点？",
+      "rewrite_v3": {
+        "v3_query": "相较于多进程，多线程通常具备哪一特征？",
+        "rewrite_rationale": "同义替换对比与特点，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2083,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "TCP 有哪些功能是说得对的？",
+      "golden": {
+        "chunk_id": "_default:e0b9ed3a982596ce:1",
+        "doc_sha256": "e0b9ed3a982596ceea6b10a1cfd5bcefe2ec92b3e94c7a03096608fdb7d84fe6"
+      },
+      "gt_content": "【多选题】题目：关于 TCP 的能力，哪些说法正确？\n选项：\nA. 通常提供可靠传输\nB. 通常提供按序交付\nC. 通常带有流量控制\nD. 默认是无连接协议\n答案：A,B,C\n解析：TCP 的典型特征包括可靠、按序、流量控制和拥塞控制；它不是无连接协议。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e0b9ed3a982596ce:1",
+      "source_bank": "network_and_communication_systems_bank",
+      "series_code": "network_and_communication_systems",
+      "matched_terms": [
+        "TCP",
+        "协议"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:c775ed1b5c090ad8:1",
+      "v1_idx": 34,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于 TCP 的能力，哪些说法正确？",
+      "rewrite_v3": {
+        "v3_query": "TCP 有哪些功能是说得对的？",
+        "rewrite_rationale": "同义替换，意图与限定不变，口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "请阐述建模与优化二者之间存在怎样的联系。",
+      "golden": {
+        "chunk_id": "_default:53aca604c8615945:1",
+        "doc_sha256": "53aca604c86159457ef90081c78ea63e07c5d20c3e584f850953c3a1aeb9a643"
+      },
+      "gt_content": "【简答题】题目：说明“建模”和“优化”之间的关系。\n答案：建模先把现实问题抽象成数学结构，优化则在该结构下寻找最优方案；二者常常前后衔接、相互配合。\n解析：很多交叉问题本质上就是“先建模，再优化”。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:53aca604c8615945:1",
+      "source_bank": "interdisciplinary_mathematics_bank",
+      "series_code": "interdisciplinary_mathematics",
+      "matched_terms": [
+        "交叉",
+        "建模",
+        "问题"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:709c65694ae9a84c:1",
+      "v1_idx": 35,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "说明“建模”和“优化”之间的关系。 ",
+      "rewrite_v3": {
+        "v3_query": "请阐述建模与优化二者之间存在怎样的联系。",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.25,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "面试时哪个礼仪点最影响整体印象？",
+      "golden": {
+        "chunk_id": "_default:933ac9e628d8358f:1",
+        "doc_sha256": "933ac9e628d8358f5b0b8501782f50d0d7ca478725b072737b42bda61a3467b3"
+      },
+      "gt_content": "【单选题】题目：面试礼仪中最容易影响整体印象的是：\n选项：\nA. 入场问候是否自然得体\nB. 答题时是否使用专业术语\nC. 是否提前背过所有题目\nD. 是否引用名人名言\n答案：A\n解析：入场、问候和基本礼仪会直接影响第一印象，是面试训练的基础部分。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:933ac9e628d8358f:1",
+      "source_bank": "interview_training_bank",
+      "series_code": "interview_training",
+      "matched_terms": [
+        "训练",
+        "面试"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:d4d0e5b72e738fdb:1",
+      "v1_idx": 36,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "面试礼仪中最容易影响整体印象的是： ",
+      "rewrite_v3": {
+        "v3_query": "面试时哪个礼仪点最影响整体印象？",
+        "rewrite_rationale": "同义改写，保留面试礼仪与整体印象核心语义",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 2,
+        "literal_overlap": 0.4375,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "请借助 knowledge_import 工具，将示例文档以 private 可见性添加到知识库中。",
+      "golden": {
+        "chunk_id": "_default:bdc4a450dc7c36ca:2",
+        "doc_sha256": "bdc4a450dc7c36cab49d91503035a7f2393dcd5b91420d7a85fd182822d688b3"
+      },
+      "gt_content": "## 4. 实现规划要点\n- knowledge_import_task：task_id PK、task_type、tenant_id、visibility、status、total_chunks、imported_chunks、source_files JSON、error、created_at、started_at、finished_at\n- 通用 task 表：status ∈ {pending,running,succeeded,failed} + progress_json（供 §3.9 durable execution 与 §6.3 批量任务）\n- 与 Redis key `edu:knowledge:task:{id}`（TTL 24h）双写对账",
+      "independence": "manual",
+      "source": "chat_message",
+      "source_message_id": "m_79ad5f8b2738",
+      "cited_rank": 1,
+      "rewrite": "rule_regex(去寒暄+空白归一)",
+      "rag_final_count": 5,
+      "golden_overlap_terms": [
+        "import",
+        "knowledge",
+        "visibility"
+      ],
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:bdc4a450dc7c36ca:2",
+      "v1_idx": 37,
+      "content_match_form": "production_cited",
+      "golden_is_query_source": null,
+      "verbatim_dup_count": null,
+      "v2_query": "请使用 knowledge_import 工具把示例文档导入知识库（visibility=private）",
+      "rewrite_v3": {
+        "v3_query": "请借助 knowledge_import 工具，将示例文档以 private 可见性添加到知识库中。",
+        "rewrite_rationale": "同义替换动词与语序，保留工具、对象及可见性限定",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.56,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "为啥做前端的得重视首屏加载速度呢？",
+      "golden": {
+        "chunk_id": "_default:045016b8a6e57819:1",
+        "doc_sha256": "045016b8a6e57819403cfb6894e605ca0474ab9a0613a44b99de00c4d8954a64"
+      },
+      "gt_content": "【简答题】题目：说明前端为什么要关注首屏加载性能。\n答案：首屏性能直接影响用户感知和留存，加载越快，用户越容易继续使用页面。\n解析：首屏体验通常是前端性能优化最优先的目标之一。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:045016b8a6e57819:1",
+      "source_bank": "frontend_development_bank",
+      "series_code": "frontend_development",
+      "matched_terms": [
+        "优化",
+        "前端",
+        "性能"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:de9fa0a0060b03d0:1",
+      "v1_idx": 38,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "说明前端为什么要关注首屏加载性能。 ",
+      "rewrite_v3": {
+        "v3_query": "为啥做前端的得重视首屏加载速度呢？",
+        "rewrite_rationale": "同义替换，意图与限定条件不变，口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.25,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "复试个人陈述是否应着重展现与报考领域紧密相关的经历？",
+      "golden": {
+        "chunk_id": "_default:ce4ed5d66edc529e:1",
+        "doc_sha256": "ce4ed5d66edc529e4f4ed21eae81c199d6d1a381828651516af93eda4dd7f298"
+      },
+      "gt_content": "【判断题】题目：复试自我介绍应尽量突出与报考方向相关的经历。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：相关经历更能体现匹配度。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:ce4ed5d66edc529e:1",
+      "source_bank": "postgraduate_retest_bank",
+      "series_code": "postgraduate_retest",
+      "matched_terms": [
+        "自我介绍",
+        "复试"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:3f2aa9b33c6e761a:1",
+      "v1_idx": 39,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "复试自我介绍应尽量突出与报考方向相关的经历。 ",
+      "rewrite_v3": {
+        "v3_query": "复试个人陈述是否应着重展现与报考领域紧密相关的经历？",
+        "rewrite_rationale": "同义替换并改为疑问句，语义一致且长度合规",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 2,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "这学期既要打比赛又得上课，头一件事该干啥？",
+      "golden": {
+        "chunk_id": "_default:00474ad3a566cc4c:1",
+        "doc_sha256": "00474ad3a566cc4cf70fac62f22e3c62ce4fda9297398d8782e9e88c0c32e33b"
+      },
+      "gt_content": "【单选题】题目：如果本学期要兼顾竞赛和课程，最先做什么？\n选项：\nA. 按轻重缓急排序，并给任务设定截止时间。\nB. 想到什么就先做什么。\nC. 把所有任务都拖到最后一天。\nD. 只处理最容易的任务。\n答案：A\n解析：先规划时间，再安排投入。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:00474ad3a566cc4c:1",
+      "source_bank": "academic_planning_bank",
+      "series_code": "academic_planning",
+      "matched_terms": [
+        "竞赛",
+        "规划"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:6ec7dce282bbc44a:1",
+      "v1_idx": 40,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "如果本学期要兼顾竞赛和课程，最先做什么？",
+      "rewrite_v3": {
+        "v3_query": "这学期既要打比赛又得上课，头一件事该干啥？",
+        "rewrite_rationale": "同义替换兼顾为既要又得，最先做什么改为头一件事该干啥",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.0526,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "关系型数据库的速度是否必然不及 NoSQL？",
+      "golden": {
+        "chunk_id": "_default:95d652a01147f733:1",
+        "doc_sha256": "95d652a01147f7330c7051e5def949ffe63ecfdb5af6ff135624d9d1f12a2dbe"
+      },
+      "gt_content": "【判断题】题目：NoSQL 一定比关系型数据库更快。\n选项：\nA. 正确\nB. 错误\n答案：B\n解析：性能取决于数据模型、访问模式和约束要求，不存在绝对更快的数据库类型。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:95d652a01147f733:1",
+      "source_bank": "data_storage_systems_bank",
+      "series_code": "data_storage_systems",
+      "matched_terms": [
+        "数据库",
+        "关系",
+        "性能"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:b0bd6104e79687c6:1",
+      "v1_idx": 41,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "NoSQL 一定比关系型数据库更快。 ",
+      "rewrite_v3": {
+        "v3_query": "关系型数据库的速度是否必然不及 NoSQL？",
+        "rewrite_rationale": "同义改写，否定断言转为疑问，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.5625,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "用 TypeScript 做静态类型检查，是不是能避免一些运行时的类型报错？这说法对不对？",
+      "golden": {
+        "chunk_id": "_default:01c9dcb84f4f8c37:1",
+        "doc_sha256": "01c9dcb84f4f8c37c3dfd5e16b4638eb1cf731af5423db9e3bf824e3d453feef"
+      },
+      "gt_content": "【判断题】题目：TypeScript 的静态类型检查可以减少一部分运行时类型错误。对还是错？\n选项：\nA. 对\nB. 错\n答案：对\n解析：类型检查能在编译阶段发现一些不匹配问题，但不能替代所有运行时校验。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:01c9dcb84f4f8c37:1",
+      "source_bank": "web_programming_languages_bank",
+      "series_code": "web_programming_languages",
+      "matched_terms": [
+        "TypeScript",
+        "类型"
+      ],
+      "match_note": "overlap=2_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:1f37edf895a55649:1",
+      "v1_idx": 42,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "TypeScript 的静态类型检查可以减少一部分运行时类型错误。对还是错？ ",
+      "rewrite_v3": {
+        "v3_query": "用 TypeScript 做静态类型检查，是不是能避免一些运行时的类型报错？这说法对不对？",
+        "rewrite_rationale": "同义替换静态类型检查与运行时类型错误，保留判断意图",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4857,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "当同窗于模拟面试环节反馈你的表述缺乏条理时，接下来采取何种做法更为妥当？",
+      "golden": {
+        "chunk_id": "_default:e69ccf7eaa3b8365:1",
+        "doc_sha256": "e69ccf7eaa3b8365dd6f0793937c7858ed5f611c3069683b774e581048c409e0"
+      },
+      "gt_content": "【单选题】题目：同学在模拟面试中指出你表达太散，下一步更合适的是？\n选项：\nA. 只解释原因，不做调整。\nB. 先转移话题再说。\nC. 记录反馈并据此改进。\nD. 把反馈当作否定就直接忽略。\n答案：C\n解析：反馈后做结构化调整最有效。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e69ccf7eaa3b8365:1",
+      "source_bank": "campus_employability_bank",
+      "series_code": "campus_employability",
+      "matched_terms": [
+        "结构化",
+        "面试"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:6a9391ca86ee033c:1",
+      "v1_idx": 43,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "同学在模拟面试中指出你表达太散，下一步更合适的是？",
+      "rewrite_v3": {
+        "v3_query": "当同窗于模拟面试环节反馈你的表述缺乏条理时，接下来采取何种做法更为妥当？",
+        "rewrite_rationale": "同义替换并调整语序，语义与限定条件完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.125,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "一般来讲，游戏的主循环都包含哪些部分？",
+      "golden": {
+        "chunk_id": "_default:579b7349c33474e6:1",
+        "doc_sha256": "579b7349c33474e6212444938c40a22f2dcbb94a67089977272a339a8e04500f"
+      },
+      "gt_content": "【单选题】题目：典型游戏主循环通常包括：\n选项：\nA. 输入处理、更新、渲染\nB. 下载、打印、关机\nC. 编译、链接、打包\nD. 写论文、交作业、考试\n答案：A\n解析：游戏循环的核心就是输入、更新和渲染。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:579b7349c33474e6:1",
+      "source_bank": "interactive_media_and_games_bank",
+      "series_code": "interactive_media_and_games",
+      "matched_terms": [
+        "循环",
+        "游戏"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:739e39c6da0f8b46:1",
+      "v1_idx": 44,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "典型游戏主循环通常包括： ",
+      "rewrite_v3": {
+        "v3_query": "一般来讲，游戏的主循环都包含哪些部分？",
+        "rewrite_rationale": "同义改写，意图与限定条件不变，句式更口语",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2727,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "将线性规划问题先行化为标准形式，其缘由何在？",
+      "golden": {
+        "chunk_id": "_default:2d2d2145c5dfd8b5:1",
+        "doc_sha256": "2d2d2145c5dfd8b59e7b765f497b285705da3821eeaef82cb81c3b7afb7769b0"
+      },
+      "gt_content": "【简答题】题目：为什么线性规划常先转化为标准型？\n答案：标准型便于统一表示约束、引入松弛变量，并能直接使用单纯形法等算法。\n解析：形式统一后便于计算。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:2d2d2145c5dfd8b5:1",
+      "source_bank": "operations_research_bank",
+      "series_code": "operations_research",
+      "matched_terms": [
+        "线性规划"
+      ],
+      "match_note": "single_long_term=线性规划",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9d69143ee83dd2d1:1",
+      "v1_idx": 45,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "为什么线性规划常先转化为标准型？",
+      "rewrite_v3": {
+        "v3_query": "将线性规划问题先行化为标准形式，其缘由何在？",
+        "rewrite_rationale": "同义替换，语义完全一致，仅调整语序与用词",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在复试说话的时候，一般怎么做会更招人喜欢？",
+      "golden": {
+        "chunk_id": "_default:0fc4e3fc9b7655d6:1",
+        "doc_sha256": "0fc4e3fc9b7655d686937a34e893f913d4bfd700e450a586b4b46d13edcefcc1"
+      },
+      "gt_content": "【多选题】题目：复试表达中，哪些做法通常更受欢迎？\n选项：\nA. 观点明确\nB. 逻辑分层\nC. 夸大其词\nD. 结合实例\n答案：A,B,D\n解析：清晰表达和实例支撑更有说服力。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:0fc4e3fc9b7655d6:1",
+      "source_bank": "postgraduate_retest_bank",
+      "series_code": "postgraduate_retest",
+      "matched_terms": [
+        "复试",
+        "表达"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:d239f29b0c66136f:1",
+      "v1_idx": 46,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "复试表达中，哪些做法通常更受欢迎？",
+      "rewrite_v3": {
+        "v3_query": "在复试说话的时候，一般怎么做会更招人喜欢？",
+        "rewrite_rationale": "同义替换，意图与限定不变，句式口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.0625,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "当客户提出价格方面的质疑，觉得你们的定价高于竞争对手时，应当首先采取的措施是什么？",
+      "golden": {
+        "chunk_id": "_default:84c93f1ca4065c77:1",
+        "doc_sha256": "84c93f1ca4065c775b385f03db9f8d133cd9948a1e2e6018572961404c114517"
+      },
+      "gt_content": "【单选题】题目：客户对价格有异议，认为你们比竞品贵。在这种情况下，最优先的做法是：\n选项：\nA. 先确认客户在意的点，再用场景和收益解释价格差异。\nB. 马上降价抢单\nC. 先不处理，等情况更明显再说\nD. 只口头提醒，不确认执行结果\n答案：A\n解析：异议处理要先理解顾虑，再回到价值和差异。。先确认客户在意的点，再用场景和收益解释价格差异。，这样才能先控制住 利润被压缩、客户只盯价格。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:84c93f1ca4065c77:1",
+      "source_bank": "sales_training_bank",
+      "series_code": "sales_training",
+      "matched_terms": [
+        "客户",
+        "异议"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:4c33dba3e570d9fa:1",
+      "v1_idx": 47,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "客户对价格有异议，认为你们比竞品贵。在这种情况下，最优先的做法是： ",
+      "rewrite_v3": {
+        "v3_query": "当客户提出价格方面的质疑，觉得你们的定价高于竞争对手时，应当首先采取的措施是什么？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.0938,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "业务方突然要加功能，项目经理得先判断接不接。这种时候，先看看范围、成本和风险，再去走审批、同步影响，是不是该优先这么做？",
+      "golden": {
+        "chunk_id": "_default:e42a1200e7381285:1",
+        "doc_sha256": "e42a1200e73812852fd9cb509826134d9bce2b1d16afee037c312f89f4c985d1"
+      },
+      "gt_content": "【判断题】题目：在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：正确。题干描述的做法符合先控风险、再推进后续动作的原则。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:e42a1200e7381285:1",
+      "source_bank": "project_management_bank",
+      "series_code": "project_management",
+      "matched_terms": [
+        "场景",
+        "风险"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:ca1d0e7a65965ebf:1",
+      "v1_idx": 48,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。 ",
+      "rewrite_v3": {
+        "v3_query": "业务方突然要加功能，项目经理得先判断接不接。这种时候，先看看范围、成本和风险，再去走审批、同步影响，是不是该优先这么做？",
+        "rewrite_rationale": "同义改写，保留场景与动作顺序，仅换句式",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.431,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在部门中两名员工能力显著但培养方向尚未清晰的情况下，优先开展能力盘点并依据岗位需求规划发展路径，是否属于恰当的优先举措？",
+      "golden": {
+        "chunk_id": "_default:055e3340173da577:1",
+        "doc_sha256": "055e3340173da57740160dd73e8034b272ed7ecce8c98896edcbb095722b4a4b"
+      },
+      "gt_content": "【判断题】题目：在部门里有两名员工能力突出，但培养方向还不明确。的场景里，先做能力盘点，再结合岗位要求设计成长路径。是合适的优先动作。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：正确。题干描述的做法符合先控风险、再推进后续动作的原则。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:055e3340173da577:1",
+      "source_bank": "talent_development_bank",
+      "series_code": "talent_development",
+      "matched_terms": [
+        "场景",
+        "岗位",
+        "能力"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:c35e8e7057bbbaaf:1",
+      "v1_idx": 49,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在部门里有两名员工能力突出，但培养方向还不明确。的场景里，先做能力盘点，再结合岗位要求设计成长路径。是合适的优先动作。 ",
+      "rewrite_v3": {
+        "v3_query": "在部门中两名员工能力显著但培养方向尚未清晰的情况下，优先开展能力盘点并依据岗位需求规划发展路径，是否属于恰当的优先举措？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2982,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在渲染管线里，一般哪个阶段会把三角形投影到屏幕上？",
+      "golden": {
+        "chunk_id": "_default:89581b8ed410185c:1",
+        "doc_sha256": "89581b8ed410185c1e73820bec3c9b49c12c2772d00372f44d7bd9d3e0cbb968"
+      },
+      "gt_content": "【单选题】题目：渲染管线中，负责把三角形投到屏幕上的阶段通常是：\n选项：\nA. 顶点着色/投影阶段\nB. 音频混音阶段\nC. 物理碰撞阶段\nD. 网络同步阶段\n答案：A\n解析：投影与裁剪通常发生在顶点处理之后。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:89581b8ed410185c:1",
+      "source_bank": "graphics_rendering_pipeline_bank",
+      "series_code": "graphics_rendering_pipeline",
+      "matched_terms": [
+        "处理",
+        "渲染",
+        "管线"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9466bed20e730a7f:1",
+      "v1_idx": 50,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "渲染管线中，负责把三角形投到屏幕上的阶段通常是： ",
+      "rewrite_v3": {
+        "v3_query": "在渲染管线里，一般哪个阶段会把三角形投影到屏幕上？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.4783,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "是否任何齐次线性方程组都必然存在零解？",
+      "golden": {
+        "chunk_id": "_default:0c37307527dd0d4b:1",
+        "doc_sha256": "0c37307527dd0d4b7de1300c88c3c892db8b21ec74c4362485b4c963168736ca"
+      },
+      "gt_content": "【判断题】题目：齐次线性方程组一定有零解。\n选项：\nA. 正确\nB. 错误\n答案：A\n解析：把所有未知数取 0 就是零解。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:0c37307527dd0d4b:1",
+      "source_bank": "algebra_foundations_bank",
+      "series_code": "algebra_foundations",
+      "matched_terms": [
+        "线性方程组"
+      ],
+      "match_note": "single_long_term=线性方程组",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:5b6b8443c1165799:1",
+      "v1_idx": 51,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "齐次线性方程组一定有零解。 ",
+      "rewrite_v3": {
+        "v3_query": "是否任何齐次线性方程组都必然存在零解？",
+        "rewrite_rationale": "同义改写，语义完全一致，仅调整句式与用词",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.5833,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "按照文明施工的标准，下面哪个做法才是对的？",
+      "golden": {
+        "chunk_id": "_default:17e1393dfe57dd0f:1",
+        "doc_sha256": "17e1393dfe57dd0f680395e072f9e86b0d3dbbbf4cc01d33568ce634dcd3738f"
+      },
+      "gt_content": "【单选题】题目：下列哪项更符合文明施工要求？\n选项：\nA. 材料随意堆放\nB. 道路畅通、标识清晰、垃圾及时清运\nC. 施工区和生活区混杂\nD. 夜间施工无需控制噪声\n答案：B\n解析：文明施工强调现场整洁、标识和环境控制。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:17e1393dfe57dd0f:1",
+      "source_bank": "construction_certificate_bank",
+      "series_code": "construction_certificate",
+      "matched_terms": [
+        "施工",
+        "现场"
+      ],
+      "match_note": "overlap=2_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:30b05e9811fa40f5:1",
+      "v1_idx": 52,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "下列哪项更符合文明施工要求？",
+      "rewrite_v3": {
+        "v3_query": "按照文明施工的标准，下面哪个做法才是对的？",
+        "rewrite_rationale": "同义替换，意图与限定不变，仅换句式",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2308,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "微分几何领域里，曲率一般被用于描述什么？",
+      "golden": {
+        "chunk_id": "_default:0b26e5915ae72254:1",
+        "doc_sha256": "0b26e5915ae72254cdfff3141786d183082a966077c98ce1de2c395de6d922c4"
+      },
+      "gt_content": "【单选题】题目：在微分几何中，曲率通常用来刻画：\n选项：\nA. 图形颜色\nB. 弯曲程度\nC. 面积恒定性\nD. 点的编号\n答案：B\n解析：曲率描述曲线或曲面的弯曲程度，是几何研究的核心量。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:0b26e5915ae72254:1",
+      "source_bank": "geometry_and_topology_bank",
+      "series_code": "geometry_and_topology",
+      "matched_terms": [
+        "几何",
+        "微分",
+        "曲率"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:3560b6911e730a6a:1",
+      "v1_idx": 53,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "在微分几何中，曲率通常用来刻画： ",
+      "rewrite_v3": {
+        "v3_query": "微分几何领域里，曲率一般被用于描述什么？",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "公司打算让新制度先在小范围里试运行，可推行的时候遇到了不小的抵触。从管理的角度出发，你会怎么应对？",
+      "golden": {
+        "chunk_id": "_default:2231a112aa9c9b57:1",
+        "doc_sha256": "2231a112aa9c9b5733e96ebba4ac234589b6f1acab999d132acb44700dc9e7a8"
+      },
+      "gt_content": "【案例分析题】题目：新机制先在一个小团队试点，但试点中出现了明显阻力。请结合管理场景写出你的处理方案。\n答案：先收集试点反馈，再修正流程，最后逐步扩大范围；同时避免试点一出问题就直接放弃，以免错失优化窗口、团队不信任变革。\n解析：案例题强调可执行方案：先定事实与边界，再安排动作和跟进。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:2231a112aa9c9b57:1",
+      "source_bank": "organizational_change_bank",
+      "series_code": "organizational_change",
+      "matched_terms": [
+        "场景",
+        "方案",
+        "试点"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:efd0bea6bcb57f2e:1",
+      "v1_idx": 54,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "新机制先在一个小团队试点，但试点中出现了明显阻力。请结合管理场景写出你的处理方案。 ",
+      "rewrite_v3": {
+        "v3_query": "公司打算让新制度先在小范围里试运行，可推行的时候遇到了不小的抵触。从管理的角度出发，你会怎么应对？",
+        "rewrite_rationale": "同义替换试点、阻力、处理方案，意图与限定不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.0513,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "请阐述排列和组合之间的差异。",
+      "golden": {
+        "chunk_id": "_default:90894b319a7db6dd:1",
+        "doc_sha256": "90894b319a7db6ddccb1207422830b80d921fa0249b58ab83600335db24fa9c0"
+      },
+      "gt_content": "【简答题】题目：说明排列与组合的区别。\n答案：排列考虑顺序，组合不考虑顺序；同样的元素选取，若顺序不同则排列不同，但组合通常视为同一种选法。\n解析：这是组合数学最基础的概念辨析。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:90894b319a7db6dd:1",
+      "source_bank": "discrete_and_combinatorial_math_bank",
+      "series_code": "discrete_and_combinatorial_math",
+      "matched_terms": [
+        "基础",
+        "数学",
+        "组合"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:34009115f2016dac:1",
+      "v1_idx": 55,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "说明排列与组合的区别。 ",
+      "rewrite_v3": {
+        "v3_query": "请阐述排列和组合之间的差异。",
+        "rewrite_rationale": "同义替换，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.2,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "动态规划这块儿，哪些讲法是对的？",
+      "golden": {
+        "chunk_id": "_default:f80a31de09258f23:1",
+        "doc_sha256": "f80a31de09258f23a9bec54eb29adebda4dd702001e55f3c0299146f4e8c9a4b"
+      },
+      "gt_content": "【多选题】题目：关于动态规划，哪些说法正确？\n选项：\nA. 满足最优子结构\nB. 可通过状态转移求解\nC. 贝尔曼方程是常见表达\nD. 不需要分阶段描述\n答案：A,B,C\n解析：动态规划通常需要阶段、状态和决策。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:f80a31de09258f23:1",
+      "source_bank": "operations_research_bank",
+      "series_code": "operations_research",
+      "matched_terms": [
+        "动态",
+        "规划"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:34abd258ff51fe55:1",
+      "v1_idx": 56,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于动态规划，哪些说法正确？",
+      "rewrite_v3": {
+        "v3_query": "动态规划这块儿，哪些讲法是对的？",
+        "rewrite_rationale": "同义替换，口语化，语义完全一致",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3846,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "针对某项服务事项已办结，然而各员工向客户传达的表述存在差异，请依据管理情境阐述你的应对措施。",
+      "golden": {
+        "chunk_id": "_default:9682c9bca9b2a2be:1",
+        "doc_sha256": "9682c9bca9b2a2be5ba158e88084410c84921b0928e077d487922daf3772526b"
+      },
+      "gt_content": "【案例分析题】题目：一个服务问题已经处理完，但不同员工给客户的说法前后不一致。请结合管理场景写出你的处理方案。\n答案：先统一处理口径，再复核记录，最后保持动作一致；同时避免各说各话，按个人习惯处理，以免客户困惑、信任下降。\n解析：案例题强调可执行方案：先定事实与边界，再安排动作和跟进。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:9682c9bca9b2a2be:1",
+      "source_bank": "service_standard_bank",
+      "series_code": "service_standard",
+      "matched_terms": [
+        "场景",
+        "处理"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:b9e930fdae163f3e:1",
+      "v1_idx": 57,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。请结合管理场景写出你的处理方案。 ",
+      "rewrite_v3": {
+        "v3_query": "针对某项服务事项已办结，然而各员工向客户传达的表述存在差异，请依据管理情境阐述你的应对措施。",
+        "rewrite_rationale": "同义替换并调整语序，语义完全一致",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.1163,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在拓扑空间里，下面哪个说法是对的？",
+      "golden": {
+        "chunk_id": "_default:769e9a3199d1cc8d:1",
+        "doc_sha256": "769e9a3199d1cc8d25f4d2f5862e3590eb1ddb0502218345188a6d81a98f5c48"
+      },
+      "gt_content": "【多选题】题目：关于拓扑空间，下列说法正确的是：\n选项：\nA. 开集族满足有限交封闭\nB. 开集族满足任意并封闭\nC. 空集和全集都属于开集\nD. 每个拓扑空间都必须来自欧氏距离\n答案：A,B,C\n解析：这是拓扑的公理性定义，和具体距离并不总是绑定。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:769e9a3199d1cc8d:1",
+      "source_bank": "geometry_and_topology_bank",
+      "series_code": "geometry_and_topology",
+      "matched_terms": [
+        "拓扑",
+        "空间"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:da8f38eb104e6d91:1",
+      "v1_idx": 58,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "关于拓扑空间，下列说法正确的是： ",
+      "rewrite_v3": {
+        "v3_query": "在拓扑空间里，下面哪个说法是对的？",
+        "rewrite_rationale": "同义替换，句式改为口语化选择问句",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在功能定位上，施工组织设计更倾向于哪一类？",
+      "golden": {
+        "chunk_id": "_default:21794203b1a3f046:1",
+        "doc_sha256": "21794203b1a3f04618ac3f15a2f09734c6a78c7be4cc71f1857573d774a49817"
+      },
+      "gt_content": "【单选题】题目：施工组织设计的作用更接近于：\n选项：\nA. 指导施工部署、资源配置和现场组织\nB. 替代所有合同文件\nC. 仅用于开工当天展示\nD. 只要口头安排即可\n答案：A\n解析：施工组织设计是施工现场管理的重要基础文件。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:21794203b1a3f046:1",
+      "source_bank": "construction_certificate_bank",
+      "series_code": "construction_certificate",
+      "matched_terms": [
+        "施工",
+        "管理",
+        "组织"
+      ],
+      "match_note": "overlap=3_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:30b05e9811fa40f5:1",
+      "v1_idx": 59,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "施工组织设计的作用更接近于： ",
+      "rewrite_v3": {
+        "v3_query": "在功能定位上，施工组织设计更倾向于哪一类？",
+        "rewrite_rationale": "同义替换作用为功能定位，更接近为更倾向，句式调整",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3846,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "页面里样式不起作用了，你一般咋查原因？",
+      "golden": {
+        "chunk_id": "_default:26268c190c7cb1e6:1",
+        "doc_sha256": "26268c190c7cb1e641ac92bf6d80e7da844ef8be5c5988902a2754fea122cdfc"
+      },
+      "gt_content": "【简答题】题目：如果样式在某个页面里失效了，你会怎么排查？\n答案：会先检查选择器优先级、样式是否被覆盖、资源是否成功加载，以及是否存在缓存或作用域隔离问题。\n解析：样式故障常常是优先级和加载顺序问题。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:26268c190c7cb1e6:1",
+      "source_bank": "frontend_development_bank",
+      "series_code": "frontend_development",
+      "matched_terms": [
+        "样式",
+        "页面"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:7bd925dd47752afc:1",
+      "v1_idx": 60,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "如果样式在某个页面里失效了，你会怎么排查？",
+      "rewrite_v3": {
+        "v3_query": "页面里样式不起作用了，你一般咋查原因？",
+        "rewrite_rationale": "同义替换，意图与限定条件不变，口语化",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.25,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "逐点收敛与一致收敛相较，一般哪一者条件更严？",
+      "golden": {
+        "chunk_id": "_default:6cf651cd290199f7:1",
+        "doc_sha256": "6cf651cd290199f75c457f154467ad248345b23e5b20ca7e21867523ebd165ea"
+      },
+      "gt_content": "【单选题】题目：函数列逐点收敛与一致收敛相比，通常更强的是：\n选项：\nA. 逐点收敛\nB. 一致收敛\nC. 二者没有区别\nD. 都不重要\n答案：B\n解析：一致收敛要求对整个区间同时控制误差，因此比逐点收敛更强。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:6cf651cd290199f7:1",
+      "source_bank": "modern_analysis_bank",
+      "series_code": "modern_analysis",
+      "matched_terms": [
+        "函数",
+        "收敛"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:fcadb9dc275ef602:1",
+      "v1_idx": 61,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "函数列逐点收敛与一致收敛相比，通常更强的是： ",
+      "rewrite_v3": {
+        "v3_query": "逐点收敛与一致收敛相较，一般哪一者条件更严？",
+        "rewrite_rationale": "换序换词，问强弱关系，语义不变",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 2,
+        "literal_overlap": 0.4,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "团队里那些顶梁柱老跑来问你该咋办，大伙儿都等着你拿主意，这时候你首先该干的是啥？",
+      "golden": {
+        "chunk_id": "_default:682badb3bfd6d413:1",
+        "doc_sha256": "682badb3bfd6d413d347b42a90bce6c1e19c7ea157bb68ac1abc1caec12ea584"
+      },
+      "gt_content": "【单选题】题目：核心骨干总是来问你怎么做，团队已经开始等你拍板。在这种情况下，最优先的做法是：\n选项：\nA. 明确决策边界后，把可决策事项交给骨干，并约定汇报节点。\nB. 事事自己拍板，团队越来越依赖\nC. 先不处理，等情况更明显再说\nD. 只口头提醒，不确认执行结果\n答案：A\n解析：授权不是放手不管，而是给边界、给资源、给反馈。。明确决策边界后，把可决策事项交给骨干，并约定汇报节点。，这样才能先控制住 负责人成长慢、管理负担过重。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:682badb3bfd6d413:1",
+      "source_bank": "leadership_growth_bank",
+      "series_code": "leadership_growth",
+      "matched_terms": [
+        "决策",
+        "反馈"
+      ],
+      "match_note": "overlap=2_margin=1",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:31981be2395401b3:1",
+      "v1_idx": 62,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "核心骨干总是来问你怎么做，团队已经开始等你拍板。在这种情况下，最优先的做法是： ",
+      "rewrite_v3": {
+        "v3_query": "团队里那些顶梁柱老跑来问你该咋办，大伙儿都等着你拿主意，这时候你首先该干的是啥？",
+        "rewrite_rationale": "同义替换骨干、拍板等词，调整语序，意图不变",
+        "relevance_self": 5,
+        "style": "口语化（像学员随口提问）",
+        "attempts": 1,
+        "literal_overlap": 0.0789,
+        "model": "strong"
+      }
+    },
+    {
+      "query": "在数学中，生成函数的一项核心功能是什么？",
+      "golden": {
+        "chunk_id": "_default:3ba736354be6c5ca:1",
+        "doc_sha256": "3ba736354be6c5ca6a4dc0a71a13af2061b5f15c03b23fb8cf418c7829dc67bf"
+      },
+      "gt_content": "【单选题】题目：生成函数的主要用途之一是：\n选项：\nA. 把组合问题转化为代数运算\nB. 替代所有图论定理\nC. 只处理概率问题\nD. 直接给出几何长度\n答案：A\n解析：生成函数能把离散计数问题变成幂级数运算。",
+      "independence": "cross",
+      "source": "question_bank->content_block",
+      "source_chunk_id": "_default:3ba736354be6c5ca:1",
+      "source_bank": "discrete_and_combinatorial_math_bank",
+      "series_code": "discrete_and_combinatorial_math",
+      "matched_terms": [
+        "函数",
+        "生成",
+        "离散"
+      ],
+      "match_note": "overlap=3_margin=2",
+      "golden_type": "content_block",
+      "v1_golden_chunk_id": "_default:9b7a49f7d4bb06cb:1",
+      "v1_idx": 63,
+      "content_match_form": "verbatim",
+      "golden_is_query_source": true,
+      "verbatim_dup_count": 1,
+      "v2_query": "生成函数的主要用途之一是： ",
+      "rewrite_v3": {
+        "v3_query": "在数学中，生成函数的一项核心功能是什么？",
+        "rewrite_rationale": "同义替换，语义完全一致，仅调整句式",
+        "relevance_self": 5,
+        "style": "正式（书面提问）",
+        "attempts": 1,
+        "literal_overlap": 0.3333,
+        "model": "strong"
+      }
+    }
+  ]
+}

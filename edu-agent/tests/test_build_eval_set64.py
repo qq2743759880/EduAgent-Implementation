@@ -532,3 +532,204 @@ def test_dedup_and_cap_works_on_v2_rows() -> None:
     rows.append(dict(rows[0], query_key="q0"))            # 重复 query
     picked, stats = m.dedup_and_cap(rows, total=64)
     assert len(picked) == 5 and stats["dup_query_dropped"] == 1
+
+
+# ==================================================================
+# V3（EVAL64V3）：query 面改写护栏——纯逻辑层单测（全部离线）
+# ==================================================================
+
+_V2Q = "关于回归分析，下列说法正确的是？"
+_V3Q = "回归分析相关的问题，哪个选项的说法是对的？"
+_REWITTEN_CONTENT = ("【多选题】题目：关于回归分析，下列说法正确的是：\n选项：\nA. 可以用于刻画变量之间的关系\n"
+                     "答案：A,C\n解析：回归既可线性也可非线性。")
+
+
+def _v2_case_for_v3() -> dict:
+    """V2 verbatim 内容块 case（golden=含 v2_query 的源块）。"""
+    return {
+        "query": _V2Q,
+        "golden": m.make_golden("_default:6ce44e88:1", _REWITTEN_CONTENT),
+        "gt_content": _REWITTEN_CONTENT,
+        "independence": "cross",
+        "source": "question_bank->content_block",
+        "source_chunk_id": "_default:6ce44e88:1",
+        "golden_type": "content_block",
+        "content_match_form": "verbatim",
+        "golden_is_query_source": True,
+    }
+
+
+def _pass_rec(v2_case: dict, v3q: str = _V3Q, relevance: int = 5) -> dict:
+    return {"idx": 0, "v2_query": v2_case["query"], "golden": v2_case["golden"],
+            "v3_query": v3q, "relevance": relevance,
+            "rewrite_rationale": "换句式换同义词", "style": "口语化",
+            "attempts": 1, "model": "deepseek-flash"}
+
+
+# ---- literal_overlap：护栏② 计量单元 ----
+def test_literal_overlap_identical_is_one() -> None:
+    assert m.literal_overlap(_V2Q, _V2Q) == 1.0
+
+
+def test_literal_overlap_disjoint_is_zero() -> None:
+    assert m.literal_overlap("线性代数矩阵", "英国文学诗歌") == 0.0
+
+
+def test_literal_overlap_partial_bounded_and_deterministic() -> None:
+    ov = m.literal_overlap("制定学期计划的方法", "学期计划制定技巧")
+    assert 0.0 < ov < 1.0
+    assert ov == m.literal_overlap("制定学期计划的方法", "学期计划制定技巧")
+    assert m.char_bigrams("ab") == {"ab"}
+    assert m.char_bigrams("a b") == {"ab"}
+
+
+# ---- 护栏 G1：双键 golden 归属不变 ----
+def test_guardrail_g1_rejects_golden_mutation() -> None:
+    v2 = _v2_case_for_v3()
+    rec = _pass_rec(v2)
+    rec["golden"] = m.make_golden("_default:mutated:9", "别的块")
+    errs = m.check_rewrite_guardrails(v2, rec)
+    assert any(e.startswith("G1") for e in errs)
+
+
+def test_guardrail_g1_passes_on_inherited_golden() -> None:
+    assert not any(e.startswith("G1") for e in
+                   m.check_rewrite_guardrails(_v2_case_for_v3(), _pass_rec(_v2_case_for_v3())))
+
+
+# ---- 护栏 G2：真改写非微调（<60%）----
+def test_guardrail_g2_rejects_light_edit() -> None:
+    v2 = _v2_case_for_v3()
+    rec = _pass_rec(v2, v3q="关于回归分析，下列哪些说法是正确的？")   # 只微调
+    errs = m.check_rewrite_guardrails(v2, rec)
+    assert any(e.startswith("G2") for e in errs)
+
+
+def test_guardrail_g2_boundary_just_under_threshold_passes() -> None:
+    # 构造 v2 10 个 bigram、保留 5 个（50% < 60% 阈值）的边界样本
+    v2q = "abcdefghijk"
+    v3q = "abcdefVWXYZ"
+    v2 = _v2_case_for_v3()
+    v2["query"] = v2q
+    rec = _pass_rec(v2, v3q=v3q)
+    errs = m.check_rewrite_guardrails(v2, rec)
+    assert m.literal_overlap(v2q, v3q) == 0.5
+    assert not any(e.startswith("G2") for e in errs)
+
+
+def test_guardrail_g2_rejects_at_threshold() -> None:
+    v2q = "abcdefghijk"
+    v3q = "abcdefgVWXY"         # 6/10 = 60% 恰在阈值 → 拒（<60% 才过）
+    v2 = _v2_case_for_v3()
+    v2["query"] = v2q
+    rec = _pass_rec(v2, v3q=v3q)
+    errs = m.check_rewrite_guardrails(v2, rec)
+    assert m.literal_overlap(v2q, v3q) == 0.6
+    assert any(e.startswith("G2") for e in errs)
+
+
+# ---- 护栏 G3：LLM 自评相关性 ≥4/5 ----
+def test_guardrail_g3_rejects_low_relevance() -> None:
+    errs = m.check_rewrite_guardrails(_v2_case_for_v3(), _pass_rec(_v2_case_for_v3(), relevance=3))
+    assert any(e.startswith("G3") for e in errs)
+    errs_bad = m.check_rewrite_guardrails(_v2_case_for_v3(),
+                                          _pass_rec(_v2_case_for_v3(), relevance="5"))
+    assert any(e.startswith("G3") for e in errs_bad)   # 非整数自评 = 非法
+
+
+def test_guardrail_g3_passes_at_floor() -> None:
+    errs = m.check_rewrite_guardrails(_v2_case_for_v3(), _pass_rec(_v2_case_for_v3(), relevance=4))
+    assert not any(e.startswith("G3") for e in errs)
+
+
+# ---- 护栏 G4：长度 ±50% + 非空非全同 ----
+def test_guardrail_g4_rejects_length_drift() -> None:
+    v2 = _v2_case_for_v3()
+    errs = m.check_rewrite_guardrails(v2, _pass_rec(v2, v3q="回归" + "很长" * 30))   # 超长
+    assert any(e.startswith("G4") for e in errs)
+    errs2 = m.check_rewrite_guardrails(v2, _pass_rec(v2, v3q="回归对不对"))          # 过短
+    assert any(e.startswith("G4") for e in errs2)
+
+
+def test_guardrail_g4_rejects_empty_or_identical() -> None:
+    v2 = _v2_case_for_v3()
+    assert any(e.startswith("G4") for e in m.check_rewrite_guardrails(v2, _pass_rec(v2, v3q="  ")))
+    assert any("全同" in e for e in m.check_rewrite_guardrails(v2, _pass_rec(v2, v3q=v2["query"])))
+
+
+def test_guardrails_all_pass_for_good_rewrite() -> None:
+    assert m.check_rewrite_guardrails(_v2_case_for_v3(), _pass_rec(_v2_case_for_v3())) == []
+
+
+# ---- assemble_v3_case + validate_case_v3 ----
+def test_assemble_v3_case_swaps_query_keeps_golden_bitwise() -> None:
+    v2 = _v2_case_for_v3()
+    rec = _pass_rec(v2)
+    case = m.assemble_v3_case(v2, rec)
+    assert case["query"] == _V3Q
+    assert case["v2_query"] == v2["query"]
+    assert case["golden"] == v2["golden"]                    # golden 逐位不变
+    assert case["gt_content"] == v2["gt_content"]
+    assert case["rewrite_v3"]["literal_overlap"] == m.literal_overlap(v2["query"], _V3Q)
+    assert m.validate_case_v3(case) == []
+
+
+def test_validate_v3_relaxes_w3_substring_claim() -> None:
+    # V3 的核心差异：改写 query 不再是 golden 子串——V2 的 W3 断言必须豁免（按设计反转）
+    case = m.assemble_v3_case(_v2_case_for_v3(), _pass_rec(_v2_case_for_v3()))
+    assert not m.norm_text(case["query"]) in m.norm_text(case["gt_content"])
+    assert m.validate_case_v2(case)      # V2 规则下必挂 W3（对照）
+    assert [e for e in m.validate_case_v3(case) if e.startswith("W3")] == []
+
+
+def test_validate_v3_rejects_fake_rewrite_still_substring() -> None:
+    # W3' 反向不变量：改写后仍逐字落在 golden 里 = 假改写
+    v2 = _v2_case_for_v3()
+    rec = _pass_rec(v2, v3q="回归分析")            # 恰为 golden 内容子串
+    case = m.assemble_v3_case(v2, rec)
+    errs = m.validate_case_v3(case)
+    assert any(e.startswith("W3'") for e in errs)
+
+
+def test_validate_v3_keeps_v2_double_key_and_w_rules() -> None:
+    v2 = _v2_case_for_v3()
+    case = m.assemble_v3_case(v2, _pass_rec(v2))
+    case["golden"]["doc_sha256"] = "0" * 64        # 双键失配仍拒
+    assert any(e.startswith("V2") for e in m.validate_case_v3(case))
+    case2 = m.assemble_v3_case(v2, _pass_rec(v2))
+    case2["content_match_form"] = "vibes"          # W2 仍拒
+    assert any(e.startswith("W2") for e in m.validate_case_v3(case2))
+    case3 = m.assemble_v3_case(v2, _pass_rec(v2))
+    del case3["v2_query"]                          # V3 溯源缺失拒
+    assert any("v2_query" in e for e in m.validate_case_v3(case3))
+
+
+def test_validate_v3_requires_rewrite_rationale() -> None:
+    v2 = _v2_case_for_v3()
+    case = m.assemble_v3_case(v2, _pass_rec(v2))
+    case["rewrite_v3"]["rewrite_rationale"] = ""
+    assert any("rewrite_rationale" in e for e in m.validate_case_v3(case))
+
+
+# ---- _parse_rewrite_json：LLM 输出解析（容错围码/杂文本）----
+def test_parse_rewrite_json_tolerates_code_fence() -> None:
+    raw = '```json\n{"v3_query": "回归分析里哪个说法对？", "relevance": 5, "rationale": "换问式"}\n```'
+    obj = m._parse_rewrite_json(raw)
+    assert obj is not None and obj["relevance"] == 5 and obj["v3_query"].startswith("回归")
+    obj2 = m._parse_rewrite_json('前言 {"v3_query": "q 句", "relevance": 4, "rationale": "r"} 后记')
+    assert obj2 is not None and obj2["v3_query"] == "q 句"
+
+
+def test_parse_rewrite_json_rejects_bad_fields() -> None:
+    assert m._parse_rewrite_json("没有 JSON") is None
+    assert m._parse_rewrite_json('{"v3_query": "", "relevance": 5}') is None
+    assert m._parse_rewrite_json('{"v3_query": "q", "relevance": 9}') is None
+    assert m._parse_rewrite_json('{"v3_query": "q", "relevance": "5"}') is None
+
+
+# ---- rewrite prompt：禁新实体/风格轮换由 prompt 承载（此处验证回炉反馈注入）----
+def test_rewrite_prompt_includes_violation_feedback() -> None:
+    p1 = m._v3_rewrite_prompt("原句", "口语化")
+    assert "原问句：原句" in p1 and "口语化" in p1 and "严禁引入原句没有的实体" in p1
+    p2 = m._v3_rewrite_prompt("原句", "正式", ["G2 字面重叠 90% >= 60%"], '{"v3_query": "抄写"}')
+    assert "G2" in p2 and "抄写" in p2       # 回炉反馈进 prompt

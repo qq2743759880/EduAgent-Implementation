@@ -38,11 +38,16 @@ GPU 争用降级：EMBED_BACKEND=cpu 进程级环境变量启动本脚本即可�
   .venv/Scripts/python.exe scripts/eval/build_eval_set64.py --mode measure --tag r22_base_run1
   .venv/Scripts/python.exe scripts/eval/build_eval_set64.py --mode measure --tag r22_base_run2
   .venv/Scripts/python.exe scripts/eval/build_eval_set64.py --mode measure --tag r22_graded10 --graded
+  .venv/Scripts/python.exe -X utf8 scripts/eval/build_eval_set64.py --mode rewritev3   # V3: LLM 改写 64 query
+  .venv/Scripts/python.exe scripts/eval/build_eval_set64.py --mode buildv3            # V3: 护栏建集（活体 golden 复核）
 
 产物：
   scripts/eval/data/r22_eval_set64.json        64 条去圆环评估集（independence 溯源+双键 golden）
   scripts/eval/data/r22_runs/<tag>.json        逐次测量 per_query 全量
   scripts/eval/data/r22_position_measure.json  头寸汇总（分布+95% CI+分级指标+结论）
+  scripts/eval/data/r64v3_rewrite_records.json V3 LLM 改写记录（护栏回炉/剔除计数留痕）
+  scripts/eval/data/r64v3_eval_set64.json      V3 集（golden 不变，query 改写面）
+  scripts/eval/data/r64v3_runs/<tag>.json      V3 测量 per_query 全量（--set r64v3 集时）
 """
 from __future__ import annotations
 
@@ -120,6 +125,19 @@ V2_SET_PATH = os.path.join(DATA_DIR, "r64v2_eval_set64.json")
 V2_RUNS_DIR = os.path.join(DATA_DIR, "r64v2_runs")
 V2_CONTRACT_PATH = os.path.join(os.path.dirname(BASE_DIR), "contracts", "rag-baseline-eval64-v2.json")
 V2_CHANGE_ORDER = "contracts/ChangeOrder-eval64v2-golden-form.md"
+
+# ============================================================
+# V3（EVAL64V3，承接 EVAL64V2 P0-①）：query 面改写——「同义不同形」
+# V2 尺 0.9844 贴天花板根因=golden 取自 query 源块（子串保底乐观）。
+# V3 用 LLM 把 64 条 query 改写成同义不同形（golden 不变），创造真实 headroom。
+# ============================================================
+V3_SET_PATH = os.path.join(DATA_DIR, "r64v3_eval_set64.json")
+V3_REWRITE_PATH = os.path.join(DATA_DIR, "r64v3_rewrite_records.json")
+V3_RUNS_DIR = os.path.join(DATA_DIR, "r64v3_runs")
+V3_OVERLAP_MAX = 0.60     # 护栏②：v3 对 v2 字面重叠上限（真改写非微调）
+V3_RELEVANCE_MIN = 4      # 护栏③：LLM 自评语义相关度下限（1-5）
+V3_REWRITE_RETRY = 2      # 回炉上限（不含首改）；仍违规则剔除计数，不凑数
+V3_LENGTH_RATIO = 0.50    # 长度变化上限（±50%，任务书口径）
 
 
 # ============================================================
@@ -464,6 +482,105 @@ def assert_type_distribution(cases: list[dict],
             f"（{V2_CHANGE_ORDER} §2.3）→ 拒绝落盘，先上报编排者")
     return {"content_block": cb, "module_card": n - cb,
             "content_block_ratio": round(ratio, 4), "min_ratio": min_ratio}
+
+
+# ============================================================
+# V3 纯逻辑层（EVAL64V3；全部离线可单测，LLM 调用只在 rewritev3，Milvus 只在 buildv3）
+# ============================================================
+
+def char_bigrams(text: str) -> set:
+    """字面重叠计量单元：去空白后的字符 2-gram 集合（长度<2 退化为单字集）。
+
+    中文 query 无分词歧义，字符 bigram 对「换句式/换同义词」敏感且确定性。"""
+    t = re.sub(r"\s+", "", str(text or ""))
+    if len(t) < 2:
+        return set(t)
+    return {t[i:i + 2] for i in range(len(t) - 1)}
+
+
+def literal_overlap(v2_query: str, v3_query: str) -> float:
+    """护栏② 计量：v2 面 bigram 保留率 = |B2∩B3| / |B2|。
+
+    分母取 v2——衡量改写保留了多少原句面形：1.0=逐字抄（假改写），0=完全换形。"""
+    b2, b3 = char_bigrams(v2_query), char_bigrams(v3_query)
+    if not b2:
+        return 1.0 if not b3 else 0.0
+    return round(len(b2 & b3) / len(b2), 4)
+
+
+def check_rewrite_guardrails(v2_case: dict, rec: dict, *,
+                             overlap_max: float = V3_OVERLAP_MAX,
+                             relevance_min: int = V3_RELEVANCE_MIN,
+                             length_ratio: float = V3_LENGTH_RATIO) -> list:
+    """EVAL64V3 改写护栏（纯逻辑）。返回违规列表（空=通过）。
+
+    G1 双键 golden 归属不变：rec.golden 与 v2 case golden 逐键相等
+       （chunk_id + doc_sha256 全等——query 改写不得改变 golden 归属）。
+    G2 真改写非微调：literal_overlap(v2, v3) < overlap_max。
+    G3 LLM 自评语义相关度 ≥ relevance_min（1-5）。
+    G4 长度 ±length_ratio 内（任务书口径）且 ≥ QUERY_MIN_LEN（V5 同口径）；
+       空串/与原句全同亦拒。
+    """
+    errs: list = []
+    v2q = str(v2_case.get("query") or "")
+    v3q = str(rec.get("v3_query") or "").strip()
+    if (rec.get("golden") or {}) != (v2_case.get("golden") or {}):
+        errs.append("G1 golden 双键与 V2 不等（归属被改写）")
+    if not v3q or v3q == v2q:
+        errs.append("G4 v3_query 为空或与原句全同")
+    else:
+        ov = literal_overlap(v2q, v3q)
+        if ov >= overlap_max:
+            errs.append(f"G2 字面重叠 {ov:.2%} >= {overlap_max:.0%}（微调非改写）")
+        lo, hi = max(1, round(len(v2q) * (1 - length_ratio))), \
+            max(1, round(len(v2q) * (1 + length_ratio)))
+        if not (lo <= len(v3q) <= hi) or len(v3q) < QUERY_MIN_LEN:
+            errs.append(f"G4 长度 {len(v3q)} 越界 [{max(lo, QUERY_MIN_LEN)},{hi}]（±50%）")
+    rel = rec.get("relevance")
+    if not isinstance(rel, int) or isinstance(rel, bool) or not (1 <= rel <= 5):
+        errs.append(f"G3 relevance 非法: {rel!r}")
+    elif rel < relevance_min:
+        errs.append(f"G3 自评相关度 {rel} < {relevance_min}")
+    return errs
+
+
+def assemble_v3_case(v2_case: dict, rec: dict) -> dict:
+    """V2 case（provenance/golden 全继承，golden 逐位不变）+ 改写记录 → V3 case。
+
+    query 换成 v3_query；v2_query 与改写元数据留痕；golden/gt_content 双键零改动。"""
+    case = dict(v2_case)
+    case["query"] = str(rec["v3_query"])
+    case["v2_query"] = str(v2_case["query"])
+    case["rewrite_v3"] = {
+        "v3_query": str(rec["v3_query"]),
+        "rewrite_rationale": str(rec.get("rewrite_rationale") or ""),
+        "relevance_self": rec.get("relevance"),
+        "style": rec.get("style"),
+        "attempts": rec.get("attempts"),
+        "literal_overlap": literal_overlap(str(v2_case["query"]), str(rec["v3_query"])),
+        "model": rec.get("model"),
+    }
+    return case
+
+
+def validate_case_v3(case: dict, *, source_content: str | None = None) -> list:
+    """V3 校验：V2 全规则，唯 W3 子串断言按 V3 语义反转。
+
+    - W3 豁免：改写问句按设计不再是 golden 子串（V3 的目的即脱子串代理）。
+    - W3'（反向不变量）：verbatim 形态下 norm(v3_query) 仍 ⊆ norm(gt_content)
+      = 假改写（子串代理税未破），拒绝。
+    - V3 溯源：必带 v2_query；W1/W2/W4/W5/V1/V2/V5 与 validate_case_v2 同语义。"""
+    errs = [e for e in validate_case_v2(case, source_content=source_content)
+            if not e.startswith("W3 verbatim 声明不成立")]
+    gt = str(case.get("gt_content") or "")
+    q = str(case.get("query") or "")
+    if gt and q and norm_text(q) in norm_text(gt):
+        errs.append("W3' v3 query 仍是 golden 子串（假改写，子串代理税未破）")
+    if not case.get("v2_query"):
+        errs.append("V3 缺 v2_query（面继承溯源）")
+    if not (case.get("rewrite_v3") or {}).get("rewrite_rationale"):
+        errs.append("V3 缺 rewrite_rationale（改写理由留痕）")
+    return errs
 
 
 # ============================================================
@@ -1062,9 +1179,11 @@ def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict
     from app.config import settings
     from app.knowledge.importer.embedder import encode_dense_batch, ensure_jieba_ready
 
-    # V1 缺省行为不变（OUT_SET_PATH + RUNS_DIR）；--set 指定 V2 集时走 V2 runs 目录
+    # V1 缺省行为不变（OUT_SET_PATH + RUNS_DIR）；--set 指定 V2/V3 集时按前缀路由 runs 目录
     eval_set_path = set_path or OUT_SET_PATH
-    runs_dir = V2_RUNS_DIR if set_path else RUNS_DIR
+    runs_dir = RUNS_DIR
+    if set_path:
+        runs_dir = V3_RUNS_DIR if os.path.basename(set_path).startswith("r64v3") else V2_RUNS_DIR
     with open(eval_set_path, encoding="utf-8") as f:
         cases = json.load(f)["cases"]
     ensure_jieba_ready()
@@ -1320,6 +1439,252 @@ def freeze_v2(run_tags: list[str]) -> None:
 
 
 # ============================================================
+# V3 改写（EVAL64V3 任务①）：LLM 逐条改写 query（deepseek-flash，非流式 thinking disabled）
+# ============================================================
+
+V3_REWRITE_MODEL = "strong"   # LLM_MODEL_STRONG=deepseek-flash（.env），call_chat 非流式路径统一注入 thinking=disabled
+V3_REWRITE_TEMPERATURE = 0.3
+V3_REWRITE_MAX_TOKENS = 400
+V3_REWRITE_TIMEOUT = 90.0
+
+
+def _v3_rewrite_prompt(v2_query: str, style: str,
+                       violations: list | None = None, prev_raw: str | None = None) -> str:
+    """改写 prompt：同义不同形；禁新实体；长度 ±50%；风格按索引确定轮换（口语/正式混合）。"""
+    p = (
+        "你是检索评估集的问句改写器。把下面的问句改写成「同义不同形」的新问句：\n"
+        "1. 语义与原问句完全相同：提问意图、限定条件、所问内容都不得增减；\n"
+        "2. 严禁引入原句没有的实体、专有名词、数字或选项内容；\n"
+        "3. 必须换句式/换同义词/调整语序，与原句的字面重叠越低越好（真改写，不是微调）；\n"
+        "4. 长度在原句的 ±50% 以内；\n"
+        f"5. 风格要求：{style}。\n"
+        "输出只含一个 JSON 对象，不要任何解释或代码块标记：\n"
+        '{"v3_query": "改写后的问句", "relevance": <1-5 整数，改写与原问句的语义相关度自评>, '
+        '"rationale": "不超过30字的改写理由"}\n\n'
+        f"原问句：{v2_query}"
+    )
+    if violations:
+        p += (f"\n\n你上一次的改写未通过自动校验：{';'.join(violations)}。"
+              f"上次输出：{str(prev_raw or '')[:300]}\n请修正问题后重新只输出 JSON。")
+    return p
+
+
+def _parse_rewrite_json(raw: str) -> dict | None:
+    """解析 LLM 输出（容忍 ```json 围码/前后杂文本）；字段非法返回 None。"""
+    t = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(raw or "").strip(), flags=re.S).strip()
+    m = re.search(r"\{.*\}", t, flags=re.S)
+    if not m:
+        return None
+    try:
+        obj = json.loads(m.group(0))
+    except ValueError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    q = str(obj.get("v3_query") or "").strip()
+    rel = obj.get("relevance")
+    if not q or isinstance(rel, bool) or not isinstance(rel, int) or not (1 <= rel <= 5):
+        return None
+    return {"v3_query": q[:QUERY_MAX_LEN * 2], "relevance": rel,
+            "rewrite_rationale": str(obj.get("rationale") or "")[:200]}
+
+
+def rewrite_v3(in_set: str = V2_SET_PATH, limit: int | None = None) -> dict:
+    """任务①：64 条 query 逐条 LLM 改写 → data/r64v3_rewrite_records.json。
+
+    每条 {idx, v2_query, v3_query, relevance, rewrite_rationale, golden(继承自 V2),
+    status(pass|violation|failed), violations, attempts, style, model}。
+    防退化护栏在落记录前先跑（回炉：violation 反馈进 prompt 重改，≤V3_REWRITE_RETRY 次）；
+    仍违规定格 violation（buildv3 剔除计数，不凑数）；LLM 调用异常重试由
+    call_chat_with_retry 承担，穷尽后标 failed。断点续跑：已有记录按 idx 跳过。
+    脱敏：记录与日志零密钥（key 只在进程内 settings）。"""
+    from app.chat.generator import _ChatClient
+
+    t0 = time.perf_counter()
+    with open(in_set, encoding="utf-8") as f:
+        cases = json.load(f)["cases"]
+    done: dict = {}
+    if os.path.exists(V3_REWRITE_PATH):  # 断点续跑
+        with open(V3_REWRITE_PATH, encoding="utf-8") as f:
+            done = {r["idx"]: r for r in json.load(f)["records"]}
+        print(f"[rewritev3] 续跑：已有 {len(done)} 条记录")
+    client = _ChatClient.get()
+    n_total = len(cases) if limit is None else min(limit, len(cases))
+    records: list = list(done.values())
+    for idx in range(n_total):
+        if idx in done:
+            continue
+        vc = cases[idx]
+        style = "口语化（像学员随口提问）" if idx % 2 == 0 else "正式（书面提问）"
+        violations: list = []
+        prev_raw = None
+        rec = None
+        for attempt in range(1 + V3_REWRITE_RETRY):
+            try:
+                raw = client.call_chat_with_retry(
+                    messages=[{"role": "user",
+                               "content": _v3_rewrite_prompt(vc["query"], style, violations, prev_raw)}],
+                    model=V3_REWRITE_MODEL, temperature=V3_REWRITE_TEMPERATURE,
+                    max_tokens=V3_REWRITE_MAX_TOKENS, timeout=V3_REWRITE_TIMEOUT)
+            except Exception as exc:  # noqa: BLE001  LLM 穷尽失败：标 failed 计数（截断脱敏）
+                rec = {"idx": idx, "v2_query": vc["query"], "golden": vc["golden"],
+                       "status": "failed", "violations": [f"llm_error:{type(exc).__name__}"],
+                       "attempts": attempt + 1, "style": style, "model": V3_REWRITE_MODEL}
+                print(f"[rewritev3] {idx + 1}/{n_total} FAILED {type(exc).__name__}", flush=True)
+                break
+            parsed = _parse_rewrite_json(raw)
+            if parsed is None:
+                violations, prev_raw = ["json_parse_failed"], raw
+                continue
+            cand = {"idx": idx, "v2_query": vc["query"], "golden": vc["golden"], **parsed,
+                    "style": style, "attempts": attempt + 1, "model": V3_REWRITE_MODEL}
+            violations = check_rewrite_guardrails(vc, cand)
+            if not violations:
+                rec = {**cand, "status": "pass"}
+                print(f"[rewritev3] {idx + 1}/{n_total} pass ov={literal_overlap(vc['query'], parsed['v3_query']):.0%} "
+                      f"rel={parsed['relevance']} att={attempt + 1}", flush=True)
+                break
+            violations, prev_raw = violations, raw   # 回炉：违规反馈进下一轮 prompt
+        if rec is None:
+            rec = {"idx": idx, "v2_query": vc["query"], "golden": vc["golden"],
+                   "status": "violation", "violations": violations,
+                   "attempts": 1 + V3_REWRITE_RETRY, "style": style, "model": V3_REWRITE_MODEL}
+            print(f"[rewritev3] {idx + 1}/{n_total} violation: {violations}", flush=True)
+        records.append(rec)
+        records.sort(key=lambda r: r["idx"])
+        if (idx + 1) % 8 == 0 or idx + 1 == n_total:  # 检查点：每 8 条落盘（限速/中断保护）
+            _dump_v3_records(records, n_total)
+    summary = _dump_v3_records(records, n_total)
+    print(f"[rewritev3] DONE {summary} wall={round(time.perf_counter() - t0, 1)}s → {V3_REWRITE_PATH}")
+    return summary
+
+
+def _dump_v3_records(records: list, n_total: int) -> dict:
+    summary = {"n_expected": n_total, "n": len(records),
+               "pass": sum(1 for r in records if r["status"] == "pass"),
+               "violation": sum(1 for r in records if r["status"] == "violation"),
+               "failed": sum(1 for r in records if r["status"] == "failed")}
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "in_set": os.path.relpath(V2_SET_PATH, BASE_DIR).replace("\\", "/"),
+        "rewrite_mode": ("llm_rewrite_query_face（同义不同形；golden 冻结不变；"
+                         "护栏 G1/G2/G3/G4 回炉≤2 后剔除计数不凑数）"),
+        "model": V3_REWRITE_MODEL,
+        "thinking": "disabled（call_chat 非流式统一注入）",
+        "temperature": V3_REWRITE_TEMPERATURE,
+        "guardrails": {"overlap_max": V3_OVERLAP_MAX, "relevance_min": V3_RELEVANCE_MIN,
+                       "length_ratio": V3_LENGTH_RATIO, "retries": V3_REWRITE_RETRY},
+        "summary": summary,
+        "records": records,
+    }
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(V3_REWRITE_PATH, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    return summary
+
+
+# ============================================================
+# V3 建集（EVAL64V3 任务②③）：护栏校验 + golden 活体归属检查 → r64v3 评估集
+# ============================================================
+
+async def build_v3(in_set: str = V2_SET_PATH, rewrite_path: str = V3_REWRITE_PATH) -> None:
+    """V3 建集：V2 冻结集 + 改写记录 → data/r64v3_eval_set64.json。
+
+    纪律：golden/gt_content/provenance 逐位继承（golden 不变，只换 query 面）；
+    case 顺序=V2 文件顺序（剔除条空缺不补位，不凑数）；护栏三条全部复检 +
+    Milvus 活体 golden 归属检查（内容 sha 漂移即剔除——防语料再入库漂移带入测量）。
+    """
+    t0 = time.perf_counter()
+    with open(in_set, encoding="utf-8") as f:
+        v2 = json.load(f)
+    v2_cases: list = v2["cases"]
+    with open(rewrite_path, encoding="utf-8") as f:
+        recs = {r["idx"]: r for r in json.load(f)["records"]}
+
+    passed = [i for i in range(len(v2_cases)) if recs.get(i, {}).get("status") == "pass"]
+    # ---- 活体 golden 归属检查（护栏①的语料侧：双键解析在当前 Milvus 上仍成立）----
+    from app.knowledge.importer.loader import COLLECTION_NAME, get_milvus_client
+
+    client = get_milvus_client()
+    assert COLLECTION_NAME in [str(c) for c in client.list_collections()], "Milvus 缺 edu_knowledge"
+    content_map = _milvus_content_map(client, COLLECTION_NAME,
+                                      [v2_cases[i]["golden"]["chunk_id"] for i in passed])
+    cases: list = []
+    dropped: list = []
+    for i in passed:
+        vc, rec = v2_cases[i], recs[i]
+        gid = vc["golden"]["chunk_id"]
+        cur = content_map.get(gid)
+        if cur is None:
+            dropped.append({"idx": i, "reason": "golden_not_in_milvus", "chunk_id": gid})
+            continue
+        if sha256_utf8(cur) != vc["golden"]["doc_sha256"]:
+            dropped.append({"idx": i, "reason": "golden_content_drift", "chunk_id": gid})
+            continue
+        if rec["v2_query"] != vc["query"]:
+            dropped.append({"idx": i, "reason": "v2_query_mismatch_vs_v2_set"})
+            continue
+        case = assemble_v3_case(vc, rec)
+        errs = validate_case_v3(case)
+        if errs:
+            dropped.append({"idx": i, "reason": "validate_failed", "errors": errs})
+            continue
+        cases.append(case)
+    n = len(v2_cases)
+    dropped_pre = n - len(passed)
+    floor = math.ceil(RESOLVE_RATIO_FLOOR * n)
+    below_floor = len(cases) < floor
+
+    git_rev = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                             cwd=BASE_DIR).stdout.strip()
+    meta = {
+        "builder": "build_eval_set64.py --mode buildv3",
+        "purpose": ("EVAL64V3（承接 EVAL64V2 P0-①）：V2 尺贴天花板根因=golden 取自 query 源块"
+                    "（子串保底乐观）。V3 改写 query 面（同义不同形），golden 不变——"
+                    "创造真实 headroom，让检索质量差异可测量"),
+        "built_at": datetime.now(timezone.utc).isoformat(),
+        "git_rev": git_rev,
+        "in_set": {"file": os.path.relpath(in_set, BASE_DIR).replace("\\", "/"),
+                   "n": n, "sha256": None, "builder": v2.get("meta", {}).get("builder")},
+        "rewrite_records": os.path.relpath(rewrite_path, BASE_DIR).replace("\\", "/"),
+        "query_face_policy": ("LLM 改写（deepseek-flash，thinking disabled，温度"
+                              f"{V3_REWRITE_TEMPERATURE}，风格口语/正式按 idx 轮换）；"
+                              "golden/gt_content/provenance 逐位继承；case 顺序=V2 文件顺序"),
+        "n_cases": len(cases),
+        "guardrail_stats": {
+            "in_v2": n,
+            "rewrite_pass": len(passed),
+            "dropped_rewrite_violation": sum(1 for r in recs.values() if r["status"] == "violation"),
+            "dropped_rewrite_failed": sum(1 for r in recs.values() if r["status"] == "failed"),
+            "dropped_build_stage": len(dropped),
+            "dropped_detail": dropped,
+            "final": len(cases),
+            "floor": floor,
+            "below_floor": below_floor,
+            "no_padding": "剔除条不补位不凑数",
+        },
+        "golden_double_key": ["chunk_id", "doc_sha256(sha256(gt_content utf-8))"],
+        "golden_inheritance": "golden/gt_content 与 V2 集逐位相同（建集时活体 sha 复核）",
+        "anti_circle_invariants": [
+            "V3 query 面由 LLM 改写，禁与 v2_query 字面重叠 ≥60%（护栏②）",
+            "W3' 反向不变量：v3 query 不得仍是 golden 子串（假改写拒绝）",
+            "G1：golden 双键与 V2 集逐键相等（query 改写不得改变 golden 归属）",
+        ],
+        "wall_seconds": round(time.perf_counter() - t0, 1),
+    }
+    out = {"meta": meta, "cases": cases}
+    with open(V3_SET_PATH, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    print(f"[buildv3] in={n} pass={len(passed)} final={len(cases)} dropped_build={len(dropped)} "
+          f"(violation={meta['guardrail_stats']['dropped_rewrite_violation']}"
+          f" failed={meta['guardrail_stats']['dropped_rewrite_failed']}) → {V3_SET_PATH}")
+    if below_floor:
+        print(f"[buildv3] ⚠ final {len(cases)} < floor {floor}（90% 地板）——如实落盘并在报告标注，"
+              "先上报编排者，不凑数")
+    print(f"[buildv3] wall={meta['wall_seconds']}s")
+
+
+# ============================================================
 # 抽检：5 条 golden 人读判定（3 manual + 2 cross，确定性）
 # ============================================================
 
@@ -1424,19 +1789,23 @@ def recallprobe() -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="R22 去圆环评估集构造 + 头寸测量（+V2 golden 形态重铸 CO-EVAL64V2-001）")
+    ap = argparse.ArgumentParser(description="R22 去圆环评估集构造 + 头寸测量"
+                                             "（+V2 golden 形态重铸 CO-EVAL64V2-001 +V3 query 面改写 EVAL64V3）")
     ap.add_argument("--mode", required=True,
                     choices=["build", "measure", "position", "spotcheck", "recallprobe",
-                             "buildv2", "freezev2"])
+                             "buildv2", "freezev2", "rewritev3", "buildv3"])
     ap.add_argument("--tag", default="run")
     ap.add_argument("--limit", type=int, default=64)
     ap.add_argument("--manual-n", type=int, default=40)
     ap.add_argument("--graded", action="store_true", help="measure 用分级窗口 top_k=final_max_k=10")
     ap.add_argument("--runs", nargs="*", help="position/freezev2 模式: 参与汇总的 run tags")
     ap.add_argument("--graded-tag", default=None, help="position 模式: 分级窗口 run tag")
-    ap.add_argument("--in-set", default=None, help="buildv2: V1 集路径（默认 V1 冻结集 r22_eval_set64.json）")
+    ap.add_argument("--in-set", default=None,
+                    help="buildv2: V1 集路径（默认 V1 冻结集）；rewritev3/buildv3: V2 集路径"
+                         "（默认 V2 冻结集 r64v2_eval_set64.json）")
     ap.add_argument("--set", dest="set_path", default=None,
-                    help="measure: 评估集路径（缺省=V1 集不变；指定 V2 集时产物落 r64v2_runs/）")
+                    help="measure: 评估集路径（缺省=V1 集不变；V2 集落 r64v2_runs/；"
+                         "r64v3* 前缀集落 r64v3_runs/）")
     args = ap.parse_args()
 
     if args.mode == "build":
@@ -1444,6 +1813,12 @@ def main() -> int:
         return 0
     if args.mode == "buildv2":
         asyncio.run(build_v2(args.in_set or V1_SET_PATH))
+        return 0
+    if args.mode == "rewritev3":
+        rewrite_v3(args.in_set or V2_SET_PATH, limit=args.limit)
+        return 0
+    if args.mode == "buildv3":
+        asyncio.run(build_v3(args.in_set or V2_SET_PATH))
         return 0
     if args.mode == "measure":
         measure(args.tag, args.graded, args.set_path)
