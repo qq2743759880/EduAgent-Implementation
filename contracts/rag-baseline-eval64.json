@@ -1,0 +1,81 @@
+{
+  "plan_id": "reshape-r-eval64",
+  "frozen_at": "2026-09-19T03:57:15.659040+00:00",
+  "git_rev": "601bdcd1d7c5fd1938591167e1b06a81590fd3ad",
+  "draft": false,
+  "frozen_by": "W-NEXT-R23-001（scripts/eval/r23_freeze_eval64.py）",
+  "eval_set": {
+    "file": "edu-agent/scripts/eval/data/r22_eval_set64.json",
+    "n": 64,
+    "seed": 20260918,
+    "independence_split": {
+      "manual": 1,
+      "cross": 63
+    },
+    "golden_double_key": [
+      "chunk_id",
+      "doc_sha256(sha256(gt_content utf-8))"
+    ],
+    "builder": "build_eval_set64.py --mode build（R22 去圆环集，本轮禁改）"
+  },
+  "params": {
+    "recall_topk": 150,
+    "rerank_topk": 20,
+    "final_max_k": 5,
+    "cutoff_drop_ratio": 0.4,
+    "use_hyde": false,
+    "enable_graph": true,
+    "nprobe": 10,
+    "rrf_k": 60,
+    "embed_backend": "cuda",
+    "rerank_sidecar": "http://127.0.0.1:8601",
+    "role": "student",
+    "top_k": 5,
+    "rerank_cliff_v2": false
+  },
+  "baseline": {
+    "tag": "r23_base_run1",
+    "n": 64,
+    "top_k": 5,
+    "hit_rate@5": 0.0312,
+    "mrr@5": 0.0195,
+    "runs_reference": [
+      "edu-agent/scripts/eval/data/r22_runs/r23_base_run1.json",
+      "edu-agent/scripts/eval/data/r22_runs/r23_base_run2.json"
+    ],
+    "cliff_behavior": {
+      "final_docs_dist": {
+        "2": 28,
+        "3": 1,
+        "4": 1,
+        "5": 34
+      },
+      "final_docs2_queries": 28,
+      "note": "断崖 cutoff_drop_ratio=0.4 在 rerank 分数集中时激进收缩（R22 Crit-S4 登记，R23 修复对象）"
+    }
+  },
+  "thresholds": {
+    "RAG_EVAL_HIT_RATE_MIN": 0.0112,
+    "RAG_EVAL_MRR_MIN": -0.0005,
+    "rule": "基线-0.02（独立尺持续回归下限）; R23 一次性修复爬升目标 hit_rate@5>=0.10 为任务门禁非持续阈值; 头寸口径裁定权在编排者（R22 批判承接）"
+  },
+  "metric_scope": "实时端到端检索链(retriever.retrieve_three_channel 全链: 召回150→rerank20→断崖→top5), 禁止在冻结 candidates 上算指标",
+  "determinism_check": {
+    "runs": [
+      "r23_base_run1",
+      "r23_base_run2"
+    ],
+    "hit_rate_equal": true,
+    "mrr_equal": true,
+    "per_query_identical": true,
+    "cross_generation_reproducible": true,
+    "cross_generation_ref": "data/r22_runs/r22_base_run1.json（R22 pre-fix 首跑，同集同参逐位全同）"
+  },
+  "attribution_reference": {
+    "recall_layer_probe": "edu-agent/scripts/eval/data/r22_recall_layer_probe.json",
+    "recall_layer": "golden 在召回 top150 内 49/63=77.8%（median rank 35）→ 瓶颈在 rerank+断崖层非召回层（R22 实测）",
+    "graded10": "top_k=10 分级窗 hit@10=0.0469（data/r22_runs/r22_graded10.json）"
+  },
+  "ruler_note": "本契约=去圆环独立尺（R23 起 RAG 门禁独立尺），eval32 圆环尺（rag-baseline-eval32.json）保留作旧路径一致性对照，两尺并行禁互相换算",
+  "id_map_note": "R03 迁移须输出 old→new chunk_id id_map 落盘; golden 双键中 doc_sha256 为迁移后解析兜底键"
+}

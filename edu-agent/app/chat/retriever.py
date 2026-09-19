@@ -678,10 +678,25 @@ async def _rerank_docs(query: str, docs: list[RetrievedDoc]) -> tuple[list[Retri
 
 # ============================================================
 # 7. 断崖截断（相邻分数跌幅 > cutoff_drop_ratio 即截断，且最终不超过 final_max_k）
+#
+#   R23（W-NEXT-R23-001）V2 自适应断崖（灰度开关 RERANK_CLIFF_V2，默认 False =
+#   V1 现行行为逐位不变；达标开启由编排者/用户裁定，不静默改生产行为）：
+#     V1 缺陷（R22 S-4 + R23 probe 实证，data/r23_runs/r23_cliff_probe_probe64.json）：
+#     min-max 归一恒使 top1=1.0，相对跌幅 (prev-cur)/prev 在首步被系统性放大
+#     （如 [1.0, 0.595, ...] 首步 40.5%>40% 即斩），28/64 query 收缩至 2 docs；
+#     golden 在 rerank top5 的 5 条中 3 条被 V1 斩落（0.0312 vs 窗口上限 0.0781）。
+#     V2=绝对分下限断崖（按本轮分数分布自适应：分数已经全候选池 min-max 归一，
+#     低于 floor 即为本轮分布内的真断崖）：score < floor 触发，边缘条保留后停
+#     （与 V1「断点边缘条计入」同语义）；top1 恒保、上限仍 final_max_k（契约冻结，
+#     只改"在 ≤5 窗口内选得更准"，不改返回数量上限、不改排序、不改分数）。
+#     实测（eval64/eval32 双集 probe 离线网格 + 实测复跑，见 R23 报告）：
+#     eval64 hit@5 0.0312→0.0781（+150%），eval32 0.9688 逐位不变。
 # ============================================================
 def _cliff_cutoff(docs: list[RetrievedDoc], *, final_max_k: int, drop_ratio: float) -> list[RetrievedDoc]:
     if not docs:
         return docs
+    if getattr(settings, "RERANK_CLIFF_V2", False):
+        return _cliff_cutoff_v2(docs, final_max_k=final_max_k)
     truncated: list[RetrievedDoc] = [docs[0]]
     for i in range(1, len(docs)):
         prev_score = truncated[-1].score
@@ -694,6 +709,31 @@ def _cliff_cutoff(docs: list[RetrievedDoc], *, final_max_k: int, drop_ratio: flo
         if len(truncated) >= final_max_k:
             break
     return truncated[:final_max_k]
+
+
+def _cliff_cutoff_v2(docs: list[RetrievedDoc], *, final_max_k: int) -> list[RetrievedDoc]:
+    """R23 V2：绝对分下限断崖（灰度 RERANK_CLIFF_V2）。
+
+    floor 取本轮归一分绝对下限（RERANK_CLIFF_V2_SCORE_FLOOR，默认 0.30——0~1 归一
+    尺上 0=全候选池最差，0.3 即"显著高于本轮池底"；grid 实测 0.30 为 eval64/eval32
+    双集最优折中，见 scripts/eval/r23_cliff_probe.py 与 R23 报告）。
+    断点边缘条保留后停（与 V1 同语义）；top1 恒保；上限 final_max_k 不变。
+    """
+    floor = float(getattr(settings, "RERANK_CLIFF_V2_SCORE_FLOOR", 0.30) or 0.0)
+    if not docs:
+        return docs
+    truncated: list[RetrievedDoc] = [docs[0]]
+    for i in range(1, len(docs)):
+        if docs[i].score < floor:
+            # 断崖：边缘条计入（与 V1 同语义）后停
+            truncated.append(docs[i])
+            break
+        truncated.append(docs[i])
+        if len(truncated) >= final_max_k:
+            break
+    kept = truncated[:final_max_k]
+    logger.info(f"[retrieval-profile] cliff-v2 floor={floor:.2f} kept={len(kept)}/{len(docs)}")
+    return kept
 
 
 # ============================================================
