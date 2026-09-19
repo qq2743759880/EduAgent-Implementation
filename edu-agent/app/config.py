@@ -676,10 +676,12 @@ class Settings(BaseSettings):
     RETRIEVER_RERANK_TOPK: int = 20            # rerank 后保留 top-n 再断崖
     # R23 断崖 V2（灰度开关，默认 False=V1 现行相对断崖逐位不变；开启由编排者/用户裁定）
     #   V1 缺陷：min-max 归一恒使 top1=1.0，相对跌幅首步被系统性放大 → 28/64 query 收缩至 2 docs；
-    #   V2=绝对分下限断崖（score<floor 触发，边缘条保留后停；top1 恒保、final_max_k 上限不变）。
-    #   实测：eval64 hit@5 0.0312→0.0781（窗口上限=golden 落 rerank top5 比例 5/64），eval32 0.9688 不变。
+    #   V2=本轮 top20 分位下限（score<分位值即停；top1 恒保、final_max_k 上限不变；
+    #   q≥0.25 时 ≤5 窗口内等效 cap 补满——golden 保全优先，probe 实测达窗口上限）。
+    #   实测（编排者复跑 probe）：quant 0.5/0.6/0.7 平台=0.0781（+150%），eval32 0.9688 不变；
+    #   WIP v2a 绝对分 0.30 仅 0.0625——弃用。
     RERANK_CLIFF_V2: bool = False
-    RERANK_CLIFF_V2_SCORE_FLOOR: float = 0.30  # 归一分绝对下限（0=本轮全候选池最差；grid 实测 0.30 双集最优折中）
+    RERANK_CLIFF_V2_QUANT: float = 0.60  # top20 归一分分位下限（0.5~0.7 平台最优中位；probe 实测）
     # course_public 保留分区：课程知识隔离用户上传（GWT③），检索期排除下列 content_type 防促销/班次混入
     COURSE_PUBLIC_PARTITION: str = "course_public"
     RETRIEVER_EXCLUDE_CONTENT_TYPES: tuple[str, ...] = (

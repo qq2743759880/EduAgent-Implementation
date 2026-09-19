@@ -679,18 +679,22 @@ async def _rerank_docs(query: str, docs: list[RetrievedDoc]) -> tuple[list[Retri
 # ============================================================
 # 7. 断崖截断（相邻分数跌幅 > cutoff_drop_ratio 即截断，且最终不超过 final_max_k）
 #
-#   R23（W-NEXT-R23-001）V2 自适应断崖（灰度开关 RERANK_CLIFF_V2，默认 False =
+#   R23（W-NEXT-R23-001）V2 分位断崖（灰度开关 RERANK_CLIFF_V2，默认 False =
 #   V1 现行行为逐位不变；达标开启由编排者/用户裁定，不静默改生产行为）：
-#     V1 缺陷（R22 S-4 + R23 probe 实证，data/r23_runs/r23_cliff_probe_probe64.json）：
-#     min-max 归一恒使 top1=1.0，相对跌幅 (prev-cur)/prev 在首步被系统性放大
-#     （如 [1.0, 0.595, ...] 首步 40.5%>40% 即斩），28/64 query 收缩至 2 docs；
-#     golden 在 rerank top5 的 5 条中 3 条被 V1 斩落（0.0312 vs 窗口上限 0.0781）。
-#     V2=绝对分下限断崖（按本轮分数分布自适应：分数已经全候选池 min-max 归一，
-#     低于 floor 即为本轮分布内的真断崖）：score < floor 触发，边缘条保留后停
-#     （与 V1「断点边缘条计入」同语义）；top1 恒保、上限仍 final_max_k（契约冻结，
-#     只改"在 ≤5 窗口内选得更准"，不改返回数量上限、不改排序、不改分数）。
-#     实测（eval64/eval32 双集 probe 离线网格 + 实测复跑，见 R23 报告）：
-#     eval64 hit@5 0.0312→0.0781（+150%），eval32 0.9688 逐位不变。
+#     V1 缺陷（R22 S-4 + R23 probe 实证）：min-max 归一恒使 top1=1.0，相对跌幅
+#     (prev-cur)/prev 首步被系统性放大（[1.0,0.595,...] 首步 40.5%>40% 即斩），
+#     28/64 query 收缩至 2 docs；golden 在 rerank top5 的 5 条中 3 条被 V1 斩落
+#     （0.0312 vs ≤5 窗口上限 0.0781=5/64）。
+#     V2=本轮分数分布分位下限（接手者定稿；编排者亲跑 probe 网格实证）：
+#     floor=top20 归一分的 RERANK_CLIFF_V2_QUANT 分位值，score<floor 即停
+#     （低于分位线的边缘条不保留——与 probe keep_quantile 逐位一致）；top1 恒保、
+#     上限仍 final_max_k=5（契约口径不变，不改排序/分数）。
+#     语义诚实登记：q≥0.25 时 floor≤top5 全体——≤5 窗口内 V2 退化为「cap 补满」，
+#     断崖裁剪权让位于 golden 保全（V1 危害 3/5 golden 被斩的实证支撑此取舍；
+#     垃圾分布防护仍在 rerank_topk=20 段与 top1 恒保）。
+#     实测（编排者独立复跑 r23_cliff_probe.py，eval64 基线 0.0312）：
+#     quant 0.5/0.6/0.7 平台=0.0781（=窗口上限，+150%），eval32 0.9688 逐位不变；
+#     WIP 原 v2a 绝对分下限 0.30 仅 0.0625（4/64）——弃用。
 # ============================================================
 def _cliff_cutoff(docs: list[RetrievedDoc], *, final_max_k: int, drop_ratio: float) -> list[RetrievedDoc]:
     if not docs:
@@ -712,27 +716,26 @@ def _cliff_cutoff(docs: list[RetrievedDoc], *, final_max_k: int, drop_ratio: flo
 
 
 def _cliff_cutoff_v2(docs: list[RetrievedDoc], *, final_max_k: int) -> list[RetrievedDoc]:
-    """R23 V2：绝对分下限断崖（灰度 RERANK_CLIFF_V2）。
+    """R23 V2：本轮分数分布分位下限断崖（灰度 RERANK_CLIFF_V2）。
 
-    floor 取本轮归一分绝对下限（RERANK_CLIFF_V2_SCORE_FLOOR，默认 0.30——0~1 归一
-    尺上 0=全候选池最差，0.3 即"显著高于本轮池底"；grid 实测 0.30 为 eval64/eval32
-    双集最优折中，见 scripts/eval/r23_cliff_probe.py 与 R23 报告）。
-    断点边缘条保留后停（与 V1 同语义）；top1 恒保；上限 final_max_k 不变。
+    floor=top20 归一分的 RERANK_CLIFF_V2_QUANT 分位值（默认 0.60——probe 实测
+    0.5/0.6/0.7 平台均达 ≤5 窗口上限 0.0781，取平台中位；见 scripts/eval/r23_cliff_probe.py
+    与 R23 报告）。score<floor 即停（低于分位线的边缘条不保留，与 probe keep_quantile
+    逐位一致）；top1 恒保；上限 final_max_k 不变。q≥0.25 时 ≤5 窗口内等效 cap 补满
+    （诚实语义，见上方块注释）。
     """
-    floor = float(getattr(settings, "RERANK_CLIFF_V2_SCORE_FLOOR", 0.30) or 0.0)
     if not docs:
         return docs
+    q = float(getattr(settings, "RERANK_CLIFF_V2_QUANT", 0.60) or 0.0)
+    xs = sorted(d.score for d in docs)
+    floor = xs[min(int(q * len(xs)), len(xs) - 1)]
     truncated: list[RetrievedDoc] = [docs[0]]
-    for i in range(1, len(docs)):
-        if docs[i].score < floor:
-            # 断崖：边缘条计入（与 V1 同语义）后停
-            truncated.append(docs[i])
+    for d in docs[1:]:
+        if d.score < floor or len(truncated) >= final_max_k:
             break
-        truncated.append(docs[i])
-        if len(truncated) >= final_max_k:
-            break
+        truncated.append(d)
     kept = truncated[:final_max_k]
-    logger.info(f"[retrieval-profile] cliff-v2 floor={floor:.2f} kept={len(kept)}/{len(docs)}")
+    logger.info(f"[retrieval-profile] cliff-v2 quant={q:.2f} floor={floor:.3f} kept={len(kept)}/{len(docs)}")
     return kept
 
 
