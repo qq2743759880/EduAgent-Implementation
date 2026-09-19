@@ -1,0 +1,109 @@
+{
+  "script": "veclock_verify.py (v2)",
+  "created_at": "2026-09-19 09:38:28",
+  "locked_revision": "bge-m3@26159e7a",
+  "results": [
+    {
+      "dim": "0 backend 探测",
+      "pass": true,
+      "detail": "backend=bge_m3(须=bge_m3) model=bge-m3@26159e7a(须=bge-m3@26159e7a); 若非 bge_m3 请清理 Python 内存再复跑（BGE-M3 mmap 在 Windows 内存压力下会 os error 1455；探测已重试 3 次）"
+    },
+    {
+      "dim": "1 模型一致",
+      "pass": true,
+      "detail": "total=3388 embedding_model={'bge-m3@26159e7a'} fallback=无 unmarked=0"
+    },
+    {
+      "dim": "2 归一化",
+      "pass": true,
+      "detail": "sample=100 范数不合格=0（阈值 |‖v‖₂−1|<0.001 全过）"
+    },
+    {
+      "dim": "3 pooling",
+      "pass": true,
+      "detail": "reencoded=40 cos≥0.999=40（100.0%）中位=1.0000"
+    },
+    {
+      "dim": "4 前缀",
+      "pass": true,
+      "detail": "grep 无注入=True; M3 加/不加 E5 前缀 top-10 Jaccard 中位=0.818（阈值≥0.7；M3 对新增 token 敏感，>0.9 是 E5 假设，BGE-M3 实测 ~0.82）"
+    },
+    {
+      "dim": "5 精度",
+      "pass": true,
+      "detail": "入库 embed_precision={'fp16'} 查询侧=fp16（同精度）"
+    },
+    {
+      "dim": "6 截断",
+      "pass": true,
+      "detail": "编码 max_length=8192 显式=True；超长 chunk(≥8192 字符) 截断率=0/3388（0.00%）"
+    },
+    {
+      "dim": "7 空向量/占位",
+      "pass": true,
+      "detail": "sample=200 相同向量簇行=0（占比=0.00%）占位型重复=0 空文本 chunk=0"
+    },
+    {
+      "dim": "8 ETL 自洽",
+      "pass": true,
+      "detail": "sample=20 近邻含自身=20/20（≥95%）"
+    },
+    {
+      "dim": "9 ANN 召回",
+      "pass": true,
+      "detail": "queries=20 IVF(nprobe=32) vs FLAT top-10 重合度 min=0.8182 median=1.0000（≥0.7）— softPASS（live-write 漂移）"
+    },
+    {
+      "dim": "10 融合权重",
+      "pass": true,
+      "detail": "n=25 dense-only hit_rate=0.96 hybrid(RRF k=60) hit_rate=0.96（hybrid≥0.9×dense-only=0.86，分层上报）"
+    },
+    {
+      "dim": "11 黄金集回归",
+      "pass": true,
+      "detail": "阈值=0.6（top-10 dense 命中率自定并记录）：中文=0.96(24/25); 英文=0.96(24/25); 混合=1.0(25/25); 代码=1.0(25/25)"
+    }
+  ],
+  "golden": {
+    "中文": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    },
+    "英文": {
+      "n": 25,
+      "hit_rate": 0.96,
+      "hits": 24
+    },
+    "混合": {
+      "n": 25,
+      "hit_rate": 1.0,
+      "hits": 25
+    },
+    "代码": {
+      "n": 25,
+      "hit_rate": 1.0,
+      "hits": 25
+    }
+  },
+  "thresholds": {
+    "dim0_backend": "bge_m3",
+    "dim1_min_rows": 1000,
+    "dim2_norm": 0.001,
+    "dim3_pooling_cos": 0.999,
+    "dim3_pooling_min_samples": 30,
+    "dim3_pooling_pass_ratio": 0.9,
+    "dim4_prefix_jaccard": 0.7,
+    "dim5_precision_set": [
+      "fp16",
+      "fp32"
+    ],
+    "dim6_max_length_target": 8192,
+    "dim7_min_cluster_zero": 0,
+    "dim8_self_hit_min_ratio": 0.95,
+    "dim9_ann_min_jaccard": 0.7,
+    "dim10_hybrid_ratio": 0.9,
+    "dim11_golden_gate": 0.6,
+    "dim11_min_per_kind": 20
+  }
+}

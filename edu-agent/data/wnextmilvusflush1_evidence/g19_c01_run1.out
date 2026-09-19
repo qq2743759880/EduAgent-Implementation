@@ -1,0 +1,20 @@
+[32m09:36:46[0m | [1mINFO    [0m | [36mapp.common.logging[0m:[36msetup_logging[0m:[36m95[0m | [1m日志系统已初始化，级别: DEBUG，目录: logs[0m
+[veclock] 锁定模型 revision = bge-m3@26159e7a
+[32m09:37:15[0m | [1mINFO    [0m | [36mapp.knowledge.importer.embedder[0m:[36m_get_bge_model[0m:[36m223[0m | [1mBGE-M3 本地模型已加载：E:\stu\ai-models\bge-m3（device=cuda）[0m
+[veclock] PASS  0 backend 探测: backend=bge_m3(须=bge_m3) model=bge-m3@26159e7a(须=bge-m3@26159e7a); 若非 bge_m3 请清理 Python 内存再复跑（BGE-M3 mmap 在 Windows 内存压力下会 os error 1455；探测已重试 3 次）
+[veclock] PASS  1 模型一致: total=3388 embedding_model={'bge-m3@26159e7a'} fallback=无 unmarked=0
+[veclock] PASS  2 归一化: sample=100 范数不合格=0（阈值 |‖v‖₂−1|<0.001 全过）
+[veclock] PASS  3 pooling: reencoded=40 cos≥0.999=40（100.0%）中位=1.0000
+[veclock] PASS  4 前缀: grep 无注入=True; M3 加/不加 E5 前缀 top-10 Jaccard 中位=0.818（阈值≥0.7；M3 对新增 token 敏感，>0.9 是 E5 假设，BGE-M3 实测 ~0.82）
+[veclock] PASS  5 精度: 入库 embed_precision={'fp16'} 查询侧=fp16（同精度）
+[veclock] PASS  6 截断: 编码 max_length=8192 显式=True；超长 chunk(≥8192 字符) 截断率=0/3388（0.00%）
+[veclock] PASS  7 空向量/占位: sample=200 相同向量簇行=0（占比=0.00%）占位型重复=0 空文本 chunk=0
+[veclock] PASS  8 ETL 自洽: sample=20 近邻含自身=20/20（≥95%）
+[veclock] PASS  9 ANN 召回: queries=20 IVF(nprobe=32) vs FLAT top-10 重合度 min=0.8182 median=1.0000（≥0.7）— softPASS（live-write 漂移）
+[32m09:37:50[0m | [1mINFO    [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m159[0m | [1mjieba 自定义词典已加载：data\custom_dict.txt[0m
+[32m09:37:50[0m | [34m[1mDEBUG   [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m174[0m | [34m[1m停用词加载完成，共 348 条[0m
+[veclock] PASS  10 融合权重: n=25 dense-only hit_rate=0.96 hybrid(RRF k=60) hit_rate=0.96（hybrid≥0.9×dense-only=0.86，分层上报）
+[veclock] PASS  11 黄金集回归: 阈值=0.6（top-10 dense 命中率自定并记录）：中文=0.96(24/25); 英文=0.96(24/25); 混合=1.0(25/25); 代码=1.0(25/25)
+
+[veclock] 汇总：12/12 PASS
+[veclock] 报告 → data/wnextmilvusflush1_evidence/g19_c01_run1.json

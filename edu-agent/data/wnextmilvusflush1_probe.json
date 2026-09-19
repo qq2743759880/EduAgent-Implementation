@@ -1,0 +1,868 @@
+{
+  "meta": {
+    "server_version": "pkg/v2.5.5",
+    "collection": "edu_knowledge",
+    "partitions": [
+      "_default",
+      "course_public",
+      "user_1",
+      "user_100003"
+    ],
+    "consistency_level": "Bounded",
+    "auto_id": false,
+    "enable_dynamic_field": true,
+    "num_shards": 1,
+    "milvus_uri": "http://192.168.85.101:19530",
+    "generated_at": "2026-09-19 09:33:56",
+    "readonly_guarantee": "仅 describe/list/stats/query/get，无 flush/compact/load/release/insert/delete/upsert"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "epoch": 1789781629.3058517,
+      "stats_row_count": 3399,
+      "count_star_empty": 3398,
+      "count_star_id_ge0": 3398,
+      "enumerate_id_ge0": 3388,
+      "id_min": 684284,
+      "id_max": 4294555907,
+      "ids_sha12": "4ed85d1555af",
+      "enumerate_with_chunk_id": 3388,
+      "enumerate_strong": 3388,
+      "strong_ids_sha12": "4ed85d1555af",
+      "paginate_walk_total": 3388,
+      "paginate_same_set": true,
+      "partitions": [
+        {
+          "partition": "_default",
+          "stats_row_count": 3374,
+          "stats_err": null,
+          "count_star": 3373,
+          "enumerate": 3373,
+          "stats_minus_count": 1,
+          "created_at_min": "2026-09-15T08:48:26.676273+00:00",
+          "created_at_max": "2026-09-17T00:24:25.878730"
+        },
+        {
+          "partition": "course_public",
+          "stats_row_count": 0,
+          "stats_err": null,
+          "count_star": 0,
+          "enumerate": 0,
+          "stats_minus_count": 0,
+          "created_at_min": null,
+          "created_at_max": null
+        },
+        {
+          "partition": "user_1",
+          "stats_row_count": 19,
+          "stats_err": null,
+          "count_star": 19,
+          "enumerate": 19,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T15:05:36.389269",
+          "created_at_max": "2026-09-16T20:44:41.385396"
+        },
+        {
+          "partition": "user_100003",
+          "stats_row_count": 6,
+          "stats_err": null,
+          "count_star": 6,
+          "enumerate": 6,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T22:15:49.407677",
+          "created_at_max": "2026-09-16T22:15:49.407677"
+        }
+      ],
+      "partitions_count_sum": 3398,
+      "partitions_enumerate_sum": 3398,
+      "partitions_stats_minus_count_sum": 1,
+      "segments": {
+        "persistent": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "4": 3399
+          },
+          "segments_by_state": {
+            "4": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469112185157310641,
+              "state": "4",
+              "num_rows": 6,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469112185157309433,
+              "state": "4",
+              "num_rows": 19,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469147958198690135,
+              "state": "4",
+              "num_rows": 3374,
+              "partition_id": null
+            }
+          ]
+        },
+        "loaded": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "3": 3399
+          },
+          "segments_by_state": {
+            "3": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469147958198690135,
+              "state": "3",
+              "num_rows": 3374,
+              "partition_id": 468842384127141446
+            },
+            {
+              "segment_id": 469112185157309433,
+              "state": "3",
+              "num_rows": 19,
+              "partition_id": 469112185157042431
+            },
+            {
+              "segment_id": 469112185157310641,
+              "state": "3",
+              "num_rows": 6,
+              "partition_id": 469112185157292292
+            }
+          ]
+        }
+      },
+      "elapsed_s": 0.65
+    },
+    {
+      "round": 2,
+      "epoch": 1789781635.3442535,
+      "stats_row_count": 3399,
+      "count_star_empty": 3398,
+      "count_star_id_ge0": 3398,
+      "enumerate_id_ge0": 3388,
+      "id_min": 684284,
+      "id_max": 4294555907,
+      "ids_sha12": "4ed85d1555af",
+      "enumerate_with_chunk_id": 3388,
+      "enumerate_strong": 3388,
+      "strong_ids_sha12": "4ed85d1555af",
+      "paginate_walk_total": 3388,
+      "paginate_same_set": true,
+      "partitions": [
+        {
+          "partition": "_default",
+          "stats_row_count": 3374,
+          "stats_err": null,
+          "count_star": 3373,
+          "enumerate": 3373,
+          "stats_minus_count": 1,
+          "created_at_min": "2026-09-15T08:48:26.676273+00:00",
+          "created_at_max": "2026-09-17T00:24:25.878730"
+        },
+        {
+          "partition": "course_public",
+          "stats_row_count": 0,
+          "stats_err": null,
+          "count_star": 0,
+          "enumerate": 0,
+          "stats_minus_count": 0,
+          "created_at_min": null,
+          "created_at_max": null
+        },
+        {
+          "partition": "user_1",
+          "stats_row_count": 19,
+          "stats_err": null,
+          "count_star": 19,
+          "enumerate": 19,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T15:05:36.389269",
+          "created_at_max": "2026-09-16T20:44:41.385396"
+        },
+        {
+          "partition": "user_100003",
+          "stats_row_count": 6,
+          "stats_err": null,
+          "count_star": 6,
+          "enumerate": 6,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T22:15:49.407677",
+          "created_at_max": "2026-09-16T22:15:49.407677"
+        }
+      ],
+      "partitions_count_sum": 3398,
+      "partitions_enumerate_sum": 3398,
+      "partitions_stats_minus_count_sum": 1,
+      "segments": {
+        "persistent": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "4": 3399
+          },
+          "segments_by_state": {
+            "4": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469112185157310641,
+              "state": "4",
+              "num_rows": 6,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469112185157309433,
+              "state": "4",
+              "num_rows": 19,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469147958198690135,
+              "state": "4",
+              "num_rows": 3374,
+              "partition_id": null
+            }
+          ]
+        },
+        "loaded": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "3": 3399
+          },
+          "segments_by_state": {
+            "3": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469112185157310641,
+              "state": "3",
+              "num_rows": 6,
+              "partition_id": 469112185157292292
+            },
+            {
+              "segment_id": 469147958198690135,
+              "state": "3",
+              "num_rows": 3374,
+              "partition_id": 468842384127141446
+            },
+            {
+              "segment_id": 469112185157309433,
+              "state": "3",
+              "num_rows": 19,
+              "partition_id": 469112185157042431
+            }
+          ]
+        }
+      },
+      "elapsed_s": 0.7
+    },
+    {
+      "round": 3,
+      "epoch": 1789781636.0458374,
+      "stats_row_count": 3399,
+      "count_star_empty": 3398,
+      "count_star_id_ge0": 3398,
+      "enumerate_id_ge0": 3388,
+      "id_min": 684284,
+      "id_max": 4294555907,
+      "ids_sha12": "4ed85d1555af",
+      "enumerate_with_chunk_id": 3388,
+      "enumerate_strong": 3388,
+      "strong_ids_sha12": "4ed85d1555af",
+      "paginate_walk_total": 3388,
+      "paginate_same_set": true,
+      "partitions": [
+        {
+          "partition": "_default",
+          "stats_row_count": 3374,
+          "stats_err": null,
+          "count_star": 3373,
+          "enumerate": 3373,
+          "stats_minus_count": 1,
+          "created_at_min": "2026-09-15T08:48:26.676273+00:00",
+          "created_at_max": "2026-09-17T00:24:25.878730"
+        },
+        {
+          "partition": "course_public",
+          "stats_row_count": 0,
+          "stats_err": null,
+          "count_star": 0,
+          "enumerate": 0,
+          "stats_minus_count": 0,
+          "created_at_min": null,
+          "created_at_max": null
+        },
+        {
+          "partition": "user_1",
+          "stats_row_count": 19,
+          "stats_err": null,
+          "count_star": 19,
+          "enumerate": 19,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T15:05:36.389269",
+          "created_at_max": "2026-09-16T20:44:41.385396"
+        },
+        {
+          "partition": "user_100003",
+          "stats_row_count": 6,
+          "stats_err": null,
+          "count_star": 6,
+          "enumerate": 6,
+          "stats_minus_count": 0,
+          "created_at_min": "2026-09-16T22:15:49.407677",
+          "created_at_max": "2026-09-16T22:15:49.407677"
+        }
+      ],
+      "partitions_count_sum": 3398,
+      "partitions_enumerate_sum": 3398,
+      "partitions_stats_minus_count_sum": 1,
+      "segments": {
+        "persistent": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "4": 3399
+          },
+          "segments_by_state": {
+            "4": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469112185157310641,
+              "state": "4",
+              "num_rows": 6,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469112185157309433,
+              "state": "4",
+              "num_rows": 19,
+              "partition_id": null
+            },
+            {
+              "segment_id": 469147958198690135,
+              "state": "4",
+              "num_rows": 3374,
+              "partition_id": null
+            }
+          ]
+        },
+        "loaded": {
+          "segments": 3,
+          "sum_rows": 3399,
+          "rows_by_state": {
+            "3": 3399
+          },
+          "segments_by_state": {
+            "3": 3
+          },
+          "all_segments": [
+            {
+              "segment_id": 469112185157309433,
+              "state": "3",
+              "num_rows": 19,
+              "partition_id": 469112185157042431
+            },
+            {
+              "segment_id": 469112185157310641,
+              "state": "3",
+              "num_rows": 6,
+              "partition_id": 469112185157292292
+            },
+            {
+              "segment_id": 469147958198690135,
+              "state": "3",
+              "num_rows": 3374,
+              "partition_id": 468842384127141446
+            }
+          ]
+        }
+      },
+      "elapsed_s": 0.61
+    }
+  ],
+  "rowdiff": {
+    "diff_ids": [
+      {
+        "id": 19587845,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 19587845,
+            "chunk_id": "user_1:adb078bf3017153b:1"
+          }
+        ]
+      },
+      {
+        "id": 145339617,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 145339617,
+            "chunk_id": "user_1:4de91c9271c8776e:1"
+          }
+        ]
+      },
+      {
+        "id": 279813836,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 279813836,
+            "chunk_id": "user_1:883a713149a5ffac:1"
+          }
+        ]
+      },
+      {
+        "id": 816417878,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 816417878,
+            "chunk_id": "user_1:5e3af34d5be116a6:1"
+          }
+        ]
+      },
+      {
+        "id": 1302561580,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 1302561580,
+            "chunk_id": "user_1:cb08341c978d7b44:1"
+          }
+        ]
+      },
+      {
+        "id": 1329293447,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 1329293447,
+            "chunk_id": "user_1:fde38d918b965d8a:1"
+          }
+        ]
+      },
+      {
+        "id": 1711174363,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 1711174363,
+            "chunk_id": "user_1:c9d42d9459cdef8c:1"
+          }
+        ]
+      },
+      {
+        "id": 2409068295,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 2409068295,
+            "chunk_id": "user_1:46a2087225dadebf:1"
+          }
+        ]
+      },
+      {
+        "id": 3339387773,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 3339387773,
+            "chunk_id": "user_1:090d075a32d33ed5:1"
+          }
+        ]
+      },
+      {
+        "id": 3600661124,
+        "count_in_range": 2,
+        "count_eq": 2,
+        "query_eq": 1,
+        "get_eq": 1,
+        "query_rows": [
+          {
+            "id": 3600661124,
+            "chunk_id": "user_1:13b00159ab5de394:1"
+          }
+        ]
+      }
+    ],
+    "anomalies": [],
+    "dc_probes": 579,
+    "elapsed_s": 4.96,
+    "present_total": 3388,
+    "attribution": [
+      {
+        "id": 19587845,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 19587845,
+                "chunk_id": "user_1:adb078bf3017153b:1",
+                "tenant_id": "user_1",
+                "source_file": "c56769527306.md",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "source_file": "c56769527306.md",
+                "id": 19587845,
+                "chunk_id": "user_1:adb078bf3017153b:1",
+                "tenant_id": "user_1",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 145339617,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "source_file": "fdc227fb0884.md",
+                "id": 145339617,
+                "chunk_id": "user_1:4de91c9271c8776e:1",
+                "tenant_id": "user_1",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 145339617,
+                "chunk_id": "user_1:4de91c9271c8776e:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 279813836,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 279813836,
+                "chunk_id": "user_1:883a713149a5ffac:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 279813836,
+                "chunk_id": "user_1:883a713149a5ffac:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 816417878,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "source_file": "fdc227fb0884.md",
+                "id": 816417878,
+                "chunk_id": "user_1:5e3af34d5be116a6:1",
+                "tenant_id": "user_1",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "id": 816417878,
+                "chunk_id": "user_1:5e3af34d5be116a6:1",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 1302561580,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "chunk_id": "user_1:cb08341c978d7b44:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "id": 1302561580,
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "chunk_id": "user_1:cb08341c978d7b44:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "id": 1302561580,
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 1329293447,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 1329293447,
+                "chunk_id": "user_1:fde38d918b965d8a:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 1329293447,
+                "chunk_id": "user_1:fde38d918b965d8a:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 1711174363,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 1711174363,
+                "chunk_id": "user_1:c9d42d9459cdef8c:1",
+                "tenant_id": "user_1",
+                "source_file": "c56769527306.md",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 1711174363,
+                "chunk_id": "user_1:c9d42d9459cdef8c:1",
+                "tenant_id": "user_1",
+                "source_file": "c56769527306.md",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 2409068295,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 2409068295,
+                "chunk_id": "user_1:46a2087225dadebf:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 2409068295,
+                "chunk_id": "user_1:46a2087225dadebf:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 3339387773,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 3339387773,
+                "chunk_id": "user_1:090d075a32d33ed5:1",
+                "tenant_id": "user_1",
+                "source_file": "c56769527306.md",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "id": 3339387773,
+                "chunk_id": "user_1:090d075a32d33ed5:1",
+                "tenant_id": "user_1",
+                "source_file": "c56769527306.md",
+                "created_at": "2026-09-16T16:06:25.069304"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      },
+      {
+        "id": 3600661124,
+        "per_partition": [
+          {
+            "partition": "_default",
+            "count": 1,
+            "rows": [
+              {
+                "id": 3600661124,
+                "chunk_id": "user_1:13b00159ab5de394:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          },
+          {
+            "partition": "user_1",
+            "count": 1,
+            "rows": [
+              {
+                "chunk_id": "user_1:13b00159ab5de394:1",
+                "tenant_id": "user_1",
+                "source_file": "fdc227fb0884.md",
+                "id": 3600661124,
+                "created_at": "2026-09-16T15:05:36.389269"
+              }
+            ]
+          }
+        ],
+        "copies_total": 2
+      }
+    ]
+  },
+  "verdict": {
+    "status": "INCONSISTENT",
+    "count_enumerate_gap": 10,
+    "stats_count_gap": 1,
+    "hypothesis_scores": {
+      "true_ghost_unreadable": false,
+      "cross_partition_duplicate_pk": true,
+      "deleted_rows_pending_compaction": true,
+      "growing_unsealed_rows": false,
+      "field_absent_filter": false,
+      "bounded_snapshot_lag": false,
+      "concurrent_write_window": false
+    },
+    "dominant_hypothesis": "cross_partition_duplicate_pk（同 PK 跨分区双副本：整表枚举按 PK reduce 去重返回最新副本，count(*) 数物理副本；upsert 只 tombstone 目标分区故旧副本存活；flush 不消除——正常语义差）"
+  }
+}
