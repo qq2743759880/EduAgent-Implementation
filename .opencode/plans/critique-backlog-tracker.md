@@ -618,3 +618,10 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 结果：V2 分位断崖（quant 0.60 灰度默认关）eval64 hit@5 0.0312→0.0781（+150%，=rerank-top5 结构上限 5/64 达成率 100%）；eval32 0.9688 零回归。
 - 新瓶颈移交：R24 候选=rerank 排名质量（golden top5 内 5/64、top20 内 21.9%）；RERANK_CLIFF_V2 开启裁定待用户（达标已证默认仍关）。
 - 审核 [P2]×2 登记：收口 commit 号表述（实体=818b83d）；候选不足 20 时分位线窗内截断已被宽分布单测覆盖。
+
+## R24 销项登记（2026-09-19/20，编排者首段 0f42b4e + agent 收口 82d046d/5594b96 两段式）
+- **关键修正（活体成对分析推翻首段结论）**：rerank 非主瓶颈——49 条双命中成对迁移净提升 30:18（median Δ=-9 位）；新瓶颈重定位=①golden 形态（89% 为 course_module 路由卡，worst10 全部 recall miss 且 top1=逐字原题块 score1.0 含答案——eval64 实测的是「问句→模块路由」与 RAG 内容寻回目标错配，属 contracts 冻结面移交变更单）②召回侧（cover 49/64 median 34，15 条 miss）。
+- 三候选全未达标（数字如实登记，无开启建议）：窗 20→50 逐位 identical（无操作实证）/HyDE 0/39 rank 变动/sparse70 +1 边际（dense-heavy 崩溃 13/64 反证路由卡仅稀疏可达）。
+- R12 judge 补验完成：30/30 判定（eq12/neq18/failed0）；口径限制=old 侧 429 降级规则答案+200 字符 head，60% not_eq 不可归因新路径。
+- V2 开启活体增益：grid rrf_k60_base hit@5=0.0469（V1 时代 0.0312 的 +50%）。
+- 移交：评测集 golden 形态变更单（路由卡 vs 内容块口径，contracts 层）；R25 候选=召回侧质量（15 miss + median 34 靠后）。
