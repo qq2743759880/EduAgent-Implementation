@@ -612,3 +612,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 2. **R23 检索门禁=独立尺**——contracts/rag-baseline-eval64.json 以 R22 实测 0.0312 为 pre-fix 基线冻结，R23 目标=独立 GT 爬升；旧圆环尺仅作不回归参考。
 3. **可选卫生项立项**：r03b guard 校准方案 B（逐分区对拍）+ _default 10 冗余副本清理（走数据软删三核闸变更单）。
 4. **reshape-b 语义归位**：后续变更单（支付端点从 reshape-b 迁 reshape-r-health G3_trade_payment）。
+
+## R23 销项登记（2026-09-19）
+- W-NEXT-R23-001 断崖修复闭环：编排者亲执行（子 agent 三连败转自执行+反向审核新规首例）——审核 PASS 7/7（独立审核 agent 逐项复现：报告 vs 代码逐句符/三 commit 红线零触碰/12 单测实跑绿/eval64+eval32 探针与契约三方互证）。
+- 结果：V2 分位断崖（quant 0.60 灰度默认关）eval64 hit@5 0.0312→0.0781（+150%，=rerank-top5 结构上限 5/64 达成率 100%）；eval32 0.9688 零回归。
+- 新瓶颈移交：R24 候选=rerank 排名质量（golden top5 内 5/64、top20 内 21.9%）；RERANK_CLIFF_V2 开启裁定待用户（达标已证默认仍关）。
+- 审核 [P2]×2 登记：收口 commit 号表述（实体=818b83d）；候选不足 20 时分位线窗内截断已被宽分布单测覆盖。
