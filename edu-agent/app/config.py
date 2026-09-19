@@ -674,13 +674,14 @@ class Settings(BaseSettings):
     # ============================================================
     RETRIEVER_RECALL_TOPK: int = 150           # RRF 融合后召回候选（GWT② 12→150）
     RETRIEVER_RERANK_TOPK: int = 20            # rerank 后保留 top-n 再断崖
-    # R23 断崖 V2（灰度开关，默认 False=V1 现行相对断崖逐位不变；开启由编排者/用户裁定）
+    # R23 断崖 V2（用户裁定 2026-09-19 开启：eval64 0.0312→0.0781 达 rerank-top5 结构上限
+    #   5/64 达成率 100%，eval32 0.9688 零回归，反向审核 PASS 7/7）
     #   V1 缺陷：min-max 归一恒使 top1=1.0，相对跌幅首步被系统性放大 → 28/64 query 收缩至 2 docs；
     #   V2=本轮 top20 分位下限（score<分位值即停；top1 恒保、final_max_k 上限不变；
     #   q≥0.25 时 ≤5 窗口内等效 cap 补满——golden 保全优先，probe 实测达窗口上限）。
     #   实测（编排者复跑 probe）：quant 0.5/0.6/0.7 平台=0.0781（+150%），eval32 0.9688 不变；
     #   WIP v2a 绝对分 0.30 仅 0.0625——弃用。
-    RERANK_CLIFF_V2: bool = False
+    RERANK_CLIFF_V2: bool = True
     RERANK_CLIFF_V2_QUANT: float = 0.60  # top20 归一分分位下限（0.5~0.7 平台最优中位；probe 实测）
     # course_public 保留分区：课程知识隔离用户上传（GWT③），检索期排除下列 content_type 防促销/班次混入
     COURSE_PUBLIC_PARTITION: str = "course_public"

@@ -52,16 +52,18 @@ def v2_on(monkeypatch):
     yield
 
 
-# ════════════════ ① 默认关：V1 逐位一致 ════════════════
-def test_default_off_matches_v1_on_real_probe_vector():
-    """开关默认 False：真实 probe 向量上与 V1 语义逐位一致（28/64 收缩形态保留）。"""
+# ════════════════ ① V1 语义（显式 False；默认已随用户裁定 2026-09-19 翻为 True） ════════════════
+def test_explicit_false_matches_v1_on_real_probe_vector(monkeypatch):
+    """显式 RERANK_CLIFF_V2=False：真实 probe 向量上与 V1 语义逐位一致（28/64 收缩形态保留）。"""
+    monkeypatch.setattr(st, "RERANK_CLIFF_V2", False)
     docs = _docs(PROBE_IDX23_SCORES)
     out = _cliff_cutoff(docs, final_max_k=5, drop_ratio=0.40)
     assert [d.doc_id for d in out] == ["c0", "c1"]   # 1.0→0.595 跌 40.5%>40% → 边缘条保留后停
 
 
-def test_default_off_param_drop_ratio_still_honored():
+def test_explicit_false_param_drop_ratio_still_honored(monkeypatch):
     """V1 路径 cutoff_drop_ratio 参数仍生效（既有调用方契约不变）。"""
+    monkeypatch.setattr(st, "RERANK_CLIFF_V2", False)
     docs = _docs([1.0, 0.85, 0.7, 0.6])
     assert [d.doc_id for d in _cliff_cutoff(docs, final_max_k=5, drop_ratio=0.40)] == ["c0", "c1", "c2", "c3"]
     assert [d.doc_id for d in _cliff_cutoff(docs, final_max_k=5, drop_ratio=0.10)] == ["c0", "c1"]
@@ -131,12 +133,12 @@ def test_v2_does_not_mutate_scores_or_reorder(v2_on):
 
 # ════════════════ ②b 开关接线 + 灰度默认（R23 接手者补锁） ════════════════
 def test_config_grayscale_defaults():
-    """灰度红线：RERANK_CLIFF_V2 默认 False（生产行为逐位不变）、quant 默认 0.60。
+    """默认红线（用户裁定 2026-09-19 开启）：RERANK_CLIFF_V2 默认 True、quant 默认 0.60。
     直接新建 Settings 实例读源码默认（防进程内前序测试 monkeypatch 残留误判）。"""
     from app.config import Settings
 
     fresh = Settings()
-    assert fresh.RERANK_CLIFF_V2 is False
+    assert fresh.RERANK_CLIFF_V2 is True
     assert fresh.RERANK_CLIFF_V2_QUANT == 0.60
 
 

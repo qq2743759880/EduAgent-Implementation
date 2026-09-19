@@ -44,6 +44,14 @@ def _install_milvus_stub(monkeypatch, docs: list[R.RetrievedDoc]):
 # ══════════════════════════════════════════════════════════════
 # ① 通道融合单元（mock kg 返回邻居 → 融合排序正确）
 # ══════════════════════════════════════════════════════════════
+@pytest.fixture(autouse=True)
+def _pin_cliff_v1(monkeypatch):
+    """本文件主角=kg_expand 融合/去重/降级语义，断崖层是下游噪声——钉 V1 相对断崖
+    保持确定性（R23 起全局默认 V2 分位断崖，会改变本组断言的 final docs 面；
+    V2×全链组合已由 tests/test_r23_cliff_v2.py 全链测试锁定）。"""
+    monkeypatch.setattr(st, "RERANK_CLIFF_V2", False)
+
+
 class TestGraphExpandFusion:
     async def test_neighbors_fused_with_rrf_order_and_dedup(self, monkeypatch):
         docs_ab = [
