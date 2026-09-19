@@ -606,3 +606,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - reshape-r-kg.json 签字生效（draft:false，sha256 前缀 c99f486c，KG 3 端点：path/upstream/downstream）——R-N1 验收 PASS 后用户会话授权代签
 - reshape-r-analytics.json 签字生效（draft:false，sha256 前缀 3234109b，analytics 2 端点：summary/stream-stats）——R-M1 验收 PASS 后用户会话授权代签
 - 遗留：pay 渠道验签闸门（346 行）已派 PAY-GATE（配额中断待重派）；注释层残留处置=用户裁定删除（待派）
+
+## 用户四裁定登记（2026-09-19，均按编排者推荐）
+1. **TTFT 判定口径=方案 a（检索段口径）**——新图路径 P95 1.696s=冻结预算 37.6% 达标；首 token P95 超标定性为 deepseek-flash 供应商方差非图路径开销（R02-tail §C-3）。灰度五条件现状：intent✓/Jaccard✓/TTFT✓（口径 a）/连续 3 天⏳/千条样本⏳——R05 解锁仅剩纯时间窗。
+2. **R23 检索门禁=独立尺**——contracts/rag-baseline-eval64.json 以 R22 实测 0.0312 为 pre-fix 基线冻结，R23 目标=独立 GT 爬升；旧圆环尺仅作不回归参考。
+3. **可选卫生项立项**：r03b guard 校准方案 B（逐分区对拍）+ _default 10 冗余副本清理（走数据软删三核闸变更单）。
+4. **reshape-b 语义归位**：后续变更单（支付端点从 reshape-b 迁 reshape-r-health G3_trade_payment）。
