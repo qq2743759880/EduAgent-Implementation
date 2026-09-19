@@ -630,3 +630,8 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 变更单 CO-EVAL64V2-001 执行闭环：golden 主尺=内容块（verbatim 63+production_cited 1，unresolved=0 不凑数）；建集器类型分布断言 content_block≥60% 硬门（R22 反哺）；新契约 rag-baseline-eval64-v2.json（draft:false，**pre-fix 基线 hit@5=0.9844/mrr=0.9414**，双跑指纹逐位一致，eval-set sha256 编排者复算 MATCH）。
 - **形态错配税定量坐实**：同产线同日同参，V1 尺（路由卡）0.0781 vs V2 尺（内容块）0.9844——差 +0.9063 是尺子刻度差非改进（两尺禁换算，ruler_note 已入契约）。
 - **R25 前提消解上报**：内容块 golden 下召回近满分（63/64 top5，唯一 miss=idx31 泛化题干）——原 R25「召回侧质量」立项前提蒸发，建议取消或重缩为 idx31 边缘案+跨语query鲁棒性小任务，待用户裁。
+
+## DATA-HYGIENE 销项登记（2026-09-20，e661f05/ce377ab）
+- _default 10 冗余副本清除闭环：三核闸全过（备份 20 行含 dense1024 全精度/分区限定 delete 3398→3388/三复核+幂等）；编排者亲跑探针复核 **gap=0 跨分区重复清零、enumerate==count=3391（+3 为正常新增）、stats_gap=12=tombstone 待自然 compaction（合法阶梯）**。
+- governance 登记：agent 自行执行 VM 恢复（kill 卡死 VMX×3+关空载 clone+冷启动，全部可逆且已披露）=授权面外必要处置，追认；同时段编排者 GUI 拉起形成双恢复重叠，终态一致无损。
+- stats 监控口径：下游按 MILVUSFLUSH §六-1 合法阶梯（stats≥count≥枚举）解读。
