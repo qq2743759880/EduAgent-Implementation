@@ -542,7 +542,7 @@ SET PERSIST general_log=ON,文件=datadir/edu_general.log(探针已落盘验证,
 我方独立重跑 eval 模式:hit_rate@5=0.9688/mrr@5=0.9688 与报告逐位一致;32 cases 双键 golden 在盘(meta.seed=20260914);契约 draft=false+阈值 0.9488+id_map_note/sensitivity_probe 字段齐;commit 9eea0f2 九文件。
 ### 批判性审查(3 条,带竞品锚点,登记承接)
 - **Crit-1 golden 圆环自证**(rank 分布退化:mrr==hit_rate→31/32 命中全在 rank1):query 从 chunk 自身提取,关键词重叠保底→基线测的是"能否找回引文",偏乐观。对标:LlamaIndex LabelledRagDataset 人工出题/BEIR 惯例(2026-09-14)。处置:R02-b 样本已含 50 条真实 chat query+18 边界例补偿;长期=人工出题批。
-- **Crit-2 融合层对 dense 故障失明**(实证:我重跑时本地模型缺失+DashScope 429,指标仍 0.9688):稀疏通道补偿掩盖 dense 健康度→gate 探不到 dense 通道回归。处置:登记 R22 扩展项(gate 增 dense-only 探针)。
+- **Crit-2 融合层对 dense 故障失明**(实证:我重跑时本地模型缺失+DashScope 429,指标仍 0.9688):稀疏通道补偿掩盖 dense 健康度→gate 探不到 dense 通道回归。处置:登记 R22 扩展项(gate 增 dense-only 探针)。(✅ 承接闭环 2026-09-19:W-NEXT-FUSIONBLIND-001——retriever.py 三通道 channel_health 显式化(dense ok/idle(空转=sha256 伪向量)/failed+原因+backend,只增不改)+通道失败 WARN 连续 N 次升级 ERROR+r20min_run summary 增 per-channel dense 分层命中率/全 dense 失效顶部 WARNING+gate dense 全失效强制 FAIL(实测 hit_rate 0.99>阈值仍 FAIL)+三态注入测试 7/7(tests/test_fusionblind1_channel_health.py)+R-N2 22 例等回归 205 绿)
 - **Crit-3 阈值头寸退化**(0.9488 贴近 rank1 退化分布的天花板):真回归会猛撞门(好),微小噪声也易误伤(差)。处置:R02 双跑收敛后复核阈值头寸。
 ### D 项处置
 - **D-2 已由编排者修复**:.env 两行模型路径 C:/ai-models→E:/stu/ai-models(实盘验证 bge-m3/bge-reranker-v2-m3 均在;重启后 reranker device=cuda 加载成功)。密钥未触碰。
