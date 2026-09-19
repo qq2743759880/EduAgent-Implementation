@@ -1,0 +1,132 @@
+..........ssssssssss.......s.......................ss................... [  3%]
+........................................................................ [  7%]
+s.............................................................F......... [ 11%]
+............s..........................................s................ [ 15%]
+........................................................................ [ 19%]
+..............ssss.ss.ssssssssssssss..........................s......... [ 23%]
+.........................................................s..........s... [ 27%]
+........................................................................ [ 31%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+...............................................s........................ [ 43%]
+.............................s.................s........................ [ 47%]
+......................s................................................. [ 51%]
+.......sssssssssssssss.................................................. [ 55%]
+.............s.......................................................... [ 58%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+............................s.................................ss........ [ 70%]
+........................................................................ [ 74%]
+........................................................................ [ 78%]
+..................................sssssss.ss............................ [ 82%]
+........................................................................ [ 86%]
+.....................sss...........................ss................... [ 90%]
+........................................................................ [ 94%]
+.........ss.................................................s........... [ 98%]
+...............................                                          [100%]
+================================== FAILURES ===================================
+_______ TestLiveHealthAsync.test_05_50_concurrent_polls_no_500_no_queue _______
+
+self = <tests.test_contract_mcp_health_async.TestLiveHealthAsync object at 0x0000022AFA47D310>
+
+    def test_05_50_concurrent_polls_no_500_no_queue(self):
+        """GWT④（live）：扫描期间 50 并发 GET 轮询 → 全 200/壳 code=0/无排队（max<2s）。"""
+        tok = login_token()
+        s, j = api("POST", "/api/mcp/health-scan-async", token=tok)
+        assert s == 202
+        job_id = j["data"]["job_id"]
+    
+        def poll(_):
+            t0 = time.perf_counter()
+            st, body = api("GET", f"/api/mcp/health-scan/{job_id}", token=tok, timeout=15)
+            return st, body, (time.perf_counter() - t0) * 1000
+    
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as ex:
+            futures = [ex.submit(poll, i) for i in range(50)]
+            results = [f.result() for f in futures]
+        lat = sorted(r[2] for r in results)
+        bad = [r for r in results if r[0] != 200 or r[1].get("code") != 0]
+        assert not bad, f"50 并发轮询出现异常响应：{bad[:3]}"
+        p95 = lat[int(len(lat) * 0.95) - 1]
+>       assert lat[-1] < 2000, f"轮询 P100={lat[-1]:.0f}ms 超 2s（疑似排队）"
+E       AssertionError: 轮询 P100=4238ms 超 2s（疑似排队）
+E       assert 4237.59930000233 < 2000
+
+tests\test_contract_mcp_health_async.py:417: AssertionError
+============================== warnings summary ===============================
+tests\test_check_demo_timeouts.py:136
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\tests\test_check_demo_timeouts.py:136: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app\rerank_service\main.py:115
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:115: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\rerank_service\main.py:128
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\rerank_service\main.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+.venv\Lib\site-packages\neo4j\_sync\driver.py:547
+.venv\Lib\site-packages\neo4j\_sync\driver.py:547
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\neo4j\_sync\driver.py:547: DeprecationWarning: Relying on Driver's destructor to close the session is deprecated. Please make sure to close the session. Use it as a context (`with` statement) or make sure to call `.close()` explicitly. Future versions of the driver will not close drivers automatically.
+    _deprecation_warn(
+
+tests/test_breaker_db_resilience.py::test_graph_expand_degrades_fast_after_open
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/test_contract_r12_tool_decision.py::test_r12_4_call_log_success_audit_row
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\mcp\executor.py:702: RuntimeWarning: coroutine 'call_tool.<locals>._run_once_cached' was never awaited
+    return await _run_once_guarded()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_core.py::TestCache::test_cache_hit
+tests/test_core.py::TestCache::test_cache_miss_loader_called
+tests/test_core.py::TestCache::test_null_cache_penetration
+tests/test_core.py::TestCache::test_short_polling_gets_value
+  E:\stu\project\stu\EduAgent实施手册\edu-agent\app\core\breaker.py:144: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_bypasses_in_recent_window_without_blocking
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_bypasses_in_recent_window_without_blocking.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_redis_outage_fastfail.py::test_rate_limit_passes_through_during_outage
+  C:\Users\Administrator\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\asyncio\events.py:84: RuntimeWarning: coroutine 'test_rate_limit_passes_through_during_outage.<locals>._no_client' was never awaited
+    self._context.run(self._callback, *self._args)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_contract_mcp_health_async.py::TestLiveHealthAsync::test_05_50_concurrent_polls_no_500_no_queue
+1 failed, 1751 passed, 79 skipped, 16 warnings in 565.17s (0:09:25)

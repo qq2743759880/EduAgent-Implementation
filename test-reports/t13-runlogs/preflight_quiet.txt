@@ -1,0 +1,13 @@
+=== T13 安静轮预检快照 2026-09-20_02:11:23 ===
+VM Mongo(27017): OPEN
+VM Milvus(19530): OPEN
+VM MinIO(9000): OPEN
+VM Neo4j(7687): OPEN
+local Redis 6377: OPEN
+local 8000 /docs: 200
+local 8003 /docs: 000
+local 8003: DOWN
+--- 在岗 locks ---
+edu-agent/scripts/eval/datahyg.lock
+edu-agent/scripts/eval/reval64v3.lock
+edu-agent/scripts/eval/t13.lock
