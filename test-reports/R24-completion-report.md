@@ -7,7 +7,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 本收口 commit | **governance 提交补记：`<R24B_HASH>`**（主体 feat(r24b) 同日；首段=编排者 `0f42b4e`） |
+| 本收口 commit | **`82d046d`**（test(r24b) 主提交；首段=编排者 `0f42b4e`，两段同在 feature/opt-waves） |
 | 探针脚本 | `edu-agent/scripts/eval/r24_rank_probe.py`（~620 行，5 模式可复跑：rank/grid/hyde/r12-judge/all-rank-grid；16-query 检查点落盘，宿主限速安全） |
 | 数据产物 | `edu-agent/scripts/eval/data/r24_runs/`：r24_rank_probe_probe64.json（64×双层 rank+全序分数）、r24_worst10_probe64.json（证据包）、r24_grid_probe64.json（3 权重臂）、r24_hyde_probe64.json（39 条对照臂）、r24_r12_semantic_judge.json（30 条判定） |
 | 核心结论 | 新瓶颈**不是** rerank 排名质量，而是 **eval64 golden 形态（course_module 元数据卡）与语义检索目标的错配 + 召回覆盖缺口**；三个低危候选全部不达标（无开启建议，数字如实登记） |
