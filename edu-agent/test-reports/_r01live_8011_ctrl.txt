@@ -1,0 +1,57 @@
+[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线
+[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线
+[32m01:49:40[0m | [1mINFO    [0m | [36mapp.common.logging[0m:[36msetup_logging[0m:[36m95[0m | [1m日志系统已初始化，级别: DEBUG，目录: logs[0m
+INFO:     Started server process [31484]
+INFO:     Waiting for application startup.
+[32m01:49:43[0m | [1mINFO    [0m | [36mapp.main[0m:[36mlifespan[0m:[36m68[0m | [1m=== EduAgent v0.3.0 正在启动 ===[0m
+[32m01:49:43[0m | [33m[1mWARNING [0m | [36mapp.main[0m:[36mlifespan[0m:[36m72[0m | [33m[1m[安全] METRICS_TOKEN 未设置，/metrics 维持公开（Prometheus 抓取向后兼容）；生产环境建议设置 METRICS_TOKEN 启用 Bearer 门禁（抓取端配 bearer_token 同值）[0m
+[32m01:49:43[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m108[0m | [1m初始化 MySQL 连接池: localhost:3306 (asyncmy)[0m
+[32m01:49:43[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql[0m:[36m122[0m | [1mMySQL 连接池已创建[0m
+[32m01:49:43[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mysql_ro[0m:[36m173[0m | [1mMySQL 只读连接池已创建[0m
+[32m01:49:43[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_milvus[0m:[36m194[0m | [1m初始化 Milvus 连接: http://192.168.85.101:19530[0m
+[32m01:49:46[0m | [33m[1mWARNING [0m | [36mapp.main[0m:[36mlifespan[0m:[36m104[0m | [33m[1mMilvus 初始化失败（开发模式可忽略，知识库不可用）: <MilvusException: (code=2, message=Fail connecting to server on 192.168.85.101:19530, illegal connection params or server unavailable)>[0m
+[32m01:49:46[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_mongo[0m:[36m231[0m | [1m连接 MongoDB: mongodb://192.168.85.101:27017[0m
+[32m01:49:50[0m | [33m[1mWARNING [0m | [36mapp.main[0m:[36mlifespan[0m:[36m114[0m | [33m[1mMongoDB 初始化失败（开发模式可忽略，对话不可用）: 192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms), Timeout: 3.0s, Topology Description: <TopologyDescription id: 6aaecb3a17c4567547eb4935, topology_type: Unknown, servers: [<ServerDescription ('192.168.85.101', 27017) server_type: Unknown, rtt: None, error=NetworkTimeout('192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms)')>]>[0m
+[32m01:49:50[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_minio[0m:[36m271[0m | [1m初始化 MinIO 连接: 192.168.85.101:9000 (secure=False)[0m
+[32m01:50:00[0m | [33m[1mWARNING [0m | [36mapp.database[0m:[36minit_minio[0m:[36m302[0m | [33m[1mMinIO Bucket edu-course 检查失败（视频/文件上传暂不可用，可忽略）: HTTPConnectionPool(host='192.168.85.101', port=9000): Max retries exceeded with url: /edu-course?location= (Caused by ConnectTimeoutError(<HTTPConnection(host='192.168.85.101', port=9000) at 0x258a48a45d0>, 'Connection to 192.168.85.101 timed out. (connect timeout=5.0)'))[0m
+[32m01:50:10[0m | [33m[1mWARNING [0m | [36mapp.database[0m:[36minit_minio[0m:[36m302[0m | [33m[1mMinIO Bucket edu-question 检查失败（视频/文件上传暂不可用，可忽略）: HTTPConnectionPool(host='192.168.85.101', port=9000): Max retries exceeded with url: /edu-question?location= (Caused by ConnectTimeoutError(<HTTPConnection(host='192.168.85.101', port=9000) at 0x258a48a63d0>, 'Connection to 192.168.85.101 timed out. (connect timeout=5.0)'))[0m
+[32m01:50:20[0m | [33m[1mWARNING [0m | [36mapp.database[0m:[36minit_minio[0m:[36m302[0m | [33m[1mMinIO Bucket edu-upload 检查失败（视频/文件上传暂不可用，可忽略）: HTTPConnectionPool(host='192.168.85.101', port=9000): Max retries exceeded with url: /edu-upload?location= (Caused by ConnectTimeoutError(<HTTPConnection(host='192.168.85.101', port=9000) at 0x258a48b4190>, 'Connection to 192.168.85.101 timed out. (connect timeout=5.0)'))[0m
+[32m01:50:20[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_minio[0m:[36m305[0m | [1mMinIO 初始化完成[0m
+[32m01:50:20[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_neo4j[0m:[36m353[0m | [1m初始化 Neo4j：bolt://192.168.85.101:7687[0m
+Transaction failed and will be retried in 1.1704080597219282s (Couldn't connect to 192.168.85.101:7687 (resolved to ('192.168.85.101:7687',)):
+Timed out trying to establish connection to ResolvedIPv4Address(('192.168.85.101', 7687)))
+[32m01:50:27[0m | [33m[1mWARNING [0m | [36mapp.database[0m:[36minit_neo4j[0m:[36m379[0m | [33m[1mNeo4j 连接失败（知识图谱写入会降级跳过，不影响 Milvus 入库）：Couldn't connect to 192.168.85.101:7687 (resolved to ('192.168.85.101:7687',)):
+Timed out trying to establish connection to ResolvedIPv4Address(('192.168.85.101', 7687))[0m
+[32m01:50:27[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_redis[0m:[36m426[0m | [1m初始化 Redis 连接池: redis://127.0.0.1:6377/0[0m
+[32m01:50:27[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_redis[0m:[36m438[0m | [1mRedis 连接成功[0m
+[32m01:50:27[0m | [1mINFO    [0m | [36mapp.observability.otlp[0m:[36mstart[0m:[36m128[0m | [1m[OTLP] OTEL_EXPORTER_OTLP_ENDPOINT 未配置，OTLP 导出 disabled（安全缺省）[0m
+[32m01:50:27[0m | [1mINFO    [0m | [36mapp.main[0m:[36mlifespan[0m:[36m166[0m | [1m=== 存储初始化完成: {'mysql': 'ok', 'mysql_ro': 'ok', 'milvus': 'error: <MilvusException: (code=2, message=Fail connecting to server on 192.168.85.101:19530, illegal connection params or server unavailable)>', 'mongodb': "error: 192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms), Timeout: 3.0s, Topology Description: <TopologyDescription id: 6aaecb3a17c4567547eb4935, topology_type: Unknown, servers: [<ServerDescription ('192.168.85.101', 27017) server_type: Unknown, rtt: None, error=NetworkTimeout('192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms)')>]>", 'minio': 'ok', 'neo4j': 'ok', 'redis': 'ok', 'otlp': 'disabled'} ===[0m
+[32m01:50:30[0m | [33m[1mWARNING [0m | [36mapp.ai.memory.vector[0m:[36m_try_init_milvus[0m:[36m192[0m | [33m[1m[Memory:vector] Milvus 不可达/维度不符，降级 in-memory 向量：MilvusException: <MilvusException: (code=2, message=Fail connecting to server on 192.168.85.101:19530, illegal connection params or server unavailable)>[0m
+[32m01:50:30[0m | [1mINFO    [0m | [36mapp.ai.memory.service[0m:[36mstart_memory_worker[0m:[36m102[0m | [1m[Memory] 记忆写队列消费者已启动[0m
+[32m01:50:30[0m | [1mINFO    [0m | [36mapp.mcp.executor[0m:[36minit_mcp_capabilities[0m:[36m1037[0m | [1m[MCP] search_knowledge 后端已接线：真实三通道检索（retrieve_three_channel）[0m
+[32m01:50:30[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36m_record[0m:[36m74[0m | [1m[预热] embed_backend 完成 0ms — cuda-first（本地 BGE 主链路）[0m
+[32m01:50:30[0m | [1mINFO    [0m | [36mapp.ai.memory.service[0m:[36m_hitl_sweep_loop[0m:[36m323[0m | [1m[HITL] sweep 后台扫描已启动（interval=1800s, ttl=600s）[0m
+E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+Building prefix dict from the default dictionary ...
+Loading model from cache C:\Users\Administrator\AppData\Local\Temp\jieba.cache
+Loading model cost 1.799 seconds.
+Prefix dict has been built successfully.
+[32m01:50:33[0m | [1mINFO    [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m159[0m | [1mjieba 自定义词典已加载：data\custom_dict.txt[0m
+[32m01:50:33[0m | [34m[1mDEBUG   [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m174[0m | [34m[1m停用词加载完成，共 348 条[0m
+[32m01:50:33[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36m_record[0m:[36m74[0m | [1m[预热] jieba 完成 2622ms — jieba 词典 + 停用词已加载[0m
+[32m01:50:33[0m | [33m[1mWARNING [0m | [36mapp.domains.analytics.event_stream[0m:[36mstart_event_worker[0m:[36m234[0m | [33m[1m[LearningEvent] 索引创建失败（worker 仍启动，写入期重试自愈）: 192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms), Timeout: 3.0s, Topology Description: <TopologyDescription id: 6aaecb3a17c4567547eb4935, topology_type: Unknown, servers: [<ServerDescription ('192.168.85.101', 27017) server_type: Unknown, rtt: None, error=NetworkTimeout('192.168.85.101:27017: timed out (configured timeouts: socketTimeoutMS: 3000.0ms, connectTimeoutMS: 3000.0ms)')>]>[0m
+[32m01:50:33[0m | [1mINFO    [0m | [36mapp.domains.analytics.event_stream[0m:[36mstart_event_worker[0m:[36m237[0m | [1m[LearningEvent] worker 已启动（enabled=True, indexes=None）[0m
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+[32m01:50:34[0m | [1mINFO    [0m | [36mapp.middleware.auth_middleware[0m:[36mdispatch[0m:[36m97[0m | [1m[40d8b01b] GET /health → 200 (9ms)[0m
+INFO:     127.0.0.1:64085 - "GET /health HTTP/1.1" 200 OK
+Table 'user_memory_event' already exists
+Table 'user_memory_entity_seq' already exists
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights:  15%|█▍        | 57/391 [00:00<00:00, 556.17it/s]Loading weights:  29%|██▉       | 113/391 [00:00<00:00, 521.68it/s]Loading weights:  42%|████▏     | 166/391 [00:00<00:00, 435.56it/s]Loading weights:  55%|█████▌    | 217/391 [00:00<00:00, 456.08it/s]Loading weights:  68%|██████▊   | 264/391 [00:00<00:00, 436.94it/s]Loading weights:  79%|███████▉  | 309/391 [00:00<00:00, 404.30it/s]Loading weights:  91%|█████████▏| 357/391 [00:00<00:00, 422.69it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 445.14it/s]
+[32m01:51:09[0m | [1mINFO    [0m | [36mapp.knowledge.importer.embedder[0m:[36m_get_bge_model[0m:[36m223[0m | [1mBGE-M3 本地模型已加载：E:\stu\ai-models\bge-m3（device=cuda）[0m
+[32m01:51:11[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36m_record[0m:[36m74[0m | [1m[预热] bge_m3 完成 38369ms — BGE-M3 已加载 device=cuda[0m
+[32m01:51:11[0m | [1mINFO    [0m | [36mapp.ai.memory.store[0m:[36mwrite[0m:[36m85[0m | [1m[Memory] 写入记忆 user=999001 id=273 type=preference imp=5[0m
+[32m01:51:11[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36m_record[0m:[36m74[0m | [1m[预热] reranker_sidecar 完成 136ms — rerank sidecar 已预热 http://127.0.0.1:8601/rerank[0m
+[32m01:51:11[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36m_record[0m:[36m74[0m | [1m[预热] reranker_local 完成 0ms — skipped：sidecar 可用，避免重复占显存（§7 薄弱点 3）[0m
+[32m01:51:11[0m | [1mINFO    [0m | [36mapp.core.warmup[0m:[36mrun_warmup[0m:[36m182[0m | [1m[预热] 完成 status=ready elapsed=41129.0ms failed=none[0m

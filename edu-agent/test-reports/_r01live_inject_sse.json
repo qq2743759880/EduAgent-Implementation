@@ -1,0 +1,25 @@
+{
+  "frames": {
+    "start": 1,
+    "retrieval": 1,
+    "token": 26,
+    "done": 1,
+    "error": 0
+  },
+  "answer_head": "机器学习是指让计算机从数据中自动发现规律、并据此对未知情况做出预测或判断的方法（基于通用知识）。",
+  "done": {
+    "code": 0,
+    "message": "ok",
+    "data": {
+      "session_id": null,
+      "message_id": null,
+      "retrieved_count": 0,
+      "final_count": 0,
+      "latency_ms": 9227,
+      "rewrite_query": "用一句话说明什么是机器学习",
+      "degraded_reason": "Milvus 检索超时(8.0s)；Neo4j 未连接（跳过图谱扩展）",
+      "mcp_tool_calls": []
+    }
+  },
+  "errors": []
+}
