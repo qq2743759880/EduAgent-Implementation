@@ -323,7 +323,7 @@ async function check(no, name, fn) {
 const FIX = {
   vm: (d) => `开启 VMware 虚拟机: vmrun start "${VMX_PATH}" nogui,等 60s${existsSync(VMX_PATH) ? "" : `(注意:配置的 vmx 路径不存在,请确认虚拟机实际路径)`} [${d}]`,
   redis: (d) => `按 .env REDIS_PORT 端口反查容器名,docker start <容器>(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
-  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000 [${d}]`,
+  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000(无声死亡史:可先 .venv\\Scripts\\python.exe scripts\\watchdog_8000.py --once 判读,再起常驻看门狗 python scripts\\watchdog_8000.py;取证见 test-reports/WNEXTSTABILITY1-completion-report.md) [${d}]`,
   frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p ${FRONTEND_PORT}(或 deploy.mjs start 生产形态;--frontend-port 已选 ${FRONTEND_PORT}) [${d}]`,
   debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据) [${d}]`,
 };
