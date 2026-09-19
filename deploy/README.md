@@ -406,6 +406,82 @@ mysqldump -uroot -p --routines --triggers --single-transaction --set-gtid-purged
 
 ---
 
+## 5.5 看门狗服务化（W-NEXT-OPS-001，2026-09-20）
+
+> 承接 STABILITY P0-A：「看门狗非免死金牌——它自己不在岗就没人拉起」。手工常驻版
+> `watchdog_8000.py`（前台/后台裸进程）会随 agent 会话/终端回收而亡（STABILITY 取证：外部
+> TerminateProcess 死亡史），本节把它注册为 Windows 计划任务「EduAgent-Watchdog」，由任务计划
+> 持有：**开机延迟 60s 启动 + 每 5 分钟重复触发**。5 分钟触发即「看门狗的看门狗」：loop 实例
+> 在岗时 pid 文件防重入 + MultipleInstancesPolicy=IgnoreNew 使触发为 no-op；实例死亡 ≤5 分钟内
+> 由下次触发重拉。
+>
+> ⚠ 设计差异（真实契约优先）：任务书曾写「每 5 分钟执行 `--once`（探活+按需拉起）」——实读
+> `watchdog_8000.py`：`--once` 只探活**不拉起**（exit 0/1），永远无法复活 8000，也无法复活看门狗
+> 本身。故任务动作 = `watchdog_8000.py` 无参（loop 模式，30s 探活/3 连败/冷却 90s/僵尸清理/
+> 三级降级拉起全复用本体），零改动看门狗本体。
+
+三条命令（注册 / 卸载 / 状态查询）：
+
+```powershell
+# 注册（幂等查重：已存在 EduAgent-Watchdog 则跳过；-StopExisting 自动停掉手工常驻版防双实例）
+powershell -NoProfile -ExecutionPolicy Bypass -File edu-agent\scripts\deploy\install_watchdog_task.ps1 -StopExisting
+# 期望末段：[WATCHDOG-INSTALL] OK ...；任务状态 Query 输出 Status=Ready
+
+# 卸载（结束任务实例 + 删任务；不影响 8000 本体——看门狗拉起的 uvicorn 是独立进程）
+powershell -NoProfile -ExecutionPolicy Bypass -File edu-agent\scripts\deploy\uninstall_watchdog_task.ps1
+# 期望：[WATCHDOG-UNINSTALL] OK 任务已删除（复核：查询不到）
+
+# 状态查询
+schtasks /Query /TN EduAgent-Watchdog /V /FO LIST
+# 期望：Status=Running（看门狗 loop 在岗）或 Ready；Last Result=0x0
+```
+
+- 事件/证据日志：`edu-agent\logs\watchdog_8000_events.log`（HEALTH_FAIL / RESTART_BEGIN /
+  RESTART_OK 一行一事）；被拉起 uvicorn 的 stdout/stderr 在 `edu-agent\logs\watchdog_8000_restart.log`。
+- 手动立即拉起（不等触发）：`schtasks /Run /TN EduAgent-Watchdog`；模拟验证：杀 8000 监听进程后
+  等 ~2-3 分钟（30s×3 连败+拉起+健康回 200），看 events 日志 `RESTART_OK`。
+- 两种形态取舍：**手工常驻版**（`python scripts/watchdog_8000.py` 前台/后台裸跑）调试直观，但随
+  会话回收而亡、重启后无人拉起——只建议临时排障用；**服务化版**（本节任务计划）开机自启 +
+  5 分钟不在岗自愈，是默认推荐形态。终态口径：服务化版在岗（任务 Status=Running + 8000 /health 200）。
+- 边界（如实）：任务以 InteractiveToken 注册到当前用户——「开机延迟 60s」在用户未登录时会经
+  StartWhenAvailable 等到登录后补跑；真无人值守（不登录也拉起）需改 S4U/服务账号形态（服务化 v2 待办）。
+
+---
+
+## 5.6 回归门禁（full-run 一键门禁 + CI 手动接线，W-NEXT-OPS-001 / TEST-BASE 承接）
+
+> 门禁断言（TEST-BASE §4「门禁复信」）：`cd edu-agent && .venv\Scripts\python.exe -m pytest tests/
+> -q -p no:cacheprovider` 的 **exit code==0** 即 PASS（终态基线 1712P/57S/0F，约 7-8 分钟；57 例
+> skip 全部白名单登记）。每次发版/合入前必跑。
+
+本地一条命令：
+
+```cmd
+:: 在 edu-agent\ 目录下
+scripts\eval\gate_fullrun.cmd
+:: exit 0 = PASS；exit 1 = 回归（自动输出失败清单尾部 50 行，完整日志 logs\gate_fullrun.log）；
+:: exit 2 = 环境前置不可达（MySQL/Redis/Milvus，非代码回归——先修环境，别当回归修）
+:: 只跑预检：scripts\eval\gate_fullrun.cmd -PrecheckOnly
+```
+
+- 预检口径：MySQL/Redis 为硬门（conftest 防污染护栏依赖真实 Redis 清 rl:* 计数器）；Milvus
+  默认硬门，**降级窗口**（Milvus 宿主不可达，2026-09-20 现状）加 `-AllowMilvusDown` 明示放行
+  ——该形态与 TEST-BASE run7 终态基线一致（task_m2/task_vec 两例为无条件 skip 白名单，Milvus
+  在不在线均不进跑面，结果构成可比）。8000 后端只 WARN 不阻断（离线时 live_backend 系按
+  conftest 机制 skip，覆盖面缩小会如实打印）。
+- 预检目标可被环境变量覆盖：`GATE_MYSQL_HOST/GATE_MYSQL_PORT/GATE_REDIS_URL/GATE_MILVUS_URI`。
+
+CI 手动触发（GitHub Actions → CI → Run workflow）：
+
+- 「Full-run regression gate (self-hosted eduagent-local only)」job，仅 `workflow_dispatch`
+  手动触发 + 带 `eduagent-local` 标签的 self-hosted runner（=本开发机）可跑——**云端 runner 无
+  MySQL/Redis/Milvus，跑不了 full-run，不挂进 push/PR 自动链，也绝不伪装云端可跑**。
+- runner 未接线时该 job 停在 queued（无 runner 可领）属预期，不是 CI 挂了。
+- 前置：runner 工作区需已就绪 `edu-agent/.venv`；失败时自动上传完整日志 artifact
+  （`fullrun-gate-log` → `edu-agent/logs/gate_fullrun.log`）。
+
+---
+
 ## 6. 边界声明
 
 - 本部署包 = **本机同构部署**（Windows 主机 + VMware VM Docker 一键拉起），验收口径 =

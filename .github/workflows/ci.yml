@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # W-NEXT-OPS-001：full-run 回归门禁的手动触发入口（仅 full-run-gate job 消费）。
+  # 云端 runner 没有 MySQL/Redis(6377)/Milvus/8000 后端，跑不了 full-run——不挂进 push/PR 自动链。
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -139,3 +142,32 @@ jobs:
         run: node edu-agent/scripts/eval/deploy_env_gate.mjs edu-agent/.env.example
       - name: Gate self-test (decision branches)
         run: node edu-agent/scripts/eval/test_deploy_env_gate.mjs
+
+  # W-NEXT-OPS-001 小单B：full-run 回归门禁接线（TEST-BASE §7 移交 2 承接）。
+  # 如实边界：full-run（pytest tests/ 全量，TEST-BASE §4 门禁定义）依赖本机真实 MySQL(3306)/
+  # Redis(6377)/Milvus(19530) 与 8000 后端——云端 ubuntu runner 一律没有，硬跑=大面积环境性假红。
+  # 故本 job【绝不伪装云端可跑】：只在 workflow_dispatch 手动触发 + 带 'eduagent-local' 标签的
+  # self-hosted runner（=本开发机）上运行。runner 未接线时 job 停在 queued（无 runner 可领）属预期。
+  # 前置：该 runner 的工作区需已就绪 edu-agent/.venv（gate 脚本按检出目录解析 venv）。
+  # 步骤：预检（MySQL/Redis 硬门 + Milvus 可 -AllowMilvusDown 放行，不可达 exit 2 快失败，
+  # 不误报代码回归）→ gate_fullrun 全量跑（exit 0=PASS）→ 失败时上传完整日志 artifact。
+  full-run-gate:
+    name: Full-run regression gate (self-hosted eduagent-local only)
+    runs-on: [self-hosted, eduagent-local]
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Precheck env (MySQL/Redis hard; Milvus see gate script)
+        shell: cmd
+        run: scripts\eval\gate_fullrun.cmd -PrecheckOnly
+      - name: Full-run gate (pytest tests/, exit 0 = PASS)
+        shell: cmd
+        run: scripts\eval\gate_fullrun.cmd
+      - name: Upload gate log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fullrun-gate-log
+          path: edu-agent/logs/gate_fullrun.log
+          if-no-files-found: ignore
