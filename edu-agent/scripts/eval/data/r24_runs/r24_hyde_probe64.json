@@ -1,0 +1,388 @@
+{
+  "tag": "probe64",
+  "ran_at": "2026-09-19T13:39:07.846039+00:00",
+  "mode": "hyde on/off 对照臂（生产链路真实顺序 rewrite→recall150→rerank；仅离线 diff 改写子集；基线=r24_rank_probe 同 idx 记录, use_hyde=False 契约口径）",
+  "n_changed_subset": 39,
+  "baseline_hyde_off": {
+    "rerank": {
+      "hit@5": 0.1026,
+      "mrr@5": 0.0265,
+      "cover": 33,
+      "n": 39
+    },
+    "recall": {
+      "hit@5": 0.0256,
+      "mrr@5": 0.0128,
+      "cover": 33,
+      "n": 39
+    }
+  },
+  "arm_hyde_on": {
+    "rerank": {
+      "hit@5": 0.1026,
+      "mrr@5": 0.0265,
+      "cover": 33,
+      "n": 39
+    },
+    "recall": {
+      "hit@5": 0.0256,
+      "mrr@5": 0.0128,
+      "cover": 33,
+      "n": 39
+    }
+  },
+  "wall_seconds": 50.2,
+  "per_query": [
+    {
+      "idx": 0,
+      "query": "关于回归分析，下列说法正确的是： ",
+      "rewritten": "关于回归分析，下列说法正确的是：",
+      "base_recall_rank": 32,
+      "hyde_recall_rank": 32,
+      "base_rerank_rank": 72,
+      "hyde_rerank_rank": 72
+    },
+    {
+      "idx": 2,
+      "query": "数据仓库与数据湖的核心区别之一是： ",
+      "rewritten": "数据仓库与数据湖的核心区别之一是：",
+      "base_recall_rank": 25,
+      "hyde_recall_rank": 25,
+      "base_rerank_rank": 16,
+      "hyde_rerank_rank": 16
+    },
+    {
+      "idx": 3,
+      "query": "路径、账号和密钥都适合直接硬编码到脚本中。对还是错？ ",
+      "rewritten": "路径、账号和密钥都适合直接硬编码到脚本中。对还是错？",
+      "base_recall_rank": 22,
+      "hyde_recall_rank": 22,
+      "base_rerank_rank": 85,
+      "hyde_rerank_rank": 85
+    },
+    {
+      "idx": 6,
+      "query": "客户投诉物流延迟，要求当天必须解决。在这种情况下，最优先的做法是： ",
+      "rewritten": "客户投诉物流延迟，要求当天必须解决。在这种情况下，最优先的做法是：",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 9,
+      "query": "给出一个你认为最典型的“数学服务现实”的例子，并说明原因。 ",
+      "rewritten": "给出一个你认为最典型的“数学服务现实”的例子，并说明原因。",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 10,
+      "query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。在这种情况下，最优先的做法是： ",
+      "rewritten": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。在这种情况下，最优先的做法是：",
+      "base_recall_rank": 104,
+      "hyde_recall_rank": 104,
+      "base_rerank_rank": 110,
+      "hyde_rerank_rank": 110
+    },
+    {
+      "idx": 12,
+      "query": "在你刚带一个新团队，目标是本季度提升交付效率，但成员对方向还不够清楚。的场景里，先讲清业务目标和优先级，再把结果拆成团队和个人任务。是合适的优先动作。 ",
+      "rewritten": "在你刚带一个新团队，目标是本季度提升交付效率，但成员对方向还不够清楚。的场景里，先讲清业务目标和优先级，再把结果拆成团队和个人任务。是合适的优先动作。",
+      "base_recall_rank": 80,
+      "hyde_recall_rank": 80,
+      "base_rerank_rank": 102,
+      "hyde_rerank_rank": 102
+    },
+    {
+      "idx": 13,
+      "query": "说明一阶导数和函数单调性的关系。 ",
+      "rewritten": "说明一阶导数和函数单调性的关系。",
+      "base_recall_rank": 9,
+      "hyde_recall_rank": 9,
+      "base_rerank_rank": 36,
+      "hyde_rerank_rank": 36
+    },
+    {
+      "idx": 14,
+      "query": "在项目推进到一半，接口需求被反复变更，责任边界也不清楚。的场景里，补充 RACI 或责任清单，统一接口定义，并约定升级机制。是合适的优先动作。 ",
+      "rewritten": "在项目推进到一半，接口需求被反复变更，责任边界也不清楚。的场景里，补充 RACI 或责任清单，统一接口定义，并约定升级机制。是合适的优先动作。",
+      "base_recall_rank": 88,
+      "hyde_recall_rank": 88,
+      "base_rerank_rank": 34,
+      "hyde_rerank_rank": 34
+    },
+    {
+      "idx": 17,
+      "query": "若两个事件互斥，则它们一定独立。 ",
+      "rewritten": "若两个事件互斥，则它们一定独立。",
+      "base_recall_rank": 122,
+      "hyde_recall_rank": 122,
+      "base_rerank_rank": 52,
+      "hyde_rerank_rank": 52
+    },
+    {
+      "idx": 18,
+      "query": "游戏主循环一般会持续执行输入、更新和渲染。 ",
+      "rewritten": "游戏主循环一般会持续执行输入、更新和渲染。",
+      "base_recall_rank": 47,
+      "hyde_recall_rank": 47,
+      "base_rerank_rank": 10,
+      "hyde_rerank_rank": 10
+    },
+    {
+      "idx": 20,
+      "query": "前后端协作中，统一接口约定可以减少大量沟通成本。对还是错？ ",
+      "rewritten": "前后端协作中，统一接口约定可以减少大量沟通成本。对还是错？",
+      "base_recall_rank": 74,
+      "hyde_recall_rank": 74,
+      "base_rerank_rank": 57,
+      "hyde_rerank_rank": 57
+    },
+    {
+      "idx": 22,
+      "query": "简述 B+ 树为什么适合数据库索引。 ",
+      "rewritten": "简述 B+ 树为什么适合数据库索引。",
+      "base_recall_rank": 139,
+      "hyde_recall_rank": 139,
+      "base_rerank_rank": 83,
+      "hyde_rerank_rank": 83
+    },
+    {
+      "idx": 23,
+      "query": "深度网络越深，训练就一定越容易。 ",
+      "rewritten": "深度网络越深，训练就一定越容易。",
+      "base_recall_rank": 13,
+      "hyde_recall_rank": 13,
+      "base_rerank_rank": 3,
+      "hyde_rerank_rank": 3
+    },
+    {
+      "idx": 24,
+      "query": "写出新员工第一周工作安排中通常应包含的三类信息。 ",
+      "rewritten": "写出新员工第一周工作安排中通常应包含的三类信息。",
+      "base_recall_rank": 33,
+      "hyde_recall_rank": 33,
+      "base_rerank_rank": 84,
+      "hyde_rerank_rank": 84
+    },
+    {
+      "idx": 27,
+      "query": "逐点收敛就足以保证积分与极限可以交换。 ",
+      "rewritten": "逐点收敛就足以保证积分与极限可以交换。",
+      "base_recall_rank": 96,
+      "hyde_recall_rank": 96,
+      "base_rerank_rank": 27,
+      "hyde_rerank_rank": 27
+    },
+    {
+      "idx": 29,
+      "query": "以下哪项最能体现闭环服务要跟进结果，确认客户真正接受。 ",
+      "rewritten": "以下哪项最能体现闭环服务要跟进结果，确认客户真正接受。",
+      "base_recall_rank": 98,
+      "hyde_recall_rank": 98,
+      "base_rerank_rank": 73,
+      "hyde_rerank_rank": 73
+    },
+    {
+      "idx": 31,
+      "query": "简述该场景下的处理顺序。 ",
+      "rewritten": "简述该场景下的处理顺序。",
+      "base_recall_rank": 74,
+      "hyde_recall_rank": 74,
+      "base_rerank_rank": 124,
+      "hyde_rerank_rank": 124
+    },
+    {
+      "idx": 35,
+      "query": "说明“建模”和“优化”之间的关系。 ",
+      "rewritten": "说明“建模”和“优化”之间的关系。",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 36,
+      "query": "面试礼仪中最容易影响整体印象的是： ",
+      "rewritten": "面试礼仪中最容易影响整体印象的是：",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 38,
+      "query": "说明前端为什么要关注首屏加载性能。 ",
+      "rewritten": "说明前端为什么要关注首屏加载性能。",
+      "base_recall_rank": 30,
+      "hyde_recall_rank": 30,
+      "base_rerank_rank": 20,
+      "hyde_rerank_rank": 20
+    },
+    {
+      "idx": 39,
+      "query": "复试自我介绍应尽量突出与报考方向相关的经历。 ",
+      "rewritten": "复试自我介绍应尽量突出与报考方向相关的经历。",
+      "base_recall_rank": 45,
+      "hyde_recall_rank": 45,
+      "base_rerank_rank": 23,
+      "hyde_rerank_rank": 23
+    },
+    {
+      "idx": 41,
+      "query": "NoSQL 一定比关系型数据库更快。 ",
+      "rewritten": "NoSQL 一定比关系型数据库更快。",
+      "base_recall_rank": 19,
+      "hyde_recall_rank": 19,
+      "base_rerank_rank": 23,
+      "hyde_rerank_rank": 23
+    },
+    {
+      "idx": 42,
+      "query": "TypeScript 的静态类型检查可以减少一部分运行时类型错误。对还是错？ ",
+      "rewritten": "TypeScript 的静态类型检查可以减少一部分运行时类型错误。对还是错？",
+      "base_recall_rank": 19,
+      "hyde_recall_rank": 19,
+      "base_rerank_rank": 39,
+      "hyde_rerank_rank": 39
+    },
+    {
+      "idx": 44,
+      "query": "典型游戏主循环通常包括： ",
+      "rewritten": "典型游戏主循环通常包括：",
+      "base_recall_rank": 28,
+      "hyde_recall_rank": 28,
+      "base_rerank_rank": 4,
+      "hyde_rerank_rank": 4
+    },
+    {
+      "idx": 47,
+      "query": "客户对价格有异议，认为你们比竞品贵。在这种情况下，最优先的做法是： ",
+      "rewritten": "客户对价格有异议，认为你们比竞品贵。在这种情况下，最优先的做法是：",
+      "base_recall_rank": 129,
+      "hyde_recall_rank": 129,
+      "base_rerank_rank": 59,
+      "hyde_rerank_rank": 59
+    },
+    {
+      "idx": 48,
+      "query": "在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。 ",
+      "rewritten": "在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 49,
+      "query": "在部门里有两名员工能力突出，但培养方向还不明确。的场景里，先做能力盘点，再结合岗位要求设计成长路径。是合适的优先动作。 ",
+      "rewritten": "在部门里有两名员工能力突出，但培养方向还不明确。的场景里，先做能力盘点，再结合岗位要求设计成长路径。是合适的优先动作。",
+      "base_recall_rank": 101,
+      "hyde_recall_rank": 101,
+      "base_rerank_rank": 19,
+      "hyde_rerank_rank": 19
+    },
+    {
+      "idx": 50,
+      "query": "渲染管线中，负责把三角形投到屏幕上的阶段通常是： ",
+      "rewritten": "渲染管线中，负责把三角形投到屏幕上的阶段通常是：",
+      "base_recall_rank": 11,
+      "hyde_recall_rank": 11,
+      "base_rerank_rank": 11,
+      "hyde_rerank_rank": 11
+    },
+    {
+      "idx": 51,
+      "query": "齐次线性方程组一定有零解。 ",
+      "rewritten": "齐次线性方程组一定有零解。",
+      "base_recall_rank": 20,
+      "hyde_recall_rank": 20,
+      "base_rerank_rank": 42,
+      "hyde_rerank_rank": 42
+    },
+    {
+      "idx": 53,
+      "query": "在微分几何中，曲率通常用来刻画： ",
+      "rewritten": "在微分几何中，曲率通常用来刻画：",
+      "base_recall_rank": 2,
+      "hyde_recall_rank": 2,
+      "base_rerank_rank": 4,
+      "hyde_rerank_rank": 4
+    },
+    {
+      "idx": 54,
+      "query": "新机制先在一个小团队试点，但试点中出现了明显阻力。请结合管理场景写出你的处理方案。 ",
+      "rewritten": "新机制先在一个小团队试点，但试点中出现了明显阻力。请结合管理场景写出你的处理方案。",
+      "base_recall_rank": 75,
+      "hyde_recall_rank": 75,
+      "base_rerank_rank": 40,
+      "hyde_rerank_rank": 40
+    },
+    {
+      "idx": 55,
+      "query": "说明排列与组合的区别。 ",
+      "rewritten": "说明排列与组合的区别。",
+      "base_recall_rank": 71,
+      "hyde_recall_rank": 71,
+      "base_rerank_rank": 21,
+      "hyde_rerank_rank": 21
+    },
+    {
+      "idx": 57,
+      "query": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。请结合管理场景写出你的处理方案。 ",
+      "rewritten": "一个服务问题已经处理完，但不同员工给客户的说法前后不一致。请结合管理场景写出你的处理方案。",
+      "base_recall_rank": 76,
+      "hyde_recall_rank": 76,
+      "base_rerank_rank": 66,
+      "hyde_rerank_rank": 66
+    },
+    {
+      "idx": 58,
+      "query": "关于拓扑空间，下列说法正确的是： ",
+      "rewritten": "关于拓扑空间，下列说法正确的是：",
+      "base_recall_rank": 48,
+      "hyde_recall_rank": 48,
+      "base_rerank_rank": 38,
+      "hyde_rerank_rank": 38
+    },
+    {
+      "idx": 59,
+      "query": "施工组织设计的作用更接近于： ",
+      "rewritten": "施工组织设计的作用更接近于：",
+      "base_recall_rank": 10,
+      "hyde_recall_rank": 10,
+      "base_rerank_rank": 5,
+      "hyde_rerank_rank": 5
+    },
+    {
+      "idx": 61,
+      "query": "函数列逐点收敛与一致收敛相比，通常更强的是： ",
+      "rewritten": "函数列逐点收敛与一致收敛相比，通常更强的是：",
+      "base_recall_rank": 34,
+      "hyde_recall_rank": 34,
+      "base_rerank_rank": 28,
+      "hyde_rerank_rank": 28
+    },
+    {
+      "idx": 62,
+      "query": "核心骨干总是来问你怎么做，团队已经开始等你拍板。在这种情况下，最优先的做法是： ",
+      "rewritten": "核心骨干总是来问你怎么做，团队已经开始等你拍板。在这种情况下，最优先的做法是：",
+      "base_recall_rank": null,
+      "hyde_recall_rank": null,
+      "base_rerank_rank": null,
+      "hyde_rerank_rank": null
+    },
+    {
+      "idx": 63,
+      "query": "生成函数的主要用途之一是： ",
+      "rewritten": "生成函数的主要用途之一是：",
+      "base_recall_rank": 24,
+      "hyde_recall_rank": 24,
+      "base_rerank_rank": 8,
+      "hyde_rerank_rank": 8
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "ran_at": "2026-09-19T13:39:29.985088+00:00",
+  "reuses": "r12 dualrun_results.json semantic 30 条（old/new_answer_head 存档）+ dualrun_samples.json 样本清单",
+  "judge_model_note": "r12 原 judge=model fast（minimax-m3@dashscope）本轮 401 invalid_api_key （.env LLM_BASE_URL 默认 dashscope + LLM_API_KEY=deepseek key 错配）→ 改 model strong（deepseek-flash@api.deepseek.com，LLM 周配额已重置）",
+  "caveats": [
+    "old 侧 = r12 当时 429 降级规则答案（非真实生成）——本补验判定的是『降级规则答案 vs 新路径 LLM 答案』语义面",
+    "old/new 答案均为 200 字符 head 存档（r12 semantic_pair 截断），judge 输入非全文"
+  ],
+  "n": 30,
+  "equivalent": 12,
+  "not_equivalent": 18,
+  "judge_failed": 0,
+  "wall_seconds": 17.5,
+  "records": [
+    {
+      "sample_id": 2,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 3,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 6,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 8,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 14,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 15,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 16,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 17,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 20,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 21,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 22,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 25,
+      "source": "eval_set32",
+      "equivalent": true,
+      "judge_raw": "{\"equivalent\": true}"
+    },
+    {
+      "sample_id": 27,
+      "source": "eval_set32",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 33,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 36,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 38,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 39,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 43,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 52,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 55,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 58,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 59,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 63,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 64,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 72,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 74,
+      "source": "chat_history",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 83,
+      "source": "edge_chitchat",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 90,
+      "source": "edge_tool",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 94,
+      "source": "edge_tool",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    },
+    {
+      "sample_id": 97,
+      "source": "edge_knowledge",
+      "equivalent": false,
+      "judge_raw": "{\"equivalent\": false}"
+    }
+  ]
+}
