@@ -9,6 +9,10 @@ R03-b 迁移/评估只读核验（4417 迁移 + 指标零偏差可重放独立�
 全程 **纯只读**: 对 Milvus 只用参数绑定 SELECT（query/count），对 MySQL 零访问；
 **不写库 / 不重建 / 不迁移**。产出 = 打印 + 可选写入 scripts/eval/data/r03b_verify_result.json。
 
+G0 防漏读 guard（W-NEXT-R03BGUARD-001 校准）: 逐分区对拍（每分区 count==枚举）+
+整表差=跨分区重复 PK 数→WARN（Milvus 正常语义，见 _read_all_light docstring 与
+test-reports/MILVUSFLUSH1-completion-report.md §六-1 方案 B）；真漏读/对拍不闭合仍红。
+
 四步 GWT:
   G1  id_map 翻译命中率 / new id 在库率 (+ 旧 id 已替换) —— 与 R03 报告对账
   G2  canonical id 重算(hash/seq 组件) 一致率 + doc_sha256 一致率
@@ -68,8 +72,94 @@ def _load_id_map() -> dict:
         return json.load(f)
 
 
-def _read_all_light(client: MilvusClient) -> list[dict]:
-    """只读全量轻量字段（不含向量），行数超 16384 拒（防漏读掩盖）。"""
+def _read_guard_verdict(part_ladder: list[dict], whole_count: int, whole_enumerate: int) -> dict:
+    """防漏读 guard 判定（纯函数，单测直测；Milvus 语义见 _read_all_light docstring）。
+
+    part_ladder: [{"partition": str, "count": int, "enumerate": int, "ids": list[int]}]
+      count=该分区 count(*)（物理活行数），enumerate=该分区枚举行数，ids=枚举出的 PK 清单
+    whole_count: 整表 count(*)（物理活行数，逐 segment 聚合不去重）
+    whole_enumerate: 整表枚举行数（PK reduce 去重视图）
+
+    判据（W-NEXT-R03BGUARD-001，MILVUSFLUSH-001 处置建议 §六-1 方案 B）：
+      ① 每分区 count == 枚举（分区级相等硬断言——真漏读/同分区重复 PK 在此红）
+      ② Σ分区 count == 整表 count 且 Σ分区枚举−唯一 id 数 == 整表 count−整表枚举
+        （对拍闭合；整表差无法完全归因于跨分区重复 → 红，防 ghost 漏网）
+      ③ 跨分区重复 PK 数 > 0 → WARN 附重复 id 清单（Milvus 正常语义，不 FAIL）
+    """
+    broken = [{"partition": p["partition"], "count": p["count"], "enumerate": p["enumerate"]}
+              for p in part_ladder if p["count"] != p["enumerate"]]
+    id_seen: dict[int, int] = {}
+    for p in part_ladder:
+        for i in p["ids"]:
+            id_seen[i] = id_seen.get(i, 0) + 1
+    dup_ids = sorted(i for i, c in id_seen.items() if c > 1)
+    part_count_sum = sum(p["count"] for p in part_ladder)
+    part_enum_sum = sum(p["enumerate"] for p in part_ladder)
+    redundant_copies = part_enum_sum - len(id_seen)   # 跨分区冗余物理副本数
+    gap = whole_count - whole_enumerate               # 整表 count − 整表枚举
+
+    if broken:
+        verdict = "FAIL"
+        reason = f"分区级 count!=枚举（真漏读/同分区重复/ghost）: {broken}"
+    elif part_count_sum != whole_count:
+        verdict = "FAIL"
+        reason = (f"对拍不闭合: Σ分区count={part_count_sum} != 整表count={whole_count} "
+                  f"（reduce 语义或分区清单漂移）")
+    elif redundant_copies != gap:
+        verdict = "FAIL"
+        reason = (f"对拍不闭合: 整表差 count−枚举={gap} 无法由跨分区重复 PK（冗余副本="
+                  f"{redundant_copies}）解释——疑似 count 可见而枚举不可读的 ghost")
+    elif dup_ids:
+        verdict = "WARN"
+        reason = (f"跨分区重复 PK（同 PK 双副本，整表枚举按 PK reduce 去重返回最新副本）: "
+                  f"gap={gap} dup_ids={len(dup_ids)} 个——Milvus 正常语义非数据问题"
+                  f"（MILVUSFLUSH1 已归因），定位指针 scripts/eval/milvus_count_probe.py")
+    else:
+        verdict = "PASS"
+        reason = f"逐分区对拍全闭合（{len(part_ladder)} 分区），整表差={gap}"
+    return {
+        "step": "G0",
+        "goal": "防漏读 guard（逐分区对拍: 每分区 count==枚举; 整表差=跨分区重复 PK 数→WARN）",
+        "mode": "per_partition_reconcile(MILVUSFLUSH1 §六-1 方案 B)",
+        "partitions": [{"partition": p["partition"], "count": p["count"],
+                        "enumerate": p["enumerate"], "closed": p["count"] == p["enumerate"]}
+                       for p in part_ladder],
+        "whole_count": whole_count,
+        "whole_enumerate": whole_enumerate,
+        "gap": gap,
+        "part_count_sum": part_count_sum,
+        "part_enumerate_sum": part_enum_sum,
+        "duplicate_pk_count": len(dup_ids),
+        "redundant_copies": redundant_copies,
+        "duplicate_ids": dup_ids,
+        "duplicate_ids_samples": dup_ids[:20],
+        "verdict": verdict,
+        "reason": reason,
+    }
+
+
+def _read_all_light(client: MilvusClient) -> tuple[list[dict], dict]:
+    """只读全量轻量字段（不含向量），行数超 16384 拒（防漏读掩盖）。
+
+    防漏读 guard 语义（W-NEXT-R03BGUARD-001 按 MILVUSFLUSH-001 处置建议 §六-1 方案 B 校准，
+    归因报告: edu-agent/test-reports/MILVUSFLUSH1-completion-report.md）：
+
+    Milvus 合法口径阶梯（本库 2026-09-19 实证，pkg/v2.5.5 @edu_knowledge）：
+      stats(num_entities)=3399 >= count(*)=3398 >= 整表枚举(query)=3388
+      - stats − count(*) = 已删行待 compaction（num_entities 不含 delete 过滤）——合法，不作失败条件
+      - count(*) − 整表枚举 = 跨分区同 PK 双副本：upsert 只 tombstone 目标分区，旧分区活副本
+        存活；整表 query 在 reduce 阶段按 PK 去重返回最新副本（get 同理），count(*) 逐 segment
+        聚合物理行数不去重；flush 不消除（3 个 persistent 段全 Flushed，与 flush 状态无关的
+        查询语义差）。整表「query 数 != count 数」不再判失败（恒为 WARN 源，非漏读信号）
+      - 本库实证：10 个 id（crc32 PK）各在 _default+user_1 一份（chunk_id/created_at 逐字段同）；
+        分区对拍全闭合 _default 3373/3373、course_public 0/0、user_1 19/19、user_100003 6/6
+
+    故 guard 改为逐分区对拍（判定逻辑在 _read_guard_verdict，纯函数可单测）：
+      ① 每分区 count(*) == 该分区枚举数（分区级相等仍硬断言——真漏读/同分区重复在此红）
+      ② 对拍闭合校验（Σ分区 count == 整表 count；整表差 == 跨分区冗余副本数）
+      ③ 跨分区重复 PK > 0 → WARN 附重复 id 清单，不再 FAIL
+    行级定位/复跑探针: scripts/eval/milvus_count_probe.py（只读，产物 data/wnextmilvusflush1_probe.json）
+    """
     rows = client.query(
         COLLECTION_NAME, filter="id >= 0",
         output_fields=["id", "chunk_id", "content", "raw_content", "tenant_id",
@@ -77,9 +167,18 @@ def _read_all_light(client: MilvusClient) -> list[dict]:
         limit=16384, timeout=120,
     )
     cnt = int(client.query(COLLECTION_NAME, filter="id >= 0", output_fields=["count(*)"])[0]["count(*)"])
-    if len(rows) != cnt:
-        raise RuntimeError(f"只读全量不完整: query={len(rows)} count(*)={cnt}")
-    return rows
+    part_ladder: list[dict] = []
+    for pname in client.list_partitions(COLLECTION_NAME):
+        pcnt = int(client.query(COLLECTION_NAME, filter="id >= 0", output_fields=["count(*)"],
+                                partition_names=[pname])[0]["count(*)"])
+        prows = client.query(COLLECTION_NAME, filter="id >= 0", output_fields=["id"],
+                             limit=16384, partition_names=[pname], timeout=120)
+        part_ladder.append({"partition": pname, "count": pcnt, "enumerate": len(prows),
+                            "ids": [int(r["id"]) for r in prows]})
+    guard = _read_guard_verdict(part_ladder, cnt, len(rows))
+    if guard["verdict"] == "FAIL":
+        raise RuntimeError(f"只读全量不完整(逐分区对拍 guard): {guard['reason']}")
+    return rows, guard
 
 
 def _doc_sha256(content: str) -> str:
@@ -419,9 +518,9 @@ def main() -> int:
     if not client.has_collection(COLLECTION_NAME):
         print(f"[fatal] collection 不存在: {COLLECTION_NAME}")
         return 1
-    rows = _read_all_light(client)
+    rows, guard = _read_all_light(client)
     n = len(rows)
-    print(f"Milvus {COLLECTION_NAME} 只读全量: {n} 行")
+    print(f"Milvus {COLLECTION_NAME} 只读全量: {n} 行 (guard={guard['verdict']}: {guard['reason']})")
 
     g1 = step1_idmap(rows, payload)
     g2 = step2_canonical(rows, payload, args.sample)
@@ -455,8 +554,11 @@ def main() -> int:
         "collection": COLLECTION_NAME,
         "milvus_uri": settings.MILVUS_URI,
         "row_count": n,
-        "steps": [g1, g2, (g3 or {}), g4],
-        "all_pass": all(s.get("verdict") in ("PASS", "TODO", None) for s in [g1, g2, (g3 or {}), g4]),
+        "steps": [guard, g1, g2, (g3 or {}), g4],
+        # guard WARN=跨分区重复 PK（Milvus 正常语义，MILVUSFLUSH1 已归因）不判失败;
+        # guard FAIL 在 _read_all_light 内已 raise，不会进入 steps
+        "all_pass": all(s.get("verdict") in ("PASS", "WARN", "TODO", None)
+                        for s in [guard, g1, g2, (g3 or {}), g4]),
         "wall_seconds": round(time.perf_counter() - t0, 1),
     }
     print("=" * 72)

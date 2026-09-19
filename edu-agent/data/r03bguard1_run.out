@@ -1,0 +1,721 @@
+[安全] DEBUG 模式使用公开 JWT_SECRET，仅限本地开发，禁止上线
+[安全] DEBUG 模式使用默认 API_TOKEN，仅限本地开发，禁止上线
+Milvus edu_knowledge 只读全量: 3388 行 (guard=WARN: 跨分区重复 PK（同 PK 双副本，整表枚举按 PK reduce 去重返回最新副本）: gap=10 dup_ids=10 个——Milvus 正常语义非数据问题（MILVUSFLUSH1 已归因），定位指针 scripts/eval/milvus_count_probe.py)
+[32m18:12:14[0m | [1mINFO    [0m | [36mapp.common.logging[0m:[36msetup_logging[0m:[36m95[0m | [1m日志系统已初始化，级别: DEBUG，目录: logs[0m
+E:\stu\project\stu\EduAgent实施手册\edu-agent\.venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+[32m18:12:16[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_neo4j[0m:[36m353[0m | [1m初始化 Neo4j：bolt://192.168.85.101:7687[0m
+Building prefix dict from the default dictionary ...
+Loading model from cache C:\Users\Administrator\AppData\Local\Temp\jieba.cache
+[32m18:12:16[0m | [1mINFO    [0m | [36mapp.database[0m:[36minit_neo4j[0m:[36m367[0m | [1mNeo4j 连接成功[0m
+Loading model cost 0.744 seconds.
+Prefix dict has been built successfully.
+[32m18:12:17[0m | [1mINFO    [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m159[0m | [1mjieba 自定义词典已加载：data\custom_dict.txt[0m
+[32m18:12:17[0m | [34m[1mDEBUG   [0m | [36mapp.knowledge.importer.embedder[0m:[36mload_jieba_resources[0m:[36m174[0m | [34m[1m停用词加载完成，共 348 条[0m
+[32m18:12:17[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=1416ms embed(dense)=0ms sparse=1ms search=293ms asm=3ms docs=150[0m
+[32m18:12:18[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=1252ms ok=True[0m
+[32m18:12:18[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=2671ms | hyde=0 milvus=1419 graph=0 kg_expand=0 merge=0 rerank=1253 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:18[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=62ms embed(dense)=0ms sparse=0ms search=59ms asm=2ms docs=150[0m
+[32m18:12:19[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=716ms ok=True[0m
+[32m18:12:19[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=780ms | hyde=0 milvus=63 graph=0 kg_expand=0 merge=0 rerank=717 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:19[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=83ms embed(dense)=0ms sparse=0ms search=80ms asm=2ms docs=150[0m
+[32m18:12:20[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=772ms ok=True[0m
+[32m18:12:20[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=857ms | hyde=0 milvus=84 graph=0 kg_expand=0 merge=0 rerank=773 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:20[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=45ms embed(dense)=0ms sparse=1ms search=43ms asm=2ms docs=150[0m
+[32m18:12:21[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=780ms ok=True[0m
+[32m18:12:21[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=829ms | hyde=0 milvus=48 graph=0 kg_expand=0 merge=0 rerank=781 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:21[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=57ms embed(dense)=0ms sparse=0ms search=55ms asm=1ms docs=150[0m
+[32m18:12:22[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=1015ms ok=True[0m
+[32m18:12:22[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=1074ms | hyde=0 milvus=58 graph=0 kg_expand=0 merge=0 rerank=1016 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:22[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=46ms embed(dense)=0ms sparse=0ms search=44ms asm=2ms docs=150[0m
+[32m18:12:23[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=920ms ok=True[0m
+[32m18:12:23[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=969ms | hyde=0 milvus=48 graph=0 kg_expand=0 merge=0 rerank=921 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:23[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=61ms embed(dense)=0ms sparse=0ms search=58ms asm=2ms docs=150[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=849ms ok=True[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=912ms | hyde=0 milvus=62 graph=0 kg_expand=0 merge=0 rerank=850 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=59ms embed(dense)=0ms sparse=0ms search=57ms asm=2ms docs=150[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=848ms ok=True[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=908ms | hyde=0 milvus=60 graph=0 kg_expand=0 merge=0 rerank=848 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:24[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=53ms embed(dense)=0ms sparse=0ms search=52ms asm=1ms docs=150[0m
+[32m18:12:25[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=711ms ok=True[0m
+[32m18:12:25[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=766ms | hyde=0 milvus=54 graph=0 kg_expand=0 merge=0 rerank=712 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:25[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=46ms embed(dense)=0ms sparse=0ms search=44ms asm=2ms docs=150[0m
+[32m18:12:26[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=716ms ok=True[0m
+[32m18:12:26[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=764ms | hyde=0 milvus=47 graph=0 kg_expand=0 merge=0 rerank=717 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:26[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=42ms embed(dense)=0ms sparse=0ms search=40ms asm=2ms docs=150[0m
+[32m18:12:27[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=813ms ok=True[0m
+[32m18:12:27[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=867ms | hyde=0 milvus=45 graph=9 kg_expand=0 merge=0 rerank=813 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:27[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=41ms embed(dense)=0ms sparse=0ms search=40ms asm=1ms docs=150[0m
+[32m18:12:28[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=849ms ok=True[0m
+[32m18:12:28[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=892ms | hyde=0 milvus=43 graph=0 kg_expand=0 merge=0 rerank=850 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:28[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=48ms embed(dense)=0ms sparse=0ms search=47ms asm=1ms docs=150[0m
+[32m18:12:29[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=1042ms ok=True[0m
+[32m18:12:29[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=1092ms | hyde=0 milvus=49 graph=0 kg_expand=0 merge=0 rerank=1042 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:29[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=69ms embed(dense)=0ms sparse=0ms search=66ms asm=2ms docs=150[0m
+[32m18:12:30[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=920ms ok=True[0m
+[32m18:12:30[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=991ms | hyde=0 milvus=71 graph=0 kg_expand=0 merge=0 rerank=920 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:30[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=53ms embed(dense)=0ms sparse=0ms search=52ms asm=1ms docs=150[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=729ms ok=True[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=784ms | hyde=0 milvus=54 graph=0 kg_expand=0 merge=0 rerank=729 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=61ms embed(dense)=0ms sparse=0ms search=59ms asm=1ms docs=150[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=745ms ok=True[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=807ms | hyde=0 milvus=62 graph=0 kg_expand=0 merge=0 rerank=746 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:31[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=60ms embed(dense)=0ms sparse=0ms search=57ms asm=2ms docs=150[0m
+[32m18:12:32[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=698ms ok=True[0m
+[32m18:12:32[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=763ms | hyde=0 milvus=62 graph=2 kg_expand=0 merge=0 rerank=699 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:32[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=43ms embed(dense)=0ms sparse=0ms search=41ms asm=1ms docs=150[0m
+[32m18:12:33[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=962ms ok=True[0m
+[32m18:12:33[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=1006ms | hyde=0 milvus=44 graph=0 kg_expand=0 merge=0 rerank=962 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:33[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=69ms embed(dense)=0ms sparse=0ms search=66ms asm=2ms docs=150[0m
+[32m18:12:34[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=777ms ok=True[0m
+[32m18:12:34[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=849ms | hyde=0 milvus=70 graph=0 kg_expand=0 merge=0 rerank=778 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:34[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=67ms embed(dense)=0ms sparse=0ms search=65ms asm=2ms docs=150[0m
+[32m18:12:35[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=808ms ok=True[0m
+[32m18:12:35[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=878ms | hyde=0 milvus=69 graph=0 kg_expand=0 merge=0 rerank=809 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:35[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=48ms embed(dense)=0ms sparse=0ms search=46ms asm=1ms docs=150[0m
+[32m18:12:36[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=701ms ok=True[0m
+[32m18:12:36[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=751ms | hyde=0 milvus=49 graph=0 kg_expand=0 merge=0 rerank=702 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:36[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=44ms embed(dense)=0ms sparse=0ms search=42ms asm=2ms docs=150[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=909ms ok=True[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=958ms | hyde=0 milvus=45 graph=3 kg_expand=0 merge=0 rerank=910 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=56ms embed(dense)=0ms sparse=0ms search=54ms asm=2ms docs=150[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=645ms ok=True[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=704ms | hyde=0 milvus=58 graph=0 kg_expand=0 merge=0 rerank=646 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:37[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=50ms embed(dense)=0ms sparse=0ms search=49ms asm=1ms docs=150[0m
+[32m18:12:38[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=829ms ok=True[0m
+[32m18:12:38[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=884ms | hyde=0 milvus=52 graph=3 kg_expand=0 merge=0 rerank=829 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:38[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=59ms embed(dense)=0ms sparse=1ms search=56ms asm=2ms docs=150[0m
+[32m18:12:39[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=793ms ok=True[0m
+[32m18:12:39[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=854ms | hyde=0 milvus=61 graph=0 kg_expand=0 merge=0 rerank=794 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:39[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=103ms embed(dense)=0ms sparse=0ms search=101ms asm=2ms docs=150[0m
+[32m18:12:40[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=661ms ok=True[0m
+[32m18:12:40[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=766ms | hyde=0 milvus=105 graph=0 kg_expand=0 merge=0 rerank=661 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:40[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=53ms embed(dense)=0ms sparse=1ms search=51ms asm=1ms docs=150[0m
+[32m18:12:41[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=910ms ok=True[0m
+[32m18:12:41[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=967ms | hyde=0 milvus=56 graph=0 kg_expand=0 merge=0 rerank=911 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:41[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=54ms embed(dense)=0ms sparse=0ms search=51ms asm=2ms docs=150[0m
+[32m18:12:42[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=743ms ok=True[0m
+[32m18:12:42[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=799ms | hyde=0 milvus=55 graph=0 kg_expand=0 merge=0 rerank=744 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:42[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=46ms embed(dense)=0ms sparse=0ms search=43ms asm=2ms docs=150[0m
+[32m18:12:42[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=799ms ok=True[0m
+[32m18:12:42[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=851ms | hyde=0 milvus=48 graph=3 kg_expand=0 merge=0 rerank=799 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:43[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=51ms embed(dense)=0ms sparse=0ms search=50ms asm=1ms docs=150[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=1009ms ok=True[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=1062ms | hyde=0 milvus=53 graph=0 kg_expand=0 merge=0 rerank=1009 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=51ms embed(dense)=0ms sparse=1ms search=48ms asm=2ms docs=150[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=752ms ok=True[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=806ms | hyde=0 milvus=53 graph=0 kg_expand=0 merge=0 rerank=753 cliff=0 | raw=150 final=2 | health dense=ok sparse=ok graph=ok kg=disabled rerank=ok[0m
+[32m18:12:44[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_milvus_hybrid_search_safe[0m:[36m361[0m | [1m[retrieval-profile] milvus total=48ms embed(dense)=0ms sparse=0ms search=46ms asm=1ms docs=150[0m
+[32m18:12:45[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36m_rerank_docs[0m:[36m647[0m | [1m[retrieval-profile] rerank sidecar attempt=811ms ok=True[0m
+[32m18:12:45[0m | [1mINFO    [0m | [36mapp.chat.retriever[0m:[36mretrieve_three_channel[0m:[36m916[0m | [1m[retrieval-profile] pipeline total=862ms | hyde=0 milvus=50 graph=0 kg_expand=0 merge=0 rerank=812 cliff=0 | raw=150 final=5 | health dense=ok sparse=ok graph=empty kg=disabled rerank=ok[0m
+========================================================================
+
+[G0] 防漏读 guard（逐分区对拍: 每分区 count==枚举; 整表差=跨分区重复 PK 数→WARN）
+{
+  "mode": "per_partition_reconcile(MILVUSFLUSH1 §六-1 方案 B)",
+  "partitions": [
+    {
+      "partition": "_default",
+      "count": 3373,
+      "enumerate": 3373,
+      "closed": true
+    },
+    {
+      "partition": "course_public",
+      "count": 0,
+      "enumerate": 0,
+      "closed": true
+    },
+    {
+      "partition": "user_1",
+      "count": 19,
+      "enumerate": 19,
+      "closed": true
+    },
+    {
+      "partition": "user_100003",
+      "count": 6,
+      "enumerate": 6,
+      "closed": true
+    }
+  ],
+  "whole_count": 3398,
+  "whole_enumerate": 3388,
+  "gap": 10,
+  "part_count_sum": 3398,
+  "part_enumerate_sum": 3398,
+  "duplicate_pk_count": 10,
+  "redundant_copies": 10,
+  "duplicate_ids": [
+    19587845,
+    145339617,
+    279813836,
+    816417878,
+    1302561580,
+    1329293447,
+    1711174363,
+    2409068295,
+    3339387773,
+    3600661124
+  ],
+  "duplicate_ids_samples": [
+    19587845,
+    145339617,
+    279813836,
+    816417878,
+    1302561580,
+    1329293447,
+    1711174363,
+    2409068295,
+    3339387773,
+    3600661124
+  ],
+  "verdict": "WARN",
+  "reason": "跨分区重复 PK（同 PK 双副本，整表枚举按 PK reduce 去重返回最新副本）: gap=10 dup_ids=10 个——Milvus 正常语义非数据问题（MILVUSFLUSH1 已归因），定位指针 scripts/eval/milvus_count_probe.py"
+}
+
+[G1] id_map 翻译命中率 / new id 在库率 / 旧 id 已替换 / golden 覆盖
+{
+  "id_map_rows": 4417,
+  "new_in_lib": 3343,
+  "new_in_lib_rate": 0.756849,
+  "old_residual_in_lib": 0,
+  "old_residual_samples": [],
+  "id_map_old_unique": 4417,
+  "id_map_new_unique": 4417,
+  "id_format_contract_bad": 0,
+  "id_format_bad_samples": [],
+  "golden_total": 32,
+  "golden_in_map": 32,
+  "golden_in_map_rate": 1.0,
+  "golden_missing": [],
+  "verdict": "FAIL"
+}
+
+[G2] canonical id 重算(hash/seq 组件) + doc_sha256 一致率
+{
+  "sampled_records_joined": 3343,
+  "canonical_hash_match": 3343,
+  "canonical_hash_match_rate": 1.0,
+  "canonical_hash_bad_samples": [],
+  "doc_sha256_match": 3343,
+  "doc_sha256_match_rate": 1.0,
+  "doc_sha256_bad_samples": [],
+  "seq_ok_groups": 3344,
+  "seq_bad_groups": 0,
+  "seq_bad_samples": [],
+  "unique_canonical_groups": 3344,
+  "verdict": "PASS"
+}
+
+[G3] hit_rate@5 / mrr@5 实测 vs 基线偏差; golden 排名一致率
+{
+  "mode": "realtime_e2e_readonly(retrieve_three_channel 全链 + R03 precomputed dense)",
+  "n": 32,
+  "hit_rate@5": 0.9688,
+  "mrr@5": 0.9688,
+  "per_query": [
+    {
+      "idx": 0,
+      "query": "化学方程式总是写错时，最该加强的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q019",
+      "gt_resolved_id": "_default:f3b54bdeeb7573a9:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:f3b54bdeeb7573a9:1",
+        "_default:db8b750ef7bed423:1"
+      ]
+    },
+    {
+      "idx": 1,
+      "query": "在多学科并行时，最能提升效率的是？",
+      "golden_chunk_id": "question_senior_transition_bank_q016",
+      "gt_resolved_id": "_default:0b8d94a5327a1e44:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:0b8d94a5327a1e44:1",
+        "_default:62b37f77b4b38cc4:1",
+        "_default:cda6ce1127819cb4:1",
+        "_default:6271ab958ccf89ef:1",
+        "_default:ecb05042fb0a2ea9:1"
+      ]
+    },
+    {
+      "idx": 2,
+      "query": "限流可以帮助保护接口免受突发流量或恶意请求冲击。对还是错？ ",
+      "golden_chunk_id": "question_backend_development_bank_q016",
+      "gt_resolved_id": "_default:1efbcd91f4eb3499:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:1efbcd91f4eb3499:1",
+        "_default:7d133ee7f2de85d5:1"
+      ]
+    },
+    {
+      "idx": 3,
+      "query": "如果缓存数据和数据库数据不一致，常见的处理思路是什么？",
+      "golden_chunk_id": "question_backend_development_bank_q020",
+      "gt_resolved_id": "_default:8627e30844db7514:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:8627e30844db7514:1",
+        "_default:30d587d856c983aa:1"
+      ]
+    },
+    {
+      "idx": 4,
+      "query": "异步请求失败时仍然应该考虑显式捕获错误。对还是错？ ",
+      "golden_chunk_id": "question_web_programming_languages_bank_q016",
+      "gt_resolved_id": "_default:a0ff4694fb7d53a5:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:a0ff4694fb7d53a5:1",
+        "_default:85eccc08fd1b9492:1"
+      ]
+    },
+    {
+      "idx": 5,
+      "query": "在 Web 语言相关开发中，为什么要注意数据编码？",
+      "golden_chunk_id": "question_web_programming_languages_bank_q008",
+      "gt_resolved_id": "_default:6fb37f368788774f:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:6fb37f368788774f:1",
+        "_default:58c14730d537f09b:1"
+      ]
+    },
+    {
+      "idx": 6,
+      "query": "请分析公司准备建立后备干部梯队，但很多岗位的接班人还没有被识别出来。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_talent_development_bank_q024",
+      "gt_resolved_id": "_default:13d60acc312b1752:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:13d60acc312b1752:1",
+        "_default:cfd8814d0e5673ff:1",
+        "_default:81828876addf5459:1",
+        "_default:018cdd5e3ecf427a:1",
+        "_default:b08e7e462a0ae23a:1"
+      ]
+    },
+    {
+      "idx": 7,
+      "query": "关于部门里有两名员工能力突出，但培养方向还不明确。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_talent_development_bank_q003",
+      "gt_resolved_id": "_default:f920447dc5bcc336:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:f920447dc5bcc336:1",
+        "_default:6ca6d409e6353510:1",
+        "_default:5f0bc2a926c8d42c:1",
+        "_default:055e3340173da577:1",
+        "_default:eca76b8af4cd80bc:1"
+      ]
+    },
+    {
+      "idx": 8,
+      "query": "你会怎样回答？",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q024",
+      "gt_resolved_id": "_default:71d80e901ac8436e:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:71d80e901ac8436e:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0cfe1706b7ac36be:1",
+        "_default:694b00d344e777df:1",
+        "_default:700fada12e2feeec:1"
+      ]
+    },
+    {
+      "idx": 9,
+      "query": "复试中只要答案正确，表达方式不重要。 ",
+      "golden_chunk_id": "question_postgraduate_retest_bank_q013",
+      "gt_resolved_id": "_default:89131f53d00854dd:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:89131f53d00854dd:1",
+        "_default:3ff516e787c41edf:1",
+        "_default:6b772a7e51d0ffe4:1",
+        "_default:0fc4e3fc9b7655d6:1",
+        "_default:46ecfcf77dfd067a:1"
+      ]
+    },
+    {
+      "idx": 10,
+      "query": "关于模型验证与模型评估，下列说法正确的是： ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q008",
+      "gt_resolved_id": "_default:f7ed73c579b695b7:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:f7ed73c579b695b7:1",
+        "_default:e6f6c7f57f0b126e:1"
+      ]
+    },
+    {
+      "idx": 11,
+      "query": "某产品月销量依次为 120、128、131、140、149。若用简单线性趋势描述，请判断其总体变化并给出一句分析。 ",
+      "golden_chunk_id": "question_modeling_and_simulation_bank_q023",
+      "gt_resolved_id": "_default:2b719a69195d9fd1:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:2b719a69195d9fd1:1",
+        "_default:24dc7f1fcc899a02:1"
+      ]
+    },
+    {
+      "idx": 12,
+      "query": "为什么要关注 TCP 的 TIME_WAIT 状态？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q021",
+      "gt_resolved_id": "_default:60e00f8d266c98ff:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:60e00f8d266c98ff:1",
+        "_default:ad21d61f88405e29:1"
+      ]
+    },
+    {
+      "idx": 13,
+      "query": "TLS 证书在安全通信中的关键作用更接近哪一项？",
+      "golden_chunk_id": "question_network_and_communication_systems_bank_q007",
+      "gt_resolved_id": "_default:9e63100408e0c5b9:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:9e63100408e0c5b9:1",
+        "_default:8664fae87fd086f8:1"
+      ]
+    },
+    {
+      "idx": 14,
+      "query": "关于假设检验，下列说法正确的是： ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q010",
+      "gt_resolved_id": "_default:3adc5068ac73fc4c:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:3adc5068ac73fc4c:1",
+        "_default:38aec30618fd39a9:1",
+        "_default:78aa1d254b033f39:1",
+        "_default:ed02d98f10d2efbf:1",
+        "_default:e6f6c7f57f0b126e:1"
+      ]
+    },
+    {
+      "idx": 15,
+      "query": "说明方差和标准差之间的关系。 ",
+      "golden_chunk_id": "question_data_and_quantitative_analysis_bank_q017",
+      "gt_resolved_id": "_default:a8b60df90279a079:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:a8b60df90279a079:1",
+        "_default:d262f3365d4ffe8b:1"
+      ]
+    },
+    {
+      "idx": 16,
+      "query": "在工程里如何理解 CAP，而不是只背概念？",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q018",
+      "gt_resolved_id": "_default:8daa80cd05678c11:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:8daa80cd05678c11:1",
+        "_default:76e938e6c763e6f5:1"
+      ]
+    },
+    {
+      "idx": 17,
+      "query": "写出一个指数退避加随机抖动的重试伪代码。 ",
+      "golden_chunk_id": "question_distributed_and_cloud_systems_bank_q023",
+      "gt_resolved_id": "_default:00778542d0b23eb1:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:00778542d0b23eb1:1",
+        "_default:d9dcdfd0cee2dcb6:1",
+        "_default:b75d665a3219b538:1",
+        "_default:a1df4c0903c246e2:1",
+        "_default:5974ba0702ccb72b:1"
+      ]
+    },
+    {
+      "idx": 18,
+      "query": "关于车间巡检时发现地面有油渍，旁边还有行走通道。的处理，以下做法正确的是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q003",
+      "gt_resolved_id": "_default:9b1bf7ee4ad0da67:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:9b1bf7ee4ad0da67:1",
+        "_default:a914107b465b725c:1",
+        "_default:ec93fc50ab1cc102:1",
+        "_default:3e5c47c6a849ff42:1",
+        "_default:279a7091502b6363:1"
+      ]
+    },
+    {
+      "idx": 19,
+      "query": "员工要进行有粉尘的操作，但嫌佩戴防护用品麻烦。在这种情况下，最优先的做法是： ",
+      "golden_chunk_id": "question_workplace_safety_bank_q009",
+      "gt_resolved_id": "_default:b044b645b9a8580d:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:b044b645b9a8580d:1",
+        "_default:f01fd47cc0bb6c03:1",
+        "_default:2de9c8f9aac6a24b:1",
+        "_default:3f014fedfcb59fec:1",
+        "_default:401adbf55ac1dac9:1"
+      ]
+    },
+    {
+      "idx": 20,
+      "query": "半径为 3 的圆的面积是： ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q006",
+      "gt_resolved_id": "_default:c7abc3b29d512d9c:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:c7abc3b29d512d9c:1",
+        "_default:775e6de0d561b748:1",
+        "_default:1b14d81f2e098f22:1",
+        "_default:f415499bc3d3f61a:1",
+        "_default:67819d19f3f47e10:1"
+      ]
+    },
+    {
+      "idx": 21,
+      "query": "解方程 x^2-7x+10=0。 ",
+      "golden_chunk_id": "question_middle_high_school_math_bank_q021",
+      "gt_resolved_id": "_default:2eac18381fbcdbcb:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:2eac18381fbcdbcb:1",
+        "user_1:0b92bd8c540c54d0:1"
+      ]
+    },
+    {
+      "idx": 22,
+      "query": "简述该场景下的处理顺序。 ",
+      "golden_chunk_id": "question_service_standard_bank_q013",
+      "gt_resolved_id": "_default:b1367fc01bc30bb9:1",
+      "gt_resolve_via": "miss",
+      "hit": false,
+      "rr": 0.0,
+      "rank_of_gt": null,
+      "top5_ids": [
+        "_default:20d3ce7bab1bca11:1",
+        "_default:ddd0b9fdc1865105:1",
+        "_default:9f0590c84554de82:1",
+        "_default:29fbcc866b6d1be0:1",
+        "_default:622d3991321d4cec:1"
+      ]
+    },
+    {
+      "idx": 23,
+      "query": "请分析门店早班迎宾时，客户刚进门，前台还在低头整理文件。中的主要风险点，并说明如何闭环。 ",
+      "golden_chunk_id": "question_service_standard_bank_q008",
+      "gt_resolved_id": "_default:4f59c31e8452eb99:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:4f59c31e8452eb99:1",
+        "_default:38ab1090ad9b1def:1",
+        "_default:5c548b91b960da05:1",
+        "_default:302a5b446796fd7b:1",
+        "_default:cd9f217d08f60d3d:1"
+      ]
+    },
+    {
+      "idx": 24,
+      "query": "材料六：共同富裕不是少数人的富裕，也不是整齐划一的平均主义，而是全体人民共同富裕的渐进过程。 作答要避免把共同富裕理解成平均主义。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q006",
+      "gt_resolved_id": "_default:764df29a68273f5b:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:764df29a68273f5b:1",
+        "_default:0c1eff9558b1f2fe:1"
+      ]
+    },
+    {
+      "idx": 25,
+      "query": "网上出现关于食品安全的谣言，引发居民恐慌。 ",
+      "golden_chunk_id": "question_postgraduate_politics_bank_q011",
+      "gt_resolved_id": "_default:3be16756c6ad8ad5:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:3be16756c6ad8ad5:1",
+        "_default:7f2d58a58e26ac87:1"
+      ]
+    },
+    {
+      "idx": 26,
+      "query": "某初中班级中，一名学生连续两周作业拖延，课堂上也不愿回答问题。班主任在与其谈话后发现，他担心自己基础差、回答错误会被同学笑话。请结合教育心理学知识，说明班主任可以采取的两类支持措施，并简要说明理由。 ",
+      "golden_chunk_id": "question_teacher_certificate_bank_q021",
+      "gt_resolved_id": "_default:41e6cb6760983471:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:41e6cb6760983471:1",
+        "_default:bfe520e850452498:1"
+      ]
+    },
+    {
+      "idx": 27,
+      "query": "关于班级管理，哪些说法正确？",
+      "golden_chunk_id": "question_teacher_certificate_bank_q010",
+      "gt_resolved_id": "_default:318349f00fa3e8df:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:318349f00fa3e8df:1",
+        "_default:2d621de2b6fd2500:1"
+      ]
+    },
+    {
+      "idx": 28,
+      "query": "关于前后端联调，哪些做法通常有效？",
+      "golden_chunk_id": "question_fullstack_development_bank_q009",
+      "gt_resolved_id": "_default:82fde9da2ffd59fc:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:82fde9da2ffd59fc:1",
+        "_default:42c1d9f1d8f59511:1",
+        "_default:7baa2af0d1c655d2:1",
+        "_default:b75d665a3219b538:1",
+        "_default:52451621def2ecb4:1"
+      ]
+    },
+    {
+      "idx": 29,
+      "query": "关于跨域请求，哪一项更准确？",
+      "golden_chunk_id": "question_fullstack_development_bank_q006",
+      "gt_resolved_id": "_default:cf8c7407cabe6f64:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:cf8c7407cabe6f64:1",
+        "_default:d198171a794952cb:1"
+      ]
+    },
+    {
+      "idx": 30,
+      "query": "企业月末应计提工资 36000 元，若全部计入管理费用，问本月应确认的管理费用金额。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q019",
+      "gt_resolved_id": "_default:8ee587fc9147c625:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:8ee587fc9147c625:1",
+        "_default:a6991f393b48f077:1"
+      ]
+    },
+    {
+      "idx": 31,
+      "query": "权责发生制下，收入一定要等到现金收到后才能确认。 ",
+      "golden_chunk_id": "question_accounting_certificate_bank_q013",
+      "gt_resolved_id": "_default:c4176aede3898523:1",
+      "gt_resolve_via": "chunk_id+id_map",
+      "hit": true,
+      "rr": 1.0,
+      "rank_of_gt": 1,
+      "top5_ids": [
+        "_default:c4176aede3898523:1",
+        "_default:618dcc38708e427a:1",
+        "_default:a6991f393b48f077:1",
+        "_default:bae502e905cfb5f8:1",
+        "_default:7c5a19059ac1cb41:1"
+      ]
+    }
+  ]
+}
+
+[G4] 唯一性违例=0 + 跨租户隔离实证
+{
+  "row_count": 3388,
+  "dup_chunk_id": 0,
+  "dup_pk": 0,
+  "isolation_samples_ok": 145,
+  "isolation_checked": 200,
+  "verdict": "PASS"
+}
+========================================================================
+ALL_PASS=False  wall=33.0s
