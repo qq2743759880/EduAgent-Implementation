@@ -266,3 +266,269 @@ def _valid_cross_case() -> dict:
         "matched_terms": ["学业规划", "时间管理"],
         "match_note": "overlap=2_margin=2",
     }
+
+
+# ==================================================================
+# V2（CO-EVAL64V2-001）：golden 形态重铸——纯逻辑层单测（全部离线）
+# ==================================================================
+
+def _qchunk(cid: str, content: str, bank: str = "academic_planning_bank") -> dict:
+    return {"chunk_id": cid, "bank": bank, "content": content, "norm": m.norm_text(content)}
+
+
+_QUESTION = ("【单选题】题目：制定学期计划时最应优先考虑什么？\n选项：\nA. 目标\nB. 休息\n"
+             "答案：A\n解析：计划以目标为先。")
+
+
+def _v1_cross_case() -> dict:
+    content = "课程模块：学业规划方法与目标管理\n关键词：学业规划、时间管理\n课时：8"
+    return {
+        "query": "制定学期计划时最应优先考虑什么？",
+        "golden": m.make_golden("_default:mod01:1", content),
+        "gt_content": content,
+        "independence": "cross",
+        "source": "question_bank->course_module",
+        "source_chunk_id": "_default:qsrc01:1",
+        "source_bank": "academic_planning_bank",
+        "series_code": "academic_planning",
+        "matched_terms": ["学业规划", "时间管理"],
+        "match_note": "overlap=2_margin=2",
+    }
+
+
+def _resolved_row(v1_case: dict, **kw) -> dict:
+    """走真解析器生成 row（保证单测与实现同源），kw 可覆写解析输入。"""
+    qidx = kw.pop("question_index", None) or [_qchunk(v1_case["source_chunk_id"], _QUESTION)]
+    qcontent = {qi["chunk_id"]: qi["content"] for qi in qidx}
+    cmap = kw.pop("content_map", None)
+    if cmap is None:
+        cmap = {v1_case["golden"]["chunk_id"]: v1_case["gt_content"]}
+        cmap.update(qcontent)
+    row, reason = m.resolve_golden_v2(v1_case, qidx, qcontent, cmap)
+    assert reason is None and row is not None
+    return row
+
+
+# ---- norm_text / find_verbatim_candidates ----
+def test_norm_text_matches_v1_query_key_semantics() -> None:
+    import re as _re
+    v1_key = _re.sub(r"[\s\W_]+", "", "制定学期计划时，最应优先考虑什么？".lower())
+    assert m.norm_text("制定学期计划时，最应优先考虑什么？") == v1_key
+    assert m.norm_text("  ABC def! ") == "abcdef"
+    assert m.norm_text(None) == ""
+
+
+def test_find_verbatim_candidates_sorted_and_deterministic() -> None:
+    qidx = [
+        _qchunk("_default:zzz9:1", "题干：简述该场景下的处理顺序。答案A"),
+        _qchunk("_default:aaa1:1", "前文 简述该场景下的处理顺序。 后文"),
+        _qchunk("_default:mmm5:1", "完全无关内容"),
+    ]
+    cands = m.find_verbatim_candidates(m.norm_text("简述该场景下的处理顺序。"), qidx)
+    assert cands == ["_default:aaa1:1", "_default:zzz9:1"]  # chunk_id 排序，确定性
+    assert m.find_verbatim_candidates("", qidx) == []
+    assert m.find_verbatim_candidates("不存在的问句", qidx) == []
+
+
+# ---- resolve_golden_v2：cross 路径 ----
+def test_resolve_v2_cross_source_block_wins_with_declaration() -> None:
+    v1 = _v1_cross_case()
+    qidx = [_qchunk(v1["source_chunk_id"], _QUESTION)]
+    row, reason = m.resolve_golden_v2(
+        v1, qidx, {v1["source_chunk_id"]: _QUESTION},
+        {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    assert reason is None
+    assert row["golden_type"] == "content_block"
+    assert row["content_match_form"] == "verbatim"
+    assert row["golden_is_query_source"] is True
+    assert row["golden_chunk_id"] == v1["source_chunk_id"]
+    assert row["verbatim_dup_count"] == 1
+
+
+def test_resolve_v2_cross_duplicate_block_falls_back_deterministic() -> None:
+    v1 = _v1_cross_case()
+    dup_a, dup_b = "_default:aaa1:1", "_default:bbb2:1"
+    qidx = [_qchunk(dup_b, _QUESTION, bank="x_bank"), _qchunk(dup_a, _QUESTION, bank="y_bank")]
+    row, reason = m.resolve_golden_v2(
+        v1, qidx, {dup_a: _QUESTION, dup_b: _QUESTION}, {})
+    assert reason is None
+    assert row["golden_type"] == "content_block"
+    assert row["golden_is_query_source"] is False       # source 块不在语料（被删场景）
+    assert row["golden_chunk_id"] == dup_a              # 排序第一，确定性
+    assert row["verbatim_dup_count"] == 2
+
+
+def test_resolve_v2_cross_module_card_fallback_keeps_v1_golden() -> None:
+    v1 = _v1_cross_case()
+    row, reason = m.resolve_golden_v2(v1, [], {}, {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    assert reason is None
+    assert row["golden_type"] == "module_card"
+    assert row["golden_chunk_id"] == v1["golden"]["chunk_id"]
+
+
+def test_resolve_v2_cross_unresolved_when_nothing_verifiable() -> None:
+    v1 = _v1_cross_case()
+    row, reason = m.resolve_golden_v2(v1, [], {}, {})   # 无逐字块 + V1 golden 无法 sha 复核
+    assert row is None
+    assert reason == "no_verbatim_block_and_v1_golden_unverifiable"
+
+
+# ---- resolve_golden_v2：manual 路径 ----
+def _v1_manual_case() -> dict:
+    doc = "## 4. 实现规划要点\n- knowledge_import_task 字段设计：task_id PK、visibility"
+    return {
+        "query": "请使用 knowledge_import 工具把示例文档导入知识库",
+        "golden": m.make_golden("_default:doc09:2", doc),
+        "gt_content": doc,
+        "independence": "manual",
+        "source": "chat_message",
+        "source_message_id": "m_79ad5f8b2738",
+        "cited_rank": 1,
+    }
+
+
+def test_resolve_v2_manual_production_cited_primary() -> None:
+    v1 = _v1_manual_case()
+    row, reason = m.resolve_golden_v2(v1, [], {}, {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    assert reason is None
+    assert row["golden_type"] == "content_block"
+    assert row["content_match_form"] == "production_cited"
+    assert row["golden_chunk_id"] == v1["golden"]["chunk_id"]
+
+
+def test_resolve_v2_manual_drift_falls_back_to_verbatim() -> None:
+    v1 = _v1_manual_case()
+    qidx = [_qchunk("_default:qqq1:1", f"题目：{v1['query']} 答案：A")]
+    row, reason = m.resolve_golden_v2(v1, qidx, {"_default:qqq1:1": qidx[0]["content"]}, {})
+    assert reason is None
+    assert row["content_match_form"] == "verbatim"
+    assert row["golden_is_query_source"] is False
+
+
+def test_resolve_v2_manual_unresolved_on_drift_and_no_verbatim() -> None:
+    v1 = _v1_manual_case()
+    row, reason = m.resolve_golden_v2(v1, [], {}, {})
+    assert row is None and reason == "manual_golden_drift_and_no_verbatim_block"
+
+
+# ---- assemble_v2_case：provenance 继承 + 双键 ----
+def test_assemble_v2_case_inherits_provenance_and_relabels_source() -> None:
+    v1 = _v1_cross_case()
+    row = _resolved_row(v1)
+    row["v1_idx"] = 7
+    case = m.assemble_v2_case(v1, row)
+    assert case["query"] == v1["query"]                      # query 面冻结复用
+    for k in ("source_chunk_id", "source_bank", "series_code", "matched_terms"):
+        assert case[k] == v1[k]                              # provenance 全继承
+    assert case["source"] == "question_bank->content_block"  # golden 派生来源如实改标
+    assert case["v1_golden_chunk_id"] == v1["golden"]["chunk_id"]
+    assert case["v1_idx"] == 7
+    assert case["golden"]["doc_sha256"] == m.sha256_utf8(case["gt_content"])  # 双键自洽
+    assert m.validate_case_v2(case) == []
+
+
+def test_assemble_v2_case_module_card_source_label_unchanged() -> None:
+    v1 = _v1_cross_case()
+    row, _ = m.resolve_golden_v2(v1, [], {}, {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    case = m.assemble_v2_case(v1, row)
+    assert case["source"] == v1["source"]                    # module_card 兜底不改标
+    assert m.validate_case_v2(case) == []
+
+
+# ---- validate_case_v2：W1~W5 + V1 规则在 module_card 路径全保留 ----
+def _v2_content_case() -> dict:
+    v1 = _v1_cross_case()
+    row = _resolved_row(v1)
+    return m.assemble_v2_case(v1, row)
+
+
+def test_validate_v2_rejects_missing_golden_type() -> None:
+    case = _v2_content_case()
+    del case["golden_type"]
+    assert any(e.startswith("W1") for e in m.validate_case_v2(case))
+
+
+def test_validate_v2_rejects_bad_content_match_form() -> None:
+    case = _v2_content_case()
+    case["content_match_form"] = "vibes"
+    assert any(e.startswith("W2") for e in m.validate_case_v2(case))
+
+
+def test_validate_v2_rejects_false_verbatim_claim() -> None:
+    case = _v2_content_case()
+    case["gt_content"] = "与问句完全无关的内容块"      # norm(query) 不在内容里
+    case["golden"] = m.make_golden(case["golden"]["chunk_id"], case["gt_content"])
+    errs = m.validate_case_v2(case)
+    assert any(e.startswith("W3") for e in errs)
+
+
+def test_validate_v2_requires_query_source_declaration_on_cross() -> None:
+    case = _v2_content_case()
+    case["golden_is_query_source"] = "yes"               # 非布尔：声明无效
+    assert any(e.startswith("W4") for e in m.validate_case_v2(case))
+
+
+def test_validate_v2_requires_manual_provenance_on_production_cited() -> None:
+    v1 = _v1_manual_case()
+    row, _ = m.resolve_golden_v2(v1, [], {}, {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    case = m.assemble_v2_case(v1, row)
+    del case["source_message_id"]
+    del case["cited_rank"]
+    assert sum(1 for e in m.validate_case_v2(case) if e.startswith("W5")) == 2
+
+
+def test_validate_v2_module_card_keeps_v1_anti_circle_rules() -> None:
+    v1 = _v1_cross_case()
+    row, _ = m.resolve_golden_v2(v1, [], {}, {v1["golden"]["chunk_id"]: v1["gt_content"]})
+    case = m.assemble_v2_case(v1, row)
+    case["source_chunk_id"] = case["golden"]["chunk_id"]  # golden==source 圆环
+    assert any("同 chunk" in e for e in m.validate_case_v2(case))
+    case2 = m.assemble_v2_case(v1, row)
+    case2["query"] = case2["gt_content"][:40]             # query 为 golden 子串
+    assert any("子串" in e for e in m.validate_case_v2(case2))
+    case3 = m.assemble_v2_case(v1, row)
+    case3["matched_terms"] = []                           # 互证证据缺失
+    assert any("matched_terms" in e for e in m.validate_case_v2(case3))
+
+
+def test_validate_v2_content_block_allows_verbatim_substring() -> None:
+    # 与 V1 的关键差异：verbatim 内容块 golden 的定义即「逐字含问句」——
+    # query 归一后 ⊆ golden 不再是违规（变更单 §2.2 显式裁定），但必须带 W4 声明
+    case = _v2_content_case()
+    assert m.norm_text(case["query"]) in m.norm_text(case["gt_content"])
+    assert m.validate_case_v2(case) == []
+
+
+# ---- assert_type_distribution：R22 反哺硬断言 ----
+def test_type_distribution_assertion_passes_at_threshold() -> None:
+    cases = [{"golden_type": "content_block"}] * 6 + [{"golden_type": "module_card"}] * 4
+    dist = m.assert_type_distribution(cases)              # 60% 恰好达标
+    assert dist["content_block_ratio"] == 0.6
+
+
+def test_type_distribution_assertion_blocks_below_60pct() -> None:
+    cases = [{"golden_type": "content_block"}] * 59 + [{"golden_type": "module_card"}] * 41
+    try:
+        m.assert_type_distribution(cases)                 # 59/100 < 60%
+        raise AssertionError("占比 59% 未触发 SystemExit")
+    except SystemExit as exc:
+        assert "类型分布断言失败" in str(exc)
+
+
+def test_type_distribution_assertion_blocks_empty_set() -> None:
+    try:
+        m.assert_type_distribution([])
+        raise AssertionError("空集未触发 SystemExit")
+    except SystemExit as exc:
+        assert "空集" in str(exc)
+
+
+# ---- dedup_and_cap 与 V2 行的配合（golden 碰撞显式拒绝由 build_v2 负责）----
+def test_dedup_and_cap_works_on_v2_rows() -> None:
+    rows = [
+        {"query_key": f"q{i}", "cap_key": f"g{i}", "session_key": None,
+         "golden_type": "content_block"} for i in range(5)
+    ]
+    rows.append(dict(rows[0], query_key="q0"))            # 重复 query
+    picked, stats = m.dedup_and_cap(rows, total=64)
+    assert len(picked) == 5 and stats["dup_query_dropped"] == 1

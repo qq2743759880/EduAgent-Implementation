@@ -108,6 +108,19 @@ QUERY_MAX_LEN = 120
 GOLDEN_CAP = 2          # 同一 golden chunk 最多出现在 2 条样本（防集中偏置）
 SESSION_CAP = 3         # 同一会话最多采 3 条（r20b 同口径）
 
+# ============================================================
+# V2（CO-EVAL64V2-001 golden 形态重铸）：golden 主目标=内容块
+# V1 既有行为零改动；V2 全部走 buildv2/measure(--set)/freezev2 新路径
+# ============================================================
+GOLDEN_TYPES = ("content_block", "module_card")
+CONTENT_FORMS = ("verbatim", "production_cited")
+CONTENT_BLOCK_RATIO_MIN = 0.60   # 类型分布断言（R22 反哺：建集器缺类型分布检查）
+V1_SET_PATH = OUT_SET_PATH
+V2_SET_PATH = os.path.join(DATA_DIR, "r64v2_eval_set64.json")
+V2_RUNS_DIR = os.path.join(DATA_DIR, "r64v2_runs")
+V2_CONTRACT_PATH = os.path.join(os.path.dirname(BASE_DIR), "contracts", "rag-baseline-eval64-v2.json")
+V2_CHANGE_ORDER = "contracts/ChangeOrder-eval64v2-golden-form.md"
+
 
 # ============================================================
 # 纯逻辑层（模块级，可离线单测；Milvus/MySQL/app.* 一律懒加载）
@@ -273,6 +286,184 @@ def match_module(
     if best_n >= 2 and best_n == second_n:
         return None, best_terms, "tied_margin"
     return None, best_terms, "insufficient_overlap"
+
+
+# ============================================================
+# V2 纯逻辑层（CO-EVAL64V2-001；全部离线可单测，Milvus/app.* 懒加载在 build_v2）
+# ============================================================
+
+def norm_text(text: str) -> str:
+    """与 V1 query_key 同口径的归一：lower + 去空白/标点/下划线（子串判定两侧统一）。"""
+    return re.sub(r"[\s\W_]+", "", str(text or "").lower())
+
+
+def find_verbatim_candidates(norm_query: str, question_index: list[dict]) -> list[str]:
+    """在 question 全量索引中找逐字含问句的内容块，按 chunk_id 排序保证确定性。"""
+    if not norm_query:
+        return []
+    return sorted(qi["chunk_id"] for qi in question_index
+                  if qi.get("norm") and norm_query in qi["norm"])
+
+
+def resolve_golden_v2(
+    v1_case: dict,
+    question_index: list[dict],
+    qcontent_by_id: dict[str, str],
+    content_map: dict[str, str],
+) -> tuple[dict | None, str | None]:
+    """V1 case → V2 golden 解析（CO-EVAL64V2-001 §2.1/§2.2）。
+
+    优先级：cross=逐字内容块（source 块优先，其余重复块次之）→ V1 路由卡兜底（sha 复核）
+           manual=生产投喂块（production_cited，sha 复核）→ 逐字内容块 → unresolved。
+    返回 (resolved_row | None, unresolved_reason | None)。query 面冻结复用，禁再提取/再改写。
+    """
+    indep = v1_case.get("independence")
+    q = str(v1_case.get("query") or "")
+    golden_v1 = v1_case.get("golden") or {}
+    v1_gid = str(golden_v1.get("chunk_id") or "")
+    v1_sha = str(golden_v1.get("doc_sha256") or "")
+    base = {
+        "query": q,
+        "query_key": norm_text(q),
+        "cap_key": None,
+        "session_key": None,   # V1 集建集时已过 session cap；V2 继承面不重采
+        "independence": indep,
+        "v1_golden_chunk_id": v1_gid,
+    }
+
+    def _v1_golden_content_ok() -> str | None:
+        cur = content_map.get(v1_gid)
+        return cur if (cur is not None and v1_sha and sha256_utf8(cur) == v1_sha) else None
+
+    if indep == "cross":
+        src = str(v1_case.get("source_chunk_id") or "")
+        cands = find_verbatim_candidates(norm_text(q), question_index)
+        if cands:
+            pick = src if src in cands else cands[0]
+            return {**base, "cap_key": pick, "golden_chunk_id": pick,
+                    "golden_content": qcontent_by_id.get(pick, content_map.get(pick, "")),
+                    "golden_type": "content_block", "content_match_form": "verbatim",
+                    "golden_is_query_source": pick == src, "verbatim_dup_count": len(cands)}, None
+        cur = _v1_golden_content_ok()
+        if cur is not None:
+            return {**base, "cap_key": v1_gid, "golden_chunk_id": v1_gid,
+                    "golden_content": cur, "golden_type": "module_card",
+                    "content_match_form": None, "golden_is_query_source": None,
+                    "verbatim_dup_count": None}, None
+        return None, "no_verbatim_block_and_v1_golden_unverifiable"
+    if indep == "manual":
+        cur = _v1_golden_content_ok()
+        if cur is not None:
+            return {**base, "cap_key": v1_gid, "golden_chunk_id": v1_gid,
+                    "golden_content": cur, "golden_type": "content_block",
+                    "content_match_form": "production_cited",
+                    "golden_is_query_source": None, "verbatim_dup_count": None}, None
+        cands = find_verbatim_candidates(norm_text(q), question_index)
+        if cands:
+            pick = cands[0]
+            return {**base, "cap_key": pick, "golden_chunk_id": pick,
+                    "golden_content": qcontent_by_id.get(pick, ""),
+                    "golden_type": "content_block", "content_match_form": "verbatim",
+                    "golden_is_query_source": False, "verbatim_dup_count": len(cands)}, None
+        return None, "manual_golden_drift_and_no_verbatim_block"
+    return None, f"unknown_independence:{indep}"
+
+
+def assemble_v2_case(v1_case: dict, row: dict) -> dict:
+    """V1 case（provenance 全量继承）+ V2 解析行 → V2 case dict。顺序=V1 文件序（v1_idx 对齐）。"""
+    case = dict(v1_case)   # source_chunk_id/source_bank/series_code/matched_terms/manual 溯源等全继承
+    content = str(row["golden_content"] or "")
+    case.update({
+        "golden": make_golden(row["golden_chunk_id"], content),
+        "gt_content": content[:8000],   # 与 V1 同口径（截断后双键校验，>8000 会被 validate 拒绝）
+        "golden_type": row["golden_type"],
+        "v1_golden_chunk_id": row["v1_golden_chunk_id"],
+        "v1_idx": row.get("v1_idx"),
+    })
+    if row.get("content_match_form") is not None or row["golden_type"] == "content_block":
+        case["content_match_form"] = row.get("content_match_form")
+        case["golden_is_query_source"] = row.get("golden_is_query_source")
+        case["verbatim_dup_count"] = row.get("verbatim_dup_count")
+    if row["golden_type"] == "content_block" and row.get("content_match_form") == "verbatim" \
+            and case.get("independence") == "cross":
+        case["source"] = "question_bank->content_block"
+    return case
+
+
+def validate_case_v2(case: dict, *, source_content: str | None = None) -> list[str]:
+    """V2 反圆环 + 结构校验（CO-EVAL64V2-001 §2.2）。返回违规列表（空=通过）。
+
+    W1 golden_type 必填且 ∈ {content_block, module_card}
+    W2 content_block 必带合法 content_match_form
+    W3 verbatim 声明可验证：norm(query) ⊆ norm(gt_content)
+    W4 cross verbatim 必带 golden_is_query_source 显式声明（禁隐藏子串保底）
+    W5 production_cited 必带 manual 溯源（source_message_id/cited_rank）
+    V2/V5 双键与 query 长度同 V1；module_card 沿用 V1 全部 cross 反圆环规则
+    （golden≠source id+sha、query 非子串、matched_terms 必填）。
+    """
+    errs: list[str] = []
+    indep = case.get("independence")
+    if indep not in INDEPENDENCE_VALUES:
+        errs.append(f"V1 independence 非法: {indep!r}")
+    gtype = case.get("golden_type")
+    if gtype not in GOLDEN_TYPES:
+        errs.append(f"W1 golden_type 非法: {gtype!r}")
+    golden = case.get("golden") or {}
+    gt = str(case.get("gt_content") or "")
+    q = str(case.get("query") or "")
+    if not golden.get("chunk_id"):
+        errs.append("V2 golden.chunk_id 缺失")
+    if not golden.get("doc_sha256"):
+        errs.append("V2 golden.doc_sha256 缺失")
+    elif golden["doc_sha256"] != sha256_utf8(gt):
+        errs.append("V2 doc_sha256 与 gt_content 不一致（双键失配）")
+    if not (QUERY_MIN_LEN <= len(q) <= QUERY_MAX_LEN):
+        errs.append(f"V5 query 长度越界: {len(q)}")
+    if gtype == "content_block":
+        form = case.get("content_match_form")
+        if form not in CONTENT_FORMS:
+            errs.append(f"W2 content_match_form 非法: {form!r}")
+        elif form == "verbatim":
+            if not gt or not q:
+                errs.append("W3 verbatim 缺 query 或 gt_content")
+            elif norm_text(q) not in norm_text(gt):
+                errs.append("W3 verbatim 声明不成立: norm(query) 非 norm(gt_content) 子串")
+            if indep == "cross" and not isinstance(case.get("golden_is_query_source"), bool):
+                errs.append("W4 cross verbatim 缺 golden_is_query_source 布尔声明")
+        elif form == "production_cited":
+            if not case.get("source_message_id"):
+                errs.append("W5 production_cited 缺 source_message_id 溯源")
+            if case.get("cited_rank") is None:
+                errs.append("W5 production_cited 缺 cited_rank 溯源")
+    if gtype == "module_card":
+        src_id = str(case.get("source_chunk_id") or "")
+        if not src_id:
+            errs.append("V3 module_card 缺 source_chunk_id")
+        elif src_id == golden.get("chunk_id"):
+            errs.append("V3 module_card golden 与 source 同 chunk（圆环）")
+        if source_content is not None and golden.get("doc_sha256") == sha256_utf8(source_content):
+            errs.append("V3 module_card golden 内容与 source 内容相同（圆环）")
+        if gt and q and q in gt:
+            errs.append("V3 module_card query 是 golden 内容子串（自匹配保底）")
+        if not case.get("matched_terms"):
+            errs.append("V3 module_card 缺 matched_terms 互证证据")
+    return errs
+
+
+def assert_type_distribution(cases: list[dict],
+                             *, min_ratio: float = CONTENT_BLOCK_RATIO_MIN) -> dict:
+    """类型分布硬断言（CO-EVAL64V2-001 §2.3，R22 反哺）：content_block 占比 <60% 报错退出。"""
+    n = len(cases)
+    if n == 0:
+        raise SystemExit("[buildv2] 空集：类型分布断言不可能满足（content_block 占比须 ≥60%）→ 拒绝落盘")
+    cb = sum(1 for c in cases if c.get("golden_type") == "content_block")
+    ratio = cb / n
+    if ratio < min_ratio:
+        raise SystemExit(
+            f"[buildv2] 类型分布断言失败: content_block {cb}/{n}={ratio:.2%} < {min_ratio:.0%}"
+            f"（{V2_CHANGE_ORDER} §2.3）→ 拒绝落盘，先上报编排者")
+    return {"content_block": cb, "module_card": n - cb,
+            "content_block_ratio": round(ratio, 4), "min_ratio": min_ratio}
 
 
 # ============================================================
@@ -616,6 +807,129 @@ async def build(limit: int = 64, manual_n: int = 40) -> None:
 
 
 # ============================================================
+# V2 构建（CO-EVAL64V2-001）：V1 冻结集 golden 重解析到内容块
+# ============================================================
+
+RESOLVE_RATIO_FLOOR = 0.90   # 主尺质量地板：可解析样本不足 90% 拒绝建尺（不凑数）
+
+
+async def build_v2(in_set: str = V1_SET_PATH) -> None:
+    """eval64-v2 重建：冻结复用 V1 query 面，golden 重解析到内容块（逐字含问句优先）。
+
+    纪律（变更单 §2.2）：query 逐字继承（禁从目标块循环提取/再改写）；independence 溯源
+    全继承；golden 双键不变；类型分布断言 content_block ≥60% 否则报错退出（§2.3）。
+    """
+    t0 = time.perf_counter()
+    with open(in_set, encoding="utf-8") as f:
+        v1 = json.load(f)
+    v1_cases: list[dict] = v1["cases"]
+
+    # ---- Milvus：question 全量（逐字索引）+ V1 golden 当前内容（sha 复核）----
+    from app.knowledge.importer.loader import COLLECTION_NAME, get_milvus_client
+
+    client = get_milvus_client()
+    assert COLLECTION_NAME in [str(c) for c in client.list_collections()], "Milvus 缺 edu_knowledge"
+    questions = client.query(
+        COLLECTION_NAME,
+        filter='content_type == "question"',
+        output_fields=["chunk_id", "question_bank_code", "content"],
+        limit=8000,
+    )
+    question_index = [{"chunk_id": str(q.get("chunk_id") or ""),
+                       "bank": str(q.get("question_bank_code") or ""),
+                       "content": str(q.get("content") or ""),
+                       "norm": norm_text(q.get("content"))} for q in questions]
+    qcontent_by_id = {qi["chunk_id"]: qi["content"] for qi in question_index if qi["chunk_id"]}
+    v1_golden_ids = [str((c.get("golden") or {}).get("chunk_id") or "") for c in v1_cases]
+    content_map = _milvus_content_map(client, COLLECTION_NAME, v1_golden_ids)
+
+    # ---- 逐条重解析（V1 文件顺序，v1_idx 对齐 R24 探针口径）----
+    resolved: list[dict] = []
+    unresolved: list[dict] = []
+    for idx, vc in enumerate(v1_cases):
+        row, reason = resolve_golden_v2(vc, question_index, qcontent_by_id, content_map)
+        if row is None:
+            unresolved.append({"v1_idx": idx, "query": vc.get("query"), "reason": reason})
+            continue
+        row["v1_idx"] = idx
+        resolved.append(row)
+    resolve_stats = {
+        "content_block_verbatim": sum(1 for r in resolved if r["content_match_form"] == "verbatim"),
+        "content_block_production_cited": sum(1 for r in resolved if r["content_match_form"] == "production_cited"),
+        "module_card_fallback": sum(1 for r in resolved if r["golden_type"] == "module_card"),
+        "unresolved": len(unresolved),
+    }
+    print(f"[buildv2] 解析: {resolve_stats}（in={len(v1_cases)}）")
+
+    # ---- 去重与配额（纪律同 V1）。V1 集已去重，此处丢弃只可能来自 V2 golden 碰撞——显式拒绝 ----
+    picked, dedup_stats = dedup_and_cap(resolved, total=len(v1_cases))
+    if len(picked) < len(resolved):
+        raise SystemExit(f"[buildv2] 继承面出现去重/配额丢弃 {len(resolved) - len(picked)} 条"
+                         f"（V2 golden 碰撞？）→ 拒绝静默，先上报编排者: {dedup_stats}")
+
+    # ---- 组装 + V2 校验（硬门）----
+    cases: list[dict] = []
+    invalid: list[dict] = []
+    for r in picked:
+        case = assemble_v2_case(v1_cases[r["v1_idx"]], r)
+        errs = validate_case_v2(case)
+        if errs:
+            invalid.append({"v1_idx": r["v1_idx"], "query": case["query"], "errors": errs})
+            continue
+        cases.append(case)
+    if invalid:
+        raise SystemExit(f"[buildv2] validate_case_v2 拒绝 {len(invalid)} 条（硬门）: {invalid[:3]}")
+    if len(cases) < math.ceil(RESOLVE_RATIO_FLOOR * len(v1_cases)):
+        raise SystemExit(f"[buildv2] 可解析样本 {len(cases)}/{len(v1_cases)} 低于 "
+                         f"{RESOLVE_RATIO_FLOOR:.0%} 地板，拒绝建尺（不凑数）；unresolved 已入 meta，先上报编排者")
+
+    # ---- 类型分布断言（R22 反哺，硬门）----
+    dist = assert_type_distribution(cases)
+    print(f"[buildv2] 类型分布: {dist}")
+
+    git_rev = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                             cwd=BASE_DIR).stdout.strip()
+    meta = {
+        "builder": "build_eval_set64.py --mode buildv2",
+        "change_order": V2_CHANGE_ORDER,
+        "built_at": datetime.now(timezone.utc).isoformat(),
+        "git_rev": git_rev,
+        "in_set": {"file": os.path.relpath(in_set, BASE_DIR).replace("\\", "/"),
+                   "n": len(v1_cases), "seed": v1.get("meta", {}).get("seed"),
+                   "v1_builder": v1.get("meta", {}).get("builder")},
+        "query_face_policy": ("冻结复用 V1 query 面（逐字继承，禁从目标块循环提取/再改写）；"
+                               "case 顺序=V1 文件顺序（v1_idx 对齐 R24 探针 idx）"),
+        "golden_form": ("主目标=内容块（逐字含问句或直接回答该问句的 chunk）；"
+                        "module_card 仅为内容块不可达时的兜底（沿用 V1 反圆环全规则）；"
+                        "V1 golden 保留为 v1_golden_chunk_id 次级指标锚点"),
+        "n_cases": len(cases),
+        "golden_type_distribution": dist,
+        "resolve_stats": resolve_stats,
+        "unresolved": unresolved,
+        "independence_definitions": {
+            "manual": "query=V1 继承（chat 真实问句规则改写）; golden=生产投喂块(production_cited, 当前 Milvus sha 复核) 或逐字内容块",
+            "cross": "query=V1 继承（题库题干）; golden=逐字含问句的 question 内容块（source 块优先, golden_is_query_source 显式声明）",
+        },
+        "golden_double_key": ["chunk_id", "doc_sha256(sha256(gt_content utf-8))"],
+        "dedup_rules": {"query_normalized_unique": True, "golden_cap": GOLDEN_CAP,
+                         "session_cap": "N/A（继承面不重采）", "dropped": dedup_stats},
+        "milvus_collection": COLLECTION_NAME,
+        "anti_circle_invariants": [
+            "V2 query 面冻结自 V1 集本（不在 V2 build 中从 golden 块提取/改写任何 query）",
+            "cross verbatim: golden_is_query_source 显式声明子串保底形态（CO-EVAL64V2-001 §2.2），脱圆环语义由变更单裁定",
+            "module_card 兜底: golden≠source(id+sha 双验) 且 query 非 golden 子串（V1 规则全保留）",
+        ],
+        "wall_seconds": round(time.perf_counter() - t0, 1),
+    }
+    out = {"meta": meta, "cases": cases}
+    with open(V2_SET_PATH, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    print(f"[buildv2] n={len(cases)} dist={dist['content_block']}cb/{dist['module_card']}mc "
+          f"unresolved={len(unresolved)} → {V2_SET_PATH}")
+    print(f"[buildv2] wall={meta['wall_seconds']}s")
+
+
+# ============================================================
 # 测量：实时端到端检索链（R20-min 范式，0-LLM）
 # ============================================================
 
@@ -641,10 +955,15 @@ async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, fin
 
         gt_id, gt_via = _match_golden(case, docs)
         ranks = [i + 1 for i, d in enumerate(docs) if d["chunk_id"] == gt_id]
+        # module-level 次级指标（CO-EVAL64V2-001 §2.1：模块卡降为次级）：V1 golden 块是否进 final docs
+        module_gt = str(case.get("v1_golden_chunk_id") or "")
+        module_rank = next((i + 1 for i, d in enumerate(docs) if d["chunk_id"] == module_gt), None) \
+            if module_gt else None
         results.append({
             "idx": idx,
             "query": case["query"],
             "independence": case.get("independence"),
+            "golden_type": case.get("golden_type"),
             "golden_chunk_id": case["golden"]["chunk_id"],
             "golden_doc_sha256": case["golden"]["doc_sha256"],
             "gt_resolved_id": gt_id,
@@ -654,6 +973,9 @@ async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, fin
             "rr@5": (1.0 / ranks[0]) if (ranks and ranks[0] <= 5) else 0.0,
             "rr@10": (1.0 / ranks[0]) if (ranks and ranks[0] <= top_k) else 0.0,
             "rank_of_gt": ranks[0] if ranks else None,
+            "module_hit@5": (bool(module_rank and module_rank <= 5)
+                             if case.get("v1_golden_chunk_id") else None),
+            "module_rank_of_gt": module_rank,
             "final_docs": len(docs),
             "latency_ms": lat_ms,
             "trace": {
@@ -694,6 +1016,30 @@ def _summarize(per_query: list[dict], tag: str, mode_note: str, top_k: int) -> d
                 "mrr@5": round(sum(r["rr@5"] for r in sub) / len(sub), 4),
                 "hit@5_wilson95": wilson_ci(h5 / len(sub), len(sub)),
             }
+    # V2：golden_type 分组 + module-level 次级指标（V1 集无这些字段时自动缺省不产出）
+    if any(r.get("golden_type") for r in per_query):
+        summary["by_golden_type"] = {}
+        for gt in GOLDEN_TYPES:
+            sub = [r for r in per_query if r.get("golden_type") == gt]
+            if sub:
+                h5 = sum(1 for r in sub if r["hit@5"])
+                summary["by_golden_type"][gt] = {
+                    "n": len(sub),
+                    "hit_rate@5": round(h5 / len(sub), 4),
+                    "mrr@5": round(sum(r["rr@5"] for r in sub) / len(sub), 4),
+                    "hit@5_wilson95": wilson_ci(h5 / len(sub), len(sub)),
+                }
+    mod_rows = [r for r in per_query if r.get("module_hit@5") is not None]
+    if mod_rows:
+        mh5 = sum(1 for r in mod_rows if r["module_hit@5"])
+        summary["module_level_secondary"] = {
+            "note": "V1 golden（路由卡）是否进 final docs——模块路由能力次级读数，非门禁主尺",
+            "n": len(mod_rows),
+            "module_hit@5": round(mh5 / len(mod_rows), 4),
+            "module_mrr@5": round(sum((1.0 / r["module_rank_of_gt"])
+                                      if r.get("module_rank_of_gt") else 0.0
+                                      for r in mod_rows) / len(mod_rows), 4),
+        }
     if top_k > TOP_K_EVAL:  # 分级窗口
         h10 = sum(1 for r in per_query if r["rank_of_gt"] and r["rank_of_gt"] <= top_k)
         summary.update({
@@ -712,11 +1058,14 @@ def _summarize(per_query: list[dict], tag: str, mode_note: str, top_k: int) -> d
     return summary
 
 
-def measure(tag: str, graded: bool = False) -> dict:
+def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict:
     from app.config import settings
     from app.knowledge.importer.embedder import encode_dense_batch, ensure_jieba_ready
 
-    with open(OUT_SET_PATH, encoding="utf-8") as f:
+    # V1 缺省行为不变（OUT_SET_PATH + RUNS_DIR）；--set 指定 V2 集时走 V2 runs 目录
+    eval_set_path = set_path or OUT_SET_PATH
+    runs_dir = V2_RUNS_DIR if set_path else RUNS_DIR
+    with open(eval_set_path, encoding="utf-8") as f:
         cases = json.load(f)["cases"]
     ensure_jieba_ready()
     sys.path.insert(0, EVAL_DIR)  # r20min_run 只读复用（_match_golden 双键解析）
@@ -747,7 +1096,7 @@ def measure(tag: str, graded: bool = False) -> dict:
         "ran_at": datetime.now(timezone.utc).isoformat(),
         "git_rev": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                                   cwd=BASE_DIR).stdout.strip(),
-        "eval_set": OUT_SET_PATH,
+        "eval_set": eval_set_path,
         "mode_note": mode_note,
         "params": eff_params,
         "seed": SEED,
@@ -756,8 +1105,8 @@ def measure(tag: str, graded: bool = False) -> dict:
         "wall_seconds": wall_s,
         "per_query": results,
     }
-    os.makedirs(RUNS_DIR, exist_ok=True)
-    out_path = os.path.join(RUNS_DIR, f"{tag}.json")
+    os.makedirs(runs_dir, exist_ok=True)
+    out_path = os.path.join(runs_dir, f"{tag}.json")
     try:
         from app.common.artifact_store import save_artifact
 
@@ -854,6 +1203,120 @@ def build_position_measure(run_tags: list[str], graded_tag: str | None) -> None:
     print(f"[position] hit@5={base['hit_rate@5']} ci95={base['hit@5_wilson95']} "
           f"mrr@5={base['mrr@5']} ci95={base['mrr@5_bootstrap95']} det={det} → {POSITION_PATH}")
     print(f"[position] verdict={out['headroom_verdict']['verdict']}")
+
+
+# ============================================================
+# V2 基线冻结（CO-EVAL64V2-001 任务④）：pre-fix 现产线实况，无目标预设
+# ============================================================
+
+def _fingerprint(per_query: list[dict]) -> list:
+    """逐位指纹（r23_freeze_eval64 同口径：rank/hit/rr/final_docs 四元组）。"""
+    return [(r["rank_of_gt"], r["hit@5"], r["rr@5"], r["final_docs"]) for r in per_query]
+
+
+def freeze_v2(run_tags: list[str]) -> None:
+    """V2 双跑 → contracts/rag-baseline-eval64-v2.json（draft:false，格式承 r23_freeze_eval64）。"""
+    from app.config import settings
+
+    if len(run_tags) != 2:
+        raise SystemExit(f"freezev2 需要恰好 2 个 run tags（determinism 双跑）: {run_tags}")
+    runs = {}
+    for t in run_tags:
+        with open(os.path.join(V2_RUNS_DIR, f"{t}.json"), encoding="utf-8") as f:
+            runs[t] = json.load(f)
+    run1, run2 = runs[run_tags[0]], runs[run_tags[1]]
+    pq1, pq2 = run1["per_query"], run2["per_query"]
+    n = len(pq1)
+    hit5 = sum(1 for r in pq1 if r["hit@5"])
+    hit3 = sum(1 for r in pq1 if r["hit@3"])
+    mrr5 = round(sum(r["rr@5"] for r in pq1) / n, 4)
+    fd: dict[int, int] = {}
+    for r in pq1:
+        fd[r["final_docs"]] = fd.get(r["final_docs"], 0) + 1
+
+    base = _summarize(pq1, run_tags[0], run1["mode_note"], TOP_K_EVAL)
+    det = {
+        "runs": list(run_tags),
+        "hit_rate_equal": base["hit_rate@5"] == _summarize(pq2, run_tags[1], "", TOP_K_EVAL)["hit_rate@5"],
+        "mrr_equal": round(sum(r["rr@5"] for r in pq1) / n, 4) == round(sum(r["rr@5"] for r in pq2) / n, 4),
+        "per_query_identical": _fingerprint(pq1) == _fingerprint(pq2),
+        "note": "新尺无跨代际参照（本冻结即代际起点）；复现性以双跑逐位一致为准",
+    }
+
+    with open(run1["eval_set"], "rb") as f:
+        set_sha = hashlib.sha256(f.read()).hexdigest()
+    with open(run1["eval_set"], encoding="utf-8") as f:
+        set_meta = json.load(f)["meta"]
+    set_file_rel = os.path.relpath(run1["eval_set"], os.path.dirname(BASE_DIR)).replace("\\", "/")
+
+    params = dict(run1["params"])
+    params["rerank_cliff_v2"] = bool(getattr(settings, "RERANK_CLIFF_V2", False))  # 冻结时产线实况
+
+    contract = {
+        "plan_id": "reshape-r-eval64-v2",
+        "change_order": V2_CHANGE_ORDER,
+        "frozen_at": datetime.now(timezone.utc).isoformat(),
+        "git_rev": run1["git_rev"],
+        "draft": False,
+        "frozen_by": "W-NEXT-EVAL64V2-001（build_eval_set64.py --mode freezev2）",
+        "eval_set": {
+            "file": set_file_rel,
+            "sha256": set_sha,
+            "n": n,
+            "seed": set_meta.get("in_set", {}).get("seed"),
+            "query_face": "冻结复用 V1（禁从目标块循环提取）；case 顺序=V1 文件顺序（v1_idx 对齐）",
+            "golden_form": "content_block primary（逐字含问句或直接回答该问句的 chunk）；module card 降为次级指标",
+            "golden_type_distribution": set_meta.get("golden_type_distribution"),
+            "golden_double_key": ["chunk_id", "doc_sha256(sha256(gt_content utf-8))"],
+            "builder": "build_eval_set64.py --mode buildv2（CO-EVAL64V2-001，V1 模式零改动）",
+        },
+        "params": params,
+        "baseline": {
+            "tag": run_tags[0],
+            "n": n,
+            "top_k": TOP_K_EVAL,
+            "hit_rate@5": round(hit5 / n, 4),
+            "mrr@5": mrr5,
+            "hit@3": round(hit3 / n, 4),
+            "by_golden_type": base.get("by_golden_type"),
+            "module_level_secondary": base.get("module_level_secondary"),
+            "runs_reference": [f"edu-agent/scripts/eval/data/r64v2_runs/{t}.json" for t in run_tags],
+            "cliff_behavior": {
+                "final_docs_dist": {str(k): v for k, v in sorted(fd.items())},
+                "note": "V2 断崖（RERANK_CLIFF_V2=True, quant=0.60）现产线实况",
+            },
+        },
+        "thresholds": {
+            "RAG_EVAL_HIT_RATE_MIN": round(hit5 / n - 0.02, 4),
+            "RAG_EVAL_MRR_MIN": round(mrr5 - 0.02, 4),
+            "rule": ("基线-0.02（持续回归下限）；pre-fix 现产线数字即新尺起点，无目标预设"
+                     "（CO-EVAL64V2-001 §3）；门禁适用范围裁定权在编排者"),
+        },
+        "metric_scope": ("实时端到端检索链(retriever.retrieve_three_channel 全链: 召回150→rerank20→断崖→top5), "
+                          "禁止在冻结 candidates 上算指标"),
+        "determinism_check": det,
+        "attribution_reference": {
+            "evidence_base": [
+                "edu-agent/scripts/eval/data/r24_runs/r24_worst10_probe64.json",
+                "edu-agent/scripts/eval/data/r24_runs/r24_rank_probe_probe64.json",
+            ],
+            "form_mismatch_evidence": "V1 golden 89%(57/64) 为 course_module 路由卡（2026-09-19 Milvus 复核）",
+            "worst10_alignment": "worst-10 的 rerank top1(score=1.0) 逐字原题块 == V1 source_chunk_id == V2 golden，10/10 对齐",
+            "v1_ruler_on_v2_cliff": "同产线 V1 尺对照 run 见完成报告（r64v1_ctrl_run1），两尺禁互相换算",
+        },
+        "ruler_note": ("本契约=内容块主尺（eval64-v2）；旧路由卡尺 contracts/rag-baseline-eval64.json "
+                        "零改动保留作对照；两尺并行禁互相换算"),
+        "id_map_note": "R03 迁移须输出 old→new chunk_id id_map 落盘; golden 双键中 doc_sha256 为迁移后解析兜底键",
+    }
+    with open(V2_CONTRACT_PATH, "w", encoding="utf-8") as f:
+        json.dump(contract, f, ensure_ascii=False, indent=2)
+    b = contract["baseline"]
+    print(f"[freezev2] → {V2_CONTRACT_PATH}")
+    print(f"[freezev2] baseline hit_rate@5={b['hit_rate@5']} mrr@5={b['mrr@5']} hit@3={b['hit@3']} n={n} "
+          f"dist={contract['eval_set']['golden_type_distribution']} "
+          f"det={det['per_query_identical']} cliff_v2={params['rerank_cliff_v2']}")
+    if base.get("module_level_secondary"):
+        print(f"[freezev2] module_level_secondary={base['module_level_secondary']}")
 
 
 # ============================================================
@@ -961,21 +1424,32 @@ def recallprobe() -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="R22 去圆环评估集构造 + 头寸测量")
-    ap.add_argument("--mode", required=True, choices=["build", "measure", "position", "spotcheck", "recallprobe"])
+    ap = argparse.ArgumentParser(description="R22 去圆环评估集构造 + 头寸测量（+V2 golden 形态重铸 CO-EVAL64V2-001）")
+    ap.add_argument("--mode", required=True,
+                    choices=["build", "measure", "position", "spotcheck", "recallprobe",
+                             "buildv2", "freezev2"])
     ap.add_argument("--tag", default="run")
     ap.add_argument("--limit", type=int, default=64)
     ap.add_argument("--manual-n", type=int, default=40)
     ap.add_argument("--graded", action="store_true", help="measure 用分级窗口 top_k=final_max_k=10")
-    ap.add_argument("--runs", nargs="*", help="position 模式: 参与汇总的主口径 run tags")
+    ap.add_argument("--runs", nargs="*", help="position/freezev2 模式: 参与汇总的 run tags")
     ap.add_argument("--graded-tag", default=None, help="position 模式: 分级窗口 run tag")
+    ap.add_argument("--in-set", default=None, help="buildv2: V1 集路径（默认 V1 冻结集 r22_eval_set64.json）")
+    ap.add_argument("--set", dest="set_path", default=None,
+                    help="measure: 评估集路径（缺省=V1 集不变；指定 V2 集时产物落 r64v2_runs/）")
     args = ap.parse_args()
 
     if args.mode == "build":
         asyncio.run(build(args.limit, args.manual_n))
         return 0
+    if args.mode == "buildv2":
+        asyncio.run(build_v2(args.in_set or V1_SET_PATH))
+        return 0
     if args.mode == "measure":
-        measure(args.tag, args.graded)
+        measure(args.tag, args.graded, args.set_path)
+        return 0
+    if args.mode == "freezev2":
+        freeze_v2(args.runs or [])
         return 0
     if args.mode == "position":
         build_position_measure(args.runs or ["r22_base_run1"], args.graded_tag)
