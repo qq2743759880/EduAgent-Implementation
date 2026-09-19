@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "name": "r25s_bilingual_set10",
+    "built_at": "2026-09-20",
+    "built_by": "W-NEXT-R25S-001",
+    "purpose": "Task B 跨语言 query 鲁棒性对照集：10 条中文 query（冻结自 r64v2_eval_set64.json，逐字复用）+ 人工英文改写（同一事实问题，非机器翻译，人工校对措辞）",
+    "source_set": "edu-agent/scripts/eval/data/r64v2_eval_set64.json",
+    "source_set_sha256": "877d5d9c06692c1e8f8a620c342bff7bbeeae9c51487a6c4acd00269eb703b88",
+    "selection_rule": "全部取 V2 基线 run1 的 hit 样本（rank_of_gt 非空），覆盖 rank1 与 rank3（idx48）两种排名位、9 个不同 series、单选/多选/判断/简答多种题型；不含 idx31（基线唯一 miss，混入会污染 hit 差归因）",
+    "golden_rule": "golden 双键逐字继承 V2 集（chunk_id + doc_sha256）；英文 query 的 golden 与中文相同（语料为中文内容块，跨语言检索是否仍能寻回同一块即本实验测量对象）",
+    "english_rewrite_discipline": "人工改写保持同一问题事实与题型语义（不增删考点、不改题型），允许自然英文措辞；no back-translation",
+    "measure_params": "与 contracts/rag-baseline-eval64-v2.json params 逐字段一致（recall_topk=150, rerank_topk=20, final_max_k=5, cutoff_drop_ratio=0.4, use_hyde=false, enable_graph=true, rerank_cliff_v2=true, role=student）"
+  },
+  "cases": [
+    {
+      "idx_ref": 5,
+      "series_code": "low_level_programming",
+      "query_zh": "在汇编或底层调试中，寄存器通常指什么？",
+      "query_en": "In assembly or low-level debugging, what does a register usually refer to?",
+      "golden": {
+        "chunk_id": "_default:b0a2df12d4091003:1",
+        "doc_sha256": "b0a2df12d4091003dd53bdd54df00bdd41260e1c165154b3f68e73cacf1ca1f3"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【单选题】题目：在汇编或底层调试中，寄存器通常指什么？\n选项：\nA. 用于临时保存 CPU 内部数据的小型高速存储单元\nB. 磁盘上的大型文件区域\nC. 只在浏"
+    },
+    {
+      "idx_ref": 8,
+      "series_code": "web_programming_languages",
+      "query_zh": "关于 JavaScript 的闭包，哪一项更准确？",
+      "query_en": "Regarding JavaScript closures, which option is more accurate?",
+      "golden": {
+        "chunk_id": "_default:7fa2738f21f2d843:1",
+        "doc_sha256": "7fa2738f21f2d8437b58582a3b6be74afc4baa6785e19c95f89df024020b0b63"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【单选题】题目：关于 JavaScript 的闭包，哪一项更准确？\n选项：\nA. 闭包只是一种语法错误\nB. 闭包让函数可以访问其外部词法作用域中的变量\nC. "
+    },
+    {
+      "idx_ref": 11,
+      "series_code": "geometry_and_topology",
+      "query_zh": "什么是拓扑不变量？",
+      "query_en": "What is a topological invariant?",
+      "golden": {
+        "chunk_id": "_default:ae65e5e572d98777:1",
+        "doc_sha256": "ae65e5e572d98777abc94168a83045f0ff441b0fe25f9eae8f703a86e5b561bb"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【简答题】题目：什么是拓扑不变量？请举一例。\n答案：拓扑不变量是同胚变换下保持不变的性质，如连通性、紧致性或欧拉示性数。\n解析：这类性质是区分空间类型的重要工具"
+    },
+    {
+      "idx_ref": 22,
+      "series_code": "data_storage_systems",
+      "query_zh": "简述 B+ 树为什么适合数据库索引。 ",
+      "query_en": "Briefly explain why B+ trees are well suited for database indexes.",
+      "golden": {
+        "chunk_id": "_default:81d831f8e6290e07:1",
+        "doc_sha256": "81d831f8e6290e0734e5dd3d7ada16ce6a65c6626e5508058215c7e21d5a732c"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【简答题】题目：简述 B+ 树为什么适合数据库索引。\n答案：B+ 树高度较低，查找复杂度稳定；叶子节点有序且便于范围扫描，因此很适合作为磁盘索引结构。\n解析：答"
+    },
+    {
+      "idx_ref": 34,
+      "series_code": "network_and_communication_systems",
+      "query_zh": "关于 TCP 的能力，哪些说法正确？",
+      "query_en": "Regarding the capabilities of TCP, which statements are correct?",
+      "golden": {
+        "chunk_id": "_default:e0b9ed3a982596ce:1",
+        "doc_sha256": "e0b9ed3a982596ceea6b10a1cfd5bcefe2ec92b3e94c7a03096608fdb7d84fe6"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【多选题】题目：关于 TCP 的能力，哪些说法正确？\n选项：\nA. 通常提供可靠传输\nB. 通常提供按序交付\nC. 通常带有流量控制\nD. 默认是无连接协议\n答"
+    },
+    {
+      "idx_ref": 38,
+      "series_code": "frontend_development",
+      "query_zh": "说明前端为什么要关注首屏加载性能。 ",
+      "query_en": "Explain why the frontend should care about first-screen loading performance.",
+      "golden": {
+        "chunk_id": "_default:045016b8a6e57819:1",
+        "doc_sha256": "045016b8a6e57819403cfb6894e605ca0474ab9a0613a44b99de00c4d8954a64"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【简答题】题目：说明前端为什么要关注首屏加载性能。\n答案：首屏性能直接影响用户感知和留存，加载越快，用户越容易继续使用页面。\n解析：首屏体验通常是前端性能优化最"
+    },
+    {
+      "idx_ref": 48,
+      "series_code": "project_management",
+      "query_zh": "在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。 ",
+      "query_en": "In the scenario where the business side asks to add a feature on short notice and the project manager must decide whether to accept it, evaluating scope, cost and risks first and then going through approval while communicating the impact is the appropriate priority action.",
+      "golden": {
+        "chunk_id": "_default:e42a1200e7381285:1",
+        "doc_sha256": "e42a1200e73812852fd9cb509826134d9bce2b1d16afee037c312f89f4c985d1"
+      },
+      "baseline_rank_zh_run1": 3,
+      "gt_content_head": "【判断题】题目：在业务方临时增加功能，项目经理需要评估是否接受。的场景里，先评估范围、成本和风险，再走审批并同步影响。是合适的优先动作。\n选项：\nA. 正确\nB"
+    },
+    {
+      "idx_ref": 52,
+      "series_code": "construction_certificate",
+      "query_zh": "下列哪项更符合文明施工要求？",
+      "query_en": "Which of the following better meets civilized construction requirements?",
+      "golden": {
+        "chunk_id": "_default:17e1393dfe57dd0f:1",
+        "doc_sha256": "17e1393dfe57dd0f680395e072f9e86b0d3dbbbf4cc01d33568ce634dcd3738f"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【单选题】题目：下列哪项更符合文明施工要求？\n选项：\nA. 材料随意堆放\nB. 道路畅通、标识清晰、垃圾及时清运\nC. 施工区和生活区混杂\nD. 夜间施工无需控"
+    },
+    {
+      "idx_ref": 55,
+      "series_code": "discrete_and_combinatorial_math",
+      "query_zh": "说明排列与组合的区别。 ",
+      "query_en": "Explain the difference between permutations and combinations.",
+      "golden": {
+        "chunk_id": "_default:90894b319a7db6dd:1",
+        "doc_sha256": "90894b319a7db6ddccb1207422830b80d921fa0249b58ab83600335db24fa9c0"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【简答题】题目：说明排列与组合的区别。\n答案：排列考虑顺序，组合不考虑顺序；同样的元素选取，若顺序不同则排列不同，但组合通常视为同一种选法。\n解析：这是组合数学"
+    },
+    {
+      "idx_ref": 60,
+      "series_code": "frontend_development",
+      "query_zh": "如果样式在某个页面里失效了，你会怎么排查？",
+      "query_en": "If styles break on some page, how would you troubleshoot it?",
+      "golden": {
+        "chunk_id": "_default:26268c190c7cb1e6:1",
+        "doc_sha256": "26268c190c7cb1e641ac92bf6d80e7da844ef8be5c5988902a2754fea122cdfc"
+      },
+      "baseline_rank_zh_run1": 1,
+      "gt_content_head": "【简答题】题目：如果样式在某个页面里失效了，你会怎么排查？\n答案：会先检查选择器优先级、样式是否被覆盖、资源是否成功加载，以及是否存在缓存或作用域隔离问题。\n解"
+    }
+  ]
+}

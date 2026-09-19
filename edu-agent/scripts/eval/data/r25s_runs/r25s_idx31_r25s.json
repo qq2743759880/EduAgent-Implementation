@@ -1,0 +1,764 @@
+{
+  "tag": "r25s",
+  "task": "A_idx31_edge_case_attribution",
+  "ran_at": "2026-09-19T16:50:43.656095+00:00",
+  "git_rev": "d73540ae71dba43872ba8b86b3491694fc879d31",
+  "query": "简述该场景下的处理顺序。 ",
+  "golden_chunk_id": "_default:482454bc109d453c:1",
+  "golden_doc_sha256": "482454bc109d453c7705d9ede4e14cb2ed61bc61ec35c52b5081ad5007211453",
+  "params": {
+    "use_hyde": false,
+    "enable_graph": true,
+    "top_k": 5,
+    "final_max_k": 5,
+    "cutoff_drop_ratio": 0.4,
+    "role": "student",
+    "rerank_cliff_v2": true,
+    "embed_backend": "cuda",
+    "recall_topk": 150,
+    "rerank_topk": 20,
+    "cliff_quant": 0.6
+  },
+  "census": {
+    "criterion": "builder 同准则：content_type=='question' 且 norm(content) 包含 norm(query)",
+    "questions_total": 1751,
+    "stem_share_dups": 33,
+    "verbatim_dup_count_in_set": 33,
+    "dup_count_matches_set_field": true,
+    "exact_content_dup_group_size": 1,
+    "exact_content_dup_group_ids": [
+      "_default:482454bc109d453c:1"
+    ],
+    "sha_group_sizes": {
+      "51d89e195aecefbb": 1,
+      "7e593c572ef9196c": 1,
+      "482454bc109d453c": 1,
+      "1cb39460d2659bf8": 1,
+      "4f7b5bb460c06729": 1,
+      "ab2e498ef62b66fa": 1,
+      "33f4ad31a01555ee": 1,
+      "71a8e280e9c4ce32": 1,
+      "996f89988b6709a6": 1,
+      "03ac158a900c805e": 1,
+      "43f475420ed18f18": 1,
+      "0b9d1299c89e331d": 1,
+      "1cdccfb4e41e7eb5": 1,
+      "b1367fc01bc30bb9": 1,
+      "29fbcc866b6d1be0": 1,
+      "91519c803ee0bdf5": 1,
+      "f7233dca61f165d1": 1,
+      "9f0590c84554de82": 1,
+      "30bfa19101534f5a": 1,
+      "618e9fd40e7cd1a8": 1,
+      "0a9efd9b1eec7889": 1,
+      "29dd5b448d23a434": 1,
+      "622d3991321d4cec": 1,
+      "20d3ce7bab1bca11": 1,
+      "5caf5c53982dd5f5": 1,
+      "2bb6176f5d3a9320": 1,
+      "0f1ffc992bc9a9c0": 1,
+      "b66a2ad0483eef75": 1,
+      "1cc374bd4343188b": 1,
+      "d65c7565ae0546b7": 1,
+      "d54003fb6ce8546a": 1,
+      "ddd0b9fdc1865105": 1,
+      "7c5a19059ac1cb41": 1
+    },
+    "rows": [
+      {
+        "chunk_id": "_default:51d89e195aecefbb:1",
+        "content_sha256_16": "51d89e195aecefbb",
+        "content_len": 68,
+        "bank": "workplace_safety_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：立即停机；组织撤离；按流程报告。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:7e593c572ef9196c:1",
+        "content_sha256_16": "7e593c572ef9196c",
+        "content_len": 78,
+        "bank": "organizational_change_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：说明变革目标；讲清对岗位的影响；用示范和培训降阻力。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:482454bc109d453c:1",
+        "content_sha256_16": "482454bc109d453c",
+        "content_len": 83,
+        "bank": "first_line_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：列出具体返工事实；说明对交付和成本的影响；约定改进与复盘时间。\n解析：答案应体现顺序感和责任感，不能跳过前置确认"
+      },
+      {
+        "chunk_id": "_default:1cb39460d2659bf8:1",
+        "content_sha256_16": "1cb39460d2659bf8",
+        "content_len": 76,
+        "bank": "data_compliance_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：确认接收人权限；核对使用目的；通过受控渠道共享。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:4f7b5bb460c06729:1",
+        "content_sha256_16": "4f7b5bb460c06729",
+        "content_len": 74,
+        "bank": "talent_development_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：列出关键岗位候选人；安排轮岗；安排项目历练。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:ab2e498ef62b66fa:1",
+        "content_sha256_16": "ab2e498ef62b66fa",
+        "content_len": 71,
+        "bank": "organizational_change_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：收集试点反馈；修正流程；逐步扩大范围。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:33f4ad31a01555ee:1",
+        "content_sha256_16": "33f4ad31a01555ee",
+        "content_len": 70,
+        "bank": "talent_development_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：导师先示范；新人实操；逐步减少陪同。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:71a8e280e9c4ce32:1",
+        "content_sha256_16": "71a8e280e9c4ce32",
+        "content_len": 75,
+        "bank": "cross_team_collaboration_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：说明业务影响；按优先级排序；协商资源分配方案。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:996f89988b6709a6:1",
+        "content_sha256_16": "996f89988b6709a6",
+        "content_len": 68,
+        "bank": "data_compliance_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：立即止损；保留证据；按流程上报。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:03ac158a900c805e:1",
+        "content_sha256_16": "03ac158a900c805e",
+        "content_len": 72,
+        "bank": "sales_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：问清业务痛点；确认使用场景；了解决策链。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:43f475420ed18f18:1",
+        "content_sha256_16": "43f475420ed18f18",
+        "content_len": 73,
+        "bank": "project_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：评估范围和成本；走审批留痕；同步进度影响。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:0b9d1299c89e331d:1",
+        "content_sha256_16": "0b9d1299c89e331d",
+        "content_len": 72,
+        "bank": "customer_service_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：给出处理时点；同步升级责任人；安排回访。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:1cdccfb4e41e7eb5:1",
+        "content_sha256_16": "1cdccfb4e41e7eb5",
+        "content_len": 73,
+        "bank": "sales_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：确认客户顾虑；讲清价值差异；回到使用收益。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:b1367fc01bc30bb9:1",
+        "content_sha256_16": "b1367fc01bc30bb9",
+        "content_len": 73,
+        "bank": "service_standard_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：说明延迟原因；告知预计时间；给出补救安排。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:29fbcc866b6d1be0:1",
+        "content_sha256_16": "29fbcc866b6d1be0",
+        "content_len": 71,
+        "bank": "service_standard_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：统一处理口径；复核记录；保持动作一致。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:91519c803ee0bdf5:1",
+        "content_sha256_16": "91519c803ee0bdf5",
+        "content_len": 72,
+        "bank": "talent_development_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：做能力盘点；匹配岗位要求；设计成长路径。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:f7233dca61f165d1:1",
+        "content_sha256_16": "f7233dca61f165d1",
+        "content_len": 75,
+        "bank": "workplace_safety_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：先隔离风险区域；及时清理隐患；确认安全后恢复。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:9f0590c84554de82:1",
+        "content_sha256_16": "9f0590c84554de82",
+        "content_len": 74,
+        "bank": "project_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：澄清需求范围；明确验收标准；锁定排期和依赖。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:30bfa19101534f5a:1",
+        "content_sha256_16": "30bfa19101534f5a",
+        "content_len": 70,
+        "bank": "organizational_change_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：写进制度；纳入检查项；定期复盘执行。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:618e9fd40e7cd1a8:1",
+        "content_sha256_16": "618e9fd40e7cd1a8",
+        "content_len": 79,
+        "bank": "first_line_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：先停用相关设备；确认风险并补记异常；同步主管和接班人。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:0a9efd9b1eec7889:1",
+        "content_sha256_16": "0a9efd9b1eec7889",
+        "content_len": 74,
+        "bank": "data_compliance_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：只采集必要字段；补齐授权说明；明确使用目的。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:29dd5b448d23a434:1",
+        "content_sha256_16": "29dd5b448d23a434",
+        "content_len": 73,
+        "bank": "leadership_growth_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：讲清业务目标；拆成团队任务；拆到个人责任。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:622d3991321d4cec:1",
+        "content_sha256_16": "622d3991321d4cec",
+        "content_len": 72,
+        "bank": "customer_service_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：主动回访；确认问题是否解决；记录满意度。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:20d3ce7bab1bca11:1",
+        "content_sha256_16": "20d3ce7bab1bca11",
+        "content_len": 76,
+        "bank": "cross_team_collaboration_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：对齐双方目标；拆出关键依赖；明确负责人和时间点。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:5caf5c53982dd5f5:1",
+        "content_sha256_16": "5caf5c53982dd5f5",
+        "content_len": 75,
+        "bank": "workplace_safety_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：确认 PPE 齐全；说明作业风险；开工前复核。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:2bb6176f5d3a9320:1",
+        "content_sha256_16": "2bb6176f5d3a9320",
+        "content_len": 74,
+        "bank": "leadership_growth_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：明确决策边界；交付可决策事项；约定汇报节点。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:0f1ffc992bc9a9c0:1",
+        "content_sha256_16": "0f1ffc992bc9a9c0",
+        "content_len": 73,
+        "bank": "service_standard_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：第一时间问候；主动引导客户；使用统一话术。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:b66a2ad0483eef75:1",
+        "content_sha256_16": "b66a2ad0483eef75",
+        "content_len": 76,
+        "bank": "leadership_growth_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：重新排优先级；清理低价值任务；公开认可关键贡献。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:1cc374bd4343188b:1",
+        "content_sha256_16": "1cc374bd4343188b",
+        "content_len": 79,
+        "bank": "project_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：提前更新风险清单；准备备选方案；明确责任人和截止时间。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:d65c7565ae0546b7:1",
+        "content_sha256_16": "d65c7565ae0546b7",
+        "content_len": 82,
+        "bank": "first_line_management_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：先讲清产量、质量和节拍；按熟练度分配任务；安排新人跟班复核。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步"
+      },
+      {
+        "chunk_id": "_default:d54003fb6ce8546a:1",
+        "content_sha256_16": "d54003fb6ce8546a",
+        "content_len": 73,
+        "bank": "cross_team_collaboration_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：补充责任清单；统一接口定义；约定升级机制。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:ddd0b9fdc1865105:1",
+        "content_sha256_16": "ddd0b9fdc1865105",
+        "content_len": 73,
+        "bank": "customer_service_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：先安抚情绪；复述客户诉求；核实订单和细节。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "chunk_id": "_default:7c5a19059ac1cb41:1",
+        "content_sha256_16": "7c5a19059ac1cb41",
+        "content_len": 73,
+        "bank": "sales_training_bank",
+        "tenant_id": "_default",
+        "visibility": "public",
+        "source_file": "seeds/3_question/question.csv",
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：确认付款条件；确认交付里程碑；确认责任人。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      }
+    ]
+  },
+  "recall_layer": {
+    "n_unique_after_dedupe": 150,
+    "degraded_reason": null,
+    "golden_rank": 33,
+    "golden_resolve_via": "chunk_id",
+    "dups_in_recall_n": 33,
+    "dup_recall_positions": {
+      "_default:51d89e195aecefbb:1": 5,
+      "_default:7e593c572ef9196c:1": 26,
+      "_default:482454bc109d453c:1": 33,
+      "_default:1cb39460d2659bf8:1": 14,
+      "_default:4f7b5bb460c06729:1": 9,
+      "_default:ab2e498ef62b66fa:1": 3,
+      "_default:33f4ad31a01555ee:1": 16,
+      "_default:71a8e280e9c4ce32:1": 17,
+      "_default:996f89988b6709a6:1": 8,
+      "_default:03ac158a900c805e:1": 6,
+      "_default:43f475420ed18f18:1": 12,
+      "_default:0b9d1299c89e331d:1": 2,
+      "_default:1cdccfb4e41e7eb5:1": 19,
+      "_default:b1367fc01bc30bb9:1": 25,
+      "_default:29fbcc866b6d1be0:1": 1,
+      "_default:91519c803ee0bdf5:1": 4,
+      "_default:f7233dca61f165d1:1": 24,
+      "_default:9f0590c84554de82:1": 20,
+      "_default:30bfa19101534f5a:1": 11,
+      "_default:618e9fd40e7cd1a8:1": 13,
+      "_default:0a9efd9b1eec7889:1": 31,
+      "_default:29dd5b448d23a434:1": 32,
+      "_default:622d3991321d4cec:1": 23,
+      "_default:20d3ce7bab1bca11:1": 18,
+      "_default:5caf5c53982dd5f5:1": 27,
+      "_default:2bb6176f5d3a9320:1": 29,
+      "_default:0f1ffc992bc9a9c0:1": 21,
+      "_default:b66a2ad0483eef75:1": 28,
+      "_default:1cc374bd4343188b:1": 15,
+      "_default:d65c7565ae0546b7:1": 30,
+      "_default:d54003fb6ce8546a:1": 22,
+      "_default:ddd0b9fdc1865105:1": 7,
+      "_default:7c5a19059ac1cb41:1": 10
+    },
+    "exact_sha_dups_in_recall": [
+      "_default:482454bc109d453c:1"
+    ],
+    "note": "recall_ids 为 RRF 融合去重序（与 retrieve_three_channel 融合段同语义）"
+  },
+  "rerank_layer": {
+    "golden_full_rank": 18,
+    "golden_resolve_via": "chunk_id",
+    "golden_score": 0.965492,
+    "top1_score": 1.0,
+    "dups_in_rerank_order": [
+      {
+        "chunk_id": "_default:20d3ce7bab1bca11:1",
+        "rank": 1,
+        "score": 1.0
+      },
+      {
+        "chunk_id": "_default:ddd0b9fdc1865105:1",
+        "rank": 2,
+        "score": 0.992519
+      },
+      {
+        "chunk_id": "_default:9f0590c84554de82:1",
+        "rank": 3,
+        "score": 0.99083
+      },
+      {
+        "chunk_id": "_default:29fbcc866b6d1be0:1",
+        "rank": 4,
+        "score": 0.989624
+      },
+      {
+        "chunk_id": "_default:622d3991321d4cec:1",
+        "rank": 5,
+        "score": 0.988658
+      },
+      {
+        "chunk_id": "_default:b66a2ad0483eef75:1",
+        "rank": 6,
+        "score": 0.985039
+      },
+      {
+        "chunk_id": "_default:2bb6176f5d3a9320:1",
+        "rank": 7,
+        "score": 0.983108
+      },
+      {
+        "chunk_id": "_default:1cc374bd4343188b:1",
+        "rank": 8,
+        "score": 0.982625
+      },
+      {
+        "chunk_id": "_default:618e9fd40e7cd1a8:1",
+        "rank": 9,
+        "score": 0.98166
+      },
+      {
+        "chunk_id": "_default:1cdccfb4e41e7eb5:1",
+        "rank": 10,
+        "score": 0.98166
+      },
+      {
+        "chunk_id": "_default:7c5a19059ac1cb41:1",
+        "rank": 11,
+        "score": 0.981178
+      },
+      {
+        "chunk_id": "_default:4f7b5bb460c06729:1",
+        "rank": 12,
+        "score": 0.978041
+      },
+      {
+        "chunk_id": "_default:ab2e498ef62b66fa:1",
+        "rank": 13,
+        "score": 0.972732
+      },
+      {
+        "chunk_id": "_default:0b9d1299c89e331d:1",
+        "rank": 14,
+        "score": 0.97249
+      },
+      {
+        "chunk_id": "_default:f7233dca61f165d1:1",
+        "rank": 15,
+        "score": 0.970319
+      },
+      {
+        "chunk_id": "_default:03ac158a900c805e:1",
+        "rank": 16,
+        "score": 0.96694
+      },
+      {
+        "chunk_id": "_default:5caf5c53982dd5f5:1",
+        "rank": 17,
+        "score": 0.965734
+      },
+      {
+        "chunk_id": "_default:482454bc109d453c:1",
+        "rank": 18,
+        "score": 0.965492
+      },
+      {
+        "chunk_id": "_default:1cb39460d2659bf8:1",
+        "rank": 19,
+        "score": 0.964044
+      },
+      {
+        "chunk_id": "_default:29dd5b448d23a434:1",
+        "rank": 20,
+        "score": 0.96139
+      },
+      {
+        "chunk_id": "_default:43f475420ed18f18:1",
+        "rank": 21,
+        "score": 0.959701
+      },
+      {
+        "chunk_id": "_default:996f89988b6709a6:1",
+        "rank": 22,
+        "score": 0.959459
+      },
+      {
+        "chunk_id": "_default:d65c7565ae0546b7:1",
+        "rank": 23,
+        "score": 0.958494
+      },
+      {
+        "chunk_id": "_default:51d89e195aecefbb:1",
+        "rank": 24,
+        "score": 0.95777
+      },
+      {
+        "chunk_id": "_default:0f1ffc992bc9a9c0:1",
+        "rank": 25,
+        "score": 0.957046
+      },
+      {
+        "chunk_id": "_default:b1367fc01bc30bb9:1",
+        "rank": 26,
+        "score": 0.953668
+      },
+      {
+        "chunk_id": "_default:33f4ad31a01555ee:1",
+        "rank": 27,
+        "score": 0.949324
+      },
+      {
+        "chunk_id": "_default:30bfa19101534f5a:1",
+        "rank": 28,
+        "score": 0.948359
+      },
+      {
+        "chunk_id": "_default:71a8e280e9c4ce32:1",
+        "rank": 29,
+        "score": 0.948118
+      },
+      {
+        "chunk_id": "_default:d54003fb6ce8546a:1",
+        "rank": 30,
+        "score": 0.947876
+      },
+      {
+        "chunk_id": "_default:91519c803ee0bdf5:1",
+        "rank": 31,
+        "score": 0.939913
+      },
+      {
+        "chunk_id": "_default:7e593c572ef9196c:1",
+        "rank": 32,
+        "score": 0.935328
+      },
+      {
+        "chunk_id": "_default:0a9efd9b1eec7889:1",
+        "rank": 33,
+        "score": 0.934122
+      }
+    ],
+    "top20_ids": [
+      "_default:20d3ce7bab1bca11:1",
+      "_default:ddd0b9fdc1865105:1",
+      "_default:9f0590c84554de82:1",
+      "_default:29fbcc866b6d1be0:1",
+      "_default:622d3991321d4cec:1",
+      "_default:b66a2ad0483eef75:1",
+      "_default:2bb6176f5d3a9320:1",
+      "_default:1cc374bd4343188b:1",
+      "_default:618e9fd40e7cd1a8:1",
+      "_default:1cdccfb4e41e7eb5:1",
+      "_default:7c5a19059ac1cb41:1",
+      "_default:4f7b5bb460c06729:1",
+      "_default:ab2e498ef62b66fa:1",
+      "_default:0b9d1299c89e331d:1",
+      "_default:f7233dca61f165d1:1",
+      "_default:03ac158a900c805e:1",
+      "_default:5caf5c53982dd5f5:1",
+      "_default:482454bc109d453c:1",
+      "_default:1cb39460d2659bf8:1",
+      "_default:29dd5b448d23a434:1"
+    ],
+    "top20_scores": [
+      1.0,
+      0.992519,
+      0.99083,
+      0.989624,
+      0.988658,
+      0.985039,
+      0.983108,
+      0.982625,
+      0.98166,
+      0.98166,
+      0.981178,
+      0.978041,
+      0.972732,
+      0.97249,
+      0.970319,
+      0.96694,
+      0.965734,
+      0.965492,
+      0.964044,
+      0.96139
+    ],
+    "rerank_reason": null
+  },
+  "final_layer_cliff_replay": {
+    "final_ids": [
+      "_default:20d3ce7bab1bca11:1",
+      "_default:ddd0b9fdc1865105:1",
+      "_default:9f0590c84554de82:1",
+      "_default:29fbcc866b6d1be0:1",
+      "_default:622d3991321d4cec:1"
+    ],
+    "rows": [
+      {
+        "rank": 1,
+        "chunk_id": "_default:20d3ce7bab1bca11:1",
+        "score": 1.0,
+        "content_type": "question",
+        "is_dup_of_idx31_stem": true,
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：对齐双方目标；拆出关键依赖；明确负责人和时间点。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "_default:ddd0b9fdc1865105:1",
+        "score": 0.992519,
+        "content_type": "question",
+        "is_dup_of_idx31_stem": true,
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：先安抚情绪；复述客户诉求；核实订单和细节。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "_default:9f0590c84554de82:1",
+        "score": 0.99083,
+        "content_type": "question",
+        "is_dup_of_idx31_stem": true,
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：澄清需求范围；明确验收标准；锁定排期和依赖。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "rank": 4,
+        "chunk_id": "_default:29fbcc866b6d1be0:1",
+        "score": 0.989624,
+        "content_type": "question",
+        "is_dup_of_idx31_stem": true,
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：统一处理口径；复核记录；保持动作一致。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      },
+      {
+        "rank": 5,
+        "chunk_id": "_default:622d3991321d4cec:1",
+        "score": 0.988658,
+        "content_type": "question",
+        "is_dup_of_idx31_stem": true,
+        "content_head": "【简答题】题目：简述该场景下的处理顺序。\n答案：主动回访；确认问题是否解决；记录满意度。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。"
+      }
+    ],
+    "hit_vs_golden_double_key": false,
+    "group_hit_stem_dups_in_final": [
+      "_default:20d3ce7bab1bca11:1",
+      "_default:ddd0b9fdc1865105:1",
+      "_default:9f0590c84554de82:1",
+      "_default:29fbcc866b6d1be0:1",
+      "_default:622d3991321d4cec:1"
+    ]
+  },
+  "e2e_full_chain_tie_in": {
+    "final_ids": [
+      "_default:20d3ce7bab1bca11:1",
+      "_default:ddd0b9fdc1865105:1",
+      "_default:9f0590c84554de82:1",
+      "_default:29fbcc866b6d1be0:1",
+      "_default:622d3991321d4cec:1"
+    ],
+    "gt_resolve_via": "miss",
+    "hit": false,
+    "raw_retrieved_count": 150,
+    "degraded_reason": null,
+    "baseline_run1_idx31": {
+      "gt_resolve_via": "miss",
+      "hit@5": false,
+      "final_docs": 5
+    },
+    "miss_reproduced": true,
+    "final_ids_match_replay": true
+  },
+  "separability": {
+    "dense_cos_query_vs_golden": 0.729312,
+    "note": "泛化题干逐字信号弱：query 仅 10 字且不含答案面词；dense 余弦为参考值，主证据=rerank 全序分数梯度（rerank_layer）"
+  },
+  "verdict_booleans": {
+    "root2_golden_in_recall150": true,
+    "root2_golden_recall_rank": 33,
+    "root2_golden_via": "chunk_id",
+    "root1_dups_in_recall": 33,
+    "root1_dups_total": 33,
+    "root1_dilution_recall_slots": 33,
+    "root1_n_dups_above_golden_at_rerank": 17,
+    "root1_final_top5_contains_stem_dup": true,
+    "root3_golden_rerank_rank": 18,
+    "root3_golden_rerank_score": 0.965492,
+    "root3_top1_score": 1.0,
+    "root3_best_dup_rank": 1,
+    "root3_best_dup_score": 1.0,
+    "root3_dense_cos_query_vs_golden": 0.729312
+  },
+  "wall_seconds": 29.2
+}
