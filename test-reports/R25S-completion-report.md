@@ -7,7 +7,7 @@
 
 ## 0. 主提交 hash（补记）
 
-**（本报告随主提交入库，hash 由紧随的补记 commit 回填本节——仓库惯例，先例 `b04e32d`→`afe11ef`）**
+**`2bf7af8`**（eval(r25s)/W-NEXT-R25S-001 缩编收口主提交，feature/opt-waves，父 `d73540a`；本报告随主提交入库，hash 由紧随的补记 commit 回填本节——仓库惯例，先例 `b04e32d`→`afe11ef`）
 
 交付物清单（本提交）：
 - `edu-agent/scripts/eval/r25s_probe.py`（探针：idx31 三层归因 / bilingual 双语实测 / rebuild-summary 离线重建）
