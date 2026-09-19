@@ -625,3 +625,8 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - R12 judge 补验完成：30/30 判定（eq12/neq18/failed0）；口径限制=old 侧 429 降级规则答案+200 字符 head，60% not_eq 不可归因新路径。
 - V2 开启活体增益：grid rrf_k60_base hit@5=0.0469（V1 时代 0.0312 的 +50%）。
 - 移交：评测集 golden 形态变更单（路由卡 vs 内容块口径，contracts 层）；R25 候选=召回侧质量（15 miss + median 34 靠后）。
+
+## EVAL64V2 销项登记（2026-09-20，b04e32d/afe11ef）
+- 变更单 CO-EVAL64V2-001 执行闭环：golden 主尺=内容块（verbatim 63+production_cited 1，unresolved=0 不凑数）；建集器类型分布断言 content_block≥60% 硬门（R22 反哺）；新契约 rag-baseline-eval64-v2.json（draft:false，**pre-fix 基线 hit@5=0.9844/mrr=0.9414**，双跑指纹逐位一致，eval-set sha256 编排者复算 MATCH）。
+- **形态错配税定量坐实**：同产线同日同参，V1 尺（路由卡）0.0781 vs V2 尺（内容块）0.9844——差 +0.9063 是尺子刻度差非改进（两尺禁换算，ruler_note 已入契约）。
+- **R25 前提消解上报**：内容块 golden 下召回近满分（63/64 top5，唯一 miss=idx31 泛化题干）——原 R25「召回侧质量」立项前提蒸发，建议取消或重缩为 idx31 边缘案+跨语query鲁棒性小任务，待用户裁。
