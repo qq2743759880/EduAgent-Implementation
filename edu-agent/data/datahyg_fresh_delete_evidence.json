@@ -1,0 +1,29 @@
+{
+ "meta": {
+  "plan": "W-NEXT-DATAHYG-001",
+  "captured_at": "2026-09-20T02:14+08:00",
+  "note": "apply#1(fresh 路径)删后立即断言撞 Bounded 陈旧读窗口 fail-closed 中止(未落产物)；本文件为事后只读重探+转录留痕，与 apply#2 幂等产物/verify 产物共同闭合 fresh 路径证据链"
+ },
+ "apply1_fatal_stdout": "[DHG1][FATAL] 删后 count(*)=3398 != 3388 （delete 已下发后、post ladder 陈旧读）",
+ "fresh_probe_now": {
+  "count_star_whole": 3388,
+  "partition_counts": {
+   "_default": 3363,
+   "course_public": 0,
+   "user_1": 19,
+   "user_100003": 6
+  },
+  "default_10pk_hits": 0,
+  "user1_10pk_hits": 10,
+  "enumerate": 3388,
+  "enumerate_sha12": "4ed85d1555af",
+  "default_10pk_hits_obj": "data: [], extra_info: {}"
+ },
+ "expected": {
+  "count_star": 3388,
+  "default": 3363,
+  "user_1": 19,
+  "user_100003": 6,
+  "course_public": 0
+ }
+}

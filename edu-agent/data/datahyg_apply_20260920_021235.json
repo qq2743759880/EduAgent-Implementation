@@ -1,0 +1,70 @@
+{
+ "mode": "idempotent_noop",
+ "deleted_requested": [
+  19587845,
+  145339617,
+  279813836,
+  816417878,
+  1302561580,
+  1329293447,
+  1711174363,
+  2409068295,
+  3339387773,
+  3600661124
+ ],
+ "already_deleted": [
+  19587845,
+  145339617,
+  279813836,
+  816417878,
+  1302561580,
+  1329293447,
+  1711174363,
+  2409068295,
+  3339387773,
+  3600661124
+ ],
+ "delete_result": {
+  "delete_count": 10,
+  "cost": 0
+ },
+ "pre": {
+  "stats_row_count": 3399,
+  "count_star": 3388,
+  "enumerate": 3388,
+  "enumerate_sha12": "4ed85d1555af",
+  "partitions_count_star": {
+   "_default": 3363,
+   "course_public": 0,
+   "user_1": 19,
+   "user_100003": 6
+  }
+ },
+ "post": {
+  "stats_row_count": 3399,
+  "count_star": 3388,
+  "enumerate": 3388,
+  "enumerate_sha12": "4ed85d1555af",
+  "partitions_count_star": {
+   "_default": 3363,
+   "course_public": 0,
+   "user_1": 19,
+   "user_100003": 6
+  }
+ },
+ "visibility_wait": {
+  "got": [
+   3388,
+   "4ed85d1555af"
+  ],
+  "expected": [
+   3388,
+   "4ed85d1555af"
+  ]
+ },
+ "expected": {
+  "count_star": 3388,
+  "enumerate": 3388
+ },
+ "ok": true
+}

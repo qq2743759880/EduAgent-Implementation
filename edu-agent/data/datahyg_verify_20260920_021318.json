@@ -1,0 +1,67 @@
+{
+ "check1_default_zero": true,
+ "check1_user1_one_each": true,
+ "check1_user1_rows_intact": 10,
+ "check2_ladder": {
+  "stats_row_count": 3399,
+  "count_star": 3388,
+  "enumerate": 3388,
+  "enumerate_sha12": "4ed85d1555af",
+  "partitions_count_star": {
+   "_default": 3363,
+   "course_public": 0,
+   "user_1": 19,
+   "user_100003": 6
+  }
+ },
+ "check2_sha_matches_pre": true,
+ "check3_golden": [
+  {
+   "idx": 0,
+   "golden_chunk_id": "_default:6ce44e88938b6426:1",
+   "gt_resolved_id": "_default:6ce44e88938b6426:1",
+   "gt_resolve_via": "chunk_id",
+   "hit@5": true,
+   "rank_of_gt": 1,
+   "final_docs": 5
+  },
+  {
+   "idx": 12,
+   "golden_chunk_id": "_default:a936a6808b1a8b50:1",
+   "gt_resolved_id": "_default:a936a6808b1a8b50:1",
+   "gt_resolve_via": "chunk_id",
+   "hit@5": true,
+   "rank_of_gt": 3,
+   "final_docs": 5
+  },
+  {
+   "idx": 25,
+   "golden_chunk_id": "_default:e467f5fbefed8e1d:1",
+   "gt_resolved_id": "_default:e467f5fbefed8e1d:1",
+   "gt_resolve_via": "chunk_id",
+   "hit@5": true,
+   "rank_of_gt": 1,
+   "final_docs": 5
+  },
+  {
+   "idx": 38,
+   "golden_chunk_id": "_default:045016b8a6e57819:1",
+   "gt_resolved_id": "_default:045016b8a6e57819:1",
+   "gt_resolve_via": "chunk_id",
+   "hit@5": true,
+   "rank_of_gt": 1,
+   "final_docs": 5
+  },
+  {
+   "idx": 51,
+   "golden_chunk_id": "_default:0c37307527dd0d4b:1",
+   "gt_resolved_id": "_default:0c37307527dd0d4b:1",
+   "gt_resolve_via": "chunk_id",
+   "hit@5": true,
+   "rank_of_gt": 1,
+   "final_docs": 5
+  }
+ ],
+ "golden_n": 5,
+ "ok": true
+}
