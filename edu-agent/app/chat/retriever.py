@@ -122,6 +122,55 @@ def _maybe_shadow(query, user_id, role, primary) -> None:
 
 
 # ============================================================
+# W-NEXT-FUSIONBLIND-001（R20-min Crit-2 承接：融合层对 dense 故障失明）
+#   Crit-2 实证：本地 BGE 缺失 + DashScope 429 → encode 静默退化 sha256 伪向量，
+#   dense 通道空转、稀疏通道补偿 → hit_rate 照常 0.9688，指标不报警（可观测性盲区）。
+#   本段只增不改：① channel_health 随 RetrievalBundle 显式外带（新增字段，不改既有字段语义）
+#   ② 通道失败 WARN 带通道名+原因 ③ 连续 N 次失败升级 ERROR（RETRIEVER_CHANNEL_FAIL_ERROR_N，默认 3）。
+#   不改变任何通道的输入/输出/降级路径（kg_expand 语义禁动，仅只读其 degraded_reason 做标记）。
+# ============================================================
+_CHANNEL_FAIL_STREAK: dict[str, int] = {}   # 通道名 → 连续失败次数（成功清零；仅 dense 接线）
+_CHANNEL_FAIL_ERROR_N_DEFAULT = 3           # 连续失败升级 ERROR 的默认阈值（settings.RETRIEVER_CHANNEL_FAIL_ERROR_N 优先；模块常量供测试注入）
+
+
+def _channel_fail_threshold() -> int:
+    return max(1, int(getattr(settings, "RETRIEVER_CHANNEL_FAIL_ERROR_N", _CHANNEL_FAIL_ERROR_N_DEFAULT)
+                      or _CHANNEL_FAIL_ERROR_N_DEFAULT))
+
+
+def _log_channel_failure(channel: str, reason: str) -> None:
+    """通道失败留痕：WARN（通道名+原因）；连续失败达阈值升级 ERROR（Crit-2③）。"""
+    _CHANNEL_FAIL_STREAK[channel] = _CHANNEL_FAIL_STREAK.get(channel, 0) + 1
+    n = _CHANNEL_FAIL_STREAK[channel]
+    thr = _channel_fail_threshold()
+    msg = f"[retriever] channel={channel} FAILED（连续 {n} 次/阈值 {thr}）：{reason}"
+    if n >= thr:
+        logger.error(msg)
+    else:
+        logger.warning(msg)
+
+
+def _log_channel_recovery(channel: str) -> None:
+    """通道恢复：连续失败计数清零（仅在确有失败残留时打一条 INFO，避免每查一刷）。"""
+    if _CHANNEL_FAIL_STREAK.pop(channel, None) is not None:
+        logger.info(f"[retriever] channel={channel} 恢复（连续失败计数清零）")
+
+
+def _dense_health_from_backend(backend: str, query_embed_degrade: str | None) -> tuple[str, str | None]:
+    """按编码后端定 dense 通道健康级：ok / idle（空转=异空间伪向量，检索无有效贡献）/ degraded。
+
+    - bge_m3                       → ok（与库内向量空间一致，VEC-LOCK 单一事实源）
+    - sha256（两级兜底均失败的伪向量）/ cuda 环境下异空间降级 → idle（Crit-2「空转」形态）
+    - 其余（cloud 等）             → degraded（非 BGE-M3 空间，仅 cuda 环境下已有既有 WARN）
+    """
+    if backend == "bge_m3":
+        return "ok", None
+    if backend == "sha256" or query_embed_degrade:
+        return "idle", (query_embed_degrade or f"backend={backend}（异空间伪向量，dense 无有效贡献）")
+    return "degraded", f"backend={backend}（非 BGE-M3 空间）"
+
+
+# ============================================================
 # 1. 数据结构：检索返回（给 service 用的内部类型）
 # ============================================================
 @dataclass
@@ -132,6 +181,12 @@ class RetrievalBundle:
     graph_entities: list[GraphEntity]        # 图谱扩展实体（可提前渲染）
     rewrite_query: str | None                # HyDE 改写后的查询（None=未改写）
     degraded_reason: str | None = None       # 任何降级（Milvus 连不上 / Neo4j 连不上）说明
+    # FUSIONBLIND-001：三通道健康度（只增不改）。形如
+    # {"dense": {"status": ok|idle|degraded|failed, "reason", "backend"},
+    #  "sparse": {"status": ok|failed|skipped, "reason"},
+    #  "milvus_hybrid": {"status": ok|empty|failed, "reason"},
+    #  "graph"/"kg_expand"/"rerank": {"status": ok|empty|failed|degraded|disabled, "reason"}}
+    channel_health: dict | None = None
 
 
 # ============================================================
@@ -198,23 +253,34 @@ def _milvus_hybrid_search_safe(
     user_id: int,
     role: UserRole,
     top_k: int,
-) -> tuple[list[RetrievedDoc], str | None]:
+) -> tuple[list[RetrievedDoc], str | None, dict]:
     """Milvus 两通道：连不上返回空 list + degraded_reason。
 
     task31：召回 top_k 统一抬到 RETRIEVER_RECALL_TOPK(150)，给后续 rerank 足够候选（GWT② 12→150）；
     filter_expr 排除促销/班次/公告类 content_type，避免课程问答混入推广文案（GWT③）。
+
+    FUSIONBLIND-001：返回第 3 元 channel_health（dense/sparse/milvus_hybrid 通道级状态），
+    phase 归因——dense_embed/sparse_embed/milvus_search 各自失败落到对应通道，不再整段失明。
     """
     tenant_ids = _search_tenant_ids(user_id, role)
     # R02-tail profile：Milvus 通道内部分段计时（嵌入 dense/稀疏/远端搜索/装配）
     _t_total = time.perf_counter()
     _t_embed = _t_sparse = _t_search = _t_asm = 0.0
+    health: dict = {
+        "milvus_hybrid": {"status": "unknown", "reason": None},
+        "dense": {"status": "unknown", "reason": None, "backend": None},
+        "sparse": {"status": "unknown", "reason": None},
+    }
+    _phase = "init"
     try:
         ensure_jieba_ready()
         # 稠密（VEC-LOCK：与入库侧同编码器同参数——单一事实源 encode_dense_batch_detailed）
+        _phase = "dense_embed"
         _t0 = time.perf_counter()
         embed_res = encode_dense_batch_detailed([query])
         _t_embed = time.perf_counter() - _t0
         dense_vec = [float(x) for x in embed_res.vectors[0]]
+        health["dense"]["backend"] = embed_res.backend
         # VEC-LOCK：EMBED_BACKEND=cuda 时查询侧必须落在 BGE-M3 空间；若本次编码降级
         # 到异向量空间（cloud/sha256），显式告警并在 degraded_reason 标注（禁静默混写）
         if (
@@ -228,11 +294,23 @@ def _milvus_hybrid_search_safe(
             _query_embed_degrade = f"query_embed_fallback:{embed_res.backend}"
         else:
             _query_embed_degrade = None
+        # FUSIONBLIND-001：dense 健康定级（ok/idle/degraded）+ 失败留痕（Crit-2：空转必须显式化）
+        _d_status, _d_reason = _dense_health_from_backend(embed_res.backend, _query_embed_degrade)
+        health["dense"]["status"] = _d_status
+        health["dense"]["reason"] = _d_reason
+        if _d_status == "ok":
+            _log_channel_recovery("dense")
+        else:
+            _log_channel_failure("dense", _d_reason or f"backend={embed_res.backend}")
         # 稀疏：build_sparse_vector 返回 {str(term_id): weight}，基于（HyDE 后的）contextual 文本生成
         # —— BM25 双路增益（GWT④：sparse 与入库端同样基于带上下文文本，双路互补召回）
+        _phase = "sparse_embed"
         _t0 = time.perf_counter()
         sparse_vec = build_sparse_vector(query)
         _t_sparse = time.perf_counter() - _t0
+        health["sparse"]["status"] = "ok" if sparse_vec else "empty"
+        if not sparse_vec:
+            health["sparse"]["reason"] = "稀疏向量为空（分词无产出）"
 
         # 召回候选数：优先 150（GWT②）；外部传的 top_k 只是最终展示期望，不应压召回
         recall_k = max(int(top_k), int(getattr(settings, "RETRIEVER_RECALL_TOPK", 150)))
@@ -243,6 +321,7 @@ def _milvus_hybrid_search_safe(
             filter_expr = f"content_type not in [{quoted}]"
 
         # 真实调用（内部已含 RRF 融合 + 可选分区过滤）；timeout 防 Milvus 慢拖死链路（P1-4）
+        _phase = "milvus_search"
         _t0 = time.perf_counter()
         raw = _milvus_hybrid_search(
             dense_vec=dense_vec,
@@ -285,12 +364,29 @@ def _milvus_hybrid_search_safe(
                 (time.perf_counter() - _t_total) * 1000, _t_embed * 1000, _t_sparse * 1000,
                 _t_search * 1000, _t_asm * 1000, len(docs))
         )
+        # FUSIONBLIND-001：hybrid 通道整体结果态（0 行=empty；融合后无逐子通道归因，dense 定级以嵌入阶段为准）
+        health["milvus_hybrid"]["status"] = "ok" if docs else "empty"
+        if not docs:
+            health["milvus_hybrid"]["reason"] = "hybrid_search 返回 0 行（索引空/分区过滤/双通道均无召回）"
         # VEC-LOCK：查询编码降级（异向量空间）时在 degraded_reason 显式标注
-        return docs, (_query_embed_degrade if _query_embed_degrade else None)
+        return docs, (_query_embed_degrade if _query_embed_degrade else None), health
     except Exception as e:
         reason = f"Milvus 检索跳过（{type(e).__name__}）"
         logger.warning(f"{reason}：{e}")
-        return [], reason
+        # FUSIONBLIND-001：按 phase 归因到通道（dense 嵌入失败 → dense failed + sparse skipped）
+        health["milvus_hybrid"]["status"] = "failed"
+        health["milvus_hybrid"]["reason"] = f"{_phase}:{type(e).__name__}: {e}"
+        if _phase in ("dense_embed", "init"):
+            health["dense"]["status"] = "failed"
+            health["dense"]["reason"] = f"{_phase}:{type(e).__name__}: {e}"
+            health["sparse"]["status"] = "skipped"
+            health["sparse"]["reason"] = "dense 嵌入失败，hybrid 通道整体不可用（loader 契约 dense+sparse 成对）"
+            _log_channel_failure("dense", health["dense"]["reason"])
+        elif _phase == "sparse_embed":
+            health["sparse"]["status"] = "failed"
+            health["sparse"]["reason"] = f"{type(e).__name__}: {e}"
+        # milvus_search/assemble 阶段失败：dense 已按嵌入阶段定级，失败归 milvus_hybrid 通道
+        return [], reason, health
 
 
 def _milvus_fetch_contents(chunk_ids: list[str]) -> dict[str, str]:
@@ -641,10 +737,29 @@ async def retrieve_three_channel(
     ))
     graph_task = asyncio.ensure_future(_graph_expand(rewrite_query, enable_graph=enable_graph))
     try:
-        milvus_docs, milvus_degrade = await asyncio.wait_for(milvus_task, timeout=_milvus_timeout)
+        _milvus_res = await asyncio.wait_for(milvus_task, timeout=_milvus_timeout)
     except asyncio.TimeoutError:
         logger.warning(f"Milvus 检索超时（>{_milvus_timeout}s），降级返回空 docs")
         milvus_docs, milvus_degrade = [], f"Milvus 检索超时({_milvus_timeout}s)"
+        # FUSIONBLIND-001：超时=通道级失败（dense 硬失败计入连续失败升级；sparse 阶段未知不妄断）
+        milvus_health = {
+            "milvus_hybrid": {"status": "failed", "reason": f"timeout(>{_milvus_timeout}s)"},
+            "dense": {"status": "failed", "reason": f"milvus_hybrid 超时(>{_milvus_timeout}s)", "backend": None},
+            "sparse": {"status": "unknown", "reason": f"milvus_hybrid 超时(>{_milvus_timeout}s)，失败阶段未知"},
+        }
+        _log_channel_failure("dense", f"milvus_hybrid timeout(>{_milvus_timeout}s)")
+    else:
+        # FUSIONBLIND-001：兼容旧 2 元组桩（既有测试/外部注入方）——健康度按降级字段保守推导
+        if isinstance(_milvus_res, tuple) and len(_milvus_res) == 3:
+            milvus_docs, milvus_degrade, milvus_health = _milvus_res
+        else:
+            milvus_docs, milvus_degrade = _milvus_res
+            milvus_health = {
+                "milvus_hybrid": {"status": "failed" if milvus_degrade else ("empty" if not milvus_docs else "ok"),
+                                  "reason": milvus_degrade},
+                "dense": {"status": "failed" if milvus_degrade else "ok", "reason": milvus_degrade, "backend": None},
+                "sparse": {"status": "failed" if milvus_degrade else "ok", "reason": None},
+            }
     _prof_milvus = time.perf_counter() - _prof_t1
     # 3) 图谱扩展（已与 Milvus 并行启动，此处仅收口；_graph_expand 内部全吞异常，恒返回元组）
     graph_entities, graph_degrade = await graph_task
@@ -668,6 +783,7 @@ async def retrieve_three_channel(
     #     主链结果与开关关闭时逐位一致（对账零分歧的结构保证）。
     kg_degrade: str | None = None
     _prof_kg = 0.0
+    kg_merged = 0  # FUSIONBLIND-001：只读产出计数（channel_health 标记用，不参与检索语义）
     if getattr(settings, "KG_EXPAND_ENABLED", False) and merged:
         from app.ai import kg_bridge
 
@@ -703,6 +819,7 @@ async def retrieve_three_channel(
                     source_channel="graph",  # 契约 Literal 冻结：通道3=实体渲染、通道4=chunk 扩展共用 graph 溯源
                 ))
             if rank:
+                kg_merged = rank  # FUSIONBLIND-001：只读计数
                 logger.info(
                     f"[kg_expand] 图谱扩展并入 {rank} 个邻居 chunk（种子 {len(seed_ids)}，"
                     f"耗时 {_prof_kg * 1000:.0f}ms）"
@@ -721,14 +838,49 @@ async def retrieve_three_channel(
     final_docs = _cliff_cutoff(merged, final_max_k=final_max_k, drop_ratio=cutoff_drop_ratio)
     _prof_cliff = time.perf_counter() - _prof_t4 - _prof_rerank
 
-    # R02-tail profile：三通道主链路分段汇总（一次检索一行；kg_expand=R-N2 第四通道段）
+    # FUSIONBLIND-001：三通道健康度汇总（只增不改——degraded_reason 组装逻辑与内容原样保留）。
+    # 先于 pipeline profile 日志组装，使每次检索的通道健康态随 profile 行留痕（可观测）。
+    _rerank_status = (
+        "empty" if raw_retrieved_count == 0
+        else "ok" if rerank_degrade is None
+        else "failed" if rerank_degrade == "reranker_unavailable"
+        else "degraded"
+    )
+    channel_health: dict = dict(milvus_health or {})
+    channel_health.setdefault("dense", {"status": "unknown", "reason": None, "backend": None})
+    channel_health.setdefault("sparse", {"status": "unknown", "reason": None})
+    channel_health.setdefault("milvus_hybrid", {"status": "unknown", "reason": milvus_degrade})
+    channel_health["graph"] = {
+        "status": (
+            "disabled" if not enable_graph
+            else "failed" if graph_degrade
+            else "ok" if graph_entities else "empty"
+        ),
+        "reason": graph_degrade,
+    }
+    channel_health["kg_expand"] = {
+        "status": (
+            "disabled" if not getattr(settings, "KG_EXPAND_ENABLED", False)
+            else "failed" if kg_degrade
+            else "ok" if kg_merged else "empty"
+        ),
+        "reason": kg_degrade,
+    }
+    channel_health["rerank"] = {"status": _rerank_status, "reason": rerank_degrade}
+
+    # R02-tail profile：三通道主链路分段汇总（一次检索一行；kg_expand=R-N2 第四通道段；
+    # FUSIONBLIND-001 追加 health 段——通道健康态随 profile 行留痕，dense 空转/失败不再静默）
     logger.info(
         "[retrieval-profile] pipeline total={:.0f}ms | hyde={:.0f} milvus={:.0f} graph={:.0f} "
-        "kg_expand={:.0f} merge={:.0f} rerank={:.0f} cliff={:.0f} | raw={} final={}".format(
+        "kg_expand={:.0f} merge={:.0f} rerank={:.0f} cliff={:.0f} | raw={} final={} | "
+        "health dense={} sparse={} graph={} kg={} rerank={}".format(
             (time.perf_counter() - _prof_t0) * 1000,
             _prof_hyde * 1000, _prof_milvus * 1000, _prof_graph * 1000,
             _prof_kg * 1000, _prof_merge * 1000, _prof_rerank * 1000, max(0.0, _prof_cliff) * 1000,
-            raw_retrieved_count, len(final_docs))
+            raw_retrieved_count, len(final_docs),
+            channel_health["dense"]["status"], channel_health["sparse"]["status"],
+            channel_health["graph"]["status"], channel_health["kg_expand"]["status"],
+            channel_health["rerank"]["status"])
     )
 
     # 7) 汇总降级原因 + task39 GWT② 逐组件指标埋点
@@ -757,6 +909,7 @@ async def retrieve_three_channel(
         graph_entities=graph_entities,
         rewrite_query=rewrite_query if hyde_done else None,
         degraded_reason=degraded_reason,
+        channel_health=channel_health,
     )
     # task-E1 影子模式（AC1）：主路径返回完全不变；影子对比仅 fire-and-forget，绝不阻塞/改结果
     _maybe_shadow(query, user_id, role, _bundle)

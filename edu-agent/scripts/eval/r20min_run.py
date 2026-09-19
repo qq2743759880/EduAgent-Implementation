@@ -327,6 +327,8 @@ async def _eval_one(sem, idx: int, case: dict, results: list, trace_hook=None) -
             "final_layer": len(docs),                                              # 断崖+final 截断后
             "degraded_reason": bundle.degraded_reason,
             "rewrite_query": bundle.rewrite_query,
+            # FUSIONBLIND-001（Crit-2 承接）：通道健康度随 trace 落盘 —— per-channel 命中占比判定依据
+            "channel_health": bundle.channel_health,
         }
         if trace_hook is not None:
             trace_hook(idx, case, trace)
@@ -344,6 +346,43 @@ async def _eval_one(sem, idx: int, case: dict, results: list, trace_hook=None) -
             "latency_ms": lat_ms,
             "trace": trace,
         })
+
+
+def _channel_summary(results: list[dict]) -> dict:
+    """FUSIONBLIND-001（R20-min Crit-2 承接）：per-channel 健康占比 + dense 健康分层命中率。
+
+    Crit-2 实证：dense 空转（本地模型缺失→sha256 伪向量 / DashScope 429）时稀疏通道补偿，
+    顶部 hit_rate 照常 0.9688 无报警 —— 评估护栏要求 summary 必须显式拆分通道健康。
+    口径说明：Milvus hybrid_search 经 RRFRanker 融合后不回传子通道归因（结果级无法判定
+    「命中来自 dense 还是 sparse」），故 per-channel 命中占比以「dense 健康态分层命中率」呈现
+    （dense ok/idle/failed 各自的 hit_rate），另附 graph/kg_expand 通道产出占比。
+    """
+    dense_counts: dict[str, int] = {}
+    strat: dict[str, list[int]] = {}   # status → [hit_n, total_n]
+    graph_ok = kg_ok = 0
+    for r in results:
+        ch = (r.get("trace") or {}).get("channel_health") or {}
+        d = ch.get("dense") or {}
+        st = str(d.get("status") or "unknown")
+        dense_counts[st] = dense_counts.get(st, 0) + 1
+        strat.setdefault(st, [0, 0])
+        strat[st][1] += 1
+        if r.get("hit"):
+            strat[st][0] += 1
+        if (ch.get("graph") or {}).get("status") == "ok":
+            graph_ok += 1
+        if (ch.get("kg_expand") or {}).get("status") == "ok":
+            kg_ok += 1
+    n = len(results) or 1
+    return {
+        "note": "hybrid 融合无子通道归因 → per-channel 命中占比以 dense 健康态分层命中率呈现（FUSIONBLIND-001）",
+        "dense_status_counts": dense_counts,
+        "hit_rate_by_dense_status": {k: round(strat[k][0] / strat[k][1], 4) for k in sorted(strat)},
+        "hit_n_by_dense_status": {k: strat[k][0] for k in sorted(strat)},
+        "n_by_dense_status": {k: strat[k][1] for k in sorted(strat)},
+        "graph_ok_ratio": round(graph_ok / n, 4),
+        "kg_expand_ok_ratio": round(kg_ok / n, 4),
+    }
 
 
 def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
@@ -391,7 +430,19 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
     n = len(results)
     hit_rate = round(sum(r["hit"] for r in results) / n, 4)
     mrr = round(sum(r["rr"] for r in results) / n, 4)
-    report = {
+    # FUSIONBLIND-001（Crit-2 承接）：评估护栏 —— summary 必含 per-channel 命中占比；
+    # 全 dense 失效时顶部加显式警告（禁静默产出「正常-looking」数字）。
+    ch_summary = _channel_summary(results)
+    _d_counts = ch_summary["dense_status_counts"]
+    all_dense_dead = n > 0 and sum(_d_counts.get(s, 0) for s in ("failed", "idle")) == n
+    report = {}
+    if all_dense_dead:
+        report["WARNING"] = (
+            f"ALL_DENSE_FAILED: dense 通道 {n}/{n} 失效（failed/idle）—— "
+            f"hit_rate@5={hit_rate}/mrr@5={mrr} 为纯稀疏通道补偿产出，"
+            "禁止与 dense 健康基线对比或冻结入契约（r20min_run FUSIONBLIND-001 护栏）"
+        )
+    report.update({
         "tag": tag,
         "ran_at": datetime.now(timezone.utc).isoformat(),
         "git_rev": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=BASE_DIR).stdout.strip(),
@@ -402,9 +453,10 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
         "hit_rate@5": hit_rate,
         "mrr@5": mrr,
         "wall_seconds": wall_s,
+        "channel_summary": ch_summary,
         "r03_dense_precompute": r03_precomp,
         "per_query": results,
-    }
+    })
     os.makedirs(RUNS_DIR, exist_ok=True)
     out_path = os.path.join(RUNS_DIR, f"{tag}.json")
     # M-2 收口: run 报告（含 per_query 全量）真身入 GridFS 制品库, 本地留同字节工作副本
@@ -422,6 +474,11 @@ def run_eval(tag: str, nprobe_override: int | None = None) -> dict:
         print(f"[artifact] 归档失败(忽略, 回退直接落盘): {type(_e).__name__}: {_e}")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
+    if all_dense_dead:
+        print(f"[eval:{tag}] WARNING: {report['WARNING']}")
+    print(f"[eval:{tag}] channel_summary dense={ch_summary['dense_status_counts']} "
+          f"hit_rate_by_dense={ch_summary['hit_rate_by_dense_status']} "
+          f"graph_ok={ch_summary['graph_ok_ratio']} kg_ok={ch_summary['kg_expand_ok_ratio']}")
     print(f"[eval:{tag}] hit_rate@5={hit_rate} mrr@5={mrr} n={n} wall={wall_s}s → {out_path}")
     return report
 
@@ -633,6 +690,14 @@ def gate() -> int:
     mrr_min = contract["thresholds"]["RAG_EVAL_MRR_MIN"]
     rep = run_eval("gate_check")
     ok = rep["hit_rate@5"] >= hit_min and rep["mrr@5"] >= mrr_min
+    # FUSIONBLIND-001 护栏：dense 全失效时阈值判定无意义（稀疏补偿产物）→ 强制 FAIL，
+    # 防「指标正常-looking 但 dense 已回归/宕机」静默过门（Crit-2 复发的 CI 拦截面）。
+    _d = ((rep.get("channel_summary") or {}).get("dense_status_counts") or {})
+    _n = int(rep.get("n_cases") or 0)
+    if _n > 0 and sum(int(_d.get(s, 0) or 0) for s in ("failed", "idle")) >= _n:
+        print(f"[gate] FAIL dense 通道全失效（dense_status_counts={_d}）→ "
+              f"指标为稀疏补偿产物，不具门槛效力（FUSIONBLIND-001）")
+        ok = False
     print(f"[gate] hit_rate@5={rep['hit_rate@5']} (min={hit_min}) mrr@5={rep['mrr@5']} (min={mrr_min}) → {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1
 
@@ -663,6 +728,8 @@ def main() -> int:
                 top_k=5, final_max_k=5, cutoff_drop_ratio=0.40,
             )
             print(f"[smoke] docs={len(b.docs)} raw={b.raw_retrieved_count} degrade={b.degraded_reason}")
+            # FUSIONBLIND-001：通道健康度实测样例（真实服务链路一次检索的 dense/sparse/graph 态）
+            print(f"[smoke] channel_health={json.dumps(b.channel_health, ensure_ascii=False)}")
             print(f"[smoke] top1={b.docs[0].doc_id if b.docs else None} score={b.docs[0].score if b.docs else None}")
 
         asyncio.run(_smoke())
