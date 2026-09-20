@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端用户管理原型 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
   :root{ --htc-0-0-0-0.18: rgba(0,0,0,0.18); --htc-25-28-38-0.42: rgba(25,28,38,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-5b647b: #5b647b; --ht-7c4bd6: #7c4bd6; --ht-a78bfa: #a78bfa; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff;
     --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
@@ -141,6 +142,95 @@
   .map-tbl tr:last-child td{border-bottom:none}
   .sw{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px;border:1px solid var(--line)}
 </style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离，本页零 script）；不新增 body 类。
+   z-index 层级表与布局黑名单属性未动（.gnav-item.is-locked 的 pointer-events 原样保留）。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-orange:var(--status-danger); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--text-strong);
+  --ht-7c4bd6:var(--text-strong); --ht-a78bfa:var(--text-strong); --ht-f3edfe:#EAE4FF; --ht-5b647b:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+body.admin-html-page input::placeholder,body.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav（含 S3 nav-replica 复用类）--- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+
+/* --- 原型标注/场景/索引 --- */
+body.admin-html-page .proto-note{background:#F9F3D7!important;border:1px dashed #E8D89A!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+body.admin-html-page .toc a{color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important;min-height:44px;display:inline-flex;align-items:center;border-radius:var(--radius-pill)!important}
+body.admin-html-page .toc a:hover{border-color:var(--clay-moss)!important}
+body.admin-html-page .page-head h1{color:var(--text-strong)}
+body.admin-html-page .page-head .sub{color:var(--text-muted)}
+body.admin-html-page .chip{color:var(--text-muted)!important;background:#EEF0F5!important}
+body.admin-html-page .chip b{color:var(--text-strong)!important}
+body.admin-html-page .scene-h{color:var(--text-strong)}
+body.admin-html-page .scene-h .tag{color:var(--text-muted)!important}
+body.admin-html-page .scene-h .sid{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .scene{border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;border-color:var(--bg-input)!important;background:var(--bg-raised)!important}
+body.admin-html-page .map-tbl th{color:var(--text-muted)!important}
+body.admin-html-page .map-tbl td{color:var(--text-strong)}
+body.admin-html-page .deb-pulse{color:var(--status-danger)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+body.admin-html-page .btn{min-height:44px}
+body.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+body.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+body.admin-html-page .fld select,body.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+body.admin-html-page .fld label,body.admin-html-page .ft-note{color:var(--text-muted)!important}
+body.admin-html-page .field select,body.admin-html-page .field input,body.admin-html-page .field textarea{height:auto;min-height:44px;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+body.admin-html-page .field textarea{min-height:64px}
+body.admin-html-page .seg button{min-height:44px;color:var(--text-strong)!important;background:var(--bg-raised)!important}
+body.admin-html-page .seg button.on{background:var(--clay-pink)!important;color:var(--text-strong)!important}
+body.admin-html-page .link-btn{min-height:44px;min-width:44px;color:var(--text-strong)!important;text-decoration:underline;border-radius:var(--radius-btn)}
+body.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+body.admin-html-page .pager button{flex:0 0 auto;width:auto;min-width:44px;height:44px;padding:0 10px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+body.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+body.admin-html-page .close-x{width:44px;height:44px;min-width:44px;min-height:44px;color:var(--text-muted);border-radius:var(--radius-btn)!important}
+
+/* --- 表格/徽章/头像/提示 --- */
+body.admin-html-page thead th{color:var(--text-muted)}
+body.admin-html-page .nb,body.admin-html-page .muted{color:var(--text-muted)}
+body.admin-html-page .prim-cell .nm{color:var(--text-strong)}
+body.admin-html-page .prim-cell .cd{color:var(--text-muted)}
+body.admin-html-page .prim-cell .av{background-image:none!important;background-color:var(--clay-sky)!important;color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important}
+body.admin-html-page [class*="badge-role"]{color:var(--text-strong)!important}
+body.admin-html-page .badge-off{background:#EEF0F5!important;color:var(--text-strong)!important}
+body.admin-html-page .box-pad{color:var(--text-muted)}
+body.admin-html-page .box-pad b{color:var(--text-strong)}
+body.admin-html-page .box-pad .ic{color:var(--text-strong)}
+body.admin-html-page .tbl-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+body.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .redline{background:#FAF0F4!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+body.admin-html-page .redline b{color:var(--text-strong)}
+body.admin-html-page .gap-note{background:#F9F3D7!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+body.admin-html-page .gap-note b{color:var(--text-strong)}
+body.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+body.admin-html-page .dlg-h h3{color:var(--text-strong)}
+body.admin-html-page .dlg-h .sub{color:var(--text-muted)}
+body.admin-html-page .tbl-foot .cnt{color:var(--text-muted)}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  body.admin-html-page *,body.admin-html-page *::before,body.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+}
+</style>
 </head>
 <body class="admin-html-page">
 <div class="glayout">
@@ -161,7 +251,7 @@
 
   <!-- 原型标注条：示例数据声明 -->
   <div class="proto-note" role="note">
-    <span aria-hidden="true">🧪</span>
+    <span aria-hidden="true"><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-info"/></svg></span>
     <div>
       原型 · <u>示例数据，实施后为真实数据</u> —— 本页为纯静态原型，<b>零 script</b>（无 script src / fetch / XHR / 内联事件），
       不发起任何真实请求；示例数据仅用于呈现列表与交互形态，正式版以后端真实数据为准。
@@ -201,7 +291,7 @@
   <div class="scene" id="s1">
     <div class="scene-h"><span class="sid">S1</span> manager 视角态：只读横幅 + 导航例外灰显示意<span class="tag">GWT③ 签字口径</span></div>
     <div class="scene-b">
-      <div class="gap-note"><span>ℹ️</span><span>场景：manager 角色经守卫放行后直接 URL 进入用户管理。常规入口已在导航层拦截；本横幅为直入兜底形态。实施版在<b>请求前</b>即拦截（复查登录角色），不发起必被拒绝的列表请求。</span></div>
+      <div class="gap-note"><span><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-info"/></svg></span><span>场景：manager 角色经守卫放行后直接 URL 进入用户管理。常规入口已在导航层拦截；本横幅为直入兜底形态。实施版在<b>请求前</b>即拦截（复查登录角色），不发起必被拒绝的列表请求。</span></div>
 
       <div class="banner-admin-only" role="alert">
         <span>该模块仅 ADMIN 可用（当前角色 manager）</span>
@@ -219,7 +309,7 @@
       </div>
 
       <div class="tbl-card" style="margin-top:14px">
-        <div class="box-pad"><div class="ic">🚫</div><b style="color:var(--ink)">列表区置诚实空态（清骨架屏，不留误导性加载态）</b><p style="margin:6px 0 0">该模块仅 ADMIN 可用（后端权限口径）；当前登录角色 manager，无权读取用户列表</p></div>
+        <div class="box-pad"><div class="ic"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div><b style="color:var(--ink)">列表区置诚实空态（清骨架屏，不留误导性加载态）</b><p style="margin:6px 0 0">该模块仅 ADMIN 可用（后端权限口径）；当前登录角色 manager，无权读取用户列表</p></div>
       </div>
     </div>
   </div>
@@ -395,7 +485,7 @@
     <div class="scene-h"><span class="sid">S4</span> ADMIN 视角态 · 空态<span class="tag">组合查询无结果</span></div>
     <div class="scene-b">
       <div class="tbl-card">
-        <div class="box-pad"><div class="ic">🔍</div>未匹配到用户（组合查询为空/调整筛选）</div>
+        <div class="box-pad"><div class="ic"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></div>未匹配到用户（组合查询为空/调整筛选）</div>
         <div class="tbl-foot">
           <span class="cnt">共 0 条 · 第 1 页</span>
           <span class="pager"><button type="button" disabled>‹</button><button type="button" class="cur">1</button><button type="button" disabled>›</button></span>
@@ -408,10 +498,10 @@
   <div class="scene" id="s5">
     <div class="scene-h"><span class="sid">S5</span> ADMIN 视角态 · 403 错误态（无权限兜底展示形态）<span class="tag">示例载荷</span></div>
     <div class="scene-b">
-      <div class="gap-note"><span>ℹ️</span><span>实施版在<b>请求前</b>即拦截：复查登录角色，非 admin → 直接进 S1 横幅，<b>不发起</b>必被拒绝的列表请求。本错误态仅为直连兜底展示形态（如权限口径变更/越权探测）。</span></div>
+      <div class="gap-note"><span><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-info"/></svg></span><span>实施版在<b>请求前</b>即拦截：复查登录角色，非 admin → 直接进 S1 横幅，<b>不发起</b>必被拒绝的列表请求。本错误态仅为直连兜底展示形态（如权限口径变更/越权探测）。</span></div>
       <div class="tbl-card">
         <div class="box-pad">
-          <div class="ic">⚠️</div>
+          <div class="ic"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
           <b style="color:var(--ink)">用户列表加载失败：角色无权限（当前角色 manager，仅 admin 可访问）</b>
           <div class="payload">HTTP 403 · 角色无权限</div>
         </div>
@@ -484,7 +574,7 @@
               <div class="diff-row diff-blocked"><span class="diff-k">状态</span><span class="diff-old">启用 1</span><span class="diff-arrow">→</span><span class="diff-new">禁用 0（已拦截）</span><span class="nb" style="margin-left:auto">已拦截</span></div>
             </div>
             <div class="redline">
-              <span>🚫</span>
+              <span><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
               <span><b>保护机制</b>：该用户是<b>最后 1 个可用管理员</b>。禁用或降级将导致无人能进入管理端——操作已被禁用；后端同样会拒绝（至少保留 1 名可用管理员）。</span>
             </div>
           </div>
@@ -501,7 +591,7 @@
   <div class="scene" id="s8">
     <div class="scene-h"><span class="sid">S8</span> 设计说明 · 糖果 token 映射 · 实施要点</div>
     <div class="scene-b">
-      <div class="gap-note"><span>📏</span><span><b>形态约束</b>：正式实施版需与现有管理页保持一致的糖果色视觉体系；如实现规模明显超出原型形态，需回评选型。</span></div>
+      <div class="gap-note"><span><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-info"/></svg></span><span><b>形态约束</b>：正式实施版需与现有管理页保持一致的糖果色视觉体系；如实现规模明显超出原型形态，需回评选型。</span></div>
       <table class="map-tbl">
         <thead><tr><th style="width:220px">原型元素</th><th>糖果 token（与 admin-users.html :root 逐字同源，未引入新视觉语言）</th></tr></thead>
         <tbody>
