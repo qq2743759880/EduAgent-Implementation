@@ -15,24 +15,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>学习播放 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码 hex）===== */
-:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-035: rgba(0,0,0,0.35); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-072: rgba(0,0,0,0.72); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-025: rgba(124,58,237,0.25); --htc-124-58-237-050: rgba(124,58,237,0.5); --htc-20-20-20-082: rgba(20,20,20,0.82); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-028: rgba(255,255,255,0.28); --htc-255-255-255-030: rgba(255,255,255,0.3); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-080: rgba(255,255,255,0.8); --htc-255-255-255-085: rgba(255,255,255,0.85); --htc-255-75-75-040: rgba(255,75,75,0.4); --htc-255-77-0-040: rgba(255,77,0,0.4); --htc-31-31-31-004: rgba(31,31,31,0.04); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-008: rgba(31,31,31,0.08); --htc-31-31-31-010: rgba(31,31,31,0.1); --htc-31-31-31-012: rgba(31,31,31,0.12); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-015: rgba(31,31,31,0.15); --htc-31-31-31-016: rgba(31,31,31,0.16); --htc-31-31-31-028: rgba(31,31,31,0.28); --htc-31-31-31-030: rgba(31,31,31,0.3); --htc-31-31-31-055: rgba(31,31,31,0.55); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3); --htc-88-204-2-040: rgba(88,204,2,0.4);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-141414: #141414; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2b2b2b: #2b2b2b; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: #f5f9fe; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-blue-soft:#e8f6ff; --candy-bg:#fff9f0;
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  --candy-blue-deep:#0e8ac0;
-  --gray-300:#cfcfcf; --gray-400:#9a9a9a; --gray-500:#8a8a8a; --gray-600:#c9c9c9;
-  --error-bg:#fff0f0; --statebar-text:#e8e8e8;
-  --border-chip:rgba(31,31,31,.15);
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）；
+   视频区深色表面（--video-stage 等）按 §7.5 深色代码面语义保留 ===== */
+:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-035: rgba(0,0,0,0.35); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-072: rgba(0,0,0,0.72); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-025: rgba(214,82,70,0.25); --htc-124-58-237-050: rgba(214,82,70,0.5); --htc-20-20-20-082: rgba(20,20,20,0.82); --htc-24-24-24-002: rgba(46, 42, 63, 0.02); --htc-24-24-24-004: rgba(46, 42, 63, 0.04); --htc-24-24-24-006: rgba(46, 42, 63, 0.06); --htc-24-24-24-008: rgba(46, 42, 63, 0.08); --htc-24-24-24-012: rgba(46, 42, 63, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-028: rgba(255,255,255,0.28); --htc-255-255-255-030: rgba(255,255,255,0.3); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-080: rgba(255,255,255,0.8); --htc-255-255-255-085: rgba(255,255,255,0.85); --htc-255-75-75-040: rgba(198,62,74,0.4); --htc-255-77-0-040: rgba(214,82,70,0.4); --htc-31-31-31-004: rgba(46,42,63,0.04); --htc-31-31-31-005: rgba(46,42,63,0.05); --htc-31-31-31-008: rgba(46,42,63,0.08); --htc-31-31-31-010: rgba(46,42,63,0.1); --htc-31-31-31-012: rgba(46,42,63,0.12); --htc-31-31-31-014: rgba(46,42,63,0.14); --htc-31-31-31-015: rgba(46,42,63,0.15); --htc-31-31-31-016: rgba(46,42,63,0.16); --htc-31-31-31-028: rgba(46,42,63,0.28); --htc-31-31-31-030: rgba(46,42,63,0.3); --htc-31-31-31-055: rgba(46,42,63,0.55); --htc-47-178-135-060: rgba(78, 126, 66, 0.6); --htc-47-178-135-030: rgba(78,126,66,0.3); --htc-88-204-2-040: rgba(78,126,66,0.4);  --ht-0003: #0003; --ht-06c179: var(--clay-mint); --ht-0ac27b: var(--clay-mint); --ht-0ecd70: var(--clay-mint); --ht-0fdc78: var(--clay-mint); --ht-141414: #141414; --ht-1e8b56: rgb(78,126,66); --ht-222427: #222427; --ht-2b2b2b: #2b2b2b; --ht-2fb287: var(--clay-mint); --ht-32f08c: var(--clay-mint); --ht-3ee1a3: var(--clay-mint); --ht-56637726: #56637726; --ht-60f2bd: #DFEED8; --ht-63c5b1: #63c5b1; --ht-a0fde7: #DFEED8; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: var(--bg-input); --ht-ffea8e: var(--clay-lemon); --ht-fff: #fff; --ht-ffffff0f: #ffffff0f;
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF;
+  --candy-blue-soft:#E9F2FB; --candy-bg:var(--bg-app);
+  --candy-orange-deep:rgb(214,82,70); --candy-orange-hover:#FF8E81;
+  --candy-green-deep:rgb(78,126,66); --candy-green-hover:var(--clay-moss);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --candy-blue-deep:rgb(80,142,196);
+  --gray-300:rgba(46,42,63,.2); --gray-400:var(--text-muted); --gray-500:var(--text-muted); --gray-600:rgba(46,42,63,.25);
+  --error-bg:#FBF1F2; --statebar-text:rgba(255,255,255,.9);
+  --border-chip:rgba(78,126,66,.22);
   --video-stage:linear-gradient(135deg,var(--ht-2b2b2b),var(--ht-141414));
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-255-255-255-004: rgba(255, 255, 255, 0.004); --htc-31-31-31-003: rgba(31, 31, 31, 0.003); --htc-255-255-255-008: rgba(255, 255, 255, 0.008); --htc-255-255-255-003: rgba(255, 255, 255, 0.003); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --htc-255-77-0-004: rgba(255, 77, 0, 0.004); --htc-255-75-75-004: rgba(255, 75, 75, 0.004); --htc-31-31-31-001: rgba(31, 31, 31, 0.001); --htc-124-58-237-005: rgba(124, 58, 237, 0.005);}
+  --shadow-3d:var(--clay-shadow-raised);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-255-255-255-004: rgba(255, 255, 255, 0.004); --htc-31-31-31-003: rgba(46, 42, 63, 0.003); --htc-255-255-255-008: rgba(255, 255, 255, 0.008); --htc-255-255-255-003: rgba(255, 255, 255, 0.003); --htc-88-204-2-004: rgba(78, 126, 66, 0.3); --htc-255-77-0-004: rgba(214, 82, 70, 0.25); --htc-255-75-75-004: rgba(198, 62, 74, 0.25); --htc-31-31-31-001: rgba(46, 42, 63, 0.001); --htc-124-58-237-005: rgba(184, 166, 255, 0.3);}
+/* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+:root{ --card:var(--bg-raised); --white:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42); --muted:var(--text-muted); --line:rgba(78,126,66,.22); --shadow:var(--clay-shadow-light); --r:var(--radius-input);}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
@@ -315,6 +319,75 @@ a.session{text-decoration:none}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（对比度、44px 点按、去无限动画）；选择器/状态类显隐语义零改动 ===== */
+:focus-visible{outline:3px solid var(--focus-ring)!important;outline-offset:2px}
+.brandbar-logo .ic{width:28px;height:28px;color:var(--text-strong)}
+.brandbar-link{min-height:44px}
+.brandbar-back{min-height:44px;display:inline-flex;align-items:center;color:var(--text-strong);border:0;box-shadow:var(--clay-shadow-light)}
+.breadcrumb a{color:var(--text-strong);display:inline-flex;align-items:center;min-width:44px;min-height:44px;justify-content:center}
+.series-head .mascot{animation:none;color:var(--text-strong)}
+.series-head .mascot .ic{width:40px;height:40px}
+.series-head .series{color:var(--text-strong)}
+.chip{border:0;box-shadow:var(--clay-shadow-light)}
+.chip.green,.chip.orange,.chip.purple{color:var(--text-strong)}
+.player-card,.hw-card,.syllabus-card,.q-card,.error-demo{border:0;box-shadow:var(--clay-shadow-raised)}
+.play-btn{color:var(--cta-text);border:3px solid var(--bg-raised)}
+/* 修复作者 CSS 压过 [hidden] 的存量 bug：转码遮罩的显隐控制权还给 hidden 属性（JS 行为不变） */
+.transcode[hidden]{display:none}
+.transcode .d{color:rgba(255,255,255,.82)}
+.done-flag{color:var(--text-strong)}
+.tab.on{color:var(--text-strong);border-color:var(--cta-coral);border-bottom:3px solid var(--cta-coral)}
+.tab:focus-visible{outline:3px solid var(--focus-ring)}
+.tab .cnt{color:var(--text-strong);border:2px solid var(--bg-raised)}
+.tab .cnt[hidden]{display:none}
+.tab svg{width:17px;height:17px}
+.teacher-note{border:0;box-shadow:var(--clay-shadow-light)}
+.teacher-note b{color:var(--text-strong)}
+.exam-timer{color:var(--text-strong)}
+.btn{border:0;border-radius:var(--radius-btn);min-height:44px}
+.btn-primary{color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.btn-primary:hover{background:var(--clay-moss)}
+.btn-ghost{color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-ghost:hover{border:0;background:var(--bg-input);color:var(--text-strong)}
+.btn-danger{color:#fff;background:var(--status-danger);box-shadow:var(--clay-shadow-press-coral)}
+.btn-soft{color:var(--text-strong);background:#F3F1FF;border:0;box-shadow:var(--clay-shadow-light)}
+.btn-orange{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-press-coral)}
+.btn-orange:hover{background:var(--cta-coral)}
+.result{border:0;box-shadow:var(--clay-shadow-light);background:#F3F8EF}
+.result .score-big{color:var(--text-strong)}
+.result .stars{color:var(--text-strong)}
+.result .analysis b{color:var(--text-strong)}
+.q-no{color:var(--text-strong)}
+.syl-head .ic{border-radius:var(--radius-icon-tile);color:var(--text-strong)}
+.syl-head .ic .ic{width:16px;height:16px}
+.lvl-row .ch.done{color:var(--text-strong)}
+.lvl-row .ch.cur{color:var(--cta-text)}
+.session{min-height:44px}
+.session .st.done{color:var(--text-strong)}
+.session .st.cur{color:var(--cta-text)}
+.session.cur .nm{color:var(--text-strong)}
+.acc-head{min-height:44px}
+.acc-head[aria-expanded="true"]{color:var(--text-strong)}
+.toolbar{border-top:0;box-shadow:0 -6px 20px rgba(78,126,66,.15)}
+.toolbar .ai{border:0;background:var(--clay-lavender);box-shadow:var(--clay-shadow-lavender);color:var(--text-strong);min-height:44px}
+.toolbar .ai .hint{color:rgba(46,42,63,.75)}
+.toolbar .ai .ic .ic{width:16px;height:16px}
+.error-demo{border:0}
+.error-demo .ic{color:var(--text-strong)}
+.error-demo .ic .ic{width:34px;height:34px}
+.error-demo .code{color:var(--status-danger)}
+.transcode .big{animation:none}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+  .series-head .mascot,.transcode .big{animation:none!important}
+  .spinner{animation:none!important}
+}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -340,7 +413,7 @@ a.session{text-decoration:none}
   <!-- ===== 品牌条 + 返回入口（learning 例外：替代全量侧边栏）===== -->
   <header class="brandbar" role="banner">
     <a href="dashboard.html" class="brandbar-link">
-      <span class="brandbar-logo">🦉</span>
+      <span class="brandbar-logo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></span>
       <span class="brandbar-name">EduAgent</span>
     </a>
     <a href="dashboard.html" class="brandbar-back">← 返回仪表盘</a>
@@ -355,7 +428,7 @@ a.session{text-decoration:none}
 
   <!-- ===== 课程头部（真实数据回填：系列名/课次名/模块/时长/整体进度）===== -->
   <header class="series-head">
-    <div class="mascot" aria-hidden="true">🦉</div>
+    <div class="mascot" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></div>
     <div class="tt">
       <div class="series" id="seriesName">加载中…</div>
       <h1 id="sessionHeading">加载中…</h1>
@@ -365,7 +438,7 @@ a.session{text-decoration:none}
 
   <!-- ===== 班次选择（task06：无入口参数时列出我的报名班次，真实数据）===== -->
   <section class="syllabus-card" id="cohortPicker" aria-label="选择班次" hidden>
-    <div class="syl-head"><span class="ic">🎓</span> 选择要继续学习的班次 <span class="cnt" id="cohortCnt"></span></div>
+    <div class="syl-head"><span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></span> 选择要继续学习的班次 <span class="cnt" id="cohortCnt"></span></div>
     <div id="cohortList" style="padding:6px 16px 14px"></div>
   </section>
 
@@ -396,26 +469,26 @@ a.session{text-decoration:none}
 
       <!-- ===== Tabs：视频 / 作业 / 考试（角标由 task06 JS 按真实资源数回填）===== -->
       <div class="tabs" id="tabs" role="tablist" aria-label="学习任务">
-        <button class="tab on" id="tab-video" role="tab" aria-selected="true" aria-controls="p-video" aria-labelledby="tab-video" tabindex="0"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg> 视频</button>
-        <button class="tab" id="tab-hw" role="tab" aria-selected="false" aria-controls="p-hw" aria-labelledby="tab-hw" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a2 2 0 0 0 2 2h4"></path><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"></path></svg> 作业<span class="cnt" id="hwCnt" hidden>0</span></button>
-        <button class="tab" id="tab-exam" role="tab" aria-selected="false" aria-controls="p-exam" aria-labelledby="tab-exam" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 1.5 21h21z"></path><path d="M12 10.5v4"></path><path d="M12 18h.01"></path></svg> 考试<span class="cnt" id="examCnt" hidden>0</span></button>
+        <button class="tab on" id="tab-video" role="tab" aria-selected="true" aria-controls="p-video" aria-labelledby="tab-video" tabindex="0"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"></use></svg> 视频</button>
+        <button class="tab" id="tab-hw" role="tab" aria-selected="false" aria-controls="p-hw" aria-labelledby="tab-hw" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg> 作业<span class="cnt" id="hwCnt" hidden>0</span></button>
+        <button class="tab" id="tab-exam" role="tab" aria-selected="false" aria-controls="p-exam" aria-labelledby="tab-exam" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg> 考试<span class="cnt" id="examCnt" hidden>0</span></button>
       </div>
 
       <!-- 视频 tab：真实契约无课程简介字段 → 诚实占位（不伪造文案） -->
       <div class="tab-panel active" id="p-video" role="tabpanel" aria-labelledby="tab-video">
-        <h3>📒 课程简介</h3>
+        <h3><span class="h3ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span> 课程简介</h3>
         <p class="intro-p" id="introText">正在加载课次信息…</p>
       </div>
 
       <!-- 作业 tab：本页无作业提交契约落点 → 诚实列出课次文字资源（task06 实测） -->
       <div class="tab-panel" id="p-hw" role="tabpanel" aria-labelledby="tab-hw">
-        <h3>📝 本节资源</h3>
+        <h3><span aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span> 本节资源</h3>
         <p class="intro-p" id="hwPlaceholder">正在加载课次资源…</p>
       </div>
 
       <!-- 考试 tab：真实契约无考试落点 → 诚实空态（不伪造题卡/计时器） -->
       <div class="tab-panel" id="p-exam" role="tabpanel" aria-labelledby="tab-exam">
-        <h3>📐 本节考试</h3>
+        <h3>本节考试</h3>
         <p class="intro-p" id="examPlaceholder">正在加载课次考试信息…</p>
       </div>
 
@@ -423,7 +496,7 @@ a.session{text-decoration:none}
 
     <!-- ========== 右：大纲 Accordion（真实大纲由 task06 JS 渲染）========== -->
     <aside class="syllabus-card" aria-label="课程大纲">
-      <div class="syl-head"><span class="ic">📚</span> 课程大纲 <span class="cnt" id="sylCnt">加载中…</span></div>
+      <div class="syl-head"><span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span> 课程大纲 <span class="cnt" id="sylCnt">加载中…</span></div>
       <div id="sylBody" style="padding:4px 0 10px"><p class="intro-p" style="padding:10px 16px">正在加载学习大纲…</p></div>
     </aside>
 
@@ -431,7 +504,7 @@ a.session{text-decoration:none}
 
   <!-- ===== 未报名/无权限 403 守卫（enrolled_only 守卫不吞错，默认隐藏，task06 JS 按真实 access 结果显示）===== -->
   <section class="error-demo" id="accessGuard" aria-label="未报名访问提示" hidden>
-    <div class="ic">🔒</div>
+    <div class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></div>
     <div class="code" id="guardCode">403 · 未报名</div>
     <div class="t" id="guardTitle">本课为报名专属内容</div>
     <div class="d" id="guardDesc">仅已报名该班次的学员可观看该课次。请先报名本系列后返回继续学习。</div>
@@ -444,12 +517,12 @@ a.session{text-decoration:none}
 <div class="toolbar">
   <div class="toolbar-inner">
     <a class="ai" href="chat.html">
-      <span class="ic">🧠</span>
+      <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-chat-circle"></use></svg></span>
       <span style="display:flex;flex-direction:column;gap:1px">
         <span>AI 提问 · 本课答疑</span>
       </span>
     </a>
-  <a class="btn btn-ghost" href="practice.html">📒 错题本 → /practice</a></div>
+  <a class="btn btn-ghost" href="practice.html"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg> 错题本 → /practice</a></div>
 </div>
 
 <script>
