@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """watchdog_8000.py — 8000 uvicorn 看门狗（W-NEXT-STABILITY-001）
+端口变更注记（W-NEXT-PORTS-001）：端口 2026-09-20 起 9988（后端 8000→9988 用户裁定；
+文件名保留 watchdog_8000.py 不改，仅 PORT 常量与探活目标随迁）。
 
 背景（取证结论，见 test-reports/WNEXTSTABILITY1-completion-report.md）：
   8000 uvicorn 存在"无声死亡"史——服务中戛然而止、无 shutdown 日志、无 WER 崩溃事件。
@@ -42,7 +44,7 @@ LOG_DIR = REPO_ROOT / "logs"
 PID_FILE = LOG_DIR / "watchdog_8000.pid"
 EVENT_LOG = LOG_DIR / "watchdog_8000_events.log"
 RESTART_LOG = LOG_DIR / "watchdog_8000_restart.log"          # 被拉起 uvicorn 的 stdout/stderr
-PORT = 8000
+PORT = 9988  # W-NEXT-PORTS-001(2026-09-20):8000→9988
 HEALTH_URL = f"http://127.0.0.1:{PORT}/health"
 PYTHON = REPO_ROOT / ".venv" / "Scripts" / "python.exe"
 SCRIPT_TAG = "watchdog_8000.py"
@@ -334,7 +336,7 @@ def run_loop(interval: float, threshold: int, cooldown: float) -> int:
                             time.sleep(5)
                             h2, d2 = probe_health(timeout=5)
                             if h2:
-                                log_event("RESTART_OK 8000 back to healthy")
+                                log_event(f"RESTART_OK {PORT} back to healthy")
                                 break
                         else:
                             log_event("RESTART_PENDING 60s 内未回 200（后续循环继续盯）")
@@ -359,7 +361,7 @@ def run_once() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="8000 uvicorn watchdog (W-NEXT-STABILITY-001)")
+    ap = argparse.ArgumentParser(description=f"uvicorn watchdog port {PORT} (W-NEXT-STABILITY-001 / W-NEXT-PORTS-001)")
     ap.add_argument("--interval", type=float, default=30.0, help="探活间隔秒（默认 30）")
     ap.add_argument("--threshold", type=int, default=3, help="连续失败次数阈值（默认 3）")
     ap.add_argument("--cooldown", type=float, default=90.0, help="两次拉起最小间隔秒（默认 90）")

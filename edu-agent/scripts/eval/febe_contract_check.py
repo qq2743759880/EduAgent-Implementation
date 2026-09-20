@@ -52,8 +52,11 @@ DEFAULT_FRONTEND_LIST = os.path.join(REPO_ROOT, "test-reports", "_frontend_real_
 
 # ---------------- 安全：允许的本地后端（写死，拒绝其他） ----------------
 ALLOWED_HOST = "127.0.0.1"
-ALLOWED_PORT = 8000
-BACKEND = "http://127.0.0.1:8000"
+# W-NEXT-PORTS-001(2026-09-20)：后端 8000→9988。BACKEND/ALLOWED_PORT 改由
+#   CHECK_DEMO_BACKEND env 派生（与 hitl_realness_probe.py 同约定，默认 9988）；
+#   SSRF 守卫语义不变：仍强制 loopback 127.0.0.1，且仅锁定所配后端单端口。
+BACKEND = os.environ.get("CHECK_DEMO_BACKEND", "http://127.0.0.1:9988").rstrip("/")
+ALLOWED_PORT = urlparse(BACKEND).port or 80
 
 METHOD_MAP = {"get": "GET", "post": "POST", "put": "PUT", "patch": "PATCH", "del": "DELETE"}
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")

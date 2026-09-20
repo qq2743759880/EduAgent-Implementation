@@ -2,7 +2,7 @@
 // 用法: node scripts/check-demo.mjs [--fail-drill] [--no-color] [--frontend-port <N>] [--prod-gate]
 // 零新依赖:Node >= 18(fetch / net / child_process 均内置)。
 // 检查项:① Milvus socket ② Redis(docker exec redis-cli ping)③ MongoDB socket
-//         ④ 后端 8000 /health ⑤ 前端 /login-register.html(默认 3000,--frontend-port 可改)+ 前端形态判别(dev/prod,T5-C2)
+//         ④ 后端 9988 /health ⑤ 前端 /login-register.html(默认 3322,--frontend-port 可改)+ 前端形态判别(dev/prod,T5-C2)
 //         ⑥ 登录链路(admin+student 各一次 login + /api/auth/me)
 //         ⑦ 8 个核心 html 页 200  ⑧ advisory:DEBUG 虚拟管理员漏洞探测(教训 6,两级判据 + --prod-gate,W-NEXT-CHECKDEMO-PROD-001;
 //            HARD-002:双探点 /api/users/me + /api/admin/users,管理端护栏失效任何环境直接红)
@@ -22,9 +22,15 @@ import { fileURLToPath } from "node:url";
 const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的克隆 docker.vmx";
 const MILVUS = { host: "192.168.85.101", port: 19530 };
 const MONGO = { host: "192.168.85.101", port: 27017 };
-const BACKEND = process.env.CHECK_DEMO_BACKEND || "http://127.0.0.1:8000"; // env 覆盖仅用于 ⑧ WARN 分支自测
+// W-NEXT-PORTS-001(2026-09-20 用户裁定):后端端口 8000→9988。BACKEND_PORT 走 env 覆盖,
+//   与 FRONTEND_PORT(--frontend-port CLI)机制对齐;CHECK_DEMO_BACKEND env 仍可整体覆盖 BASE(⑧ WARN 分支自测)。
+const BACKEND_PORT = parseInt(process.env.BACKEND_PORT || "9988", 10);
+const BACKEND = process.env.CHECK_DEMO_BACKEND || `http://127.0.0.1:${BACKEND_PORT}`;
+// W-NEXT-PORTS-001:BACKEND 归一化写回 env,传导给子探针(⑩ febe_contract_check 与
+//   ⑫ hitl_realness_probe 均读 CHECK_DEMO_BACKEND;⑬ mcp_tristate_probe 另以 argv 显传)。
+process.env.CHECK_DEMO_BACKEND = BACKEND;
 // W-NEXT-CHECKDEMO-PROD-001 尾巴①:FRONTEND 从硬编码 3000 改为 --frontend-port 参数派生,
-//   定义移至下方「参数」段(args 解析之后)。8000 后端端口不动(④⑥⑧ 等仍指 BACKEND)。
+//   定义移至下方「参数」段(args 解析之后)。W-NEXT-PORTS-001 起后端默认 9988(④⑥⑧ 等仍指 BACKEND)。
 const ADMIN = { account: "adm02test", password: "Test@123456" };
 const STUDENT = { account: "user000001", password: "Test@123456" };
 // W-NEXT-PROBE-001 修:② 容器名不再硬编码。原 `REDIS_CONTAINER="edu-redis-standalone"`
@@ -141,9 +147,10 @@ const NOCOLOR = args.includes("--no-color") || !process.stdout.isTTY;
 //   动机(P0-1):⑧ WARN 不阻断 exit 0,CI/出包流水线默认放行,DEBUG=true 随包进生产。
 //   显式升级旗标而非删检测:检测能力保留,只在部署把关场景收紧。
 const PROD_GATE = args.includes("--prod-gate");
-// W-NEXT-CHECKDEMO-PROD-001 尾巴①:--frontend-port <N>(默认 3000)。
+// W-NEXT-CHECKDEMO-PROD-001 尾巴①:--frontend-port <N>(默认 3000;W-NEXT-PORTS-001 起默认 3322)。
 //   动机:W-NEXT-PRODUCTION-BUILD-001 盲测态C 实证——next start 端口被占 failover 到 3001 时,
-//   ⑤⑦⑨ 仍探硬编码 3000 判错。⑤⑦⑨ 全部改用 FRONTEND_PORT 派生;只动前端端口,8000 不动。
+//   ⑤⑦⑨ 仍探硬编码 3000 判错。⑤⑦⑨ 全部改用 FRONTEND_PORT 派生;只动前端端口,后端端口由
+//   BACKEND_PORT 另管(W-NEXT-PORTS-001 起 9988)。
 function cliPort(name, fallback) {
   const i = args.indexOf(name);
   if (i === -1) return fallback;
@@ -155,7 +162,7 @@ function cliPort(name, fallback) {
   }
   return p;
 }
-const FRONTEND_PORT = cliPort("--frontend-port", 3000);
+const FRONTEND_PORT = cliPort("--frontend-port", 3322);
 const FRONTEND = `http://127.0.0.1:${FRONTEND_PORT}`;
 const C = NOCOLOR
   ? { g: "", r: "", y: "", b: "", dim: "", x: "" }
@@ -323,7 +330,7 @@ async function check(no, name, fn) {
 const FIX = {
   vm: (d) => `开启 VMware 虚拟机: vmrun start "${VMX_PATH}" nogui,等 60s${existsSync(VMX_PATH) ? "" : `(注意:配置的 vmx 路径不存在,请确认虚拟机实际路径)`} [${d}]`,
   redis: (d) => `按 .env REDIS_PORT 端口反查容器名,docker start <容器>(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
-  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000(无声死亡史:可先 .venv\\Scripts\\python.exe scripts\\watchdog_8000.py --once 判读,再起常驻看门狗 python scripts\\watchdog_8000.py;取证见 test-reports/WNEXTSTABILITY1-completion-report.md) [${d}]`,
+  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port ${BACKEND_PORT}(无声死亡史:可先 .venv\\Scripts\\python.exe scripts\\watchdog_8000.py --once 判读,再起常驻看门狗 python scripts\\watchdog_8000.py;取证见 test-reports/WNEXTSTABILITY1-completion-report.md) [${d}]`,
   frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p ${FRONTEND_PORT}(或 deploy.mjs start 生产形态;--frontend-port 已选 ${FRONTEND_PORT}) [${d}]`,
   debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据) [${d}]`,
 };
@@ -367,7 +374,7 @@ await check("③", `MongoDB 连通 ${mongoTarget.host}:${mongoTarget.port}`, Obj
   { __fix: FIX.vm }));
 
 // ④ 后端 /health
-await check("④", `后端 8000 /health`, Object.assign(
+await check("④", `后端 ${BACKEND_PORT} /health`, Object.assign(
   async () => {
     const j = await httpProbe(`${BACKEND}/health`, { mustJson: {} });
     if (j?.status !== "ok") throw new Error(`status=${j?.status}`);
@@ -420,7 +427,7 @@ await check("⑥", `登录链路 login×2 + /api/auth/me×2`, Object.assign(
     const s = await who(STUDENT, "student");
     return `${a} + ${s}`;
   },
-  { __fix: (d) => `先过 ④ 后端: cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000(若账号失效查 DB 种子) [${d}]` }));
+  { __fix: (d) => `先过 ④ 后端: cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port ${BACKEND_PORT}(若账号失效查 DB 种子) [${d}]` }));
 
 // ⑦ 关键页 200(8 个核心 html)
 await check("⑦", `关键页 200 × ${PAGES.length}`, Object.assign(
@@ -591,12 +598,12 @@ await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.a
   { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\veclock_health_probe.py 排查 embed 元数据/索引状态 [${d}]` }));
 
 // ⑬ W-NEXT-MCP-001「MCP 三态」健康门（能力对账 + 内置工具落审计 + 字段级脱敏）
-//   打 live 8000 + MySQL，真实调 calculator（内置）验证审计落库(server_id=0)与字段脱敏；
+//   打 live 9988 + MySQL，真实调 calculator（内置）验证审计落库(server_id=0)与字段脱敏；
 //   探针末行输出 [TRISTATE] <json>，env_blocked→WARN（不阻断，仅环境未就绪），其余失败→红。
 const TRISTATE_PROBE = fileURLToPath(new URL("../scripts/eval/mcp_tristate_probe.py", import.meta.url));
 await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Object.assign(
   async () => {
-    const { code, stdout } = await runPy(EDU_PY, [TRISTATE_PROBE], 60000);
+    const { code, stdout } = await runPy(EDU_PY, [TRISTATE_PROBE, BACKEND], 60000);
     const m = /\[TRISTATE\]\s*(\{.*\})/.exec(stdout || "");
     if (!m) {
       if (code === 2) {
@@ -615,7 +622,7 @@ await check("⑬", `MCP 三态门（能力对账+内置落审计+脱敏）`, Obj
     if (!j.redacted) throw new Error(`字段脱敏未生效: ${j.detail || ""}`);
     return `审计checked=${j.audit_checked} 内置落库✔ 脱敏✔`;
   },
-  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_tristate_probe.py 排查（需 8000 在线 + MySQL 可达） [${d}]` }));
+  { __fix: (d) => `cd edu-agent && .venv\\Scripts\\python.exe scripts\\eval\\mcp_tristate_probe.py 排查（需 ${BACKEND_PORT} 在线 + MySQL 可达） [${d}]` }));
 
 // ⑫ HITL 真实性健康门（SURFACED-1 闭环实证，P0）：/health 200 + chat 流式 knowledge_import
 //    HITL confirm → 续流执行，**不再出现** 42200「必须提供 tool_id」症状（回归红线 =
@@ -713,7 +720,7 @@ await check("⑮", `Redis 部署对账(.env REDIS_PORT vs docker 宿主端口)`,
 //    日志 0 Traceback / 0 CancelledError / 0 "Application shutdown failed"。
 //    退出码：0=PASS，1=FAIL。env_blocked（后端/DB 不可达）→ WARN 不阻断。
 const LIFECYCLE_PROBE = fileURLToPath(new URL("../scripts/_lifecycle_real_verify.py", import.meta.url));
-await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError traceback)`, Object.assign(
+await check("⑯", `${BACKEND_PORT} lifecycle 健壮性(start+stop×5,无 CancelledError traceback)`, Object.assign(
   async () => {
     const { code, stdout, stderr } = await runPy(EDU_PY, [LIFECYCLE_PROBE, "5"], 300000);
     const m = /\[LIFECYCLE\]\s*(\{.*\})/.exec(stdout || "");
@@ -739,12 +746,12 @@ await check("⑯", `8000 lifecycle 健壮性(start+stop×5,无 CancelledError tr
 //   ⑯ lifecycle 探针本身要 start/stop 8000 五轮,再加自动重启会引入新竞态。
 try {
   const envMtime = statSync(fileURLToPath(new URL("../.env", import.meta.url))).mtime;
-  console.log(`${C.dim}       [⑯ 附注] .env 变更感知:后端 settings 仅启动时加载一次,⑧ 的 DEBUG/ENV_NAME 判据直读 .env(最近修改 ${envMtime.toLocaleString()})——若改过 .env 未重启 8000,⑧ 可能误判,请重启后端后重跑本检查单${C.x}`);
+  console.log(`${C.dim}       [⑯ 附注] .env 变更感知:后端 settings 仅启动时加载一次,⑧ 的 DEBUG/ENV_NAME 判据直读 .env(最近修改 ${envMtime.toLocaleString()})——若改过 .env 未重启后端(9988),⑧ 可能误判,请重启后端后重跑本检查单${C.x}`);
 } catch { /* .env 不存在时跳过附注(readDevEnv 亦按缺文件安全缺省处理) */ }
 
 // ⑰ W-NEXT-MCP-003「MCP 跨权限门对账」健康门——audit_mcp_capability checked=17 +
 //    5 个新对账行 + chat 路径真接 permission_gate 4 个 API + JSON serializable + AST 真接模式 ≥4。
-//    纯离线探针，不依赖 8000/DB——只走 audit 函数与 AST 解析源码；FAIL 时阻断 exit。
+//    纯离线探针，不依赖后端/DB——只走 audit 函数与 AST 解析源码；FAIL 时阻断 exit。
 //    退出码：0=PASS（全绿）；1=FAIL（代码缺陷：行缺失/未真接/返回值形态异常）。
 //    W-NEXT-CHECKDEMO-002 改:BGE-M3 mmap 在 Windows 内存压力下偶发 1455,
 //    cross_perm 探针若首跑 5 个 AST 解析 + JSON 序列化 + 17 行 audit 对账超过
@@ -772,7 +779,7 @@ await check("⑰", `MCP 跨权限门对账(audit checked=17 + 5 新对账行 + c
 //    parser 根路径扩展（KNOWN_ROOT_PATHS 白名单）后 unfrozen_only 必须 == 0。
 //    探针：纯离线，跑 febe_contract_check.py --quiet，解析 [SUMMARY] 行
 //    unfrozen_only=N 数字。unfrozen_only==0 → PASS；>0 → 红（仍有 root path
-//    落不进冻结集合，回退为治理 backlog）。env_blocked（后端 8000 不可达）
+//    落不进冻结集合，回退为治理 backlog）。env_blocked（后端 9988 不可达）
 //    → WARN 不阻断（与 ⑩ 同语义）。
 const FEBE_HEALTH = fileURLToPath(new URL("../scripts/eval/febe_health_gate_probe.py", import.meta.url));
 await check("⑱", `febe root path 闭环(febe_contract_check --quiet unfrozen_only=0)`, Object.assign(
@@ -868,7 +875,7 @@ await check("⑲", `VEC-LOCK 守门(veclock_verify.py 12 维 + dim0 backend=bge_
 //    endpoint 解析 + SSRF 白名单守门 + 一次性 TCP 探活。探针读 settings.OTEL_EXPORTER_OTLP_ENDPOINT：
 //      空 → state=disabled，PASS（默认 disabled 安全缺省）；
 //      非空 → state=healthy/probe_failed/ssrf_rejected/probe_skipped，按 PASS/WARN/FAIL 分级。
-//    不依赖 8000/DB，只走 venv python + app.observability.otlp.OtlpExporter + ssrf_guard.validate_url。
+//    不依赖后端/DB，只走 venv python + app.observability.otlp.OtlpExporter + ssrf_guard.validate_url。
 //    阻断规则：state=disabled → PASS（默认安全缺省）；
 //             state=healthy → PASS（链路绿，OTel collector 实达）；
 //             state=probe_skipped → PASS（跳过启动探活 = 运维显式 false）；

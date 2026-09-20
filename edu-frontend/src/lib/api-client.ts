@@ -78,7 +78,7 @@ const API_BASE_URL =
   (typeof process !== "undefined" &&
     process.env &&
     (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL)) ||
-  "http://127.0.0.1:8000";
+  "http://127.0.0.1:9988";
 
 /**
  * 默认去掉末尾斜杠，避免拼 /api/auth/login 时出现双斜杠

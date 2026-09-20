@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # 服务配置
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 9988
     WORKERS: int = 1                     # 开发模式用 1，生产可用 4
 
     # ============================================================

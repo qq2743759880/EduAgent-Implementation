@@ -2,7 +2,7 @@
  * 管理端 API 通用骨架（task02，G2 管理端布局与权限）
  *
  * 数据流：页面 → lib/api/admin.ts（本骨架） → lib/api-client.ts（axios 实例，
- *         baseURL=http://127.0.0.1:8000，JWT 由 auth-client 拦截器注入 Authorization）
+ *         baseURL=http://127.0.0.1:9988，JWT 由 auth-client 拦截器注入 Authorization）
  *
  * 错误契约（R-7 治理 / 设计指南 §5.1 / dev-plan 红线 4）：
  *  - 后端统一错误壳 {code, message, detail} 已由 api-client 响应拦截器归一为

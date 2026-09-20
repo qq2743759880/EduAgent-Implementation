@@ -1,11 +1,11 @@
-/* EduAgent 静态页共享 API 客户端（fe-html 对接后端 8000）
+/* EduAgent 静态页共享 API 客户端（fe-html 对接后端 9988）
  * - 封装 fetch + JWT + 响应壳解包 {code,message,data}
  * - task101 加固契约：
  *   1) 401 判定 = resp.status === 401：无条件清 token，并跳 login-register.html?redirect=<当前路径+query>
  *      （登录页自身跳过跳转，避免登录失败原地循环）
  *   2) 非 2xx（含非 JSON 网关错误、FastAPI {detail}、壳外响应）一律抛带 status 的 Error（err.status/err.body），
  *      禁止静默 return null；2xx 空 body 才允许 null（204/无内容）
- *   3) BASE 级联覆盖：window.EDU_API_BASE > 同源 :3000→:8000 > 默认 http://127.0.0.1:8000；
+ *   3) BASE 级联覆盖：window.EDU_API_BASE > 同源 :3322→:9988 > 默认 http://127.0.0.1:9988；
  *      运行时可再直接赋值 EAPI.BASE（request 每次调用时读取）
  *   4) AbortController 超时，默认 15s（EAPI.TIMEOUT_MS 可调）；chat SSE 走页面原生 fetch，不经此通道不受影响
  *   5) EAPI.logout()（清 token+跳登录）；EAPI.onError(fn) 全局错误钩子（task122 toast 接入点，返回退订函数）；
@@ -21,7 +21,7 @@
   const TOKEN_KEY = "edu:auth:token";
   const REFRESH_KEY = "edu:auth:refresh";
   const REFRESH_PATH = "/api/auth/refresh";
-  const DEFAULT_BASE = "http://127.0.0.1:8000";
+  const DEFAULT_BASE = "http://127.0.0.1:9988";
   const LOGIN_PAGE = "/login-register.html";
   const DEFAULT_TIMEOUT_MS = 15000;
   const errorHandlers = [];
@@ -34,8 +34,8 @@
     try { override = global.EDU_API_BASE || ""; } catch (e) {}
     if (override) return trimSlash(override);
     try {
-      if (typeof location !== "undefined" && location.origin && /:3000$/.test(location.origin)) {
-        return trimSlash(location.origin.replace(":3000", ":8000"));
+      if (typeof location !== "undefined" && location.origin && /:3322$/.test(location.origin)) {
+        return trimSlash(location.origin.replace(":3322", ":9988"));
       }
     } catch (e) {}
     return DEFAULT_BASE;

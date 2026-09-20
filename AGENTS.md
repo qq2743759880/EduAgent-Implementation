@@ -5,11 +5,11 @@
 
 ## 当前架构（已稳定）
 
-- **前端 3000** = fe-html 糖果色静态页（`edu-frontend/public/*.html`）+ `public/edu-api.js` 共享客户端（JWT + `{code:0,data}` 壳解包 + 401 跳登录）；根路由 `/` → login-register.html
+- **前端 3322**（2026-09-20 起，原 3000，W-NEXT-PORTS-001）= fe-html 糖果色静态页（`edu-frontend/public/*.html`）+ `public/edu-api.js` 共享客户端（JWT + `{code:0,data}` 壳解包 + 401 跳登录）；根路由 `/` → login-register.html
 
-- **后端 8000** = uvicorn（`edu-agent/.venv`）；8003 是验证服务非前端用
+- **后端 9988**（2026-09-20 起，原 8000，W-NEXT-PORTS-001）= uvicorn（`edu-agent/.venv`）；8003 是验证服务非前端用
 
-- 前端 api-client.ts 默认连 8000；CORS 3000→8000 正常
+- 前端 api-client.ts 默认连 9988；CORS 3322→9988 正常（.env 显式 `CORS_ORIGINS` 3322 双源）
 
 - 契约权威：后端 `schemas.py`；错误码 `error_codes.py`；响应壳 `{code:0,message:"ok",data}`；分页裸 DTO `{total,page,page_size,items}`
 
@@ -23,9 +23,11 @@
 
 ## 启动命令
 
-- 后端：`cmd /c start "" /B .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`（在 edu-agent/ 下）
+> 端口变更（W-NEXT-PORTS-001，2026-09-20）：后端 8000→9988、前端 3000→3322。一键启停脚本在仓库根：`start-eduagent.cmd` / `stop-eduagent.cmd`。
 
-- 前端：`cmd /c start /B node next\dist\bin\next dev -p 3000`
+- 后端：`cmd /c start "" /B .venv\Scripts\python.exe -m uvicorn app.main:app --port 9988`（在 edu-agent/ 下）
+
+- 前端：`cmd /c start /B node next\dist\bin\next dev -p 3322`
 
 ## 关键教训（必读）
 

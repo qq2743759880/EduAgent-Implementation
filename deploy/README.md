@@ -10,6 +10,11 @@
 > - 检查单：`edu-agent/scripts/check-demo.mjs`（9 项检查，FAIL 时逐项给一句话处置指引）
 >
 > 边界一句话：**本包 = 本机同构部署**；公网/HTTPS/容器化归 C 阶段全量（容器化路线见文末附录）。
+>
+> **端口变更（W-NEXT-PORTS-001，2026-09-20）**：后端 8000→**9988**、前端 3000→**3322**（用户裁定），
+> 本文端口提及已同步；一键启停见仓库根 `start-eduagent.cmd` / `stop-eduagent.cmd`。
+> ⚠ `deploy.mjs` 脚本内默认端口仍为 8000/3000（不在该单改动清单），迁移后请用一键脚本，
+> 或显式传 `--frontend-port 3322`（后端端口 deploy.mjs 尚无 CLI 覆盖，见 PORTS1 报告残留清单）。
 
 ---
 
@@ -20,10 +25,10 @@
 | Windows 宿主机                                                               |
 |                                                                             |
 |  [MySQL 8]            [后端 uvicorn]           [前端 Next.js]                |
-|  127.0.0.1:3306       127.0.0.1:8000            127.0.0.1:3000               |
+|  127.0.0.1:3306       127.0.0.1:9988            127.0.0.1:3322               |
 |  业务库 edu（快照恢复） FastAPI，读 .env 原样     生产形态 build+start          |
 |        ^                   ^    ^                ^        （.next-prod）     |
-|        |                   |    +----------------+   用户浏览器打开 :3000    |
+|        |                   |    +----------------+   用户浏览器打开 :3322    |
 |  [Redis 容器] --------------+                                                |
 |  edu-redis-standalone:6379                                                  |
 |  （宿主 Docker Desktop）缓存/限流/会话/队列                                   |
@@ -41,8 +46,8 @@
 | 组件 | 位置 | 职责 |
 |---|---|---|
 | MySQL 8 | 宿主 3306（Windows 服务） | 业务主库（`edu` 库）；凭据在 .env `MYSQL_PASSWORD`（必填，无默认值） |
-| 后端 uvicorn | 宿主 8000 | FastAPI 应用；**读 .env 的 DEBUG/ENV_NAME 形态原样启动**，脚本不做替换 |
-| 前端 Next.js | 宿主 3000 | 生产形态 `build+start`（产物目录 `.next-prod`，缺失时 deploy 脚本自动 build） |
+| 后端 uvicorn | 宿主 9988 | FastAPI 应用；**读 .env 的 DEBUG/ENV_NAME 形态原样启动**，脚本不做替换 |
+| 前端 Next.js | 宿主 3322 | 生产形态 `build+start`（产物目录 `.next-prod`，缺失时 deploy 脚本自动 build） |
 | Redis | 宿主 Docker Desktop 容器 `edu-redis-standalone`（6379） | 缓存/限流/会话/LLM 队列削峰 |
 | Milvus | VM 192.168.85.101:19530 | 向量检索主链路 |
 | MongoDB | VM 192.168.85.101:27017 | 对话状态存储 |
@@ -90,7 +95,7 @@ node edu-agent/scripts/check-demo.mjs
 **为什么 .env 必须显式 REDIS_URL 而不只靠 config.py 默认？**
 
 1. `app/config.py:79` 默认是 `redis://localhost:6379/0`——这条历史默认值锁死了「Redis 一定在 6379」的隐含假设，
-   漂移后**没有**任何代码层告警，仅在 lifespan `init_redis()` `ping()` 失败时才暴露（彼时 8000 已拒启/降级）。
+   漂移后**没有**任何代码层告警，仅在 lifespan `init_redis()` `ping()` 失败时才暴露（彼时 9988 已拒启/降级）。
 2. 显式 `REDIS_URL` 是**单一事实源**（single source of truth）：配置漂移时运维/新人第一时间看到正确端口，
    避免再次出现「文档/代码/实际」三方不一致。
 3. `REDIS_PORT` 是冗余键——与 `REDIS_URL` 解耦的明示端口，便于 `redis_port_check.py` 单独断言
@@ -183,7 +188,7 @@ copy .env.example .env    # ⚠ 仅当 .env 不存在时用；已存在先按上
 | `JWT_SECRET` / `API_TOKEN` | §2.2 生成的强随机值 | DEBUG=false 下默认值直接拒绝启动（`_security_guard`） |
 | `MYSQL_PASSWORD` | 部署机真实密码 | 必填无默认 |
 | `LLM_API_KEY` | 服务商 key | 必填无默认 |
-| `CORS_ORIGINS` | 建议留空或显式双源 | **必须同时含 `http://localhost:3000` 与 `http://127.0.0.1:3000` 双源**（C3 实证，详见 §4 已知项） |
+| `CORS_ORIGINS` | 建议留空或显式双源 | **必须同时含 `http://localhost:3322` 与 `http://127.0.0.1:3322` 双源**（C3 实证，详见 §4 已知项） |
 
 其余未注释键逐键说明见 `.ai-hub/plans/deploy-config-checklist.md`（含每键默认值/必填性/生产值指引，`.env.example` 未注释键 37 个，2026-09-15 实测），本 README 不重复。
 
@@ -288,12 +293,12 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 | ① | Milvus 连通 192.168.85.101:19530 | 连接超时/主机不可达 | `开启 VMware 虚拟机: vmrun start "E:\tt\CentOS 7 64 位 的克隆 docker\CentOS 7 64 位 的克隆 docker.vmx" nogui,等 60s`；进 VM `docker ps` 确认 milvus 容器在跑。⚠ 该 vmx 路径即 `check-demo.mjs` 头部「配置段」的 `VMX_PATH`（路径不存在时脚本自动追加「配置的 vmx 路径不存在」提示）——换机器后按实际 VM 路径改该常量 |
 | ② | Redis（`docker exec edu-redis-standalone redis-cli ping` 期望 PONG） | docker 引擎未运行 / 容器停 | 脚本原文＝`docker start edu-redis-standalone(若 docker 引擎未运行,先启动 Docker Desktop)` |
 | ③ | MongoDB 连通 192.168.85.101:27017 | 同 ① | 同 ①（脚本给同一条 `vmrun start …` 指引，确认 mongo 容器在跑） |
-| ④ | 后端 8000 `/health`（status=ok） | `fetch failed`（后端未起）/ status≠ok | `cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000`；启动即自杀见下方「8000 拒启三分支」，日志 `logs/deploy-backend.log` |
-| ⑤ | 前端 3000 `/login-register.html`（+生产形态判别） | 拒绝连接 / 非 200；或 dev 形态（`_buildManifest` dev 探针 200） | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000(验生产形态:deploy.mjs stop 后 start,先 build 再起)`。生产形态优先 `node scripts\deploy\deploy.mjs start`（自动 build+start `.next-prod`）；build 失败看 `logs/deploy-frontend-build.log`。⚠ dev 形态为 **WARN**（不阻断 exit），提示「生产形态未验收」 |
-| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / `fetch failed` / 账号不存在 | **先等 60 秒重跑**（登录限流 42900/60s 窗口，密集连跑必红，12-25ms 快失败即限流特征）。脚本原文指引：`先过 ④ 后端: cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 8000(若账号失效查 DB 种子)`。**勿直接恢复快照**——§3③ 仅适用全新空库，本机非空库执行＝破坏性覆盖＋数据回滚。耗时：约 1.0-1.3s，冷启动/限流重试时 6-10s（整轮巡检见 §5） |
-| ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`（`FIX.frontend`，与 ⑦⑨ 同源；⑤ 另带生产形态判别后缀）；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
+| ④ | 后端 9988 `/health`（status=ok） | `fetch failed`（后端未起）/ status≠ok | `cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 9988`；启动即自杀见下方「9988 拒启三分支」，日志 `logs/deploy-backend.log` |
+| ⑤ | 前端 3322 `/login-register.html`（+生产形态判别） | 拒绝连接 / 非 200；或 dev 形态（`_buildManifest` dev 探针 200） | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3322(验生产形态:deploy.mjs stop 后 start,先 build 再起)`。生产形态优先 `node scripts\deploy\deploy.mjs start`（自动 build+start `.next-prod`）；build 失败看 `logs/deploy-frontend-build.log`。⚠ dev 形态为 **WARN**（不阻断 exit），提示「生产形态未验收」 |
+| ⑥ | 登录链路（admin+student 各 login + /api/auth/me） | 401 / `fetch failed` / 账号不存在 | **先等 60 秒重跑**（登录限流 42900/60s 窗口，密集连跑必红，12-25ms 快失败即限流特征）。脚本原文指引：`先过 ④ 后端: cd edu-agent && .venv\Scripts\python.exe -m uvicorn app.main:app --port 9988(若账号失效查 DB 种子)`。**勿直接恢复快照**——§3③ 仅适用全新空库，本机非空库执行＝破坏性覆盖＋数据回滚。耗时：约 1.0-1.3s，冷启动/限流重试时 6-10s（整轮巡检见 §5） |
+| ⑦ | 关键页 200 × 8（login-register / courses / course-detail?id=1 / dashboard / learning / admin-dashboard / admin-mcp / admin-rag-upload） | 某些页非 200 | 脚本原文＝`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3322`（`FIX.frontend`，与 ⑦⑨ 同源；⑤ 另带生产形态判别后缀）；页面能开但数据全空/console 报错 → 见「已知项 A：CORS 双源」 |
 | ⑧ | advisory：DEBUG 虚拟管理员探测（无 token GET /api/users/me，两级判据 + `--prod-gate`，W-NEXT-CHECKDEMO-PROD-001） | 无 token 返回 200；或 DEBUG=true 且 ENV_NAME 显式非 local | `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据)`。四分支（与后端 P1-8 `_debug_env_gate` 同口径：ENV_NAME strip+lower ∈ {"", "local"}＝本机开发态）：**A** 被 401/403 拒绝 → PASS（DEBUG=true 时文案不再自称「安全」）；**B** 有数据 + DEBUG=true + ENV_NAME 显式非 local → **红，阻断 exit 1**（生产类环境 DEBUG=true 真后门）；**C** 有数据 + DEBUG=true + ENV_NAME 缺省/local → WARN 不阻断（本机 dev 态；`--prod-gate` 旗标下升级为红）；**D** 有数据 + DEBUG≠true → **红，阻断 exit 1**（真后门） |
-| ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤（脚本原文＝`FIX.frontend`：`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3000`） |
+| ⑨ | 抽验页 200 `/admin-users-refine-proto.html`（C5-D2 扩清单） | 页面 404 | 确认 `public/admin-users-refine-proto.html` 存在；前端未就绪先修 ⑤（脚本原文＝`FIX.frontend`：`cd edu-frontend && node node_modules/next/dist/bin/next dev -p 3322`） |
 
 **测试账号（快照内种子，check-demo ⑥ 使用）**：
 
@@ -303,7 +308,7 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 | manager | `mgr01test` | `Test@123456` |
 | student | `user000001` | `Test@123456` |
 
-**8000 拒启三分支（生产形态 DEBUG=false 下启动即失败，全在 `logs/deploy-backend.log` 可见 ValueError/异常）**：
+**9988 拒启三分支（生产形态 DEBUG=false 下启动即失败，全在 `logs/deploy-backend.log` 可见 ValueError/异常）**：
 
 | 分支 | 触发条件 | 处置 |
 |---|---|---|
@@ -314,9 +319,9 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 **已知项（check-demo 9 项之外，C3 实测发现）**：
 
 - **A. CORS 生产双源**（commit `c208020`）：DEBUG 态 CORS=`*` 从未暴露此问题；生产形态下若 CORS 白名单
-  只有 `http://localhost:3000`，用户以 `http://127.0.0.1:3000` 访问前端时所有 API 被预检拦截
+  只有 `http://localhost:3322`，用户以 `http://127.0.0.1:3322` 访问前端时所有 API 被预检拦截
   （C3 首轮实测 8 页中 6 页 console 报错、admin-dashboard 守卫跳登录）。处置：`.env` 设
-  `CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`（或留空走 `app/main.py _cors_origins()`
+  `CORS_ORIGINS=http://localhost:3322,http://127.0.0.1:3322`（或留空走 `app/main.py _cors_origins()`
   生产回退双源——回退已含双源）。
 - **B. Neo4j 密码核对**（deploy-config-checklist §Neo4j 已标注）：`NEO4J_PASSWORD` 禁默认值
   `edu_neo4j_pwd_2026`；改密码时 VM 内 Neo4j 容器启动参数 `NEO4J_AUTH` 与 .env **必须同步改**，
@@ -335,7 +340,7 @@ check-demo 检查项与序号一一对应；每行「处置」**逐字引用** `
 node scripts\deploy\deploy.mjs start    # [--prod-gate:部署环境门]→前置检查→后端→前端→check-demo 断言（幂等）
 node scripts\deploy\deploy.mjs start --prod-gate            # 生产出包形态：门不过即中止（不拉起任何服务）
 node scripts\deploy\deploy.mjs start --prod-gate --env <文件>  # 门读取指定 env 文件（默认 edu-agent/.env）
-node scripts\deploy\deploy.mjs stop     # 按端口清 8000/3000（netstat→PID→taskkill /F /T）
+node scripts\deploy\deploy.mjs stop     # 按端口清 9988/3322（netstat→PID→taskkill /F /T）
 node scripts\deploy\deploy.mjs stop --all   # 同上，附加 Redis 容器处置提示（容器本身不停）
 node scripts\deploy\deploy.mjs status   # ① dev/prod 形态判别（_buildManifest 探针，404=生产判据）② 透传 check-demo
 node scripts\deploy\deploy.mjs stop-prod-and-restart-dev   # 生产→dev 可逆（见下）
@@ -345,14 +350,14 @@ node scripts\deploy\deploy.mjs stop-prod-and-restart-dev   # 生产→dev 可逆
 
 | 旗标 | 作用 | 承接 |
 |---|---|---|
-| `--frontend-port <N>` | 前端端口，默认 3000。start 拉起/stop 清杀/status 判别/可逆子命令全链路跟随，并透传 `check-demo --frontend-port`（探测侧与拉起侧同端口，防 failover 端口判错） | W-NEXT-CHECKDEMO-PROD-001 P0-4 |
+| `--frontend-port <N>` | 前端端口，默认 3322。start 拉起/stop 清杀/status 判别/可逆子命令全链路跟随，并透传 `check-demo --frontend-port`（探测侧与拉起侧同端口，防 failover 端口判错） | W-NEXT-CHECKDEMO-PROD-001 P0-4 |
 | `--prod-gate` | start 前跑 `scripts/eval/deploy_env_gate.mjs`（exit!=0 立即中止并给处置指引，**不拉起任何服务**）；check-demo 断言段以 `--prod-gate` 严格模式跑（⑧ 开发态 WARN 升级红） | W-NEXT-CHECKDEMO-PROD-001 P0-1 |
 | `--env <文件>` | 部署环境门读取的 env 文件路径（默认 `edu-agent/.env`；仅与 `--prod-gate` 搭配生效，方便对候选 .env 预检） | 同上 |
 
 #### 可逆性：stop-prod-and-restart-dev（生产→dev，W-NEXT-PRODUCTION-BUILD-001 P0-5 收口）
 
 ```bash
-node scripts\deploy\deploy.mjs stop-prod-and-restart-dev [--frontend-port 3000]
+node scripts\deploy\deploy.mjs stop-prod-and-restart-dev [--frontend-port 3322]
 ```
 
 依序执行：① 停前形态探针（`_buildManifest`，如实记录被停的是什么形态）→ ② 按端口反查 PID
@@ -365,14 +370,14 @@ teardown/套接字关闭有秒级窗口，立即探测会误判"仍被占用"而
 
 反向（dev→生产，2026-09-18 盲测实证路径）：**先清掉 <port> 上的 dev 实例再 start**——`start` 对已在
 监听的端口是幂等跳过（不会替换 dev 实例），单跑 `start` 切不回生产形态。单清前端端口 =
-`for /f "PID" %p in ('netstat -ano -p tcp ^| findstr ":3000.*LISTENING"') do taskkill /F /T /PID %p`
-（或 `taskkill /F /T /PID <dev PID>`）；`stop` 也可用但**会连 8000 后端一起清**。随后
-`node scripts\deploy\deploy.mjs start --frontend-port 3000`：8000 在跑则幂等跳过、3000 空闲则
+`for /f "PID" %p in ('netstat -ano -p tcp ^| findstr ":3322.*LISTENING"') do taskkill /F /T /PID %p`
+（或 `taskkill /F /T /PID <dev PID>`）；`stop` 也可用但**会连 9988 后端一起清**。随后
+`node scripts\deploy\deploy.mjs start --frontend-port 3322`：9988 在跑则幂等跳过、3322 空闲则
 `.next-prod/BUILD_ID` 在即跳过 build（实测 ~4-5s 拉起）并自动跑 check-demo 断言。
 
 - `stop` **不停 Redis 容器**（缓存/限流/会话依赖它，一般无需停止）；容器名按 .env `REDIS_PORT` 宿主端口反查（不要按旧名硬编码），确需停止：`docker stop <反查容器名>`，恢复 `docker start <同容器名>`。
 - PID 记录：`logs/deploy.pids.json`（stop 会清理陈旧记录；记录的是 spawn 包装层 PID，实际监听 PID 以 `netstat -ano` 为准——清杀一律按端口反查，不依赖该记录）。
-- 幂等提示：start 时若 3000 已被监听会跳过并提示「可能是 dev 形态，如需生产形态请先 stop」。
+- 幂等提示：start 时若 3322 已被监听会跳过并提示「可能是 dev 形态，如需生产形态请先 stop」。
 - 可逆性三态盲测（--frontend-port 3001 全流程 / --prod-gate 拦 DEBUG=true / 往返后恢复生产 21/21）实证记录：`edu-agent/test-reports/WNEXTDEPLOYHARD1-completion-report.md`。
 
 ### 日志位置（均为追加式 append）
@@ -416,7 +421,7 @@ mysqldump -uroot -p --routines --triggers --single-transaction --set-gtid-purged
 > 由下次触发重拉。
 >
 > ⚠ 设计差异（真实契约优先）：任务书曾写「每 5 分钟执行 `--once`（探活+按需拉起）」——实读
-> `watchdog_8000.py`：`--once` 只探活**不拉起**（exit 0/1），永远无法复活 8000，也无法复活看门狗
+> `watchdog_8000.py`：`--once` 只探活**不拉起**（exit 0/1），永远无法复活 9988，也无法复活看门狗
 > 本身。故任务动作 = `watchdog_8000.py` 无参（loop 模式，30s 探活/3 连败/冷却 90s/僵尸清理/
 > 三级降级拉起全复用本体），零改动看门狗本体。
 
@@ -427,7 +432,7 @@ mysqldump -uroot -p --routines --triggers --single-transaction --set-gtid-purged
 powershell -NoProfile -ExecutionPolicy Bypass -File edu-agent\scripts\deploy\install_watchdog_task.ps1 -StopExisting
 # 期望末段：[WATCHDOG-INSTALL] OK ...；任务状态 Query 输出 Status=Ready
 
-# 卸载（结束任务实例 + 删任务；不影响 8000 本体——看门狗拉起的 uvicorn 是独立进程）
+# 卸载（结束任务实例 + 删任务；不影响 9988 本体——看门狗拉起的 uvicorn 是独立进程）
 powershell -NoProfile -ExecutionPolicy Bypass -File edu-agent\scripts\deploy\uninstall_watchdog_task.ps1
 # 期望：[WATCHDOG-UNINSTALL] OK 任务已删除（复核：查询不到）
 
@@ -438,11 +443,11 @@ schtasks /Query /TN EduAgent-Watchdog /V /FO LIST
 
 - 事件/证据日志：`edu-agent\logs\watchdog_8000_events.log`（HEALTH_FAIL / RESTART_BEGIN /
   RESTART_OK 一行一事）；被拉起 uvicorn 的 stdout/stderr 在 `edu-agent\logs\watchdog_8000_restart.log`。
-- 手动立即拉起（不等触发）：`schtasks /Run /TN EduAgent-Watchdog`；模拟验证：杀 8000 监听进程后
+- 手动立即拉起（不等触发）：`schtasks /Run /TN EduAgent-Watchdog`；模拟验证：杀 9988 监听进程后
   等 ~2-3 分钟（30s×3 连败+拉起+健康回 200），看 events 日志 `RESTART_OK`。
 - 两种形态取舍：**手工常驻版**（`python scripts/watchdog_8000.py` 前台/后台裸跑）调试直观，但随
   会话回收而亡、重启后无人拉起——只建议临时排障用；**服务化版**（本节任务计划）开机自启 +
-  5 分钟不在岗自愈，是默认推荐形态。终态口径：服务化版在岗（任务 Status=Running + 8000 /health 200）。
+  5 分钟不在岗自愈，是默认推荐形态。终态口径：服务化版在岗（任务 Status=Running + 9988 /health 200）。
 - 边界（如实）：任务以 InteractiveToken 注册到当前用户——「开机延迟 60s」在用户未登录时会经
   StartWhenAvailable 等到登录后补跑；真无人值守（不登录也拉起）需改 S4U/服务账号形态（服务化 v2 待办）。
 
@@ -467,7 +472,7 @@ scripts\eval\gate_fullrun.cmd
 - 预检口径：MySQL/Redis 为硬门（conftest 防污染护栏依赖真实 Redis 清 rl:* 计数器）；Milvus
   默认硬门，**降级窗口**（Milvus 宿主不可达，2026-09-20 现状）加 `-AllowMilvusDown` 明示放行
   ——该形态与 TEST-BASE run7 终态基线一致（task_m2/task_vec 两例为无条件 skip 白名单，Milvus
-  在不在线均不进跑面，结果构成可比）。8000 后端只 WARN 不阻断（离线时 live_backend 系按
+  在不在线均不进跑面，结果构成可比）。9988 后端只 WARN 不阻断（离线时 live_backend 系按
   conftest 机制 skip，覆盖面缩小会如实打印）。
 - 预检目标可被环境变量覆盖：`GATE_MYSQL_HOST/GATE_MYSQL_PORT/GATE_REDIS_URL/GATE_MILVUS_URI`。
 
@@ -519,9 +524,9 @@ docker compose -f deploy/docker-compose.yml --env-file .env.production up -d --b
 docker compose -f deploy/docker-compose.yml ps
 
 # 4. 验证
-curl -s http://localhost:8000/health
-curl -s http://localhost:8000/health/detail   # 各存储 ok
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000   # 前端 200
+curl -s http://localhost:9988/health
+curl -s http://localhost:9988/health/detail   # 各存储 ok
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3322   # 前端 200
 ```
 
 ### 服务器部署时前端指向后端
@@ -529,7 +534,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000   # 前端 200
 `NEXT_PUBLIC_*` 在 build 时内联，需用 build arg 注入：
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://<服务器IP>:8000 \
+NEXT_PUBLIC_API_BASE_URL=http://<服务器IP>:9988 \
   docker compose -f deploy/docker-compose.yml --env-file .env.production up -d --build
 ```
 
@@ -575,25 +580,25 @@ node scripts/eval/deploy_env_gate.mjs
 #    自回归：node scripts/eval/test_deploy_env_gate.mjs（期望 10/10 PASS）
 
 # 1) 无 token 访问 /api/users/me → 必须 401（禁虚拟管理员 / DEBUG_超级管理员）
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/api/users/me
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:9988/api/users/me
 #    期望：401
 
 # 2) 伪造/垃圾 token → 必须 401
 curl -s -o /dev/null -w "%{http_code}\n" \
   -H "Authorization: Bearer garbage.invalid.token" \
-  http://localhost:8000/api/users/me
+  http://localhost:9988/api/users/me
 #    期望：401
 
 # 3) X-Force-Role 头无效（DEBUG 后门手势在生产无效）→ 仍 401
 curl -s -o /dev/null -w "%{http_code}\n" \
-  -H "X-Force-Role: admin" http://localhost:8000/api/users/me
+  -H "X-Force-Role: admin" http://localhost:9988/api/users/me
 #    期望：401（X-Force-* 后门仅 DEBUG=true 生效）
 #    ⚠ 实证登记（task123）：/api/metrics/cache-context-dashboard 已 require_role([ADMIN,MANAGER]) 鉴权；
 #      裸 /metrics（Prometheus 抓取端点）当前无 Depends 守护——若 task113 预期该端点也鉴权，需编排者确认
 #      并补守卫（见 test-reports/task123-completion-report.md 自检发现）。
 
 # 4) /api/metrics 鉴权生效（依赖 task113）：无 token 返回 401；仅 ADMIN/MANAGER 可读
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/api/metrics/cache-context-dashboard
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:9988/api/metrics/cache-context-dashboard
 #    期望：401
 
 # 5) 死链扫描（W1-批判3 承接，C-17，L4/里程碑回归固定条目）：
@@ -606,7 +611,7 @@ node test-reports/scan-deadlinks.mjs
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   -H "Content-Type: application/json" \
   -d "{\"thread_id\":\"probe-nonexistent\",\"action\":\"confirm\"}" \
-  http://localhost:8000/api/chat/resume
+  http://localhost:9988/api/chat/resume
 #    期望：401（未鉴权即拒）。
 #    ⚠ 本机 dev 态（DEBUG=true + ENV_NAME 缺省=local）W-NEXT-8 实测为 **404 {"code":"40450"}
 #      CHAT_HITL_THREAD_NOT_FOUND（HTTP 404）而非 401**：DEBUG 虚拟管理员通道使无 token 请求也进入
