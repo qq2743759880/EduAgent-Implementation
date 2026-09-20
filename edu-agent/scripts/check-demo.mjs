@@ -584,7 +584,10 @@ await check("⑪", `VEC-LOCK embed 一致性(edu_knowledge 元数据)`, Object.a
     //     probe 路径 'E:\stu\project\stu\EduAgent实施手册\edu-agent\scripts\...py'
     //     含中文 + 反斜杠,windowsHide:true 后稳定。改用 runPy 拿 stdout/stderr 并做
     //     pydantic 友好报(stderr 含 Field required 即说明 cwd 没 .env)。
-    const { code, stdout, stderr } = await runPy(EDU_PY, [VECLOCK_PROBE], 60000);
+    // W-NEXT-PORTS-001 后勘误(2026-09-20):BGE 冷启动(进程级重载)需 90-110s,60s 必被
+    //   SIGTERM(143) 误杀——① 体检单自己 5 轮启停后 GPU/页缓存清冷 ② VM 崩溃恢复窗。
+    //   预算抬到 300s(对齐 ⑯)。
+    const { code, stdout, stderr } = await runPy(EDU_PY, [VECLOCK_PROBE], 300000);
     if (stderr && /Field\s+required\s+\[type=missing/i.test(stderr)) {
       const m = /(\w+)\s+Field required/i.exec(stderr);
       const field = m ? m[1] : "unknown";
