@@ -21,28 +21,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>学习仪表盘 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css + chart-palette.ts §1.7；业务区禁止硬编码 hex/内联色/任意字号/灰系）===== */
-:root{ --htc-225-29-72-0.06: rgba(225,29,72,0.06); --htc-225-29-72-0.4: rgba(225,29,72,0.4); --htc-255-249-240-0.95: rgba(255,249,240,0.95); --htc-31-31-31-0.05: rgba(31,31,31,0.05); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45);  --ht-f6f5ff: #f6f5ff; --ht-f7f5ff: #f7f5ff; --ht-fff9f0: #fff9f0; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-bg:#fff9f0;
-  /* 主色系（dashboard 非课程中心 → indigo 语义主色，糖果色仅作副色点缀） */
-  --indigo:#4f46e5; --indigo-strong:#4338ca; --indigo-deep:#312e81;
-  --indigo-soft:#eef0fd; --indigo-border:#d8dcf8; --indigo-light:#a5b4fc;
-  /* §1.7 图表 8 色定性序（chart-palette.ts；sky/violet 仅图表允许） */
-  --chart-indigo:#4f46e5; --chart-emerald:#10b981; --chart-amber:#f59e0b; --chart-rose:#f43f5e;
-  --chart-sky:#0ea5e9; --chart-violet:#8b5cf6; --chart-slate:#64748b; --chart-indigo-light:#a5b4fc;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a; --white:#fff;
-  --destructive:#e11d48; --success:#059669; --warning:#f59e0b;
-  --border-chip:rgba(31,31,31,.15);
-  --tint-purple-01:rgba(124,58,237,.1); --tint-indigo-01:rgba(79,70,229,.1);
-  --tint-ink-03:rgba(31,31,31,.08);
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014); --shadow-s:0 3px 0 var(--htc-31-31-31-014);
-  --focus-ring:var(--indigo);
-  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(31, 31, 31, 0.014); --htc-255-249-240-095: rgba(255, 249, 240, 0.095); --htc-31-31-31-005: rgba(31, 31, 31, 0.005); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-225-29-72-006: rgba(225, 29, 72, 0.006); --htc-225-29-72-004: rgba(225, 29, 72, 0.004); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动，行为层零影响）===== */
+:root{ --htc-225-29-72-0.06: rgba(198,62,74,0.06); --htc-225-29-72-0.4: rgba(198,62,74,0.4); --htc-255-249-240-0.95: rgba(255,249,240,0.95); --htc-31-31-31-0.05: rgba(46,42,63,0.05); --htc-31-31-31-0.12: rgba(46,42,63,0.12); --htc-31-31-31-0.14: rgba(46,42,63,0.14); --htc-31-31-31-0.18: rgba(46,42,63,0.18); --htc-31-31-31-0.45: rgba(46,42,63,0.45);  --ht-f6f5ff: var(--bg-app); --ht-f7f5ff: var(--bg-app); --ht-fff9f0: var(--bg-app);
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF;
+  --candy-bg:var(--bg-app);
+  /* 主色系：dashboard 主行动色 → 批款珊瑚 CTA；强调文本 → focus-ring 墨色（静态混色值，禁 color-mix：G7 parse 不认 color(srgb) 序列化） */
+  --indigo:var(--cta-coral); --indigo-strong:var(--focus-ring); --indigo-deep:var(--text-strong);
+  --indigo-soft:#FFF4F1; --indigo-border:#FFEAE7; --indigo-light:var(--clay-peach);
+  /* 图表定性序 → 黏土表面色族（禁相邻同系） */
+  --chart-indigo:var(--clay-sky); --chart-emerald:var(--clay-mint); --chart-amber:var(--clay-lemon); --chart-rose:var(--clay-peach);
+  --chart-sky:var(--clay-lavender); --chart-violet:var(--clay-pink); --chart-slate:var(--text-muted); --chart-indigo-light:#D8CEFF;
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted); --white:var(--bg-raised);
+  --destructive:var(--status-danger); --success:var(--text-strong); --warning:var(--clay-lemon);
+  --border-chip:rgba(78,126,66,.22);
+  --tint-purple-01:rgba(184,166,255,.14); --tint-indigo-01:rgba(255,122,107,.14);
+  --tint-ink-03:rgba(78,126,66,.10);
+  --shadow-3d:var(--clay-shadow-raised); --shadow-s:var(--clay-shadow-light);
+  /* --focus-ring 不在此覆盖：沿用 theme.css 冻结值 */
+  --radius-md:var(--radius-input); --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(46, 42, 63, 0.05); --htc-255-249-240-095: rgba(255, 249, 240, 0.095); --htc-31-31-31-005: rgba(46, 42, 63, 0.05); --htc-31-31-31-012: rgba(46, 42, 63, 0.08); --htc-225-29-72-006: rgba(198, 62, 74, 0.06); --htc-225-29-72-004: rgba(198, 62, 74, 0.18); --htc-31-31-31-018: rgba(46, 42, 63, 0.10); --htc-31-31-31-045: rgba(46, 42, 63, 0.45); --r: var(--radius-input); --shadow: var(--clay-shadow-light); --line: rgba(78,126,66,.22); --muted: var(--text-muted);
+  /* clay 桥接变量：aihub-topnav-fix 块 var 兜底链取到批款色 */
+  --card:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42);
+  --candy-green-deep:rgba(78,126,66,.42); --candy-green-hover:var(--clay-moss);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:auto;min-height:100dvh}
 body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:linear-gradient(180deg,var(--ht-fff9f0) 0%,var(--ht-f6f5ff) 100%);-webkit-font-smoothing:antialiased}
@@ -298,6 +303,49 @@ button{font-family:inherit;cursor:pointer}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（糖果描边→黏土阴影、44px 点按、G6 第三方容器底色、动效纪律）；选择器与状态类显隐语义零改动 ===== */
+.kpi,.panel,.points,.sk-card{border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-raised)}
+.badge{border:0;border-radius:var(--radius-icon-tile);box-shadow:var(--clay-shadow-light);background:var(--bg-raised)}
+.mtrack{border:0}
+.lvbar{border:0}
+.lvbar i{background:linear-gradient(90deg,var(--clay-lemon),var(--clay-peach))}
+.legend .lg .sw{border:0}
+.donut{border:0;box-shadow:var(--clay-shadow-sky)}
+.donut::before{border:0;background:var(--bg-raised)}
+.btn{border:0;min-height:44px;border-radius:var(--radius-btn);background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-press-moss)}
+.btn.primary{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.btn:hover{transform:translateY(-2px);box-shadow:var(--clay-shadow-light)}
+.btn.primary:hover{box-shadow:var(--clay-shadow-press-coral)}
+.error .retry{border:0;min-height:44px;border-radius:var(--radius-btn);background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.empty{border:2px dashed rgba(78,126,66,.28);border-radius:var(--radius-card)}
+.error{background:#FBF1F2;border:2px solid rgba(198,62,74,.25);border-radius:var(--radius-card);color:var(--text-strong)}
+.error p{color:var(--text-strong)}
+.badge .rar{color:var(--text-strong)}
+.myrank{border:2px solid var(--cta-coral);border-radius:var(--radius-card)}
+.myrank .face .ic{width:24px;height:24px}
+.rar{border:0;color:var(--text-strong)}
+.rar.legendary{background:var(--clay-lavender)} .rar.epic{background:var(--clay-peach)} .rar.rare{background:var(--clay-mint)} .rar.common{background:var(--clay-sky)}
+.hello{border:0;background:#FFF2F0;color:var(--text-strong)}
+.pill{border:0;background:var(--clay-lemon);color:var(--text-strong)}
+.kpi .ic{border:0;border-radius:var(--radius-icon-tile);color:var(--text-strong)}
+.kpi .ic.indigo{background:var(--clay-peach)} .kpi .ic.green{background:var(--clay-moss)} .kpi .ic.amber{background:var(--clay-lemon)} .kpi .ic.violet{background:var(--clay-lavender)}
+.kpi .ic .ic{width:18px;height:18px}
+.e-emo .ic{width:30px;height:30px}
+.emo .ic{width:17px;height:17px}
+.btn .ic{width:16px;height:16px}
+.chart{background:var(--bg-raised);border-radius:var(--radius-input)}
+.sk-chart{background-color:var(--bg-input)}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+  .sk-line::after,.sk-chart{animation:none!important}
+  .btn:hover,.btn.primary:hover{transform:none}
+}
+</style>
 </head><body>
 
 <!-- task11：respbar 演示工具条已移除（critique C4）；演示兜底数据已清零（reshape-a），未登录显示诚实登录引导 -->
@@ -325,44 +373,44 @@ button{font-family:inherit;cursor:pointer}
   <!-- ===== 页面头部（昵称来自 GET /api/users/me，task11 移除硬编码"小柚子"）===== -->
   <header class="head">
     <div>
-      <span class="hello">✨ 今天也要和 EduAgent 一起进步呀</span>
-      <h1>你好，<span id="helloName">同学</span> 👋</h1>
+      <span class="hello">今天也要和 EduAgent 一起进步呀</span>
+      <h1>你好，<span id="helloName">同学</span></h1>
       <p class="sub">这里是你的学习仪表盘：随时查看学习时长、学科能力、积分与排行榜，让每一次努力都能被看见。</p>
     </div>
     <div class="acts">
-      <button class="btn" type="button" onclick="location.href='me.html'">🧑‍🎓 个人中心</button>
-      <button class="btn primary" type="button" onclick="location.href='me.html?edit=1'">⚙️ 调整偏好</button>
+      <button class="btn" type="button" onclick="location.href='me.html'"><svg class="ic"><use href="/assets/icons/icons.svg#ic-user"></use></svg> 个人中心</button>
+      <button class="btn primary" type="button" onclick="location.href='me.html?edit=1'"><svg class="ic"><use href="/assets/icons/icons.svg#ic-gear"></use></svg> 调整偏好</button>
     </div>
   </header>
 
   <!-- ===== task11：未登录诚实引导（无演示数据兜底）===== -->
   <section id="loginGate" hidden>
-    <div class="empty" style="min-height:220px"><span class="e-emo">🔑</span><p>登录后查看你的学习仪表盘：<br>学习时长、练习正确率、积分与排行榜实时同步。</p><a class="btn primary" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">去登录</a></div>
+    <div class="empty" style="min-height:220px"><span class="e-emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-sign-in"></use></svg></span><p>登录后查看你的学习仪表盘：<br>学习时长、练习正确率、积分与排行榜实时同步。</p><a class="btn primary" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">去登录</a></div>
   </section>
 
   <!-- ===== KPI 4 卡（成功态；数值由 /api/progress/dashboard + /api/users/me/learning-summary 真实渲染）===== -->
   <section class="v-success" data-sec="kpi" hidden>
     <div class="kpis">
       <div class="kpi">
-        <div class="top"><span class="lb">累计学习时长</span><span class="ic indigo">⏱️</span></div>
+        <div class="top"><span class="lb">累计学习时长</span><span class="ic indigo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span></div>
         <div class="val" id="kpi-time">—</div>
         <div class="delta" id="delta1">—</div>
         <div class="dbar"><i id="bar1" style="width:0%;background:var(--indigo)"></i></div>
       </div>
       <div class="kpi">
-        <div class="top"><span class="lb">累计练习题</span><span class="ic green">✍️</span></div>
+        <div class="top"><span class="lb">累计练习题</span><span class="ic green" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span></div>
         <div class="val" id="kpi-q">—</div>
         <div class="delta" id="delta2">—</div>
         <div class="dbar"><i id="bar2" style="width:0%;background:var(--candy-green)"></i></div>
       </div>
       <div class="kpi">
-        <div class="top"><span class="lb">在学课程</span><span class="ic amber">📚</span></div>
+        <div class="top"><span class="lb">在学课程</span><span class="ic amber" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span></div>
         <div class="val" id="kpi-course">—</div>
         <div class="delta" id="delta3">— 建议一次专注 1~2 门</div>
         <div class="dbar" hidden><i style="width:0%;background:var(--candy-yellow)"></i></div>
       </div>
       <div class="kpi">
-        <div class="top"><span class="lb">连续打卡</span><span class="ic violet">🔥</span></div>
+        <div class="top"><span class="lb">连续打卡</span><span class="ic violet" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span></div>
         <div class="val" id="kpi-streak">—</div>
         <div class="delta" id="delta4">—</div>
         <div class="dbar"><i id="bar4" style="width:0%;background:var(--chart-violet)"></i></div>
@@ -374,7 +422,7 @@ button{font-family:inherit;cursor:pointer}
   <section class="row l2 v-success" data-sec="trend-mastery" hidden>
     <!-- 折线：单系列 → primary 主色；数据来自 /api/progress/dashboard recent_days（真实 7 日） -->
     <div class="panel">
-      <div class="p-title"><span class="emo">📈</span>学习时长 · 近 7 天<span class="pill">分钟</span></div>
+      <div class="p-title"><span class="emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-play"></use></svg></span>学习时长 · 近 7 天<span class="pill">分钟</span></div>
       <div class="p-sub">统计每天学习时长（分钟）</div>
       <div class="chart" id="trendChart">
         <svg class="trend-svg" viewBox="0 0 640 220" role="img" aria-label="近7天学习时长折线">
@@ -393,13 +441,13 @@ button{font-family:inherit;cursor:pointer}
           <g id="trend-labels" fill="var(--ink-muted)" font-size="12" font-weight="700" text-anchor="middle"/>
         </svg>
       </div>
-      <div class="empty" id="trendEmpty" hidden><span class="e-emo">📈</span><p>开始学习后，这里会记录你每天的学习时长</p></div>
+      <div class="empty" id="trendEmpty" hidden><span class="e-emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-play"></use></svg></span><p>开始学习后，这里会记录你每天的学习时长</p></div>
     </div>
     <!-- 学科掌握度：契约缺口（归并端点不在冻结契约）→ 诚实空态，React 批次接 C-A 后回填 -->
     <div class="panel">
-      <div class="p-title"><span class="emo">📊</span>学科掌握度<span class="pill">%</span></div>
+      <div class="p-title"><span class="emo" aria-hidden="true"></span>学科掌握度<span class="pill">%</span></div>
       <div class="p-sub">按学科归并课程完成度</div>
-      <div class="empty" style="margin-top:8px"><span class="e-emo">📊</span><p>学科掌握度暂无数据</p></div>
+      <div class="empty" style="margin-top:8px"><span class="e-emo" aria-hidden="true"></span><p>学科掌握度暂无数据</p></div>
     </div>
   </section>
 
@@ -407,20 +455,20 @@ button{font-family:inherit;cursor:pointer}
   <section class="row l3b v-success" data-sec="structure-badge-rank" hidden>
     <!-- 学习构成：来自 /api/users/me/learning-summary（无分类占比字段，不造假饼图；donut 仅作视觉保留） -->
     <div class="panel">
-      <div class="p-title"><span class="emo">🍩</span>学习构成<span class="pill">累计</span></div>
+      <div class="p-title"><span class="emo" aria-hidden="true"></span>学习构成<span class="pill">累计</span></div>
       <div class="p-sub">视频观看、作业与测验的累计情况</div>
       <div class="donut" id="donut" hidden></div>
-      <div class="empty" id="structureEmpty" hidden><span class="e-emo">🍩</span><p>暂无学习构成数据</p></div>
+      <div class="empty" id="structureEmpty" hidden><span class="e-emo" aria-hidden="true"></span><p>暂无学习构成数据</p></div>
       <div class="legend" id="structure-legend"></div>
     </div>
     <!-- 排行榜 Top5 + 我的排名 + 积分卡 -->
     <div class="panel">
-      <div class="p-title"><span class="emo">🏆</span>本周排行榜</div>
+      <div class="p-title"><span class="emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span>本周排行榜</div>
       <div class="p-sub">按本周获得积分排名</div>
-      <div class="empty" id="rankEmpty" hidden><span class="e-emo">🏆</span><p>暂无排行榜数据，快去学习抢榜首吧</p></div>
+      <div class="empty" id="rankEmpty" hidden><span class="e-emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span><p>暂无排行榜数据，快去学习抢榜首吧</p></div>
       <div class="ranklist" id="ranklist"></div>
       <div class="myrank" id="rankMy">
-        <span class="face">🦊</span>
+        <span class="face" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-user"></use></svg></span>
         <div class="meta"><b>我的排名</b><span id="myrank-sub">—</span></div>
         <span class="rank-big" id="myrank-big">—</span>
       </div>
@@ -435,9 +483,9 @@ button{font-family:inherit;cursor:pointer}
 
     <!-- 最近解锁徽章（真实 /api/gamification/me/badges，按 unlocked_at 最近排序） -->
     <div class="panel badge-row-panel">
-      <div class="p-title"><span class="emo">🎖️</span>最近解锁徽章<span class="pill" id="badgePill">…</span></div>
+      <div class="p-title"><span class="emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span>最近解锁徽章<span class="pill" id="badgePill">…</span></div>
       <div class="p-sub">最近解锁的徽章</div>
-      <div class="empty" id="badgesEmpty" hidden><span class="e-emo">🎖️</span><p>还差一点就解锁第一枚徽章啦，去课程中心开启学习吧</p></div>
+      <div class="empty" id="badgesEmpty" hidden><span class="e-emo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span><p>还差一点就解锁第一枚徽章啦，去课程中心开启学习吧</p></div>
       <div class="badges badges-strip" id="badgesStrip"></div>
     </div>
 
