@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EduAgent Clay Gate A 变体选择器</title>
+  <style>
+    :root{color-scheme:light;--bg:#ECEAF1;--panel:#FFFFFF;--ink:#17151F;--muted:#615D6E;--line:#D8D4E0;--accent:#2E2A3F}
+    *{box-sizing:border-box}html{min-width:320px;background:var(--bg)}body{margin:0;color:var(--ink);background:var(--bg);font:500 15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}.page{width:min(1540px,calc(100% - 32px));margin:auto;padding:36px 0 60px}.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}.hero h1{margin:0;font-size:clamp(30px,4vw,54px);letter-spacing:-.045em;line-height:1}.hero p{max-width:600px;margin:10px 0 0;color:var(--muted)}.instruction{max-width:420px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);font-weight:750}.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}.legend span{padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:12px;font-weight:800}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 10px 28px rgba(46,42,63,.08)}.preview{position:relative;height:320px;overflow:hidden;background:#F7F5FB;border-bottom:1px solid var(--line)}iframe{position:absolute;inset:0;width:160%;height:160%;border:0;transform:scale(.625);transform-origin:top left;pointer-events:none}.meta{padding:16px}.title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.title-row h2{margin:0;font-size:18px}.tag{flex:0 0 auto;padding:5px 9px;border-radius:999px;color:#4A445D;background:#EEEAF7;font-size:11px;font-weight:900}.desc{min-height:46px;margin:10px 0 14px;color:var(--muted);font-size:13px}.open{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 15px;border-radius:12px;color:white;background:var(--accent);text-decoration:none;font-weight:850}.open:hover{background:#443F58}.open:focus-visible{outline:3px solid #FF7A6B;outline-offset:3px}.group-label{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:12px 0 -4px;font-size:13px;font-weight:900;color:var(--muted)}.group-label::after{content:"";height:1px;flex:1;background:var(--line)}
+    @media(max-width:1080px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{align-items:flex-start;flex-direction:column}.instruction{max-width:none}.group-label{grid-column:1/-1}}
+    @media(max-width:700px){.page{width:min(100% - 20px,1540px);padding-top:22px}.grid{grid-template-columns:1fr}.preview{height:350px}.group-label{grid-column:1}.desc{min-height:0}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero"><div><h1>Clay Gate A 变体选择器</h1><p>九个原型全部位于隔离面，不连接真实接口，也不改动生产页面。缩略图用于快速扫视，请在新页中按真实尺寸判断。</p></div><div class="instruction">挑款方式：登录、对话、管理端各选一个字母，例如 <strong>登录 B / 对话 A / 管理端 A</strong>。</div></header>
+    <div class="legend" aria-label="评审重点"><span>正文对比度 ≥ 4.5:1</span><span>CTA 对比度 5.43:1</span><span>44px 点按区</span><span>140ms 触感反馈</span><span>断网可渲染</span></div>
+    <section class="grid" aria-label="九个设计变体">
+      <div class="group-label">登录注册 · 探索配色浓度</div>
+      <article class="card"><div class="preview"><iframe src="login-a.html" title="登录 A 云朵奶昔缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>登录 A · 云朵奶昔</h2><span class="tag">奶昔淡</span></div><p class="desc">低浓度粉彩与轻影，降低视觉负荷，适合高频登录与更广年龄跨度。</p><a class="open" href="login-a.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="login-b.html" title="登录 B 标准粉彩缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>登录 B · 标准粉彩</h2><span class="tag">标准粉彩</span></div><p class="desc">完整使用 lavender、sky、pink 三组表面色，活泼度与信息清晰度保持平衡。</p><a class="open" href="login-b.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="login-c.html" title="登录 C 糖果高能缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>登录 C · 糖果高能</h2><span class="tag">高饱和糖果</span></div><p class="desc">大面积 lavender 与高纯度点缀，记忆点最强，但长时间使用的视觉压力也最高。</p><a class="open" href="login-c.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+
+      <div class="group-label">AI 对话 · 探索气泡质感</div>
+      <article class="card"><div class="preview"><iframe src="chat-a.html" title="对话 A 纯色块缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>对话 A · 纯色块</h2><span class="tag">纯色块</span></div><p class="desc">气泡用明确纯色区分用户与 AI，最利于长对话扫读，黏土感集中在关键组件。</p><a class="open" href="chat-a.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="chat-b.html" title="对话 B 渐变黏土缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>对话 B · 渐变黏土</h2><span class="tag">渐变黏土</span></div><p class="desc">双色渐变配合三层同色相阴影，触感柔软饱满，视觉表现与可读性较均衡。</p><a class="open" href="chat-b.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="chat-c.html" title="对话 C 厚度描边缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>对话 C · 厚度描边</h2><span class="tag">带厚度描边</span></div><p class="desc">深色描边与底部厚度强化玩具触感，状态边界最明确，整体重量也最强。</p><a class="open" href="chat-c.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+
+      <div class="group-label">管理端 · 探索黏土浓度与双密度</div>
+      <article class="card"><div class="preview"><iframe src="admin-a.html" title="管理端 A Clay Light 缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>管理 A · Clay Light</h2><span class="tag">L0 表格</span></div><p class="desc">侧栏与统计卡保留品牌触感，10 行表格降为 L0 平面，扫描效率最高。</p><a class="open" href="admin-a.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="admin-b.html" title="管理端 B 半黏土缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>管理 B · 半黏土</h2><span class="tag">容器黏土</span></div><p class="desc">导航、指标和表格容器采用黏土，数据行保持平面，品牌感与密度居中。</p><a class="open" href="admin-b.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+      <article class="card"><div class="preview"><iframe src="admin-c.html" title="管理端 C 全黏土缩略图" loading="lazy"></iframe></div><div class="meta"><div class="title-row"><h2>管理 C · 全黏土</h2><span class="tag">数据行黏土</span></div><p class="desc">所有层级都使用体积与阴影，风格最完整，也最能暴露数据密集场景的上限。</p><a class="open" href="admin-c.html" target="_blank" rel="noopener">在新页打开</a></div></article>
+    </section>
+  </main>
+  <!-- variant: index axis: 九宫格挑款 -->
+</body>
+</html>

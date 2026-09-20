@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EduAgent 对话原型 A - 纯色块</title>
+  <style>
+    :root {
+      --bg-app:#F7F5FB; --bg-raised:#FFFFFF;
+      --clay-lavender:#B8A6FF; --clay-sky:#9EC9F0; --clay-mint:#7DD4A8; --clay-peach:#FFB59E; --clay-pink:#F5B8D0; --clay-lemon:#F5D77A;
+      --cta-coral:#FF7A6B; --status-active:#7DD4A8; --status-pending:#F5D77A; --status-archived:#C9B5FF;
+      --text-strong:#2E2A3F; --text-muted:#6B6580; --cta-text:#2E2A3F; /* 5.43:1 against #FF7A6B */
+      --radius-card:28px; --radius-btn:18px; --radius-input:16px; --radius-pill:999px; --radius-icon-tile:20px;
+      --clay-shadow-lavender:8px 8px 24px rgba(122,100,220,.35), inset -6px -6px 16px rgba(122,100,220,.25), inset 6px 6px 16px rgba(255,255,255,.55);
+      --clay-shadow-sky:8px 8px 24px rgba(80,142,196,.26), inset -6px -6px 16px rgba(80,142,196,.20), inset 6px 6px 16px rgba(255,255,255,.55);
+      --clay-shadow-coral:8px 8px 24px rgba(214,82,70,.28), inset -6px -6px 16px rgba(214,82,70,.20), inset 6px 6px 16px rgba(255,255,255,.44);
+    }
+    *{box-sizing:border-box} html{min-width:320px;background:var(--bg-app)} body{margin:0;min-height:100dvh;overflow-x:hidden;color:var(--text-strong);background:var(--bg-app);font:500 15px/1.55 "PingFang SC","Microsoft YaHei",sans-serif} button,textarea{font:inherit}:focus-visible{outline:3px solid var(--text-strong);outline-offset:3px}
+    .app{width:min(1280px,100%);min-height:100dvh;margin:auto;padding:16px;display:grid;grid-template-rows:auto 1fr;gap:16px}
+    .topbar{min-height:64px;display:flex;align-items:center;gap:16px;padding:10px 16px;border-radius:var(--radius-card);background:var(--bg-raised);box-shadow:8px 8px 24px rgba(122,100,220,.16)}
+    .logo{display:grid;place-items:center;width:44px;height:44px;border-radius:var(--radius-icon-tile);background:var(--clay-lavender);box-shadow:var(--clay-shadow-lavender);font-weight:950}.brand{font-weight:950}.axis{margin-left:auto;padding:8px 14px;border-radius:var(--radius-pill);background:var(--clay-lemon);font-size:12px;font-weight:900}
+    .layout{min-height:0;display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px}
+    .sidebar{min-width:0;padding:18px;border-radius:var(--radius-card);background:color-mix(in srgb,var(--clay-sky) 28%,white);box-shadow:var(--clay-shadow-sky)}
+    .side-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.side-head h2{margin:0;font-size:18px}.new{min-width:44px;min-height:44px;border:0;border-radius:14px;color:var(--text-strong);background:var(--clay-mint);font-weight:950;cursor:pointer}
+    .threads{min-width:0;max-width:100%;display:grid;gap:10px}.thread{min-height:64px;padding:11px 12px;border:0;border-radius:16px;text-align:left;color:var(--text-strong);background:rgba(255,255,255,.54);cursor:pointer}.thread b,.thread small{display:block}.thread small{margin-top:3px;color:var(--text-muted)}.thread.active{background:var(--clay-lavender);box-shadow:4px 4px 12px rgba(122,100,220,.22);font-weight:900}.thread.active small{color:var(--text-strong)}
+    .main{min-width:0;min-height:0;display:grid;grid-template-rows:auto 1fr auto;border-radius:var(--radius-card);background:var(--bg-raised);box-shadow:8px 8px 26px rgba(122,100,220,.18);overflow:hidden}
+    .chat-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:2px solid color-mix(in srgb,var(--clay-lavender) 32%,white)}.bot{display:grid;place-items:center;width:46px;height:46px;border-radius:var(--radius-icon-tile);background:var(--clay-lavender);box-shadow:var(--clay-shadow-lavender);font-size:23px}.chat-head h1{margin:0;font-size:20px}.chat-head p{margin:2px 0 0;color:var(--text-muted);font-size:13px}.online{margin-left:auto;padding:7px 12px;border-radius:var(--radius-pill);background:var(--clay-mint);font-size:12px;font-weight:900}
+    .stream{padding:24px;overflow:auto;background:linear-gradient(180deg,var(--bg-app),white 42%)}
+    .message{display:flex;align-items:flex-end;gap:10px;max-width:780px;margin-bottom:20px}.message>div:last-child{min-width:0}.message.user{margin-left:auto;flex-direction:row-reverse}.avatar{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:15px;background:var(--clay-lemon)}.bubble{min-width:0;overflow-wrap:anywhere;padding:16px 18px;border-radius:22px;background:var(--clay-lavender)}.user .bubble{background:var(--clay-peach)}.bubble p{margin:0}.meta{margin-top:7px;color:#504A65;font-size:11px}
+    .markdown h3{margin:0 0 10px;font-size:18px}.markdown p{margin:0 0 10px}.markdown ul{margin:8px 0 12px;padding-left:20px}.markdown li+li{margin-top:5px}.markdown code{padding:2px 6px;border-radius:8px;color:#F7F5FB;background:var(--text-strong);font:600 13px/1.4 Consolas,monospace}
+    .hitl{max-width:650px;margin:6px 0 22px 52px;padding:18px;border-radius:var(--radius-card);background:var(--clay-lemon);box-shadow:8px 8px 22px rgba(190,149,35,.24),inset 5px 5px 14px rgba(255,255,255,.46)}.hitl h3{margin:0 0 7px;font-size:17px}.hitl p{margin:0;color:#504A65}.hitl-actions{display:flex;gap:10px;margin-top:16px}.btn{min-height:44px;border:0;border-radius:14px;padding:0 18px;color:var(--text-strong);font-weight:950;cursor:pointer;transition:transform 140ms ease}.btn:hover{transform:translateY(-2px)}.btn:active{transform:scale(.97)}.confirm{background:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}.cancel{background:rgba(255,255,255,.66)}
+    .composer{padding:16px 20px 20px;background:white}.context{display:inline-flex;margin-bottom:10px;padding:6px 11px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--clay-mint) 38%,white);font-size:12px;font-weight:800}.input-row{display:grid;grid-template-columns:1fr 52px;gap:10px}.input-row textarea{min-height:54px;max-height:130px;resize:vertical;border:0;border-radius:var(--radius-input);padding:15px 16px;color:var(--text-strong);background:color-mix(in srgb,var(--clay-lavender) 14%,white);box-shadow:inset 3px 3px 8px rgba(122,100,220,.18),inset -3px -3px 8px rgba(255,255,255,.9)}.send{width:52px;height:52px;border:0;border-radius:var(--radius-btn);color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-coral);cursor:pointer;font-weight:950}
+    @media(max-width:760px){.app{padding:8px}.layout{grid-template-columns:1fr}.sidebar{padding:12px}.side-head{margin-bottom:10px}.threads{display:flex;overflow:auto;padding-bottom:6px}.thread{flex:0 0 190px}.main{min-height:720px}.axis{display:none}.stream{padding:18px 14px}.hitl{margin-left:0}.message{max-width:92%}}
+    @media(max-width:460px){.topbar{padding:8px 10px}.brand{font-size:14px}.chat-head{padding:14px}.online{display:none}.stream{padding-inline:10px}.avatar{display:none}.message{max-width:96%}.hitl-actions{flex-direction:column}.input-row{grid-template-columns:1fr 48px}.send{width:48px;height:48px}}
+    @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}.btn:hover,.btn:active{transform:none}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar"><div class="logo" aria-hidden="true">EA</div><div class="brand">EduAgent 智能问答</div><span class="axis">纯色块 · 清晰轻快</span></header>
+    <div class="layout">
+      <aside class="sidebar" aria-label="会话列表"><div class="side-head"><h2>最近对话</h2><button class="new" type="button" aria-label="新建对话">＋</button></div><div class="threads"><button class="thread active" type="button"><b>Python 自动化入门</b><small>刚刚</small></button><button class="thread" type="button"><b>错题复盘计划</b><small>今天 09:42</small></button><button class="thread" type="button"><b>第三章重点整理</b><small>昨天</small></button><button class="thread" type="button"><b>本周学习安排</b><small>周一</small></button></div></aside>
+      <main class="main">
+        <header class="chat-head"><div class="bot" aria-hidden="true">🤖</div><div><h1>AI 学习助教</h1><p>基于《脚本与自动化编程》课程资料</p></div><span class="online">知识库已连接</span></header>
+        <section class="stream" aria-label="消息流">
+          <article class="message user"><div class="avatar" aria-hidden="true">🙂</div><div><div class="bubble"><p>能用 Markdown 帮我总结 Python 自动化脚本的学习重点吗？</p></div><div class="meta">10:24</div></div></article>
+          <article class="message"><div class="avatar" aria-hidden="true">🤖</div><div><div class="bubble markdown"><h3>Python 自动化学习重点</h3><p>先掌握可重复执行的小任务，再逐步连接文件与网络能力。</p><ul><li><strong>文件处理：</strong>使用 <code>pathlib</code> 管理路径。</li><li><strong>数据整理：</strong>用字典与列表处理结构化数据。</li><li><strong>可靠执行：</strong>为外部输入增加校验和错误提示。</li></ul><p>建议先完成“批量整理课程资料”练习。</p></div><div class="meta">10:24 · 引用 3 份课程资料</div></div></article>
+          <section class="hitl" aria-labelledby="hitl-a-title"><h3 id="hitl-a-title">需要你确认</h3><p>是否把本次总结保存到“第三章复习笔记”？保存后可在课程详情中继续编辑。</p><div class="hitl-actions"><button class="btn confirm" type="button">确认保存</button><button class="btn cancel" type="button">暂不保存</button></div></section>
+        </section>
+        <footer class="composer"><span class="context">已关联：脚本与自动化编程 第 3 讲</span><div class="input-row"><textarea rows="1" aria-label="输入问题" placeholder="继续追问课程内容"></textarea><button class="send" type="button" aria-label="发送问题">➤</button></div></footer>
+      </main>
+    </div>
+  </div>
+  <!-- variant: chat-a axis: 气泡质感-纯色块 -->
+</body>
+</html>
