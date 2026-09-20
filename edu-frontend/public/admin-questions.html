@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端题库 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <!--
   task107 真实接入（W1 · admin-questions.html 真实接入题库 API） — 后续审计以本文档为准
   - P15 风格 candy-playful frozen（复用 task56/57/58 同源样式）
@@ -322,6 +323,116 @@
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 📚/⚠ 为行为层冻结面（📚 用 font-size:0+mask sprite 视觉层消隐）。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-blue:var(--clay-mint); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --subj-bg:#EAE4FF; --subj-ink:var(--text-strong);
+  --rowbad-bg:#FAF0F4; --rowbad-ink:var(--status-danger);
+  --sky-6:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 页头/Tabs/返回 --- */
+.admin-html-page .back-link{color:var(--text-muted)!important;min-height:44px}
+.admin-html-page .back-link:hover{color:var(--text-strong)!important}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .tabs{background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)}
+.admin-html-page .tab{min-height:44px;color:var(--text-strong)!important}
+.admin-html-page .tab.on{background:var(--clay-pink)!important;background-image:none!important;color:var(--text-strong)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .fld select,.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .fld label{color:var(--text-muted)}
+.admin-html-page .fld select:focus,.admin-html-page .fld input:focus{outline:2px solid var(--focus-ring);border-color:var(--focus-ring)}
+.admin-html-page .ft-note{color:var(--text-muted)}
+.admin-html-page .ft-note code{background:#EEF0F5;color:var(--text-strong)}
+.admin-html-page .toolbar-meta{color:var(--text-muted)}
+.admin-html-page .cur-bank .bn{color:var(--text-strong)!important}
+.admin-html-page .req-chip{color:var(--text-strong)!important}
+
+/* --- 表格/空态 --- */
+.admin-html-page .tbl-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .prim-cell .ico{font-size:0;color:var(--text-strong);background:var(--clay-sky)!important;border-radius:var(--radius-icon-tile)}
+.admin-html-page .prim-cell .ico::after{content:"";width:20px;height:20px;background-color:var(--text-strong);
+  -webkit-mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain;mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain}
+.admin-html-page .prim-cell .nm{color:var(--text-strong)}
+.admin-html-page .prim-cell .cd{color:var(--text-muted)}
+.admin-html-page .tag-chips{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .nb,.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .cell-strong{color:var(--text-strong)}
+.admin-html-page .st-ico{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .state b{color:var(--text-strong)!important}
+
+/* --- 下拉/分页/弹窗 --- */
+.admin-html-page .dd-btn{min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important}
+.admin-html-page .dd-btn:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .dd-menu{border-radius:var(--radius-input);background:var(--bg-raised)}
+.admin-html-page .dd-item{min-height:44px;color:var(--text-strong)!important;border-radius:var(--radius-input)}
+.admin-html-page .dd-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .dd-item.danger{color:var(--status-danger)!important}
+.admin-html-page .dd-item.danger:hover{background:#FAF0F4!important;color:var(--status-danger)!important}
+.admin-html-page .dd-item .go{color:var(--text-strong)!important}
+.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+.admin-html-page .pager button{flex:0 0 auto;width:44px;height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .modal .mh,.admin-html-page .modal .mfoot{border-color:var(--bg-input)}
+.admin-html-page .modal .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong);min-height:44px}
+.admin-html-page .modal .mff textarea{min-height:64px}
+.admin-html-page .modal .mff label,.admin-html-page .field-tip{color:var(--text-muted)}
+.admin-html-page .modal .mff .err{color:var(--status-danger)!important}
+.admin-html-page .confirm .c-ico{background:var(--bg-raised)!important;color:var(--status-danger)!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .confirm .c-msg p{color:var(--text-muted)}
+.admin-html-page .up-drop{color:var(--text-muted);border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .up-drop:hover,.admin-html-page .up-drop.drag{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .up-prog{background:#EEF0F5}
+.admin-html-page .up-prog i{background-image:linear-gradient(90deg,var(--clay-mint),var(--clay-moss))}
+.admin-html-page .up-meta,.admin-html-page .up-file .meta{color:var(--text-muted)}
+.admin-html-page .up-file{background:#FAFBFF;border-color:var(--bg-input)}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
 </head>
 <body class="admin-html-page">
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -342,7 +453,7 @@
 </header>
 <div class="wrap">
 
-  <a class="back-link" href="#">← 管理首页</a>
+  <a class="back-link" href="#"><svg class="ic"><use href="/assets/icons/icons.svg#ic-arrow-left"/></svg> 管理首页</a>
 
   <div class="page-head">
     <div>
@@ -350,8 +461,8 @@
       <div class="sub">题库 → 题目 两级管理 · 真实接入后端 API · /admin/questions</div>
     </div>
     <div class="act">
-      <button class="btn btn-ghost" id="btn-import" onclick="openImport(1)">⬆ 批量导入</button>
-      <button class="btn btn-primary" onclick="openBankForm()">＋ 新建题库</button>
+      <button class="btn btn-ghost" id="btn-import" onclick="openImport(1)"><svg class="ic"><use href="/assets/icons/icons.svg#ic-upload-simple"/></svg> 批量导入</button>
+      <button class="btn btn-primary" onclick="openBankForm()"><svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 新建题库</button>
     </div>
   </div>
 
@@ -384,12 +495,12 @@
         <tbody id="bank-body"></tbody>
       </table>
       <div id="bank-empty" class="state hidden">
-        <div class="st-ico">📭</div>
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
         <div><b style="color:var(--ink)">暂无题库</b></div>
-        <p style="margin:4px 0 0">点击右上角「＋新建题库」开始建设题库资产</p>
+        <p style="margin:4px 0 0">点击右上角「新建题库」开始建设题库资产</p>
       </div>
       <div id="bank-error" class="state hidden">
-        <div class="st-ico">⚠️</div>
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
         <div><b style="color:var(--ink)">加载失败</b></div>
         <p style="margin:4px 0 12px" id="bank-err-msg">后端不可用，请稍后重试</p>
         <button class="btn btn-ghost btn-mini" onclick="renderBanks('success')">重试</button>
@@ -426,17 +537,17 @@
         <tbody id="q-body"></tbody>
       </table>
       <div id="q-none" class="state">
-        <div class="st-ico">🧩</div>
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
         <div><b style="color:var(--ink)">请先在「题库」选中一个题库</b></div>
         <p style="margin:4px 0 0">在题库 Tab 点击任一行的「管理」，题目列表将切到该题库</p>
       </div>
       <div id="q-empty" class="state hidden">
-        <div class="st-ico">📭</div>
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
         <div><b style="color:var(--ink)">该题库暂无题目</b></div>
         <p style="margin:4px 0 0">可点击右上角「批量导入」或后续「新建题目」填充</p>
       </div>
       <div id="q-error" class="state hidden">
-        <div class="st-ico">⚠️</div>
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
         <div><b style="color:var(--ink)">题目加载失败</b></div>
         <p style="margin:4px 0 12px">题库题目接口不可用，请稍后重试</p>
         <button class="btn btn-ghost btn-mini" onclick="renderQuestions('success')">重试</button>
@@ -474,7 +585,7 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
           <div>
             <b>删除题库「<span id="del-bank-name"></span>」？</b>
             <p>该题库下共有 <b id="del-bank-cnt">0</b> 道题。删除为<b>软删</b>（yn=0），题库与其下题目将不再展示，但<b>不会物理删除数据</b>。请二次确认。</p>
@@ -493,7 +604,7 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
           <div>
             <b>删除题目「<span id="del-q-code"></span>」？</b>
             <p>软删（yn=0），题目将不再出现在选题与组卷中。已发布的考试快照（session_exam_question_rel）不受影响。</p>
