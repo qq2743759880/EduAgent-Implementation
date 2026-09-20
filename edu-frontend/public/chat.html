@@ -208,8 +208,12 @@ textarea{font-family:inherit}
 /* ===== 移动端抽屉（会话列表；z-index 70/80 与显隐语义冻结）===== */
 .scrim{position:fixed;inset:0;background:rgba(46,42,63,.35);z-index:70;display:none}
 .scrim.open{display:block}
-.drawer{position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);background:var(--bg-app);z-index:80;padding:16px;border:0;box-shadow:var(--clay-shadow-raised);display:flex;flex-direction:column;transform:translateX(-105%);visibility:hidden;transition:transform .22s var(--ease-clay),visibility 0s .22s}
-.drawer.open{transform:translateX(0);visibility:visible;transition:transform .22s var(--ease-clay),visibility 0s 0s}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);background:var(--bg-app);z-index:80;padding:16px;border:0;box-shadow:var(--clay-shadow-raised);display:flex;flex-direction:column;transform:translateX(-105%);transition:transform .22s var(--ease-clay)}
+.drawer.open{transform:translateX(0)}
+/* 关闭态只隐藏子元素（抽屉本体保持布局可见，z 层表与 G6 冻结快照一致）：
+   子元素 visibility:hidden → 不可 Tab 聚焦（G7 focus-not-obscured），开启时随滑动恢复 */
+.drawer:not(.open) *{visibility:hidden;transition:visibility 0s .22s}
+.drawer.open *{visibility:visible;transition:visibility 0s 0s}
 .drawer .close{align-self:flex-end;min-width:44px;min-height:44px;border:none;background:var(--bg-raised);border-radius:var(--radius-btn);font-weight:800;color:var(--text-strong);margin-bottom:6px;box-shadow:var(--clay-shadow-light)}
 .drawer .side{width:auto;min-height:0;flex:1;border:0}
 
