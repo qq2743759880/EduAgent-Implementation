@@ -25,6 +25,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端仪表盘 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
 /* ===== 糖果色 tokens（对齐 globals.css + chart-palette.ts §1.7，业务区禁止硬编码 hex/内联色/任意字号/灰系）===== */
 :root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
@@ -257,6 +258,98 @@ button{font-family:inherit;cursor:pointer}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域：本页 <style> 为单文件隔离，不会外溢；
+   不新增 body 类，以保持 G7 冻结 cssPath（body.admin-html-page > …）逐字节稳定。
+   z-index 层级表与全部布局黑名单属性未动。
+   图表数据区（.panel）按批款红线降级 clay-light（记录于 REPORT-PAGE-WAVES-C）。 */
+.admin-html-page{
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --muted:var(--text-muted); --white:var(--bg-raised); --candy-bg:var(--bg-app); --line:var(--bg-input);
+  --candy-orange-deep:var(--status-danger); --candy-red-deep:#8f2d36;
+  /* §7.5 图表调色盘 → 六表面色 + coral（禁默认蓝紫；JS 注入的 var(--chart-*) 在此重映射） */
+  --chart-indigo:var(--clay-moss); --chart-emerald:var(--clay-mint); --chart-amber:var(--clay-lemon);
+  --chart-rose:var(--clay-peach); --chart-blue:var(--clay-sky); --chart-purple:var(--clay-lavender);
+  --chart-slate:var(--text-muted); --chart-indigo-light:color-mix(in srgb,var(--clay-moss) 55%,#fff);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+
+/* --- 顶栏 gnav（aihub 布局保持，色彩走令牌）--- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:color-mix(in srgb,var(--clay-moss) 30%,var(--bg-raised))!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- KPI 指标卡：全黏土六表面（批款浓度 C）--- */
+.admin-html-page .kpis{gap:var(--space-4)!important}
+.admin-html-page .kpi{background:var(--clay-moss)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .kpi:nth-of-type(2){background:var(--clay-sky)!important;box-shadow:var(--clay-shadow-sky)!important}
+.admin-html-page .kpi:nth-of-type(3){background:var(--clay-mint)!important;box-shadow:var(--clay-shadow-mint)!important}
+.admin-html-page .kpi:nth-of-type(4){background:var(--clay-peach)!important;box-shadow:var(--clay-shadow-peach)!important}
+.admin-html-page .kpi:nth-of-type(5){background:var(--clay-pink)!important;box-shadow:var(--clay-shadow-pink)!important}
+.admin-html-page .kpi:nth-of-type(6){background:var(--clay-lemon)!important;box-shadow:var(--clay-shadow-lemon)!important}
+.admin-html-page .kpi .lb{color:var(--text-strong)}
+.admin-html-page .kpi .val{color:var(--text-strong)}
+.admin-html-page .kpi .val small{color:var(--text-strong)}
+.admin-html-page .kpi .role{color:var(--text-strong)}
+.admin-html-page .kpi .role .cnt{color:var(--text-strong)}
+.admin-html-page .kpi .ic{color:var(--text-strong)!important;border:0!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .kpi .ic.indigo{background:color-mix(in srgb,var(--clay-sky) 62%,#fff)!important;box-shadow:3px 4px 10px rgba(80,142,196,.24)!important}
+.admin-html-page .kpi .ic.rose{background:color-mix(in srgb,var(--clay-peach) 62%,#fff)!important;box-shadow:3px 4px 10px rgba(218,111,82,.24)!important}
+.admin-html-page .kpi .ic>svg.ic{width:22px;height:22px;border:0;border-radius:0;display:block}
+
+/* --- 图表面板：clay-light 降级（数据区可读性红线）--- */
+.admin-html-page .panel{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .panel .p-title{color:var(--text-strong)}
+.admin-html-page .panel .p-title .pill{background:var(--clay-lemon)!important;border:0!important;color:var(--text-strong)!important;border-radius:var(--radius-pill)!important}
+.admin-html-page .panel .p-sub{color:var(--text-muted)}
+.admin-html-page .chart{background:var(--bg-raised);border-radius:var(--radius-input)}
+.admin-html-page .bar{background:var(--chart-indigo);border:0;border-radius:10px 10px 0 0}
+.admin-html-page .bar .hv{color:var(--text-strong)}
+.admin-html-page .bar-col .bl{color:var(--text-muted)}
+.admin-html-page .donut{border:0;box-shadow:var(--clay-shadow-light)!important;background-color:var(--bg-raised)}
+.admin-html-page .donut::before{border-color:var(--bg-input)}
+.admin-html-page .donut .center span{color:var(--text-muted)}
+.admin-html-page .legend .lg{color:var(--text-strong)}
+.admin-html-page .legend .lg .sw{border-color:var(--bg-input)}
+
+/* --- 占位/状态卡 --- */
+.admin-html-page .demo-note{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-input)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-muted)!important}
+.admin-html-page .demo-note b{color:var(--text-strong)}
+.admin-html-page .demo-note .warn{color:var(--status-danger)!important}
+.admin-html-page .updated{background:var(--clay-lemon)!important;border:0!important;color:var(--text-strong)!important;border-radius:var(--radius-pill)!important}
+.admin-html-page .fallback{background:var(--clay-lemon)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-lemon)!important}
+.admin-html-page .fallback h3{color:var(--text-strong)}
+.admin-html-page .fallback p{color:var(--text-strong)}
+.admin-html-page .fallback .fb-emoji{color:var(--text-strong)}
+.admin-html-page .fallback .fb-flag{background:var(--clay-peach)!important;border:0!important;color:var(--text-strong)!important;border-radius:var(--radius-pill)!important}
+.admin-html-page #view-empty .state{background:var(--clay-lemon)!important;box-shadow:var(--clay-shadow-lemon)!important}
+.admin-html-page #view-error .state{background:var(--clay-peach)!important;box-shadow:var(--clay-shadow-peach)!important}
+.admin-html-page .state{border:0!important;border-radius:var(--radius-card)!important;color:var(--text-strong)!important}
+.admin-html-page .state h3{color:var(--text-strong)}
+.admin-html-page .state p{color:var(--text-strong)}
+.admin-html-page .state .st-emoji{color:var(--text-strong)}
+.admin-html-page .retry{background:var(--cta-coral)!important;border:0!important;color:var(--cta-text)!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-coral)!important;min-height:44px;min-width:44px}
+.admin-html-page .retry:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .sk-card{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+
+/* --- reduced-motion：动画瞬时完成，运行计数归零 --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .retry:active{transform:none}
+}
+</style>
 </head>
 <body class="admin-html-page">
 <!-- respbar 演示工具条已移除（critique C4）；数据由 window.bootAdmin() 真实接口渲染 -->
@@ -296,47 +389,43 @@ button{font-family:inherit;cursor:pointer}
     <!-- KPI 指标卡 6（字段对齐 DashboardMetrics，curl 实测 2026-09-12） -->
     <div class="kpis">
       <div class="kpi">
-        <span class="ic indigo" aria-hidden="true">👥</span>
+        <span class="ic indigo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-users"/></svg></span>
         <div class="kv">
           <div class="lb">用户总数</div>
           <div class="val" id="kpi-total">—</div>
         </div>
       </div>
       <div class="kpi">
-        <span class="ic green" aria-hidden="true">⚡</span>
         <div class="kv">
           <div class="lb">7d 活跃用户</div>
           <div class="val" id="kpi-active7d">—</div>
         </div>
       </div>
       <div class="kpi">
-        <span class="ic green" aria-hidden="true">🚀</span>
         <div class="kv">
           <div class="lb">7d 新增注册</div>
           <div class="val" id="kpi-newreg7d">—</div>
         </div>
       </div>
       <div class="kpi">
-        <span class="ic rose" aria-hidden="true">🚫</span>
+        <span class="ic rose" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
         <div class="kv">
           <div class="lb">禁用账号</div>
           <div class="val" id="kpi-disabled">—</div>
         </div>
       </div>
       <div class="kpi">
-        <span class="ic indigo" aria-hidden="true">🧭</span>
         <div class="kv">
           <div class="lb">角色分布</div>
           <div class="role">
-            <span title="admin">👑<b class="cnt" id="rb-admin">—</b></span>
-            <span title="manager">🛠<b class="cnt" id="rb-manager">—</b></span>
-            <span title="teacher">👩‍🏫<b class="cnt" id="rb-teacher">—</b></span>
-            <span title="student">🎓<b class="cnt" id="rb-student">—</b></span>
+            <span title="admin">管理员 <b class="cnt" id="rb-admin">—</b></span>
+            <span title="manager">运营 <b class="cnt" id="rb-manager">—</b></span>
+            <span title="teacher">教师 <b class="cnt" id="rb-teacher">—</b></span>
+            <span title="student">学员 <b class="cnt" id="rb-student">—</b></span>
           </div>
         </div>
       </div>
       <div class="kpi">
-        <span class="ic indigo" aria-hidden="true">📅</span>
         <div class="kv">
           <div class="lb">30d 人均登录（天）</div>
           <div class="val"><span id="kpi-avglogin">—</span><small> 天</small></div>
@@ -346,7 +435,7 @@ button{font-family:inherit;cursor:pointer}
 
     <!-- 图表区：注册趋势 + 角色饼图（数据就绪后由 bootAdmin 渲染） -->
     <div class="grid2">
-      <div class="panel">
+      <div class="panel clay-light">
         <div class="p-title">近 7 天注册趋势 <span class="pill">真实数据</span></div>
         <div class="p-sub">每日新增注册用户数 · 单系列 primary（§1.7）</div>
         <div class="chart">
@@ -363,7 +452,7 @@ button{font-family:inherit;cursor:pointer}
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel clay-light">
         <div class="p-title">角色分布 <span class="pill">多系列</span></div>
         <div class="p-sub">按 §1.7 饼图疏色序：admin/student/teacher/manager</div>
         <div class="donut" id="donut-real" style="background:conic-gradient(var(--ht-eee) 0% 100%)" role="img" aria-label="角色分布加载中">
@@ -380,11 +469,11 @@ button{font-family:inherit;cursor:pointer}
 
     <!-- 热门课程榜（契约缺口占位，禁 MOCK） -->
     <div class="fallback">
-      <span class="fb-emoji" aria-hidden="true">🏆</span>
+      <span class="fb-emoji" aria-hidden="true"><svg class="ic" style="width:38px;height:38px"><use href="/assets/icons/icons.svg#ic-trophy"/></svg></span>
       <div class="fb-txt">
         <h3>热门课程榜</h3>
         <p>订单数 / 营收 / 热门课程依赖管理端全局交易统计，功能开放后将在此呈现。</p>
-        <span class="fb-flag">⏳ 暂未开放</span>
+        <span class="fb-flag">暂未开放</span>
       </div>
     </div>
   </section>
@@ -414,20 +503,20 @@ button{font-family:inherit;cursor:pointer}
   <!-- ================= 空态（total_user_count=0 时诚实展示） ================= -->
   <section id="view-empty" hidden="">
     <div class="state" role="status">
-      <span class="st-emoji" aria-hidden="true">📭</span>
+      <span class="st-emoji" aria-hidden="true"><svg class="ic" style="width:46px;height:46px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
       <h3>暂无运营数据</h3>
       <p>当前数据库中没有用户（total_user_count=0）。注册产生数据后，指标与图表将在此展示。</p>
-      <button type="button" class="retry" onclick="loadDashboardMetrics()">⟳ 重新加载</button>
+      <button type="button" class="retry" onclick="loadDashboardMetrics()">重新加载</button>
     </div>
   </section>
 
   <!-- ================= 错误态 ================= -->
   <section id="view-error" hidden="">
     <div class="state" role="alert">
-      <span class="st-emoji" aria-hidden="true">😵</span>
+      <span class="st-emoji" aria-hidden="true"><svg class="ic" style="width:46px;height:46px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
       <h3>运营指标加载失败</h3>
       <p id="err-msg">无法连接数据接口，请检查网络或稍后重试。</p>
-      <button type="button" class="retry" onclick="loadDashboardMetrics()">⟳ 重试</button>
+      <button type="button" class="retry" onclick="loadDashboardMetrics()">重试</button>
     </div>
   </section>
 </div><!-- /.page -->
