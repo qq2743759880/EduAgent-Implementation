@@ -19,131 +19,144 @@
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <title>帖子详情 · EduAgent</title>
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
-:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-010: rgba(124,58,237,0.1); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-77-0-030: rgba(255,77,0,0.3); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-010: rgba(31,31,31,0.1); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-020: rgba(31,31,31,0.2); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3); --htc-88-204-2-035: rgba(88,204,2,0.35);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-1f1f1f: #1f1f1f; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f1f5f9: #f1f5f9; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-pink-soft:#ffe3f4; --candy-bg:#fff9f0;
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --candy-purple-deep:#5b21b6; --candy-yellow-deep:#c9a000; --candy-red-deep:#d63e3e;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  --gray-300:#cfcfcf; --white:#fff;
-  --border-chip:rgba(31,31,31,.15);
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-124-58-237-001: rgba(124, 58, 237, 0.001); --htc-31-31-31-002: rgba(31, 31, 31, 0.002); --htc-255-77-0-003: rgba(255, 77, 0, 0.003); --htc-31-31-31-001: rgba(31, 31, 31, 0.001); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f；社区域表面色=pink。
+   三层分离：仅动视觉层——id/class/data-*/状态类(.on)显隐语义、z-index(#gnav 130)冻结；
+   旧 candy 变量名保留为页内别名(L1)，供共享块 aihub-topnav-fix 与脚本内联样式继续解析。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix / 脚本内联样式仍引用，禁删）—— */
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --ink-faint:var(--text-muted); --muted:var(--text-muted); --foreground:var(--text-strong);
+  --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--clay-mint); --candy-green-deep:#2E7D4F; --candy-green-hover:var(--clay-mint);
+  --candy-purple-soft:#EFE9FF; --candy-purple:#5B4FC4; --candy-purple-deep:#5B4FC4;
+  --candy-orange:var(--cta-coral); --candy-orange-deep:#D65246; --candy-orange-hover:var(--cta-coral);
+  --candy-yellow:var(--clay-lemon); --candy-yellow-deep:#B8912F;
+  --candy-red:var(--status-danger); --candy-red-deep:var(--status-danger);
+  --candy-blue:#2B2E6E; --candy-pink:var(--clay-pink); --candy-pink-soft:#FDEDF4;
+  --gray-300:var(--text-muted);
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16);
+  --r:12px; --shadow:0 6px 18px rgba(78,126,66,.14);
+  /* —— 页内派生色（L1，仅本页）—— */
+  --page-accent:#5B4FC4    /* 淡紫底强调字：#EFE9FF 上 5.4:1 */
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:auto;min-height:100dvh}
-body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 88% 12%,rgba(245,184,208,.30),transparent 26rem),radial-gradient(circle at 6% 88%,rgba(184,166,255,.20),transparent 24rem);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
 textarea,input{font-family:inherit}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
 
-/* ===== 审核工具条（HTML 效果图专属，不进入 React）：flex 顶行，参与文档流→绝不与页面重叠 ===== */
 /* respbar 演示工具条样式已移除（critique C4） */
-.demo-note{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-bottom:12px;background:var(--white);border:2px solid var(--border-chip);border-radius:12px;padding:8px 12px}
 
 /* ===== 详情头 ===== */
 .back-row{display:flex;align-items:center;gap:10px}
-.back{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);background:var(--white);color:var(--ink);font-weight:800;font-size:0.8125rem;border-radius:999px;padding:6px 14px;box-shadow:0 3px 0 var(--htc-31-31-31-014);transition:transform .08s,box-shadow .08s}
-.back:hover{transform:translateY(-1px)}
-.back:active{transform:translateY(1px);box-shadow:none}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:2px solid transparent;background:var(--bg-raised);color:var(--text-strong);font-weight:800;font-size:0.8125rem;border-radius:var(--radius-pill);padding:6px 16px;box-shadow:var(--clay-shadow-light);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.back:hover{transform:translateY(-2px)}
+.back:active{transform:scale(.97)}
 .badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.board-tag{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:2px solid var(--ink);color:var(--ht-fff)}
-.board-tag.en{background:var(--candy-blue)} .board-tag.math{background:var(--candy-purple)}
-.board-tag.prog{background:var(--candy-green)} .board-tag.gen{background:var(--candy-orange)}
-.pin{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--ink);background:var(--candy-yellow);border:2px solid var(--ink);border-radius:8px;padding:2px 8px}
-.lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--ink-muted);border:2px solid var(--border-chip);border-radius:8px;padding:2px 8px}
-.post-title{font-size:26px;font-weight:900;line-height:1.25;letter-spacing:-.01em;color:var(--ink)}
-.post-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--ink-faint)}
-.post-meta .who{font-weight:800;color:var(--ink-strong)}
-.post-meta .sep-dot{color:var(--gray-300)}
+.board-tag{font-size:11px;font-weight:800;padding:2px 9px;border-radius:var(--radius-pill);border:0;color:var(--text-strong)}
+.board-tag.en{background:var(--clay-sky)} .board-tag.math{background:var(--clay-lavender)}
+.board-tag.prog{background:var(--clay-mint)} .board-tag.gen{background:var(--clay-peach)}
+.pin{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--text-strong);background:var(--clay-lemon);border:0;border-radius:8px;padding:2px 8px}
+.pin .ic{width:1em;height:1em}
+.lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--text-muted);border:2px solid var(--border-chip);border-radius:8px;padding:2px 8px}
+.post-title{font-size:26px;font-weight:900;line-height:1.25;letter-spacing:-.01em;color:var(--text-strong)}
+.post-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--text-muted)}
+.post-meta .who{font-weight:800;color:var(--text-strong)}
+.post-meta .sep-dot{color:var(--text-muted)}
 .post-meta .cmt i{font-style:normal;margin-right:2px}
+.post-meta .ic{width:1em;height:1em}
 
 /* ===== 操作行（点赞/收藏 react）===== */
 .actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
-.react-btn{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);font-weight:800;font-size:14px;border-radius:14px;padding:8px 16px;box-shadow:0 4px 0 var(--htc-31-31-31-002);transition:transform .1s,box-shadow .1s,background .1s}
-.react-btn:active{transform:translateY(2px);box-shadow:none}
-.react-btn.like{background:var(--white);color:var(--ink)}
-.react-btn.like.on{background:var(--candy-green);color:var(--ht-fff);box-shadow:0 4px 0 var(--candy-green-deep)}
-.react-btn.fav{background:var(--white);color:var(--ink)}
-.react-btn.fav.on{background:var(--candy-yellow);color:var(--ink);box-shadow:0 4px 0 var(--candy-yellow-deep)}
-.react-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
-.points-hint{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--candy-green-deep);background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-035);border-radius:999px;padding:4px 10px}
-.locked-banner{display:flex;align-items:center;gap:8px;font-size:0.8125rem;font-weight:700;color:var(--ink-muted);background:var(--candy-orange-soft);border:2px solid var(--htc-255-77-0-003);border-radius:12px;padding:8px 12px}
+.react-btn{display:inline-flex;align-items:center;gap:7px;min-height:44px;border:0;font-weight:800;font-size:14px;border-radius:var(--radius-btn);padding:8px 18px;box-shadow:var(--clay-shadow-light);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.react-btn:active{transform:scale(.97)}
+.react-btn.like{background:var(--bg-raised);color:var(--text-strong)}
+.react-btn.like.on{background:var(--clay-mint);color:var(--text-strong);box-shadow:var(--clay-shadow-mint)}
+.react-btn.fav{background:var(--bg-raised);color:var(--text-strong)}
+.react-btn.fav.on{background:var(--clay-lemon);color:var(--text-strong);box-shadow:var(--clay-shadow-lemon)}
+.react-btn .ic{width:1.05em;height:1.05em}
+.react-btn:disabled{opacity:.52;cursor:not-allowed;transform:none;box-shadow:none}
+.points-hint{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--text-strong);background:rgba(125,212,168,.22);border:0;border-radius:var(--radius-pill);padding:4px 10px}
+.locked-banner{display:flex;align-items:center;gap:8px;font-size:0.8125rem;font-weight:700;color:var(--text-strong);background-color:var(--clay-lemon);background-image:linear-gradient(145deg,#FFEBAB,var(--clay-lemon));border:2px dashed rgba(190,149,35,.45);border-radius:var(--radius-input);padding:8px 12px}
 
-/* ===== 正文 MarkdownView（prose 排版模拟）===== */
-.body-card{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:20px 22px}
-.md{font-size:0.9375rem;line-height:1.75;color:var(--ink)}
-.md h2{font-size:19px;font-weight:800;margin:18px 0 8px;color:var(--ink)}
-.md h3{font-size:1rem;font-weight:700;margin:14px 0 6px;color:var(--ink)}
+/* ===== 正文 MarkdownView（prose 排版模拟；§7.5 第三方渲染区：容器继承令牌、代码块深色底）===== */
+.body-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:20px 22px}
+.md{font-size:0.9375rem;line-height:1.75;color:var(--text-strong)}
+.md h2{font-size:19px;font-weight:800;margin:18px 0 8px;color:var(--text-strong)}
+.md h3{font-size:1rem;font-weight:700;margin:14px 0 6px;color:var(--text-strong)}
 .md p{margin:8px 0}
 .md ul,.md ol{margin:8px 0;padding-left:22px}
 .md li{margin:3px 0}
-.md blockquote{border-left:4px solid var(--candy-purple);padding-left:12px;color:var(--ink-muted);margin:10px 0;background:var(--candy-purple-soft);border-radius:0 10px 10px 0;padding:8px 12px}
-.md code{background:var(--candy-purple-soft);color:var(--candy-purple-deep);border-radius:6px;padding:1px 6px;font-size:0.8125rem}
-.md pre{background:var(--ht-1f1f1f);color:var(--ht-f1f5f9);border-radius:14px;padding:14px 16px;overflow-x:auto;margin:10px 0}
+.md blockquote{border-left:4px solid var(--clay-lavender);padding-left:12px;color:var(--text-strong);margin:10px 0;background:var(--candy-purple-soft);border-radius:0 10px 10px 0;padding:8px 12px}
+.md code{background:var(--candy-purple-soft);color:var(--page-accent);border-radius:6px;padding:1px 6px;font-size:0.8125rem}
+.md pre{background:var(--surface-code);color:var(--text-on-dark);border-radius:var(--radius-input);padding:14px 16px;overflow-x:auto;margin:10px 0}
 .md pre code{background:transparent;color:inherit;padding:0}
 .md a{color:var(--candy-blue);font-weight:600;text-decoration:underline}
 
 /* ===== 评论区 ===== */
 .comments{display:flex;flex-direction:column;gap:12px}
-.sec-title{display:flex;align-items:center;gap:8px;font-size:0.9375rem;font-weight:900;color:var(--ink)}
-.sec-title .pill{font-size:11px;font-weight:800;color:var(--ink-strong);background:var(--candy-yellow);border:2px solid var(--ink);border-radius:999px;padding:2px 9px}
-.composer{display:flex;flex-direction:column;gap:8px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:12px 14px}
-.composer textarea{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);resize:none;outline:none;min-height:64px;line-height:1.5}
-.composer textarea:focus{border-color:var(--candy-purple)}
-.composer textarea:disabled{background:var(--candy-bg);color:var(--ink-faint);cursor:not-allowed}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:0.9375rem;font-weight:900;color:var(--text-strong)}
+.sec-title .pill{font-size:11px;font-weight:800;color:var(--text-strong);background:var(--clay-lemon);border:0;border-radius:var(--radius-pill);padding:2px 9px}
+.sec-title .ic{width:1.05em;height:1.05em}
+.composer{display:flex;flex-direction:column;gap:8px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:12px 14px}
+.composer textarea{border:2px solid transparent;border-radius:var(--radius-input);padding:10px 12px;font-size:14px;color:var(--text-strong);resize:none;outline:none;min-height:64px;line-height:1.5;background:var(--bg-input);box-shadow:var(--clay-shadow-input)}
+.composer textarea:focus{border-color:var(--focus-ring)}
+.composer textarea:disabled{background:var(--bg-app);color:var(--text-muted);cursor:not-allowed;box-shadow:none}
 .composer .c-row{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.composer .c-hint{font-size:11px;color:var(--ink-faint);font-weight:700}
-.submit{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-orange);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-orange-deep);transition:transform .1s,box-shadow .1s}
-.submit:hover{background:var(--candy-orange-hover)}
-.submit:active{transform:translateY(1px);box-shadow:none}
-.submit:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.composer .c-hint{font-size:11px;color:var(--text-muted);font-weight:700}
+.submit{display:inline-flex;align-items:center;gap:7px;min-height:44px;border:0;background:var(--cta-coral);color:var(--cta-text);font-weight:800;font-size:0.8125rem;border-radius:var(--radius-btn);padding:7px 16px;box-shadow:var(--clay-shadow-coral);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.submit:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)}
+.submit .ic{width:1.05em;height:1.05em}
+.submit:disabled{opacity:.52;cursor:not-allowed;transform:none;box-shadow:none}
 .c-list{display:flex;flex-direction:column;gap:10px}
-.c-item{display:flex;flex-direction:column;gap:6px;background:var(--white);border:2px solid var(--ink);border-radius:var(--radius-md);box-shadow:0 3px 0 var(--htc-31-31-31-001);padding:12px 14px}
-.c-item.reply{margin-left:26px;border-style:dashed}
-.c-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:12px;color:var(--ink-faint)}
-.c-head .who{font-weight:800;color:var(--candy-purple-deep)}
-.c-head .sep-dot{color:var(--gray-300)}
-.c-like{margin-left:auto;display:inline-flex;align-items:center;gap:5px;border:2px solid var(--ink);background:var(--white);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;color:var(--ink);box-shadow:0 2px 0 var(--htc-31-31-31-014)}
-.c-like.on{background:var(--candy-green);color:var(--ht-fff)}
-.c-like:active{transform:translateY(1px);box-shadow:none}
-.c-body{font-size:14px;line-height:1.65;color:var(--ink)}
+.c-item{display:flex;flex-direction:column;gap:6px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:12px 14px}
+.c-item.reply{margin-left:26px;border:2px dashed var(--border-chip);box-shadow:none}
+.c-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:12px;color:var(--text-muted)}
+.c-head .who{font-weight:800;color:var(--page-accent)}
+.c-head .sep-dot{color:var(--text-muted)}
+.c-like{margin-left:auto;display:inline-flex;align-items:center;gap:5px;min-height:44px;border:0;background:rgba(46,42,63,.06);border-radius:var(--radius-pill);padding:3px 14px;font-size:12px;font-weight:800;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.c-like.on{background:var(--clay-mint);color:var(--text-strong);box-shadow:var(--clay-shadow-mint)}
+.c-like:active{transform:scale(.97)}
+.c-like .ic{width:1em;height:1em}
+.c-body{font-size:14px;line-height:1.65;color:var(--text-strong)}
 .c-body .md{font-size:14px;line-height:1.65}
 .c-body .md p{margin:4px 0}
 .c-body .md code{font-size:12px}
 
 /* ===== 分页（C2）===== */
 .pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px}
-.pager-btn{min-width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);background:var(--white);border-radius:12px;font-size:0.8125rem;font-weight:800;color:var(--ink);box-shadow:0 3px 0 var(--htc-31-31-31-014);padding:0 10px;transition:transform .08s,box-shadow .08s}
-.pager-btn:hover{transform:translateY(-1px)}
-.pager-btn:active{transform:translateY(1px);box-shadow:none}
-.pager-btn.on{background:var(--candy-green);color:var(--ht-fff)}
+.pager-btn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);font-size:0.8125rem;font-weight:800;color:var(--text-strong);box-shadow:var(--clay-shadow-light);padding:0 10px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.pager-btn:hover{transform:translateY(-2px)}
+.pager-btn:active{transform:scale(.97)}
+.pager-btn.on{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-coral)}
 .pager-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.pager .total{font-size:12px;color:var(--ink-faint);font-weight:700;margin-left:6px}
+.pager .total{font-size:12px;color:var(--text-muted);font-weight:700;margin-left:6px}
 
 /* ===== 状态：loading 骨架 ===== */
 .sk{display:flex;flex-direction:column;gap:12px}
-.sk-card{border:3px solid var(--gray-300);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ht-eee) 25%,var(--ht-f7f1e6) 50%,var(--ht-eee) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-card{border:2px solid var(--border-chip);border-radius:var(--radius-card);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,#ECE9F4 25%,#F7F5FB 50%,#ECE9F4 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
 .sk-line.w60{width:60%}.sk-line.w40{width:40%}.sk-line.w90{width:90%}.sk-line.w25{width:25%}.sk-line.w70{width:70%}.sk-line.w30{width:30%}
-.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,var(--ht-e6e6e6) 25%,var(--ht-f4f4f4) 50%,var(--ht-e6e6e6) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:55%}
+.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,#E4E0EF 25%,#F1EEF7 50%,#E4E0EF 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:55%}
 @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 
 /* ===== 状态：empty / error ===== */
-.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d)}
-.state .st-emoji{font-size:46px}
-.state h3{font-size:1.125rem;font-weight:800;color:var(--ink)}
-.state p{font-size:14px;color:var(--ink-muted);line-height:1.6;max-width:340px}
-.retry{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-red);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-red-deep)}
-.retry:active{transform:translateY(1px);box-shadow:none}
-.back-list{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-purple);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-purple-deep)}
-.back-list:active{transform:translateY(1px);box-shadow:none}
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light)}
+.state .st-emoji{font-size:46px;color:var(--text-strong);display:inline-flex}
+.state h3{font-size:1.125rem;font-weight:800;color:var(--text-strong)}
+.state p{font-size:14px;color:var(--text-muted);line-height:1.6;max-width:340px}
+.retry{display:inline-flex;align-items:center;gap:7px;min-height:44px;border:0;background:var(--status-danger);color:#FFFFFF;font-weight:800;font-size:0.8125rem;border-radius:var(--radius-btn);padding:7px 16px;box-shadow:4px 6px 14px rgba(198,62,74,.30)}
+.retry:active{transform:scale(.97)}
+.back-list{display:inline-flex;align-items:center;gap:7px;min-height:44px;border:0;background:var(--clay-lavender);color:var(--text-strong);font-weight:800;font-size:0.8125rem;border-radius:var(--radius-btn);padding:7px 16px;box-shadow:var(--clay-shadow-lavender)}
+.back-list:active{transform:scale(.97)}
 
 /* ===== 响应式断点（@container 以 body 宽度驱动 → 演示切视口与真实拖窗口同源生效）===== */
 @container app (max-width:820px){
@@ -245,6 +258,20 @@ textarea,input{font-family:inherit}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-user-link{min-width:44px!important;min-height:44px!important;background:var(--bg-raised)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+.gnav-user-link:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
 </head>
 <body>
 
@@ -268,7 +295,7 @@ textarea,input{font-family:inherit}
   </nav>
   <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
   <div class="gnav-user" aria-label="顶栏右侧快捷入口">
-    <a class="gnav-user-link" href="chat.html" aria-label="问 AI">✨ 问 AI</a>
+    <a class="gnav-user-link" href="chat.html" aria-label="问 AI">问 AI</a>
     <a class="gnav-user-link ava" href="me.html" aria-label="个人中心">🐣</a>
   </div>
 </header>
@@ -278,21 +305,21 @@ textarea,input{font-family:inherit}
   <div class="back-row" style="visibility: hidden;">
     <button class="back" id="backBtn">← 返回列表</button>
   </div>
-  <div class="badges" id="badges" style="visibility: hidden;"><span class="board-tag math">数学</span><span class="pin">📌 置顶</span></div>
+  <div class="badges" id="badges" style="visibility: hidden;"><span class="board-tag math">数学</span><span class="pin"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg> 置顶</span></div>
   <h1 class="post-title" id="postTitle" style="visibility: hidden;">高数第三章「分部积分」易错题集锦</h1>
   <div class="post-meta" id="postMeta" style="visibility: hidden;">
     <span class="who">小豆芽</span><span class="sep-dot">·</span><span>2026-08-20 09:12</span>
-    <span class="sep-dot">·</span><span>👁 1283</span>
-    <span class="sep-dot">·</span><span>👍 <i id="metaLike">343</i></span>
-    <span class="sep-dot">·</span><span>⭐ <i id="metaFav">58</i></span>
-    <span class="sep-dot">·</span><span>💬 <i id="metaCmt">18</i></span>
+    <span class="sep-dot">·</span><span>浏览 1283</span>
+    <span class="sep-dot">·</span><span><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-heart"/></svg> <i id="metaLike">343</i></span>
+    <span class="sep-dot">·</span><span><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-star"/></svg> <i id="metaFav">58</i></span>
+    <span class="sep-dot">·</span><span><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg> <i id="metaCmt">18</i></span>
   </div>
 
   <!-- ===== 操作行（点赞/收藏 react）===== -->
   <div class="actions" id="actions" style="visibility: hidden; display: flex;">
-    <button class="react-btn like on" id="likeBtn">👍 点赞 <b id="likeCnt">343</b></button>
-    <button class="react-btn fav on" id="favBtn">⭐ 收藏 <b id="favCnt">58</b></button>
-    <span class="points-hint" id="pointsHint" style="display: none;">🎉 +2 积分</span>
+    <button class="react-btn like on" id="likeBtn"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-heart"/></svg> 点赞 <b id="likeCnt">343</b></button>
+    <button class="react-btn fav on" id="favBtn"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-star"/></svg> 收藏 <b id="favCnt">58</b></button>
+    <span class="points-hint" id="pointsHint" style="display: none;">+2 积分</span>
   </div>
 
   <!-- ===== 正文 MarkdownView（mock content_md）===== -->
@@ -315,19 +342,19 @@ I = eˣ sinx − (eˣ cosx + I)
 
   <!-- ===== 评论区 ===== -->
   <div class="comments" id="comments" style="visibility: hidden;">
-    <div class="sec-title">💬 评论 <span class="pill" id="cmtTotal">18 条</span></div>
+    <div class="sec-title"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg> 评论 <span class="pill" id="cmtTotal">18 条</span></div>
 
     <!-- 评论输入（CommentComposer） -->
     <div class="composer" id="composer">
       <textarea id="cmtInput" placeholder="写下你的看法…（Markdown 支持）" aria-label="评论内容"></textarea>
       <div class="c-row">
         <span class="c-hint">发布 +2 积分</span>
-        <button class="submit" id="cmtSubmit">💬 发布</button>
+        <button class="submit" id="cmtSubmit"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg> 发布</button>
       </div>
     </div>
 
     <!-- 评论列表（CommentList） -->
-    <div class="c-list" id="cList"><div class="state"><span class="st-emoji">🔒</span><h3>暂无评论</h3><p>本帖已锁定。</p></div></div>
+    <div class="c-list" id="cList"><div class="state"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span><h3>暂无评论</h3><p>本帖已锁定。</p></div></div>
 
     <!-- 评论分页（C2） -->
     <div class="pager" id="pager" style="visibility: visible;">
@@ -338,7 +365,7 @@ I = eˣ sinx − (eˣ cosx + I)
       <span class="total">共 18 条</span>
     </div>
   </div>
-<div class="state" data-st="1" style="width: 815.333px; height: 1104.13px; transform: matrix(1, 0, 0, 1, 12.6666, -1190.67);"><span class="st-emoji">🔍</span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list">← 返回列表</button></div></div>
+<div class="state" data-st="1" style="width: 815.333px; height: 1104.13px; transform: matrix(1, 0, 0, 1, 12.6666, -1190.67);"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list">← 返回列表</button></div></div>
 
 <!--
   DATA: mock PostDetail + CommentItem（snake_case，与契约⑬ 一致）
@@ -385,7 +412,7 @@ I = eˣ sinx − (eˣ cosx + I)
     var card=document.createElement('div');
     card.className='c-item';
     card.innerHTML='<div class="c-head"><span class="who">我</span><span class="sep-dot">·</span><span>刚刚</span>'
-      +'<button class="c-like">👍 <b>0</b></button></div>'
+      +'<button class="c-like"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-heart"/></svg> <b>0</b></button></div>'
       +'<div class="c-body"><div class="md"><p>'+text.replace(/</g,'&lt;')+'</p></div></div>';
     cList.insertBefore(card,cList.firstChild);
     var n=parseInt(cmtTotal.textContent,10)+1;
@@ -422,7 +449,7 @@ I = eˣ sinx − (eˣ cosx + I)
       var likeOn=c[4]===1?' on':'';
       return '<div class="c-item'+replyCls+'">'
         +'<div class="c-head"><span class="who">'+c[0]+'</span><span class="sep-dot">·</span><span>'+c[1]+'</span>'
-        +'<button class="c-like'+likeOn+'">👍 <b>'+c[3]+'</b></button></div>'
+        +'<button class="c-like'+likeOn+'"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-heart"/></svg> <b>'+c[3]+'</b></button></div>'
         +'<div class="c-body"><div class="md"><p>'+c[2]+'</p></div></div></div>';
     }).join('');
   }
@@ -442,7 +469,7 @@ I = eˣ sinx − (eˣ cosx + I)
     sk.dataset.sk='1';
   }
   function buildEmpty(){
-    cList.innerHTML='<div class="state"><span class="st-emoji">🛋️</span><h3>暂无评论</h3>'
+    cList.innerHTML='<div class="state"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span><h3>暂无评论</h3>'
       +'<p>还没有人评论，来抢沙发吧～</p></div>';
     document.getElementById('pager').style.visibility='hidden';
   }
@@ -451,17 +478,17 @@ I = eˣ sinx − (eˣ cosx + I)
     document.getElementById('actions').style.display='none';
     var banner=document.createElement('div');
     banner.className='locked-banner';
-    banner.innerHTML='🔒 本帖已锁定，仅管理员可回复。';
+    banner.innerHTML='本帖已锁定，仅管理员可回复。';
     banner.dataset.lock='1';
     page.insertBefore(banner,page.querySelector('.body-card'));
     var badges=page.querySelector('.badges');
-    badges.innerHTML='<span class="board-tag gen">综合</span><span class="lock">🔒 锁定</span>';
+    badges.innerHTML='<span class="board-tag gen">综合</span><span class="lock">锁定</span>';
     var ta=document.getElementById('cmtInput');
     ta.disabled=true; ta.placeholder='本帖已锁定，无法评论';
     document.getElementById('cmtSubmit').disabled=true;
     document.getElementById('cmtTotal').textContent='0 条';
     metaCmt.textContent='0';
-    cList.innerHTML='<div class="state"><span class="st-emoji">🔒</span><h3>暂无评论</h3><p>本帖已锁定。</p></div>';
+    cList.innerHTML='<div class="state"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span><h3>暂无评论</h3><p>本帖已锁定。</p></div>';
     document.getElementById('pager').style.visibility='hidden';
   }
   function buildError(){
@@ -474,7 +501,7 @@ I = eˣ sinx − (eˣ cosx + I)
     comments.style.visibility='hidden';
     var st=document.createElement('div');
     st.className='state';
-    st.innerHTML='<span class="st-emoji">🔍</span><h3>帖子不存在</h3>'
+    st.innerHTML='<span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></span><h3>帖子不存在</h3>'
       +'<p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p>'
       +'<button class="back-list">← 返回列表</button>';
     page.appendChild(st);
@@ -491,7 +518,7 @@ I = eˣ sinx − (eˣ cosx + I)
     page.querySelector('.actions').style.visibility='visible';
     page.querySelector('.actions').style.display='flex';
     page.querySelector('.body-card').style.visibility='visible';
-    page.querySelector('.badges').innerHTML='<span class="board-tag math">数学</span><span class="pin">📌 置顶</span>';
+    page.querySelector('.badges').innerHTML='<span class="board-tag math">数学</span><span class="pin"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg> 置顶</span>';
     var ta=document.getElementById('cmtInput');
     ta.disabled=false; ta.placeholder='写下你的看法…（Markdown 支持）';
     document.getElementById('cmtSubmit').disabled=false;
@@ -583,8 +610,8 @@ buildComments();
     var st = document.createElement("div");
     st.className = "state"; st.dataset.st = "1";
     st.innerHTML = notFound
-      ? '<span class="st-emoji">🔍</span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list" id="backListBtn">← 返回列表</button>'
-      : '<span class="st-emoji">😵</span><h3>帖子加载失败</h3><p>' + esc(msg || "网络开小差了，请稍后重试。") + '</p><button class="retry" id="retryLoadBtn">🔄 重试</button>';
+      ? '<span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></span><h3>帖子不存在</h3><p>这个帖子可能已被删除或链接有误，请返回列表重新查看。</p><button class="back-list" id="backListBtn">← 返回列表</button>'
+      : '<span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span><h3>帖子加载失败</h3><p>' + esc(msg || "网络开小差了，请稍后重试。") + '</p><button class="retry" id="retryLoadBtn">重试</button>';
     page.appendChild(st);
     var bl = document.getElementById("backListBtn");
     if (bl) bl.addEventListener("click", function () { location.href = "/community.html"; });
@@ -603,12 +630,12 @@ buildComments();
       if (postMeta) {
         var who = postMeta.querySelector(".who"); if (who && p.author_name) who.textContent = p.author_name;
         if (postMeta.children[2]) postMeta.children[2].textContent = (p.created_at || "—").replace("T", " ").slice(0, 16);
-        if (postMeta.children[4]) postMeta.children[4].textContent = "👁 " + (p.view_count || 0);
+        if (postMeta.children[4]) postMeta.children[4].textContent = "浏览 " + (p.view_count || 0);
         postMeta.style.visibility = "visible";
       }
       if (mdBody && p.content_md) mdBody.innerHTML = esc(p.content_md).replace(/\n/g, "<br>");
       if (bodyCard) bodyCard.style.visibility = "visible";
-      if (badges) { badges.style.visibility = "visible"; badges.innerHTML = ""; var bc = document.createElement("span"); bc.className = "board-tag " + ({ en: "en", english: "en", math: "math", prog: "prog", programming: "prog", gen: "gen", general: "gen" }[p.board_code] || "gen"); bc.textContent = BOARD[p.board_code] || p.board_code || ""; badges.appendChild(bc); if (p.is_pinned) { var pin = document.createElement("span"); pin.className = "pin"; pin.textContent = "📌 置顶"; badges.appendChild(pin); } if (p.is_locked) { var lk = document.createElement("span"); lk.className = "lock"; lk.textContent = "🔒 锁定"; badges.appendChild(lk); } }
+      if (badges) { badges.style.visibility = "visible"; badges.innerHTML = ""; var bc = document.createElement("span"); bc.className = "board-tag " + ({ en: "en", english: "en", math: "math", prog: "prog", programming: "prog", gen: "gen", general: "gen" }[p.board_code] || "gen"); bc.textContent = BOARD[p.board_code] || p.board_code || ""; badges.appendChild(bc); if (p.is_pinned) { var pin = document.createElement("span"); pin.className = "pin"; pin.textContent = "置顶"; badges.appendChild(pin); } if (p.is_locked) { var lk = document.createElement("span"); lk.className = "lock"; lk.textContent = "锁定"; badges.appendChild(lk); } }
       if (actions) { actions.style.visibility = "visible"; actions.style.display = "flex"; }
       var cm = document.getElementById("comments"); if (cm) cm.style.visibility = "visible";
       show(likeCnt, p.like_count); show(metaLike, p.like_count); show(favCnt, p.favorite_count); show(metaFav, p.favorite_count);
@@ -624,9 +651,9 @@ buildComments();
 
   /* ---- 评论列表（task08④：真实分页；计数以端点 total 为准）---- */
   function renderComments(items) {
-    if (!items || !items.length) { cList.innerHTML = '<div class="state"><span class="st-emoji">🛋️</span><h3>暂无评论</h3><p>还没有人评论，来抢沙发吧～</p></div>'; return; }
+    if (!items || !items.length) { cList.innerHTML = '<div class="state"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span><h3>暂无评论</h3><p>还没有人评论，来抢沙发吧～</p></div>'; return; }
     cList.innerHTML = items.map(function (c) {
-      return '<div class="c-item" data-cid="' + c.comment_id + '"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + esc((c.created_at || "").replace("T", " ").slice(0, 16)) + '</span><button type="button" class="c-like' + (c.mine_liked ? " on" : "") + '" data-cid="' + c.comment_id + '" aria-pressed="' + (c.mine_liked ? "true" : "false") + '">👍 <b>' + c.like_count + '</b></button></div><div class="c-body"><div class="md"><p>' + esc(c.content_md) + '</p></div></div></div>';
+      return '<div class="c-item" data-cid="' + c.comment_id + '"><div class="c-head"><span class="who">' + esc(c.author_name) + '</span><span class="sep-dot">·</span><span>' + esc((c.created_at || "").replace("T", " ").slice(0, 16)) + '</span><button type="button" class="c-like' + (c.mine_liked ? " on" : "") + '" data-cid="' + c.comment_id + '" aria-pressed="' + (c.mine_liked ? "true" : "false") + '"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-heart"/></svg> <b>' + c.like_count + '</b></button></div><div class="c-body"><div class="md"><p>' + esc(c.content_md) + '</p></div></div></div>';
     }).join("");
   }
   function renderCmtPager(total) {
@@ -661,7 +688,7 @@ buildComments();
       renderCmtPager(lastCmtTotal);
       setTotal(lastCmtTotal);
     }).catch(function (e) {
-      cList.innerHTML = '<div class="state" role="alert"><span class="st-emoji">😵</span><h3>评论加载失败</h3><p>' + esc((e && e.message) || "网络错误") + '</p><button class="retry" id="cRetryBtn">🔄 重试</button></div>';
+      cList.innerHTML = '<div class="state" role="alert"><span class="st-emoji"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span><h3>评论加载失败</h3><p>' + esc((e && e.message) || "网络错误") + '</p><button class="retry" id="cRetryBtn">重试</button></div>';
       renderCmtPager(0);
       var rb = document.getElementById("cRetryBtn");
       if (rb) rb.addEventListener("click", function () { loadComments(curPage); });
