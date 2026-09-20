@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>课程中心 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <!--
   AUDIT LOG:
   [2026-08-19 R1] v1 初稿提交（契约② 对齐：搜索/筛选/排序/分页/四态）→ 状态: SUBMITTED
@@ -16,33 +17,36 @@
   [2026-08-20 R8] R7 完成 + 用户指出分页仍为上下方向：修复 #pgPages 纵向堆叠（span 作为 flex 子项被压缩致内部按钮换行）→ 改为 #pgPages 自身 flex nowrap + flex-shrink:0，并用 auto margin 居中避免 375 溢出不可滚动；verify 33 项全 PASS（新增封面标题 5 项 + 页码按钮同 y/x 递增坐标断言）→ 状态: SUBMITTED
 -->
 <style>
-  /* ===== 设计 tokens（效果图「学中玩」糖果色板；React 实现时映射项目 tokens 或新增 candy 色板）===== */
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
-  :root{ --htc-124-58-237-0.28: rgba(124,58,237,0.28); --htc-124-58-237-0.35: rgba(124,58,237,0.35); --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.9: rgba(255,255,255,0.9); --htc-255-75-75-0.08: rgba(255,75,75,0.08); --htc-255-75-75-0.35: rgba(255,75,75,0.35); --htc-255-77-0-0.25: rgba(255,77,0,0.25); --htc-255-77-0-0.3: rgba(255,77,0,0.3); --htc-31-31-31-0.08: rgba(31,31,31,0.08); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.15: rgba(31,31,31,0.15); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.35: rgba(31,31,31,0.35); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-88-204-2-0.18: rgba(88,204,2,0.18); --htc-88-204-2-0.4: rgba(88,204,2,0.4);  --ht-1cb0f6: #1cb0f6; --ht-58cc02: #58cc02; --ht-7c3aed: #7c3aed; --ht-a5e8ff: #a5e8ff; --ht-a5f36a: #a5f36a; --ht-c4b5fd: #c4b5fd; --ht-d8c4fb: #d8c4fb; --ht-e4d5f5: #e4d5f5; --ht-e8e8e8: #e8e8e8; --ht-f1e8ff: #f1e8ff; --ht-faf5ff: #faf5ff; --ht-ff4d00: #ff4d00; --ht-ffb199: #ffb199; --ht-ffc800: #ffc800; --ht-ffc80066: #ffc80066; --ht-ffe58a: #ffe58a; --ht-ffe8dc: #ffe8dc; --ht-fff: #fff; --ht-fff0f0: #fff0f0; --ht-fff3e0: #fff3e0; 
-    /* 糖果色主色（用户指定 Duolingo 系） */
-    --candy-orange:#FF4D00; --candy-green:#58CC02; --candy-purple:#7C3AED;
-    --candy-yellow:#FFC800; --candy-blue:#1CB0F6; --candy-pink:#FF86D0; --candy-red:#FF4B4B;
-    /* 语义映射（对齐项目 tokens 结构：primary/secondary/accent/status） */
-    --primary:var(--candy-green);        /* 主行动（学习/打卡） */
-    --primary-strong:#46A302;            /* 绿深端 */
-    --primary-soft:#E9FBD8;              /* 绿浅底 */
-    --accent:var(--candy-orange);        /* 强调（价格/CTA） */
-    --accent-strong:#E04400;
-    --accent-soft:#FFE8DC;
-    --secondary:var(--candy-purple);     /* 次级品牌（学科导航） */
-    --secondary-soft:#F1E8FF;
-    --success:var(--candy-green); --warning:var(--candy-yellow); --destructive:var(--candy-red);
-    /* 中性（对齐 slate 语义） */
-    --ink:#3C3C3C; --ink-strong:#1F1F1F; --ink-soft:#6B6B6B; --ink-faint:#9A9A9A;
-    --bg:#FFF9F0; --card:#FFFFFF; --line:#F0E6DA; --line-strong:#E4D5C4;
-    /* 圆角（学中玩：超大圆角 20px+） */
-    --radius:1.5rem; --radius-lg:1.25rem; --radius-md:0.9rem; --radius-pill:999px;
-    /* 字体：标题 Baloo 2 圆润粗体；正文系统圆体回退 */
-    --font-head:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;
+  /* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）。
+     Google Fonts @import 已移除（G8 红项），字体全部本地栈；浅色 tint 为令牌色相的静态推导值（禁 color-mix：G7 parse 不认 color(srgb) 序列化）===== */
+  :root{ --htc-124-58-237-0.28: rgba(214,82,70,0.28); --htc-124-58-237-0.35: rgba(214,82,70,0.35); --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.9: rgba(255,255,255,0.9); --htc-255-75-75-0.08: rgba(198,62,74,0.08); --htc-255-75-75-0.35: rgba(198,62,74,0.35); --htc-255-77-0-0.25: rgba(214,82,70,0.25); --htc-255-77-0-0.3: rgba(214,82,70,0.3); --htc-31-31-31-0.08: rgba(46,42,63,0.08); --htc-31-31-31-0.12: rgba(46,42,63,0.12); --htc-31-31-31-0.15: rgba(46,42,63,0.15); --htc-31-31-31-0.18: rgba(46,42,63,0.18); --htc-31-31-31-0.35: rgba(46,42,63,0.35); --htc-31-31-31-0.45: rgba(46,42,63,0.45); --htc-88-204-2-0.18: rgba(78,126,66,0.18); --htc-88-204-2-0.4: rgba(78,126,66,0.4);  --ht-1cb0f6: var(--clay-sky); --ht-58cc02: var(--clay-moss); --ht-7c3aed: var(--clay-lavender); --ht-a5e8ff: #D3E7F8; --ht-a5f36a: #DFEED8; --ht-c4b5fd: #DFD7FF; --ht-d8c4fb: rgba(184,166,255,.45); --ht-e4d5f5: rgba(184,166,255,.3); --ht-e8e8e8: rgba(247,245,251,.9); --ht-f1e8ff: #F3F1FF; --ht-faf5ff: var(--bg-input); --ht-ff4d00: var(--cta-coral); --ht-ffb199: var(--clay-peach); --ht-ffc800: var(--clay-lemon); --ht-ffc80066: rgba(245,215,122,.4); --ht-ffe58a: #FAEDC3; --ht-ffe8dc: #FFDED3; --ht-fff: #fff; --ht-fff0f0: #FBF1F2; --ht-fff3e0: #FFF4F1;
+    /* 糖果色名 → 黏土令牌 */
+    --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+    --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+    /* 语义映射 */
+    --primary:var(--clay-moss);        /* 主行动（学习/打卡） */
+    --primary-strong:rgb(78,126,66);   /* 苔绿深端（hover 底） */
+    --primary-soft:#F3F8EF;            /* 绿浅底 */
+    --accent:var(--cta-coral);         /* 强调（价格/CTA） */
+    --accent-strong:rgb(214,82,70);
+    --accent-soft:#FFF1EE;
+    --secondary:var(--clay-lavender);  /* 次级品牌（学科导航） */
+    --secondary-soft:#F3F1FF;
+    --success:var(--clay-mint); --warning:var(--clay-lemon); --destructive:var(--status-danger);
+    /* 中性（对比度安全映射） */
+    --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-soft:var(--text-muted); --ink-faint:var(--text-muted);
+    --bg:var(--bg-app); --card:var(--bg-raised); --line:rgba(78,126,66,.16); --line-strong:rgba(78,126,66,.28);
+    /* 圆角（黏土） */
+    --radius:var(--radius-card); --radius-lg:var(--radius-icon-tile); --radius-md:var(--radius-input); --radius-pill:999px;
+    /* 字体：本地栈（Baloo 2 外链已删） */
+    --font-head:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
     --font: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    /* 粗描边（Claymorphism 参考） */
-    --stroke:3px solid var(--ink);
-    --shadow-pop:0 6px 0 var(--htc-31-31-31-012); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-31-31-31-008: rgba(31, 31, 31, 0.008); --htc-88-204-2-018: rgba(88, 204, 2, 0.018); --htc-124-58-237-035: rgba(124, 58, 237, 0.035); --htc-255-77-0-003: rgba(255, 77, 0, 0.003); --htc-255-75-75-008: rgba(255, 75, 75, 0.008); --htc-124-58-237-028: rgba(124, 58, 237, 0.028); --htc-31-31-31-035: rgba(31, 31, 31, 0.035); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --htc-255-77-0-025: rgba(255, 77, 0, 0.025); --htc-255-255-255-009: rgba(255, 255, 255, 0.009); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --htc-255-75-75-035: rgba(255, 75, 75, 0.035); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-012: rgba(255, 255, 255, 0.012); --htc-31-31-31-015: rgba(31, 31, 31, 0.015); --p: 0; --candy-bg: #fff9f0; --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --muted: #8a8f98;}
+    /* 粗描边退役 → 黏土阴影（--stroke 保留名，值置 0，hero 边框走修饰层） */
+    --stroke:0;
+    --shadow-pop:var(--clay-shadow-light); --htc-31-31-31-012: rgba(46, 42, 63, 0.12); --htc-31-31-31-008: rgba(46, 42, 63, 0.08); --htc-88-204-2-018: rgba(78, 126, 66, 0.18); --htc-124-58-237-035: rgba(214, 82, 70, 0.35); --htc-255-77-0-003: rgba(214, 82, 70, 0.25); --htc-255-75-75-008: rgba(198, 62, 74, 0.08); --htc-124-58-237-028: rgba(214, 82, 70, 0.28); --htc-31-31-31-035: rgba(46, 42, 63, 0.35); --htc-31-31-31-018: rgba(46, 42, 63, 0.18); --htc-31-31-31-045: rgba(46, 42, 63, 0.45); --htc-255-77-0-025: rgba(214, 82, 70, 0.25); --htc-255-255-255-009: rgba(46, 42, 63, 0.55); --htc-88-204-2-004: rgba(78, 126, 66, 0.26); --htc-255-75-75-035: rgba(198, 62, 74, 0.35); --htc-255-255-255-025: rgba(255, 255, 255, 0.25); --htc-255-255-255-012: rgba(255, 255, 255, 0.12); --htc-31-31-31-015: rgba(46, 42, 63, 0.15); --p: 0; --candy-bg: var(--bg-app); --r: var(--radius-input); --shadow: var(--clay-shadow-light); --muted: var(--text-muted);
+    /* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+    --foreground:var(--text-strong); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42); --candy-green-deep:rgba(78,126,66,.42); --candy-green-hover:var(--clay-moss);
+  }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
   button{font-family:inherit;cursor:pointer}
@@ -331,6 +335,81 @@
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（44px 点按、对比度、去无限动画、动效纪律）；选择器/状态类显隐语义零改动 ===== */
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.hero{border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-lemon)}
+.hero::after{background:radial-gradient(circle,rgba(245,215,122,.45) 0%,transparent 70%)}
+.hero-mascot{animation:none}
+.hero-mascot .ic{width:56px;height:56px}
+.stat-card{border:0;box-shadow:var(--clay-shadow-light)}
+.stat-icon .ic{width:18px;height:18px}
+.stat-card b{color:var(--text-strong)}
+.hero-slogan b{color:var(--text-strong)}
+.search-wrap .ic{width:17px;height:17px}
+.fb-toggle .ic{width:14px;height:14px}
+.fb-toggle{min-height:44px}
+.fb-toggle .fb-summary{color:var(--text-strong)}
+.search-input{border:0;box-shadow:var(--clay-shadow-input);background:var(--bg-input)}
+.search-input:focus{outline:2px solid var(--focus-ring);outline-offset:2px;box-shadow:var(--clay-shadow-input-focus)}
+.clear-x{width:44px;height:44px;top:0;right:6px;background:var(--clay-moss);color:var(--text-strong);font-size:16px}
+.clear-x:hover{background:var(--clay-moss)}
+.filterbar{border:0;box-shadow:var(--clay-shadow-raised);border-radius:var(--radius-card)}
+.filterbar.open .fb-toggle svg{transform:none}
+.filterbar.open .fb-toggle svg:last-of-type{transform:rotate(180deg)!important}
+.f-label{color:var(--text-muted)}
+.chip{min-height:44px;display:inline-flex;align-items:center;border:0;background:var(--bg-input);color:var(--text-strong);padding:8px 16px;box-shadow:var(--clay-shadow-light)}
+.chip:hover{background:#F3F1FF;color:var(--text-strong)}
+.chip.active{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+#subGroup .chip{background:var(--bg-input)}
+#subGroup .chip.active{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.select select{height:44px;border:0;box-shadow:var(--clay-shadow-input);background:var(--bg-input);color:var(--text-strong)}
+.select select:focus{outline:2px solid var(--focus-ring);outline-offset:2px;box-shadow:var(--clay-shadow-input-focus)}
+.reset-btn{min-height:44px;min-width:44px;color:var(--text-strong)}
+.reset-btn:hover{color:var(--status-danger);background:rgba(198,62,74,.08)}
+.resultbar{color:var(--text-muted)}
+.resultbar b{color:var(--text-strong)}
+.card{border:0;box-shadow:var(--clay-shadow-raised)}
+.card:hover{border:0;box-shadow:12px 16px 36px rgba(78,126,66,.28)}
+.cover-title{color:var(--text-strong);text-shadow:0 2px 6px rgba(255,255,255,.55)}
+.cover .delivery{background:var(--surface-code);color:var(--text-on-dark)}
+.cover .xp-badge{background:var(--cta-coral);color:var(--cta-text);border:0;box-shadow:var(--clay-shadow-press-coral)}
+.cover .code{color:var(--text-strong);background:rgba(255,255,255,.6)}
+.card-title{color:var(--text-strong)}
+.cat{color:var(--text-strong);background:#F3F1FF;border:0}
+.meta-row{color:var(--text-muted)}
+.meta-row .hot{color:var(--text-strong)}
+.price{color:var(--text-strong)}
+.price .qi{color:var(--text-muted)}
+.price-empty{color:var(--text-muted)}
+.ring{background:conic-gradient(var(--clay-mint) calc(var(--p)*1%),rgba(78,126,66,.16) 0)}
+.ring b{color:var(--text-strong)}
+.empty{border:2px dashed rgba(78,126,66,.28);background:var(--bg-raised)}
+.empty .t{color:var(--text-strong)}
+.empty .d{color:var(--text-muted)}
+.empty button.btn{background:var(--cta-coral);color:var(--cta-text);border:0;min-height:44px;border-radius:var(--radius-btn);box-shadow:var(--clay-shadow-press-coral)}
+.empty button.btn:hover{background:var(--cta-coral)}
+.empty button.btn:active{transform:scale(.97)}
+.error{border:2px solid rgba(198,62,74,.25);background:#FBF1F2}
+.error .t{color:var(--text-strong)}
+.error .d{color:var(--text-muted)}
+.error button.btn{background:var(--cta-coral);color:var(--cta-text);border:0;min-height:44px;border-radius:var(--radius-btn)}
+.error button.btn:active{transform:scale(.97)}
+.pg-btn{min-width:44px;height:44px;border:0;background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-press-moss)}
+.pg-btn:hover:not(:disabled):not(.active){background:var(--clay-moss);color:var(--text-strong);transform:translateY(-2px)}
+.pg-btn.active{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.pg-btn:disabled{opacity:.45}
+.pg-info{color:var(--text-muted)}
+.pg-ellipsis{color:var(--text-muted)}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+  .hero-mascot{animation:none!important}
+}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -360,21 +439,21 @@
 
   <!-- Hero：吉祥物 + 口号 + 打卡/等级/XP 社交证明（学中玩） -->
   <section class="hero">
-    <div class="hero-mascot" role="img" aria-label="吉祥物猫头鹰">🦉</div>
+    <div class="hero-mascot" role="img" aria-label="吉祥物猫头鹰"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></div>
     <div class="hero-copy">
       <h2 class="hero-slogan">学中玩 · 玩中学，每天进步<b>一点点</b></h2>
       <p class="hero-sub">像玩游戏一样把课程学完，打卡、赚 XP、升级徽章</p>
       <div class="hero-stats">
-        <div class="stat-card"><span class="stat-icon">🔥</span><span>连续打卡 <b id="heroStreak">–</b> 天</span></div>
-        <div class="stat-card"><span class="stat-icon">⭐</span><span class="level-row">Lv.<b id="heroLevel">–</b> <span class="xp-bar"><span class="xp-fill" id="xpFill"></span></span><span class="xp-text" id="heroXp">– XP</span></span></div>
-        <div class="stat-card"><span class="stat-icon">🏆</span><span>累计 <b id="heroTotalXp">–</b> XP</span></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span><span>连续打卡 <b id="heroStreak">–</b> 天</span></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-star"></use></svg></span><span class="level-row">Lv.<b id="heroLevel">–</b> <span class="xp-bar"><span class="xp-fill" id="xpFill"></span></span><span class="xp-text" id="heroXp">– XP</span></span></div>
+        <div class="stat-card"><span class="stat-icon" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span><span>累计 <b id="heroTotalXp">–</b> XP</span></div>
       </div>
     </div>
   </section>
 
   <!-- SearchInput（防抖 400ms 意图：输入停止 400ms 后触发） -->
   <div class="search-wrap">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+    <svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"></use></svg>
     <input class="search-input" id="searchInput" type="text" placeholder="搜索课程名称、简介或编码" autocomplete="off" />
     <button class="clear-x" id="clearBtn" aria-label="清空搜索" style="display:none">×</button>
   </div>
@@ -382,10 +461,10 @@
   <!-- FilterBar（v4：两级导航——一级学科大类 + 二级课程方向；375 折叠） -->
   <div class="filterbar" id="filterBar">
     <button class="fb-toggle" id="fbToggle" type="button" aria-expanded="false" aria-controls="fbRows">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-gear"></use></svg>
       <span>筛选</span>
       <span class="fb-summary" id="fbSummary">全部课程</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-caret-down"></use></svg>
     </button>
     <div class="fb-rows" id="fbRows">
       <div class="f-group">
