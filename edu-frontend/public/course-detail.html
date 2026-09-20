@@ -12,22 +12,26 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>课程详情 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码 hex）===== */
-:root{ --htc-255-255-255-0.14: rgba(255,255,255,0.14); --htc-255-255-255-0.2: rgba(255,255,255,0.2); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.9: rgba(255,255,255,0.9); --htc-255-255-255-0.95: rgba(255,255,255,0.95); --htc-255-77-0-0.2: rgba(255,77,0,0.2); --htc-255-77-0-0.3: rgba(255,77,0,0.3); --htc-255-77-0-0.35: rgba(255,77,0,0.35); --htc-31-31-31-0.03: rgba(31,31,31,0.03); --htc-31-31-31-0.05: rgba(31,31,31,0.05); --htc-31-31-31-0.06: rgba(31,31,31,0.06); --htc-31-31-31-0.08: rgba(31,31,31,0.08); --htc-31-31-31-0.1: rgba(31,31,31,0.1); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.15: rgba(31,31,31,0.15); --htc-31-31-31-0.16: rgba(31,31,31,0.16); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.2: rgba(31,31,31,0.2); --htc-31-31-31-0.22: rgba(31,31,31,0.22); --htc-31-31-31-0.25: rgba(31,31,31,0.25); --htc-31-31-31-0.3: rgba(31,31,31,0.3); --htc-31-31-31-0.34: rgba(31,31,31,0.34); --htc-31-31-31-0.35: rgba(31,31,31,0.35); --htc-31-31-31-0.42: rgba(31,31,31,0.42); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-31-31-31-0.5: rgba(31,31,31,0.5);  --ht-c74000: #c74000; --ht-c9c9c9: #c9c9c9; --ht-ddd: #ddd; --ht-eee: #eee; --ht-fff: #fff; --ht-fffaf0: #fffaf0; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-bg:#fff9f0;
-  /* 派生阴影/hover 阶（由主色派生，React 阶段映射 design-tokens 语义）*/
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a;
-  --border-chip:rgba(31,31,31,.15);
-  /* 语义：primary=糖果橙（CTA/主行动）secondary=糖果绿（成功/满员正向提示）destructive=糖果红 accent=糖果紫 */
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(31, 31, 31, 0.014); --htc-255-255-255-009: rgba(255, 255, 255, 0.009); --htc-31-31-31-015: rgba(31, 31, 31, 0.015); --htc-31-31-31-042: rgba(31, 31, 31, 0.042); --htc-31-31-31-022: rgba(31, 31, 31, 0.022); --htc-255-255-255-095: rgba(255, 255, 255, 0.095); --htc-31-31-31-034: rgba(31, 31, 31, 0.034); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-255-77-0-035: rgba(255, 77, 0, 0.035); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-31-31-31-005: rgba(31, 31, 31, 0.005); --htc-31-31-31-003: rgba(31, 31, 31, 0.003); --htc-255-77-0-002: rgba(255, 77, 0, 0.002); --htc-31-31-31-001: rgba(31, 31, 31, 0.001); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --htc-31-31-31-035: rgba(31, 31, 31, 0.035); --htc-31-31-31-016: rgba(31, 31, 31, 0.016); --htc-31-31-31-006: rgba(31, 31, 31, 0.006); --htc-31-31-31-025: rgba(31, 31, 31, 0.025); --htc-255-77-0-003: rgba(255, 77, 0, 0.003); --htc-31-31-31-008: rgba(31, 31, 31, 0.008); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-014: rgba(255, 255, 255, 0.014); --htc-255-255-255-002: rgba(255, 255, 255, 0.002); --htc-31-31-31-002: rgba(31, 31, 31, 0.002); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）；
+   浅色 tint 为令牌色相静态推导值（禁 color-mix：G7 parse 不认 color(srgb) 序列化）===== */
+:root{ --htc-255-255-255-0.14: rgba(255,255,255,0.14); --htc-255-255-255-0.2: rgba(255,255,255,0.2); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.9: rgba(255,255,255,0.9); --htc-255-255-255-0.95: rgba(255,255,255,0.95); --htc-255-77-0-0.2: rgba(214,82,70,0.2); --htc-255-77-0-0.3: rgba(214,82,70,0.3); --htc-255-77-0-0.35: rgba(214,82,70,0.35); --htc-31-31-31-0.03: rgba(46,42,63,0.03); --htc-31-31-31-0.05: rgba(46,42,63,0.05); --htc-31-31-31-0.06: rgba(46,42,63,0.06); --htc-31-31-31-0.08: rgba(46,42,63,0.08); --htc-31-31-31-0.1: rgba(46,42,63,0.1); --htc-31-31-31-0.12: rgba(46,42,63,0.12); --htc-31-31-31-0.14: rgba(46,42,63,0.14); --htc-31-31-31-0.15: rgba(46,42,63,0.15); --htc-31-31-31-0.16: rgba(46,42,63,0.16); --htc-31-31-31-0.18: rgba(46,42,63,0.18); --htc-31-31-31-0.2: rgba(46,42,63,0.2); --htc-31-31-31-0.22: rgba(46,42,63,0.22); --htc-31-31-31-0.25: rgba(46,42,63,0.25); --htc-31-31-31-0.3: rgba(46,42,63,0.3); --htc-31-31-31-0.34: rgba(46,42,63,0.34); --htc-31-31-31-0.35: rgba(46,42,63,0.35); --htc-31-31-31-0.42: rgba(46,42,63,0.42); --htc-31-31-31-0.45: rgba(46,42,63,0.45); --htc-31-31-31-0.5: rgba(46,42,63,0.5);  --ht-c74000: rgb(214,82,70); --ht-c9c9c9: rgba(255,255,255,0.75); --ht-ddd: rgba(255,255,255,0.85); --ht-eee: #EEF4E9; --ht-fff: #fff; --ht-fffaf0: #EEF4E9;
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF;
+  --candy-bg:var(--bg-app);
+  /* 派生阴影/hover 阶 */
+  --candy-orange-deep:rgb(214,82,70); --candy-orange-hover:#FF8E81;
+  --candy-green-deep:rgb(78,126,66); --candy-green-hover:var(--clay-moss);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --border-chip:rgba(78,126,66,.22);
+  --shadow-3d:var(--clay-shadow-raised);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(46, 42, 63, 0.14); --htc-255-255-255-009: rgba(255, 255, 255, 0.09); --htc-31-31-31-015: rgba(46, 42, 63, 0.15); --htc-31-31-31-042: rgba(46, 42, 63, 0.42); --htc-31-31-31-022: rgba(46, 42, 63, 0.22); --htc-255-255-255-095: rgba(255, 255, 255, 0.95); --htc-31-31-31-034: rgba(46, 42, 63, 0.34); --htc-31-31-31-018: rgba(46, 42, 63, 0.18); --htc-255-77-0-035: rgba(214, 82, 70, 0.35); --htc-31-31-31-012: rgba(46, 42, 63, 0.12); --htc-31-31-31-005: rgba(46, 42, 63, 0.05); --htc-31-31-31-003: rgba(46, 42, 63, 0.03); --htc-255-77-0-002: rgba(214, 82, 70, 0.2); --htc-31-31-31-001: rgba(46, 42, 63, 0.01); --htc-31-31-31-045: rgba(46, 42, 63, 0.45); --htc-31-31-31-035: rgba(46, 42, 63, 0.35); --htc-31-31-31-016: rgba(46, 42, 63, 0.16); --htc-31-31-31-006: rgba(46, 42, 63, 0.06); --htc-31-31-31-025: rgba(46, 42, 63, 0.25); --htc-255-77-0-003: rgba(214, 82, 70, 0.25); --htc-31-31-31-008: rgba(46, 42, 63, 0.08); --htc-255-255-255-025: rgba(255, 255, 255, 0.25); --htc-255-255-255-014: rgba(255, 255, 255, 0.14); --htc-255-255-255-002: rgba(255, 255, 255, 0.02); --htc-31-31-31-002: rgba(46, 42, 63, 0.02); --r: var(--radius-input); --shadow: var(--clay-shadow-light); --line: rgba(78,126,66,.22); --muted: var(--text-muted);
+  /* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+  --card:var(--bg-raised); --white:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
@@ -327,6 +331,74 @@ select,input{font-family:inherit}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（对比度、44px 点按、去无限动画）；选择器/状态类显隐语义零改动。
+   !important 仅用于压制 JS 内联样式的颜色/尺寸（行为层字符串不可改）===== */
+.hero{border:0;box-shadow:var(--clay-shadow-raised);border-radius:var(--radius-card)}
+.cover{background:linear-gradient(135deg,var(--clay-sky),var(--clay-mint) 45%,var(--clay-moss))}
+.cover .blob.b1{background:var(--clay-lemon)}
+.cover .blob.b3{background:var(--clay-moss)}
+.cover .mascot{animation:none}
+.cover .delivery{background:var(--surface-code);color:var(--text-on-dark)}
+.cover .title{color:var(--text-strong);text-shadow:none}
+.cover .sub{color:rgba(46,42,63,.82)}
+.cover .fact{background:rgba(255,255,255,.55);color:var(--text-strong)}
+.buy .price-min b{color:var(--text-strong)}
+.cta{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-press-coral);border:0}
+.cta:hover{background:var(--cta-coral)}
+.fav{border:0;box-shadow:var(--clay-shadow-light)}
+.cta-note.warn{color:var(--text-strong);background:#FFF1EE;border:2px dashed rgba(214,82,70,.35)}
+.btn{border:0;border-radius:var(--radius-btn);min-height:44px}
+.breadcrumb a{color:var(--text-strong);font-weight:700;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+/* disabled 按钮显式上色：压过 Chrome UA GrayText（rgba(16,16,16,.3) 对比度不足） */
+button:disabled{color:var(--text-strong)}
+.cta:disabled,.cta:disabled:hover{color:var(--cta-text)}
+/* 压制 JS 内联样式的珊瑚色价格文字（行为层字符串不可改，样式层接管） */
+#summary b,.dialog b{color:var(--text-strong)!important}
+.tab.on{color:var(--text-strong);border-color:var(--cta-coral);border-bottom:3px solid var(--cta-coral)}
+.tabs{border-bottom:3px solid rgba(78,126,66,.16)}
+.cohort{border:0;box-shadow:var(--clay-shadow-light);border-radius:var(--radius-btn)}
+.cohort.selected{box-shadow:var(--clay-shadow-press-coral);outline:3px solid var(--cta-coral);outline-offset:-3px}
+.cohort .radio{border-color:rgba(46,42,63,.25)}
+.cohort.selected .radio{border-color:var(--cta-coral)}
+.cohort.selected .radio::after{background:var(--cta-coral)}
+.seat-fill.hot{background:var(--cta-coral)}
+.go-learn{color:var(--text-strong)!important;border-radius:var(--radius-btn);min-height:44px}
+.coupon{border:0;box-shadow:var(--clay-shadow-light);border-radius:var(--radius-btn)}
+.coupon .amount{color:var(--text-strong);border-right:2px dashed rgba(255,255,255,.7)}
+.coupon.received .get .g-btn{color:var(--text-strong)}
+.g-btn{border:0;min-height:44px;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light)}
+.btn-star{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.w-btn{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.w-btn:hover{background:var(--clay-moss)}
+.dialog-x{width:44px;height:44px;border-radius:var(--radius-input)}
+.overlay{background:rgba(46,42,63,.45)}
+.dialog{border:0;box-shadow:var(--clay-shadow-raised)}
+.tree,.review,.review-cta,.mindmap{border:0;box-shadow:var(--clay-shadow-light)}
+.badge.primary{background:var(--clay-sky);border-color:var(--clay-sky);color:var(--text-strong)}
+.badge.success{background:var(--clay-mint);border-color:var(--clay-mint);color:var(--text-strong)}
+.badge.destructive{background:var(--status-danger);border-color:var(--status-danger);color:#fff}
+.lvl .star{color:var(--text-strong)!important}
+.stag{background:#F3F1FF;color:var(--text-strong)}
+.review .ava{color:var(--text-strong);background:#F3F1FF}
+.review .stars{color:var(--text-strong)}
+.mm.d0 .mm-node{background:var(--cta-coral);color:var(--cta-text)}
+.mm.d1 .mm-node{background:#F3F8EF;border-color:var(--clay-moss);color:var(--text-strong)}
+.mm.d2 .mm-node{background:#F3F1FF;border-color:var(--clay-lavender);color:var(--text-strong)}
+.state-fill{border:2px dashed rgba(78,126,66,.28);background:var(--bg-raised)}
+.state-fill .btn{border:0;border-radius:var(--radius-btn);min-height:44px;background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.toolbar button{min-height:44px;min-width:44px}
+.toolbar button.on{color:var(--cta-text)}
+button[data-star]{width:44px!important;height:44px!important;border:0!important;color:var(--text-strong)!important;background:var(--clay-lemon)!important;box-shadow:var(--clay-shadow-light)!important;border-radius:var(--radius-input)!important}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+  .cover .mascot{animation:none!important}
+}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -386,7 +458,7 @@ select,input{font-family:inherit}
 <div class="overlay" id="couponOverlay" role="dialog" aria-modal="true" aria-labelledby="couponTitle">
   <div class="dialog">
     <div class="dialog-head">
-      <h3 id="couponTitle">🎟️ 系列优惠券</h3>
+      <h3 id="couponTitle">系列优惠券</h3>
       <button class="dialog-x" id="couponClose" aria-label="关闭">×</button>
     </div>
     <div class="coupon-list" id="couponList"><!-- 运行时渲染 --></div>
