@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端课程管理 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
   :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-6a4fd0: #6a4fd0; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
     --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
@@ -221,6 +222,114 @@
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与全部布局黑名单属性未动；JS 模板内注入的 emoji 属行为层冻结面，一律用
+   font-size:0 + mask sprite（必要时 :has() 区分视图）在视觉层消隐，不改任何脚本字符。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-orange:var(--status-danger); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --muted-bg:#E2EFFA; --muted-ink:var(--text-strong);
+  --ht-0b6bc2:var(--text-strong); --ht-e6f3fe:#E2EFFA;
+  --ht-6a4fd0:var(--text-strong); --ht-f1ecfe:#EAE4FF;
+  --ht-b4600e:var(--text-strong); --ht-fdf0e4:#FFE9E2;
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav（aihub 布局保持，色彩走令牌）--- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:var(--primary-soft)!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-danger:hover{background:#FAF0F4!important}
+/* G7 注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page .fld select,.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .fld label{color:var(--text-muted)}
+.admin-html-page .fld select:focus,.admin-html-page .fld input:focus{outline:2px solid var(--focus-ring);border-color:var(--focus-ring)}
+.admin-html-page .vtab{min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important}
+.admin-html-page .vtab:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .vtab.active{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important;box-shadow:var(--clay-shadow-light)}
+.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+.admin-html-page .pager button{flex:0 0 auto;width:44px;height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+.admin-html-page .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+.admin-html-page #purge-code-input{min-height:44px}
+.admin-html-page .dd-btn{min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important}
+.admin-html-page .dd-btn:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .dd-menu{border-radius:var(--radius-input);background:var(--bg-raised)}
+.admin-html-page .dd-item{min-height:44px;color:var(--text-strong)!important;border-radius:var(--radius-input)}
+.admin-html-page .dd-item:hover{background:var(--primary-soft)!important;color:var(--text-strong)!important}
+.admin-html-page .dd-item.danger{color:var(--status-danger)!important}
+.admin-html-page .dd-item.danger:hover{background:#FAF0F4!important;color:var(--status-danger)!important}
+
+/* --- 行内 emoji（JS 注入）视觉层消隐 + sprite 化 --- */
+.admin-html-page .dd-item .ic{display:none}
+.admin-html-page .dd-btn>span{display:inline-block;width:12px;height:12px;font-size:0;color:var(--bg-raised);background-color:var(--text-strong);
+  -webkit-mask:url("/assets/icons/icons.svg#ic-caret-down") no-repeat center/contain;mask:url("/assets/icons/icons.svg#ic-caret-down") no-repeat center/contain}
+.admin-html-page .series-cell .ico{font-size:0;color:var(--text-strong);background:var(--clay-sky)!important;border-radius:var(--radius-icon-tile)}
+.admin-html-page .series-cell .ico::after{content:"";width:20px;height:20px;background-color:var(--text-strong);
+  -webkit-mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain;mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain}
+body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .ico{background:var(--clay-peach)!important}
+body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .ico::after{
+  -webkit-mask-image:url("/assets/icons/icons.svg#ic-trash");mask-image:url("/assets/icons/icons.svg#ic-trash")}
+.admin-html-page #empty-ico{font-size:0;color:var(--text-strong)}
+.admin-html-page #empty-ico::after{content:"";display:block;width:26px;height:26px;background-color:var(--text-strong);
+  -webkit-mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain;mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain}
+body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) #empty-ico::after{
+  -webkit-mask-image:url("/assets/icons/icons.svg#ic-trash");mask-image:url("/assets/icons/icons.svg#ic-trash")}
+.admin-html-page .st-ico{background:#EDF5E9!important;color:var(--text-strong)!important}
+.admin-html-page .confirm .c-ico svg.ic{width:22px;height:22px}
+.admin-html-page .confirm .c-ico{color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .badge-on{background:#D8F2E5!important;color:var(--text-strong)!important}
+.admin-html-page .badge-on .pd{background:var(--status-active)!important}
+.admin-html-page .badge-mut{color:var(--text-strong)!important}
+.admin-html-page .confirm .c-warn{background:var(--bg-raised)!important;color:var(--status-danger)!important;outline:2px solid #FAF0F4;outline-offset:-2px}
+
+/* --- 徽标/表格/弹窗/Toast 走令牌 --- */
+.admin-html-page .toolbar-meta{color:var(--text-muted)}
+.admin-html-page .tbl-card{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)}
+.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .em-toast{background:var(--surface-code)!important;color:var(--text-on-dark)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .em-toast.ok{background:var(--status-active)!important;color:var(--text-strong)!important}
+.admin-html-page .em-toast.err{background:var(--status-danger)!important;color:#fff!important}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .modal .mh,.admin-html-page .modal .mfoot{border-color:var(--bg-input)}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong);min-height:44px}
+.admin-html-page .modal .mff textarea{min-height:64px}
+.admin-html-page .modal .mff label{color:var(--text-muted)}
+.admin-html-page .modal .m-close{color:var(--text-muted)}
+
+/* --- reduced-motion：动画瞬时完成，运行计数归零 --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
 </head>
 <body class="admin-html-page">
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -247,7 +356,7 @@
       <div class="sub" id="head-sub">系列 → 班次 · 上下架与软删管理</div>
     </div>
     <button class="btn btn-primary" data-open="series-form" id="btn-create">
-      ＋ 新建系列
+      <svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 新建系列
     </button>
   </div>
 
@@ -311,7 +420,7 @@
     </div>
 
     <div id="state-error" class="state hidden">
-      <div class="st-ico">⚠️</div>
+      <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
       <div><b style="color:var(--ink)">加载失败</b></div>
       <p style="margin:4px 0 12px" id="err-msg">后端不可用，请稍后重试</p>
       <button class="btn btn-ghost btn-mini" onclick="refreshList()">重试</button>
@@ -359,7 +468,7 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
           <div>
             <b>下架系列「<span id="del-name"></span>」（可在回收站查看）？</b>
             <p>下架为软删：将把该系列置为「已下架」，用户端不再展示；记录保留，可在回收站中查看/恢复。此操作<b>不会永久删除</b>数据。</p>
@@ -378,7 +487,7 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdf0e4);color:var(--candy-orange)">👁</div>
+          <div class="c-ico" style="background:var(--ht-fdf0e4);color:var(--candy-orange)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
           <div>
             <b>下架系列「<span id="off-name"></span>」？</b>
             <p>下架后该系列在用户端不再展示。上架为恢复操作，随时可再上架。</p>
@@ -397,7 +506,7 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ok-bg);color:var(--ok-ink)">♻</div>
+          <div class="c-ico" style="background:var(--ok-bg);color:var(--ok-ink)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg></div>
           <div>
             <b>恢复系列「<span id="restore-name"></span>」？</b>
             <p>恢复后该系列将置为「<b style="font-size:0.8125rem">草稿</b>」状态，可在正式列表中编辑并重新上架。</p>
@@ -416,11 +525,11 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">🗑</div>
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
           <div>
             <b>彻底删除系列「<span id="purge-name"></span>」？</b>
             <p>将彻底删除该系列（物理真删，仅管理员且零引用）：该系列将被<b>永久移除</b>；若仍存在班次/订单引用，操作将被拒绝（系列仍被引用）。</p>
-            <div class="c-warn">⚠ 彻底删除后数据不可恢复，请谨慎操作</div>
+            <div class="c-warn">彻底删除后数据不可恢复，请谨慎操作</div>
           </div>
         </div>
       </div>
@@ -436,12 +545,12 @@
     <div class="modal">
       <div class="mb">
         <div class="c-msg">
-          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)">✋</div>
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
           <div style="flex:1">
             <b>二次确认：输入系列编码「<span id="purge-code-echo" style="font-family:ui-monospace,Consolas,monospace"></span>」以继续</b>
             <p>此操作不可恢复。输入与系列编码完全一致后，「彻底删除」按钮才会可用。</p>
             <input id="purge-code-input" type="text" placeholder="输入系列编码" oninput="onPurgeInput()" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-family:ui-monospace,Consolas,monospace;font-size:0.8125rem;color:var(--ink)">
-            <div class="c-warn">⚠ 数据将被物理删除且不可恢复</div>
+            <div class="c-warn">数据将被物理删除且不可恢复</div>
           </div>
         </div>
       </div>
