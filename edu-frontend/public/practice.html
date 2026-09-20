@@ -18,30 +18,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>复习中心 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务色）===== */
-:root{ --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-31-31-31-0.02: rgba(31,31,31,0.02); --htc-31-31-31-0.08: rgba(31,31,31,0.08); --htc-31-31-31-0.1: rgba(31,31,31,0.1); --htc-31-31-31-0.13: rgba(31,31,31,0.13); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.15: rgba(31,31,31,0.15); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45);  --ht-e8e8e8: #e8e8e8; --ht-fff: #fff; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-blue-soft:#e8f6ff; --candy-bg:#fff9f0;
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-blue-deep:#0e8ac0;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  --gray-300:#cfcfcf; --gray-400:#9a9a9a; --gray-500:#8a8a8a;
-  --border-chip:rgba(31,31,31,.15);
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）；
+   --focus-ring 不在此覆盖（沿用 theme.css 冻结值）；代码块深色面按 §7.5 保留 ===== */
+:root{ --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-31-31-31-0.02: rgba(46,42,63,0.02); --htc-31-31-31-0.08: rgba(46,42,63,0.08); --htc-31-31-31-0.1: rgba(46,42,63,0.1); --htc-31-31-31-0.13: rgba(46,42,63,0.13); --htc-31-31-31-0.14: rgba(46,42,63,0.14); --htc-31-31-31-0.15: rgba(46,42,63,0.15); --htc-31-31-31-0.18: rgba(46,42,63,0.18); --htc-31-31-31-0.45: rgba(46,42,63,0.45);  --ht-e8e8e8: rgba(247,245,251,.9); --ht-fff: #fff;
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF;
+  --candy-blue-soft:#E9F2FB; --candy-bg:var(--bg-app);
+  --candy-orange-deep:rgb(214,82,70); --candy-orange-hover:#FF8E81;
+  --candy-green-deep:rgb(78,126,66); --candy-blue-deep:rgb(80,142,196);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --gray-300:rgba(46,42,63,.2); --gray-400:var(--text-muted); --gray-500:#6B6580;
+  --border-chip:rgba(78,126,66,.22);
   --code-bg:#141414;
   --code-text:#e6e6e6;
   --code-acc:#8ad4ff;
-  --error-bg:#fff0f0;
-  --shadow-red:rgba(255,75,75,.35);
-  --shadow-green:rgba(88,204,2,.4);
-  --error-border:rgba(255,75,75,.4);
-  --focus-ring:var(--candy-blue);
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --shadow-s:0 3px 0 var(--htc-31-31-31-013);
-  --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(31, 31, 31, 0.014); --htc-31-31-31-013: rgba(31, 31, 31, 0.013); --htc-31-31-31-015: rgba(31, 31, 31, 0.015); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-008: rgba(31, 31, 31, 0.008); --htc-31-31-31-001: rgba(31, 31, 31, 0.001); --htc-31-31-31-002: rgba(31, 31, 31, 0.002); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-012: rgba(255, 255, 255, 0.012); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+  --error-bg:#FBF1F2;
+  --shadow-red:rgba(198,62,74,.35);
+  --shadow-green:rgba(78,126,66,.35);
+  --error-border:rgba(198,62,74,.4);
+  --shadow-3d:var(--clay-shadow-raised);
+  --shadow-s:var(--clay-shadow-light);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(46, 42, 63, 0.14); --htc-31-31-31-013: rgba(46, 42, 63, 0.13); --htc-31-31-31-015: rgba(46, 42, 63, 0.15); --htc-31-31-31-018: rgba(46, 42, 63, 0.18); --htc-31-31-31-008: rgba(46, 42, 63, 0.08); --htc-31-31-31-001: rgba(46, 42, 63, 0.001); --htc-31-31-31-002: rgba(46, 42, 63, 0.002); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-012: rgba(255, 255, 255, 0.012); --htc-31-31-31-045: rgba(46, 42, 63, 0.45); --r: var(--radius-input); --shadow: var(--clay-shadow-light); --line: rgba(78,126,66,.22); --muted: var(--text-muted);}
+/* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+:root{ --card:var(--bg-raised); --white:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42); --candy-green-deep:rgb(78,126,66); --candy-green-hover:var(--clay-moss);}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
@@ -429,6 +432,96 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（对比度、44px 点按、hidden 语义修复）；选择器/状态类显隐语义零改动 ===== */
+.stat-card,.panel,.quiz,.entry,.error-panel,.empty-panel,.word-card,.prog-cell,.skel-card{border:0;box-shadow:var(--clay-shadow-raised)}
+.entry{box-shadow:var(--clay-shadow-raised)}
+.entry .accent{height:8px}
+.entry .ico{border:0}
+.entry .go{border:0;color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral);min-height:44px;border-radius:var(--radius-btn)}
+.entry .count{border:0;color:var(--text-strong)!important}
+.stat-card .num,.stat-card.green .num,.stat-card.blue .num,.stat-card.orange .num,.stat-card.purple .num{color:var(--text-strong)}
+.stat-card .ic{border:0}
+.breadcrumb a{color:var(--text-strong);display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+.sec-h .tag{border:0;color:var(--text-strong)}
+.type-chip{border:0}
+.type-chip.single,.type-chip.multi,.type-chip.blank,.type-chip.judge{color:var(--text-strong)}
+.acc.mid{color:var(--text-strong)}
+.redo{border:0;min-height:44px;min-width:44px;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light);color:var(--text-strong)}
+.redo:hover{background:#F3F1FF;color:var(--text-strong)}
+.quiz{border:0}
+.q-top{border-bottom:0;background:var(--bg-input)}
+.q-top .quit,.q-top .nav button{border:0;min-height:44px;min-width:44px;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light);color:var(--text-strong)}
+.q-top .quit{color:var(--status-danger)}
+.q-top .bar{border:0;background:rgba(46,42,63,.12)}
+.q-top .bar i{border-right:0;background:var(--clay-lemon)}
+.q-typebar button{border:0;min-height:44px;min-width:44px;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light);color:var(--text-strong);background:var(--bg-raised)}
+.q-typebar button.on{background:var(--cta-coral);color:var(--cta-text)}
+.opt{border:0;box-shadow:var(--clay-shadow-light);border-radius:var(--radius-btn)}
+.opt.correct{box-shadow:var(--clay-shadow-press-moss)}
+.opt.correct .key{color:var(--text-strong)}
+.opt.correct .check{color:var(--text-strong)}
+.opt.wrong{box-shadow:var(--clay-shadow-press-coral)}
+.blank-input{border:0;box-shadow:var(--clay-shadow-input);background:var(--bg-input)}
+.blank-input:focus{outline:3px solid var(--focus-ring);box-shadow:var(--clay-shadow-input-focus)}
+.judge-opt{border:0;box-shadow:var(--clay-shadow-light)}
+.submit{border:0;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.submit.hid{display:none}
+.result{border:0;box-shadow:var(--clay-shadow-light)}
+.result.ok .t{color:var(--text-strong)}
+.result .big{color:var(--text-strong)}
+.result.error .big{color:#fff}
+.analysis{border:3px dashed var(--clay-lavender)}
+.analysis .a-h{color:var(--text-strong)}
+.kp-chip{border:0}
+.kp-chip.p,.kp-chip.b,.kp-chip.g{color:var(--text-strong)}
+.md-callout{border:0;box-shadow:var(--clay-shadow-light)}
+.md-callout .icx .ic{width:17px;height:17px;color:var(--text-strong)}
+.trash .tagx{border:0;color:var(--text-strong)}
+.error-panel{border:2px solid rgba(198,62,74,.25)}
+.error-panel .btn-retry{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-press-coral)}
+.error-panel .btn-retry .ic{color:var(--cta-text)}
+.empty-panel{border:2px dashed rgba(78,126,66,.28)}
+.empty-panel .btn-go{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.empty-panel .ic{color:var(--text-strong)}
+.empty-panel .ic .ic,.error-panel .ic .ic{width:30px;height:30px}
+.wb-filter .pill{border:0;min-height:44px;min-width:44px;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light);color:var(--text-strong)}
+.wb-filter .pill.on{color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.rev-start{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.rev-expl{border:3px dashed var(--clay-lavender)}
+.rev-mast{color:var(--text-strong)}
+.drag-item{border:0;box-shadow:var(--clay-shadow-light)}
+.drag-item .mv{width:44px;height:44px;border:0;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light);color:var(--text-strong)}
+.match-item{border:0;box-shadow:var(--clay-shadow-light)}
+.match-item select{border:0;min-height:44px;box-shadow:var(--clay-shadow-input);background:var(--bg-input);color:var(--text-strong)}
+.vocab-toolbar select{border:0;min-height:44px;box-shadow:var(--clay-shadow-input);background:var(--bg-input);color:var(--text-strong)}
+.word-card{box-shadow:var(--clay-shadow-light)}
+.word-card .chip{border:0;color:var(--text-strong)}
+.word-card .word{color:var(--text-strong)}
+.word-card .ex b{color:var(--text-strong)}
+.word-acts button{border:0;min-height:44px;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light);color:var(--text-strong)}
+.wa-yes{background:#F3F8EF}.wa-so{background:#FFF1EE}.wa-no{background:#FBF1F2}
+.word-fb{color:var(--text-strong)}
+.prog-cell{border:0}
+.prog-cell .n{color:var(--text-strong)}
+.statebar{background:var(--surface-code)}
+.statebar button{min-height:44px;min-width:44px}
+.statebar button.on{color:var(--text-strong);background:var(--clay-moss)}
+.gnav-user-link{min-height:44px}
+.gnav-user-link.ava{min-width:44px;justify-content:center}
+.gnav-user-link .ic{width:16px;height:16px}
+.mascot .ic{width:40px;height:40px}
+.stat-card .ic .ic{width:22px;height:22px}
+.entry .ico .ic{width:27px;height:27px}
+.emoj .ic{width:20px;height:20px}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -449,8 +542,8 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   </nav>
   <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
   <div class="gnav-user" aria-label="顶栏右侧快捷入口">
-    <a class="gnav-user-link" href="chat.html" aria-label="问 AI">✨ 问 AI</a>
-    <a class="gnav-user-link ava" href="me.html" aria-label="个人中心">🐣</a>
+    <a class="gnav-user-link" href="chat.html" aria-label="问 AI"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"></use></svg> 问 AI</a>
+    <a class="gnav-user-link ava" href="me.html" aria-label="个人中心"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-user"></use></svg></a>
   </div>
 </header>
 <div class="page">
@@ -461,7 +554,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
   </nav>
 
   <div class="head-row">
-    <span class="mascot" aria-hidden="true">🎯</span>
+    <span class="mascot" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg></span>
     <div>
       <h1>复习中心</h1>
       <div class="sub">错题复盘 · 单词回忆 · 专项突破</div>
@@ -477,19 +570,19 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
       <!-- ① StatCard 待复习数 -->
       <section class="stat-grid" aria-label="复习概览">
         <div class="stat-card green">
-          <span class="ic" aria-hidden="true">📚</span>
+          <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span>
           <div><div class="num" id="statWrong">23</div><div class="lbl">今日待复习 <b>错题</b></div></div>
         </div>
         <div class="stat-card blue">
-          <span class="ic" aria-hidden="true">🔤</span>
+          <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg></span>
           <div><div class="num" id="statWord">12</div><div class="lbl">待回忆 <b>单词</b></div></div>
         </div>
         <div class="stat-card orange">
-          <span class="ic" aria-hidden="true">📈</span>
+          <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span>
           <div><div class="num" id="statAcc">67%</div><div class="lbl">近 30 日 <b>正确率</b></div></div>
         </div>
         <div class="stat-card purple">
-          <span class="ic" aria-hidden="true">🔥</span>
+          <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span>
           <div><div class="num" id="statStreak">5</div><div class="lbl">连续 <b>学习天数</b></div></div>
         </div>
       </section>
@@ -498,21 +591,21 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
       <section class="entry-grid" aria-label="复习模式">
         <article class="entry green">
           <div class="accent" aria-hidden="true"></div>
-          <span class="ico" aria-hidden="true">📕</span>
+          <span class="ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span>
           <h3>错题本 <span class="count">23 题待复习</span></h3>
           <p id="wrong-book-note">历史作答错误的题目自动收录，逐题重做 + 查看解析，攻破薄弱知识点。</p>
           <a class="go" href="#quiz" role="button" aria-describedby="wrong-book-note">开始复习 →</a>
         </article>
         <article class="entry blue">
           <div class="accent" aria-hidden="true"></div>
-          <span class="ico" aria-hidden="true">🗂️</span>
+          <span class="ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg></span>
           <h3>单词本 <span class="count">12 词待回忆</span></h3>
           <p id="word-note">SM-2 间隔回忆，按遗忘曲线安排复习节点，巩固已学词汇。行为沿用既有词卡，本次不改动。</p>
           <button class="go" type="button" aria-describedby="word-note">开始回忆</button>
         </article>
         <article class="entry purple">
           <div class="accent" aria-hidden="true"></div>
-          <span class="ico" aria-hidden="true">🛠️</span>
+          <span class="ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span>
           <h3>专项练习 <span class="count">按题型选择 · 待联调</span></h3>
           <p id="topic-note">按题型过滤（单选/多选/填空/判断），定向刷题型，搭配难度过滤。</p>
           <button class="go" type="button" aria-describedby="topic-note">去练习</button>
@@ -597,7 +690,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <div class="q-top">
           <span class="prog"><span id="qCur">3</span> / <span id="qTotal">23</span></span>
           <span class="bar" role="progressbar" id="qBar" aria-valuenow="13" aria-valuemin="0" aria-valuemax="100" aria-valuetext="第 3 题，共 23 题（13%）"><i id="qBarFill" style="width:13%" aria-hidden="true"></i></span>
-          <button class="quit" type="button" aria-label="结束复习" disabled title="登录后进入真实复习会话">⏹ 结束复习</button>
+          <button class="quit" type="button" aria-label="结束复习" disabled title="登录后进入真实复习会话">结束复习</button>
           <div class="nav"><button type="button" aria-label="上一题" disabled title="登录后进入真实复习会话">上一题</button><button type="button" aria-label="下一题" disabled title="登录后进入真实复习会话">下一题</button></div>
         </div>
         <!-- R3 题型切换：四种题型各展示一次判分+解析 -->
@@ -639,7 +732,7 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
 nums = ["a", "b", "c"]
 for i, v in enumerate(nums):
     print(i, v)</div>
-                <div class="md-callout warn"><span class="icx" aria-hidden="true">💡</span><div class="txn"><b>易错点：</b>若只需索引用 range(len())；若同时要元素与索引务必用 <span class="tagx">enumerate</span>，避免两次遍历。</div></div>
+                <div class="md-callout warn"><span class="icx" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-info"></use></svg></span><div class="txn"><b>易错点：</b>若只需索引用 range(len())；若同时要元素与索引务必用 <span class="tagx">enumerate</span>，避免两次遍历。</div></div>
               </div>
             </div>
           </div>
@@ -702,8 +795,8 @@ for i, v in enumerate(nums):
             <div class="q-meta"><span class="no">第 9 题</span><span class="type-chip judge">判断</span><span>· 数据结构</span></div>
             <div class="q-stem">Python 的 <b>tuple（元组）</b> 与 <b>list（列表）</b> 一样，创建后都可以修改元素。</div>
             <div class="judge-wrap" role="group" aria-label="判断：元组是否可修改">
-              <button class="judge-opt" type="button" data-judge="correct"><span class="emoj" aria-hidden="true">✅</span> 正确</button>
-              <button class="judge-opt" type="button" data-judge="wrong"><span class="emoj" aria-hidden="true">❌</span> 错误</button>
+              <button class="judge-opt" type="button" data-judge="correct"><span class="emoj" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-check-circle"></use></svg></span> 正确</button>
+              <button class="judge-opt" type="button" data-judge="wrong"><span class="emoj" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-x"></use></svg></span> 错误</button>
             </div>
             <div class="result ok hid" id="qi-judge-result" role="status" aria-live="polite">
               <span class="big" aria-hidden="true">✓</span>
@@ -772,7 +865,7 @@ for i, v in enumerate(nums):
     <!-- ============ ERROR：加载失败 ============ -->
     <div id="panel-error" style="display:none">
       <div class="error-panel" role="alert">
-        <div class="t">😵 加载复习中心失败</div>
+        <div class="t"><span aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></span> 加载复习中心失败</div>
         <p class="d">网络开小差了，请稍后重试</p>
         <button class="btn-retry" type="button">↻ 重试</button>
       </div>
@@ -781,7 +874,7 @@ for i, v in enumerate(nums):
     <!-- ============ EMPTY：空态 ============ -->
     <div id="panel-empty" style="display:none">
       <div class="empty-panel" role="status">
-        <div class="ic" aria-hidden="true">🎉</div>
+        <div class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></div>
         <div class="t">太棒了，暂时没有待复习题目</div>
         <p class="d">错题本已清空 · 去课程中心学点新知识，继续保持吧</p>
         <button class="btn-go" type="button">去选课 →</button>
