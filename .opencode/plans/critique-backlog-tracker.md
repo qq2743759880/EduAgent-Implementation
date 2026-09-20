@@ -640,3 +640,10 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **EVAL64V3 销项**：改写问句 query 面 63 条（1 条重叠 62.5% 剔除不凑数）——护栏四条机械校验+68/68 单测；**证伪 EVAL64V2 P0-①：子串代理税=0**（shared-63 严格对照 V2 62/63==V3 62/63，字面重叠只剩 27% 未打掉任何 hit）——V2 尺 0.9844 是真实检索能力；mrr +0.028 噪声内。V3 契约未建（冻结待编排者裁，双跑数字备齐）。唯一 miss 与 V2 同条（idx31 泛化题干，非改写敏感）。
 - **T13 盲测销项**：三轮（并发×2 env-contaminated + 健康/轻并发×1）——run1 唯一失败=mcp_health P100 4238ms（VM 失联窗瞬态，健康窗 14/14 不复现，B 类登记）；**真回归空/并发敏感清单空/CI 豁免不需要**；TEST-BASE 57 例确定性失败在峰值 4-agent×4 次 full-run 零复现=双防污染护栏实测有效；门禁健康窗 exit0 + skip 白名单精确一致。
 - 待用户：①idx31 组命中放宽变更单（预估内容块尺 hit→1.0/mrr→0.9594）②V3 尺冻结与否 ③流程修正 2 条（跑前 collect-only 快照/预检五点探活——已在 run3 实际执行）。
+
+## W-NEXT-WRITE1 打样发现登记（2026-09-20，4a598b3，favorite_add/user_write）
+- **C-W1-①（P0，已修）图路径内置工具零审计**：`call_tool_with_retry → _default_attempt_executor` 内置分支直调 handler 不落 `mcp_tool_call_log`——W-NEXT-MCP-001 P0-② 只覆盖了 `call_tool` 直连路径。实测：favorite_add 经六节点图真实写库（favorites 5→6）但审计 0 行。修复：该分支成败均落审计（与 _execute_builtin_attempt 同构）+ 回归锁 test_t6_audit_log_graph_path；修后实证 audit id=684/SUCCESS/35ms。**同型风险面：其他经 graph 路径的内置工具历史审计盲区（calculator/search_knowledge/knowledge_import）——低危只读可容忍，写类历史已无其他。**
+- **C-W1-②（P0，部分修，硬化待立项）答案层捏造工具回执**：工具阶段未命中时答案 LLM 捏造「已收藏/已提交」成功回执（两次实证：路由误判 knowledge 兜底时、子代理 exact-pin 拒绝后）。已落缓解：rule_router 收藏意图→tool + tool 子代理 prompt 补 REGISTERED_TOOLS 同源工具清单+「严禁虚构调用结果」指令。**残留：answer 生成层缺机检护栏（建议：answer 提及工具名而 mcp_tool_calls/artifact 空 → 拦截或打 degraded 标），立项 F-W1-GUARD。**
+- **C-W1-③（P1，待修）mcp_tool_calls 六节点路径恒空**：chat 响应体 `mcp_tool_calls` 字段仅旧版回退路径（service.py:394）填充；六节点图路径工具真实执行（审计/DB 可证）但响应体零回执——前端收不到工具凭据。落点：graph fanout/merge → service 响应组装透传 SubagentResult.full_tool_outputs。
+- **C-W1-④（P2，观察）读池初始化抖动**：首测出现一次性「MySQL 连接池未初始化→工具阶段降级」（后续进程未复现）。R 候选：读池 lazy-init 在预热完成前的竞态窗。
+- 教训沉淀：**「回执数字系统性失真」新形态=答案层回执无工具层凭据对账**；验收铁律再证——编排者逐断言复现（favorites API 反查）抓出两次捏造，采信完工回执必然漏过。
