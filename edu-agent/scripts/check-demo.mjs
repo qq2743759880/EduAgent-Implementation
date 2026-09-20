@@ -19,7 +19,9 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // ---------- 配置(按演示机实际环境修改这里) ----------
-const VMX_PATH = "E:\\tt\\CentOS 7 64 位 的克隆 docker\\CentOS 7 64 位 的克隆 docker.vmx";
+// W-NEXT-PORTS-001 后勘误(2026-09-20 编排者):VMX_PATH 曾误指空 docker 克隆机(2026-08-11 建,
+//   无镜像无卷,曾抢占 .101)。数据机=「CentOS 7 64 位」(delta 盘 0919 时间戳,Milvus/Mongo/MinIO/Neo4j 所在)。
+const VMX_PATH = "E:\\tt\\CentOS 7 64 位\\CentOS 7 64 位.vmx";
 const MILVUS = { host: "192.168.85.101", port: 19530 };
 const MONGO = { host: "192.168.85.101", port: 27017 };
 // W-NEXT-PORTS-001(2026-09-20 用户裁定):后端端口 8000→9988。BACKEND_PORT 走 env 覆盖,

@@ -24,8 +24,12 @@ def run_once(attempt: int) -> dict:
     preexec_fn = None
     if os.name == "nt":
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+    # LIFECYCLE_PROBE_PORT(默认 18000):专用临时端口,与生产端口(9988)解耦
+    # (W-NEXT-PORTS-001 后勘误:曾硬编码 8000,端口迁移后与常驻实例冲突)
+    probe_port = int(os.environ.get("LIFECYCLE_PROBE_PORT", "18000"))
     proc = subprocess.Popen(
-        [str(PY), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+        [str(PY), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1",
+         "--port", str(probe_port)],
         cwd=str(ROOT / "edu-agent"),
         stdout=open(log_path, "wb"),
         stderr=subprocess.STDOUT,
@@ -39,7 +43,7 @@ def run_once(attempt: int) -> dict:
     ready_in = None
     for _ in range(60):
         try:
-            with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1) as r:
+            with urllib.request.urlopen(f"http://127.0.0.1:{PROBE_PORT}/health", timeout=1) as r:
                 if r.status == 200:
                     ready_in = time.monotonic() - start
                     break
