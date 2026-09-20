@@ -12,134 +12,140 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/theme.css?v=7fed87f" />
 <title>我的班次 · EduAgent</title>
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码 hex）===== */
-:root{ --htc-124-58-237-0.25: rgba(124,58,237,0.25); --htc-255-255-255-0.12: rgba(255,255,255,0.12); --htc-255-255-255-0.25: rgba(255,255,255,0.25); --htc-255-255-255-0.7: rgba(255,255,255,0.7); --htc-255-75-75-0.4: rgba(255,75,75,0.4); --htc-31-31-31-0.02: rgba(31,31,31,0.02); --htc-31-31-31-0.05: rgba(31,31,31,0.05); --htc-31-31-31-0.08: rgba(31,31,31,0.08); --htc-31-31-31-0.1: rgba(31,31,31,0.1); --htc-31-31-31-0.12: rgba(31,31,31,0.12); --htc-31-31-31-0.14: rgba(31,31,31,0.14); --htc-31-31-31-0.15: rgba(31,31,31,0.15); --htc-31-31-31-0.16: rgba(31,31,31,0.16); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.2: rgba(31,31,31,0.2); --htc-31-31-31-0.32: rgba(31,31,31,0.32); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-31-31-31-0.55: rgba(31,31,31,0.55); --htc-88-204-2-0.4: rgba(88,204,2,0.4);  --ht-fff: #fff; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-bg:#fff9f0;
-  /* 派生阴影/hover 阶（由主色派生，React 阶段映射 design-tokens 语义）*/
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  /* 派生渐变端点 / 灰色阶 / 状态底（对齐 courses.html 封面渐变族 + course-detail.html 派生阶）*/
-  --candy-orange-soft-end:#ffb199; --candy-green-soft-end:#a5f36a; --candy-purple-soft-end:#c4b5fd;
-  --candy-blue-soft-end:#a5e8ff; --candy-yellow-soft-end:#ffe58a;
-  --candy-green-bright:#7ee04a; --candy-orange-bright:#ff8a5c;
-  --gray-300:#cfcfcf; --gray-400:#9a9a9a; --gray-500:#8a8a8a; --gray-600:#c9c9c9;
-  --error-bg:#fff0f0; --statebar-text:#e8e8e8;
-  --border-chip:rgba(31,31,31,.15);
-  /* 语义：primary=糖果橙（CTA/主行动）secondary=糖果绿（学习/继续）destructive=糖果红 accent=糖果紫 */
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-31-31-31-014: rgba(31, 31, 31, 0.014); --htc-31-31-31-015: rgba(31, 31, 31, 0.015); --htc-31-31-31-012: rgba(31, 31, 31, 0.012); --htc-31-31-31-005: rgba(31, 31, 31, 0.005); --htc-31-31-31-001: rgba(31, 31, 31, 0.001); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-002: rgba(31, 31, 31, 0.002); --htc-31-31-31-032: rgba(31, 31, 31, 0.032); --htc-31-31-31-055: rgba(31, 31, 31, 0.055); --htc-255-255-255-007: rgba(255, 255, 255, 0.007); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --htc-31-31-31-016: rgba(31, 31, 31, 0.016); --htc-255-75-75-004: rgba(255, 75, 75, 0.004); --htc-124-58-237-025: rgba(124, 58, 237, 0.025); --htc-31-31-31-008: rgba(31, 31, 31, 0.008); --htc-255-255-255-025: rgba(255, 255, 255, 0.025); --htc-255-255-255-012: rgba(255, 255, 255, 0.012); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f；班次域=sky/mint 表面。
+   三层分离：仅动视觉层——id/class/data-tab/.on/.active 显隐语义、SDK tabs roving tabindex、
+   z-index(gnav 130/overlay 120/演示角标 2147483001)冻结；旧 candy 变量名保留为页内别名(L1)。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix / 脚本仍引用，禁删）—— */
+  --ht-fff:var(--bg-raised); --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --muted:var(--text-muted); --foreground:var(--text-strong);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--clay-mint); --candy-green-deep:#2E7D4F; --candy-green-hover:var(--clay-mint);
+  --candy-purple:#5B4FC4; --candy-purple-soft:#EFE9FF; --candy-purple-deep:#5B4FC4;
+  --candy-orange:var(--cta-coral); --candy-orange-deep:#D65246; --candy-orange-hover:var(--cta-coral);
+  --candy-red:var(--status-danger); --candy-blue:#2B2E6E;
+  --gray-300:rgba(46,42,63,.12); --gray-400:#B9B4C7; --gray-500:#8D879F; --gray-600:#DEDBE8;
+  --error-bg:rgba(198,62,74,.10); --statebar-text:#F7F5FB;
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --r:12px; --shadow:0 6px 18px rgba(78,126,66,.14);
+  /* —— 页内派生色（L1，仅本页）—— */
+  --page-accent:#5B4FC4
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 90% 8%,rgba(158,201,240,.28),transparent 24rem),radial-gradient(circle at 4% 94%,rgba(125,212,168,.20),transparent 22rem);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
 select,input{font-family:inherit}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
 
 .page{max-width:1180px;margin:0 auto;padding:20px 18px 72px}
 
 /* ===== Breadcrumb + 页头 ===== */
-.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:0.8125rem;color:var(--ink-strong);margin-bottom:14px}
-.breadcrumb a{color:var(--candy-blue);text-decoration:none;font-weight:600}
+.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:0.8125rem;color:var(--text-strong);margin-bottom:14px}
+.breadcrumb a{color:#2B2E6E;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;min-height:44px}
 .breadcrumb a:hover{text-decoration:underline}
-.breadcrumb .sep{color:var(--ink-muted);opacity:.6}
-.breadcrumb .cur{color:var(--ink);font-weight:700}
+.breadcrumb .sep{color:var(--text-muted)}
+.breadcrumb .cur{color:var(--text-strong);font-weight:700}
 .page-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.page-head .mascot{font-size:40px;filter:drop-shadow(0 4px 0 var(--htc-31-31-31-015));animation:mascot 3.2s ease-in-out infinite}
+.page-head .mascot{font-size:40px;filter:drop-shadow(0 4px 0 rgba(78,126,66,.15));animation:mascot 3.2s ease-in-out infinite}
 @keyframes mascot{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-4deg) translateY(-5px)}}
 .page-head h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
-.page-head .sub{font-size:0.8125rem;color:var(--ink-muted);margin-top:4px}
+.page-head .sub{font-size:0.8125rem;color:var(--text-muted);margin-top:4px}
 
 /* ===== Tabs（三 tab 状态 + 计数徽章）===== */
-.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:3px solid var(--htc-31-31-31-012);margin-bottom:20px}
-.tab{border:3px solid transparent;border-bottom:none;border-radius:12px 12px 0 0;background:transparent;color:var(--ink-strong);padding:11px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
-.tab:hover{background:var(--htc-31-31-31-005)}
-.tab.on{background:var(--candy-bg);border-color:var(--candy-orange);border-bottom:3px solid var(--candy-orange);color:var(--candy-orange);position:relative;top:1px}
-.tab .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--htc-31-31-31-001);color:var(--ink-strong);font-size:11px;font-weight:800;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
-.tab.on .cnt{background:var(--candy-orange);color:var(--ht-fff)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:2px solid rgba(46,42,63,.12);margin-bottom:20px}
+.tab{border:0;border-radius:var(--radius-btn) var(--radius-btn) 0 0;background:transparent;color:var(--text-strong);padding:11px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:8px;min-height:44px}
+.tab:hover{background:rgba(46,42,63,.06)}
+.tab.on{background:var(--bg-raised);color:var(--text-strong);position:relative;top:1px;box-shadow:var(--clay-shadow-light)}
+.tab .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:rgba(46,42,63,.08);color:var(--text-strong);font-size:11px;font-weight:800;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+.tab.on .cnt{background:var(--clay-mint);color:var(--text-strong)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
 /* ===== Grid lg:2 CohortCard ===== */
 .grid{display:grid;grid-template-columns:1fr;gap:18px}
 @media(min-width:768px){.grid{grid-template-columns:repeat(2,1fr)}}
-.cohort-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-3d);display:flex;flex-direction:column;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease}
-.cohort-card:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--htc-31-31-31-014)}
-/* 封面横条：糖果渐变 + 系列名 + 班次徽章 + 吉祥物 */
-.cc-cover{position:relative;display:flex;align-items:center;gap:12px;padding:16px 18px;color:var(--ht-fff);overflow:hidden}
-.cc-cover .blob{position:absolute;border-radius:50%;opacity:.2;pointer-events:none}
-.cc-cover .blob.b1{width:120px;height:120px;background:var(--ht-fff);top:-46px;right:-26px}
-.cc-cover .blob.b2{width:70px;height:70px;background:var(--candy-yellow);bottom:-30px;left:34%}
-.cc-cover .mascot{position:relative;font-size:34px;flex-shrink:0;filter:drop-shadow(0 3px 0 var(--htc-31-31-31-018))}
+.cohort-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);overflow:hidden;box-shadow:var(--clay-shadow-light);display:flex;flex-direction:column;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.cohort-card:hover{transform:translateY(-2px);box-shadow:var(--clay-shadow-raised)}
+/* 封面横条：浅黏土渐变 + 深字（G7 对比度）+ 系列名 + 班次徽章 + 吉祥物 */
+.cc-cover{position:relative;display:flex;align-items:center;gap:12px;padding:16px 18px;color:var(--text-strong);overflow:hidden}
+.cc-cover .blob{position:absolute;border-radius:50%;opacity:.5;pointer-events:none}
+.cc-cover .blob.b1{width:120px;height:120px;background:rgba(255,255,255,.5);top:-46px;right:-26px}
+.cc-cover .blob.b2{width:70px;height:70px;background:rgba(255,255,255,.4);bottom:-30px;left:34%}
+.cc-cover .mascot{position:relative;font-size:34px;flex-shrink:0;filter:drop-shadow(0 3px 0 rgba(78,126,66,.15))}
 .cc-cover .tt{position:relative;min-width:0;flex:1}
-.cc-cover .series{font-size:11px;font-weight:700;opacity:.92;letter-spacing:.02em}
-.cc-cover .name{font-size:17px;font-weight:800;line-height:1.3;margin-top:2px;text-shadow:0 2px 0 var(--htc-31-31-31-002);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc-cover .badge{position:relative;flex-shrink:0;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;border:2px solid var(--ht-fff);background:var(--htc-31-31-31-032);backdrop-filter:blur(3px)}
-.cc-cover .badge.b-active{background:var(--candy-green);border-color:var(--ht-fff)}
-.cc-cover .badge.b-done{background:var(--htc-31-31-31-055);border-color:var(--htc-255-255-255-007)}
-.cc-cover .badge.b-refunded{background:var(--gray-500);border-color:var(--gray-300)}
-/* 封面渐变族（按系列 id 派生，对齐 courses.html）*/
-.cov--t1{background:linear-gradient(135deg,var(--candy-orange),var(--candy-orange-soft-end))}
-.cov--t2{background:linear-gradient(135deg,var(--candy-green),var(--candy-green-soft-end))}
-.cov--t3{background:linear-gradient(135deg,var(--candy-purple),var(--candy-purple-soft-end))}
-.cov--t4{background:linear-gradient(135deg,var(--candy-blue),var(--candy-blue-soft-end))}
-.cov--t5{background:linear-gradient(135deg,var(--candy-yellow),var(--candy-yellow-soft-end))}
+.cc-cover .series{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text-strong)}
+.cc-cover .name{font-size:17px;font-weight:800;line-height:1.3;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cover .badge{position:relative;flex-shrink:0;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;border:0;background:rgba(255,255,255,.72);color:var(--text-strong)}
+.cc-cover .badge.b-active{background:var(--clay-mint);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.cc-cover .badge.b-done{background:rgba(255,255,255,.72);color:var(--text-strong)}
+.cc-cover .badge.b-refunded{background:#DEDBE8;color:var(--text-strong)}
+/* 封面渐变族（浅黏土，按系列 id 派生）*/
+.cov--t1{background-color:var(--clay-peach);background-image:linear-gradient(135deg,#FFD0C1,var(--clay-peach))}
+.cov--t2{background-color:var(--clay-mint);background-image:linear-gradient(135deg,#A9E5C6,var(--clay-mint))}
+.cov--t3{background-color:var(--clay-lavender);background-image:linear-gradient(135deg,#D9D1FF,var(--clay-lavender))}
+.cov--t4{background-color:var(--clay-sky);background-image:linear-gradient(135deg,#D5EAFB,var(--clay-sky))}
+.cov--t5{background-color:var(--clay-lemon);background-image:linear-gradient(135deg,#FFEBAB,var(--clay-lemon))}
 /* 已退款：整卡灰色态 */
 .cohort-card.refunded{filter:saturate(.25) opacity(.86)}
-.cohort-card.refunded .cc-cover{background:linear-gradient(135deg,var(--gray-400),var(--gray-600))!important}
+.cohort-card.refunded .cc-cover{background-image:none!important;background:#DEDBE8!important}
 /* 卡片体 */
 .cc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px;flex:1}
 .prog-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.prog-label{font-size:0.8125rem;color:var(--ink-strong);font-weight:700}
-.prog-pct{font-size:0.8125rem;font-weight:800;color:var(--candy-green);font-variant-numeric:tabular-nums}
-.prog-pct.hot{color:var(--candy-orange)}
-.prog-bar{height:14px;border-radius:999px;background:var(--htc-31-31-31-001);overflow:hidden;border:2px solid var(--htc-31-31-31-014)}
-.prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--candy-green),var(--candy-green-bright));box-shadow:inset 0 -3px 0 var(--htc-31-31-31-012);transition:width .6s cubic-bezier(.34,1.56,.64,1)}
-.prog-fill.hot{background:linear-gradient(90deg,var(--candy-orange),var(--candy-orange-bright))}
-.prog-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-muted)}
-.prog-meta b{color:var(--ink-strong);font-weight:700}
-.next-lesson{display:flex;align-items:center;gap:8px;background:var(--candy-green-soft);border:2px dashed var(--htc-88-204-2-004);border-radius:12px;padding:9px 12px;font-size:0.8125rem;color:var(--ink-strong)}
-.next-lesson .clock{font-size:0.9375rem;flex-shrink:0}
+.prog-label{font-size:0.8125rem;color:var(--text-strong);font-weight:700}
+.prog-pct{font-size:0.8125rem;font-weight:800;color:#2E7D4F;font-variant-numeric:tabular-nums}
+.prog-pct.hot{color:var(--page-accent)}
+.prog-bar{height:14px;border-radius:999px;background:rgba(46,42,63,.08);overflow:hidden;border:0}
+.prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--clay-mint),#5FB98C);transition:width .6s var(--ease-clay)}
+.prog-fill.hot{background:linear-gradient(90deg,var(--clay-lavender),#9C8BE0)}
+.prog-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--text-muted)}
+.prog-meta b{color:var(--text-strong);font-weight:700}
+.next-lesson{display:flex;align-items:center;gap:8px;background:rgba(125,212,168,.20);border:0;border-radius:var(--radius-input);padding:9px 12px;font-size:0.8125rem;color:var(--text-strong);min-height:44px}
+.next-lesson .clock{font-size:0.9375rem;flex-shrink:0;display:inline-flex}
 .next-lesson .nl-text{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.next-lesson b{color:var(--candy-green-deep);font-weight:800}
-.next-lesson .when{margin-left:auto;flex-shrink:0;font-weight:700;color:var(--ink-strong);font-variant-numeric:tabular-nums;padding-left:8px}
+.next-lesson b{color:#2E7D4F;font-weight:800}
+.next-lesson .when{margin-left:auto;flex-shrink:0;font-weight:700;color:var(--text-strong);font-variant-numeric:tabular-nums;padding-left:8px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
 /* 移动端 ≤480px：主按钮全宽换行，辅按钮自动折行，杜绝挤占 */
 @media(max-width:480px){
   .actions .btn-primary{flex:1 1 100%}
   .actions .btn-ghost{flex:1 1 auto}
 }
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:3px solid var(--ink);border-radius:12px;font-weight:800;font-size:0.8125rem;padding:9px 14px;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;user-select:none}
-.btn:hover{transform:translateY(-1px)}
-.btn:active{transform:translateY(1px);box-shadow:none}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-primary{color:var(--ht-fff);background:var(--candy-green);box-shadow:0 4px 0 var(--candy-green-deep)}
-.btn-primary:hover{background:var(--candy-green-hover)}
-.btn-ghost{background:var(--ht-fff);color:var(--ink-strong);box-shadow:0 4px 0 var(--htc-31-31-31-016)}
-.btn-ghost:hover{border-color:var(--candy-purple);color:var(--candy-purple)}
-.btn-danger{color:var(--ht-fff);background:var(--candy-red);box-shadow:0 4px 0 var(--htc-255-75-75-004)}
-.btn-soft{background:var(--candy-purple-soft);color:var(--candy-purple);border-color:var(--candy-purple);box-shadow:0 4px 0 var(--htc-124-58-237-025)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:0.8125rem;padding:9px 16px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay),background var(--motion-fast) var(--ease-clay);user-select:none}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+.btn .ic{width:1.05em;height:1.05em}
+.btn-primary{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}
+.btn-primary:active{box-shadow:var(--clay-shadow-press-coral)}
+.btn-ghost{background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-ghost:hover{color:var(--page-accent)}
+.btn-danger{color:#FFFFFF;background:var(--status-danger);box-shadow:4px 6px 14px rgba(198,62,74,.30)}
+.btn-soft{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
 /* 已完成卡片操作行 */
 .done-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
 /* 已退款信息行 */
-.refund-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-muted);margin-top:auto}
-.refund-note b{color:var(--ink-strong)}
+.refund-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-top:auto}
+.refund-note b{color:var(--text-strong)}
 
 /* ===== 空态 ===== */
-.empty{border:3px dashed var(--border-chip);border-radius:var(--radius-xl);padding:56px 20px;text-align:center;background:var(--ht-fff)}
-.empty .icon{width:64px;height:64px;margin:0 auto 16px;border-radius:20px;background:var(--candy-green-soft);display:grid;place-items:center;font-size:30px}
-.empty .t{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px}
-.empty .d{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:18px}
-.empty .btn-primary{font-size:14px;padding:12px 24px;border-radius:14px}
+.empty{border:2px dashed var(--border-chip);border-radius:var(--radius-card);padding:56px 20px;text-align:center;background:var(--bg-raised)}
+.empty .icon{width:64px;height:64px;margin:0 auto 16px;border-radius:var(--radius-icon-tile);background:rgba(125,212,168,.25);display:grid;place-items:center;font-size:30px;color:var(--text-strong)}
+.empty .icon .ic{width:30px;height:30px}
+.empty .t{font-size:17px;font-weight:800;color:var(--text-strong);margin-bottom:6px}
+.empty .d{font-size:0.8125rem;color:var(--text-muted);margin-bottom:18px}
+.empty .btn-primary{font-size:14px;padding:12px 24px}
 
 /* ===== Skeleton ===== */
-.skeleton .shape{background:linear-gradient(100deg,var(--htc-31-31-31-008) 40%,var(--htc-31-31-31-002) 50%,var(--htc-31-31-31-008) 60%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px}
+.skeleton .shape{background:linear-gradient(100deg,#ECE9F4 40%,#F7F5FB 50%,#ECE9F4 60%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px}
 @keyframes shimmer{to{background-position:-200% 0}}
-.sk-card{background:var(--ht-fff);border:3px solid var(--border-chip);border-radius:var(--radius-xl);overflow:hidden}
+.sk-card{background:var(--bg-raised);border:2px solid var(--border-chip);border-radius:var(--radius-card);overflow:hidden}
 .sk-card .sk-cover{height:86px}
 .sk-card .sk-body{padding:16px 18px;display:grid;gap:12px}
 .sk-card .sk-line{height:14px}
@@ -148,9 +154,9 @@ select,input{font-family:inherit}
 .sk-card .sk-line.w100{width:100%}
 
 /* ===== ErrorState ===== */
-.error{border:3px solid var(--htc-255-75-75-004);background:var(--error-bg);border-radius:var(--radius-xl);padding:44px 20px;text-align:center}
-.error .t{font-size:1rem;font-weight:800;color:var(--ink);margin-bottom:6px}
-.error .d{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:18px}
+.error{border:0;background:rgba(198,62,74,.10);border-radius:var(--radius-card);padding:44px 20px;text-align:center}
+.error .t{font-size:1rem;font-weight:800;color:var(--text-strong);margin-bottom:6px}
+.error .d{font-size:0.8125rem;color:var(--text-muted);margin-bottom:18px}
 .error .btn-danger{font-size:0.8125rem;padding:10px 20px}
 
 /* 全局焦点可见（a11y：不依赖默认焦点环）*/
@@ -287,6 +293,19 @@ select,input{font-family:inherit}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-item.active:hover{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -325,8 +344,8 @@ select,input{font-family:inherit}
   <!-- Tabs：enroll_status 驱动（SDK tabs：id + aria-controls + aria-selected + 方向键导航）-->
   <div class="tabs" role="tablist" aria-label="班次状态">
     <button class="tab on" id="tabbtn-active" role="tab" aria-selected="true" aria-controls="tab-active" data-tab="active" tabindex="0">学习中 <span class="cnt">2</span></button>
-    <button class="tab" id="tabbtn-completed" role="tab" aria-selected="false" aria-controls="tab-completed" data-tab="completed" tabindex="-1">已完成 <span class="cnt">1</span></button>
-    <button class="tab" id="tabbtn-refunded" role="tab" aria-selected="false" aria-controls="tab-refunded" data-tab="refunded" tabindex="-1">已退款 <span class="cnt">1</span></button>
+    <button class="tab" id="tabbtn-completed" role="tab" aria-selected="false" aria-controls="tab-completed" data-tab="completed" tabindex="0">已完成 <span class="cnt">1</span></button>
+    <button class="tab" id="tabbtn-refunded" role="tab" aria-selected="false" aria-controls="tab-refunded" data-tab="refunded" tabindex="0">已退款 <span class="cnt">1</span></button>
   </div>
 
   <!-- 主内容区（JS 按 state 切换 success / loading / error / empty）-->
@@ -363,12 +382,12 @@ select,input{font-family:inherit}
                 <span>下次课: <b>模块一 · 课次3</b></span>
               </div>
               <div class="next-lesson">
-                <span class="clock" aria-hidden="true">⏰</span>
+                <span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span>
                 <span class="nl-text">下次课 <b>变量与类型</b></span>
                 <span class="when">03-08 09:00</span>
               </div>
               <div class="actions">
-                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习">▶ 继续学习</button>
+                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</button>
                 <button class="btn btn-ghost" disabled title="登录后查看真实班次详情">课程详情</button>
                 <button class="btn btn-ghost" disabled title="登录后可用（售后暂未开放）">售后</button>
               </div>
@@ -401,12 +420,12 @@ select,input{font-family:inherit}
                 <span>下次课: <b>模块三 · 课次8</b></span>
               </div>
               <div class="next-lesson">
-                <span class="clock" aria-hidden="true">⏰</span>
+                <span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span>
                 <span class="nl-text">下次课 <b>数列与递推</b></span>
                 <span class="when">03-10 19:30</span>
               </div>
               <div class="actions">
-                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习">▶ 继续学习</button>
+                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</button>
                 <button class="btn btn-ghost" disabled title="登录后查看真实班次详情">课程详情</button>
                 <button class="btn btn-ghost" disabled title="登录后可用（售后暂未开放）">售后</button>
               </div>
@@ -415,7 +434,7 @@ select,input{font-family:inherit}
         </div>
         <!-- B5：学习中空态（仅该 Tab 无数据且有其他数据时显示） -->
         <div class="empty" id="tab-empty-active" style="display:none" role="status">
-          <div class="icon" aria-hidden="true">🌱</div>
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
           <div class="t">暂无进行中的班次</div>
           <p class="d">报名并开课后，进行中的班次会出现在这里</p>
         </div>
@@ -449,7 +468,7 @@ select,input{font-family:inherit}
                 <span>结课: <b>2026-06-30</b></span>
               </div>
               <div class="done-actions">
-                <button class="btn btn-soft" disabled title="证书功能即将上线">🏆 查看证书</button>
+                <button class="btn btn-soft" disabled title="证书功能即将上线"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg> 查看证书</button>
                 <button class="btn btn-ghost" disabled title="登录后在课程详情页写评价">写评价</button>
                 <button class="btn btn-ghost" disabled title="登录后可从课程中心再次报名">再次报名</button>
               </div>
@@ -458,7 +477,7 @@ select,input{font-family:inherit}
         </div>
         <!-- B5：已完成空态 -->
         <div class="empty" id="tab-empty-completed" style="display:none" role="status">
-          <div class="icon" aria-hidden="true">🎓</div>
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-graduation-cap"/></svg></div>
           <div class="t">还没有完成过班次</div>
           <p class="d">结课的班次会沉淀在这里</p>
         </div>
@@ -487,7 +506,7 @@ select,input{font-family:inherit}
                 <div class="prog-fill" style="width:0%"></div>
               </div>
               <div class="refund-note">
-                <span aria-hidden="true">💸</span>
+                <span aria-hidden="true"></span>
                 <span>已退款 <b>¥2,999</b> · 退款单 <b>RF20260812001</b>（2026-08-12）</span>
               </div>
               <div class="actions">
@@ -498,7 +517,7 @@ select,input{font-family:inherit}
         </div>
         <!-- B5：已退款空态 -->
         <div class="empty" id="tab-empty-refunded" style="display:none" role="status">
-          <div class="icon" aria-hidden="true">💸</div>
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg></div>
           <div class="t">暂无退款班次</div>
           <p class="d">退款相关的班次记录会展示在这里</p>
         </div>
@@ -522,7 +541,7 @@ select,input{font-family:inherit}
     <!-- ============ ERROR：加载失败 ============ -->
     <div id="panel-error" style="display:none">
       <div class="error" role="alert">
-        <div class="t">😵 加载我的班次失败</div>
+        <div class="t"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg> 加载我的班次失败</div>
         <p class="d">网络开小差了，请稍后重试</p>
         <button class="btn btn-danger">↻ 重试</button>
       </div>
@@ -531,7 +550,7 @@ select,input{font-family:inherit}
     <!-- ============ EMPTY：空态 ============ -->
     <div id="panel-empty" style="display:none">
       <div class="empty" role="status">
-        <div class="icon" aria-hidden="true">🎒</div>
+        <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
         <div class="t">还没有报名班次</div>
         <p class="d">去课程中心挑一门喜欢的课程，开始你的学习之旅吧</p>
         <button class="btn btn-primary">去选课 →</button>
@@ -598,11 +617,11 @@ tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
     var cov = "cov--t" + (((c.cohort_id || 0) % 5) + 1);
     var next = "";
     if (c.next_session && c.next_session.session_title) {
-      next = '<div class="next-lesson"><span class="clock" aria-hidden="true">⏰</span><span class="nl-text">下次课 <b>' + c.next_session.session_title + '</b></span>'
+      next = '<div class="next-lesson"><span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span><span class="nl-text">下次课 <b>' + c.next_session.session_title + '</b></span>'
         + (c.next_session.teaching_at ? '<span class="when">' + c.next_session.teaching_at + '</span>' : '') + '</div>';
     }
     var action = st === "active"
-      ? '<a class="btn btn-primary" href="learning.html?cohort_id=' + c.cohort_id + '">▶ 继续学习</a><a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>'
+      ? '<a class="btn btn-primary" href="learning.html?cohort_id=' + c.cohort_id + '"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</a><a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>'
       : '<a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>';
     return '<article class="cohort-card' + (st === "refunded" || st === "cancelled" ? " refunded" : "") + '">'
       + '<div class="cc-cover ' + cov + '"><span class="blob b1" aria-hidden="true"></span><span class="blob b2" aria-hidden="true"></span>'
