@@ -24,23 +24,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>个人中心 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
-:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-015: rgba(0,0,0,0.15); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-005: rgba(124,58,237,0.05); --htc-124-58-237-010: rgba(124,58,237,0.1); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-134-208-018: rgba(255,134,208,0.18); --htc-255-200-0-022: rgba(255,200,0,0.22); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-silver:#e5e7eb;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff; --candy-blue-soft:#e3f5ff;
-  --candy-bg:#fff9f0;
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --candy-purple-deep:#5b21b6; --candy-yellow-deep:#c9a000; --candy-red-deep:#d63e3e; --candy-blue-deep:#0f86b8;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  --gray-300:#cfcfcf; --white:#fff;
-  --border-chip:rgba(31,31,31,.15);
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-124-58-237-001: rgba(124, 58, 237, 0.001); --line: #e5e7eb;}
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）===== */
+:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-015: rgba(0,0,0,0.15); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-005: rgba(78,126,66,0.05); --htc-124-58-237-010: rgba(78,126,66,0.1); --htc-24-24-24-002: rgba(46, 42, 63, 0.02); --htc-24-24-24-004: rgba(46, 42, 63, 0.04); --htc-24-24-24-006: rgba(46, 42, 63, 0.06); --htc-24-24-24-008: rgba(46, 42, 63, 0.08); --htc-24-24-24-012: rgba(46, 42, 63, 0.12); --htc-255-134-208-018: rgba(245,184,208,0.25); --htc-255-200-0-022: rgba(245,215,122,0.3); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-31-31-31-005: rgba(46,42,63,0.05); --htc-31-31-31-014: rgba(46,42,63,0.14); --htc-31-31-31-018: rgba(46,42,63,0.18); --htc-31-31-31-045: rgba(46,42,63,0.45); --htc-47-178-135-060: rgba(78, 126, 66, 0.6); --htc-47-178-135-030: rgba(78,126,66,0.3);  --ht-0003: #0003; --ht-06c179: var(--clay-mint); --ht-0ac27b: var(--clay-mint); --ht-0ecd70: var(--clay-mint); --ht-0fdc78: var(--clay-mint); --ht-1e8b56: rgb(78,126,66); --ht-222427: #222427; --ht-2fb287: var(--clay-mint); --ht-32f08c: var(--clay-mint); --ht-3ee1a3: var(--clay-mint); --ht-56637726: #56637726; --ht-60f2bd: #DFEED8; --ht-63c5b1: #63c5b1; --ht-a0fde7: #DFEED8; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #EEF4E9; --ht-eee: #EEF4E9; --ht-f4f4f4: #F6FAF5; --ht-f5f9fe: var(--bg-input); --ht-f7f1e6: #F6FAF5; --ht-ffea8e: var(--clay-lemon); --ht-fff: #fff; --ht-ffffff0f: #ffffff0f;
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-silver:rgba(46,42,63,.15);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF; --candy-blue-soft:#E9F2FB;
+  --candy-bg:var(--bg-app);
+  --candy-orange-deep:rgb(214,82,70); --candy-orange-hover:#FF8E81;
+  --candy-green-deep:rgb(78,126,66); --candy-green-hover:var(--clay-moss);
+  --candy-purple-deep:var(--text-strong); --candy-yellow-deep:var(--text-strong); --candy-red-deep:rgb(178,45,55); --candy-blue-deep:rgb(80,142,196);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --gray-300:rgba(46,42,63,.2); --white:var(--bg-raised);
+  --border-chip:rgba(78,126,66,.22);
+  --shadow-3d:var(--clay-shadow-raised);
+  --radius-md:var(--radius-input); --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-124-58-237-001: rgba(78, 126, 66, 0.001); --line: rgba(78,126,66,.22);}
+/* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+:root{ --card:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42); --muted:var(--text-muted); --shadow:var(--clay-shadow-light); --r:var(--radius-input);}
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:auto;min-height:100dvh}
 body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
@@ -4163,6 +4166,42 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
 .t10-chip.ok{background:var(--candy-green-soft);color:var(--candy-green-deep)}
 .t10-state{border:2px dashed var(--border-chip);border-radius:14px;padding:16px;text-align:center;font-size:13px;font-weight:700;color:var(--ink-muted);background:var(--white)}
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（对比度、44px 点按）；选择器/状态类显隐语义零改动 ===== */
+.me-head,.nav-card,.form-card,.state{border:0;box-shadow:var(--clay-shadow-raised)}
+.avatar{border:0;background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-moss)}
+.edit-btn{border:0;color:var(--text-strong);background:var(--clay-lavender);box-shadow:var(--clay-shadow-light);min-height:44px}
+.pref-tag{border:0;color:var(--text-strong);background:#F3F1FF}
+.s-title .ico{border:0;color:var(--text-strong)}
+.s-title .ico .ic,.sc-ico .ic,.n-ico .ic{width:19px;height:19px}
+.stat-card,.sk-card{border:0;box-shadow:var(--clay-shadow-light)}
+.stat-card .sc-ico{border:0;color:var(--text-strong)}
+.nav-item{border-bottom:2px dashed rgba(78,126,66,.18)}
+.nav-item .n-ico{border:0;color:var(--text-strong)}
+.nav-item .n-arrow{border:0;color:var(--text-strong)}
+.field input,.field select{height:44px;border:0;box-shadow:var(--clay-shadow-input);background:var(--bg-input);color:var(--text-strong)}
+.field input:focus,.field select:focus{outline:2px solid var(--focus-ring);outline-offset:2px;box-shadow:var(--clay-shadow-input-focus)}
+.field .req{color:var(--status-danger)}
+.save-btn{border:0;min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.retry{border:0;min-height:44px;border-radius:var(--radius-btn);color:#fff;background:var(--status-danger);box-shadow:var(--clay-shadow-press-coral)}
+.state{border:0}
+.t10-btn{min-height:44px;min-width:44px;border:0;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-light);color:var(--text-strong);background:var(--bg-raised)}
+.t10-toolbar select{min-height:44px;border:0;border-radius:var(--radius-input);box-shadow:var(--clay-shadow-input);background:var(--bg-input);color:var(--text-strong)}
+.t10-chip{color:var(--text-strong)!important}
+.t10-state{border:2px dashed rgba(78,126,66,.28)}
+.em-close{min-width:44px;min-height:44px}
+.em-title .ic{width:18px;height:18px;color:var(--text-strong)}
+.pf-goal{min-height:44px;color:var(--text-strong)}
+.pf-goal.on{color:var(--text-strong)}
+input::placeholder,textarea::placeholder{color:var(--text-muted)!important;opacity:1}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+</style>
 </head>
 <body data-st="ok" class="on">
 
@@ -4193,12 +4232,12 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
 
     <!-- 个人中心头卡：头像渐变 + 昵称/目标/偏好 -->
     <section class="me-head" aria-label="个人资料">
-      <div class="avatar" aria-hidden="true">🐻</div>
+      <div class="avatar" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-user"></use></svg></div>
       <div class="me-info">
         <div class="name-row">
           <!-- 静态骨架用中性占位（—），真实数据返回后由脚本覆盖；禁写假人名/假数字 -->
           <h1 id="me-name">—</h1>
-          <button class="edit-btn">✏️ 编辑资料</button>
+          <button class="edit-btn"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg> 编辑资料</button>
         </div>
         <div class="me-goal">学习目标：<b id="me-goal">编程入门</b></div>
         <div class="me-pref" id="me-prefs">
@@ -4212,30 +4251,30 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     <!-- 数据概览 4 StatCard -->
     <section class="section" aria-labelledby="stats-sec">
       <div class="s-title">
-        <span class="ico blue" aria-hidden="true">📊</span>
+        <span class="ico blue" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span>
         <div><div class="ttl" id="stats-sec">数据概览</div><div class="sub">学习时长 / 在学班次 · 积分 / 等级</div></div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true">⏱️</span><div class="sc-val"><span class="sc-num" id="st-time">—</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
-        <div class="stat-card green"><span class="sc-ico" aria-hidden="true">✅</span><div class="sc-val"><span class="sc-num" id="st-sessions">0</span><span class="sc-unit">班次</span></div><div class="sc-label">在学班次</div></div>
-        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true">💎</span><div class="sc-val"><span class="sc-num" id="st-points">—</span></div><div class="sc-label">积分</div></div>
-        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true">🏅</span><div class="sc-val"><span class="sc-num" id="st-level">—</span></div><div class="sc-label">等级</div></div>
+        <div class="stat-card blue"><span class="sc-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-play"></use></svg></span><div class="sc-val"><span class="sc-num" id="st-time">—</span><span class="sc-unit">h</span></div><div class="sc-label">学习时长</div></div>
+        <div class="stat-card green"><span class="sc-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-check-circle"></use></svg></span><div class="sc-val"><span class="sc-num" id="st-sessions">0</span><span class="sc-unit">班次</span></div><div class="sc-label">在学班次</div></div>
+        <div class="stat-card yellow"><span class="sc-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-trophy"></use></svg></span><div class="sc-val"><span class="sc-num" id="st-points">—</span></div><div class="sc-label">积分</div></div>
+        <div class="stat-card purple"><span class="sc-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg></span><div class="sc-val"><span class="sc-num" id="st-level">—</span></div><div class="sc-label">等级</div></div>
       </div>
     </section>
 
     <!-- 功能入口 7 行（J20 跳转表）-->
     <section class="section" aria-labelledby="nav-sec">
       <div class="s-title">
-        <span class="ico purple" aria-hidden="true">🧭</span>
+        <span class="ico purple" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-gear"></use></svg></span>
         <div><div class="ttl" id="nav-sec">功能入口</div><div class="sub">我的订单 / 优惠券 / 收藏 / 班次 / 退款 / 工单 / 错题本</div></div>
       </div>
       <div class="nav-card">
-        <a class="nav-item yellow" href="practice.html"><span class="n-ico" aria-hidden="true">📝</span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="favorites.html"><span class="n-ico" aria-hidden="true">⭐</span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html"><span class="n-ico" aria-hidden="true">📚</span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="#sec-orders"><span class="n-ico" aria-hidden="true">🧾</span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">本页下方我的全部订单</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <a class="nav-item green" href="coupons.html"><span class="n-ico" aria-hidden="true">🎟️</span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">券中心：领券 / 可用 / 下单闭环</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item yellow" href="practice.html"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span><span class="n-label"><span class="n-title">错题本</span><span class="n-desc">专项练习 · 错题复习与解析</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="favorites.html"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-star"></use></svg></span><span class="n-label"><span class="n-title">我的收藏</span><span class="n-desc">收藏的课程，快速回到心仪内容</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item blue" href="my-cohorts.html"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span><span class="n-label"><span class="n-title">我的班次</span><span class="n-desc">已报名课程 · 继续学习 / 售后</span></span><span class="n-arrow" aria-hidden="true">›</span></a><a class="nav-item yellow" href="#sec-orders"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-copy"></use></svg></span><span class="n-label"><span class="n-title">我的订单</span><span class="n-desc">本页下方我的全部订单</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <a class="nav-item green" href="coupons.html"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg></span><span class="n-label"><span class="n-title">我的优惠券</span><span class="n-desc">券中心：领券 / 可用 / 下单闭环</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
 
 
-        <a class="nav-item orange" href="refund.html"><span class="n-ico" aria-hidden="true">↩️</span><span class="n-label"><span class="n-title">退款记录</span><span class="n-desc">退款申请状态与进度</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
-        <div class="nav-item pink" role="note" aria-label="售后工单页未上线" style="cursor:default;opacity:.6"><span class="n-ico" aria-hidden="true">🎫</span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单页暂未上线（后端工单端点已有，页面待接）</span></span><span class="n-arrow" aria-hidden="true">›</span></div>
+        <a class="nav-item orange" href="refund.html"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-arrow-left"></use></svg></span><span class="n-label"><span class="n-title">退款记录</span><span class="n-desc">退款申请状态与进度</span></span><span class="n-arrow" aria-hidden="true">›</span></a>
+        <div class="nav-item pink" role="note" aria-label="售后工单页未上线" style="cursor:default;opacity:.6"><span class="n-ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-info"></use></svg></span><span class="n-label"><span class="n-title">售后工单</span><span class="n-desc">工单页暂未上线（后端工单端点已有，页面待接）</span></span><span class="n-arrow" aria-hidden="true">›</span></div>
 
       </div>
     </section>
@@ -4243,7 +4282,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     <!-- ===== task10：我的订单（GET /api/trade/orders 分页壳真实接线）===== -->
     <section class="section" aria-labelledby="orders-sec" id="sec-orders">
       <div class="s-title">
-        <span class="ico" aria-hidden="true">🧾</span>
+        <span class="ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-copy"></use></svg></span>
         <div><div class="ttl" id="orders-sec">我的订单</div><div class="sub">查看订单进度，支持按状态筛选</div></div>
       </div>
       <div class="t10-toolbar">
@@ -4269,7 +4308,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     <!-- ===== task10：我的优惠券（GET /api/coupons?status=unused 分页壳真实接线）===== -->
     <section class="section" aria-labelledby="coupons-sec" id="sec-coupons">
       <div class="s-title">
-        <span class="ico green" aria-hidden="true">🎟️</span>
+        <span class="ico green" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg></span>
         <div><div class="ttl" id="coupons-sec">我的优惠券（未使用）</div><div class="sub">未使用的优惠券；更多好券可去券中心领取</div></div>
       </div>
       <div class="t10-toolbar">
@@ -4285,7 +4324,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     <!-- ===== task10：我的收藏（GET /api/favorites → course-detail.html?id=）===== -->
     <section class="section" aria-labelledby="favs-sec" id="sec-favs">
       <div class="s-title">
-        <span class="ico blue" aria-hidden="true">⭐</span>
+        <span class="ico blue" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-star"></use></svg></span>
         <div><div class="ttl" id="favs-sec">我的收藏</div><div class="sub">收藏的课程，点击卡片快速回到课程详情</div></div>
       </div>
       <div class="t10-toolbar">
@@ -4298,7 +4337,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
     <!-- 学员档案表单（真实 GET/PUT /api/users/me/profile，字段对齐后端 UserProfile 契约）-->
     <section class="section" aria-labelledby="profile-sec">
       <div class="s-title">
-        <span class="ico green" aria-hidden="true">📝</span>
+        <span class="ico green" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span>
         <div><div class="ttl" id="profile-sec">学员档案</div><div class="sub">昵称 / 年级 / 学校 / 学习风格 / 每周可学时长 / 学习目标</div></div>
       </div>
       <form class="form-card" id="pfForm" novalidate>
@@ -4313,7 +4352,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
         <div class="em-err" id="pfErr"></div>
         <div class="form-actions">
           <span class="f-hint" style="margin-right:auto">保存后自动重新读取验证 · 同步到学习推荐与个人档案</span>
-          <button class="save-btn" type="submit" id="pfSave">💾 保存档案</button>
+          <button class="save-btn" type="submit" id="pfSave">保存档案</button>
         </div>
       </form>
     </section>
@@ -4331,10 +4370,10 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
   <!-- ========== 错误态 ========== -->
   <div class="page show-err">
     <div class="state" role="alert">
-      <div class="st-emoji" aria-hidden="true">😵</div>
+      <div class="st-emoji" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></div>
       <h3>个人中心加载失败</h3>
       <p>网络开小差了，请稍后重试。档案与学习数据暂不可用。</p>
-      <button class="retry">🔄 重试</button>
+      <button class="retry">重试</button>
     </div>
   </div>
 </div><!-- /.glayout -->
@@ -4523,7 +4562,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
 <div class="em-overlay" id="emOverlay" role="dialog" aria-modal="true" aria-labelledby="emTitle">
   <div class="em-modal">
     <div class="em-head">
-      <div class="em-title" id="emTitle">✏️ 编辑资料</div>
+      <div class="em-title" id="emTitle"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg> 编辑资料</div>
       <button type="button" class="em-close" id="emClose" aria-label="关闭">✕</button>
     </div>
     <p class="em-note">只保存你修改过的字段；学习目标 / 兴趣标签用逗号分隔，学科偏好用「编码:1-5」一行一个。</p>
@@ -4545,7 +4584,7 @@ a.t10-card:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--border-chip
       <div class="em-actions">
         <span class="f-hint">保存后个人中心头部立即更新</span>
         <button type="button" class="em-close-btn" id="emCancel" style="border:2px solid var(--ink);background:var(--white);border-radius:12px;padding:8px 18px;font-weight:800;cursor:pointer">取消</button>
-        <button type="submit" class="save-btn" id="emSave">💾 保存</button>
+        <button type="submit" class="save-btn" id="emSave">保存</button>
       </div>
     </form>
   </div>
