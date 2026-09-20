@@ -29,6 +29,13 @@ W-NEXT-2（2026-09-16）**补登记一条**：`knowledge_import`（知识库导�
 真实注册面因此变为 **8 个**（3 内置 + 5 DB），且 `admin_write` 类别**首次有实物**
 （T8-C1：`allowed ∧ risky` 不再是空集 → graph 路径 HITL interrupt 有真实触达面）。
 
+W-NEXT-WRITE1（2026-09-20，CR-WRITETOOLS-001 第一批，用户 P1-P6 裁定）：`favorite_add`
+真实注册为内置工具，**新类别 `user_write`（本人低危写）首例**。真实注册面变为 **9 个**
+（4 内置 + 5 DB）。契约语义变更：原契约「收藏写 = 仅 admin」按 P1 裁定改为 user_write
+（本人收藏）——矩阵 student/teacher/admin=allow、manager=deny；user_write **不入**
+WRITE_CLASSES → HITL 免弹卡（本人低危写）；executor 侧仍以注册期强属性
+write_class=True 收口角色校验（双保险）。变更单：`contracts/cr-writetools-001.md`。
+
 R15 原表里的 10 个写类工具名——`course_create` / `course_update` / `course_delete` /
 `question_create` / `question_update` / `question_delete` / `favorite_add` / `points_change` /
 `knowledge_import` / `order_create`——其中前 9 个在 executor 注册面与 `mcp_tool` 表**零命中**
@@ -60,7 +67,7 @@ class GateDecision:
     action_hint: str | None = None
 
 
-ToolClass = Literal["public_read", "course_write", "admin_write"]
+ToolClass = Literal["public_read", "course_write", "admin_write", "user_write"]
 
 # ACI 错误信封 code（contracts/reshape-r-aci.json error_envelope.shape.code，稳定字符串）
 DENIED_CODE = "permission_denied"
@@ -92,6 +99,7 @@ REGISTERED_BUILTIN_TOOLS = frozenset({
     "calculator",          # executor.py:933 register_builtin_tool
     "search_knowledge",    # executor.py:934 register_builtin_tool
     "knowledge_import",    # executor.py:935 register_builtin_tool（W-NEXT-2 上线的第一条写类工具）
+    "favorite_add",        # executor register_builtin_tool（W-NEXT-WRITE1：首条 user_write 工具，CR-WRITETOOLS-001）
 })
 
 REGISTERED_MCP_TOOLS = frozenset({
@@ -109,6 +117,7 @@ REGISTRY_EVIDENCE: dict[str, str] = {
     "calculator":       "app/mcp/executor.py:933 register_builtin_tool(\"calculator\", _calculator_handler)",
     "search_knowledge": "app/mcp/executor.py:934 register_builtin_tool(\"search_knowledge\", _search_knowledge_handler)",
     "knowledge_import": "app/mcp/executor.py:935 register_builtin_tool(\"knowledge_import\", _knowledge_import_handler)",
+    "favorite_add":     "app/mcp/executor.py register_builtin_tool(\"favorite_add\", _favorite_add_handler, write_class=True)（W-NEXT-WRITE1，CR-WRITETOOLS-001 第一批）",
     "add":              "SQL mcp_tool: id=2 tool_name=add server_id=1(stdio-echodemo) yn=1",
     "echo":             "SQL mcp_tool: id=3 tool_name=echo server_id=1(stdio-echodemo) yn=1",
     "list_alphabet":    "SQL mcp_tool: id=4 tool_name=list_alphabet server_id=1(stdio-echodemo) yn=1",
@@ -122,17 +131,24 @@ REGISTRY_EVIDENCE: dict[str, str] = {
 #    public_read  ：公开只读工具 —— student/manager/admin/teacher
 #    admin_write  ：写类工具（仅 admin）—— 2026-09-16 W-NEXT-2 起 knowledge_import 首次落地，
 #                   course_write 仍是空集（课程/题库写类无实物工具）
+#    user_write   ：本人低危写（W-NEXT-WRITE1 起 favorite_add 首例）—— 本人数据操作，
+#                   student/teacher/admin=allow、manager=deny；不入 WRITE_CLASSES（HITL 免卡）
 # ==================================================================
+# 写类内置工具排除集（不属 public_read）：knowledge_import=admin_write、favorite_add=user_write
+_PUBLIC_READ_EXCLUDE = frozenset({"knowledge_import", "favorite_add"})
 PUBLIC_READ_TOOLS: frozenset[str] = frozenset(
-    n for n in REGISTERED_TOOLS if n != "knowledge_import"
+    n for n in REGISTERED_TOOLS if n not in _PUBLIC_READ_EXCLUDE
 )
 
 TOOL_CLASS_MAP: dict[str, ToolClass] = {
     **{n: "public_read" for n in PUBLIC_READ_TOOLS},
     "knowledge_import": "admin_write",   # W-NEXT-2 步骤3：注册面实物 → 类别入映射表
+    "favorite_add": "user_write",        # W-NEXT-WRITE1（CR-WRITETOOLS-001）：本人收藏，P1 矩阵
 }
 
 # 写类类别（"一处改类，处处生效"：HITL 分级 / 缓存开关 / 权限门共用本集合）
+# ⚠️ user_write（本人低危写）**不入**本集合——HITL 免弹卡（P1/P3 裁定）；
+#    角色收口由 _CLASS_ALLOWED_ROLES 矩阵 + executor 注册期强属性双保险。
 WRITE_CLASSES: frozenset[str] = frozenset({"course_write", "admin_write"})
 
 
@@ -156,7 +172,8 @@ CONTRACT_PENDING_TOOLS: dict[str, ToolClass] = {
     # 契约 write_class_tools（仅 admin）—— 实物未注册
     # ⚠️ knowledge_import 已于 2026-09-16（W-NEXT-2 步骤3）真实注册为内置写类工具，
     #    按补登记流程移入 TOOL_CLASS_MAP（admin_write），不再挂起。
-    "favorite_add": "admin_write",
+    # ⚠️ favorite_add 已于 2026-09-20（W-NEXT-WRITE1，CR-WRITETOOLS-001 第一批）真实注册，
+    #    按用户 P1 裁定改类 user_write（本人收藏；student/teacher/admin=allow、manager=deny）迁出。
     "points_change": "admin_write",
     "order_create": "admin_write",
 }
@@ -203,6 +220,9 @@ _CLASS_ALLOWED_ROLES: dict[ToolClass, frozenset[str]] = {
     "public_read": frozenset({"student", "manager", "admin", "teacher"}),
     "course_write": frozenset({"manager", "admin"}),
     "admin_write": frozenset({"admin"}),
+    # W-NEXT-WRITE1 P1 裁定：本人收藏 student/teacher/admin=allow、manager=deny；
+    # guest/未知角色不进 KNOWN_ROLES → can_use_tool 默认 deny（fail-closed）。
+    "user_write": frozenset({"student", "teacher", "admin"}),
 }
 
 

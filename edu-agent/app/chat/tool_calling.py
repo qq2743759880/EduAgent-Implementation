@@ -42,6 +42,8 @@ _BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "calculator":       "本地四则运算计算器：对两个数字做加减乘除/取模（op=add|sub|mul|div|mod）",
     "search_knowledge": "知识库检索：按关键词 q/query 查询已入库学习资料，返回相关片段（支持降级返回）",
     "knowledge_import": "知识库导入（写类，管理员专用）：登记导入任务并后台拉起既有导入管道（visibility=private|public）",
+    # W-NEXT-WRITE1（CR-WRITETOOLS-001）：user_write 本人收藏，学生可用（manager 拒），无 HITL 卡
+    "favorite_add":     "收藏课程（写本人数据）：收藏指定 series_id 的课程系列（服务端幂等，重复收藏返回原记录）",
 }
 @dataclass
 class ToolMeta:
@@ -176,7 +178,24 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
         # ping 是无参探针工具，保留 args={}（与原实现等价）
         plans.append(ToolPlanItem(tool=ping_tool, args={}, reason="命中 ping 类关键词"))
 
-    # 3. echo 工具：「echo xxx」「重复 xxx」「回显 xxx」→ echo(text=xxx)
+    # 2b. W-NEXT-WRITE1（CR-WRITETOOLS-001）：favorite_add —— 「收藏课程 series_id 为 N」/
+    #    「收藏系列 3」/「收藏 id=3 的课」（user_write 本人收藏）。仅在**明确给出系列 ID** 时触发
+    #    （闲聊"我想收藏点东西"不误触发）；series_id 显式写法优先，次选「收藏+数字」紧凑写法。
+    fav_tool = by_lname.get("favorite_add")
+    if fav_tool is not None and "收藏" in q:
+        fm = (re.search(r"series[_\s]*id\s*(?:为|是|=|:|：)?\s*(\d+)", q_lower)
+              or re.search(r"(?:课程|系列|课)\s*(?:id|编号|号)?\s*(?:为|是|=|:|：)?\s*(\d+)", q_lower)
+              or re.search(r"收藏[^\d]{0,8}(\d+)", q))
+        if fm:
+            try:
+                plans.append(ToolPlanItem(
+                    tool=fav_tool, args={"series_id": int(fm.group(1))},
+                    reason=f"命中收藏类 series_id：{fm.group(1)}",
+                ))
+            except Exception:
+                pass
+
+    # 4. echo 工具：「echo xxx」「重复 xxx」「回显 xxx」→ echo(text=xxx)
     echo_tool = by_lname.get("echo")
     if echo_tool is not None:
         # 优先用原始 query 正则（大小写不敏感）提取内容，保留原大小写

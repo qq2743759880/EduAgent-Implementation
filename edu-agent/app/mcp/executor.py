@@ -1188,9 +1188,65 @@ async def _knowledge_import_handler(args: dict) -> str:
     }, ensure_ascii=False)
 
 
+# ============================================================
+# W-NEXT-WRITE1（CR-WRITETOOLS-001 第一批，用户 P1-P6 裁定 2026-09-20）
+# favorite_add —— 首个 user_write（本人低危写）内置工具
+# ============================================================
+_FAVORITE_ADD_SOURCE = "ai_chat"
+
+
+async def _favorite_add_handler(args: dict) -> str:
+    """收藏课程系列（user_write：本人收藏，P1 矩阵 student/teacher/admin=allow、manager=deny）。
+
+    单一执行事实源：直调既有 `market.service.add_favorite`（服务端幂等：已收藏返回原记录、
+    软删重收藏激活、未收藏新建）。user_id 以执行上下文为权威（_EXEC_CONTEXT 服务端注入），
+    **不从 args 取** —— 伪造他人收藏在结构上不可达。
+    参数精确校验（exact-pin 语义）：仅接受 series_id（int），多余键一律拒。
+    """
+    # ① 参数精确校验（先于身份校验：非法参数零副作用）
+    if "series_id" not in args or args.get("series_id") is None:
+        raise ValueError("favorite_add 缺少 series_id（int，课程系列 ID）")
+    sid = args["series_id"]
+    if isinstance(sid, bool) or not isinstance(sid, int):
+        raise ValueError(f"series_id 必须是整数，收到：{type(sid).__name__}")
+    extra = set(args) - {"series_id"}
+    if extra:
+        raise ValueError(f"favorite_add 不接受多余参数：{sorted(extra)}（仅 series_id）")
+
+    # ② 操作者身份：执行上下文权威（防 args 伪造 user_id）
+    ctx = _EXEC_CONTEXT.get() or {}
+    user_id = int(ctx.get("operator_user_id") or 0)
+    if user_id <= 0:
+        raise ValueError("favorite_add 缺少操作者身份（执行上下文 operator_user_id 为空）")
+
+    from app.domains.market import service as _market_service
+
+    try:
+        item = await _market_service.add_favorite(
+            user_id=user_id, series_id=sid, favorite_source=_FAVORITE_ADD_SOURCE,
+        )
+    except AppException as exc:
+        # 业务错（系列不存在/已下架等）→ 结构化回传，严禁伪装成功
+        return json.dumps({"ok": False, "code": exc.code, "message": exc.message,
+                           "series_id": sid}, ensure_ascii=False)
+    return json.dumps({
+        "ok": True,
+        "favorite_id": int(item.favorite_id),
+        "series_id": int(item.series_id),
+        "series_title": item.series_title,
+        "favorite_source": _FAVORITE_ADD_SOURCE,
+        "idempotent_note": "服务端幂等：重复收藏返回原记录",
+        "operator_user_id": user_id,
+    }, ensure_ascii=False)
+
+
 register_builtin_tool("calculator", _calculator_handler)
 register_builtin_tool("search_knowledge", _search_knowledge_handler)
 register_builtin_tool("knowledge_import", _knowledge_import_handler, write_class=True)
+# W-NEXT-WRITE1：write_class=True 仅表示「executor 收口做角色校验」（注册期强属性，
+# CR-WNEXT2-executor-gate-bypass 先例）；HITL 弹卡与否由 permission_gate 类别决定
+# （user_write 不入 WRITE_CLASSES → 免卡）——两个属性正交，勿混读。
+register_builtin_tool("favorite_add", _favorite_add_handler, write_class=True)
 
 
 async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str, attempt: int,
@@ -1205,19 +1261,38 @@ async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str,
     # task-T1-②：内置/本地工具优先解析（命中即真实执行，非"未注册自然走指南"）
     builtin = _BUILTIN_TOOL_HANDLERS.get(tool_name)
     if builtin is not None:
+        _t0 = time.perf_counter()
         try:
             content = await builtin(dict(args))
-            return AttemptOutcome(
+            _outcome = AttemptOutcome(
                 ok=True, status=ToolCallStatusEnum.SUCCESS.value, tool_name=tool_name,
                 args=dict(args), error_message="", latency_ms=0, is_rejection=False,
                 result={"content": content}, content_text=content,
             )
         except Exception as exc:  # noqa: BLE001
-            return AttemptOutcome(
+            _outcome = AttemptOutcome(
                 ok=False, status="ERROR", tool_name=tool_name, args=dict(args),
                 error_message=f"内置工具 {tool_name} 执行失败: {exc}", latency_ms=0,
                 is_rejection=False,
             )
+        # W-NEXT-WRITE1（T6 实测缺口修复）：graph/子代理路径（call_tool_with_retry →
+        # _default_attempt_executor）的内置分支此前**零审计落库**——W-NEXT-MCP-001 P0-②
+        # 只覆盖了 call_tool 直连路径（_execute_builtin_attempt）。favorite_add 经此路径
+        # 真实写库（favorites +1）但 mcp_tool_call_log 0 行（2026-09-20 实测）。补齐：
+        # 成败均落审计（与 _execute_builtin_attempt 同构），落库失败不阻断主链路。
+        try:
+            await _write_call_log(
+                call_id=f"mcp-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
+                server_id=0, tool_name=tool_name,
+                args=dict(args), result=None, content_text=_outcome.content_text,
+                status=(ToolCallStatusEnum.SUCCESS if _outcome.ok else ToolCallStatusEnum.ERROR),
+                latency_ms=int((time.perf_counter() - _t0) * 1000),
+                user_id=operator_user_id, tenant_id=tenant_id, trace_id=trace_id,
+                error_message=_outcome.error_message or None,
+            )
+        except Exception:  # noqa: BLE001 — 审计落库失败绝不影响工具返回
+            logger.debug(f"[MCP] 内置工具 {tool_name} 审计落库失败（graph 路径），忽略")
+        return _outcome
     try:
         tool_row = await registry.get_tool_by_ref(None, None, tool_name)
     except Exception as exc:

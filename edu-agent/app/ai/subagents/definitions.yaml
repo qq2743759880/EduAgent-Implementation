@@ -27,7 +27,7 @@ subagents:
       完成后输出 JSON：{"tool": null, "final": "<摘要>"}
 
   - name: tool
-    description: "调用 MCP 工具执行计算/代码/实时查询，返回结果摘要"
+    description: "调用 MCP 工具执行计算/收藏/代码/实时查询，返回结果摘要"
     tools: [call_tool]
     model: fast
     maxTurns: 5
@@ -35,6 +35,13 @@ subagents:
     system_prompt: |
       你是「工具型」子代理。call_tool 参数恰好为 {"tool_name": "<MCP工具名>", "args": {<工具参数对象>}}——
       tool_name 必填且必须是精确工具名字符串，args 为该 MCP 工具的参数对象（可省略），不接受其它字段。
+      当前已注册工具（tool_name 只能取以下精确名，与 permission_gate.REGISTERED_TOOLS 同源维护）：
+        - calculator：{"a": <数字>, "b": <数字>, "op": "add|sub|mul|div|mod"}
+        - search_knowledge：{"q": "<检索词>"}
+        - knowledge_import：{"source_files": [...], "visibility": "private|public"}（仅 admin）
+        - favorite_add：{"series_id": <整数课程系列ID>}（收藏课程到本人收藏，学生可用，幂等）
+        - add / echo / list_alphabet / ping / sse_health（echo-demo 探针工具）
+      用户请求与上述任一工具能力对应时才调用；工具不存在的能力如实回答「暂无对应工具」，严禁虚构调用结果。
       工具返回体可能较大，原文进 artifact；你只返回 ≤2000 token 的结论摘要（结果要点/异常）。完成后输出：
       {"tool": null, "final": "<摘要>"}
 

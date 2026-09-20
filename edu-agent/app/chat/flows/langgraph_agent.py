@@ -25,19 +25,29 @@ from __future__ import annotations
 # 风险级用 hitl_gate.RiskLevel 映射到契约 low|medium|high。
 # ============================================================
 def _hitl_risk_level(tool_name: str) -> str | None:
-    """判定工具是否需要 HITL 中断，返回契约风险级 low|medium|high；只读/未登记 → None（免中断）。"""
+    """判定工具是否需要 HITL 中断，返回契约风险级 low|medium|high；只读/未登记 → None（免中断）。
+
+    W-NEXT-WRITE1（P3 裁定）：风险分级单一事实源 = permission_gate 类别
+    （`classify_tool_intent`：TOOL_CLASS_MAP 实物优先、CONTRACT_PENDING 契约意图兜底）——
+    不再直接消费 ADMIN_WRITE_TOOLS / COURSE_WRITE_TOOLS 别名（工具在挂起区↔映射表间
+    迁移时别名双源漂移的根因，favorite_add 迁移即按本改造走）。
+    类别→风险级保持既有契约语义不变：admin_write=high（L3）、course_write=medium（L2）；
+    user_write=None（本人低危写，W-NEXT-WRITE1 P1/P3：免弹卡）。
+    executor 高风险类兜底分支（执行/网络/退款/写前缀）保留不变。
+    """
     from app.ai.hitl_gate import RiskLevel
-    from app.ai.permission_gate import ADMIN_WRITE_TOOLS, COURSE_WRITE_TOOLS
+    from app.ai.permission_gate import classify_tool_intent
     from app.mcp.executor import _classify_hitl_action
 
     n = (tool_name or "").strip().lower()
     risk_map = {RiskLevel.L1.value: "low", RiskLevel.L2.value: "medium", RiskLevel.L3.value: "high"}
-    # W-NEXT-2 步骤3：ADMIN_WRITE_TOOLS/COURSE_WRITE_TOOLS = 契约挂起 ∪ **已注册实物**，
-    # 上线后的 knowledge_import（admin_write）经此命中 high → interrupt 真实可触达（T8-C1）。
-    if n in ADMIN_WRITE_TOOLS:
-        return risk_map[RiskLevel.L3.value]   # write_class_tools（收藏写/积分/知识库导入/订单）→ high
-    if n in COURSE_WRITE_TOOLS:
-        return risk_map[RiskLevel.L2.value]   # 课程/题库写类 → medium
+    cls = classify_tool_intent(n)
+    if cls == "admin_write":
+        return risk_map[RiskLevel.L3.value]   # 契约 write_class_tools（积分/订单/知识库导入）→ high
+    if cls == "course_write":
+        return risk_map[RiskLevel.L2.value]   # 课程/题库写类 → medium（契约原语义保持）
+    if cls == "user_write":
+        return None                            # 本人低危写（favorite_add 首例）→ 免中断
     if _classify_hitl_action(n) is not None:
         return risk_map[RiskLevel.L3.value]   # executor 高风险类（执行/网络/退款/写前缀）→ high
     return None

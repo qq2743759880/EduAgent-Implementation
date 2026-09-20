@@ -175,7 +175,7 @@ def test_contract_matrix_class_semantics_unchanged():
     assert class_allowed_roles("public_read") == frozenset({"student", "manager", "admin", "teacher"})
     assert class_allowed_roles("course_write") == frozenset({"manager", "admin"})
     assert class_allowed_roles("admin_write") == frozenset({"admin"})
-    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 8, "真实工具面应为 8 个（W-NEXT-2 起）"
+    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 9, "真实工具面应为 9 个（W-NEXT-WRITE1 起，favorite_add 上线）"
 
 
 # ============================================================
@@ -207,11 +207,20 @@ def test_teacher_write_denied(tool):
     assert d.allowed is False and d.action_hint
 
 
-@pytest.mark.parametrize("tool", ["order_create", "favorite_add"])
+@pytest.mark.parametrize("tool", ["order_create"])
 def test_teacher_admin_write_denied(tool):
-    """G1：teacher × admin 专属（挂起工具）= denied + action_hint。"""
+    """G1：teacher × admin 专属（挂起工具）= denied + action_hint。
+
+    W-NEXT-WRITE1（CR-WRITETOOLS-001 P1）：favorite_add 已迁出挂起区、改类 user_write
+    ——teacher 由 deny 反转为 allow（本人收藏），断言挪入本测试下方。
+    """
     d = can_use_tool("teacher", tool)
     assert d.allowed is False and d.action_hint
+
+
+def test_teacher_user_write_allowed():
+    """W-NEXT-WRITE1 P1：teacher × user_write（favorite_add 实物）= allowed（本人收藏）。"""
+    assert can_use_tool("teacher", "favorite_add").allowed is True
 
 
 @pytest.mark.parametrize("role", ALL_ROLES)
@@ -227,9 +236,10 @@ def test_pending_tools_denied_for_all_roles(role, tool):
 def test_pending_tools_absent_from_tool_class_map():
     """G2：挂起名已从 TOOL_CLASS_MAP 移除，转入 CONTRACT_PENDING_TOOLS。
 
-    W-NEXT-2 起为 **9** 个（knowledge_import 已上线迁出，转入 admin_write 实物映射）。
+    W-NEXT-WRITE1 起为 **8** 个（favorite_add 已按 CR-WRITETOOLS-001 P1 裁定上线迁出，
+    改类 user_write；此前 W-NEXT-2 已迁出 knowledge_import 转 admin_write 实物映射）。
     """
-    assert len(CONTRACT_PENDING_TOOLS) == 9
+    assert len(CONTRACT_PENDING_TOOLS) == 8
     assert set(TOOL_CLASS_MAP) & set(CONTRACT_PENDING_TOOLS) == set()
     for name in CONTRACT_PENDING_TOOLS:
         assert classify_tool(name) is None, f"{name} 不应出现在映射表（无实物注册）"
@@ -250,10 +260,11 @@ def test_pending_tools_absent_from_tool_class_map():
 
 
 def test_all_mapping_tools_classified():
-    # 映射表每个工具都能被 classify（非 None），类别必须是三枚举之一
+    # 映射表每个工具都能被 classify（非 None），类别必须是枚举之一
+    # （W-NEXT-WRITE1/CR-WRITETOOLS-001：四枚举——user_write 首例 favorite_add）
     for name, cls in TOOL_CLASS_MAP.items():
         assert classify_tool(name) == cls
-        assert cls in ("public_read", "course_write", "admin_write")
+        assert cls in ("public_read", "course_write", "admin_write", "user_write")
         assert classify_tool_intent(name) == cls, "已注册实物的契约意图必须与映射一致"
 
 
@@ -267,8 +278,12 @@ WRITE_CLASS_NAMES = sorted(
 
 
 def test_write_class_names_cover_10():
-    """W2-G1：写类名共 10 个（9 个契约挂起 + 1 个已注册实物 knowledge_import）。"""
-    assert len(WRITE_CLASS_NAMES) == 10, f"写类名应为 10 个: {WRITE_CLASS_NAMES}"
+    """W2-G1：写类名共 9 个（8 个契约挂起 + 1 个已注册实物 knowledge_import）。
+
+    W-NEXT-WRITE1（CR-WRITETOOLS-001 P1）：favorite_add 迁出改类 user_write（本人低危写，
+    不属 WRITE_CLASSES HITL 面）→ 10→9；user_write 角色收口走矩阵+executor 强属性，不在此集。
+    """
+    assert len(WRITE_CLASS_NAMES) == 9, f"写类名应为 9 个: {WRITE_CLASS_NAMES}"
 
 
 @pytest.mark.parametrize("name", WRITE_CLASS_NAMES)
