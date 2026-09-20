@@ -36,7 +36,9 @@
 | TO-EXEC-AUDIT-W1 | WRITE1 favorite_add 反向审核（只读验收） | ✅ 闭环（fa693b4，编排者复跑 111 passed 复证） | — |
 | TO-EXEC-EVALFREEZE-B1 | idx31 组命中放宽变更单 + V3 尺契约冻结（用户已批） | ✅ 闭环（5ffe658，编排者指纹复核：双跑一致/毒性隔离仅 idx31/基线零漂移/draft:false） | — |
 | TO-EXEC-GATEA-CLAY | 前端重塑 Gate A：3 页 × 3 黏土变体 | ✅ 闭环+批款（33c2b20；用户挑款：chat=B / login=B 弃紫改绿黄 / admin=C；禁 emoji 图标） | — |
-| **TO-EXEC-THEME-GATE** | 重塑底座：theme.css 定稿+Phosphor sprite+G3/G6-G9 门禁工具 | **待派（当前最高优先）** | 强前端模型 |
-| （待出）PAGE-WAVES | 逐页批量开工令 ×3（Gate A 底座验收后按域包发出） | 排队 | — |
+| **TO-EXEC-THEME-GATE** | 重塑底座：theme.css 定稿+Phosphor sprite+G3/G6-G9 门禁工具 | ✅ 闭环（7fed87f；编排者复核：HTML 零触碰/对比度亲算 8.84+5.43 吻合/sprite 30 枚零 emoji/G3 亲跑 PASS 25 页 1214 钩/325 截图实数/G8 硬失败语义 EXIT=1 正确；25 页实况纠偏 19 页口径被如实上报） | — |
+| **TO-EXEC-PAGE-WAVES-A** | 逐页重塑包 A：学生端核心 8 页 | **待派（并行三包之一）** | 强前端模型 |
+| **TO-EXEC-PAGE-WAVES-B** | 逐页重塑包 B：学生端次级+chat 7 页 | **待派（并行三包之一）** | 强前端模型 |
+| **TO-EXEC-PAGE-WAVES-C** | 逐页重塑包 C：管理端 10 页（批款全黏土） | **待派（并行三包之一）** | 强前端模型 |
 
-> 并行建议：单张待派。Gate A 挑款已完成；THEME-GATE 验收后编排者立即出 PAGE-WAVES 三单。
+> 三包文件域互斥（A：login/dashboard/courses/course-detail/learning/favorites/practice/me；B：chat/community/community-post/achievements/coupons/my-cohorts/refund；C：admin×10），**可同时带给三个执行者并行**。三包全绿后编排者做全站抽查+G10 回滚实演+UAT 安排。

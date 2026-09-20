@@ -659,3 +659,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **EVALFREEZE-B1 ✅**（5ffe658）：idx31 组命中放宽（CO-IDX31-GROUPHIT-001，--group-hit 默认 False 配置化）+ V3 契约冻结 draft:false（hit 1.0/mrr 0.9841，n=63）。编排者指纹级复核：v3gh 双跑逐位一致 ✓、v2 ctl vs gh diff 仅 [31] ✓、v2 ctl vs 冻结基线 diff=0（零环境漂移）✓、v3 放宽前后 diff 仅 [30] ✓（首跑误报全行 diff 系编排者比较器多含 group_hit_applied 键的伪差——教训：跨 schema 比对先对齐键集）。mrr 实测 0.9570 vs 预估 0.9594 偏差 0.0024<0.005 阈值。V1 路由卡尺未动；三尺禁换算入 note。
 - **GATEA-CLAY ✅+批款**（33c2b20）：public/ 零触碰/零外链/九页齐。用户挑款：chat 气泡=B、login 配色=B（lavender 弃用改绿/黄系）、admin 黏土浓度=C（全黏土，覆盖 clay-light 预案）；**禁 emoji 图标**→调研定稿 Phosphor（MIT，fill 权重，本地 sprite）；CTA 文字色定稿 #2E2A3F（5.43:1）。
 - 派单模式运转正常：三单并行、单轮交付零返工。下一棒 TO-EXEC-THEME-GATE（theme.css+sprite+G3/G6-G9 工具）。
+
+## THEME-GATE 验收闭环（2026-09-21，7fed87f，编排者逐断言复核全 PASS）
+- 复核证据：HTML 零触碰（git show 0 个 .html）；对比度编排者亲算逐位吻合（moss 底 8.84:1 / CTA 5.43:1 / 白字 2.55:1 证弃白正确）；sprite 30 枚+MIT 归属+零 emoji；G3 编排者亲跑 PASS（25 页/1214 钩/50 checks/0 failed）；截图 325 张实数；G8 硬失败 EXIT=1 语义正确（首测 EXIT=0 系 bash 管道退出码坑复发——tail 吃了退出码，重测无管道得 1，老教训第 N 次生效）。
+- **范围纠偏（执行者如实上报）**：public/ 实况 25 页而非方案口径 19——门禁动态扫描全量覆盖，后续新增 HTML 自动入 `--all`；已按 25 页出 PAGE-WAVES 三包（A 学生核心 8 / B 学生次级+chat 7 / C 管理 10）。
+- 存量债冻结（PAGE-WAVES 输入）：G6 点击区<44px 25 页 / G7 对比度 25 页+reduced-motion 13+焦点 4+Tab 3+溢出 3 / G8 theme.css?v= 未接入 25 页+Google Fonts 外链 2 页（courses/refund）/ G9 长文本 2 页。执行者未刷绿——诚实基线。
+- 管理页门禁授权口径：EDU_GATE_TOKEN 仅 shell 内存，禁落盘（编排者验收自取 admin token）。
