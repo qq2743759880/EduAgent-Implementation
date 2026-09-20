@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>登录注册 · EduAgent</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <!--
   task42 HTML 原型（审核稿 v1.3 · 配色对齐 /dashboard）
   - 主色偏蓝紫 = 登录后第一个页面 /dashboard 的 primary（oklch .511 .262 276.966 ≈ #8b5cf6，violet-indigo）
@@ -38,20 +39,20 @@
       React 侧一致消费语义 tokens（bg-primary/primary-soft/secondary…）→ RESUBMITTED
 -->
 <style>
-  :root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-109-40-217-010: rgba(109,40,217,0.1); --htc-109-40-217-012: rgba(109,40,217,0.12); --htc-109-40-217-014: rgba(109,40,217,0.14); --htc-109-40-217-028: rgba(109,40,217,0.28); --htc-109-40-217-030: rgba(109,40,217,0.3); --htc-139-92-246-016: rgba(139,92,246,0.16); --htc-16-185-129-014: rgba(16,185,129,0.14); --htc-194-38-63-008: rgba(194,38,63,0.08); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-088: rgba(255,255,255,0.88); --htc-255-255-255-096: rgba(255,255,255,0.96); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-9aa5c0: #9aa5c0; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: #f5f9fe; --ht-f6b8c2: #f6b8c2; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-fff7f8: #fff7f8; --ht-fffdfe: #fffdfe; --ht-ffffff: #ffffff; --ht-ffffff0f: #ffffff0f; 
-    --ink:#1e2a44; --muted:#60739a; --line:#e7e9f2;
-    /* 主色：与 /dashboard primary 系一致（偏蓝紫） */
-    --primary:#8b5cf6; --primary-strong:#6d28d9; --primary-deep:#1e2a44;
-    --primary-soft:#f2eefb; --primary-border:#ddd3f1;
-    /* 副色：取 /dashboard secondary（浅蓝灰） */
-    --secondary:#eef3fb; --secondary-foreground:#1e2a44;
-    /* /dashboard KPI 副色 accent（emerald/amber/indigo/blue） */
-    --candy-emerald:#10b981; --candy-emerald-deep:#059669; --candy-emerald-soft:#a7f3d0;
-    --candy-amber:#f59e0b; --candy-amber-soft:#fde68a;
-    --candy-indigo:#6366f1; --candy-blue:#38bdf8; --candy-blue-soft:#bfdbfe; --candy-violet-soft:#ddd6fe;
-    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45309;
-    --muted-bg:#eef1f7; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
-    --shadow:0 10px 34px var(--htc-109-40-217-014); --r:20px; --htc-109-40-217-001: rgba(109, 40, 217, 0.001); --htc-255-255-255-004: rgba(255, 255, 255, 0.004); --htc-109-40-217-003: rgba(109, 40, 217, 0.003);}
+  :root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-109-40-217-010: rgba(78,126,66,0.1); --htc-109-40-217-012: rgba(78,126,66,0.12); --htc-109-40-217-014: rgba(78,126,66,0.14); --htc-109-40-217-028: rgba(78,126,66,0.28); --htc-109-40-217-030: rgba(78,126,66,0.3); --htc-139-92-246-016: rgba(78,126,66,0.16); --htc-16-185-129-014: rgba(78,126,66,0.14); --htc-194-38-63-008: rgba(198,62,74,0.08); --htc-24-24-24-002: rgba(46, 42, 63, 0.02); --htc-24-24-24-004: rgba(46, 42, 63, 0.04); --htc-24-24-24-006: rgba(46, 42, 63, 0.06); --htc-24-24-24-008: rgba(46, 42, 63, 0.08); --htc-24-24-24-012: rgba(46, 42, 63, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-088: rgba(255,255,255,0.88); --htc-255-255-255-096: rgba(255,255,255,0.96); --htc-47-178-135-060: rgba(78, 126, 66, 0.6); --htc-47-178-135-030: rgba(78,126,66,0.3);  --ht-0003: #0003; --ht-06c179: var(--clay-mint); --ht-0ac27b: var(--clay-mint); --ht-0ecd70: var(--clay-mint); --ht-0fdc78: var(--clay-mint); --ht-1e8b56: rgb(78,126,66); --ht-222427: #222427; --ht-2fb287: var(--clay-mint); --ht-32f08c: var(--clay-mint); --ht-3ee1a3: var(--clay-mint); --ht-56637726: #56637726; --ht-60f2bd: #DFEED8; --ht-63c5b1: #63c5b1; --ht-9aa5c0: var(--text-muted); --ht-a0fde7: #DFEED8; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: var(--bg-input); --ht-f6b8c2: rgba(198,62,74,.35); --ht-ffea8e: var(--clay-lemon); --ht-fff: #fff; --ht-fff7f8: #FBF1F2; --ht-fffdfe: #FFFDFE; --ht-ffffff: #ffffff; --ht-ffffff0f: #ffffff0f;
+    --ink:var(--text-strong); --muted:var(--text-muted); --line:rgba(78,126,66,.22);
+    /* 主色：Gate A 批款 = 弃薰衣草紫，主表面换 moss 绿/柠檬黄系；CTA=珊瑚 */
+    --primary:var(--clay-moss); --primary-strong:rgb(78,126,66); --primary-deep:var(--text-strong);
+    --primary-soft:#F3F8EF; --primary-border:rgba(78,126,66,.28);
+    /* 副色：moss 浅底 */
+    --secondary:#F6FAF5; --secondary-foreground:var(--text-strong);
+    /* KPI 副色 accent（emerald/amber/indigo/blue）→ 黏土表面色 */
+    --candy-emerald:var(--clay-mint); --candy-emerald-deep:rgb(78,126,66); --candy-emerald-soft:#F3F8EF;
+    --candy-amber:var(--clay-lemon); --candy-amber-soft:#FAEDC3;
+    --candy-indigo:var(--clay-sky); --candy-blue:var(--clay-sky); --candy-blue-soft:#E9F2FB; --candy-violet-soft:#F3F1FF;
+    --ok-bg:#F3F8EF; --ok-ink:var(--text-strong); --warn-bg:#FAEDC3; --warn-ink:var(--text-strong);
+    --muted-bg:var(--bg-input); --muted-ink:var(--text-muted); --red-bg:#FBF1F2; --red-ink:var(--status-danger);
+    --shadow:var(--clay-shadow-raised); --r:var(--radius-icon-tile); --htc-109-40-217-001: rgba(78, 126, 66, 0.001); --htc-255-255-255-004: rgba(255, 255, 255, 0.004); --htc-109-40-217-003: rgba(78, 126, 66, 0.003);}
   *{box-sizing:border-box}
   body{margin:0;color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5;overflow-x:hidden}
   /* 全屏主/副色渐变底（primary-soft→白→secondary，副色来自 /dashboard）+ 漂浮泡泡 */
@@ -2756,6 +2757,34 @@
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层（Gate A 批款：弃紫改 moss/柠檬；CTA=珊瑚）只动视觉；选择器/状态类零改动 ===== */
+.card{border:0;border-radius:var(--radius-card);background:var(--bg-raised);box-shadow:var(--clay-shadow-raised)}
+.card::before{background:linear-gradient(90deg,var(--clay-moss),var(--clay-sky),var(--clay-mint),var(--clay-lemon))}
+.card-brand{border-radius:var(--radius-pill);background:var(--text-strong)}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid var(--focus-ring)!important;outline-offset:2px}
+.card-brand .ic{width:16px;height:16px}
+.ctl input{border:0;box-shadow:var(--clay-shadow-input);background:var(--bg-input);border-radius:var(--radius-input)}
+.ctl input:focus{outline:2px solid var(--focus-ring);outline-offset:2px;box-shadow:var(--clay-shadow-input-focus)}
+.ctl input.err{box-shadow:0 0 0 3px rgba(198,62,74,.25)}
+.eye{width:44px;height:44px;border-radius:var(--radius-input)}
+.ferr::before{content:none}
+.btn{border-radius:var(--radius-btn)}
+.btn-login{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-press-coral)}
+.btn-reg{background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-press-moss)}
+.seg{border:0;box-shadow:var(--clay-shadow-light)}
+.seg button{min-height:44px}
+.seg button.on{background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-press-moss)}
+.mem input{width:44px;height:44px;accent-color:var(--cta-coral)}
+.card-f a{display:inline-flex;align-items:center;min-height:44px}
+.banner{border:2px solid rgba(198,62,74,.3)}
+.banner .ic{width:18px;height:18px;color:var(--status-danger);flex-shrink:0}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+}
+</style>
 </head>
 <body>
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -2777,14 +2806,14 @@
     <!-- AuthCard -->
     <div class="card">
       <div class="card-h">
-        <span class="card-brand"><span class="emoji">🍭</span> EduAgent</span>
-        <h1 id="card-title"><span>🌈</span> 欢迎回来</h1>
-        <p class="sub" id="card-sub">登录后开始你的糖果学习旅程 🍬</p>
+        <span class="card-brand"><span class="emoji" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></span> EduAgent</span>
+        <h1 id="card-title">欢迎回来</h1>
+        <p class="sub" id="card-sub">登录后开始你的糖果学习旅程</p>
       </div>
 
       <div class="seg-c"><span class="seg" id="page-seg">
-        <button data-page="login" class="on">✨ 登录</button>
-        <button data-page="register">🎈 注册</button>
+        <button data-page="login" class="on">登录</button>
+        <button data-page="register">注册</button>
       </span></div>
 
       <div class="card-b">
@@ -2799,14 +2828,14 @@
             <label>密码</label>
             <div class="ctl">
               <input id="li-pwd" type="password" placeholder="6 位以上" autocomplete="current-password">
-              <button type="button" class="eye" data-eye="li-pwd">👁</button>
+              <button type="button" class="eye" data-eye="li-pwd" aria-label="显示或隐藏密码">👁</button>
             </div>
             <div class="ferr" id="li-pwd-err">密码至少 6 位</div>
           </div>
 
           <!-- 401 表单级错误横幅（账号/密码错误、账号禁用等认证类失败，原地渲染不刷新页面） -->
           <div class="banner" id="li-banner">
-            <span>⚠️</span>
+            <span aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></span>
             <span><b id="li-banner-t">账号或密码错误</b>
               请检查后重试，或切换到注册页创建新账号</span>
           </div>
@@ -2817,7 +2846,7 @@
           </div>
 
           <button type="submit" class="btn btn-login" id="login-btn">
-            <span class="sp"></span><span class="lbl-s">🚀 登录</span>
+            <span class="sp"></span><span class="lbl-s">登录</span>
           </button>
         </form>
 
@@ -2842,7 +2871,7 @@
             <label>密码</label>
             <div class="ctl">
               <input id="rg-p" type="password" placeholder="6 位以上，不含中文" autocomplete="new-password">
-              <button type="button" class="eye" data-eye="rg-p">👁</button>
+              <button type="button" class="eye" data-eye="rg-p" aria-label="显示或隐藏密码">👁</button>
             </div>
             <div class="ferr" id="rg-p-err">密码至少 6 位，不能包含中文字符</div>
           </div>
@@ -2850,20 +2879,20 @@
             <label>确认密码</label>
             <div class="ctl">
               <input id="rg-c" type="password" placeholder="再次输入密码" autocomplete="new-password">
-              <button type="button" class="eye" data-eye="rg-c">👁</button>
+              <button type="button" class="eye" data-eye="rg-c" aria-label="显示或隐藏密码">👁</button>
             </div>
             <div class="ferr" id="rg-c-err">两次输入的密码不一致</div>
           </div>
 
           <!-- 注册冲突提示（账号/邮箱已被注册） -->
           <div class="banner" id="rg-conflict">
-            <span>⚠️</span>
+            <span aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></span>
             <span><b id="rg-conflict-t">该账号已被注册</b>
               可尝试直接登录，或更换账号/邮箱后重试</span>
           </div>
 
           <button type="submit" class="btn btn-reg" id="reg-btn">
-            <span class="sp"></span><span class="lbl-s">🎀 创建账号</span>
+            <span class="sp"></span><span class="lbl-s">创建账号</span>
           </button>
           <p class="terms">点击「创建账号」即代表你同意 EduAgent 的服务条款与隐私政策。账号仅用于存储个人学习进度与徽章。</p>
         </form>
