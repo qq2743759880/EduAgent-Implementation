@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理端用户 /admin/users</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <!--
   task60 HTML 原型（审核稿）→ 2026-09-12 task14 起为真实接线页（见 AUDIT LOG task14 条目）
   - P17 风格 candy-playful frozen（复用 task58 admin-questions 同源样式）
@@ -278,6 +279,101 @@
   .nm1{width:92px}.cd1{width:132px}.cell1{width:72px}.cell2{width:58px}.cell3{width:92px}.cell4{width:80px}
   @keyframes uksh{0%{background-position:100% 0}100%{background-position:0 0}}
 </style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 ⚠ 为行为层冻结面保留；JS 渐变头像经
+   background-image:none + 表面实色循环在视觉层 clay 化。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-purple:#EAE4FF; --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --ht-7c4bd6:var(--text-strong); --ht-a78bfa:var(--text-strong); --ht-f3edfe:#EAE4FF; --ht-5b647b:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 页头/工具条 --- */
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .toolbar-meta{color:var(--text-muted)}
+.admin-html-page .chip{color:var(--text-muted)!important;background:#EEF0F5!important}
+.admin-html-page .chip b{color:var(--text-strong)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .link-btn{min-height:44px;min-width:44px;color:var(--text-strong)!important;text-decoration:underline;border-radius:var(--radius-btn)}
+.admin-html-page .link-btn:hover{background:#EFF6EC!important}
+.admin-html-page .fld select,.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .fld label{color:var(--text-muted)}
+.admin-html-page .fld select:focus,.admin-html-page .fld input:focus,.admin-html-page .modal textarea:focus{outline:2px solid var(--focus-ring);border-color:var(--focus-ring)}
+.admin-html-page .modal textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .modal select,.admin-html-page .modal input{min-height:44px;border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .close-x{width:44px;height:44px;min-width:44px;min-height:44px;color:var(--text-muted);border-radius:var(--radius-btn)!important}
+.admin-html-page .close-x:hover{color:var(--text-strong)}
+
+/* --- 表格/徽章/头像 --- */
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .nb,.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .prim-cell .nm{color:var(--text-strong)}
+.admin-html-page .prim-cell .cd{color:var(--text-muted)}
+.admin-html-page .prim-cell .av{background-image:none!important;color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important;font-weight:800}
+.admin-html-page tbody tr:nth-of-type(5n+1) .av{background-color:var(--clay-sky)!important;box-shadow:3px 4px 10px rgba(80,142,196,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+2) .av{background-color:var(--clay-mint)!important;box-shadow:3px 4px 10px rgba(43,153,103,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+3) .av{background-color:var(--clay-peach)!important;box-shadow:3px 4px 10px rgba(218,111,82,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+4) .av{background-color:var(--clay-pink)!important;box-shadow:3px 4px 10px rgba(188,99,137,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+5) .av{background-color:var(--clay-lemon)!important;box-shadow:3px 4px 10px rgba(190,149,35,.22)}
+.admin-html-page [class*="badge-role"]{color:var(--text-strong)!important}
+.admin-html-page .badge-off{background:#EEF0F5!important;color:var(--text-strong)!important}
+.admin-html-page .badge-off .pd{background:var(--status-archived)!important}
+.admin-html-page .box-pad{color:var(--text-muted)}
+.admin-html-page .tbl-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+.admin-html-page .pager button{flex:0 0 auto;width:44px;height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+
+/* --- 弹窗/提示 --- */
+.admin-html-page .dlg-h h3{color:var(--text-strong)}
+.admin-html-page .dlg-h .sub{color:var(--text-muted)}
+.admin-html-page .redline{background:#FAF0F4!important;color:var(--status-danger)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .redline b{color:var(--status-danger)}
+.admin-html-page .gap-note{background:#F9F3D7!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .gap-note b{color:var(--text-strong)}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .stat6 .fld label{color:var(--text-muted)}
+
+/* --- reduced-motion：45 个骨架 shimmer 归零 --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
 </head>
 <body class="admin-html-page">
 <button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
@@ -350,8 +446,8 @@
       </tr></thead>
       <tbody id="u-body"></tbody>
     </table>
-    <div class="box-pad hidden" id="u-empty"><div class="ic">🔍</div>未匹配到用户（组合查询为空/调整筛选）</div>
-    <div class="box-pad hidden" id="u-error"><div class="ic">⚠️</div>用户列表加载失败</div>
+    <div class="box-pad hidden" id="u-empty"><div class="ic"><svg class="ic" style="width:22px;height:22px;vertical-align:-.3em"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></div>未匹配到用户（组合查询为空/调整筛选）</div>
+    <div class="box-pad hidden" id="u-error"><div class="ic"><svg class="ic" style="width:22px;height:22px;vertical-align:-.3em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>用户列表加载失败</div>
     <div class="tbl-foot">
       <span class="cnt" id="u-count">共 0 条</span>
       <span class="pager" id="u-pager"></span>
@@ -370,7 +466,7 @@
   <div class="dlg-b">
     <div class="stat6" id="learn-fields"></div>
     <div class="gap-note" id="learn-gap" style="margin-top:14px">
-      <span>⚠️</span>
+      <span><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
       <span><b>暂未开放</b>：学习指标面板所需接口尚未开放，功能上线后自动呈现，本页不展示占造数据。</span>
     </div>
   </div>
@@ -433,7 +529,7 @@
       </div>
     </div>
     <div class="redline hidden" id="e-redline">
-      <span>🚫</span>
+      <span><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
       <span><b>保护机制</b>：该用户是<b>最后 1 个可用管理员</b>。禁用或降级将导致无人能进入管理端——操作已被禁用；后端同样会拒绝（至少保留 1 名可用管理员）。</span>
     </div>
   </div>
