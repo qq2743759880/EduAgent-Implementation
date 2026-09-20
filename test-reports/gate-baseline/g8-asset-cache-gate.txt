@@ -1,0 +1,253 @@
+g8-asset-cache-gate FAIL
+generated_at=2026-09-20T16:33:52.229Z
+pages=25 checks=200 failed=52 warnings=19
+
+[FAIL] achievements.html http://127.0.0.1:3322/achievements.html
+  [PASS] runtime-inspection: 11 requests observed.
+  [PASS] route-stable: Expected /achievements.html, rendered /achievements.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-course-detail.html http://127.0.0.1:3322/admin-course-detail.html?id=1
+  [PASS] runtime-inspection: 5 requests observed.
+  [PASS] route-stable: Expected /admin-course-detail.html, rendered /admin-course-detail.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
+  [PASS] runtime-inspection: 1 requests observed.
+  [PASS] route-stable: Expected /admin-courses-recycle-proto.html, rendered /admin-courses-recycle-proto.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-courses.html http://127.0.0.1:3322/admin-courses.html
+  [PASS] runtime-inspection: 7 requests observed.
+  [PASS] route-stable: Expected /admin-courses.html, rendered /admin-courses.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-dashboard.html http://127.0.0.1:3322/admin-dashboard.html
+  [PASS] runtime-inspection: 7 requests observed.
+  [PASS] route-stable: Expected /admin-dashboard.html, rendered /admin-dashboard.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-mcp.html http://127.0.0.1:3322/admin-mcp.html
+  [PASS] runtime-inspection: 5 requests observed.
+  [PASS] route-stable: Expected /admin-mcp.html, rendered /admin-mcp.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-question-detail.html http://127.0.0.1:3322/admin-question-detail.html?id=1
+  [PASS] runtime-inspection: 13 requests observed.
+  [PASS] route-stable: Expected /admin-question-detail.html, rendered /admin-question-detail.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-questions.html http://127.0.0.1:3322/admin-questions.html
+  [PASS] runtime-inspection: 5 requests observed.
+  [PASS] route-stable: Expected /admin-questions.html, rendered /admin-questions.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
+  [PASS] runtime-inspection: 5 requests observed.
+  [PASS] route-stable: Expected /admin-rag-upload.html, rendered /admin-rag-upload.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
+  [PASS] runtime-inspection: 1 requests observed.
+  [PASS] route-stable: Expected /admin-users-refine-proto.html, rendered /admin-users-refine-proto.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] admin-users.html http://127.0.0.1:3322/admin-users.html
+  [PASS] runtime-inspection: 5 requests observed.
+  [PASS] route-stable: Expected /admin-users.html, rendered /admin-users.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] chat.html http://127.0.0.1:3322/chat.html
+  [PASS] runtime-inspection: 8 requests observed.
+  [PASS] route-stable: Expected /chat.html, rendered /chat.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
+  [PASS] runtime-inspection: 6 requests observed.
+  [PASS] route-stable: Expected /community-post.html, rendered /community-post.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] community.html http://127.0.0.1:3322/community.html
+  [PASS] runtime-inspection: 7 requests observed.
+  [PASS] route-stable: Expected /community.html, rendered /community.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] coupons.html http://127.0.0.1:3322/coupons.html
+  [PASS] runtime-inspection: 10 requests observed.
+  [PASS] route-stable: Expected /coupons.html, rendered /coupons.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 6 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] course-detail.html http://127.0.0.1:3322/course-detail.html?id=1
+  [PASS] runtime-inspection: 8 requests observed.
+  [PASS] route-stable: Expected /course-detail.html, rendered /course-detail.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] courses.html http://127.0.0.1:3322/courses.html
+  [PASS] runtime-inspection: 12 requests observed.
+  [PASS] route-stable: Expected /courses.html, rendered /courses.html.
+  [FAIL] zero-external-requests: 2 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 1 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 8 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] dashboard.html http://127.0.0.1:3322/dashboard.html
+  [PASS] runtime-inspection: 14 requests observed.
+  [PASS] route-stable: Expected /dashboard.html, rendered /dashboard.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 12 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] favorites.html http://127.0.0.1:3322/favorites.html
+  [PASS] runtime-inspection: 6 requests observed.
+  [PASS] route-stable: Expected /favorites.html, rendered /favorites.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] learning.html http://127.0.0.1:3322/learning.html
+  [PASS] runtime-inspection: 6 requests observed.
+  [PASS] route-stable: Expected /learning.html, rendered /learning.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] login-register.html http://127.0.0.1:3322/login-register.html
+  [PASS] runtime-inspection: 2 requests observed.
+  [PASS] route-stable: Expected /login-register.html, rendered /login-register.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] me.html http://127.0.0.1:3322/me.html
+  [PASS] runtime-inspection: 16 requests observed.
+  [PASS] route-stable: Expected /me.html, rendered /me.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 14 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] my-cohorts.html http://127.0.0.1:3322/my-cohorts.html
+  [PASS] runtime-inspection: 6 requests observed.
+  [PASS] route-stable: Expected /my-cohorts.html, rendered /my-cohorts.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] practice.html http://127.0.0.1:3322/practice.html
+  [PASS] runtime-inspection: 14 requests observed.
+  [PASS] route-stable: Expected /practice.html, rendered /practice.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [WARN] console-errors: 10 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.
+
+[FAIL] refund.html http://127.0.0.1:3322/refund.html
+  [PASS] runtime-inspection: 6 requests observed.
+  [PASS] route-stable: Expected /refund.html, rendered /refund.html.
+  [FAIL] zero-external-requests: 2 external requests observed.
+  [FAIL] theme-version-present: 0 theme.css links; version=missing.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 1 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [FAIL] site-theme-version: 0/25 pages versioned; versions=none.

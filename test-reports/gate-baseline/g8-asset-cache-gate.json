@@ -1,0 +1,2063 @@
+{
+  "gate": "G8 Asset and Cache Gate",
+  "generated_at": "2026-09-20T16:33:52.229Z",
+  "status": "FAIL",
+  "summary": {
+    "pages": 25,
+    "checks": 200,
+    "failed": 52,
+    "warnings": 19
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "themeVersions": [],
+  "versionConsistent": false,
+  "network_policy": "Loopback frontend/API traffic is allowed; every non-loopback HTTP(S) request fails the gate.",
+  "pages": [
+    {
+      "name": "achievements.html",
+      "url": "http://127.0.0.1:3322/achievements.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/achievements.html",
+        "title": "成就中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 277,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 11,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/achievements.html",
+        "title": "成就中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 277,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadBadges (http://127.0.0.1:3322/achievements.html:552:17)\n    at http://127.0.0.1:3322/achievements.html:706:23\n    at http://127.0.0.1:3322/achievements.html:709:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadRank (http://127.0.0.1:3322/achievements.html:676:17)\n    at http://127.0.0.1:3322/achievements.html:706:37\n    at http://127.0.0.1:3322/achievements.html:709:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "11 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /achievements.html, rendered /achievements.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-course-detail.html",
+      "url": "http://127.0.0.1:3322/admin-course-detail.html?id=1",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-course-detail.html?id=1",
+        "title": "管理端系列详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 164,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 5,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-course-detail.html?id=1",
+        "title": "管理端系列详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 164,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-course-detail.html?id=1:528:18"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "5 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-course-detail.html, rendered /admin-course-detail.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-courses-recycle-proto.html",
+      "url": "http://127.0.0.1:3322/admin-courses-recycle-proto.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-courses-recycle-proto.html",
+        "title": "管理端系列回收站 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 973,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 1,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-courses-recycle-proto.html",
+        "title": "管理端系列回收站 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 973,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "1 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-courses-recycle-proto.html, rendered /admin-courses-recycle-proto.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-courses.html",
+      "url": "http://127.0.0.1:3322/admin-courses.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-courses.html",
+        "title": "管理端课程管理 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 2490,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 7,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-courses.html",
+        "title": "管理端课程管理 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 2490,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "7 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-courses.html, rendered /admin-courses.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-dashboard.html",
+      "url": "http://127.0.0.1:3322/admin-dashboard.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-dashboard.html",
+        "title": "管理端仪表盘 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 235,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 7,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-dashboard.html",
+        "title": "管理端仪表盘 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 235,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at window.loadDashboardMetrics (http://127.0.0.1:3322/admin-dashboard.html:480:8)\n    at window.bootAdmin (http://127.0.0.1:3322/admin-dashboard.html:470:10)\n    at runBoot (http://127.0.0.1:3322/edu-guard.js:34:43)\n    at http://127.0.0.1:3322/edu-guard.js:65:14"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "7 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-dashboard.html, rendered /admin-dashboard.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-mcp.html",
+      "url": "http://127.0.0.1:3322/admin-mcp.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-mcp.html",
+        "title": "管理端 MCP 控制台 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 497,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 5,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-mcp.html",
+        "title": "管理端 MCP 控制台 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 497,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-mcp.html:414:18"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "5 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-mcp.html, rendered /admin-mcp.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-question-detail.html",
+      "url": "http://127.0.0.1:3322/admin-question-detail.html?id=1",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-question-detail.html?id=1",
+        "title": "管理端题目编辑 /admin/questions/[id]",
+        "themeLinks": [],
+        "bodyTextLength": 1592,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 13,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-question-detail.html?id=1",
+        "title": "管理端题目编辑 /admin/questions/[id]",
+        "themeLinks": [],
+        "bodyTextLength": 1592,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadBankLabel (http://127.0.0.1:3322/admin-question-detail.html?id=1:756:17)\n    at http://127.0.0.1:3322/admin-question-detail.html?id=1:764:97"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "13 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-question-detail.html, rendered /admin-question-detail.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-questions.html",
+      "url": "http://127.0.0.1:3322/admin-questions.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-questions.html",
+        "title": "管理端题库 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 276,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 5,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-questions.html",
+        "title": "管理端题库 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 276,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-questions.html:642:18"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "5 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-questions.html, rendered /admin-questions.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-rag-upload.html",
+      "url": "http://127.0.0.1:3322/admin-rag-upload.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-rag-upload.html",
+        "title": "管理端 RAG 控制台 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 717,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 5,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-rag-upload.html",
+        "title": "管理端 RAG 控制台 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 717,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-rag-upload.html:433:18"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "5 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-rag-upload.html, rendered /admin-rag-upload.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-users-refine-proto.html",
+      "url": "http://127.0.0.1:3322/admin-users-refine-proto.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-users-refine-proto.html",
+        "title": "管理端用户管理原型 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 3997,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 1,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-users-refine-proto.html",
+        "title": "管理端用户管理原型 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 3997,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "1 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-users-refine-proto.html, rendered /admin-users-refine-proto.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "admin-users.html",
+      "url": "http://127.0.0.1:3322/admin-users.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/admin-users.html",
+        "title": "管理端用户 /admin/users",
+        "themeLinks": [],
+        "bodyTextLength": 380,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 5,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/admin-users.html",
+        "title": "管理端用户 /admin/users",
+        "themeLinks": [],
+        "bodyTextLength": 380,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-users.html:687:18"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "5 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /admin-users.html, rendered /admin-users.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "chat.html",
+      "url": "http://127.0.0.1:3322/chat.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/chat.html",
+        "title": "智能问答 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 10706,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 8,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/chat.html",
+        "title": "智能问答 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 10706,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "8 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /chat.html, rendered /chat.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "community-post.html",
+      "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+        "title": "帖子详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 165,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 6,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+        "title": "帖子详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 165,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadAll (http://127.0.0.1:3322/community-post.html?post_id=96:598:10)\n    at http://127.0.0.1:3322/community-post.html?post_id=96:670:3\n    at http://127.0.0.1:3322/community-post.html?post_id=96:724:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "6 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /community-post.html, rendered /community-post.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "community.html",
+      "url": "http://127.0.0.1:3322/community.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/community.html",
+        "title": "社区互助 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 277,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 7,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/community.html",
+        "title": "社区互助 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 277,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/community.html:359:8\n    at http://127.0.0.1:3322/community.html:362:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at load (http://127.0.0.1:3322/community.html:469:10)\n    at http://127.0.0.1:3322/community.html:586:3\n    at http://127.0.0.1:3322/community.html:587:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "7 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /community.html, rendered /community.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "coupons.html",
+      "url": "http://127.0.0.1:3322/coupons.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/coupons.html",
+        "title": "我的优惠券 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 314,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 10,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/coupons.html",
+        "title": "我的优惠券 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 314,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at step (http://127.0.0.1:3322/coupons.html:570:21)\n    at http://127.0.0.1:3322/coupons.html:577:14\n    at ensureHeld (http://127.0.0.1:3322/coupons.html:578:7)\n    at http://127.0.0.1:3322/coupons.html:956:3\n    at http://127.0.0.1:3322/coupons.html:958:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadTemplates (http://127.0.0.1:3322/coupons.html:589:10)\n    at http://127.0.0.1:3322/coupons.html:957:3\n    at http://127.0.0.1:3322/coupons.html:958:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/coupons.html:966:8\n    at http://127.0.0.1:3322/coupons.html:969:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "10 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /coupons.html, rendered /coupons.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "6 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "course-detail.html",
+      "url": "http://127.0.0.1:3322/course-detail.html?id=1",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/course-detail.html?id=1",
+        "title": "课程详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 344,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 8,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/course-detail.html?id=1",
+        "title": "课程详情 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 344,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/course-detail.html?id=1:1221:10\n    at http://127.0.0.1:3322/course-detail.html?id=1:1274:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/course-detail.html?id=1:1222:10\n    at http://127.0.0.1:3322/course-detail.html?id=1:1274:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "8 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /course-detail.html, rendered /course-detail.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "4 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "courses.html",
+      "url": "http://127.0.0.1:3322/courses.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/courses.html",
+        "title": "课程中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 464,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 12,
+      "external": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap",
+          "type": "Stylesheet"
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/baloo2/v23/wXKrE3kTposypRyd51jcAA.woff2",
+          "type": "Font"
+        }
+      ],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 1,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/courses.html",
+        "title": "课程中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 464,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at fetchPage (http://127.0.0.1:3322/courses.html:569:8)\n    at refresh (http://127.0.0.1:3322/courses.html:580:21)\n    at http://127.0.0.1:3322/courses.html:721:1",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadHero (http://127.0.0.1:3322/courses.html:739:8)\n    at http://127.0.0.1:3322/courses.html:743:1",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadHero (http://127.0.0.1:3322/courses.html:727:8)\n    at http://127.0.0.1:3322/courses.html:743:1",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/courses.html:755:8\n    at http://127.0.0.1:3322/courses.html:758:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "12 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /courses.html, rendered /courses.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": false,
+          "detail": "2 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "1 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "8 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "dashboard.html",
+      "url": "http://127.0.0.1:3322/dashboard.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/dashboard.html",
+        "title": "学习仪表盘 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 313,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 14,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/dashboard.html",
+        "title": "学习仪表盘 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 313,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:503:8\n    at http://127.0.0.1:3322/dashboard.html:686:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:661:10\n    at http://127.0.0.1:3322/dashboard.html:686:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:663:10\n    at http://127.0.0.1:3322/dashboard.html:686:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:664:10\n    at http://127.0.0.1:3322/dashboard.html:686:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:665:10\n    at http://127.0.0.1:3322/dashboard.html:686:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/dashboard.html:662:10\n    at http://127.0.0.1:3322/dashboard.html:686:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "14 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /dashboard.html, rendered /dashboard.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "12 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "favorites.html",
+      "url": "http://127.0.0.1:3322/favorites.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/favorites.html",
+        "title": "我的收藏 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 183,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 6,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/favorites.html",
+        "title": "我的收藏 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 183,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/favorites.html:276:8\n    at http://127.0.0.1:3322/favorites.html:279:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "6 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /favorites.html, rendered /favorites.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "learning.html",
+      "url": "http://127.0.0.1:3322/learning.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/learning.html",
+        "title": "学习播放 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 879,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 6,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/learning.html",
+        "title": "学习播放 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 879,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/learning.html:486:8\n    at http://127.0.0.1:3322/learning.html:489:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "6 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /learning.html, rendered /learning.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "login-register.html",
+      "url": "http://127.0.0.1:3322/login-register.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/login-register.html",
+        "title": "登录注册 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 115,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 2,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/login-register.html",
+        "title": "登录注册 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 115,
+        "bodyFontFamily": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "2 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /login-register.html, rendered /login-register.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "me.html",
+      "url": "http://127.0.0.1:3322/me.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/me.html",
+        "title": "个人中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 974,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 16,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/me.html",
+        "title": "个人中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 974,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/me.html:4362:8\n    at http://127.0.0.1:3322/me.html:4391:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/me.html:4376:10\n    at http://127.0.0.1:3322/me.html:4391:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/me.html:4377:10\n    at http://127.0.0.1:3322/me.html:4391:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at load (http://127.0.0.1:3322/me.html:4775:9)\n    at http://127.0.0.1:3322/me.html:4791:19\n    at http://127.0.0.1:3322/me.html:4792:5\n    at http://127.0.0.1:3322/me.html:4835:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/me.html:4516:35\n    at http://127.0.0.1:3322/me.html:4519:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at load (http://127.0.0.1:3322/me.html:4736:9)\n    at http://127.0.0.1:3322/me.html:4751:19\n    at http://127.0.0.1:3322/me.html:4752:5\n    at http://127.0.0.1:3322/me.html:4835:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at load (http://127.0.0.1:3322/me.html:4807:9)\n    at http://127.0.0.1:3322/me.html:4818:19\n    at http://127.0.0.1:3322/me.html:4819:5\n    at http://127.0.0.1:3322/me.html:4835:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "16 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /me.html, rendered /me.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "14 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "my-cohorts.html",
+      "url": "http://127.0.0.1:3322/my-cohorts.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/my-cohorts.html",
+        "title": "我的班次 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 219,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 6,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/my-cohorts.html",
+        "title": "我的班次 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 219,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at http://127.0.0.1:3322/my-cohorts.html:642:8\n    at http://127.0.0.1:3322/my-cohorts.html:667:3"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "6 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /my-cohorts.html, rendered /my-cohorts.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "2 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "practice.html",
+      "url": "http://127.0.0.1:3322/practice.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/practice.html",
+        "title": "复习中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 882,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 14,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/practice.html",
+        "title": "复习中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 882,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadWrong (http://127.0.0.1:3322/practice.html:925:10)\n    at init (http://127.0.0.1:3322/practice.html:1396:5)\n    at http://127.0.0.1:3322/practice.html:1410:3\n    at http://127.0.0.1:3322/practice.html:1411:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadStats (http://127.0.0.1:3322/practice.html:908:10)\n    at init (http://127.0.0.1:3322/practice.html:1395:5)\n    at http://127.0.0.1:3322/practice.html:1410:3\n    at http://127.0.0.1:3322/practice.html:1411:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadStats (http://127.0.0.1:3322/practice.html:911:10)\n    at init (http://127.0.0.1:3322/practice.html:1395:5)\n    at http://127.0.0.1:3322/practice.html:1410:3\n    at http://127.0.0.1:3322/practice.html:1411:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadVocab (http://127.0.0.1:3322/practice.html:1289:10)\n    at init (http://127.0.0.1:3322/practice.html:1397:5)\n    at http://127.0.0.1:3322/practice.html:1410:3\n    at http://127.0.0.1:3322/practice.html:1411:3",
+        "LOG: Failed to load resource: net::ERR_FAILED",
+        "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at loadVocabProgress (http://127.0.0.1:3322/practice.html:1347:10)\n    at http://127.0.0.1:3322/practice.html:1343:9"
+      ],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "14 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /practice.html, rendered /practice.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": false,
+          "detail": "10 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    },
+    {
+      "name": "refund.html",
+      "url": "http://127.0.0.1:3322/refund.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/refund.html",
+        "title": "退款中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 258,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 6,
+      "external": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap",
+          "type": "Stylesheet"
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/baloo2/v23/wXKrE3kTposypRyd51jcAA.woff2",
+          "type": "Font"
+        }
+      ],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 1,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/refund.html",
+        "title": "退款中心 · EduAgent",
+        "themeLinks": [],
+        "bodyTextLength": 258,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "6 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /refund.html, rendered /refund.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": false,
+          "detail": "2 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": false,
+          "detail": "0 theme.css links; version=missing.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "1 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": false,
+          "detail": "0/25 pages versioned; versions=none.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}
