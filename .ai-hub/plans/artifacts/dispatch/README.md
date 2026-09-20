@@ -33,8 +33,10 @@
 
 | ID | 任务 | 状态 | 建议平台档位 |
 |---|---|---|---|
-| TO-EXEC-AUDIT-W1 | WRITE1 favorite_add 反向审核（只读验收） | 待派 | 任意强模型 |
-| TO-EXEC-EVALFREEZE-B1 | idx31 组命中放宽变更单 + V3 尺契约冻结（用户已批） | 待派 | 强模型（评测域） |
-| TO-EXEC-GATEA-CLAY | 前端重塑 Gate A：3 页 × 3 黏土变体（1 天工期第一步） | 待派 | 强前端模型 |
+| TO-EXEC-AUDIT-W1 | WRITE1 favorite_add 反向审核（只读验收） | ✅ 闭环（fa693b4，编排者复跑 111 passed 复证） | — |
+| TO-EXEC-EVALFREEZE-B1 | idx31 组命中放宽变更单 + V3 尺契约冻结（用户已批） | ✅ 闭环（5ffe658，编排者指纹复核：双跑一致/毒性隔离仅 idx31/基线零漂移/draft:false） | — |
+| TO-EXEC-GATEA-CLAY | 前端重塑 Gate A：3 页 × 3 黏土变体 | ✅ 闭环+批款（33c2b20；用户挑款：chat=B / login=B 弃紫改绿黄 / admin=C；禁 emoji 图标） | — |
+| **TO-EXEC-THEME-GATE** | 重塑底座：theme.css 定稿+Phosphor sprite+G3/G6-G9 门禁工具 | **待派（当前最高优先）** | 强前端模型 |
+| （待出）PAGE-WAVES | 逐页批量开工令 ×3（Gate A 底座验收后按域包发出） | 排队 | — |
 
-> 并行建议：三张可同时带走（互不碰文件域）。Gate A 挑款完成后编排者再出逐页批量开工令（每执行者一个域包）。
+> 并行建议：单张待派。Gate A 挑款已完成；THEME-GATE 验收后编排者立即出 PAGE-WAVES 三单。

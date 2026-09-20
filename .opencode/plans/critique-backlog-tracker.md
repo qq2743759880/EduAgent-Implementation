@@ -653,3 +653,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - ✅ **前端重塑工期 = 1 天**（方案 §十六 时刻表）；执行模式切换：执行者=其他平台 agent、用户信使、编排者写令/验收/裁定返工（协议 dispatch/README.md）。Gate A 变体=TO-EXEC-GATEA-CLAY。
 - ✅ WRITE1 反向审核转其他平台 agent：TO-EXEC-AUDIT-W1。
 - 顺延项：F-W1-GUARD 硬化 / C-W1-③ mcp_tool_calls 透传 / course_create batch-2（时光.md §四底稿就绪，等 HITL 真实窗口+派单板空档）。
+
+## 派单验收闭环 ×3（2026-09-20 晚，其他平台 agent 首班车全 PASS）
+- **AUDIT-W1 ✅**（fa693b4）：WRITE1 反审 8/8 PASS；编排者复证=亲跑 111 passed + 报告 commit 单文件。审核新登记：dispatch 计数口径教训（写预期数不如写「0 failed」硬门）；旧写类别名派生投影=非双源（batch-2 时可清）；DEBUG 在岗提醒（部署前必须 False）。
+- **EVALFREEZE-B1 ✅**（5ffe658）：idx31 组命中放宽（CO-IDX31-GROUPHIT-001，--group-hit 默认 False 配置化）+ V3 契约冻结 draft:false（hit 1.0/mrr 0.9841，n=63）。编排者指纹级复核：v3gh 双跑逐位一致 ✓、v2 ctl vs gh diff 仅 [31] ✓、v2 ctl vs 冻结基线 diff=0（零环境漂移）✓、v3 放宽前后 diff 仅 [30] ✓（首跑误报全行 diff 系编排者比较器多含 group_hit_applied 键的伪差——教训：跨 schema 比对先对齐键集）。mrr 实测 0.9570 vs 预估 0.9594 偏差 0.0024<0.005 阈值。V1 路由卡尺未动；三尺禁换算入 note。
+- **GATEA-CLAY ✅+批款**（33c2b20）：public/ 零触碰/零外链/九页齐。用户挑款：chat 气泡=B、login 配色=B（lavender 弃用改绿/黄系）、admin 黏土浓度=C（全黏土，覆盖 clay-light 预案）；**禁 emoji 图标**→调研定稿 Phosphor（MIT，fill 权重，本地 sprite）；CTA 文字色定稿 #2E2A3F（5.43:1）。
+- 派单模式运转正常：三单并行、单轮交付零返工。下一棒 TO-EXEC-THEME-GATE（theme.css+sprite+G3/G6-G9 工具）。
