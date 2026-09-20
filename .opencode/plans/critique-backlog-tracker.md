@@ -647,3 +647,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **C-W1-③（P1，待修）mcp_tool_calls 六节点路径恒空**：chat 响应体 `mcp_tool_calls` 字段仅旧版回退路径（service.py:394）填充；六节点图路径工具真实执行（审计/DB 可证）但响应体零回执——前端收不到工具凭据。落点：graph fanout/merge → service 响应组装透传 SubagentResult.full_tool_outputs。
 - **C-W1-④（P2，观察）读池初始化抖动**：首测出现一次性「MySQL 连接池未初始化→工具阶段降级」（后续进程未复现）。R 候选：读池 lazy-init 在预热完成前的竞态窗。
 - 教训沉淀：**「回执数字系统性失真」新形态=答案层回执无工具层凭据对账**；验收铁律再证——编排者逐断言复现（favorites API 反查）抓出两次捏造，采信完工回执必然漏过。
+
+## 用户裁定登记（2026-09-20 晚）
+- ✅ **idx31 组命中放宽变更单：批准**（预估内容块尺 hit→1.0/mrr→0.9594）；✅ **V3 尺冻结：批准**。合并开工令 TO-EXEC-EVALFREEZE-B1 已入派单板（执行模式切换后首班车）。
+- ✅ **前端重塑工期 = 1 天**（方案 §十六 时刻表）；执行模式切换：执行者=其他平台 agent、用户信使、编排者写令/验收/裁定返工（协议 dispatch/README.md）。Gate A 变体=TO-EXEC-GATEA-CLAY。
+- ✅ WRITE1 反向审核转其他平台 agent：TO-EXEC-AUDIT-W1。
+- 顺延项：F-W1-GUARD 硬化 / C-W1-③ mcp_tool_calls 透传 / course_create batch-2（时光.md §四底稿就绪，等 HITL 真实窗口+派单板空档）。
