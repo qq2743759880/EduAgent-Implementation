@@ -2,153 +2,169 @@
 <html lang="zh-CN" data-theme="light" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
 <title>成就中心 · EduAgent</title>
 <style>
-/* ===== 糖果色 tokens（对齐 globals.css fe-task44 + design-tokens.json colors.candy，禁硬编码业务 hex）===== */
-:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-010: rgba(124,58,237,0.1); --htc-124-58-237-035: rgba(124,58,237,0.35); --htc-24-24-24-002: rgba(24, 24, 24, 0.02); --htc-24-24-24-004: rgba(24, 24, 24, 0.04); --htc-24-24-24-006: rgba(24, 24, 24, 0.06); --htc-24-24-24-008: rgba(24, 24, 24, 0.08); --htc-24-24-24-012: rgba(24, 24, 24, 0.12); --htc-255-249-240-095: rgba(255,249,240,0.95); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-035: rgba(255,255,255,0.35); --htc-255-255-255-090: rgba(255,255,255,0.9); --htc-31-31-31-005: rgba(31,31,31,0.05); --htc-31-31-31-014: rgba(31,31,31,0.14); --htc-31-31-31-018: rgba(31,31,31,0.18); --htc-31-31-31-045: rgba(31,31,31,0.45); --htc-47-178-135-060: rgba(47, 178, 135, 0.6); --htc-47-178-135-030: rgba(47,178,135,0.3); --htc-88-204-2-035: rgba(88,204,2,0.35); --htc-88-204-2-040: rgba(88,204,2,0.4);  --ht-0003: #0003; --ht-06c179: #06c179; --ht-0ac27b: #0ac27b; --ht-0ecd70: #0ecd70; --ht-0fdc78: #0fdc78; --ht-1e8b56: #1e8b56; --ht-222427: #222427; --ht-2fb287: #2fb287; --ht-32f08c: #32f08c; --ht-3ee1a3: #3ee1a3; --ht-56637726: #56637726; --ht-60f2bd: #60f2bd; --ht-63c5b1: #63c5b1; --ht-a0fde7: #a0fde7; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-e6e6e6: #e6e6e6; --ht-eee: #eee; --ht-f4f4f4: #f4f4f4; --ht-f5f9fe: #f5f9fe; --ht-f7f1e6: #f7f1e6; --ht-ffea8e: #ffea8e; --ht-fff: #fff; --ht-ffffff0f: #ffffff0f; 
-  --candy-orange:#ff4d00; --candy-green:#58cc02; --candy-purple:#7c3aed;
-  --candy-yellow:#ffc800; --candy-blue:#1cb0f6; --candy-pink:#ff86d0; --candy-red:#ff4b4b;
-  --candy-green-soft:#e9fbd8; --candy-orange-soft:#ffe8dc; --candy-purple-soft:#f1e8ff;
-  --candy-pink-soft:#ffe3f4; --candy-bg:#fff9f0;
-  --candy-orange-deep:#c74000; --candy-orange-hover:#ff6326;
-  --candy-green-deep:#3d9900; --candy-green-hover:#4db80f;
-  --candy-purple-deep:#5b21b6; --candy-yellow-deep:#c9a000; --candy-red-deep:#d63e3e;
-  --ink:#1f1f1f; --ink-strong:#4a4a4a; --ink-muted:#6a6a6a; --ink-faint:#9a9a9a;
-  --gray-300:#cfcfcf; --white:#fff;
-  --border-chip:rgba(31,31,31,.15);
-  --shadow-3d:0 5px 0 var(--htc-31-31-31-014);
-  --radius-md:0.9rem; --radius-lg:1.5rem; --radius-xl:1.75rem;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-124-58-237-001: rgba(124, 58, 237, 0.001); --htc-255-255-255-009: rgba(255, 255, 255, 0.009); --htc-88-204-2-004: rgba(88, 204, 2, 0.004); --r: 12px; --shadow: 0 4px 16px rgba(31,31,31,0.08); --line: #e5e7eb; --muted: #8a8f98;}
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f；成就域=lemon/lavender 点缀。
+   三层分离：仅动视觉层——id/class/data-st 状态机显隐语义、z-index(#gnav 130)冻结；
+   旧 candy 变量名保留为页内别名(L1)。徽章 icon_emoji 为后端数据字段（内容），不在前端替换范围。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix 仍引用，禁删）—— */
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --ink-faint:var(--text-muted); --muted:var(--text-muted); --foreground:var(--text-strong);
+  --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--clay-mint); --candy-green-deep:#2E7D4F; --candy-green-hover:var(--clay-mint);
+  --candy-purple-soft:#EFE9FF; --candy-purple:#5B4FC4; --candy-purple-deep:#5B4FC4;
+  --candy-orange:var(--cta-coral); --candy-orange-deep:var(--status-danger);
+  --candy-yellow:var(--clay-lemon); --candy-yellow-deep:#B8912F;
+  --candy-red:var(--status-danger); --candy-red-deep:var(--status-danger);
+  --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-pink-soft:#FDEDF4;
+  --candy-green-soft:rgba(125,212,168,.22); --candy-orange-soft:rgba(255,181,158,.30);
+  --gray-300:rgba(46,42,63,.12);
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16);
+  --r:12px; --shadow:0 6px 18px rgba(78,126,66,.14);
+  /* —— 页内派生色（L1，仅本页；#EFE9FF 上 5.4:1）—— */
+  --page-accent:#5B4FC4
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:auto;min-height:100dvh}
-body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 88% 10%,rgba(245,215,122,.28),transparent 26rem),radial-gradient(circle at 6% 90%,rgba(184,166,255,.22),transparent 24rem);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
 .page{width:100%;max-width:860px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:16px}
 
 /* ===== 区块状态机（task09：data-st 挂在各 section 由真实数据驱动，无演示控制器）===== */
 
-/* ===== Hero 成就横幅 ===== */
-.hero{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--candy-purple) 0%,var(--candy-blue) 55%,var(--candy-green) 100%);color:var(--ht-fff);box-shadow:var(--shadow-3d);padding:26px 24px}
-.hero .hero-badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--ht-fff);background:var(--htc-255-255-255-018);border:2px solid var(--htc-255-255-255-035);border-radius:999px;padding:4px 12px}
+/* ===== Hero 成就横幅（lavender 渐变黏土）===== */
+.hero{position:relative;overflow:hidden;border:0;border-radius:var(--radius-card);background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));color:var(--text-strong);box-shadow:var(--clay-shadow-lavender);padding:26px 24px}
+.hero .hero-badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--text-strong);background:rgba(255,255,255,.55);border:0;border-radius:var(--radius-pill);padding:4px 12px}
+.hero .hero-badge .ic{width:1.1em;height:1.1em}
 .hero h1{margin-top:14px;font-size:28px;font-weight:900;letter-spacing:-.01em;line-height:1.2}
-.hero p{margin-top:6px;max-width:560px;font-size:14px;line-height:1.6;color:var(--htc-255-255-255-009)}
+.hero p{margin-top:6px;max-width:560px;font-size:14px;line-height:1.6;color:var(--text-strong)}
 
 /* ===== 区块卡片 ===== */
 .section{display:flex;flex-direction:column;gap:12px}
 .s-title{display:flex;align-items:center;gap:10px}
-.s-title .ico{display:grid;place-items:center;width:40px;height:40px;border:3px solid var(--ink);border-radius:14px;background:var(--candy-yellow);box-shadow:0 3px 0 var(--htc-31-31-31-018)}
-.s-title .ico.blue{background:var(--candy-blue)} .s-title .ico.green{background:var(--candy-green)}
-.s-title .ttl{font-size:17px;font-weight:900;color:var(--ink)}
-.s-title .sub{font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:1px}
+.s-title .ico{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:var(--radius-icon-tile);background:var(--clay-lemon);color:var(--text-strong);box-shadow:var(--clay-shadow-lemon)}
+.s-title .ico.blue{background:var(--clay-sky);box-shadow:var(--clay-shadow-sky)} .s-title .ico.green{background:var(--clay-mint);box-shadow:var(--clay-shadow-mint)}
+.s-title .ico .ic{width:1.25em;height:1.25em}
+.s-title .ttl{font-size:17px;font-weight:900;color:var(--text-strong)}
+.s-title .sub{font-size:12px;color:var(--text-muted);font-weight:600;margin-top:1px}
 
 /* ===== 徽章墙 ===== */
 .badge-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:2px}
-.badge-count{display:inline-flex;align-items:center;gap:6px;font-size:0.8125rem;font-weight:800;color:var(--ink);background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-004);border-radius:999px;padding:5px 12px}
-.badge-next{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--candy-purple-deep);background:var(--candy-purple-soft);border:2px solid var(--htc-124-58-237-035);border-radius:999px;padding:5px 12px}
-.badge-full{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--candy-green-deep);background:var(--candy-green-soft);border:2px solid var(--htc-88-204-2-004);border-radius:999px;padding:5px 12px}
+.badge-count{display:inline-flex;align-items:center;gap:6px;font-size:0.8125rem;font-weight:800;color:var(--text-strong);background:var(--candy-green-soft);border:0;border-radius:var(--radius-pill);padding:5px 12px}
+.badge-count .ic{width:1.05em;height:1.05em}
+.badge-next{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--page-accent);background:var(--candy-purple-soft);border:0;border-radius:var(--radius-pill);padding:5px 12px}
+.badge-full{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--text-strong);background:var(--candy-green-soft);border:0;border-radius:var(--radius-pill);padding:5px 12px}
 .badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.badge-card{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:16px 12px;text-align:center;position:relative;transition:transform .1s}
-.badge-card:hover{transform:translateY(-3px)}
-.badge-card .b-emoji{display:grid;place-items:center;width:58px;height:58px;border:2px solid var(--ink);border-radius:16px;font-size:30px;color:var(--ink)}
-.badge-card.locked .b-emoji{filter:grayscale(1);opacity:.4;background:var(--candy-bg)}
-.badge-card.unlocked .b-emoji{background:var(--candy-green-soft);box-shadow:inset 0 -3px 0 var(--htc-88-204-2-035)}
-.badge-card .b-lock{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink-muted);color:var(--ht-fff);font-size:12px}
-.badge-card .b-name{font-size:14px;font-weight:800;color:var(--ink)}
-.badge-card .b-rarity{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px;border:2px solid var(--ink)}
-.badge-card .b-rarity.common{background:var(--ink-faint);color:var(--ht-fff)}
-.badge-card .b-rarity.rare{background:var(--candy-blue);color:var(--ht-fff)}
-.badge-card .b-rarity.epic{background:var(--candy-purple);color:var(--ht-fff)}
-.badge-card .b-rarity.legendary{background:var(--candy-yellow);color:var(--ink)}
-.badge-card .b-desc{font-size:12px;color:var(--ink-muted);line-height:1.5;min-height:34px}
+.badge-card{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:16px 12px;text-align:center;position:relative;transition:transform var(--motion-fast) var(--ease-clay)}
+.badge-card:hover{transform:translateY(-2px)}
+.badge-card .b-emoji{display:grid;place-items:center;width:58px;height:58px;border:0;border-radius:var(--radius-icon-tile);font-size:30px;color:var(--text-strong);background:var(--bg-app)}
+.badge-card.locked .b-emoji{filter:grayscale(1);opacity:.4;background:var(--bg-app)}
+.badge-card.unlocked .b-emoji{background:var(--candy-green-soft);box-shadow:var(--clay-shadow-light)}
+.badge-card .b-lock{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--text-muted);color:#FFFFFF;font-size:12px}
+.badge-card .b-lock .ic{width:13px;height:13px}
+.badge-card .b-name{font-size:14px;font-weight:800;color:var(--text-strong)}
+.badge-card .b-rarity{display:inline-block;font-size:11px;font-weight:800;border-radius:var(--radius-pill);padding:2px 9px;border:0}
+.badge-card .b-rarity.common{background:rgba(107,101,128,.18);color:var(--text-strong)}
+.badge-card .b-rarity.rare{background:var(--clay-sky);color:var(--text-strong)}
+.badge-card .b-rarity.epic{background:var(--clay-lavender);color:var(--text-strong)}
+.badge-card .b-rarity.legendary{background:var(--clay-lemon);color:var(--text-strong)}
+.badge-card .b-desc{font-size:12px;color:var(--text-muted);line-height:1.5;min-height:34px}
 .badge-card .b-prog{width:100%;display:flex;flex-direction:column;gap:4px}
-.badge-card .b-prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-weight:700}
-.badge-card .b-bar{height:8px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:1px solid var(--border-chip)}
-.badge-card .b-bar i{display:block;height:100%;border-radius:999px;background:var(--candy-green)}
-.badge-card .b-reward{font-size:12px;font-weight:800;color:var(--candy-green-deep)}
+.badge-card .b-prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);font-weight:700}
+.badge-card .b-bar{height:8px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:0}
+.badge-card .b-bar i{display:block;height:100%;border-radius:999px;background:var(--clay-mint)}
+.badge-card .b-reward{font-size:12px;font-weight:800;color:#2E7D4F}
 
 /* ===== 积分总览 ===== */
-.points-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:20px 22px}
+.points-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:20px 22px}
 .points-left{display:flex;flex-direction:column;gap:10px}
-.lv-pill{display:inline-flex;align-items:center;gap:6px;width:fit-content;font-size:12px;font-weight:800;color:var(--candy-purple-deep);background:var(--candy-purple-soft);border:2px solid var(--htc-124-58-237-035);border-radius:999px;padding:4px 11px}
-.total-pts{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.01em}
-.total-label{font-size:0.8125rem;color:var(--ink-faint);font-weight:600}
+.lv-pill{display:inline-flex;align-items:center;gap:6px;width:fit-content;font-size:12px;font-weight:800;color:var(--page-accent);background:var(--candy-purple-soft);border:0;border-radius:var(--radius-pill);padding:4px 11px}
+.total-pts{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text-strong);letter-spacing:-.01em}
+.total-label{font-size:0.8125rem;color:var(--text-muted);font-weight:600}
 .points-right{min-width:200px;flex:1;max-width:300px;display:flex;flex-direction:column;gap:8px}
-.lv-range{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-muted);font-weight:600}
-.lv-range b{color:var(--ink);font-weight:800}
-.lv-prog{height:12px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:2px solid var(--ink)}
-.lv-prog i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--candy-green),var(--candy-blue))}
-.lv-note{text-align:right;font-size:11px;color:var(--ink-faint);font-weight:700}
-.lv-max{display:inline-flex;align-items:center;gap:5px;color:var(--candy-orange-deep);font-weight:800}
+.lv-range{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);font-weight:600}
+.lv-range b{color:var(--text-strong);font-weight:800}
+.lv-prog{height:12px;overflow:hidden;border-radius:999px;background:var(--gray-300);border:0}
+.lv-prog i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--clay-mint),var(--clay-sky))}
+.lv-note{text-align:right;font-size:11px;color:var(--text-muted);font-weight:700}
+.lv-max{display:inline-flex;align-items:center;gap:5px;color:var(--status-danger);font-weight:800}
 
 /* ===== 积分流水 ===== */
-.log-card{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);overflow:hidden}
-.log-head{font-size:14px;font-weight:900;color:var(--ink);border-bottom:2px dashed var(--border-chip);padding:12px 16px}
+.log-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);overflow:hidden}
+.log-head{font-size:14px;font-weight:900;color:var(--text-strong);border-bottom:2px dashed var(--border-chip);padding:12px 16px}
 .log-list{display:flex;flex-direction:column}
 .log-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px dashed var(--border-chip)}
 .log-item:last-child{border-bottom:none}
-.log-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:0.9375rem;flex-shrink:0;border:2px solid var(--ink)}
+.log-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:0.8125rem;flex-shrink:0;border:0;color:var(--text-strong);font-weight:800}
 .log-ico.up{background:var(--candy-green-soft)}
 .log-ico.down{background:var(--candy-orange-soft)}
 .log-mid{min-width:0;flex:1}
-.log-mid .lg-title{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.log-mid .lg-meta{font-size:12px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-mid .lg-title{font-size:14px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-mid .lg-meta{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .log-amt{text-align:right;flex-shrink:0}
 .log-amt .lg-delta{font-size:0.9375rem;font-weight:800;font-variant-numeric:tabular-nums}
-.log-amt .lg-delta.up{color:var(--candy-green-deep)}
-.log-amt .lg-delta.down{color:var(--candy-red-deep)}
-.log-amt .lg-bal{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums;font-weight:600}
+.log-amt .lg-delta.up{color:#2E7D4F}
+.log-amt .lg-delta.down{color:var(--status-danger)}
+.log-amt .lg-bal{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums;font-weight:600}
 
 /* ===== 排行榜 ===== */
-.rank-card{background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);overflow:hidden}
+.rank-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);overflow:hidden}
 .rank-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:2px dashed var(--border-chip);padding:12px 16px}
-.rank-head .rh-ttl{font-size:14px;font-weight:900;color:var(--ink)}
-.rank-head .rh-meta{font-size:12px;color:var(--ink-faint);font-weight:600}
+.rank-head .rh-ttl{font-size:14px;font-weight:900;color:var(--text-strong)}
+.rank-head .rh-meta{font-size:12px;color:var(--text-muted);font-weight:600}
 .rank-span{display:flex;flex-wrap:wrap;gap:10px;padding:12px 16px 4px}
 .rank-dim{padding:2px 16px 12px}
-.tabgroup{display:inline-flex;align-items:center;gap:2px;background:var(--candy-bg);border:2px solid var(--ink);border-radius:12px;padding:3px}
-.tabgroup .tab{display:inline-flex;align-items:center;gap:5px;font-size:0.8125rem;font-weight:700;color:var(--ink-muted);border:none;background:transparent;border-radius:9px;padding:5px 12px;transition:background .12s,color .12s}
-.tabgroup .tab:hover{color:var(--ink)}
-.tabgroup .tab.on{background:var(--candy-purple);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-purple-deep)}
+.tabgroup{display:inline-flex;align-items:center;gap:2px;background:var(--bg-app);border:0;border-radius:var(--radius-btn);padding:3px;box-shadow:var(--clay-shadow-input)}
+.tabgroup .tab{display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:0.8125rem;font-weight:700;color:var(--text-strong);border:none;background:transparent;border-radius:calc(var(--radius-btn) - 4px);padding:5px 14px;transition:background var(--motion-fast) var(--ease-clay),color var(--motion-fast) var(--ease-clay)}
+.tabgroup .tab .ic{width:1.05em;height:1.05em}
+.tabgroup .tab:hover{color:var(--text-strong)}
+.tabgroup .tab.on{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
 .rank-body{padding:2px 0}
 .rank-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px dashed var(--border-chip)}
 .rank-row:last-child{border-bottom:none}
 .rank-row.mine{background:var(--candy-purple-soft)}
-.rank-no{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;border:2px solid var(--ink)}
-.rank-no.gold{background:var(--candy-yellow)} .rank-no.silver{background:var(--gray-300)} .rank-no.bronze{background:var(--candy-orange-soft)}
-.rank-lg-nm{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;flex-shrink:0;background:var(--candy-purple)}
-.rank-row .r-name{min-width:0;flex:1;font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rank-row .r-me{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:var(--ht-fff);background:var(--candy-purple-deep);border-radius:6px;padding:1px 7px;margin-left:6px}
-.rank-row .r-val{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--candy-purple-deep);flex-shrink:0}
-.rank-row .r-unit{font-size:11px;color:var(--ink-faint);font-weight:600;margin-left:2px}
-.rank-row .r-live{font-size:11px;font-weight:800;color:var(--candy-green-deep);background:var(--candy-green-soft);border-radius:999px;padding:2px 8px;flex-shrink:0}
-.myrank{display:flex;align-items:center;gap:8px;border-top:2px solid var(--ink);background:var(--candy-bg);padding:12px 16px;font-size:0.8125rem}
-.myrank .mr-lbl{color:var(--ink-muted);font-weight:600}
-.myrank .mr-val{font-weight:900;color:var(--ink)}
+.rank-no{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0;border:0;background:var(--bg-app);color:var(--text-strong)}
+.rank-no.gold{background:var(--clay-lemon)} .rank-no.silver{background:#E8E6F0} .rank-no.bronze{background:var(--clay-peach)}
+.rank-lg-nm{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-size:14px;flex-shrink:0;background:var(--clay-lavender)}
+.rank-row .r-name{min-width:0;flex:1;font-size:14px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-row .r-me{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#FFFFFF;background:var(--page-accent);border-radius:6px;padding:1px 7px;margin-left:6px}
+.rank-row .r-val{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--page-accent);flex-shrink:0}
+.rank-row .r-unit{font-size:11px;color:var(--text-muted);font-weight:600;margin-left:2px}
+.rank-row .r-live{font-size:11px;font-weight:800;color:#2E7D4F;background:var(--candy-green-soft);border-radius:999px;padding:2px 8px;flex-shrink:0}
+.myrank{display:flex;align-items:center;gap:8px;border-top:2px dashed var(--border-chip);background:var(--bg-app);padding:12px 16px;font-size:0.8125rem}
+.myrank .mr-lbl{color:var(--text-muted);font-weight:600}
+.myrank .mr-val{font-weight:900;color:var(--text-strong)}
 
 /* ===== 分页（C2）===== */
 .pager{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px}
-.pager-btn{min-width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);background:var(--white);border-radius:12px;font-size:0.8125rem;font-weight:800;color:var(--ink);box-shadow:0 3px 0 var(--htc-31-31-31-014);padding:0 10px;transition:transform .08s,box-shadow .08s}
-.pager-btn:hover{transform:translateY(-1px)}
-.pager-btn:active{transform:translateY(1px);box-shadow:none}
-.pager-btn.on{background:var(--candy-green);color:var(--ht-fff)}
+.pager-btn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);font-size:0.8125rem;font-weight:800;color:var(--text-strong);box-shadow:var(--clay-shadow-light);padding:0 10px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.pager-btn:hover{transform:translateY(-2px)}
+.pager-btn:active{transform:scale(.97)}
+.pager-btn.on{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-coral)}
 .pager-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.pager .total{font-size:12px;color:var(--ink-faint);font-weight:700;margin-left:6px}
+.pager .total{font-size:12px;color:var(--text-muted);font-weight:700;margin-left:6px}
 
 /* ===== 状态：loading 骨架 ===== */
 .sk{display:flex;flex-direction:column;gap:12px}
-.sk-card{border:3px solid var(--gray-300);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ht-eee) 25%,var(--ht-f7f1e6) 50%,var(--ht-eee) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-card{border:2px solid var(--border-chip);border-radius:var(--radius-card);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,#ECE9F4 25%,#F7F5FB 50%,#ECE9F4 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
 .sk-line.w60{width:60%}.sk-line.w40{width:40%}.sk-line.w90{width:90%}.sk-line.w25{width:25%}.sk-line.w70{width:70%}.sk-line.w30{width:30%}
-.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,var(--ht-e6e6e6) 25%,var(--ht-f4f4f4) 50%,var(--ht-e6e6e6) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:55%}
+.sk-h{height:18px;border-radius:6px;background:linear-gradient(90deg,#E4E0EF 25%,#F1EEF7 50%,#E4E0EF 75%);background-size:400% 100%;animation:shimmer 1.2s infinite;width:55%}
 @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 
 /* ===== 状态：empty / error ===== */
-.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--white);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d)}
-.state .st-emoji{font-size:46px}
-.state h3{font-size:1.125rem;font-weight:800;color:var(--ink)}
-.state p{font-size:14px;color:var(--ink-muted);line-height:1.6;max-width:340px}
-.retry{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:var(--candy-red);color:var(--ht-fff);font-weight:800;font-size:0.8125rem;border-radius:12px;padding:7px 16px;box-shadow:0 3px 0 var(--candy-red-deep)}
-.retry:active{transform:translateY(1px);box-shadow:none}
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:48px 20px;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light)}
+.state .st-emoji{font-size:46px;color:var(--text-strong);display:inline-flex}
+.state h3{font-size:1.125rem;font-weight:800;color:var(--text-strong)}
+.state p{font-size:14px;color:var(--text-muted);line-height:1.6;max-width:340px}
+.retry{display:inline-flex;align-items:center;gap:7px;min-height:44px;border:0;background:var(--status-danger);color:#FFFFFF;font-weight:800;font-size:0.8125rem;border-radius:var(--radius-btn);padding:7px 16px;box-shadow:4px 6px 14px rgba(198,62,74,.30)}
+.retry:active{transform:scale(.97)}
 
 /* ===== 区块状态机（task09：loading/ok/empty/error 全部由脚本按真实数据切换）===== */
 [hidden]{display:none!important}
@@ -161,8 +177,8 @@ button{font-family:inherit;cursor:pointer}
 [data-st="error"] .show-err{display:flex}
 /* 积分流水空态（新用户无流水时诚实提示，不造演示流水） */
 .log-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:30px 16px;text-align:center}
-.log-empty .e-emo{font-size:30px}
-.log-empty p{font-size:13px;color:var(--ink-muted);font-weight:700;line-height:1.6;max-width:300px}
+.log-empty .e-emo{font-size:30px;color:var(--text-strong);display:inline-flex}
+.log-empty p{font-size:13px;color:var(--text-muted);font-weight:700;line-height:1.6;max-width:300px}
 
 /* ===== 响应式断点（@container 以 body 宽度驱动）===== */
 @container app (max-width:820px){
@@ -254,6 +270,18 @@ button{font-family:inherit;cursor:pointer}
     .chat-page .main{max-width:none!important;width:100%!important}
   }
 </style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent,var(--candy-purple))!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
 </head>
 <body class="on">
   <!-- task09：全部演示兜底数据与演示控制器已清零；未登录显示登录引导，登录后三区块走真实 gamification API -->
@@ -279,23 +307,23 @@ button{font-family:inherit;cursor:pointer}
   <div class="page">
     <!-- Hero 成就横幅 -->
     <section class="hero" aria-label="成就中心横幅">
-      <span class="hero-badge">🏆 成就中心 · 让努力被看见</span>
+      <span class="hero-badge"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trophy"/></svg> 成就中心 · 让努力被看见</span>
       <h1>成就与成长</h1>
       <p>徽章记录你的每一步成长，积分见证每一次坚持，排行榜上看看你超越了谁。</p>
     </section>
 
     <!-- task09：未登录诚实引导（无演示数据兜底） -->
     <div class="state" id="loginGate" role="status" hidden>
-      <span class="st-emoji" aria-hidden="true">🔑</span>
+      <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-sign-in"/></svg></span>
       <h3>登录后查看我的成就</h3>
       <p>徽章、积分与排行榜随你的学习实时更新，登录后即刻同步。</p>
-      <a class="retry" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">🚀 去登录</a>
+      <a class="retry" id="loginGateBtn" href="/login-register.html" style="text-decoration:none">去登录</a>
     </div>
 
     <!-- ========== 排行榜（ZSET） ========== -->
     <section class="section" id="secRank" aria-labelledby="rank-sec" data-st="loading" style="">
       <div class="s-title" style="">
-        <span class="ico green" aria-hidden="true">🏅</span>
+        <span class="ico green" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trophy"/></svg></span>
         <div>
           <div class="ttl" id="rank-sec">排行榜</div>
           <div class="sub show-ok">日 / 周 / 月 / 总榜 · 学习时长 · 徽章数 · 实时数据</div>
@@ -321,13 +349,13 @@ button{font-family:inherit;cursor:pointer}
         <div class="rank-dim" style="">
           <div class="tabgroup" role="tablist" aria-label="排行维度">
             <button class="tab on" role="tab" aria-selected="true" style="">
-              <span aria-hidden="true">🏆</span>积分
+              <svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trophy"/></svg>积分
             </button>
             <button class="tab" role="tab" aria-selected="false" style="">
-              <span aria-hidden="true" style="">⏱️</span>学习时长
+              <span aria-hidden="true" style=""></span>学习时长
             </button>
             <button class="tab" role="tab" aria-selected="false" style="">
-              <span aria-hidden="true">🎖️</span>徽章数
+              <svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg>徽章数
             </button>
           </div>
         </div>
@@ -337,7 +365,7 @@ button{font-family:inherit;cursor:pointer}
 
         <!-- 我的排名 -->
         <div class="myrank">
-          <span class="mr-lbl">📍 我的排名：</span>
+          <span class="mr-lbl">我的排名：</span>
           <span class="mr-val" id="myRankVal">…</span>
           <span class="mr-lbl" id="myRankMetric" style="margin-left:12px" hidden></span>
           <span class="r-live" id="rankLiveBadge" hidden>实时</span>
@@ -357,21 +385,21 @@ button{font-family:inherit;cursor:pointer}
 
       <!-- 排行空态 / 错误态（注意：排行空态走 C7，错误态走 C8） -->
       <div class="state show-empty" role="status">
-        <span class="st-emoji" aria-hidden="true">🏅</span>
+        <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trophy"/></svg></span>
         <h3>该榜暂无数据</h3>
         <p>快去学习抢榜首吧～</p>
       </div>
       <div class="state show-err" role="alert">
-        <span class="st-emoji" aria-hidden="true">😵</span>
+        <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
         <h3>排行榜加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry" type="button">🔄 重试</button>
+        <button class="retry" type="button">重试</button>
       </div>
     </section>
 <!-- ========== 积分总览 + 流水 ========== -->
     <section class="section" id="secPoints" aria-labelledby="points-sec" data-st="loading" style="">
       <div class="s-title">
-        <span class="ico blue" aria-hidden="true">💸</span>
+        <span class="ico blue" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-star"/></svg></span>
         <div>
           <div class="ttl" id="points-sec">积分</div>
           <div class="sub show-ok">等级成长与积分流水</div>
@@ -381,7 +409,7 @@ button{font-family:inherit;cursor:pointer}
       <!-- 积分总览（成功态；数值由 /api/gamification/me/points 真实渲染） -->
       <div class="points-card show-ok">
         <div class="points-left">
-          <span class="lv-pill">🏅 …</span>
+          <span class="lv-pill">Lv. …</span>
           <div class="total-pts">—</div>
           <div class="total-label">当前积分</div>
         </div>
@@ -409,17 +437,17 @@ button{font-family:inherit;cursor:pointer}
         <div class="sk-card" style="height:200px"></div>
       </div>
       <div class="state show-err" role="alert">
-        <span class="st-emoji" aria-hidden="true">😵</span>
+        <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
         <h3>积分加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry" type="button">🔄 重试</button>
+        <button class="retry" type="button">重试</button>
       </div>
     </section>
 
     <!-- ========== 徽章墙 ========== -->
     <section class="section" id="secBadges" aria-labelledby="badge-sec" data-st="loading" style="">
       <div class="s-title">
-        <span class="ico" aria-hidden="true">🎖️</span>
+        <span class="ico" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg></span>
         <div>
           <div class="ttl" id="badge-sec">徽章</div>
           <div class="sub show-ok">学习 / 成就 / 社交三类</div>
@@ -429,7 +457,7 @@ button{font-family:inherit;cursor:pointer}
       <!-- 成功态（task09：由 /api/gamification/me/badges 真实渲染，已得/未得状态诚实） -->
       <div class="show-ok">
         <div class="badge-head">
-          <span class="badge-count" id="badgeCount">🎖 已解锁统计加载中…</span>
+          <span class="badge-count" id="badgeCount"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg> 已解锁统计加载中…</span>
           <span class="badge-next" id="badgeNext" hidden></span>
         </div>
         <div class="badge-grid"></div>
@@ -453,17 +481,17 @@ button{font-family:inherit;cursor:pointer}
 
       <!-- 徽章墙空态（无徽章） -->
       <div class="state show-empty" role="status">
-        <span class="st-emoji" aria-hidden="true">🪙</span>
+        <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-star"/></svg></span>
         <h3>还没有徽章</h3>
         <p>完成学习任务、参与社区互动、坚持每天登录，徽章记录你的每一步成长。</p>
       </div>
 
       <!-- 徽章墙错误态 -->
       <div class="state show-err" role="alert">
-        <span class="st-emoji" aria-hidden="true">😵</span>
+        <span class="st-emoji" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
         <h3>徽章加载失败</h3>
         <p>网络开小差了，请稍后重试。</p>
-        <button class="retry" type="button">🔄 重试</button>
+        <button class="retry" type="button">重试</button>
       </div>
     </section>
 
@@ -524,7 +552,7 @@ button{font-family:inherit;cursor:pointer}
       ? '<div class="b-reward">+' + (bd.reward_points || 0) + ' 积分 · 已解锁</div>'
       : '<div class="b-prog"><div class="b-prog-row"><span>解锁进度</span><span>' + cur + '/' + req + '</span></div><div class="b-bar"><i style="width:' + prog + '%"></i></div></div>';
     return '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
-      + (unlocked ? '<span class="b-lock" hidden></span>' : '<span class="b-lock" aria-hidden="true">🔒</span>')
+      + (unlocked ? '<span class="b-lock" hidden></span>' : '<span class="b-lock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-x"/></svg></span>')
       + '<div class="b-emoji">' + esc(bd.icon_emoji || "🎖️") + '</div>'
       + '<div class="b-name">' + esc(bd.badge_name || "") + '</div>'
       + '<span class="b-rarity ' + r + '">' + rl + '</span>'
@@ -538,10 +566,10 @@ button{font-family:inherit;cursor:pointer}
     var grid = document.querySelector("#secBadges .badge-grid");
     if (grid) grid.innerHTML = items.map(badgeCard).join("");
     var cnt = document.getElementById("badgeCount");
-    if (cnt) cnt.innerHTML = "🎖 已解锁 <b>" + (b.unlocked_count || 0) + "</b> / " + (b.total || items.length) + " 枚";
+    if (cnt) cnt.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg> 已解锁 <b>' + (b.unlocked_count || 0) + '</b> / ' + (b.total || items.length) + ' 枚';
     var nx = document.getElementById("badgeNext");
     if (nx) {
-      if (b.next_milestone) { nx.textContent = "✨ " + b.next_milestone; nx.hidden = false; }
+      if (b.next_milestone) { nx.textContent = "" + b.next_milestone; nx.hidden = false; }
       else { nx.textContent = ""; nx.hidden = true; }
     }
     setSt("secBadges", "ok");
@@ -559,7 +587,7 @@ button{font-family:inherit;cursor:pointer}
     var delta = Number(l.delta || 0);
     var up = delta >= 0;
     var lbl = POINT_LABEL[l.point_type] || l.point_type || "积分变化";
-    return '<div class="log-item"><span class="log-ico ' + (up ? 'up' : 'down') + '" aria-hidden="true">' + (up ? '⬆️' : '⬇️') + '</span>'
+    return '<div class="log-item"><span class="log-ico ' + (up ? 'up' : 'down') + '" aria-hidden="true">' + (up ? '▲' : '▼') + '</span>'
       + '<div class="log-mid"><div class="lg-title">' + esc(lbl) + (l.note ? ' · ' + esc(l.note) : '') + '</div>'
       + '<div class="lg-meta">' + esc(String(l.created_at || "").replace("T", " ")) + '</div></div>'
       + '<div class="log-amt"><div class="lg-delta ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '') + delta + '</div>'
@@ -571,23 +599,23 @@ button{font-family:inherit;cursor:pointer}
     var tot = document.querySelector("#secPoints .total-pts");
     if (tot) tot.textContent = fmt(p.total_points);
     var pill = document.querySelector("#secPoints .lv-pill");
-    if (pill) pill.textContent = "🏅 Lv." + (p.level_no || 0) + (p.level_title ? " · " + p.level_title : "");
+    if (pill) pill.textContent = "Lv." + (p.level_no || 0) + (p.level_title ? " · " + p.level_title : "");
     var isMax = p.next_level_min == null;
     var pc = Math.min(100, Math.round(p.level_progress_pct || 0));
     var range = document.querySelector("#secPoints .lv-range");
     if (range) range.innerHTML = isMax
-      ? '<span>Lv.' + (p.level_no || 0) + '（<b>' + fmt(p.level_min) + '</b> 分）</span><span>🏆 满级</span>'
+      ? '<span>Lv.' + (p.level_no || 0) + '（<b>' + fmt(p.level_min) + '</b> 分）</span><span>满级</span>'
       : '<span>Lv.' + (p.level_no || 0) + '（<b>' + fmt(p.level_min) + '</b> 分）</span><span>下一级 Lv.' + ((p.level_no || 0) + 1) + '（<b>' + fmt(p.next_level_min) + '</b> 分）</span>';
     var prog = document.querySelector("#secPoints .lv-prog");
     if (prog) { prog.setAttribute("aria-valuenow", String(pc)); var i = prog.querySelector("i"); if (i) i.style.width = pc + "%"; }
     var note = document.querySelector("#secPoints .lv-note");
-    if (note) note.innerHTML = isMax ? '<span class="lv-max">🏆 已达最高等级</span>' : "距下一级还差 " + (100 - pc) + "%";
+    if (note) note.innerHTML = isMax ? '<span class="lv-max">已达最高等级</span>' : "距下一级还差 " + (100 - pc) + "%";
 
     var logs = p.recent_logs || [];
     var list = document.querySelector("#secPoints .log-list");
     var hasLogs = logs.length > 0;
     if (list) list.innerHTML = hasLogs ? logs.map(logRow).join("")
-      : '<div class="log-empty"><span class="e-emo">🪙</span><p>暂无积分流水；学习、发帖、解锁徽章都能获得积分。</p></div>';
+      : '<div class="log-empty"><span class="e-emo"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-star"/></svg></span><p>暂无积分流水；学习、发帖、解锁徽章都能获得积分。</p></div>';
     var head = document.getElementById("logHead");
     if (head) head.innerHTML = '积分流水 <span style="color:var(--ink-faint);font-weight:600">共 ' + (p.logs_total != null ? p.logs_total : logs.length) + ' 条</span>';
     setSt("secPoints", "ok");
@@ -642,9 +670,9 @@ button{font-family:inherit;cursor:pointer}
     var unit = DIM_UNIT[dim] || "分";
     var body = document.querySelector("#secRank .rank-body");
     if (body) body.innerHTML = top.map(function (r, i) {
-      var medal = i === 0 ? "👑" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : null));
+      var medal = i < 3; /* 前三名 = 金/银/铜色号牌（图标已去 emoji，牌色+名次数字表意） */
       var noHtml = medal
-        ? '<span class="rank-no ' + (i === 0 ? 'gold' : (i === 1 ? 'silver' : 'bronze')) + '" aria-label="第 ' + (r.rank_no || i + 1) + ' 名">' + medal + '</span>'
+        ? '<span class="rank-no ' + (i === 0 ? 'gold' : (i === 1 ? 'silver' : 'bronze')) + '" aria-label="第 ' + (r.rank_no || i + 1) + ' 名">' + (r.rank_no || i + 1) + '</span>'
         : '<div class="rank-no">' + (r.rank_no || i + 1) + '</div>';
       return '<div class="rank-row ' + (r.is_myself ? 'mine' : '') + '">' + noHtml
         + '<div class="r-name">' + esc(r.user_name || "用户" + (r.user_id || "")) + (r.is_myself ? '<span class="r-me">我</span>' : '') + '</div>'
