@@ -1050,7 +1050,8 @@ async def build_v2(in_set: str = V1_SET_PATH) -> None:
 # 测量：实时端到端检索链（R20-min 范式，0-LLM）
 # ============================================================
 
-async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, final_max_k: int) -> None:
+async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, final_max_k: int,
+                      group_hit: bool = False) -> None:
     from app.auth import UserRole
     from app.chat.retriever import retrieve_three_channel
 
@@ -1070,8 +1071,24 @@ async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, fin
         docs = [{"chunk_id": d.doc_id, "content": d.content, "score": d.score} for d in bundle.docs]
         from r20min_run import _match_golden  # 只读复用 W0 双键解析（id_map/doc_sha256 兜底）
 
-        gt_id, gt_via = _match_golden(case, docs)
-        ranks = [i + 1 for i, d in enumerate(docs) if d["chunk_id"] == gt_id]
+        # CO-IDX31-GROUPHIT-001：组命中放宽（配置化，仅标记 group 的 golden 生效）。
+        # 「组」= 建集时 verbatim_candidates（norm(V2 题干) 子串命中的兄弟块族，idx31=33 成员）；
+        # 组内任一成员进 final docs 即记 hit，mrr 取组内最好排名（docs 已按相关度降序，首个命中=最好）。
+        # 默认 False；开启时仅对 verbatim_dup_count>1 的 case 生效（全库实测仅 idx31 一条），
+        # 其余 case 走原 _match_golden 单键路径逐位不变。
+        group_applied = False
+        group_size = None
+        if group_hit and (case.get("verbatim_dup_count") or 0) > 1:
+            gstem = case.get("v2_query") or case["query"]
+            gnorm = norm_text(gstem)
+            ranks = [i + 1 for i, d in enumerate(docs) if gnorm and gnorm in norm_text(d["content"])]
+            gt_id = case["golden"]["chunk_id"]   # 留痕用规范 golden id
+            gt_via = "group_hit"
+            group_applied = True
+            group_size = case["verbatim_dup_count"]
+        else:
+            gt_id, gt_via = _match_golden(case, docs)
+            ranks = [i + 1 for i, d in enumerate(docs) if d["chunk_id"] == gt_id]
         # module-level 次级指标（CO-EVAL64V2-001 §2.1：模块卡降为次级）：V1 golden 块是否进 final docs
         module_gt = str(case.get("v1_golden_chunk_id") or "")
         module_rank = next((i + 1 for i, d in enumerate(docs) if d["chunk_id"] == module_gt), None) \
@@ -1095,6 +1112,8 @@ async def _measure_one(sem, idx: int, case: dict, results: list, top_k: int, fin
             "module_rank_of_gt": module_rank,
             "final_docs": len(docs),
             "latency_ms": lat_ms,
+            "group_hit_applied": group_applied,
+            "group_size": group_size,
             "trace": {
                 "recall_layer": int(bundle.raw_retrieved_count),
                 "final_layer": len(docs),
@@ -1175,7 +1194,8 @@ def _summarize(per_query: list[dict], tag: str, mode_note: str, top_k: int) -> d
     return summary
 
 
-def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict:
+def measure(tag: str, graded: bool = False, set_path: str | None = None,
+            group_hit: bool = False) -> dict:
     from app.config import settings
     from app.knowledge.importer.embedder import encode_dense_batch, ensure_jieba_ready
 
@@ -1197,7 +1217,8 @@ def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict
     t_start = time.perf_counter()
 
     async def _run_all() -> None:
-        tasks = [_measure_one(sem, i, c, results, top_k, top_k) for i, c in enumerate(cases)]
+        tasks = [_measure_one(sem, i, c, results, top_k, top_k, group_hit=group_hit)
+                 for i, c in enumerate(cases)]
         for t in tasks:  # 逐个 await：提交顺序=完成顺序（确定性）
             await t
 
@@ -1209,7 +1230,7 @@ def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict
                  f"graded_widened_window(top_k=final_max_k={top_k}, 其余同冻结契约; 分级测量专用口径)")
     eff_params = dict(PARAMS)
     eff_params.update({"embed_backend": str(getattr(settings, "EMBED_BACKEND", "unknown")),
-                        "top_k": top_k, "final_max_k": top_k})
+                        "top_k": top_k, "final_max_k": top_k, "group_hit": group_hit})
     report = {
         "tag": tag,
         "ran_at": datetime.now(timezone.utc).isoformat(),
@@ -1217,6 +1238,10 @@ def measure(tag: str, graded: bool = False, set_path: str | None = None) -> dict
                                   cwd=BASE_DIR).stdout.strip(),
         "eval_set": eval_set_path,
         "mode_note": mode_note,
+        "group_hit": group_hit,
+        "group_hit_note": ("CO-IDX31-GROUPHIT-001：组内任一兄弟块进 top5 记 hit；"
+                           "仅 verbatim_dup_count>1 的 golden 生效（实测仅 idx31）" if group_hit else
+                           "单键精确命中口径（CO-IDX31-GROUPHIT-001 未启用）"),
         "params": eff_params,
         "seed": SEED,
         "n_cases": len(results),
@@ -1798,6 +1823,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=64)
     ap.add_argument("--manual-n", type=int, default=40)
     ap.add_argument("--graded", action="store_true", help="measure 用分级窗口 top_k=final_max_k=10")
+    ap.add_argument("--group-hit", action="store_true",
+                    help="measure 启用 CO-IDX31-GROUPHIT-001 组命中（仅 verbatim_dup_count>1 的 golden 生效；默认关，V1/V2 单键口径零影响）")
     ap.add_argument("--runs", nargs="*", help="position/freezev2 模式: 参与汇总的 run tags")
     ap.add_argument("--graded-tag", default=None, help="position 模式: 分级窗口 run tag")
     ap.add_argument("--in-set", default=None,
@@ -1821,7 +1848,7 @@ def main() -> int:
         asyncio.run(build_v3(args.in_set or V2_SET_PATH))
         return 0
     if args.mode == "measure":
-        measure(args.tag, args.graded, args.set_path)
+        measure(args.tag, args.graded, args.set_path, group_hit=args.group_hit)
         return 0
     if args.mode == "freezev2":
         freeze_v2(args.runs or [])
