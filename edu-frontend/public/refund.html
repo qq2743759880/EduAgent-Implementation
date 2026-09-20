@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/theme.css?v=7fed87f" />
 <title>退款中心 · EduAgent</title>
 <!--
   ============================================================
@@ -23,86 +24,98 @@
   ============================================================
 -->
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
+  /* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f。
+     G8 清债：移除 Google Fonts 外链（@import Baloo 2）→ 本地系统字体栈（§7.2 离线优先）。
+     三层分离：仅动视觉层——id/data-cancel/表单结构/事件绑定不动；#flash z-index 2147483001 冻结；
+     旧 candy 变量名保留为页内别名(L1)，供脚本内联样式继续解析。 ===== */
   :root{
-    --candy-orange:#FF4D00; --candy-green:#58CC02; --candy-purple:#7C3AED;
-    --candy-yellow:#FFC800; --candy-blue:#1CB0F6; --candy-pink:#FF86D0; --candy-red:#FF4B4B;
-    --primary:var(--candy-green); --primary-strong:#46A302; --primary-soft:#E9FBD8;
-    --accent:var(--candy-orange); --accent-strong:#E04400; --accent-soft:#FFE8DC;
-    --secondary:var(--candy-purple); --secondary-soft:#F1E8FF;
-    --success:var(--candy-green); --warning:var(--candy-yellow); --destructive:var(--candy-red);
-    --ink:#3C3C3C; --ink-strong:#1F1F1F; --ink-soft:#6B6B6B; --ink-faint:#9A9A9A;
-    --bg:#FFF9F0; --card:#FFFFFF; --line:#F0E6DA; --line-strong:#E4D5C4;
-    --radius:1.5rem; --radius-lg:1.25rem; --radius-md:0.9rem; --radius-pill:999px;
-    --font-head:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;
+    --font-head:"PingFang SC","Microsoft YaHei",sans-serif;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    --stroke:3px solid var(--ink);
-    --shadow-pop:0 6px 0 rgba(31,31,31,.12);
-    --shadow-md:0 4px 16px rgba(31,31,31,.08);
+    --candy-orange:var(--cta-coral); --candy-green:var(--clay-mint); --candy-purple:#5B4FC4;
+    --candy-yellow:var(--clay-lemon); --candy-red:var(--status-danger);
+    --primary:var(--clay-mint); --primary-strong:#2E7D4F; --primary-soft:rgba(125,212,168,.22);
+    --accent:var(--cta-coral); --accent-strong:#D65246; --accent-soft:rgba(255,181,158,.30);
+    --secondary:#5B4FC4; --secondary-soft:#EFE9FF;
+    --success:#2E7D4F; --warning:var(--clay-lemon); --destructive:var(--status-danger);
+    --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-soft:var(--text-muted); --ink-faint:var(--text-muted);
+    --bg:var(--bg-app); --card:var(--bg-raised); --line:rgba(46,42,63,.12); --line-strong:rgba(46,42,63,.18);
+    --radius:var(--radius-card); --radius-lg:var(--radius-card); --radius-md:var(--radius-input); --radius-pill:var(--radius-pill);
+    --stroke:0;
+    --shadow-pop:var(--clay-shadow-light);
+    --shadow-md:var(--clay-shadow-light);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  body{font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 90% 6%,rgba(255,181,158,.28),transparent 24rem),radial-gradient(circle at 4% 96%,rgba(125,212,168,.20),transparent 22rem);-webkit-font-smoothing:antialiased}
   button{font-family:inherit;cursor:pointer}
   input,select,textarea{font-family:inherit;font-size:14px}
+  *:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
   .page{max-width:1060px;margin:0 auto;padding:24px 20px 72px}
   .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--ink-strong)}
-  .doc-badge{font-size:11px;color:var(--candy-purple);background:var(--secondary-soft);border:1px solid var(--line-strong);padding:3px 10px;border-radius:999px;font-weight:700}
-  .subtitle{font-size:.8125rem;color:var(--ink-soft);margin-bottom:18px}
-  .back{font-size:.8125rem;color:var(--secondary);text-decoration:none;font-weight:700;margin-left:auto;background:var(--secondary-soft);padding:8px 14px;border-radius:var(--radius-pill)}
-  .back:hover{color:var(--secondary)}
+  .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--text-strong);display:inline-flex;align-items:center;gap:8px}
+  .page-title .ic{width:1.05em;height:1.05em;color:var(--text-strong)}
+  .doc-badge{font-size:11px;color:#5B4FC4;background:var(--secondary-soft);border:0;padding:3px 10px;border-radius:var(--radius-pill);font-weight:700}
+  .subtitle{font-size:.8125rem;color:var(--text-muted);margin-bottom:18px}
+  .back{font-size:.8125rem;color:#5B4FC4;text-decoration:none;font-weight:700;margin-left:auto;background:var(--secondary-soft);padding:8px 16px;min-height:44px;display:inline-flex;align-items:center;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light)}
+  .back:hover{color:#5B4FC4}
 
   .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start}
   @media(max-width:820px){.grid{grid-template-columns:1fr}}
 
-  .card{background:var(--card);border:var(--stroke);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-pop)}
-  .card h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--ink-strong);display:flex;align-items:center;gap:8px;margin-bottom:16px}
+  .card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);padding:22px;box-shadow:var(--clay-shadow-light)}
+  .card h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--text-strong);display:flex;align-items:center;gap:8px;margin-bottom:16px}
   .card h2 .dot{width:12px;height:12px;border-radius:50%}
 
-  /* ===== 表单 ===== */
+  /* ===== 表单（input 几何与 JS 校验联动，仅外观调整；≥44px 点击区）===== */
   .field{margin-bottom:14px}
-  .field label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
-  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:2px solid var(--line-strong);border-radius:var(--radius-md);background:#fff;color:var(--ink-strong);outline:none;transition:border-color .15s}
-  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--candy-purple)}
-  .field .hint{font-size:12px;color:var(--ink-faint);margin-top:4px}
-  .field .err{font-size:12px;color:var(--destructive);margin-top:4px;display:none;font-weight:600}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--text-strong);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;min-height:44px;padding:10px 12px;border:2px solid transparent;border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong);outline:none;box-shadow:var(--clay-shadow-input);transition:box-shadow var(--motion-fast) var(--ease-clay)}
+  .field textarea{min-height:88px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{box-shadow:var(--clay-shadow-input-focus)}
+  .field input::placeholder,.field select::placeholder,.field textarea::placeholder{color:var(--text-muted);opacity:1}
+  .field .hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+  .field .err{font-size:12px;color:var(--status-danger);margin-top:4px;display:none;font-weight:600}
 
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border:var(--stroke);border-radius:var(--radius-pill);font-weight:800;font-size:14px;color:#fff;background:var(--primary);box-shadow:var(--shadow-pop);transition:transform .08s}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:11px 20px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:14px;color:var(--text-strong);background:var(--clay-mint);box-shadow:var(--clay-shadow-mint);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
   .btn:hover{transform:translateY(-2px)}
-  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
-  .btn.ghost{background:var(--secondary);}
-  .btn.warn{background:var(--accent)}
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+  .btn.ghost{background:#EFE9FF;color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+  .btn.warn{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-coral)}
   .btn.full{width:100%}
 
   .pill{display:inline-block;padding:4px 12px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:800}
-  .pill.pending{background:var(--warning);color:#5b3b00}
-  .pill.approved{background:#dbeafe;color:#1e40af}
-  .pill.rejected{background:#fee2e2;color:#991b1b}
+  .pill.pending{background:var(--clay-lemon);color:var(--text-strong)}
+  .pill.approved{background:rgba(158,201,240,.40);color:var(--text-strong)}
+  .pill.rejected{background:rgba(198,62,74,.14);color:var(--status-danger)}
   .pill.refunded{background:var(--primary-soft);color:var(--primary-strong)}
 
   /* ===== 退款列表 ===== */
-  .list-empty{text-align:center;padding:34px 10px;color:var(--ink-faint);border:2px dashed var(--line-strong);border-radius:var(--radius-lg);font-size:14px}
-  .refund-item{border:2px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;background:#fffdf8}
+  .list-empty{text-align:center;padding:34px 10px;color:var(--text-muted);border:2px dashed rgba(46,42,63,.18);border-radius:var(--radius-card);font-size:14px;background:var(--bg-raised)}
+  .refund-item{border:0;border-radius:var(--radius-card);padding:16px 18px;margin-bottom:12px;background:#FDFCF6;box-shadow:var(--clay-shadow-light)}
   .refund-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  .refund-no{font-family:var(--font-head);font-weight:800;font-size:15px;color:var(--ink-strong)}
-  .refund-meta{font-size:13px;color:var(--ink-soft);line-height:1.7}
-  .refund-meta b{color:var(--ink)}
+  .refund-no{font-family:var(--font-head);font-weight:800;font-size:15px;color:var(--text-strong)}
+  .refund-meta{font-size:13px;color:var(--text-muted);line-height:1.7}
+  .refund-meta b{color:var(--text-strong)}
   .refund-actions{margin-top:10px;text-align:right}
   .refund-actions .btn{padding:7px 16px;font-size:13px}
 
   .pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
-  .pager button{border:var(--stroke);background:#fff;border-radius:var(--radius-md);padding:6px 14px;font-weight:800;font-size:13px}
-  .pager button:disabled{opacity:.45;cursor:not-allowed}
-  .pager span{font-size:13px;color:var(--ink-soft);font-weight:700}
+  .pager button{min-height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);padding:6px 14px;font-weight:800;font-size:13px;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+  .pager button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .pager span{font-size:13px;color:var(--text-muted);font-weight:700}
 
-  .msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;font-weight:800;font-size:13px;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2);display:none}
-  hr.divider{margin:20px 0;border:0;border-top:2px dashed var(--line-strong)}
+  .msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;max-width:min(92vw,520px);padding:11px 16px;border-radius:var(--radius-btn);font-weight:800;font-size:13px;color:#FFFFFF;box-shadow:var(--clay-shadow-raised);display:none}
+  hr.divider{margin:20px 0;border:0;border-top:2px dashed rgba(46,42,63,.18)}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    .btn:hover,.back:hover{transform:none}
+  }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="topbar">
-    <h1 class="page-title">💸 退款中心</h1>
+    <h1 class="page-title"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg> 退款中心</h1>
     <span class="doc-badge">真实接口 · 金额服务端校验</span>
     <a class="back" href="/dashboard.html">← 返回学习端</a>
   </div>
@@ -209,7 +222,7 @@
    *（非 student 角色 / auth/me 失败路径：提示未弹出且其后的跳转 setTimeout 永不注册，页面卡死）。
    * 此处提供等价局部 toast（复用 #flash 元素与既有样式语义，非 alert），不改视觉。 */
   var flash=function(t){ var m=document.getElementById("flash"); if(!m)return;
-    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#ef4444" : "#16a34a";
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#C63E4A" : "#2E7D4F";
     m.textContent = t; m.style.display="block";
     clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
   };
@@ -247,7 +260,7 @@
 
   function $(id){ return document.getElementById(id); }
   function flash(t){ var m=$("flash"); if(!m)return;
-    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#ef4444" : "#16a34a";
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#C63E4A" : "#2E7D4F";
     m.textContent = t; m.style.display="block";
     clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
   }
