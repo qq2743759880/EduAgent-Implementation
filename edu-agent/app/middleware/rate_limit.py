@@ -2,11 +2,11 @@
 RateLimitMiddleware：IP+user_id 双维度滑动窗口限流
 
 交易档限流：
-- /api/trade/order: 10/min
+- /api/trade/order: 10/min（T6 后仅精确段命中，不再误伤 /api/trade/orders 列表）
 - /api/trade/payment: 30/min
-- /api/trade/refund: 5/min
+- /api/trade/refund: 5/min（⚠️ 死规则，见 _RATE_LIMIT_RULES 内登记）
 - /api/trade/coupon/receive: 30/min
-- /api/after_sales/ticket: 20/min
+- /api/after_sales/ticket: 20/min（⚠️ 死规则，见 _RATE_LIMIT_RULES 内登记）
 """
 from __future__ import annotations
 
@@ -33,6 +33,18 @@ _DEFAULT_LIMIT = int(os.environ.get("EDUAGENT_RATE_LIMIT_DEFAULT", "100"))
 _CHAT_LIMIT = int(os.environ.get("EDUAGENT_CHAT_LIMIT", "20"))
 
 # 限流规则：(窗口秒, 最大请求数)
+# T6（AUTO20，2026-09-22）匹配语义收窄：前缀匹配 → 最长前缀优先 + 段边界匹配。
+# 根因（实证）：旧 startswith 前缀匹配下 "/api/trade/order" 规则误伤
+# GET /api/trade/orders（订单列表）——学生页连拉列表 11 次起 429，
+# 且 429 在 CORS 中间件内层返回丢 access-control-allow-origin 头 → 浏览器报
+# CORS 错误 → me 页 console-errors 假红。收窄后列表走 default(100/min)。
+# ⚠️ 阈值/窗口一律未动；仅改匹配语义。
+# ⚠️ 死规则登记（保留不删，不擅自改阈值）：
+# - "/api/trade/refund"：实际退款路由是 /api/refunds（openapi.json 权威），
+#   原前缀永不命中——但按段边界匹配后 "/api/trade/refunds" 若未来出现会命中，
+#   语义无害，保留待后端统一路由命名时一并处置。
+# - "/api/after_sales/ticket"：实际工单路由是 /api/trade/after_sales/ticket*，
+#   原前缀永不命中；同理保留登记。
 _RATE_LIMIT_RULES: dict[str, tuple[int, int]] = {
     "/api/auth/login":       (60, 10),
     "/api/auth/register":    (60, 5),
@@ -52,6 +64,31 @@ _SKIP_PREFIXES = (
     "/health", "/metrics", "/docs", "/redoc", "/openapi.json",
     "/favicon.ico",
 )
+
+
+def _path_in_prefix_scope(path: str, prefix: str) -> bool:
+    """T6 段边界匹配：path 落在 prefix 的「本段及子路径」范围内才算命中。
+
+    规则 "/api/trade/order" 命中 /api/trade/order、/api/trade/order/123、
+    /api/trade/order/123/cancel；不命中 /api/trade/orders（同前缀不同段，
+    旧 startswith 误伤根因）。
+    """
+    if path == prefix:
+        return True
+    return path.startswith(prefix + "/")
+
+
+def _get_limit_for_path(path: str) -> tuple[int, int]:
+    """最长前缀优先（收窄误伤面：/api/trade/coupon/receive 优先于更短前缀）。"""
+    best: tuple[int, int] | None = None
+    best_len = -1
+    for prefix, rule in _RATE_LIMIT_RULES.items():
+        if prefix == "default":
+            continue
+        if len(prefix) > best_len and _path_in_prefix_scope(path, prefix):
+            best = rule
+            best_len = len(prefix)
+    return best if best is not None else _RATE_LIMIT_RULES["default"]
 
 
 def _get_client_ip(request: Request) -> str:
@@ -80,17 +117,42 @@ def _get_user_id(request: Request) -> str:
     return ""
 
 
-def _get_limit_for_path(path: str) -> tuple[int, int]:
-    for prefix, rule in _RATE_LIMIT_RULES.items():
-        if prefix == "default":
-            continue
-        if path.startswith(prefix):
-            return rule
-    return _RATE_LIMIT_RULES["default"]
-
-
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """IP+user_id 双维度滑动窗口限流。"""
+
+    @staticmethod
+    def _cors_headers_for(request: Request) -> dict[str, str]:
+        """T6 顺带修：429 短路响应补 CORS 头。
+
+        RateLimitMiddleware 注册在 CORSMiddleware 内层（add_middleware 逆序：
+        CORS 在外层），Starlette CORSMiddleware 只在「响应穿过它」时注入
+        access-control-* 头；限流短路 429 虽也经外层，但 simple response 的
+        ACAO 注入依赖请求 Origin 命中 allowlist —— 这里按同源规则显式回显，
+        保证浏览器可读 429 壳（否则报成 CORS 错误 → me 页 console-errors 假红）。
+        仅回显 allowlist 命中的 Origin，通配/未命中一律不带，不放宽 CORS 面。
+        """
+        origin = request.headers.get("origin")
+        if not origin:
+            return {}
+        from app.config import settings
+
+        if settings.DEBUG:
+            return {
+                "access-control-allow-origin": "*",
+                "access-control-allow-credentials": "true",
+            }
+        allowed = {
+            o.strip()
+            for o in settings.CORS_ORIGINS.split(",")
+            if o.strip()
+        } or {"http://localhost:3000", "http://127.0.0.1:3000"}
+        if origin in allowed:
+            return {
+                "access-control-allow-origin": origin,
+                "access-control-allow-credentials": "true",
+                "vary": "Origin",
+            }
+        return {}
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         path = request.url.path
@@ -168,6 +230,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 f"[RATE_LIMIT] {client_ip} {path} "
                 f"超过限制 {current}/{max_requests}（{window_sec}s）"
             )
+            # T6 顺带修：429 短路响应补 CORS 头（旧实现丢头 → 浏览器报 CORS 错误假红）
+            headers = {"Retry-After": str(window_sec)}
+            headers.update(self._cors_headers_for(request))
             return JSONResponse(
                 status_code=429,
                 content={
@@ -175,7 +240,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "message": f"请求过于频繁，请 {window_sec} 秒后再试",
                     "data": None,
                 },
-                headers={"Retry-After": str(window_sec)},
+                headers=headers,
             )
 
         response = await call_next(request)
