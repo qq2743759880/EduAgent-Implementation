@@ -1,0 +1,61 @@
+g9-state-matrix-gate PASS
+generated_at=2026-09-21T03:44:38.532Z
+pages=1 checks=56 failed=0 warnings=5 skipped=0
+
+[PASS] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
+  [PASS] empty/state-intercepted: 6 API requests intercepted.
+  [PASS] empty/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] empty/state-visible: Visible text length=465.
+  [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] empty/state-console-errors: 0 console/log diagnostics.
+  [PASS] loading/state-intercepted: 4 API requests intercepted.
+  [PASS] loading/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] loading/state-visible: Visible text length=104.
+  [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
+  [WARN] loading/state-console-errors: 2 console/log diagnostics.
+  [PASS] error/state-intercepted: 4 API requests intercepted.
+  [PASS] error/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] error/state-visible: Visible text length=168.
+  [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] error/state-console-errors: 4 console/log diagnostics.
+  [PASS] forbidden/state-intercepted: 4 API requests intercepted.
+  [PASS] forbidden/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] forbidden/state-visible: Visible text length=210.
+  [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
+  [PASS] disabled/state-intercepted: 6 API requests intercepted.
+  [PASS] disabled/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] disabled/state-visible: Visible text length=487.
+  [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] disabled/state-console-errors: 0 console/log diagnostics.
+  [PASS] long-text/state-intercepted: 6 API requests intercepted.
+  [PASS] long-text/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] long-text/state-visible: Visible text length=487.
+  [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] long-text/state-console-errors: 0 console/log diagnostics.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-route: Rendered /login-register.html; source /community-post.html.
+  [PASS] token-expired/state-visible: Visible text length=98.
+  [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] server-500/state-intercepted: 4 API requests intercepted.
+  [PASS] server-500/state-route: Rendered /community-post.html; source /community-post.html.
+  [PASS] server-500/state-visible: Visible text length=201.
+  [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] server-500/state-console-errors: 4 console/log diagnostics.
