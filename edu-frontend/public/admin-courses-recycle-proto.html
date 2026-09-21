@@ -329,9 +329,9 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
 
   <!-- 筛选栏（静态原型：对示例行做客户端过滤） -->
   <div class="filterbar">
-    <div class="fld search"><label for="f-kw">搜索</label><input id="f-kw" class="search" type="text" placeholder="系列名称 / 编码" oninput="applyFilter()"></div>
+    <div class="fld search"><label for="f-kw">搜索</label><input id="f-kw" class="search" type="text" placeholder="系列名称 / 编码"></div>
     <div class="fld"><label for="f-dm">交付模式</label>
-      <select id="f-dm" onchange="applyFilter()">
+      <select id="f-dm">
         <option value="">全部交付</option>
         <option value="online_live">直播</option>
         <option value="online_recorded">录播</option>
@@ -339,7 +339,7 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
       </select>
     </div>
     <div class="fld"><label for="f-ss">状态</label>
-      <select id="f-ss" onchange="applyFilter()" disabled title="回收站内全部为「已下架」（软删=sale_status off_sale），状态筛选不可用">
+      <select id="f-ss" disabled title="回收站内全部为「已下架」（软删=sale_status off_sale），状态筛选不可用">
         <option value="">全部状态</option>
         <option value="draft">草稿</option>
         <option value="on_sale">在售</option>
@@ -347,7 +347,7 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
       </select>
     </div>
     <div class="fld"><label for="f-sort">排序</label>
-      <select id="f-sort" onchange="applyFilter()" disabled title="回收站按最近变更倒序（updated_at），不提供排序切换（原型契约披露）">
+      <select id="f-sort" disabled title="回收站按最近变更倒序（updated_at），不提供排序切换（原型契约披露）">
         <option value="default">默认排序</option>
       </select>
     </div>
@@ -382,27 +382,10 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
       <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
       <div><b style="color:var(--ink)">加载失败</b></div>
       <p style="margin:4px 0 12px" id="err-msg">后端不可用，请稍后重试</p>
-      <button class="btn btn-ghost btn-mini" onclick="render('success')">重试</button>
+      <button class="btn btn-ghost btn-mini" onclick="loadRows()">重试</button>
     </div>
 
     <div id="pager" class="pager"></div>
-  </div>
-
-  <!-- 视图切换（审核用，非产物） -->
-  <div class="demo-ctrl">
-    <b>视图状态（审核用）</b>
-    <div class="row">
-      <button data-v="success" class="on">成功</button>
-      <button data-v="loading">加载</button>
-      <button data-v="error">错误</button>
-      <button data-v="empty">空回收站</button>
-    </div>
-    <b class="grp">交互形态演示</b>
-    <div class="row">
-      <button onclick="demoRestoreOk()">恢复成功 Toast</button>
-      <button onclick="demoRestoreConflict()">409 冲突 Toast</button>
-      <button onclick="demoPurge()">彻底删除·两步确认</button>
-    </div>
   </div>
 
   <!-- 恢复 ConfirmDialog（POST /series/{id}/restore 确认弹窗形态） -->
@@ -472,35 +455,23 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
 (function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
 </script>
 
+<script src="/edu-api.js"></script>
+<script src="/edu-guard.js"></script>
+<script>eduGuard.requireAdmin();</script>
 <script>
-/* ============ task13 静态原型数据（不接线；接线后为真实数据） ============ */
-const BIN_META = { total: 56, page: 1, page_size: 6, captured: "2026-09-12" };
-const BIN = [
-  { id:2709, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181447", series_name:"C5硬删守卫rst1788614181447", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21" },
-  { id:2708, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181329", series_name:"示例冲突恢复系列rst1788614181329", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21", __demo_conflict:true }, /* __demo_conflict 仅原型演示：模拟 series_code 被其它系列占用 */
-  { id:2707, institution_id:1, delivery_mode:"online_live", series_code:"rst1788614181030", series_name:"C5恢复测试rst1788614181030", sale_status:"off_sale", created_at:"2026-09-05T21:16:21", updated_at:"2026-09-05T21:16:21" },
-  { id:2706, institution_id:1, delivery_mode:"online_live", series_code:"jsnn1788614180483", series_name:"JSON null 测试jsnn1788614180483", sale_status:"off_sale", created_at:"2026-09-05T21:16:20", updated_at:"2026-09-05T21:16:20" },
-  { id:2705, institution_id:1, delivery_mode:"online_live", series_code:"jsnu1788614180344", series_name:"JSON更新jsnu1788614180344", sale_status:"off_sale", created_at:"2026-09-05T21:16:20", updated_at:"2026-09-05T21:16:20" },
-  { id:2704, institution_id:1, delivery_mode:"online_live", series_code:"jsn1788614180224", series_name:"JSON列测试jsn1788614180224", sale_status:"off_sale", created_at:"2026-09-05T21:16:20", updated_at:"2026-09-05T21:16:20" }
-];
-/* 正式列表 Tab：沿用 task56 admin-courses 静态样例（克隆） */
-const SERIES = [
-  { id:1, name:"零基础 Python 入门营", code:"PY001", dm:"online_live", st:"on_sale", created:"2026-08-20" },
-  { id:2, name:"数据分析实战营", code:"DA101", dm:"online_recorded", st:"on_sale", created:"2026-08-18" },
-  { id:3, name:"少儿编程启蒙班", code:"KP002", dm:"offline_face_to_face", st:"draft", created:"2026-08-15" },
-  { id:5, name:"算法与数据结构（高级）", code:"AL301", dm:"online_recorded", st:"off_sale", created:"2026-08-08" },
-  { id:8, name:"Unity 游戏开发入门", code:"UG401", dm:"offline_face_to_face", st:"off_sale", created:"2026-07-28" }
-];
-const DELIVERY = { online_live:["直播","b-live"], online_recorded:["录播","b-rec"], offline_face_to_face:["面授","b-offline"] };
+/* ===== FEAT-WIRE-V2 #6 真实接线（2026-09-21 curl 实测）=====
+ * 回收站列表 GET  /api/admin/courses/series?sale_status=off_sale&page&page_size（仅已下架/软删）
+ * 正式列表     GET  /api/admin/courses/series?page&page_size（默认排除 off_sale；显式 sale_status 以传入为准）
+ * 恢复         POST /api/admin/courses/series/{id}/restore（off_sale→draft；409=series_code 被占用）
+ * 软删下架     DELETE /api/admin/courses/series/{id}
+ * 彻底删除     DELETE /api/admin/courses/series/{id}?hard=true（仅 ADMIN 且零引用）
+ * 守卫三段由 edu-guard.requireAdmin 承担；原 task13 静态原型数据（BIN/SERIES/demo 控制器）已删除（禁 MOCK）。 */
+function esc(t){ var x=document.createElement("div"); x.textContent=t==null?"":String(t); return x.innerHTML; }
+var DELIVERY={online_live:["直播","b-live"],online_recorded:["录播","b-rec"],offline_face_to_face:["面授","b-offline"]};
+var PAGE_SIZE=20;
+var state={view:"bin",page:1,rows:[],total:0,loading:false};
+var kwTimer=null;
 
-function esc(t){ var x=document.createElement("div"); x.textContent=t==null?"":t; return x.innerHTML; }
-function deliveryBadge(dm){ var d=DELIVERY[dm]||[dm||"—","b-live"]; return '<span class="b-dm '+d[1]+'">'+esc(d[0])+'</span>'; }
-function offSaleBadge(){ return '<span class="badge badge-mut" style="outline:1px dashed var(--line)"><span class="pd"></span>已下架</span>'; }
-function listBadge(st){
-  if(st==="on_sale") return '<span class="badge badge-on"><span class="pd"></span>在售</span>';
-  if(st==="draft")   return '<span class="badge badge-mut"><span class="pd"></span>草稿</span>';
-  return offSaleBadge();
-}
 function toast(msg,type){
   var t=document.getElementById("emToast");
   if(!t){ t=document.createElement("div"); t.id="emToast"; t.className="em-toast"; document.body.appendChild(t); }
@@ -508,100 +479,104 @@ function toast(msg,type){
   clearTimeout(window.__toastTimer);
   window.__toastTimer=setTimeout(function(){ t.className="em-toast"; },3400);
 }
+function deliveryBadge(dm){ var d=DELIVERY[dm]||[dm||"—","b-live"]; return '<span class="b-dm '+d[1]+'">'+esc(d[0])+'</span>'; }
+function offSaleBadge(){ return '<span class="badge badge-mut" style="outline:1px dashed var(--line)"><span class="pd"></span>已下架</span>'; }
+function listBadge(st){
+  if(st==="on_sale") return '<span class="badge badge-on"><span class="pd"></span>在售</span>';
+  if(st==="draft")   return '<span class="badge badge-mut"><span class="pd"></span>草稿</span>';
+  return offSaleBadge();
+}
+function findRow(id){ for(var i=0;i<state.rows.length;i++){ if(state.rows[i].id===id) return state.rows[i]; } return null; }
 
-let activeView = "bin"; /* 本原型默认聚焦回收站 */
-let state = "success";
-
-/* ---- 渲染 ---- */
-function filteredBin(){
-  var kw=(document.getElementById("f-kw").value||"").trim().toLowerCase();
-  var dm=document.getElementById("f-dm").value;
-  return BIN.filter(function(s){
-    if(dm && s.delivery_mode!==dm) return false;
-    if(kw && (s.series_name+" "+s.series_code).toLowerCase().indexOf(kw)<0) return false;
-    return true;
+/* ---- 真实列表加载 ---- */
+function loadRows(){
+  if(!window.EAPI||state.loading) return;
+  state.loading=true;
+  document.getElementById("state-error").classList.add("hidden");
+  document.getElementById("state-empty").classList.add("hidden");
+  document.getElementById("pager").classList.add("hidden");
+  var body=document.getElementById("tbl-body");
+  var rows=""; for(var i=0;i<5;i++) rows+='<tr class="skrow"><td colspan="6"><div class="sk sk-line" style="width:60%"></div><div class="sk sk-line" style="width:30%;margin-top:8px"></div></td></tr>';
+  body.innerHTML=rows;
+  var url="/api/admin/courses/series?page="+state.page+"&page_size="+PAGE_SIZE;
+  var kw=(document.getElementById("f-kw").value||"").trim();
+  if(kw) url+="&keyword="+encodeURIComponent(kw);
+  var dm=document.getElementById("f-dm").value; if(dm) url+="&delivery_mode="+encodeURIComponent(dm);
+  if(state.view==="bin"){ url+="&sale_status=off_sale"; }
+  else { var ss=document.getElementById("f-ss").value; if(ss) url+="&sale_status="+encodeURIComponent(ss); }
+  EAPI.get(url).then(function(d){
+    state.loading=false;
+    var items=(d&&d.items)||[]; state.rows=items; state.total=(d&&d.total)||0;
+    if(!items.length){
+      body.innerHTML="";
+      if(state.view==="bin"){ document.getElementById("state-empty").classList.remove("hidden"); }
+      else { body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">暂无系列</td></tr>'; }
+      renderPager(); updateMeta(); return;
+    }
+    document.getElementById("state-empty").classList.add("hidden");
+    body.innerHTML=items.map(rowHTML).join("");
+    renderPager(); updateMeta();
+  }).catch(function(err){
+    state.loading=false; body.innerHTML="";
+    var em=document.getElementById("err-msg");
+    if(em) em.textContent="无法读取系列列表："+((err&&err.message)||"未知错误")+"（HTTP "+((err&&err.status)||"—")+"）";
+    document.getElementById("state-error").classList.remove("hidden");
   });
 }
-function renderBinRows(){
-  var rows=filteredBin(), body=document.getElementById("tbl-body");
-  if(!rows.length){ showEmpty(true); return; } showEmpty(false);
-  body.innerHTML = rows.map(function(s){
-    return '<tr class="series-row">'
-      +'<td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--muted-ink),var(--muted))">🗑</div><div class="min"><div class="nm">'+esc(s.series_name)+'</div><div class="cd">'+esc(s.series_code)+'</div>'
-      +(s.__demo_conflict?'<div class="tg"><span class="tag-chips" style="background:var(--ht-fdeff2);color:var(--candy-red)">示例冲突</span></div>':'')
-      +'</div></div></td>'
-      +'<td>'+deliveryBadge(s.delivery_mode)+'</td>'
-      +'<td>'+offSaleBadge()+'</td>'
-      +'<td class="c-meta">'+esc(s.created_at.slice(0,10))+'</td>'
-      +'<td class="c-meta">'+esc(s.updated_at.slice(0,10))+'</td>'
-      +'<td><div class="cell-actions" style="justify-content:flex-end">'
-      +'<button class="btn btn-primary btn-mini" onclick="openRestoreConfirm('+s.id+')">♻ 恢复</button>'
-      +'<button class="btn btn-danger btn-mini" onclick="openPurge1('+s.id+')">彻底删除</button>'
-      +'</div></td></tr>';
-  }).join("");
-  renderPagerBin();
+function rowHTML(s){
+  var inBin=state.view==="bin";
+  return '<tr class="series-row">'
+    +'<td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--muted-ink),var(--muted))">🗑</div><div class="min"><div class="nm">'+esc(s.series_name)+'</div><div class="cd">'+esc(s.series_code)+'</div></div></div></td>'
+    +'<td>'+deliveryBadge(s.delivery_mode)+'</td>'
+    +'<td>'+listBadge(s.sale_status)+'</td>'
+    +'<td class="c-meta">'+esc(String(s.created_at||"—").slice(0,10))+'</td>'
+    +'<td class="c-meta">'+esc(String(s.updated_at||"—").slice(0,10))+'</td>'
+    +'<td><div class="cell-actions" style="justify-content:flex-end">'
+    +(inBin
+      ? '<button class="btn btn-primary btn-mini" onclick="openRestoreConfirm('+s.id+')">♻ 恢复</button>'
+        +'<button class="btn btn-danger btn-mini" onclick="openPurge1('+s.id+')">彻底删除</button>'
+      : '<span style="font-size:12px;color:var(--muted)">正式列表形态（本页聚焦回收站）</span>')
+    +'</div></td></tr>';
 }
-function renderListRows(){
-  var kw=(document.getElementById("f-kw").value||"").trim().toLowerCase();
-  var dm=document.getElementById("f-dm").value;
-  var rows=SERIES.filter(function(s){
-    if(dm && s.dm!==dm) return false;
-    if(kw && (s.name+" "+s.code).toLowerCase().indexOf(kw)<0) return false;
-    return true;
-  }), body=document.getElementById("tbl-body");
-  if(!rows.length){ showEmpty(true); return; } showEmpty(false);
-  body.innerHTML = rows.map(function(s){
-    return '<tr class="series-row">'
-      +'<td><div class="series-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div class="min"><div class="nm">'+esc(s.name)+'</div><div class="cd">'+esc(s.code)+'</div></div></div></td>'
-      +'<td>'+deliveryBadge(s.dm)+'</td>'
-      +'<td>'+listBadge(s.st)+'</td>'
-      +'<td class="c-meta">'+esc(s.created)+'</td>'
-      +'<td class="c-meta">'+esc(s.created)+'</td>'
-      +'<td><div class="cell-actions" style="justify-content:flex-end"><span style="font-size:12px;color:var(--muted)">沿用正式列表形态（本原型不聚焦）</span></div></td></tr>';
-  }).join("");
-  document.getElementById("pager").innerHTML="";
+function updateMeta(){
+  var el=document.getElementById("meta-count");
+  if(el) el.textContent=(state.view==="bin"?"已下架系列":"系列")+" · 共 "+Number(state.total).toLocaleString()+" 条 · 每页 "+PAGE_SIZE;
 }
-function renderPagerBin(){
-  var p=document.getElementById("pager");
-  p.innerHTML='<button class="cur">1</button><button disabled>›</button>'; /* 快照单页示意（total=56 接线后按 triple 翻页） */
+function renderPager(){
+  var p=document.getElementById("pager"); p.classList.remove("hidden");
+  var totalPg=Math.max(1,Math.ceil(state.total/PAGE_SIZE));
+  var pg=state.page;
+  var btn=function(n,label,cur,dis){ return '<button data-pg="'+n+'" class="'+(cur?'cur':'')+'"'+(dis?' disabled':'')+'>'+(label||n)+'</button>'; };
+  var html=btn(Math.max(1,pg-1),"‹",false,pg<=1);
+  var win=[]; for(var i=1;i<=totalPg;i++){ if(i===1||i===totalPg||Math.abs(i-pg)<=2) win.push(i); }
+  var prev=0;
+  win.forEach(function(n){ if(prev&&n-prev>1) html+='<button disabled>…</button>'; html+=btn(n,null,n===pg,false); prev=n; });
+  html+=btn(Math.min(totalPg,pg+1),"›",false,pg>=totalPg);
+  p.innerHTML=html;
 }
-function showEmpty(b){
-  document.getElementById("state-empty").classList.toggle("hidden",!b);
-  document.getElementById("tbl-body").classList.toggle("hidden",b);
-  document.getElementById("pager").classList.toggle("hidden",b);
-}
-function injectSkeleton(){
-  var rows=""; for(var i=0;i<5;i++) rows+='<tr class="skrow"><td colspan="6"><div class="sk sk-line" style="width:60%"></div><div class="sk sk-line" style="width:30%;margin-top:8px"></div></td></tr>';
-  document.getElementById("tbl-body").innerHTML=rows;
-  document.getElementById("state-empty").classList.add("hidden");
-  document.getElementById("state-error").classList.add("hidden");
-  document.getElementById("pager").classList.add("hidden");
-}
-function render(v){
-  state=v||state;
-  document.querySelectorAll("[data-v]").forEach(function(b){ b.classList.toggle("on",b.dataset.v===state); });
-  var ok=state==="success";
-  if(state==="loading"){ injectSkeleton(); return; }
-  document.getElementById("state-error").classList.toggle("hidden",state!=="error");
-  if(state==="error"){ document.getElementById("tbl-body").innerHTML=""; document.getElementById("pager").classList.add("hidden"); document.getElementById("state-empty").classList.add("hidden"); return; }
-  if(activeView==="bin"){ renderBinRows(); } else { renderListRows(); }
-}
-function applyFilter(){ if(state==="success") render("success"); }
-function resetFilter(){ ["f-kw","f-dm"].forEach(function(id){ document.getElementById(id).value=""; }); applyFilter(); }
+document.getElementById("pager").addEventListener("click",function(e){
+  var b=e.target.closest("[data-pg]"); if(b&&!b.disabled){ state.page=+b.getAttribute("data-pg"); loadRows(); }
+});
+
+/* ---- 筛选（防抖 400ms）---- */
+document.getElementById("f-kw").addEventListener("input",function(){
+  clearTimeout(kwTimer);
+  kwTimer=setTimeout(function(){ state.page=1; loadRows(); },400);
+});
+function applyFilter(){ state.page=1; loadRows(); }
+["f-dm","f-ss","f-sort"].forEach(function(id){ var el=document.getElementById(id); if(el) el.addEventListener("change",applyFilter); });
+function resetFilter(){ ["f-kw","f-dm","f-ss","f-sort"].forEach(function(id){ var el=document.getElementById(id); if(el) el.selectedIndex=0; }); state.page=1; loadRows(); }
 function switchView(v){
-  activeView=(v==="bin")?"bin":"list";
-  document.querySelectorAll("#viewTabs .vtab").forEach(function(b){ b.classList.toggle("active",b.dataset.view===activeView); });
-  var bin=activeView==="bin";
+  state.view=(v==="bin")?"bin":"list"; state.page=1;
+  document.querySelectorAll("#viewTabs .vtab").forEach(function(b){ b.classList.toggle("active",b.dataset.view===state.view); });
+  var bin=state.view==="bin";
   document.getElementById("btn-create").style.display=bin?"none":"";
   document.getElementById("f-ss").disabled=bin;
   document.getElementById("f-sort").disabled=bin;
-  document.getElementById("meta-count").innerHTML = bin
-    ? '已下架系列 · 示例 6 条 · 每页 20'
-    : '系列 · 静态样例 · 每页 20';
-  document.getElementById("head-sub").textContent = bin
+  document.getElementById("head-sub").textContent=bin
     ? "回收站 · 已下架（软删）系列 · 支持恢复与彻底删除"
-    : "系列 → 班次 · 示例数据，接线后为真实数据";
-  render("success");
+    : "系列 → 班次 · 真实数据（默认排除已下架）";
+  loadRows();
 }
 
 /* ---- dialogs 公共 ---- */
@@ -611,39 +586,39 @@ document.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListene
 document.querySelectorAll(".scrim").forEach(function(s){ s.addEventListener("click",function(e){ if(e.target===s) closeAll(); }); });
 document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeAll(); });
 
-/* ---- 恢复（POST /series/{id}/restore 确认弹窗形态；成功→toast+行移出；__demo_conflict 行→409 错误态） ---- */
-let restoreId=null, purgeId=null;
-function findBin(id){ return BIN.find(function(s){ return s.id===id; })||null; }
+/* ---- 恢复（真实 POST restore） ---- */
+var restoreId=null, purgeId=null;
 function openRestoreConfirm(id){
-  var s=findBin(id); if(!s) return;
+  var s=findRow(id); if(!s) return;
   restoreId=id;
   document.getElementById("restore-name").textContent=s.series_name;
-  document.getElementById("restore-id").textContent=s.id;
+  var rid=document.getElementById("restore-id"); if(rid) rid.textContent=s.id;
   openModal("confirm-restore");
 }
 function doRestore(){
-  var s=findBin(restoreId); if(!s){ closeAll(); return; }
-  if(s.__demo_conflict){
+  if(!restoreId){ closeAll(); return; }
+  var s=findRow(restoreId);
+  EAPI.post("/api/admin/courses/series/"+restoreId+"/restore").then(function(){
     closeAll();
-    /* 实测契约：HTTP 409 {"code":"40901","message":"系列编码 'xxx' 已被其它系列占用，无法恢复"} */
-    toast("恢复失败（409 · 40901）：系列编码 '"+s.series_code+"' 已被其它系列占用，无法恢复","err");
-    return;
-  }
-  BIN.splice(BIN.indexOf(s),1); /* 原型模拟：恢复成功后行移出回收站（真实实现=重新拉列表） */
-  closeAll();
-  toast("已恢复「"+s.series_name+"」（草稿）——原型演示，接线后调用 POST /restore 并刷新","ok");
-  render("success");
+    toast("已恢复「"+((s&&s.series_name)||("#"+restoreId))+"」→ 草稿（POST restore 200）","ok");
+    loadRows();
+  }).catch(function(err){
+    closeAll();
+    toast("恢复失败（"+((err&&err.status)||"—")+"）："+((err&&err.body&&err.body.message)||(err&&err.message)||"未知错误"),"err");
+    loadRows();
+  });
 }
-/* ---- 彻底删除（?hard=true：红色危险 + 两步确认，含"不可恢复"警告） ---- */
+
+/* ---- 彻底删除（两步确认 + 真实 DELETE ?hard=true） ---- */
 function openPurge1(id){
-  var s=findBin(id); if(!s) return;
+  var s=findRow(id); if(!s) return;
   purgeId=id;
   document.getElementById("purge-name").textContent=s.series_name;
-  document.getElementById("purge-id").textContent=s.id;
+  var pid=document.getElementById("purge-id"); if(pid) pid.textContent=s.id;
   openModal("confirm-purge-1");
 }
 function toPurgeStep2(){
-  var s=findBin(purgeId); if(!s){ closeAll(); return; }
+  var s=findRow(purgeId); if(!s){ closeAll(); return; }
   document.getElementById("purge-code-echo").textContent=s.series_code;
   var inp=document.getElementById("purge-code-input");
   inp.value=""; onPurgeInput();
@@ -651,35 +626,33 @@ function toPurgeStep2(){
   setTimeout(function(){ inp.focus(); },60);
 }
 function onPurgeInput(){
-  var s=findBin(purgeId);
+  var s=findRow(purgeId);
   var ok=!!s && document.getElementById("purge-code-input").value.trim()===s.series_code;
   document.getElementById("purge-confirm-btn").disabled=!ok;
 }
 function doPurge(){
-  var s=findBin(purgeId); if(!s){ closeAll(); return; }
-  BIN.splice(BIN.indexOf(s),1); /* 原型模拟：真删成功后行移出（真实实现=DELETE ?hard=true 后刷新；有引用→409 SERIES_IN_USE toast） */
-  closeAll();
-  toast("已彻底删除「"+s.series_name+"」——原型演示，接线后调用 DELETE ?hard=true","ok");
-  render("success");
+  if(!purgeId){ closeAll(); return; }
+  var s=findRow(purgeId);
+  var btn=document.getElementById("purge-confirm-btn"); btn.disabled=true; btn.textContent="删除中…";
+  EAPI.del("/api/admin/courses/series/"+purgeId+"?hard=true").then(function(){
+    closeAll();
+    btn.textContent="彻底删除（不可恢复）";
+    toast("已彻底删除「"+((s&&s.series_name)||("#"+purgeId))+"」（DELETE ?hard=true 200）","ok");
+    purgeId=null; loadRows();
+  }).catch(function(err){
+    closeAll();
+    btn.textContent="彻底删除（不可恢复）";
+    toast("彻底删除失败（"+((err&&err.status)||"—")+"）："+((err&&err.body&&err.body.message)||(err&&err.message)||"未知错误"),"err");
+    purgeId=null; loadRows();
+  });
 }
 
-/* ---- demo 控制器：交互形态直达 ---- */
-function demoRestoreOk(){
-  var s=BIN.find(function(x){ return !x.__demo_conflict; })||BIN[0];
-  toast("已恢复「"+(s?s.series_name:"示例系列")+"」（草稿）——原型演示","ok");
-}
-function demoRestoreConflict(){
-  var s=BIN.find(function(x){ return x.__demo_conflict; })||BIN[0];
-  toast("恢复失败（409 · 40901）：系列编码 '"+(s?s.series_code:"示例编码")+"' 已被其它系列占用，无法恢复","err");
-}
-function demoPurge(){
-  var s=BIN[0];
-  if(s){ openPurge1(s.id); return; }
-  toast("示例行已被操作完毕：请刷新页面复位演示数据","err");
-}
-
-/* ---- 启动：默认回收站视图 ---- */
-render("success");
+/* ---- 入口（守卫通过后的 bootAdmin 注入） ---- */
+window.bootAdmin=function(){
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()) return;
+  loadRows();
+};
 </script>
 </body>
 </html>
