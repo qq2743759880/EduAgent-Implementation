@@ -15,7 +15,7 @@
 | 11 | 双前端对账表: React 路由面 vs 25 静态页功能对照（docs/ 入库） | FEAT-WIRE B6 残余 | ✅ 闭环 | d108ec4；React 28 路由实证 26 完整/2 壳+3 死链（MeNavList→coupons/favorites/refunds）；口径纠偏：静态页实为 26 页（admin-chat-audit 追加）、openapi 实测 177 paths/210 ops；对账表+入口速查入库 | d108ec4 |
 | 12 | course_create batch-2: HITL 实弹（测试窗开 HITL_ENABLED→confirm/reject 全链→恢复） | 时光.md §四+变更单 | pending | — | — |
 | 13 | 全站四门终扫+G10 再演（REWORK 全部消化后回归锁定） | GATE-V2 工具 | pending | — | — |
-| 14 | Mimosa 全量审计重跑（消除 scanner_enobufs fail-open 窗口+验证排除门全链路） | MIMOSA-EXCL 披露 | pending | — | — |
+| 14 | Mimosa 全量审计重跑（消除 scanner_enobufs fail-open 窗口+验证排除门全链路） | MIMOSA-EXCL 披露 | ✅ 闭环 | 17942b3；深扫成功（1219 文件/410 findings/封印齐）enobufs 未复现；排除门未被穿透（两测试文件 findings 0 出现）；如实披露：排除门对 MCP 通道本就不适用+commit-gate fail-open 模式仍在（独立工单建议）；净新增 1 HIGH（artifact_store 路径穿越，0 调用方，P2 登记） | 17942b3 |
 | 15 | 文档同步: 用户使用手册/面试演示方案补新功能（记忆反馈/审计视图/上传/新门禁） | docs/ | pending | — | — |
 | 16 | push GitHub 批量（15 单全部验证后；用户既有多轮 push 指令） | — | pending（user-gate 备注可绕） | — | — |
 | 17 | 缓冲槽: 1-16 返工消化/新批判承接项（动态分配；无则补充轮） | — | pending | — | — |
