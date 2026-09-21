@@ -715,3 +715,4 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - F-W1-GUARD 硬化闭环：receipt_guard.py 纯函数（写类完成语义∧无 success 凭据→tool_receipt_unverified+诚实修正句；error 凭据不算证据；只读零拦；幂等）+词表配置化+双链路单一事实源（流式 make_stream_finalize/非流式 chat_answer）。
 - 编排者亲测：诱导捏造场景（导入知识库被拒）→标记 True+修正句在答案尾部；17+227+21 passed 亲跑；前端黄条+G3 全站 PASS。
 - 盲测 B6 ✅。C-W1-② 从"部分修"转"已硬化"，tracker 首例 P0 项全周期闭环（发现→缓解→硬化→机检护栏→盲测）。
+- **并行度升级（2026-09-21 用户裁定）**：AUTO20 从串行单 agent 改为「能并行就并行」——文件域互斥分组并发，同域仍串行；验收由编排者逐单串行把关（并行的是执行不是验收）。
