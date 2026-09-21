@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
-/* F-1：/media 同源代理目标。视频等媒体文件由后端 8000 直出，
-   页面 <video src="/media/..."> 是相对路径（落 3000 origin 会 404 无限 loading），
+/* F-1：/media 同源代理目标。视频等媒体文件由后端 9988 直出（W-NEXT-PORTS-001 端口迁移
+   2026-09-20 起 8000→9988；旧默认 8000 为死端口，曾致 /media/* 同源代理 500——FEAT-WIRE-V2 #1 修正），
+   页面 <video src="/media/..."> 是相对路径（落 3322 origin 会 404 无限 loading），
    故由 Next 把 /media/* 反代到后端，浏览器始终同源访问。
-   - 本机 dev 不设该变量 → http://127.0.0.1:8000
+   - 本机 dev 不设该变量 → http://127.0.0.1:9988
    - Docker 生产：构建期经 build arg MEDIA_PROXY_TARGET 注入（rewrites 在 next build 时求值烘焙）*/
-const MEDIA_PROXY_TARGET = process.env.MEDIA_PROXY_TARGET || "http://127.0.0.1:8000";
+const MEDIA_PROXY_TARGET = process.env.MEDIA_PROXY_TARGET || "http://127.0.0.1:9988";
 
 const nextConfig: NextConfig = {
   /* 允许 127.0.0.1 访问 dev server 静态资源（Next.js 16 默认仅信任 localhost，IP 访问返回 403）*/

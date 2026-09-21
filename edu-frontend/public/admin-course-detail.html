@@ -775,7 +775,7 @@ function renderModules(){
         +'<td><span class="cell-strong">'+esc(x.session_title||"—")+'</span></td>'
         +'<td>'+esc(String(x.teaching_date||"").slice(0,10))+'</td>'
         +'<td>'+badge(st[0],st[1])+'</td>'
-        +'<td><div class="res-4"><button class="video" data-vid="'+x.id+'">▶ 视频</button></div></td>'
+        +'<td><div class="res-4"><button class="video" data-vid="'+x.id+'">▶ 视频</button><button data-upl="'+x.id+'">⬆ 上传视频</button></div></td>'
         +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssedit="'+x.id+'" data-mid="'+m.id+'">编辑</button>'
         +'<button class="btn btn-danger btn-mini" data-ssdel="'+x.id+'">删除</button></td></tr>';
     }).join("");
@@ -798,6 +798,15 @@ function renderModules(){
   w.querySelectorAll("[data-model]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该模块？（软删，其下课次级联不可见）",function(){
     return EAPI.del("/api/admin/courses/modules/"+b.getAttribute("data-model")).then(function(){selectCohort(S.cohortId);});});};});
   w.querySelectorAll("[data-vid]").forEach(function(b){b.onclick=function(){openVideoPanel(+b.getAttribute("data-vid"))};});
+  w.querySelectorAll("[data-upl]").forEach(function(b){b.onclick=function(){
+    var sid=+b.getAttribute("data-upl");
+    openVideoPanel(sid);
+    setTimeout(function(){
+      var vp=$("video-panel");
+      if(vp){vp.scrollIntoView({behavior:"smooth",block:"center"});}
+      var uz=$("up-z");if(uz){uz.style.outline="3px solid var(--primary)";uz.style.outlineOffset="3px";setTimeout(function(){uz.style.outline="";},1800);}
+    },250);
+  };});
   w.querySelectorAll("[data-ssedit]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-mid"),+b.getAttribute("data-ssedit"))};});
   w.querySelectorAll("[data-ssdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该课次？（软删）",function(){
     return EAPI.del("/api/admin/courses/sessions/"+b.getAttribute("data-ssdel")).then(function(){selectCohort(S.cohortId);});});};});
