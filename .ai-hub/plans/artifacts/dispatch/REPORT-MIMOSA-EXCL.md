@@ -47,7 +47,11 @@ scripts/eval 先例的机理＝插件 hooks 目录下的**排除门包装器**�
 
 1. `node --check` 语法检查：**SYNTAX-OK**。
 2. 合成 scan-hook 事件（指向 `edu-frontend/src/lib/auth-client.test.ts`）直接喂包装器：**exit 0、无 vendor 输出**＝排除生效、跳过扫描。
-3. 端到端（本报告入库的 docs commit 即验证载体）：提交携带本报告的文档 commit，git 门禁 L3 全仓扫描仍会发现 8 条「硬编码凭据」high（位于上述两测试文件），排除门应将 deny 降级为 allow——实测结果见第 5 节 git log 证据与提交时 stderr `decision deny->allow` 记录。
+3. **自测通道确定性验证**（`MIMOSA_EXCLUDE_GATE_SELFTEST=1`，按 vendor 实测报文格式 `path:line [high] 标题；…` + `N 个高危` 计数构造 deny 报文）——**3/3 PASS**：
+   - 8 条高危全部位于两测试文件（Windows 绝对路径形态）＋0 中危 → **deny→allow**，systemMessage 追加「W-NEXT-MIMOSA-EXCLUDE 2026-09-18/2026-09-21 用户授权…：8 条高危 finding 位于排除范围，已按授权放行」；
+   - 8 高危＋2 中危全部位于排除范围 → **deny→allow**（中危同在范围内才放行，否则 fail-safe 取更严的 ask）；
+   - **负例**：1 条高危在范围外（`edu-agent/app/schemas.py`）→ **维持 deny 不放行**（fail-closed 生效）。
+4. **端到端如实披露（发现并存疑，待真实窗口）**：本报告入库 commit（a732dad）与合成 git-gate 探针中，vendor L3 扫描器当前均返回 **INCONCLUSIVE（scanner_enobufs）**，按兼容策略失败开放放行——即本次提交通过走的是 vendor fail-open，**尚未在真实 deny 场景下走通降级路径**（`.mimosa/history` 最近一次成功扫描停在 2026-09-20）。降级逻辑本身已由第 3 项自测确定性证明；scanner_enobufs 为独立环境问题，建议尽快重跑完整审计（Mimosa 深扫）验证真实 deny→allow 全链路。
 
 ## 4. 代提交项（第 3 项）
 
@@ -56,7 +60,11 @@ scripts/eval 先例的机理＝插件 hooks 目录下的**排除门包装器**�
 ## 5. git log 证据
 
 ```
-（提交后由编排者/本会话回填：git log -1 --stat 输出）
+a732dad (HEAD -> feature/opt-waves) docs(dispatch)/mimosa-excl: 排除门增补两前端测试文件(凭据=公开演示账号,用户2026-09-21批准)+本单报告入库
+ 1 file changed, 66 insertions(+)
+ create mode 100644 .ai-hub/plans/artifacts/dispatch/REPORT-MIMOSA-EXCL.md
+（提交未被 8 条「硬编码凭据」high 拦截；hook 上下文示 scanner_enobufs 兼容放行，详见第 3 节第 4 点）
+（本报告修订 commit hash 待本次提交后由 git log 现场可查）
 ```
 
 ## 6. 铁律遵守声明
