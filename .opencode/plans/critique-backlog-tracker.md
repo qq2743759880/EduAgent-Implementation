@@ -716,3 +716,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 编排者亲测：诱导捏造场景（导入知识库被拒）→标记 True+修正句在答案尾部；17+227+21 passed 亲跑；前端黄条+G3 全站 PASS。
 - 盲测 B6 ✅。C-W1-② 从"部分修"转"已硬化"，tracker 首例 P0 项全周期闭环（发现→缓解→硬化→机检护栏→盲测）。
 - **并行度升级（2026-09-21 用户裁定）**：AUTO20 从串行单 agent 改为「能并行就并行」——文件域互斥分组并发，同域仍串行；验收由编排者逐单串行把关（并行的是执行不是验收）。
+
+## AUTO20 T8 验收闭环（2026-09-21，cf67bbc，编排者亲证）
+- C-W1-③ 闭环：三断点根因修复（graph.run_agent tool_results 硬编码[]/service else 分支硬清空/SubagentResult.as_distilled 第一跳丢凭据）——选型 call_tool handler 单点插桩全路径覆盖，经 AgentState.tool_receipts 通道透传，复用 MCPToolCallSummary schema。
+- 编排者亲测：favorite_add 真执行→响应体 mcp_tool_calls 含 success/57ms 凭据+tool_receipt_unverified=False+零修正句（护栏联动零误标达成）；9+26 passed 亲跑（T7 全绿硬门保持）。
+- **新发现登记（C-T8-①，非本单回归）**：T7 保守面——闲聊中 LLM 列举工具能力名（"我可以帮你 favorite_add"）∧凭据空 → 误标 True。语义待精化（"能力列举≠完成声称"），登记为 T7-b 候选小任务。
+- **写类工具面里程碑**：favorite_add 全链（执行→审计→响应凭据→护栏判定）四层全通——WRITE1 打样的四个发现 C-W1-①②③④ 全部闭环。
