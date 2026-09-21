@@ -299,26 +299,18 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
     <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
     <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
   </nav>
-  <div class="gnav-foot">Admin Console · 原型（静态）</div>
+  <div class="gnav-foot">Admin Console</div>
 </header>
 <div class="wrap">
 
-  <!-- task13 原型标注条：示例数据声明（接线后为真实数据） -->
-  <div class="proto-note" role="note">
-    <span aria-hidden="true"><svg class="ic" style="width:16px;height:16px"><use href="/assets/icons/icons.svg#ic-info"/></svg></span>
-    <div>
-      原型 · <u>示例数据，接线后为真实数据</u> —— 本页为纯静态原型，不发起任何真实请求；
-      示例数据仅用于呈现回收站与恢复 / 彻底删除的交互形态，正式版以后端真实数据为准。
-      行内「示例冲突恢复系列…」一行标注了「示例冲突」chip：点击其「恢复」将演示编码冲突错误态。
-    </div>
-  </div>
+  <!-- [FEAT-WIRE-V2 #6] 旧「纯静态原型/示例数据」标注条已删除：本页已全量接线真实接口（GET series?sale_status=off_sale / POST restore / DELETE ?hard=true） -->
 
   <div class="page-head">
     <div>
       <h1>课程管理</h1>
       <div class="sub" id="head-sub">回收站 · 已下架（软删）系列 · 支持恢复与彻底删除</div>
     </div>
-    <button class="btn btn-primary" id="btn-create" style="display:none" title="回收站视图不提供新建（原型态）">＋ 新建系列</button>
+    <button class="btn btn-primary" id="btn-create" style="display:none" title="回收站视图不提供新建（请用课程管理列表页）">＋ 新建系列</button>
   </div>
 
   <!-- C5 · 视图 Tab：正式列表 / 回收站（本原型默认聚焦回收站） -->
@@ -347,14 +339,14 @@ body.admin-html-page:has(#viewTabs .vtab[data-view="bin"].active) .series-cell .
       </select>
     </div>
     <div class="fld"><label for="f-sort">排序</label>
-      <select id="f-sort" disabled title="回收站按最近变更倒序（updated_at），不提供排序切换（原型契约披露）">
+      <select id="f-sort" disabled title="回收站视图按最近变更倒序，不提供排序切换">
         <option value="default">默认排序</option>
       </select>
     </div>
     <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetFilter()">重置</button>
   </div>
 
-  <div class="toolbar-meta"><span id="meta-count">已下架系列 · 示例 6 条 · 每页 20</span><span>示例数据，接线后为真实数据</span></div>
+  <div class="toolbar-meta"><span id="meta-count">已下架系列 · 共 0 条 · 每页 20</span><span>数据来源：GET /api/admin/courses/series（sale_status=off_sale）</span></div>
 
   <!-- 表格 -->
   <div class="tbl-card">
