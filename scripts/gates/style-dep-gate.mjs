@@ -145,13 +145,24 @@ const pages = [];
 try {
   await browser.setViewport(1280, 900);
   await browser.setReducedMotion(true);
+  // Negative-control hook (EDU_GATE_DELAY_API_MS): delay /api/ responses to
+  // reproduce the "data slower than settle" race on a fast local backend.
+  await browser.setApiDelay(options.apiDelayMs);
   for (const target of targets) {
     const source = target.sourcePath ? readFileSync(target.sourcePath, "utf8") : "";
     const geometrySelectors = collectGeometrySelectors(source);
     let snapshot = { url: "", geometry: [], zLayers: [], thirdParty: [], interactive: [] };
     let runtimeError = null;
+    let readyWindow = null;
     try {
       await browser.navigate(target.url, options.settleMs);
+      // GATE-V3 data-ready stable window: wait for network idle + two consistent
+      // INSPECT snapshots before sampling (courses animation false red: page data
+      // slower than settle sampled skeleton/placeholder geometry). Bounded by
+      // EDU_GATE_READY_TIMEOUT_MS; 0 disables (legacy settle-only behavior).
+      if (options.readyTimeoutMs > 0) {
+        readyWindow = await browser.waitForReady(() => browser.cdp.evaluate(INSPECT_EXPRESSION(geometrySelectors)));
+      }
       snapshot = await browser.cdp.evaluate(INSPECT_EXPRESSION(geometrySelectors));
     } catch (error) {
       runtimeError = error.message;
@@ -181,6 +192,7 @@ try {
       drift,
       tooSmall: tooSmall.slice(0, 100),
       transparent: transparent.slice(0, 100),
+      readyWindow,
       diagnostics: [...browser.cdp.diagnostics],
       checks,
     });
@@ -207,6 +219,7 @@ const report = finalizeReport("G6 Style Dependency Gate", pages, {
   chrome: browser.chromeVersion,
   baseline: path.relative(PROJECT_ROOT, baselinePath),
   baseline_created: options.updateBaseline || !Object.keys(existingBaseline.pages || {}).length,
+  ready_window: "sample after network idle + two consistent DOM snapshots (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap; timeout records the window as unsettled and samples as-is — informational, never alters check outcomes)",
 });
 const files = writeGateReports("g6-style-dep-gate", report, options.out);
 printReport(report, files);

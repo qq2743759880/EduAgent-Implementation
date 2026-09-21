@@ -263,13 +263,25 @@ const pages = [];
 
 try {
   await browser.setReducedMotion(true);
+  // Negative-control hook (EDU_GATE_DELAY_API_MS): delay /api/ responses to
+  // reproduce the "data slower than settle" race on a fast local backend.
+  await browser.setApiDelay(options.apiDelayMs);
   for (const target of targets) {
     const viewportResults = [];
     let runtimeError = null;
+    const readyWindows = [];
     for (const width of VIEWPORTS) {
       try {
         await browser.setViewport(width, 900);
         await browser.navigate(target.url, options.settleMs);
+        // GATE-V3 data-ready stable window: wait for network idle + two consistent
+        // A11Y snapshots before sampling. False-red classes eliminated: me
+        // /api/trade/orders 2.1s vs settle 900ms → tab-reachable 8 unreachable;
+        // my-cohorts cards not ready → 17 unreachable; courses running animations.
+        // Bounded by EDU_GATE_READY_TIMEOUT_MS (default 5s); 0 disables.
+        if (options.readyTimeoutMs > 0) {
+          readyWindows.push({ width, ...(await browser.waitForReady(() => browser.cdp.evaluate(A11Y_EXPRESSION))) });
+        }
         const audit = await browser.cdp.evaluate(A11Y_EXPRESSION);
         const screenshot = path.join(options.out, "g7-screenshots", safeStem(target.name), `${width}.jpg`);
         await browser.screenshot(screenshot);
@@ -284,6 +296,13 @@ try {
     if (!runtimeError && viewportResults.length) {
       await browser.setViewport(1280, 900);
       await browser.navigate(target.url, Math.min(options.settleMs, 500));
+      // Same ready window before the Tab walk: a still-in-flight slow query renders
+      // fewer focusable elements, which is exactly the false-unreachable mechanism
+      // (negative-control proof: 3s-delayed /api/trade/orders lands at ~3s; settle
+      // 500ms + no window sampled mid-load and missed the late order cards).
+      if (options.readyTimeoutMs > 0) {
+        await browser.waitForReady(() => browser.cdp.evaluate(ATTRS_EXPRESSION));
+      }
       focus = await tabAudit(browser.cdp, viewportResults.find((item) => item.width === 1280)?.focusable.length || 0);
     }
 
@@ -352,6 +371,7 @@ try {
       tabAggregated: aggregated.slice(0, 200),
       focusWithoutRing: focusWithoutRing.slice(0, 200),
       contrastFailures: contrastFailures.slice(0, 300),
+      readyWindows,
       diagnostics: [...browser.cdp.diagnostics],
       checks,
     });
@@ -380,6 +400,7 @@ const report = finalizeReport("G7 Viewport and Accessibility Gate", pages, {
   baseline: path.relative(PROJECT_ROOT, baselinePath),
   baseline_created: options.updateBaseline || !Object.keys(baseline.pages || {}).length,
   contrast_note: "Computed solid background-color stack; gradient/image contrast still requires screenshot review.",
+  ready_window: "sample after network idle + two consistent DOM snapshots per viewport and before the Tab walk (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap; timeout records the window as unsettled and samples as-is — informational, never alters check outcomes)",
 });
 const files = writeGateReports("g7-viewport-a11y-gate", report, options.out);
 printReport(report, files);

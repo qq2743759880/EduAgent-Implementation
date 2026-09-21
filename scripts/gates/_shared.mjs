@@ -97,11 +97,28 @@ export function parseCli(argv, { allowCheck = false, allowBaseline = false } = {
   options.na = new Set([...na.names, ...options.naArgs]);
   options.naReasons = na.reasons;
 
+  // GATE-V3 data-ready window: settle is a fixed sleep and cannot detect "data not
+  // loaded yet" races (me /api/trade/orders 2.1s vs settle 900ms → G7 tab-reachable
+  // false red). The ready window polls network idle + two consistent DOM snapshots
+  // before sampling; 0 disables it (legacy settle-only behavior, used by negative
+  // controls to reproduce the false reds).
+  options.readyTimeoutMs = Number(process.env.EDU_GATE_READY_TIMEOUT_MS || 5000);
+  // Negative-control knob: delay every loopback /api/ response by N ms via CDP
+  // Fetch interception (continueRequest after the delay), reproducing slow backends.
+  // 0/absent = no injection. Incompatible with state-matrix-gate (see that file).
+  options.apiDelayMs = Number(process.env.EDU_GATE_DELAY_API_MS || 0);
+
   if (!options.help && options.all === Boolean(options.page)) {
     throw new Error("Choose exactly one target mode: --all or --page <url>.");
   }
   if (!Number.isFinite(options.settleMs) || options.settleMs < 0) {
     throw new Error("--settle-ms must be a non-negative number.");
+  }
+  if (!Number.isFinite(options.readyTimeoutMs) || options.readyTimeoutMs < 0) {
+    throw new Error("EDU_GATE_READY_TIMEOUT_MS must be a non-negative number.");
+  }
+  if (!Number.isFinite(options.apiDelayMs) || options.apiDelayMs < 0) {
+    throw new Error("EDU_GATE_DELAY_API_MS must be a non-negative number.");
   }
 
   options.base = options.base.replace(/\/$/, "");
@@ -552,9 +569,25 @@ export async function createBrowser(options = {}) {
     });
   }
 
+  // GATE-V3 network-idle tracking: count in-flight requests from Network events so a
+  // caller can wait for "no pending request" instead of guessing a fixed settle.
+  // Excluded: DevTools-internal and websocket/handshake noise that never settles.
+  const pending = new Set();
+  cdp.on("Network.requestWillBeSent", (params) => {
+    const url = params.request?.url || "";
+    if (/^wss?:/i.test(url) || url.startsWith("devtools://") || url.startsWith("data:")) return;
+    pending.add(params.requestId);
+  });
+  cdp.on("Network.loadingFinished", (params) => pending.delete(params.requestId));
+  cdp.on("Network.loadingFailed", (params) => pending.delete(params.requestId));
+
+  let apiDelayEnabled = false;
+
   return {
     cdp,
     chromeVersion: version.Browser || "unknown",
+    /** Number of in-flight network requests as of the last CDP event. */
+    pendingRequests: () => pending.size,
     async setViewport(width, height = 900) {
       await cdp.send("Emulation.setDeviceMetricsOverride", {
         width,
@@ -577,6 +610,79 @@ export async function createBrowser(options = {}) {
       await loaded;
       await sleep(settleMs);
       return response;
+    },
+    /**
+     * GATE-V3 data-ready stable window (mechanism, not a tuning knob): after the
+     * legacy settle, poll until (a) the network is idle (no in-flight request seen
+     * by CDP Network events) and (b) two consecutive DOM snapshots agree — the
+     * double-consistency precedent is aria `settledAttrs` (GATE-V2 W2). Bounded by
+     * EDU_GATE_READY_TIMEOUT_MS (default 5s); on timeout record a warning and let
+     * the caller sample as-is (never blocks the gate, never fakes green: the
+     * warning is informational only and check outcomes are unchanged).
+     *
+     * snapshotFn: async () => JSON-serializable DOM read (the gate's own expression,
+     * e.g. A11Y_EXPRESSION / INSPECT_EXPRESSION / LAYOUT_EXPRESSION) — the two-
+     * consistency comparison runs on JSON.stringify(snapshot).
+     * Returns { settled: boolean, waitedMs, polls } — settled=false means timeout.
+     */
+    async waitForReady(snapshotFn, readyTimeoutMs = options.readyTimeoutMs ?? 5000, pollMs = 250) {
+      if (readyTimeoutMs <= 0) return { settled: false, waitedMs: 0, polls: 0, disabled: true };
+      const started = Date.now();
+      // Phase 1: network idle — wait out in-flight /api/ responses (slow queries).
+      // Idle must SUSTAIN for pollMs before proceeding: CDP events arrive on the
+      // socket asynchronously, so a single idle observation could race a request
+      // whose requestWillBeSent event has not been processed yet.
+      let idleSince = null;
+      while (true) {
+        if (this.pendingRequests() > 0) {
+          idleSince = null;
+        } else if (idleSince === null) {
+          idleSince = Date.now();
+        } else if (Date.now() - idleSince >= pollMs) {
+          break;
+        }
+        if (Date.now() - started >= readyTimeoutMs) {
+          return { settled: false, waitedMs: Date.now() - started, polls: 0, reason: "network-busy" };
+        }
+        await sleep(Math.min(100, pollMs));
+      }
+      // Phase 2: DOM double-consistency — two consecutive equal snapshots.
+      let previous = null;
+      let polls = 0;
+      while (Date.now() - started < readyTimeoutMs) {
+        polls += 1;
+        const snapshot = await snapshotFn();
+        const key = JSON.stringify(snapshot);
+        if (previous !== null && key === previous) {
+          return { settled: true, waitedMs: Date.now() - started, polls };
+        }
+        previous = key;
+        await sleep(pollMs);
+      }
+      return { settled: false, waitedMs: Date.now() - started, polls, reason: "dom-unstable" };
+    },
+    /**
+     * Negative-control helper (EDU_GATE_DELAY_API_MS): delay loopback /api/ requests
+     * via Fetch interception so a fast local backend reproduces the production "slow
+     * data" race. Idempotent. Never enable on state-matrix-gate — that gate owns
+     * Fetch.* for its state mocking and the two would fight over requestPaused.
+     */
+    async setApiDelay(delayMs) {
+      if (apiDelayEnabled) return;
+      if (!delayMs) {
+        try { await cdp.send("Fetch.disable"); } catch {}
+        return;
+      }
+      apiDelayEnabled = true;
+      await cdp.send("Fetch.enable", { patterns: [
+        { urlPattern: "*://127.0.0.1:*/api/*", requestStage: "Request" },
+        { urlPattern: "*://localhost:*/api/*", requestStage: "Request" },
+      ] });
+      cdp.on("Fetch.requestPaused", async (event) => {
+        if (!apiDelayEnabled) return;
+        await sleep(delayMs);
+        try { await cdp.send("Fetch.continueRequest", { requestId: event.requestId }); } catch {}
+      });
     },
     async screenshot(file, { quality = 52 } = {}) {
       ensureDir(path.dirname(file));
@@ -608,6 +714,6 @@ export function usage(script, extras = "") {
     `       node scripts/gates/${script} --all [--out <dir>]`,
     `       [--na <page-name>...] marks pages whose excluded check is structurally N/A (recorded as SKIP; file default: scripts/gates/na-pages.json)`,
     extras,
-    "Environment: EDU_GATE_BASE, EDU_GATE_CHROME, EDU_GATE_TOKEN, EDU_GATE_REFRESH_TOKEN, EDU_GATE_SETTLE_MS",
+    "Environment: EDU_GATE_BASE, EDU_GATE_CHROME, EDU_GATE_TOKEN, EDU_GATE_REFRESH_TOKEN, EDU_GATE_SETTLE_MS, EDU_GATE_READY_TIMEOUT_MS (data-ready window cap, default 5000; 0 disables the ready window), EDU_GATE_DELAY_API_MS (negative-control /api/ delay, default 0)",
   ].filter(Boolean).join("\n");
 }

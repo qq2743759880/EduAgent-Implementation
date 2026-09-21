@@ -177,6 +177,7 @@ try {
       };
 
       let layout = { url: "", bodyTextLength: 0, horizontalOverflow: false, broken: [] };
+      let readyWindow = null;
       try {
         await browser.cdp.send("Fetch.enable", { patterns: [
           { urlPattern: "*://127.0.0.1:*/api/*", requestStage: "Request" },
@@ -184,6 +185,18 @@ try {
         ] });
         browser.cdp.on("Fetch.requestPaused", onPaused);
         await browser.navigate(target.url, state === "loading" ? Math.min(options.settleMs, 650) : options.settleMs);
+        // GATE-V3 data-ready stable window for the mock-driven states (empty /
+        // disabled / long-text): the mock fulfills instantly, so network-idle plus
+        // two consistent LAYOUT snapshots prove the render has absorbed the mocked
+        // data before sampling. For states that hold or fail requests by design
+        // (loading holds every /api/ request; error/forbidden/500 break them) the
+        // window is skipped — waiting would only burn its timeout, and the existing
+        // transitional-poll below already guards the DOM shape. Bounded by
+        // EDU_GATE_READY_TIMEOUT_MS; 0 disables entirely (legacy behavior).
+        const readyWindowEligible = options.readyTimeoutMs > 0 && ["empty", "disabled", "long-text"].includes(state);
+        if (readyWindowEligible) {
+          readyWindow = await browser.waitForReady(() => browser.cdp.evaluate(LAYOUT_EXPRESSION));
+        }
         for (let attempt = 0; attempt < 6; attempt += 1) {
           layout = await browser.cdp.evaluate(LAYOUT_EXPRESSION);
           if (!layout.transitional) break;
@@ -225,7 +238,7 @@ try {
         makeCheck("state-runtime-exceptions", exceptions.length === 0, `${exceptions.length} uncaught runtime exceptions; ${diagnostics.length} total console/log diagnostics.`),
         makeCheck("state-console-errors", diagnostics.length === 0, `${diagnostics.length} console/log diagnostics.`, expectedNetworkNoise ? "warning" : "error"),
       ];
-      stateResults.push({ state, intercepted, layout, diagnostics, checks });
+      stateResults.push({ state, intercepted, layout, readyWindow, diagnostics, checks });
     }
 
     const checks = stateResults.flatMap((result) => result.checks.map((check) => ({ ...check, name: `${result.state}/${check.name}` })));
@@ -240,6 +253,7 @@ const report = finalizeReport("G9 State Matrix Gate", pages, {
   chrome: browser.chromeVersion,
   states: STATES,
   mock_policy: "All loopback /api/ requests are intercepted. auth/me remains an admin success except in authorization and server-failure states.",
+  ready_window: "mock-driven states (empty/disabled/long-text) sample after network idle + two consistent DOM snapshots (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap); hold/fail states skip the window by design",
 });
 const files = writeGateReports("g9-state-matrix-gate", report, options.out);
 printReport(report, files);
