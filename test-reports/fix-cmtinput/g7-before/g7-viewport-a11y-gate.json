@@ -1,0 +1,1258 @@
+{
+  "gate": "G7 Viewport and Accessibility Gate",
+  "generated_at": "2026-09-21T03:41:51.636Z",
+  "status": "FAIL",
+  "summary": {
+    "pages": 1,
+    "checks": 11,
+    "failed": 1,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "viewports": [
+    360,
+    768,
+    1280,
+    1440,
+    1920
+  ],
+  "baseline": "test-reports\\fix-cmtinput\\g7-before\\viewport-a11y-snapshot.json",
+  "baseline_created": false,
+  "contrast_note": "Computed solid background-color stack; gradient/image contrast still requires screenshot review.",
+  "pages": [
+    {
+      "name": "community-post.html",
+      "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+      "viewportResults": [
+        {
+          "width": 360,
+          "screenshot": "test-reports\\fix-cmtinput\\g7-before\\g7-screenshots\\community-post\\360.jpg",
+          "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+          "viewport": {
+            "width": 360,
+            "height": 900
+          },
+          "scrollWidth": 360,
+          "clientWidth": 360,
+          "overflow": false,
+          "contrastChecked": 42,
+          "contrastFailures": [
+            {
+              "selector": "#cmtInput::placeholder",
+              "text": "写下你的看法…（Markdown 支持）",
+              "ratio": 4.37,
+              "color": "rgb(117, 117, 117)",
+              "background": [
+                247,
+                250,
+                244,
+                1
+              ]
+            }
+          ],
+          "focusable": [
+            "#gnavToggle",
+            "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "#adminEntry",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "#likeBtn",
+            "#favBtn",
+            "#cmtInput",
+            "#cmtSubmit"
+          ],
+          "focusGroups": [
+            {
+              "selector": "#gnavToggle",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "#adminEntry",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "#likeBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#favBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtInput",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtSubmit",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnavToggle",
+              "ariaLabel": "打开导航",
+              "title": null
+            },
+            {
+              "selector": "#gnav",
+              "ariaLabel": "主导航",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list",
+              "ariaLabel": "用户端页面",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3)",
+              "ariaLabel": "顶栏右侧快捷入口",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "ariaLabel": "问 AI",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "ariaLabel": "个人中心",
+              "title": null
+            },
+            {
+              "selector": "#cmtInput",
+              "ariaLabel": "评论内容",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 768,
+          "screenshot": "test-reports\\fix-cmtinput\\g7-before\\g7-screenshots\\community-post\\768.jpg",
+          "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+          "viewport": {
+            "width": 768,
+            "height": 900
+          },
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflow": false,
+          "contrastChecked": 41,
+          "contrastFailures": [
+            {
+              "selector": "#cmtInput::placeholder",
+              "text": "写下你的看法…（Markdown 支持）",
+              "ratio": 4.37,
+              "color": "rgb(117, 117, 117)",
+              "background": [
+                247,
+                250,
+                244,
+                1
+              ]
+            }
+          ],
+          "focusable": [
+            "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "#adminEntry",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "#likeBtn",
+            "#favBtn",
+            "#cmtInput",
+            "#cmtSubmit"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "#adminEntry",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "#likeBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#favBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtInput",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtSubmit",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnavToggle",
+              "ariaLabel": "打开导航",
+              "title": null
+            },
+            {
+              "selector": "#gnav",
+              "ariaLabel": "主导航",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list",
+              "ariaLabel": "用户端页面",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3)",
+              "ariaLabel": "顶栏右侧快捷入口",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "ariaLabel": "问 AI",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "ariaLabel": "个人中心",
+              "title": null
+            },
+            {
+              "selector": "#cmtInput",
+              "ariaLabel": "评论内容",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1280,
+          "screenshot": "test-reports\\fix-cmtinput\\g7-before\\g7-screenshots\\community-post\\1280.jpg",
+          "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+          "viewport": {
+            "width": 1280,
+            "height": 900
+          },
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "overflow": false,
+          "contrastChecked": 41,
+          "contrastFailures": [
+            {
+              "selector": "#cmtInput::placeholder",
+              "text": "写下你的看法…（Markdown 支持）",
+              "ratio": 4.37,
+              "color": "rgb(117, 117, 117)",
+              "background": [
+                247,
+                250,
+                244,
+                1
+              ]
+            }
+          ],
+          "focusable": [
+            "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "#adminEntry",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "#likeBtn",
+            "#favBtn",
+            "#cmtInput",
+            "#cmtSubmit"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "#adminEntry",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "#likeBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#favBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtInput",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtSubmit",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnavToggle",
+              "ariaLabel": "打开导航",
+              "title": null
+            },
+            {
+              "selector": "#gnav",
+              "ariaLabel": "主导航",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list",
+              "ariaLabel": "用户端页面",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3)",
+              "ariaLabel": "顶栏右侧快捷入口",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "ariaLabel": "问 AI",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "ariaLabel": "个人中心",
+              "title": null
+            },
+            {
+              "selector": "#cmtInput",
+              "ariaLabel": "评论内容",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1440,
+          "screenshot": "test-reports\\fix-cmtinput\\g7-before\\g7-screenshots\\community-post\\1440.jpg",
+          "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflow": false,
+          "contrastChecked": 41,
+          "contrastFailures": [
+            {
+              "selector": "#cmtInput::placeholder",
+              "text": "写下你的看法…（Markdown 支持）",
+              "ratio": 4.37,
+              "color": "rgb(117, 117, 117)",
+              "background": [
+                247,
+                250,
+                244,
+                1
+              ]
+            }
+          ],
+          "focusable": [
+            "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "#adminEntry",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "#likeBtn",
+            "#favBtn",
+            "#cmtInput",
+            "#cmtSubmit"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "#adminEntry",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "#likeBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#favBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtInput",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtSubmit",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnavToggle",
+              "ariaLabel": "打开导航",
+              "title": null
+            },
+            {
+              "selector": "#gnav",
+              "ariaLabel": "主导航",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list",
+              "ariaLabel": "用户端页面",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3)",
+              "ariaLabel": "顶栏右侧快捷入口",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "ariaLabel": "问 AI",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "ariaLabel": "个人中心",
+              "title": null
+            },
+            {
+              "selector": "#cmtInput",
+              "ariaLabel": "评论内容",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1920,
+          "screenshot": "test-reports\\fix-cmtinput\\g7-before\\g7-screenshots\\community-post\\1920.jpg",
+          "url": "http://127.0.0.1:3322/community-post.html?post_id=96",
+          "viewport": {
+            "width": 1920,
+            "height": 900
+          },
+          "scrollWidth": 1920,
+          "clientWidth": 1920,
+          "overflow": false,
+          "contrastChecked": 41,
+          "contrastFailures": [
+            {
+              "selector": "#cmtInput::placeholder",
+              "text": "写下你的看法…（Markdown 支持）",
+              "ratio": 4.37,
+              "color": "rgb(117, 117, 117)",
+              "background": [
+                247,
+                250,
+                244,
+                1
+              ]
+            }
+          ],
+          "focusable": [
+            "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "#adminEntry",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "#likeBtn",
+            "#favBtn",
+            "#cmtInput",
+            "#cmtSubmit"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "#adminEntry",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "#likeBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#favBtn",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtInput",
+              "groupKey": null
+            },
+            {
+              "selector": "#cmtSubmit",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnavToggle",
+              "ariaLabel": "打开导航",
+              "title": null
+            },
+            {
+              "selector": "#gnav",
+              "ariaLabel": "主导航",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list",
+              "ariaLabel": "用户端页面",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3)",
+              "ariaLabel": "顶栏右侧快捷入口",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+              "ariaLabel": "问 AI",
+              "title": null
+            },
+            {
+              "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+              "ariaLabel": "个人中心",
+              "title": null
+            },
+            {
+              "selector": "#cmtInput",
+              "ariaLabel": "评论内容",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        }
+      ],
+      "focus": {
+        "visits": [
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.3) 3px 4px 10px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#adminEntry",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#likeBtn",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#favBtn",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#cmtInput",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) none 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.2) 3px 3px 8px 0px inset, rgba(255, 254, 252, 0.88) -3px -3px 8px 0px inset",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#cmtSubmit",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.31) 8px 8px 24px 0px, rgba(214, 82, 70, 0.23) -6px -6px 16px 0px inset, rgba(255, 254, 252, 0.45) 6px 6px 16px 0px inset",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          }
+        ],
+        "unique": [
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.3) 3px 4px 10px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#adminEntry",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-user:nth-of-type(3) > a.gnav-user-link.ava:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#likeBtn",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#favBtn",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#cmtInput",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) none 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.2) 3px 3px 8px 0px inset, rgba(255, 254, 252, 0.88) -3px -3px 8px 0px inset",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#cmtSubmit",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(69, 60, 102) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.31) 8px 8px 24px 0px, rgba(214, 82, 70, 0.23) -6px -6px 16px 0px inset, rgba(255, 254, 252, 0.45) 6px 6px 16px 0px inset",
+            "visibleInViewport": true
+          }
+        ]
+      },
+      "lostAttrs": [],
+      "unreachable": [],
+      "tabAggregated": [],
+      "focusWithoutRing": [],
+      "contrastFailures": [
+        {
+          "width": 360,
+          "selector": "#cmtInput::placeholder",
+          "text": "写下你的看法…（Markdown 支持）",
+          "ratio": 4.37,
+          "color": "rgb(117, 117, 117)",
+          "background": [
+            247,
+            250,
+            244,
+            1
+          ]
+        },
+        {
+          "width": 768,
+          "selector": "#cmtInput::placeholder",
+          "text": "写下你的看法…（Markdown 支持）",
+          "ratio": 4.37,
+          "color": "rgb(117, 117, 117)",
+          "background": [
+            247,
+            250,
+            244,
+            1
+          ]
+        },
+        {
+          "width": 1280,
+          "selector": "#cmtInput::placeholder",
+          "text": "写下你的看法…（Markdown 支持）",
+          "ratio": 4.37,
+          "color": "rgb(117, 117, 117)",
+          "background": [
+            247,
+            250,
+            244,
+            1
+          ]
+        },
+        {
+          "width": 1440,
+          "selector": "#cmtInput::placeholder",
+          "text": "写下你的看法…（Markdown 支持）",
+          "ratio": 4.37,
+          "color": "rgb(117, 117, 117)",
+          "background": [
+            247,
+            250,
+            244,
+            1
+          ]
+        },
+        {
+          "width": 1920,
+          "selector": "#cmtInput::placeholder",
+          "text": "写下你的看法…（Markdown 支持）",
+          "ratio": 4.37,
+          "color": "rgb(117, 117, 117)",
+          "background": [
+            247,
+            250,
+            244,
+            1
+          ]
+        }
+      ],
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "five-viewports",
+          "pass": true,
+          "detail": "5/5 viewport screenshots captured.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "0/5 viewport loads redirected away from /community-post.html.",
+          "severity": "error"
+        },
+        {
+          "name": "no-horizontal-overflow",
+          "pass": true,
+          "detail": "0/5 viewports overflow horizontally.",
+          "severity": "error"
+        },
+        {
+          "name": "contrast-4.5",
+          "pass": false,
+          "detail": "5 text samples are below 4.5:1.",
+          "severity": "error"
+        },
+        {
+          "name": "tab-reachable",
+          "pass": true,
+          "detail": "17/17 visible focusable elements reached by Tab.",
+          "severity": "error"
+        },
+        {
+          "name": "focus-visible",
+          "pass": true,
+          "detail": "0/17 reached elements lack a visible focus ring.",
+          "severity": "error"
+        },
+        {
+          "name": "focus-not-obscured",
+          "pass": true,
+          "detail": "0/17 reached elements are outside the visible viewport after focus.",
+          "severity": "error"
+        },
+        {
+          "name": "icon-control-name",
+          "pass": true,
+          "detail": "0 visible icon-only controls lack an accessible name.",
+          "severity": "error"
+        },
+        {
+          "name": "aria-title-frozen",
+          "pass": true,
+          "detail": "0 frozen aria-label/title entries are missing or changed.",
+          "severity": "error"
+        },
+        {
+          "name": "reduced-motion",
+          "pass": true,
+          "detail": "Media emulation active=true; running animations=0.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 uncaught runtime or console errors after the final load.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}
