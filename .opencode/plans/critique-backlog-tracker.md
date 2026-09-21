@@ -753,3 +753,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **执行者六场景 E2E**（报告三段式）：pending_confirm 帧/reject 0 行/confirm DB id=3135+审计+40901 幂等/清理走 API 软删/student deny/HITL 开关复原（.env 无生效行+settings False 亲验）。
 - 底稿差异处置如实：create_series 实读存在、modules 仅登记回执、institution_id 服务端兜底；批判段登记双通道凭据冗余 P1 观察项。
 - **里程碑**：写类工具面 2/10 实弹（favorite_add user_write 免卡+course_create admin_write 强制卡）——时光.md P1-P6 全部兑现，HITL 主链路首次真实弹卡真实拦截。
+
+## AUTO20 T13 验收：部分闭环（2026-09-22，690e7e3，验证域——诚实未达全绿锁）
+- **达标项**：G8 全绿（208/0）/G1 断点 0/回归 364 passed 0 failed/**G10 Scenario A 三步实证**（revert 干净→测试文件真消失+executor 零残留=真回旧态→滚回 30 passed→终态树与起跑树 diff 空）。
+- **未达项 16 红全定因不代改**：15=门禁资产过期/身份错配（G3 冻结清单未跟 09-21 三笔改动含 chat-audit 整页缺席；refund 类角色守卫页被 admin token 扫描踢回=route-stable 假红）+1 真实缺陷（admin-chat-audit contrast 5 样本<4.5:1，编排者亲测复现）。
+- 返工输入三条（T13-b 候选）：①重冻结 G3 清单+8 页 hook 漂移 review ②refund 类页扫描身份裁定（豁免或双 token 策略）③chat-audit 对比度修复+history 端点补冻结（G1 in_use_unfrozen=1 同源）。
+- 教训：**"回归锁定"也须防门禁资产自身过期**——功能迭代每笔都可能让冻结快照失真，终扫前应先重冻结再扫描（顺序纪律）。
