@@ -27,7 +27,7 @@
 
 - 后端：`cmd /c start "" /B .venv\Scripts\python.exe -m uvicorn app.main:app --port 9988`（在 edu-agent/ 下）
 
-- 前端：`cmd /c start /B node next\dist\bin\next dev -p 3322`
+- 前端：`node node_modules\next\dist\bin\next start -p 3322`（在 edu-frontend/ 下，先 `set NEXT_PROD_DIST_DIR=.next-prod`；生产 build 在 `.next-prod`）。⚠️ 旧写法 `node next\dist\bin\next dev` 已废——顶层 `next/` 目录不存在（2026-09-21 实证 MODULE_NOT_FOUND）；优先用仓库根一键脚本
 
 ## 关键教训（必读）
 
