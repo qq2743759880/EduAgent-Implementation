@@ -40,9 +40,10 @@
 | **TO-EXEC-PAGE-WAVES-A** | 逐页重塑包 A：学生端核心 8 页 | ✅ 闭环（8 页逐页 commit；编排者验收：G3 全站 PASS/G1 断点 0/learning G7 红=声明的 roving tabindex 豁免/主题字体 emoji 抽查过；变更单三条已裁：G7 聚合→GATE-V2、login G9 N/A→GATE-V2、seed 外链→DATA-SEED-1） | — |
 | **TO-EXEC-PAGE-WAVES-B** | 逐页重塑包 B：学生端次级+chat 7 页 | ✅ 闭环（chat 补丁 52a28d7；自留档 after 证据 G6 6/0 全绿；achievements aria 漂移→GATE-V2 基线刷新） | — |
 | **TO-EXEC-PAGE-WAVES-C** | 逐页重塑包 C：管理端 10 页（批款全黏土） | ✅ 闭环（10 页含 2 处 clay-light 降级点合规记录；零 API 页 N/A→GATE-V2；长文本债清零） | — |
-| **TO-EXEC-GATE-V2** | 门禁第二批：radio/roving 聚合+settle+N/A 白名单+route-stable 钉死+console 诊断跟进 | ✅ 闭环（双执行者收敛 12 commit；编排者全站终扫亲证：G6 0/150、G7 1/275、G8 0/200 诊断归零、G9 0/1400；Fetch.enable 伪影结论反转被独立复验支持） | — |
-| **TO-EXEC-MIMOSA-EXCL** | 测试文件凭据排除（用户已批） | ✅ 闭环（wrapper L40-41 实证+负例 fail-closed 保持+两笔 commit 过门；scanner_enobufs 披露如实，全量审计重跑已排程） | — |
-| **TO-EXEC-DATA-SEED-1** | 种子外链占位本地化（三核闸） | **待派（可并行）** | 中强模型 |
-| **TO-EXEC-FIX-CMTINPUT** | community-post #cmtInput 补 clay-input（G7 全站唯一余红，编排者已裁） | **待派（最高优先，一类之修）** | 任意模型 |
+| **TO-EXEC-GATE-V2** | 门禁第二批（六工作项） | ✅ 闭环 | — |
+| **TO-EXEC-FEAT-WIRE** | ~~v1 泛审计~~ | 🗑 **作废（用户裁定）**——被 V2 替代 | — |
+| **TO-EXEC-FEAT-WIRE-V2** | **新前端 12 缺陷修复(P0)+全量接线矩阵+后端修复分域授权**（用户 12 条实测为验收基线，新前端实测为唯一准则） | **待派（最高优先，最强前端档+可协作后端档）** | 强模型 |
+| **TO-EXEC-SEED-VIDEO** | 视频批量填充：ffmpeg 生成 120 真实视频+82 万行三核闸接线+播放链路验证（可行性已亲证：ffmpeg/目录/挂载全在） | **待派（与 V2 并行，文件域互斥：V2 碰页面+后端 chat/memory 域，SEED-VIDEO 碰 media/+DB）** | 中强模型 |
+| TO-EXEC-MIMOSA-EXCL / DATA-SEED-1 / FIX-CMTINPUT | — | ✅ 闭环 | — |
 
-> GATE-V2 验收后收官三件：FIX-CMTINPUT → 全站四门 25/25 全绿终态 → G10 回滚实演（编排者）→ UAT 十场景（用户在线）。
+> ⚠️ 并行戒律：两单并行时 git 写入分域错峰（V2 前端+后端域 / SEED-VIDEO media+DB 域），提交前 `git rev-parse HEAD` 对账防 ref 竞态（事故#2 教训）。
