@@ -121,11 +121,23 @@ def _mock_question_map() -> dict[str, dict[str, Any]]:
 
 # ========== 1. 生成「下一道」给用户 ==========
 
+# quiz 6 题型 → dim_question_type.type_code（真实题库按维度表映射，与 _load_by_code_or_id 的 TYPE_MAP 反向）
+_QTYPE_TO_DIM = {
+    SINGLE: "single_choice", MULTI: "multi_choice", JUDGE: "true_false",
+    FILL: "fill_blank", DRAG_SORT: "drag_sort", MATCH: "match",
+}
+
 async def next_question(user_id: int, subject_code: str | None = None,
-                        question_type: str | None = None,
-                        ensure_type: bool = False) -> Question:
-    """按学科/题型过滤：优先从错题本 next_review_at<=now 抽一道；否则从内置 mock 或 admin_question 抽。"""
-    # A) 错题本优先
+                        question_type: str | None = None) -> Question:
+    """按学科/题型过滤：优先从错题本 next_review_at<=now 抽一道；否则从内置 mock 或真实题库抽。
+
+    [FEAT-WIRE-V2 #7 修复] 专项练习选题型曾完全失效，两处根因：
+    ① 错题本优先分支不按 question_type 过滤——用户有一道到期 SINGLE 错题时，
+      选任何题型都返回这道单选题；
+    ② mock 过滤的 `or bank` 兜底把题型过滤静默吞掉（无该题型 mock 时回退全库）。
+    修复：错题优先同样按题型过滤；mock 无该题型时查真实题库（question 表按
+    dim_question_type.type_code 映射），仍无则诚实抛 404001，不再静默忽略过滤。"""
+    # A) 错题本优先（显式选题型时，错题也只在该题型内优先）
     wb_sql = ("SELECT WB.question_id, WB.custom_question_code, WB.subject_code "
               "FROM quiz_wrong_book WB "
               "WHERE WB.user_id=%s AND WB.status='ACTIVE' AND (WB.next_review_at IS NULL OR WB.next_review_at<=NOW()) ")
@@ -133,6 +145,9 @@ async def next_question(user_id: int, subject_code: str | None = None,
     if subject_code:
         wb_sql += " AND WB.subject_code=%s "
         args.append(subject_code)
+    if question_type:
+        wb_sql += " AND WB.question_type=%s "
+        args.append(question_type)
     wb_sql += " ORDER BY WB.wrong_count DESC, WB.next_review_at ASC LIMIT 1"
     wb = await fetch_one(wb_sql, tuple(args))
     if wb is not None and wb.get("custom_question_code"):
@@ -140,15 +155,18 @@ async def next_question(user_id: int, subject_code: str | None = None,
         if q is not None:
             return q
 
-    # B) 过滤 mock + admin
+    # B) 过滤 mock（题型过滤严格执行，不再 `or bank` 回退）
     bank = list(_MOCK_BANK)
     if subject_code:
         bank = [q for q in bank if q["subject_code"].lower() == subject_code.lower()]
     if question_type:
-        if ensure_type:
-            bank = [q for q in bank if q["type"] == question_type]
-        else:
-            bank = [q for q in bank if q["type"] == question_type] or bank
+        bank = [q for q in bank if q["type"] == question_type]
+    if not bank:
+        # mock 无该（学科×题型）组合 → 查真实题库；仍无 → 诚实空态
+        q = await _random_real_question(question_type=question_type)
+        if q is not None:
+            return q
+        raise BizError(404001, "题库中暂无该题型的题目，请先选择其他题型。")
 
     # C) 结合 P3 学习记录：用户薄弱 KP 优先（mastery<0.5 的题概率加权 2 倍）
     mastery: dict[str, float] = {}
@@ -166,6 +184,36 @@ async def next_question(user_id: int, subject_code: str | None = None,
         raise BizError(404001, "题库中暂无可出的题目，请先指定其他学科或题型。")
     chosen = random.choices(bank, weights=weights, k=1)[0]
     return _dict_to_question(chosen)
+
+
+async def _random_real_question(*, question_type: str | None = None) -> Question | None:
+    """[FEAT-WIRE-V2 #7] 按题型从真实题库（question 表）随机抽一题。
+
+    题型经 dim_question_type.type_code 映射；表不存在/无匹配题时返回 None（由调用方诚实空态）。"""
+    if not question_type:
+        dim_code = None
+    else:
+        dim_code = _QTYPE_TO_DIM.get(question_type)
+        if dim_code is None:
+            return None
+    sql = ("SELECT q.id FROM `question` q "
+           "JOIN dim_question_type qt ON qt.id = q.question_type_id "
+           "WHERE q.yn = 1")
+    args: list[Any] = []
+    if dim_code:
+        sql += " AND qt.type_code = %s"
+        args.append(dim_code)
+    sql += " ORDER BY RAND() LIMIT 1"
+    try:
+        row = await fetch_one(sql, tuple(args))
+    except Exception as e:
+        msg = str(e).lower()
+        if "doesn't exist" in msg or "1146" in msg or "no such table" in msg:
+            return None
+        raise
+    if not row:
+        return None
+    return await _load_by_code_or_id(code=None, qid=row["id"])
 
 
 async def _load_by_code_or_id(*, code: str | None = None, qid: int | None = None) -> Question | None:
