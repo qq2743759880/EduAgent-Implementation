@@ -680,3 +680,11 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **双执行竞态披露**：同单双派在同一分支交错作业，靠 mtime 监控接管+分项立即 commit+私有 out 收敛——终态经编排者全站复跑证明功能一致；流程教训已入项目记忆。
 - **余红裁定**：community-post #cmtInput 缺 clay-input（G7 全站唯一 FAIL，25/275）→ 批准一类之修（TO-EXEC-FIX-CMTINPUT 已上板）；G6/G7 数据未就绪竞态机制化→登记为 GATE-V3 候选（courses 动画/my-cohorts 卡片复跑即绿，非阻塞）。
 - 收官路径：FIX-CMTINPUT → 四门 25/25 全绿 → G10 回滚实演 → UAT 十场景。
+
+## DATA-SEED-1 + FIX-CMTINPUT 验收闭环 + G10 实演（2026-09-21，收官）
+- **DATA-SEED-1 PASS（范围差异裁定：批准扩大执行）**：开工令预估 5+1 行，实读 102,629 行（series.cover_url 2,628/219 distinct + sys_user.avatar_url 100,000 + user_profile 1）——执行者按「列级占位域清零」扩大执行，编排者裁定**正确**（只改 6 行则其余用户 me 页同红复现；备份具备逐行回滚能力）。编排者亲证：DB 三表残留 0（参数化查询）、本地占位 2,628 行精确一致、/api/favorites 全本地、seed 资产 3322 取回 200 image/svg+xml、favorites/me G8 PASS。
+- **FIX-CMTINPUT PASS**：1 文件 1 行 1 class 实证；A/B 探针 4.37→5.25；采样覆盖逐 viewport 一致（防假绿）；G3 全站零漂移；焦点环 3px→2px 如实登记（theme.css 冻结约束下的已知代价）。**G7 全站 25/25 全绿达成**（refund 两红系 admin token 角色守卫前提差，student token 复验 PASS）。
+- **G10 Scenario A 实演通过**：revert 965f21d6 → G7 如期 FAIL → revert-the-revert → G7 PASS；终态三处 ref 校验一致。
+- **git 事故 #2（执行者处置，编排者复核成立）**：并行进程无 reflog 改写分支 ref 至 09-17 陈旧链（0c65dca/2148 文件缺 GATE-V2 产物）+packed-refs 剪松散 ref——按「树文件数+日期+直系」判据恢复 965f21d6，弃链备份 refs/backup/。**⚠️ 运维戒律：本仓并发 git 写入方（多平台 agent 并行作业）必须串行化或分域；取件按 SHA 不按分支名。**
+- **移交候选**：SEED-2（session_asset.file_url 61.7 万行+session_video.cover_url 20.6 万行同占位域，未改）；限流前缀误伤收窄（/api/trade/orders 被 /api/trade/order 规则 429 无 CORS→me 页假红，3 次）；GATE-V3（数据就绪竞态机制化，me 页需 SETTLE_MS=3500）。
+- **下一步=UAT 十场景（用户在线）**：四门 25/25 全绿终态已锁定。
