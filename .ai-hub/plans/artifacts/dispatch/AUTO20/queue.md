@@ -12,7 +12,7 @@
 | 8 | C-W1-③: mcp_tool_calls 六节点路径透传（SubagentResult.full_tool_outputs→响应体） | tracker C-W1-③ | ✅ 闭环 | cf67bbc；编排者亲测 favorite_add 真执行→响应体含凭据(success/57ms)+护栏零误标；9+26 passed 亲跑；三断点根因修复（run_agent 硬编码[]/service 硬清空/as_distilled 第一跳丢） | cf67bbc |
 | 9 | GATE-V3: 门禁数据就绪竞态机制化（courses 动画/my-cohorts/me 的 settle→数据就绪探测） | tracker 登记 | pending | — | — |
 | 10 | R26: ⑯ BGE 冷启动 40s+ 诊断（崩溃后 GPU 态/进程级加载） | tracker 候选 | pending | — | — |
-| 11 | 双前端对账表: React 路由面 vs 25 静态页功能对照（docs/ 入库） | FEAT-WIRE B6 残余 | pending | — | — |
+| 11 | 双前端对账表: React 路由面 vs 25 静态页功能对照（docs/ 入库） | FEAT-WIRE B6 残余 | ✅ 闭环 | d108ec4；React 28 路由实证 26 完整/2 壳+3 死链（MeNavList→coupons/favorites/refunds）；口径纠偏：静态页实为 26 页（admin-chat-audit 追加）、openapi 实测 177 paths/210 ops；对账表+入口速查入库 | d108ec4 |
 | 12 | course_create batch-2: HITL 实弹（测试窗开 HITL_ENABLED→confirm/reject 全链→恢复） | 时光.md §四+变更单 | pending | — | — |
 | 13 | 全站四门终扫+G10 再演（REWORK 全部消化后回归锁定） | GATE-V2 工具 | pending | — | — |
 | 14 | Mimosa 全量审计重跑（消除 scanner_enobufs fail-open 窗口+验证排除门全链路） | MIMOSA-EXCL 披露 | pending | — | — |

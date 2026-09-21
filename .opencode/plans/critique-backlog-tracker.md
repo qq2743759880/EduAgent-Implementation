@@ -722,3 +722,8 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 编排者亲测：favorite_add 真执行→响应体 mcp_tool_calls 含 success/57ms 凭据+tool_receipt_unverified=False+零修正句（护栏联动零误标达成）；9+26 passed 亲跑（T7 全绿硬门保持）。
 - **新发现登记（C-T8-①，非本单回归）**：T7 保守面——闲聊中 LLM 列举工具能力名（"我可以帮你 favorite_add"）∧凭据空 → 误标 True。语义待精化（"能力列举≠完成声称"），登记为 T7-b 候选小任务。
 - **写类工具面里程碑**：favorite_add 全链（执行→审计→响应凭据→护栏判定）四层全通——WRITE1 打样的四个发现 C-W1-①②③④ 全部闭环。
+
+## AUTO20 T11 验收闭环（2026-09-22，d108ec4，文档域）
+- 双前端对账表入库：React 28 路由全量实证（26 完整接线/2 壳跳板/0 部分/3 死链——MeNavList→coupons/favorites/refunds 路由不存在但 API+后端全就绪=演进 P0）；功能域互有领先（静态独占优惠券/收藏/退款/会话审计 4 域，React 领先售后工单）；React 登录不按角色分流（LoginForm 一律 /dashboard，admin 会落错页）。
+- 口径纠偏两条：静态页实为 26 页（admin-chat-audit.html 晚于 matrix 摄制）；后端 openapi 实测 177 paths/210 ops（216 系旧口径，以实测为准——AGENTS 教训 8 再证：文档口径让位实测）。
+- "困惑根源"定案：两代前端同住 3322 同端口，差异只在 .html 后缀且视觉同源——用户无从分辨；对账表 §1 入口速查已终结此问题。
