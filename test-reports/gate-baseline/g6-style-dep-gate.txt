@@ -1,203 +1,203 @@
-g6-style-dep-gate FAIL
-generated_at=2026-09-20T16:33:52.235Z
-pages=25 checks=150 failed=26 warnings=0
+g6-style-dep-gate PASS
+generated_at=2026-09-21T02:12:53.709Z
+pages=25 checks=150 failed=0 warnings=0 skipped=0
 
-[FAIL] achievements.html http://127.0.0.1:3322/achievements.html
-  [PASS] runtime-inspection: 11 interactive elements inspected.
+[PASS] achievements.html http://127.0.0.1:3322/achievements.html
+  [PASS] runtime-inspection: 24 interactive elements inspected.
   [PASS] route-stable: Expected /achievements.html, rendered /achievements.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 11/11 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/24 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-course-detail.html http://127.0.0.1:3322/admin-course-detail.html?id=1
+[PASS] admin-course-detail.html http://127.0.0.1:3322/admin-course-detail.html?id=1
   [PASS] runtime-inspection: 109 interactive elements inspected.
   [PASS] route-stable: Expected /admin-course-detail.html, rendered /admin-course-detail.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 109/109 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/109 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
+[PASS] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
   [PASS] runtime-inspection: 35 interactive elements inspected.
   [PASS] route-stable: Expected /admin-courses-recycle-proto.html, rendered /admin-courses-recycle-proto.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 35/35 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/35 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-courses.html http://127.0.0.1:3322/admin-courses.html
+[PASS] admin-courses.html http://127.0.0.1:3322/admin-courses.html
   [PASS] runtime-inspection: 170 interactive elements inspected.
   [PASS] route-stable: Expected /admin-courses.html, rendered /admin-courses.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 170/170 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/170 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-dashboard.html http://127.0.0.1:3322/admin-dashboard.html
+[PASS] admin-dashboard.html http://127.0.0.1:3322/admin-dashboard.html
   [PASS] runtime-inspection: 9 interactive elements inspected.
   [PASS] route-stable: Expected /admin-dashboard.html, rendered /admin-dashboard.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
-  [FAIL] third-party-background: 1/1 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 9/9 visible targets are smaller than 44x44 CSS px.
+  [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
+  [PASS] interactive-target-44: 0/9 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-mcp.html http://127.0.0.1:3322/admin-mcp.html
-  [PASS] runtime-inspection: 74 interactive elements inspected.
+[PASS] admin-mcp.html http://127.0.0.1:3322/admin-mcp.html
+  [PASS] runtime-inspection: 13 interactive elements inspected.
   [PASS] route-stable: Expected /admin-mcp.html, rendered /admin-mcp.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 74/74 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/13 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-question-detail.html http://127.0.0.1:3322/admin-question-detail.html?id=1
-  [PASS] runtime-inspection: 34 interactive elements inspected.
+[PASS] admin-question-detail.html http://127.0.0.1:3322/admin-question-detail.html?id=1
+  [PASS] runtime-inspection: 14 interactive elements inspected.
   [PASS] route-stable: Expected /admin-question-detail.html, rendered /admin-question-detail.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 31/34 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/14 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-questions.html http://127.0.0.1:3322/admin-questions.html
+[PASS] admin-questions.html http://127.0.0.1:3322/admin-questions.html
   [PASS] runtime-inspection: 52 interactive elements inspected.
   [PASS] route-stable: Expected /admin-questions.html, rendered /admin-questions.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 52/52 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/52 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
+[PASS] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
   [PASS] runtime-inspection: 17 interactive elements inspected.
   [PASS] route-stable: Expected /admin-rag-upload.html, rendered /admin-rag-upload.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 17/17 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/17 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
+[PASS] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
   [PASS] runtime-inspection: 67 interactive elements inspected.
   [PASS] route-stable: Expected /admin-users-refine-proto.html, rendered /admin-users-refine-proto.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 65/67 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/67 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] admin-users.html http://127.0.0.1:3322/admin-users.html
-  [PASS] runtime-inspection: 48 interactive elements inspected.
+[PASS] admin-users.html http://127.0.0.1:3322/admin-users.html
+  [PASS] runtime-inspection: 12 interactive elements inspected.
   [PASS] route-stable: Expected /admin-users.html, rendered /admin-users.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 48/48 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/12 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] chat.html http://127.0.0.1:3322/chat.html
-  [PASS] runtime-inspection: 117 interactive elements inspected.
+[PASS] chat.html http://127.0.0.1:3322/chat.html
+  [PASS] runtime-inspection: 18 interactive elements inspected.
   [PASS] route-stable: Expected /chat.html, rendered /chat.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 15/117 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/18 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
-  [PASS] runtime-inspection: 17 interactive elements inspected.
+[PASS] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
+  [PASS] runtime-inspection: 16 interactive elements inspected.
   [PASS] route-stable: Expected /community-post.html, rendered /community-post.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 16/17 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/16 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] community.html http://127.0.0.1:3322/community.html
+[PASS] community.html http://127.0.0.1:3322/community.html
   [PASS] runtime-inspection: 49 interactive elements inspected.
   [PASS] route-stable: Expected /community.html, rendered /community.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 39/49 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/49 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] coupons.html http://127.0.0.1:3322/coupons.html
+[PASS] coupons.html http://127.0.0.1:3322/coupons.html
   [PASS] runtime-inspection: 85 interactive elements inspected.
   [PASS] route-stable: Expected /coupons.html, rendered /coupons.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 85/85 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/85 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] course-detail.html http://127.0.0.1:3322/course-detail.html?id=1
+[PASS] course-detail.html http://127.0.0.1:3322/course-detail.html?id=1
   [PASS] runtime-inspection: 35 interactive elements inspected.
   [PASS] route-stable: Expected /course-detail.html, rendered /course-detail.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 26/35 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/35 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] courses.html http://127.0.0.1:3322/courses.html
+[PASS] courses.html http://127.0.0.1:3322/courses.html
   [PASS] runtime-inspection: 70 interactive elements inspected.
   [PASS] route-stable: Expected /courses.html, rendered /courses.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 39/70 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/70 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] dashboard.html http://127.0.0.1:3322/dashboard.html
+[PASS] dashboard.html http://127.0.0.1:3322/dashboard.html
   [PASS] runtime-inspection: 13 interactive elements inspected.
   [PASS] route-stable: Expected /dashboard.html, rendered /dashboard.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 13/13 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/13 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] favorites.html http://127.0.0.1:3322/favorites.html
+[PASS] favorites.html http://127.0.0.1:3322/favorites.html
   [PASS] runtime-inspection: 12 interactive elements inspected.
   [PASS] route-stable: Expected /favorites.html, rendered /favorites.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 12/12 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/12 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] learning.html http://127.0.0.1:3322/learning.html
+[PASS] learning.html http://127.0.0.1:3322/learning.html
   [PASS] runtime-inspection: 28 interactive elements inspected.
   [PASS] route-stable: Expected /learning.html, rendered /learning.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 24/28 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/28 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] login-register.html http://127.0.0.1:3322/login-register.html
+[PASS] login-register.html http://127.0.0.1:3322/login-register.html
   [PASS] runtime-inspection: 10 interactive elements inspected.
   [PASS] route-stable: Expected /login-register.html, rendered /login-register.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 7/10 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/10 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] me.html http://127.0.0.1:3322/me.html
+[PASS] me.html http://127.0.0.1:3322/me.html
   [PASS] runtime-inspection: 41 interactive elements inspected.
   [PASS] route-stable: Expected /me.html, rendered /me.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 30/41 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/41 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] my-cohorts.html http://127.0.0.1:3322/my-cohorts.html
+[PASS] my-cohorts.html http://127.0.0.1:3322/my-cohorts.html
   [PASS] runtime-inspection: 31 interactive elements inspected.
   [PASS] route-stable: Expected /my-cohorts.html, rendered /my-cohorts.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 28/31 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/31 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] practice.html http://127.0.0.1:3322/practice.html
+[PASS] practice.html http://127.0.0.1:3322/practice.html
   [PASS] runtime-inspection: 145 interactive elements inspected.
   [PASS] route-stable: Expected /practice.html, rendered /practice.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 142/145 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/145 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.
 
-[FAIL] refund.html http://127.0.0.1:3322/refund.html
+[PASS] refund.html http://127.0.0.1:3322/refund.html
   [PASS] runtime-inspection: 11 interactive elements inspected.
   [PASS] route-stable: Expected /refund.html, rendered /refund.html.
   [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
   [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
-  [FAIL] interactive-target-44: 4/11 visible targets are smaller than 44x44 CSS px.
+  [PASS] interactive-target-44: 0/11 visible targets are smaller than 44x44 CSS px.
   [PASS] console-errors: 0 uncaught runtime or console errors.

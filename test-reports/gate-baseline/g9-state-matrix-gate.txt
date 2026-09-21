@@ -1,60 +1,60 @@
-g9-state-matrix-gate FAIL
-generated_at=2026-09-20T11:37:50.884Z
-pages=25 checks=1400 failed=39 warnings=110
+g9-state-matrix-gate PASS
+generated_at=2026-09-21T02:10:03.224Z
+pages=25 checks=1400 failed=0 warnings=110 skipped=24
 
 [PASS] achievements.html http://127.0.0.1:3322/achievements.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] empty/state-visible: Visible text length=319.
+  [PASS] empty/state-visible: Visible text length=288.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 6 API requests intercepted.
   [PASS] loading/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] loading/state-visible: Visible text length=186.
+  [PASS] loading/state-visible: Visible text length=173.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
   [WARN] loading/state-console-errors: 3 console/log diagnostics.
   [PASS] error/state-intercepted: 7 API requests intercepted.
   [PASS] error/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] error/state-visible: Visible text length=330.
+  [PASS] error/state-visible: Visible text length=299.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 10 total console/log diagnostics.
-  [WARN] error/state-console-errors: 10 console/log diagnostics.
+  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
+  [WARN] error/state-console-errors: 8 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 7 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] forbidden/state-visible: Visible text length=386.
+  [PASS] forbidden/state-visible: Visible text length=355.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 8 console/log diagnostics.
   [PASS] disabled/state-intercepted: 7 API requests intercepted.
   [PASS] disabled/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] disabled/state-visible: Visible text length=325.
+  [PASS] disabled/state-visible: Visible text length=291.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 7 API requests intercepted.
   [PASS] long-text/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] long-text/state-visible: Visible text length=325.
+  [PASS] long-text/state-visible: Visible text length=291.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 7 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 9 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /achievements.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 8 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 9 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 9 console/log diagnostics.
   [PASS] server-500/state-intercepted: 7 API requests intercepted.
   [PASS] server-500/state-route: Rendered /achievements.html; source /achievements.html.
-  [PASS] server-500/state-visible: Visible text length=374.
+  [PASS] server-500/state-visible: Visible text length=343.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
@@ -63,7 +63,7 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-course-detail.html http://127.0.0.1:3322/admin-course-detail.html?id=1
   [PASS] empty/state-intercepted: 6 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-course-detail.html; source /admin-course-detail.html.
-  [PASS] empty/state-visible: Visible text length=247.
+  [PASS] empty/state-visible: Visible text length=245.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
@@ -91,25 +91,25 @@ pages=25 checks=1400 failed=39 warnings=110
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 6 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-course-detail.html; source /admin-course-detail.html.
-  [PASS] disabled/state-visible: Visible text length=247.
+  [PASS] disabled/state-visible: Visible text length=245.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 6 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-course-detail.html; source /admin-course-detail.html.
-  [PASS] long-text/state-visible: Visible text length=247.
+  [PASS] long-text/state-visible: Visible text length=245.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-course-detail.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-course-detail.html; source /admin-course-detail.html.
   [PASS] server-500/state-visible: Visible text length=175.
@@ -118,59 +118,59 @@ pages=25 checks=1400 failed=39 warnings=110
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] server-500/state-console-errors: 2 console/log diagnostics.
 
-[FAIL] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
-  [FAIL] empty/state-intercepted: 0 API requests intercepted.
+[PASS] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
+  [SKIP] empty/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] empty/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] empty/state-visible: Visible text length=973.
+  [PASS] empty/state-visible: Visible text length=970.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
-  [FAIL] loading/state-intercepted: 0 API requests intercepted.
+  [SKIP] loading/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] loading/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] loading/state-visible: Visible text length=973.
+  [PASS] loading/state-visible: Visible text length=970.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] loading/state-console-errors: 0 console/log diagnostics.
-  [FAIL] error/state-intercepted: 0 API requests intercepted.
+  [SKIP] error/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] error/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] error/state-visible: Visible text length=973.
+  [PASS] error/state-visible: Visible text length=970.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] error/state-console-errors: 0 console/log diagnostics.
-  [FAIL] forbidden/state-intercepted: 0 API requests intercepted.
+  [SKIP] forbidden/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] forbidden/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] forbidden/state-visible: Visible text length=973.
+  [PASS] forbidden/state-visible: Visible text length=970.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] forbidden/state-console-errors: 0 console/log diagnostics.
-  [FAIL] disabled/state-intercepted: 0 API requests intercepted.
+  [SKIP] disabled/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] disabled/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] disabled/state-visible: Visible text length=973.
+  [PASS] disabled/state-visible: Visible text length=970.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
-  [FAIL] long-text/state-intercepted: 0 API requests intercepted.
+  [SKIP] long-text/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] long-text/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] long-text/state-visible: Visible text length=973.
+  [PASS] long-text/state-visible: Visible text length=970.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [FAIL] token-expired/state-intercepted: 0 API requests intercepted.
+  [SKIP] token-expired/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] token-expired/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] token-expired/state-visible: Visible text length=973.
+  [PASS] token-expired/state-visible: Visible text length=970.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] token-expired/state-console-errors: 0 console/log diagnostics.
-  [FAIL] server-500/state-intercepted: 0 API requests intercepted.
+  [SKIP] server-500/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] server-500/state-route: Rendered /admin-courses-recycle-proto.html; source /admin-courses-recycle-proto.html.
-  [PASS] server-500/state-visible: Visible text length=973.
+  [PASS] server-500/state-visible: Visible text length=970.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
@@ -179,56 +179,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-courses.html http://127.0.0.1:3322/admin-courses.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] empty/state-visible: Visible text length=242.
+  [PASS] empty/state-visible: Visible text length=240.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] loading/state-visible: Visible text length=215.
+  [PASS] loading/state-visible: Visible text length=213.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] error/state-visible: Visible text length=257.
+  [PASS] error/state-visible: Visible text length=255.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] forbidden/state-visible: Visible text length=271.
+  [PASS] forbidden/state-visible: Visible text length=269.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 4 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] disabled/state-visible: Visible text length=261.
+  [PASS] disabled/state-visible: Visible text length=259.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 4 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] long-text/state-visible: Visible text length=1256.
+  [PASS] long-text/state-visible: Visible text length=1254.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-courses.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-courses.html; source /admin-courses.html.
-  [PASS] server-500/state-visible: Visible text length=268.
+  [PASS] server-500/state-visible: Visible text length=266.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
@@ -237,7 +237,7 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-dashboard.html http://127.0.0.1:3322/admin-dashboard.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-dashboard.html; source /admin-dashboard.html.
-  [PASS] empty/state-visible: Visible text length=235.
+  [PASS] empty/state-visible: Visible text length=230.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
@@ -265,25 +265,25 @@ pages=25 checks=1400 failed=39 warnings=110
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 4 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-dashboard.html; source /admin-dashboard.html.
-  [PASS] disabled/state-visible: Visible text length=235.
+  [PASS] disabled/state-visible: Visible text length=230.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 4 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-dashboard.html; source /admin-dashboard.html.
-  [PASS] long-text/state-visible: Visible text length=235.
+  [PASS] long-text/state-visible: Visible text length=230.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-dashboard.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-dashboard.html; source /admin-dashboard.html.
   [PASS] server-500/state-visible: Visible text length=256.
@@ -295,56 +295,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-mcp.html http://127.0.0.1:3322/admin-mcp.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] empty/state-visible: Visible text length=510.
+  [PASS] empty/state-visible: Visible text length=508.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] loading/state-visible: Visible text length=455.
+  [PASS] loading/state-visible: Visible text length=453.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] error/state-visible: Visible text length=497.
+  [PASS] error/state-visible: Visible text length=495.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] forbidden/state-visible: Visible text length=511.
+  [PASS] forbidden/state-visible: Visible text length=509.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 8 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] disabled/state-visible: Visible text length=537.
+  [PASS] disabled/state-visible: Visible text length=535.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 8 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] long-text/state-visible: Visible text length=1525.
+  [PASS] long-text/state-visible: Visible text length=1523.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-mcp.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-mcp.html; source /admin-mcp.html.
-  [PASS] server-500/state-visible: Visible text length=508.
+  [PASS] server-500/state-visible: Visible text length=506.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
@@ -353,56 +353,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-question-detail.html http://127.0.0.1:3322/admin-question-detail.html?id=1
   [PASS] empty/state-intercepted: 10 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] empty/state-visible: Visible text length=976.
+  [PASS] empty/state-visible: Visible text length=974.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] loading/state-visible: Visible text length=527.
+  [PASS] loading/state-visible: Visible text length=525.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] error/state-visible: Visible text length=569.
+  [PASS] error/state-visible: Visible text length=567.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] forbidden/state-visible: Visible text length=583.
+  [PASS] forbidden/state-visible: Visible text length=581.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 10 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] disabled/state-visible: Visible text length=527.
+  [PASS] disabled/state-visible: Visible text length=977.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 10 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] long-text/state-visible: Visible text length=979.
+  [PASS] long-text/state-visible: Visible text length=977.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-question-detail.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-question-detail.html; source /admin-question-detail.html.
-  [PASS] server-500/state-visible: Visible text length=580.
+  [PASS] server-500/state-visible: Visible text length=578.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
@@ -411,56 +411,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-questions.html http://127.0.0.1:3322/admin-questions.html
   [PASS] empty/state-intercepted: 6 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] empty/state-visible: Visible text length=257.
+  [PASS] empty/state-visible: Visible text length=247.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] loading/state-visible: Visible text length=227.
+  [PASS] loading/state-visible: Visible text length=221.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] error/state-visible: Visible text length=276.
+  [PASS] error/state-visible: Visible text length=270.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] forbidden/state-visible: Visible text length=290.
+  [PASS] forbidden/state-visible: Visible text length=284.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 6 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] disabled/state-visible: Visible text length=292.
+  [PASS] disabled/state-visible: Visible text length=286.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 6 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] long-text/state-visible: Visible text length=292.
+  [PASS] long-text/state-visible: Visible text length=286.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-questions.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-questions.html; source /admin-questions.html.
-  [PASS] server-500/state-visible: Visible text length=287.
+  [PASS] server-500/state-visible: Visible text length=281.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
@@ -469,123 +469,123 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] empty/state-visible: Visible text length=704.
+  [PASS] empty/state-visible: Visible text length=695.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] loading/state-visible: Visible text length=675.
+  [PASS] loading/state-visible: Visible text length=666.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] error/state-visible: Visible text length=717.
+  [PASS] error/state-visible: Visible text length=708.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] forbidden/state-visible: Visible text length=731.
+  [PASS] forbidden/state-visible: Visible text length=722.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 8 API requests intercepted.
   [PASS] disabled/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] disabled/state-visible: Visible text length=745.
+  [PASS] disabled/state-visible: Visible text length=738.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 8 API requests intercepted.
   [PASS] long-text/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] long-text/state-visible: Visible text length=743.
+  [PASS] long-text/state-visible: Visible text length=736.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-rag-upload.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-rag-upload.html; source /admin-rag-upload.html.
-  [PASS] server-500/state-visible: Visible text length=728.
+  [PASS] server-500/state-visible: Visible text length=719.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] server-500/state-console-errors: 2 console/log diagnostics.
 
-[FAIL] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
-  [FAIL] empty/state-intercepted: 0 API requests intercepted.
+[PASS] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
+  [SKIP] empty/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] empty/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] empty/state-visible: Visible text length=3997.
+  [PASS] empty/state-visible: Visible text length=3974.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] empty/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
-  [FAIL] loading/state-intercepted: 0 API requests intercepted.
+  [SKIP] loading/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] loading/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] loading/state-visible: Visible text length=3997.
+  [PASS] loading/state-visible: Visible text length=3974.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] loading/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] loading/state-console-errors: 0 console/log diagnostics.
-  [FAIL] error/state-intercepted: 0 API requests intercepted.
+  [SKIP] error/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] error/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] error/state-visible: Visible text length=3997.
+  [PASS] error/state-visible: Visible text length=3974.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] error/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] error/state-console-errors: 0 console/log diagnostics.
-  [FAIL] forbidden/state-intercepted: 0 API requests intercepted.
+  [SKIP] forbidden/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] forbidden/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] forbidden/state-visible: Visible text length=3997.
+  [PASS] forbidden/state-visible: Visible text length=3974.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] forbidden/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] forbidden/state-console-errors: 0 console/log diagnostics.
-  [FAIL] disabled/state-intercepted: 0 API requests intercepted.
+  [SKIP] disabled/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] disabled/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] disabled/state-visible: Visible text length=3997.
+  [PASS] disabled/state-visible: Visible text length=3974.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] disabled/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
-  [FAIL] long-text/state-intercepted: 0 API requests intercepted.
+  [SKIP] long-text/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] long-text/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] long-text/state-visible: Visible text length=3997.
+  [PASS] long-text/state-visible: Visible text length=3974.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] long-text/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [FAIL] token-expired/state-intercepted: 0 API requests intercepted.
+  [SKIP] token-expired/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] token-expired/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] token-expired/state-visible: Visible text length=3997.
+  [PASS] token-expired/state-visible: Visible text length=3974.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] token-expired/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] token-expired/state-console-errors: 0 console/log diagnostics.
-  [FAIL] server-500/state-intercepted: 0 API requests intercepted.
+  [SKIP] server-500/state-intercepted: SKIP: structurally N/A for this page (zero script zero API prototype shell); 0 API requests observed.
   [PASS] server-500/state-route: Rendered /admin-users-refine-proto.html; source /admin-users-refine-proto.html.
-  [PASS] server-500/state-visible: Visible text length=3997.
+  [PASS] server-500/state-visible: Visible text length=3974.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] server-500/state-long-content-fit: 1 visible elements leak overflowing content.
+  [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] server-500/state-console-errors: 0 console/log diagnostics.
 
 [PASS] admin-users.html http://127.0.0.1:3322/admin-users.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /admin-users.html; source /admin-users.html.
-  [PASS] empty/state-visible: Visible text length=335.
+  [PASS] empty/state-visible: Visible text length=332.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
@@ -625,13 +625,13 @@ pages=25 checks=1400 failed=39 warnings=110
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /admin-users.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /admin-users.html; source /admin-users.html.
   [PASS] server-500/state-visible: Visible text length=391.
@@ -643,56 +643,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] chat.html http://127.0.0.1:3322/chat.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] empty/state-visible: Visible text length=157.
+  [PASS] empty/state-visible: Visible text length=135.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 4 API requests intercepted.
   [PASS] loading/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] loading/state-visible: Visible text length=395.
+  [PASS] loading/state-visible: Visible text length=269.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] loading/state-console-errors: 2 console/log diagnostics.
   [PASS] error/state-intercepted: 4 API requests intercepted.
   [PASS] error/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] error/state-visible: Visible text length=207.
+  [PASS] error/state-visible: Visible text length=184.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] error/state-console-errors: 4 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 4 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] forbidden/state-visible: Visible text length=249.
+  [PASS] forbidden/state-visible: Visible text length=226.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
   [PASS] disabled/state-intercepted: 4 API requests intercepted.
   [PASS] disabled/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] disabled/state-visible: Visible text length=157.
+  [PASS] disabled/state-visible: Visible text length=135.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 4 API requests intercepted.
   [PASS] long-text/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] long-text/state-visible: Visible text length=157.
+  [PASS] long-text/state-visible: Visible text length=135.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /chat.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
   [PASS] server-500/state-intercepted: 4 API requests intercepted.
   [PASS] server-500/state-route: Rendered /chat.html; source /chat.html.
-  [PASS] server-500/state-visible: Visible text length=240.
+  [PASS] server-500/state-visible: Visible text length=217.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
@@ -701,56 +701,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
   [PASS] empty/state-intercepted: 6 API requests intercepted.
   [PASS] empty/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] empty/state-visible: Visible text length=489.
+  [PASS] empty/state-visible: Visible text length=465.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 4 API requests intercepted.
   [PASS] loading/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] loading/state-visible: Visible text length=106.
+  [PASS] loading/state-visible: Visible text length=104.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] loading/state-console-errors: 2 console/log diagnostics.
   [PASS] error/state-intercepted: 4 API requests intercepted.
   [PASS] error/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] error/state-visible: Visible text length=176.
+  [PASS] error/state-visible: Visible text length=168.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] error/state-console-errors: 4 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 4 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] forbidden/state-visible: Visible text length=218.
+  [PASS] forbidden/state-visible: Visible text length=210.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
   [PASS] disabled/state-intercepted: 6 API requests intercepted.
   [PASS] disabled/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] disabled/state-visible: Visible text length=510.
+  [PASS] disabled/state-visible: Visible text length=487.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 6 API requests intercepted.
   [PASS] long-text/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] long-text/state-visible: Visible text length=510.
+  [PASS] long-text/state-visible: Visible text length=487.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /community-post.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
   [PASS] server-500/state-intercepted: 4 API requests intercepted.
   [PASS] server-500/state-route: Rendered /community-post.html; source /community-post.html.
-  [PASS] server-500/state-visible: Visible text length=209.
+  [PASS] server-500/state-visible: Visible text length=201.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
@@ -759,56 +759,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] community.html http://127.0.0.1:3322/community.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /community.html; source /community.html.
-  [PASS] empty/state-visible: Visible text length=241.
+  [PASS] empty/state-visible: Visible text length=214.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 4 API requests intercepted.
   [PASS] loading/state-route: Rendered /community.html; source /community.html.
-  [PASS] loading/state-visible: Visible text length=215.
+  [PASS] loading/state-visible: Visible text length=192.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] loading/state-console-errors: 2 console/log diagnostics.
   [PASS] error/state-intercepted: 4 API requests intercepted.
   [PASS] error/state-route: Rendered /community.html; source /community.html.
-  [PASS] error/state-visible: Visible text length=277.
+  [PASS] error/state-visible: Visible text length=248.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] error/state-console-errors: 4 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 4 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /community.html; source /community.html.
-  [PASS] forbidden/state-visible: Visible text length=319.
+  [PASS] forbidden/state-visible: Visible text length=290.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
   [PASS] disabled/state-intercepted: 4 API requests intercepted.
   [PASS] disabled/state-route: Rendered /community.html; source /community.html.
-  [PASS] disabled/state-visible: Visible text length=270.
+  [PASS] disabled/state-visible: Visible text length=243.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 4 API requests intercepted.
   [PASS] long-text/state-route: Rendered /community.html; source /community.html.
-  [PASS] long-text/state-visible: Visible text length=1267.
+  [PASS] long-text/state-visible: Visible text length=1240.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /community.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
   [PASS] server-500/state-intercepted: 4 API requests intercepted.
   [PASS] server-500/state-route: Rendered /community.html; source /community.html.
-  [PASS] server-500/state-visible: Visible text length=310.
+  [PASS] server-500/state-visible: Visible text length=281.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
@@ -817,56 +817,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] coupons.html http://127.0.0.1:3322/coupons.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] empty/state-visible: Visible text length=256.
+  [PASS] empty/state-visible: Visible text length=237.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 8 API requests intercepted.
   [PASS] loading/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] loading/state-visible: Visible text length=182.
+  [PASS] loading/state-visible: Visible text length=173.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] loading/state-console-errors: 4 console/log diagnostics.
   [PASS] error/state-intercepted: 8 API requests intercepted.
   [PASS] error/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] error/state-visible: Visible text length=320.
+  [PASS] error/state-visible: Visible text length=299.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
   [WARN] error/state-console-errors: 8 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 8 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] forbidden/state-visible: Visible text length=376.
+  [PASS] forbidden/state-visible: Visible text length=355.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 8 console/log diagnostics.
   [PASS] disabled/state-intercepted: 8 API requests intercepted.
   [PASS] disabled/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] disabled/state-visible: Visible text length=256.
+  [PASS] disabled/state-visible: Visible text length=244.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 8 API requests intercepted.
   [PASS] long-text/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] long-text/state-visible: Visible text length=254.
+  [PASS] long-text/state-visible: Visible text length=242.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 8 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 10 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /coupons.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 8 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 9 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 9 console/log diagnostics.
   [PASS] server-500/state-intercepted: 8 API requests intercepted.
   [PASS] server-500/state-route: Rendered /coupons.html; source /coupons.html.
-  [PASS] server-500/state-visible: Visible text length=364.
+  [PASS] server-500/state-visible: Visible text length=343.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
@@ -915,13 +915,13 @@ pages=25 checks=1400 failed=39 warnings=110
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 8 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /course-detail.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 6 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 6 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 7 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 7 console/log diagnostics.
   [PASS] server-500/state-intercepted: 6 API requests intercepted.
   [PASS] server-500/state-route: Rendered /course-detail.html; source /course-detail.html.
   [PASS] server-500/state-visible: Visible text length=388.
@@ -933,56 +933,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] courses.html http://127.0.0.1:3322/courses.html
   [PASS] empty/state-intercepted: 8 API requests intercepted.
   [PASS] empty/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] empty/state-visible: Visible text length=428.
+  [PASS] empty/state-visible: Visible text length=417.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 8 API requests intercepted.
   [PASS] loading/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] loading/state-visible: Visible text length=372.
+  [PASS] loading/state-visible: Visible text length=361.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] loading/state-console-errors: 4 console/log diagnostics.
   [PASS] error/state-intercepted: 8 API requests intercepted.
   [PASS] error/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] error/state-visible: Visible text length=464.
+  [PASS] error/state-visible: Visible text length=453.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
   [WARN] error/state-console-errors: 8 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 8 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] forbidden/state-visible: Visible text length=520.
+  [PASS] forbidden/state-visible: Visible text length=509.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 8 console/log diagnostics.
   [PASS] disabled/state-intercepted: 8 API requests intercepted.
   [PASS] disabled/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] disabled/state-visible: Visible text length=455.
+  [PASS] disabled/state-visible: Visible text length=444.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 8 API requests intercepted.
   [PASS] long-text/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] long-text/state-visible: Visible text length=2445.
+  [PASS] long-text/state-visible: Visible text length=2434.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 8 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 10 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /courses.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 8 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 9 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 9 console/log diagnostics.
   [PASS] server-500/state-intercepted: 8 API requests intercepted.
   [PASS] server-500/state-route: Rendered /courses.html; source /courses.html.
-  [PASS] server-500/state-visible: Visible text length=508.
+  [PASS] server-500/state-visible: Visible text length=497.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 8 total console/log diagnostics.
@@ -991,56 +991,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] dashboard.html http://127.0.0.1:3322/dashboard.html
   [PASS] empty/state-intercepted: 12 API requests intercepted.
   [PASS] empty/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] empty/state-visible: Visible text length=573.
+  [PASS] empty/state-visible: Visible text length=518.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 12 API requests intercepted.
   [PASS] loading/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] loading/state-visible: Visible text length=179.
+  [PASS] loading/state-visible: Visible text length=165.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 6 total console/log diagnostics.
   [WARN] loading/state-console-errors: 6 console/log diagnostics.
   [PASS] error/state-intercepted: 12 API requests intercepted.
   [PASS] error/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] error/state-visible: Visible text length=313.
+  [PASS] error/state-visible: Visible text length=299.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
   [WARN] error/state-console-errors: 12 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 12 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] forbidden/state-visible: Visible text length=397.
+  [PASS] forbidden/state-visible: Visible text length=383.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 12 console/log diagnostics.
   [PASS] disabled/state-intercepted: 12 API requests intercepted.
   [PASS] disabled/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] disabled/state-visible: Visible text length=573.
+  [PASS] disabled/state-visible: Visible text length=518.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 12 API requests intercepted.
   [PASS] long-text/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] long-text/state-visible: Visible text length=573.
+  [PASS] long-text/state-visible: Visible text length=518.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 12 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 14 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /dashboard.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 12 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 13 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 13 console/log diagnostics.
   [PASS] server-500/state-intercepted: 12 API requests intercepted.
   [PASS] server-500/state-route: Rendered /dashboard.html; source /dashboard.html.
-  [PASS] server-500/state-visible: Visible text length=379.
+  [PASS] server-500/state-visible: Visible text length=365.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
@@ -1049,172 +1049,172 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] favorites.html http://127.0.0.1:3322/favorites.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] empty/state-visible: Visible text length=165.
+  [PASS] empty/state-visible: Visible text length=163.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 4 API requests intercepted.
   [PASS] loading/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] loading/state-visible: Visible text length=114.
+  [PASS] loading/state-visible: Visible text length=112.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] loading/state-console-errors: 2 console/log diagnostics.
   [PASS] error/state-intercepted: 4 API requests intercepted.
   [PASS] error/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] error/state-visible: Visible text length=182.
+  [PASS] error/state-visible: Visible text length=180.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] error/state-console-errors: 4 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 4 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] forbidden/state-visible: Visible text length=210.
+  [PASS] forbidden/state-visible: Visible text length=208.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
   [PASS] disabled/state-intercepted: 4 API requests intercepted.
   [PASS] disabled/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] disabled/state-visible: Visible text length=152.
+  [PASS] disabled/state-visible: Visible text length=150.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 4 API requests intercepted.
   [PASS] long-text/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] long-text/state-visible: Visible text length=152.
+  [PASS] long-text/state-visible: Visible text length=150.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /favorites.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
   [PASS] server-500/state-intercepted: 4 API requests intercepted.
   [PASS] server-500/state-route: Rendered /favorites.html; source /favorites.html.
-  [PASS] server-500/state-visible: Visible text length=204.
+  [PASS] server-500/state-visible: Visible text length=202.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] server-500/state-console-errors: 4 console/log diagnostics.
 
-[FAIL] learning.html http://127.0.0.1:3322/learning.html
+[PASS] learning.html http://127.0.0.1:3322/learning.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] empty/state-visible: Visible text length=343.
-  [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] empty/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] empty/state-console-errors: 0 console/log diagnostics.
-  [PASS] loading/state-intercepted: 4 API requests intercepted.
-  [PASS] loading/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] loading/state-visible: Visible text length=279.
-  [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] loading/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] loading/state-console-errors: 2 console/log diagnostics.
-  [PASS] error/state-intercepted: 4 API requests intercepted.
-  [PASS] error/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] error/state-visible: Visible text length=355.
-  [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] error/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] error/state-console-errors: 4 console/log diagnostics.
-  [PASS] forbidden/state-intercepted: 4 API requests intercepted.
-  [PASS] forbidden/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] forbidden/state-visible: Visible text length=397.
-  [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] forbidden/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
-  [PASS] disabled/state-intercepted: 4 API requests intercepted.
-  [PASS] disabled/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] disabled/state-visible: Visible text length=343.
-  [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] disabled/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] disabled/state-console-errors: 0 console/log diagnostics.
-  [PASS] long-text/state-intercepted: 4 API requests intercepted.
-  [PASS] long-text/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] long-text/state-visible: Visible text length=343.
-  [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] long-text/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
-  [PASS] token-expired/state-route: Rendered /login-register.html; source /learning.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
-  [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
-  [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
-  [PASS] server-500/state-intercepted: 4 API requests intercepted.
-  [PASS] server-500/state-route: Rendered /learning.html; source /learning.html.
-  [PASS] server-500/state-visible: Visible text length=388.
-  [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
-  [FAIL] server-500/state-long-content-fit: 2 visible elements leak overflowing content.
-  [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] server-500/state-console-errors: 4 console/log diagnostics.
-
-[FAIL] login-register.html http://127.0.0.1:3322/login-register.html
-  [FAIL] empty/state-intercepted: 0 API requests intercepted.
-  [PASS] empty/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] empty/state-visible: Visible text length=115.
+  [PASS] empty/state-visible: Visible text length=295.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
-  [FAIL] loading/state-intercepted: 0 API requests intercepted.
-  [PASS] loading/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] loading/state-visible: Visible text length=115.
+  [PASS] loading/state-intercepted: 4 API requests intercepted.
+  [PASS] loading/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] loading/state-visible: Visible text length=234.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] loading/state-console-errors: 0 console/log diagnostics.
-  [FAIL] error/state-intercepted: 0 API requests intercepted.
-  [PASS] error/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] error/state-visible: Visible text length=115.
+  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
+  [WARN] loading/state-console-errors: 2 console/log diagnostics.
+  [PASS] error/state-intercepted: 4 API requests intercepted.
+  [PASS] error/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] error/state-visible: Visible text length=307.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] error/state-console-errors: 0 console/log diagnostics.
-  [FAIL] forbidden/state-intercepted: 0 API requests intercepted.
-  [PASS] forbidden/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] forbidden/state-visible: Visible text length=115.
+  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] error/state-console-errors: 4 console/log diagnostics.
+  [PASS] forbidden/state-intercepted: 4 API requests intercepted.
+  [PASS] forbidden/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] forbidden/state-visible: Visible text length=349.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
-  [PASS] forbidden/state-console-errors: 0 console/log diagnostics.
-  [FAIL] disabled/state-intercepted: 0 API requests intercepted.
-  [PASS] disabled/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] disabled/state-visible: Visible text length=115.
+  [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] forbidden/state-console-errors: 4 console/log diagnostics.
+  [PASS] disabled/state-intercepted: 4 API requests intercepted.
+  [PASS] disabled/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] disabled/state-visible: Visible text length=295.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
-  [FAIL] long-text/state-intercepted: 0 API requests intercepted.
-  [PASS] long-text/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] long-text/state-visible: Visible text length=115.
+  [PASS] long-text/state-intercepted: 4 API requests intercepted.
+  [PASS] long-text/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] long-text/state-visible: Visible text length=295.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [FAIL] token-expired/state-intercepted: 0 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
+  [PASS] token-expired/state-route: Rendered /login-register.html; source /learning.html.
+  [PASS] token-expired/state-visible: Visible text length=98.
+  [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
+  [PASS] server-500/state-intercepted: 4 API requests intercepted.
+  [PASS] server-500/state-route: Rendered /learning.html; source /learning.html.
+  [PASS] server-500/state-visible: Visible text length=340.
+  [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
+  [WARN] server-500/state-console-errors: 4 console/log diagnostics.
+
+[PASS] login-register.html http://127.0.0.1:3322/login-register.html
+  [SKIP] empty/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] empty/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] empty/state-visible: Visible text length=98.
+  [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] empty/state-console-errors: 0 console/log diagnostics.
+  [SKIP] loading/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] loading/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] loading/state-visible: Visible text length=98.
+  [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] loading/state-console-errors: 0 console/log diagnostics.
+  [SKIP] error/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] error/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] error/state-visible: Visible text length=98.
+  [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] error/state-console-errors: 0 console/log diagnostics.
+  [SKIP] forbidden/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] forbidden/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] forbidden/state-visible: Visible text length=98.
+  [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] forbidden/state-console-errors: 0 console/log diagnostics.
+  [SKIP] disabled/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] disabled/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] disabled/state-visible: Visible text length=98.
+  [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] disabled/state-console-errors: 0 console/log diagnostics.
+  [SKIP] long-text/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
+  [PASS] long-text/state-route: Rendered /login-register.html; source /login-register.html.
+  [PASS] long-text/state-visible: Visible text length=98.
+  [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
+  [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
+  [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
+  [PASS] long-text/state-console-errors: 0 console/log diagnostics.
+  [SKIP] token-expired/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] token-expired/state-console-errors: 0 console/log diagnostics.
-  [FAIL] server-500/state-intercepted: 0 API requests intercepted.
+  [SKIP] server-500/state-intercepted: SKIP: structurally N/A for this page (load-time zero API (auth calls fire only on user submit)); 0 API requests observed.
   [PASS] server-500/state-route: Rendered /login-register.html; source /login-register.html.
-  [PASS] server-500/state-visible: Visible text length=115.
+  [PASS] server-500/state-visible: Visible text length=98.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
@@ -1223,56 +1223,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] me.html http://127.0.0.1:3322/me.html
   [PASS] empty/state-intercepted: 14 API requests intercepted.
   [PASS] empty/state-route: Rendered /me.html; source /me.html.
-  [PASS] empty/state-visible: Visible text length=979.
+  [PASS] empty/state-visible: Visible text length=920.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 14 API requests intercepted.
   [PASS] loading/state-route: Rendered /me.html; source /me.html.
-  [PASS] loading/state-visible: Visible text length=785.
+  [PASS] loading/state-visible: Visible text length=726.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 7 total console/log diagnostics.
   [WARN] loading/state-console-errors: 7 console/log diagnostics.
   [PASS] error/state-intercepted: 14 API requests intercepted.
   [PASS] error/state-route: Rendered /me.html; source /me.html.
-  [PASS] error/state-visible: Visible text length=974.
+  [PASS] error/state-visible: Visible text length=915.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 14 total console/log diagnostics.
   [WARN] error/state-console-errors: 14 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 14 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /me.html; source /me.html.
-  [PASS] forbidden/state-visible: Visible text length=1114.
+  [PASS] forbidden/state-visible: Visible text length=1055.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 14 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 14 console/log diagnostics.
   [PASS] disabled/state-intercepted: 14 API requests intercepted.
   [PASS] disabled/state-route: Rendered /me.html; source /me.html.
-  [PASS] disabled/state-visible: Visible text length=1032.
+  [PASS] disabled/state-visible: Visible text length=973.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 14 API requests intercepted.
   [PASS] long-text/state-route: Rendered /me.html; source /me.html.
-  [PASS] long-text/state-visible: Visible text length=1030.
+  [PASS] long-text/state-visible: Visible text length=971.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 14 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 16 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /me.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 14 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 14 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 15 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 15 console/log diagnostics.
   [PASS] server-500/state-intercepted: 14 API requests intercepted.
   [PASS] server-500/state-route: Rendered /me.html; source /me.html.
-  [PASS] server-500/state-visible: Visible text length=1084.
+  [PASS] server-500/state-visible: Visible text length=1025.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 14 total console/log diagnostics.
@@ -1281,28 +1281,28 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] my-cohorts.html http://127.0.0.1:3322/my-cohorts.html
   [PASS] empty/state-intercepted: 4 API requests intercepted.
   [PASS] empty/state-route: Rendered /my-cohorts.html; source /my-cohorts.html.
-  [PASS] empty/state-visible: Visible text length=205.
+  [PASS] empty/state-visible: Visible text length=202.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 4 API requests intercepted.
   [PASS] loading/state-route: Rendered /my-cohorts.html; source /my-cohorts.html.
-  [PASS] loading/state-visible: Visible text length=386.
+  [PASS] loading/state-visible: Visible text length=378.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] loading/state-console-errors: 2 console/log diagnostics.
   [PASS] error/state-intercepted: 4 API requests intercepted.
   [PASS] error/state-route: Rendered /my-cohorts.html; source /my-cohorts.html.
-  [PASS] error/state-visible: Visible text length=230.
+  [PASS] error/state-visible: Visible text length=228.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
   [WARN] error/state-console-errors: 4 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 4 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /my-cohorts.html; source /my-cohorts.html.
-  [PASS] forbidden/state-visible: Visible text length=258.
+  [PASS] forbidden/state-visible: Visible text length=256.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
@@ -1321,16 +1321,16 @@ pages=25 checks=1400 failed=39 warnings=110
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 6 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /my-cohorts.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 4 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 5 console/log diagnostics.
   [PASS] server-500/state-intercepted: 4 API requests intercepted.
   [PASS] server-500/state-route: Rendered /my-cohorts.html; source /my-cohorts.html.
-  [PASS] server-500/state-visible: Visible text length=252.
+  [PASS] server-500/state-visible: Visible text length=250.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 4 total console/log diagnostics.
@@ -1339,56 +1339,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] practice.html http://127.0.0.1:3322/practice.html
   [PASS] empty/state-intercepted: 12 API requests intercepted.
   [PASS] empty/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] empty/state-visible: Visible text length=880.
+  [PASS] empty/state-visible: Visible text length=849.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 10 API requests intercepted.
   [PASS] loading/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] loading/state-visible: Visible text length=756.
+  [PASS] loading/state-visible: Visible text length=725.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 6 total console/log diagnostics.
-  [WARN] loading/state-console-errors: 6 console/log diagnostics.
-  [PASS] error/state-intercepted: 10 API requests intercepted.
+  [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 5 total console/log diagnostics.
+  [WARN] loading/state-console-errors: 5 console/log diagnostics.
+  [PASS] error/state-intercepted: 12 API requests intercepted.
   [PASS] error/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] error/state-visible: Visible text length=893.
+  [PASS] error/state-visible: Visible text length=862.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
   [WARN] error/state-console-errors: 12 console/log diagnostics.
-  [PASS] forbidden/state-intercepted: 10 API requests intercepted.
+  [PASS] forbidden/state-intercepted: 12 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] forbidden/state-visible: Visible text length=977.
+  [PASS] forbidden/state-visible: Visible text length=946.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 12 console/log diagnostics.
-  [PASS] disabled/state-intercepted: 10 API requests intercepted.
+  [PASS] disabled/state-intercepted: 12 API requests intercepted.
   [PASS] disabled/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] disabled/state-visible: Visible text length=880.
+  [PASS] disabled/state-visible: Visible text length=849.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
-  [PASS] long-text/state-intercepted: 10 API requests intercepted.
+  [PASS] long-text/state-intercepted: 12 API requests intercepted.
   [PASS] long-text/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] long-text/state-visible: Visible text length=880.
+  [PASS] long-text/state-visible: Visible text length=849.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 10 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 12 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /practice.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 12 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 13 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 13 console/log diagnostics.
   [PASS] server-500/state-intercepted: 10 API requests intercepted.
   [PASS] server-500/state-route: Rendered /practice.html; source /practice.html.
-  [PASS] server-500/state-visible: Visible text length=959.
+  [PASS] server-500/state-visible: Visible text length=928.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 12 total console/log diagnostics.
@@ -1397,56 +1397,56 @@ pages=25 checks=1400 failed=39 warnings=110
 [PASS] refund.html http://127.0.0.1:3322/refund.html
   [PASS] empty/state-intercepted: 2 API requests intercepted.
   [PASS] empty/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] empty/state-visible: Visible text length=258.
+  [PASS] empty/state-visible: Visible text length=255.
   [PASS] empty/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] empty/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] empty/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] empty/state-console-errors: 0 console/log diagnostics.
   [PASS] loading/state-intercepted: 2 API requests intercepted.
   [PASS] loading/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] loading/state-visible: Visible text length=229.
+  [PASS] loading/state-visible: Visible text length=226.
   [PASS] loading/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] loading/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] loading/state-runtime-exceptions: 0 uncaught runtime exceptions; 1 total console/log diagnostics.
   [WARN] loading/state-console-errors: 1 console/log diagnostics.
   [PASS] error/state-intercepted: 2 API requests intercepted.
   [PASS] error/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] error/state-visible: Visible text length=262.
+  [PASS] error/state-visible: Visible text length=259.
   [PASS] error/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] error/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] error/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] error/state-console-errors: 2 console/log diagnostics.
   [PASS] forbidden/state-intercepted: 2 API requests intercepted.
   [PASS] forbidden/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] forbidden/state-visible: Visible text length=276.
+  [PASS] forbidden/state-visible: Visible text length=273.
   [PASS] forbidden/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] forbidden/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] forbidden/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
   [WARN] forbidden/state-console-errors: 2 console/log diagnostics.
   [PASS] disabled/state-intercepted: 2 API requests intercepted.
   [PASS] disabled/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] disabled/state-visible: Visible text length=258.
+  [PASS] disabled/state-visible: Visible text length=255.
   [PASS] disabled/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] disabled/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] disabled/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] disabled/state-console-errors: 0 console/log diagnostics.
   [PASS] long-text/state-intercepted: 2 API requests intercepted.
   [PASS] long-text/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] long-text/state-visible: Visible text length=258.
+  [PASS] long-text/state-visible: Visible text length=255.
   [PASS] long-text/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] long-text/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] long-text/state-runtime-exceptions: 0 uncaught runtime exceptions; 0 total console/log diagnostics.
   [PASS] long-text/state-console-errors: 0 console/log diagnostics.
-  [PASS] token-expired/state-intercepted: 2 API requests intercepted.
+  [PASS] token-expired/state-intercepted: 4 API requests intercepted.
   [PASS] token-expired/state-route: Rendered /login-register.html; source /refund.html.
-  [PASS] token-expired/state-visible: Visible text length=115.
+  [PASS] token-expired/state-visible: Visible text length=98.
   [PASS] token-expired/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] token-expired/state-long-content-fit: 0 visible elements leak overflowing content.
-  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
-  [WARN] token-expired/state-console-errors: 2 console/log diagnostics.
+  [PASS] token-expired/state-runtime-exceptions: 0 uncaught runtime exceptions; 3 total console/log diagnostics.
+  [WARN] token-expired/state-console-errors: 3 console/log diagnostics.
   [PASS] server-500/state-intercepted: 2 API requests intercepted.
   [PASS] server-500/state-route: Rendered /refund.html; source /refund.html.
-  [PASS] server-500/state-visible: Visible text length=273.
+  [PASS] server-500/state-visible: Visible text length=270.
   [PASS] server-500/state-no-horizontal-overflow: horizontalOverflow=false.
   [PASS] server-500/state-long-content-fit: 0 visible elements leak overflowing content.
   [PASS] server-500/state-runtime-exceptions: 0 uncaught runtime exceptions; 2 total console/log diagnostics.
