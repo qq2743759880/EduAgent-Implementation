@@ -158,6 +158,14 @@ class EventMemoryPersistenceBase:
                          trace_id: str | None = None) -> None:
         raise NotImplementedError
 
+    async def close_slot_heads(self, user_id: int, *, exclude_entity_id: int,
+                               like_patterns: tuple[str, ...]) -> list[int]:
+        """[REWORK P0-1] 槽位 update 语义：关闭同槽位旧 HEAD。
+
+        仅对旧 HEAD 行做 valid_to 盖章（append-only：不改内容、不追加 delete 事件），
+        返回被关闭的 entity_id 列表（调用方负责同步向量删除）。"""
+        raise NotImplementedError
+
     async def consolidate(self, source_entity_ids: list[int], *, user_id: int,
                           summary_content: str, memory_type: str = "profile", topic: str = "general",
                           importance: int = 4, score: float | None = None,
@@ -325,6 +333,24 @@ class SqlEventMemoryPersistence(EventMemoryPersistenceBase):
             (int(entity_id), int(head.user_id), head.memory_type[:32], head.topic[:64],
              "", head.importance, head.score, now, operator, _trace(trace_id), now),
         )
+
+    async def close_slot_heads(self, user_id: int, *, exclude_entity_id: int,
+                               like_patterns: tuple[str, ...]) -> list[int]:
+        """[REWORK P0-1] 名字等槽位 update 语义：同槽位旧 HEAD 盖章关闭（valid_to=NOW，
+        不 UPDATE 内容、不追加 delete 事件——事件溯源 append-only 语义保持）。"""
+        await self._ensure()
+        if not like_patterns:
+            return []
+        where = " OR ".join(["content LIKE %s"] * len(like_patterns))
+        rows = await self._head_rows(
+            f"user_id = %s AND entity_id <> %s AND ({where}) AND {_HEAD_WHERE}",
+            (int(user_id), int(exclude_entity_id), *like_patterns),
+        )
+        closed: list[int] = []
+        for r in rows:
+            await self._stamp_head(int(r["entity_id"]))
+            closed.append(int(r["entity_id"]))
+        return closed
 
     async def consolidate(self, source_entity_ids: list[int], *, user_id: int,
                           summary_content: str, memory_type: str = "profile", topic: str = "general",

@@ -628,11 +628,20 @@ def make_stream_finalize(
         # task25 R7 / R01-b：流式会话结束异步记忆 ingest——R08 起传完整对话窗
         # （会话历史轮 + 本轮 query/answer 成对，防上下文缺 assistant 半边，与应答解耦）
         # T9-C3：收束 answer 为空串（模型零 token / 空响应）→ 调用侧短路，不入记忆窗
+        memorized: list[str] = []
         if final_answer and final_answer.strip():
+            # [REWORK P0-1/P0-2] 同步规则抽取：done 帧前落库（新名字当轮即可跨会话召回，
+            # 5 秒内提问可答对——audit 实测异步链路 ~40s 为演示灾难）；LLM 深抽取仍走异步队列。
+            try:
+                from app.ai.memory.service import sync_extract_and_write
+                memorized = await sync_extract_and_write(int(user_id), query=req.query)
+            except Exception as exc:
+                logger.warning(f"[chat] 同步记忆抽取失败（不影响 done 帧）: {exc}")
+                memorized = []
             try:
                 from app.ai.memory.service import build_turn_window, enqueue_turn
                 window = build_turn_window(memory_history_window, query=req.query, answer=final_answer)
-                asyncio.create_task(enqueue_turn(int(user_id), messages=window))
+                asyncio.create_task(enqueue_turn(int(user_id), messages=window, skip_rule_extract=bool(memorized)))
             except Exception:
                 pass
 
@@ -645,6 +654,7 @@ def make_stream_finalize(
             "rewrite_query": bundle.rewrite_query,
             "degraded_reason": merged_deg,
             "mcp_tool_calls": [s.model_dump() for s in mcp_summaries],
+            "memorized": memorized,
         }
 
     return build_finalize

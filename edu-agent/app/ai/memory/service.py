@@ -20,7 +20,7 @@ from typing import Any
 from loguru import logger
 
 from app.config import settings
-from app.ai.memory.ingest import normalize_window
+from app.ai.memory.ingest import detect_memories, normalize_window
 from app.ai.memory.queue import MemoryWriteQueue
 from app.ai.memory.store import MemoryStore
 
@@ -182,6 +182,7 @@ async def enqueue_turn(
     messages: list[dict] | None = None,
     assistant_reply: str | None = None,
     threshold: int | None = None,
+    skip_rule_extract: bool = False,
 ) -> int:
     """单轮对话结束触发记忆（R01-b 起收**对话窗**，R08 起首选完整对话窗含 assistant 回复）。
 
@@ -219,11 +220,47 @@ async def enqueue_turn(
             )
         queue = await get_memory_queue()
         return 1 if await queue.enqueue_turn_window(
-            int(user_id), window, threshold=threshold
+            int(user_id), window, threshold=threshold, skip_rule_extract=skip_rule_extract
         ) else 0
     except Exception as exc:  # 记忆链路任何异常都不允许波及应答链路
         logger.warning(f"[Memory] enqueue_turn 失败（本轮不入队，不影响应答）: {exc}")
         return 0
+
+
+async def sync_extract_and_write(user_id: int, *, query: str,
+                                 threshold: int | None = None) -> list[str]:
+    """[REWORK P0-1/P0-2] 同步规则抽取并立即落库（chat done 帧前调用）。
+
+    - 只跑确定性规则抽取（detect_memories，毫秒级），name 等显式事实当轮即可被
+      跨会话召回——异步 LLM 深抽取仍由 enqueue_turn 队列补（延迟 ~40s 不再是用户体感）。
+    - 写库走 store.write（含 [REWORK P0-1] 槽位 update 语义：新名字自动关闭旧名字 HEAD）。
+    - 返回落库成功的 content 列表（供 done 帧 `memorized` 字段 → 前端「已记住」反馈条）。
+    - 任何异常向上抛由调用方兜底（chat finalize 已 try/except，不阻断 done 帧）。
+    """
+    from app.config import settings
+
+    if not getattr(settings, "MEMORY_SYNC_EXTRACT_ENABLED", True):
+        return []
+    th = int(threshold if threshold is not None else settings.MEMORY_IMPORTANCE_THRESHOLD)
+    candidates = detect_memories(query or "")
+    written: list[str] = []
+    store = await get_memory_store()
+    seen: set[str] = set()
+    for c in candidates:
+        if int(c.importance or 4) < th or c.content in seen:
+            continue
+        seen.add(c.content)
+        try:
+            await store.write(
+                user_id=int(user_id), content=c.content,
+                memory_type=c.memory_type, topic=c.topic, importance=int(c.importance),
+            )
+            written.append(c.content)
+        except Exception as exc:
+            logger.warning(f"[Memory] 同步写入失败（跳过该候选）: {exc}")
+    if written:
+        logger.info(f"[Memory] 同步抽取落库 user={user_id} n={len(written)}: {written}")
+    return written
 
 
 def _strip_internal_ids(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

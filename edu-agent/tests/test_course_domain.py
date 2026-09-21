@@ -28,7 +28,8 @@ import pytest
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 os.environ["no_proxy"] = "127.0.0.1,localhost"
 
-BASE = "http://127.0.0.1:8000"
+# [REWORK] BASE 支持 TEST_BASE 覆盖（全仓口径对齐 task15/task113）；默认仍 8000
+BASE = os.environ.get("TEST_BASE", "http://127.0.0.1:8000")
 
 # 308 响应不应被自动跟随：重定向处理器返回 None → urllib 抛 HTTPError(308)
 class _NoRedirect(urllib.request.HTTPRedirectHandler):

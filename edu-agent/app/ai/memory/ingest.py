@@ -162,6 +162,32 @@ def normalize_window(
     return window[-n:]
 
 
+# ---------------------------------------------------------------------------
+# [REWORK P0-1] 记忆槽位（同槽位事实只保留最新 HEAD，事件溯源 update 语义）
+# ---------------------------------------------------------------------------
+_SLOT_PATTERNS: dict[str, re.Pattern] = {
+    # 名字槽位：规则路径「用户名字：X」、整句「我叫X…」、旧数据「我的名字」、
+    # LLM 抽取变体「用户的名字（昵称）是…」（REWORK P0-1 实测漏网变体）
+    "user_name": re.compile(r"^(用户名字|用户的名字|用户姓名|我的名字|我叫|昵称)"),
+}
+
+
+def detect_memory_slot(content: str) -> str | None:
+    """识别记忆内容的槽位 key（同槽位新事实应关闭旧 HEAD）。无槽位语义返回 None。"""
+    c = (content or "").strip()
+    for slot, pat in _SLOT_PATTERNS.items():
+        if pat.search(c):
+            return slot
+    return None
+
+
+def slot_like_patterns(slot: str) -> tuple[str, ...]:
+    """槽位对应 SQL LIKE 模式（close_slot_heads 用，参数绑定）。"""
+    if slot == "user_name":
+        return ("用户名字：%", "用户的名字%", "用户姓名%", "我的名字%", "我叫%", "昵称%")
+    return ()
+
+
 def detect_memories_window(messages: list[dict]) -> list[MemoryCandidate]:
     """规则路径窗口抽取：仅扫**用户**发言（高精度信号），跨条去重。
 

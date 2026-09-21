@@ -393,6 +393,7 @@ class Settings(BaseSettings):
     # R01-b：mem0 式对话窗抽取（用户 query + assistant 回复成对，抽取在 worker 内完成）
     MEMORY_INGEST_WINDOW: int = 10                 # 每轮入队的最近对话条数（用户/助手发言）
     MEMORY_LLM_EXTRACT_ENABLED: bool = True        # worker 内 LLM 事实抽取开关（False=仅规则抽取）
+    MEMORY_SYNC_EXTRACT_ENABLED: bool = True       # [REWORK P0-1/P0-2] done 帧前同步规则抽取落库（名字等显式事实当轮可召回；False=回退纯异步）
     MEMORY_EXTRACT_MODEL: str = "fast"             # 抽取 LLM 通道（与 Dream 巩固同档，cost 友好）
     MEMORY_EXTRACT_MAX_TOKENS: int = 600           # 抽取输出上限（JSON 数组，防 token 膨胀）
     MEMORY_VECTOR_DIM: int = 512                   # 内存向量降级维度（Milvus 时用 EMBEDDING_DIM=1024）

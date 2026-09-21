@@ -75,6 +75,26 @@ class MemoryStore:
             user_id=int(user_id), memory_type=memory_type[:32], topic=topic[:64],
             content=(content or "")[:2000], importance=importance, score=initial_score,
         )
+        # [REWORK P0-1] 槽位 update 语义：新事实落库即关闭同槽位旧 HEAD（valid_to 盖章，
+        # append-only；旧实体向量同步删除，防召回随机命中旧名）。失败不影响新记忆已落库。
+        try:
+            from app.ai.memory.ingest import detect_memory_slot, slot_like_patterns
+
+            slot = detect_memory_slot(content)
+            if slot:
+                closed = await self._persistence.close_slot_heads(
+                    int(user_id), exclude_entity_id=int(memory_id),
+                    like_patterns=slot_like_patterns(slot),
+                )
+                for eid in closed:
+                    try:
+                        await self._vector.delete(eid)
+                    except Exception:
+                        pass
+                if closed:
+                    logger.info(f"[Memory] 槽位 {slot} 关闭旧 HEAD entities={closed}")
+        except Exception as exc:
+            logger.warning(f"[Memory] 槽位关闭失败（不影响新记忆落库）: {type(exc).__name__}: {exc}")
         # 向量 upsert（失败不影响事实源落库——向量纯为召回加速）
         try:
             await self._vector.upsert(
@@ -99,7 +119,9 @@ class MemoryStore:
         （`fetch_by_ids` 内部强制），即 valid_only=True 为不可关闭的硬约束（对应 AC2：废弃版本永不召回）。
         """
         k = max(1, int(top_k if top_k is not None else 3))
-        hits = await self._vector.search(user_id=int(user_id), query=query, top_k=k)
+        # [REWORK P0-1] 过采样 3 倍再过滤：向量库里可能残留已盖章实体的死向量（治理/槽位关闭
+        # 只动事实源时），它们会占满 top_k 再被 fetch_by_ids 的 HEAD 过滤清空 → 召回假空。
+        hits = await self._vector.search(user_id=int(user_id), query=query, top_k=k * 3)
         if not hits:
             return []
         ids = [int(h["memory_id"]) for h in hits if h.get("memory_id")]
@@ -134,6 +156,27 @@ class MemoryStore:
             out.append({"id": int(m.id), **(m.to_recall_dict()),
                         "vector_score": float(h.get("score", 0.0))})
         out.sort(key=lambda r: r.get("vector_score", 0.0), reverse=True)
+        # [REWORK P0-1] 同槽位最新 HEAD 优先：同槽位多条命中时只保留最新（id 最大），
+        # 防旧名凭向量相似度随机压过新名（audit P0-1 实证：45s 后答出更旧的名字）。
+        try:
+            from app.ai.memory.ingest import detect_memory_slot
+
+            by_slot: dict[str, list[dict[str, Any]]] = {}
+            for r in out:
+                s = detect_memory_slot(str(r.get("content") or ""))
+                if s:
+                    by_slot.setdefault(s, []).append(r)
+            stale: set[int] = set()
+            for slot_rows in by_slot.values():
+                if len(slot_rows) > 1:
+                    keep_id = max(int(r.get("id") or 0) for r in slot_rows)
+                    for r in slot_rows:
+                        if int(r.get("id") or 0) != keep_id:
+                            stale.add(int(r["id"]))
+            if stale:
+                out = [r for r in out if int(r["id"]) not in stale]
+        except Exception:
+            pass
         try:
             from app.otel.exporter import get_otel_exporter
             get_otel_exporter().record_memory_event("recall", user_id=user_id, adopted=bool(out))

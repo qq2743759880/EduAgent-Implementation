@@ -97,6 +97,7 @@ class MemoryWriteQueue:
         messages: list[dict[str, str]],
         *,
         threshold: int | None = None,
+        skip_rule_extract: bool = False,
     ) -> bool:
         """R01-b：对话窗整窗入队（抽取在 worker 内做，enqueue 侧零 LLM、毫秒级快返）。
 
@@ -119,6 +120,7 @@ class MemoryWriteQueue:
                 if isinstance(m, dict)
             ][:20],
             "threshold": int(threshold if threshold is not None else settings.MEMORY_IMPORTANCE_THRESHOLD),
+            "skip_rule_extract": bool(skip_rule_extract),
             "retries": 0,
             "ts": datetime.now().isoformat(timespec="seconds"),
         }
@@ -211,7 +213,12 @@ class MemoryWriteQueue:
         threshold = int(payload.get("threshold") or settings.MEMORY_IMPORTANCE_THRESHOLD)
 
         # 1) 规则候选（只扫用户发言，确定性高精度；零外部依赖，永不丢）
-        candidates = detect_memories_window(messages)
+        # [REWORK P0-1] skip_rule_extract：chat done 帧已同步落库规则候选时，worker 侧跳过
+        # 规则重抽取（防同 content 重复入库），LLM 深抽取照常。
+        if payload.get("skip_rule_extract"):
+            candidates: list[MemoryCandidate] = []
+        else:
+            candidates = detect_memories_window(messages)
 
         # 2) LLM 候选（覆盖用户偏好 + 助手事实性陈述）；失败 → degraded，不阻断
         if getattr(settings, "MEMORY_LLM_EXTRACT_ENABLED", True):
