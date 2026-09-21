@@ -665,3 +665,10 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **范围纠偏（执行者如实上报）**：public/ 实况 25 页而非方案口径 19——门禁动态扫描全量覆盖，后续新增 HTML 自动入 `--all`；已按 25 页出 PAGE-WAVES 三包（A 学生核心 8 / B 学生次级+chat 7 / C 管理 10）。
 - 存量债冻结（PAGE-WAVES 输入）：G6 点击区<44px 25 页 / G7 对比度 25 页+reduced-motion 13+焦点 4+Tab 3+溢出 3 / G8 theme.css?v= 未接入 25 页+Google Fonts 外链 2 页（courses/refund）/ G9 长文本 2 页。执行者未刷绿——诚实基线。
 - 管理页门禁授权口径：EDU_GATE_TOKEN 仅 shell 内存，禁落盘（编排者验收自取 admin token）。
+
+## PAGE-WAVES 三包验收闭环（2026-09-21，25/25 页 PASS，编排者逐断言复核）
+- **A/B/C 全 PASS**：25 页逐页独立 commit（域互斥零交叉实证）；G3 全站亲跑 PASS、G1 断点 0、G8 全站终态（dev 态+admin token）**0 failed/200 checks**；theme.css?v= 全 25 页接入（grep 实证）、Google Fonts 清零、存量债大面积清偿（点击区/对比度/reduced-motion/长文本）。
+- **验收中揪出的门禁工具问题（非页面回归）**：①3322 生产态 vs dev 态 route-stable 前提差（编排者 prod 重启致 G8 --all 假红 100→带 token dev 态 0）——route-stable 形态钉死进 GATE-V2；②无 token 跑守卫页=重定向伪差（编排者自己踩了两次，教训：门禁全站跑必须带 EDU_GATE_TOKEN 且 dev 态）③radio 组/roving tabindex 聚合 ④dashboard aria settle ⑤achievements 基线数据漂移——全部裁给 GATE-V2。
+- **变更单裁定**：login/两零 API 页 G9=N/A 批准（GATE-V2 白名单机制）；achievements 基线刷新批准；seed cdn.example.com 外链→DATA-SEED-1（三核闸）；verify_pages_cdp 旧端口→GATE-V2 顺修。
+- **遗留清理**：_task106_* 三脚本已按用户指令删除；测试凭据排除已批（MIMOSA-EXCL 单，含 AGENTS.md 勘误+PACK-C 报告代提交）。
+- emoji 残留复核：抽查页各 1-4 枚，属 PACK-B 声明的「头像/吉祥物/内容字段」豁免类（🤖🐣🎖💬 等），非图标违规；✕/⚠ 等符号字形待 GATE-V2 console 诊断跟进时顺带复核。

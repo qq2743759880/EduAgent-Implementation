@@ -37,8 +37,11 @@
 | TO-EXEC-EVALFREEZE-B1 | idx31 组命中放宽变更单 + V3 尺契约冻结（用户已批） | ✅ 闭环（5ffe658，编排者指纹复核：双跑一致/毒性隔离仅 idx31/基线零漂移/draft:false） | — |
 | TO-EXEC-GATEA-CLAY | 前端重塑 Gate A：3 页 × 3 黏土变体 | ✅ 闭环+批款（33c2b20；用户挑款：chat=B / login=B 弃紫改绿黄 / admin=C；禁 emoji 图标） | — |
 | **TO-EXEC-THEME-GATE** | 重塑底座：theme.css 定稿+Phosphor sprite+G3/G6-G9 门禁工具 | ✅ 闭环（7fed87f；编排者复核：HTML 零触碰/对比度亲算 8.84+5.43 吻合/sprite 30 枚零 emoji/G3 亲跑 PASS 25 页 1214 钩/325 截图实数/G8 硬失败语义 EXIT=1 正确；25 页实况纠偏 19 页口径被如实上报） | — |
-| **TO-EXEC-PAGE-WAVES-A** | 逐页重塑包 A：学生端核心 8 页 | **待派（并行三包之一）** | 强前端模型 |
-| **TO-EXEC-PAGE-WAVES-B** | 逐页重塑包 B：学生端次级+chat 7 页 | **待派（并行三包之一）** | 强前端模型 |
-| **TO-EXEC-PAGE-WAVES-C** | 逐页重塑包 C：管理端 10 页（批款全黏土） | **待派（并行三包之一）** | 强前端模型 |
+| **TO-EXEC-PAGE-WAVES-A** | 逐页重塑包 A：学生端核心 8 页 | ✅ 闭环（8 页逐页 commit；编排者验收：G3 全站 PASS/G1 断点 0/learning G7 红=声明的 roving tabindex 豁免/主题字体 emoji 抽查过；变更单三条已裁：G7 聚合→GATE-V2、login G9 N/A→GATE-V2、seed 外链→DATA-SEED-1） | — |
+| **TO-EXEC-PAGE-WAVES-B** | 逐页重塑包 B：学生端次级+chat 7 页 | ✅ 闭环（chat 补丁 52a28d7；自留档 after 证据 G6 6/0 全绿；achievements aria 漂移→GATE-V2 基线刷新） | — |
+| **TO-EXEC-PAGE-WAVES-C** | 逐页重塑包 C：管理端 10 页（批款全黏土） | ✅ 闭环（10 页含 2 处 clay-light 降级点合规记录；零 API 页 N/A→GATE-V2；长文本债清零） | — |
+| **TO-EXEC-GATE-V2** | 门禁第二批：radio/roving 聚合+settle+N/A 白名单+route-stable 形态钉死+console 诊断跟进 | **待派（三包验收沉淀）** | 中强模型 |
+| **TO-EXEC-MIMOSA-EXCL** | 测试文件凭据排除（用户已批）+ AGENTS.md 勘误/PACK-C 报告代提交 | **待派（可并行）** | 中强模型 |
+| **TO-EXEC-DATA-SEED-1** | 种子外链占位本地化（三核闸） | **待派（可并行）** | 中强模型 |
 
-> 三包文件域互斥（A：login/dashboard/courses/course-detail/learning/favorites/practice/me；B：chat/community/community-post/achievements/coupons/my-cohorts/refund；C：admin×10），**可同时带给三个执行者并行**。三包全绿后编排者做全站抽查+G10 回滚实演+UAT 安排。
+> 三包 25/25 页验收 PASS（G8 全站 dev 态+token 终态 0 failed）。三张后续单可并行带走。GATE-V2 验收后：全站 G6-G9 终扫 + G10 回滚实演 + UAT 十场景。
