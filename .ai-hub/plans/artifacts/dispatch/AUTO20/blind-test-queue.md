@@ -26,3 +26,4 @@
 - B5 ✅ 双角色边界亲验（admin 200 / student 403）
 - B6 ⬜ 待 F-W1-GUARD（队列 #8）验收后执行
 - B7 ⬜ 待 SEED-VIDEO（#6）；B8 ⬜ 待限流收窄（#7）；B9 ⬜ 待 course_create（#15）
+- B8 ✅ 已随验收执行：orders 12 连发全 200（编排者亲测）/order 第 11 次 429 规则仍在——收窄语义实证

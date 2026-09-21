@@ -704,3 +704,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **10/12 缺陷实证闭环**（#1/#3/#5/#6/#7/#8/#9/#12 编排者亲证或强证据；#8 隔离亲测 admin 只见 100003/student 只见 1；#1 视频实测文件+代理修复在位）；186 passed 亲跑复证；14 commit 域内（唯一域外=next.config.ts 端口修恰是 #1 根因）。
 - **批判审计 6 P0**（ORCH-AUDIT-feat-wire-v2.md，全部带编排者实测数据）：①#11 记忆召回选错事实（落库对/召回错，45s 后仍答错——用户原缺陷体感依旧）②记忆 45s 延迟+零反馈=演示必翻车 ③dead=0 口径漏洞：83 delegated 元素未点击差分（历史缺陷大半是 delegated 形态）④视频上传仅 2.3MB 冒烟，100MB+ 真实路径未验 ⑤隔离修复代价=管理端会话审计归零无替代 ⑥演示主账号 4+ 条冲突名字记忆无治理。返工令 REWORK-FEAT-WIRE-V2 已上板。
 - **教训入册**：「dead=0」声明口径=无零绑定元素≠全站点得动；delegated 类（有绑定 handler 坏）是用户实测缺陷主力形态，点击差分是唯一验收手段。记忆系统三断点结构：提取（已修）→落库（本就通）→**召回选择（P0-1 盲区）→时效（P0-2 盲区）**——半修复之所以半，是验收只测了链路通没测「选对+够快」。
+
+## AUTO20 T6 验收闭环（2026-09-21，5058bd3，编排者逐项亲证）
+- 限流前缀收窄：精确段+子路径匹配+最长前缀优先（/api/trade/orders 不再误伤，落 default 100/min）；429 补 CORS 头（按同源规则回显 ACAO，DEBUG=false 仅精确 Origin，不放宽 CORS 面）。编排者亲测：orders 12 连发全 200、order 第 11 次 429 规则仍在、429 带 ACAO（OPTIONS 预检+POST 双实证）。19+64 passed 亲跑。
+- 执行者顺带环境治理：Redis 容器（6377）未运行致限流整体降级，已 docker start 恢复。
+- 遗留登记：空壳 TestMiddlewareOrder、旧 app/common/rate_limit.py 死代码；死规则 /api/trade/refund、/api/after_sales/ticket 不擅改保留。全量 1737 passed/5 failed/11 errors=存量数据态+TEST_BASE 默认 8000 旧契约测试（stash 对照隔离验证与本单无关）。
+- 教训：E2E 验收顺序坑——先跑 orders 12 连发验证收窄，再跑 order 超限验 429（顺序反了会被限流窗口互相污染）。

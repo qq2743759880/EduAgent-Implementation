@@ -7,7 +7,7 @@
 | 3 | REWORK-3: P0-3 83 个 delegated 元素 CDP 点击差分+坏 handler 修复 | REWORK-FEAT-WIRE-V2 §3 | ✅ 闭环 | 6c721d4；三轮扫描修两个测量假阴性→终判 83=47 wired+13 disabled-by-design+14 prototype-honest+3 真死链当场修（RAG 分页/MCP 日志/delOpt）；differential.json 在 | 6c721d4 |
 | 4 | REWORK-4: P0-4 ≥100MB 上传全链+失败注入+错误态 | REWORK-FEAT-WIRE-V2 §4 | ✅ 闭环 | e4dad35；108.8MB/22 分片阻断注入→自动重试 2 次→错误态+重试按钮→解除重传→114,069,910B 落盘可播 | e4dad35 |
 | 5 | REWORK-5: P0-5 管理端会话审计只读视图（admin-only 端点+页面+角色硬校验） | REWORK-FEAT-WIRE-V2 §5 | ✅ 闭环 | 4aa7bff；编排者亲验 admin 320 会话 200/student 直连 403；pytest 5 passed；前端审计页+8 导航入口 | 4aa7bff |
-| 6 | 限流前缀收窄：/api/trade/orders 被 /api/trade/order 规则误伤（429 无 CORS 假红根因） | 新写 | pending | — | — |
+| 6 | 限流前缀收窄：/api/trade/orders 被 /api/trade/order 规则误伤（429 无 CORS 假红根因） | 新写 | ✅ 闭环 | 5058bd3；编排者亲测 12 连发全 200/order 第 11 次 429 规则仍在/429 带 ACAO（OPTIONS+POST 双实证）；19+64 passed 亲跑；Redis 容器顺带恢复 | 5058bd3 |
 | 7 | F-W1-GUARD: 答案层捏造工具回执机检护栏（answer 提及工具名而凭据空→拦截/降级标） | tracker C-W1-② | pending | — | — |
 | 8 | C-W1-③: mcp_tool_calls 六节点路径透传（SubagentResult.full_tool_outputs→响应体） | tracker C-W1-③ | pending | — | — |
 | 9 | GATE-V3: 门禁数据就绪竞态机制化（courses 动画/my-cohorts/me 的 settle→数据就绪探测） | tracker 登记 | pending | — | — |
