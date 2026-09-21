@@ -118,17 +118,15 @@ async def _ensure_session_owner(session_id: str, user_id: int, role: UserRole) -
 
 
 async def list_sessions(user_id: int, role: UserRole, *, limit: int = 50) -> list[ChatSession]:
-    """会话列表：按 last_message_at 倒序（再 created_at 倒序）。"""
-    if role is UserRole.ADMIN or role.value == UserRole.ADMIN.value:
-        rows = await fetch_all(
-            "SELECT * FROM chat_session WHERE yn = 1 ORDER BY last_message_at DESC, created_at DESC LIMIT %s",
-            (limit,),
-        )
-    else:
-        rows = await fetch_all(
-            "SELECT * FROM chat_session WHERE yn = 1 AND user_id = %s ORDER BY last_message_at DESC, created_at DESC LIMIT %s",
-            (int(user_id), limit),
-        )
+    """会话列表：按 last_message_at 倒序（再 created_at 倒序）。
+
+    [FEAT-WIRE-V2 #8 隔离修复] 旧版 admin 角色返回全库所有用户会话（"admin 全局"），
+    用户实测缺陷：管理员对话列表混入他人会话。现一律按当前 user_id 过滤；
+    admin 全局审计视图应另立管理端页面（FEAT-WIRE-V2 登记，本单不做）。"""
+    rows = await fetch_all(
+        "SELECT * FROM chat_session WHERE yn = 1 AND user_id = %s ORDER BY last_message_at DESC, created_at DESC LIMIT %s",
+        (int(user_id), limit),
+    )
     return [
         ChatSession(
             session_id=r["session_id"],
