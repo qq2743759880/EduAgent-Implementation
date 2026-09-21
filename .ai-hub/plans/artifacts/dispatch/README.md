@@ -40,8 +40,9 @@
 | **TO-EXEC-PAGE-WAVES-A** | 逐页重塑包 A：学生端核心 8 页 | ✅ 闭环（8 页逐页 commit；编排者验收：G3 全站 PASS/G1 断点 0/learning G7 红=声明的 roving tabindex 豁免/主题字体 emoji 抽查过；变更单三条已裁：G7 聚合→GATE-V2、login G9 N/A→GATE-V2、seed 外链→DATA-SEED-1） | — |
 | **TO-EXEC-PAGE-WAVES-B** | 逐页重塑包 B：学生端次级+chat 7 页 | ✅ 闭环（chat 补丁 52a28d7；自留档 after 证据 G6 6/0 全绿；achievements aria 漂移→GATE-V2 基线刷新） | — |
 | **TO-EXEC-PAGE-WAVES-C** | 逐页重塑包 C：管理端 10 页（批款全黏土） | ✅ 闭环（10 页含 2 处 clay-light 降级点合规记录；零 API 页 N/A→GATE-V2；长文本债清零） | — |
-| **TO-EXEC-GATE-V2** | 门禁第二批：radio/roving 聚合+settle+N/A 白名单+route-stable 形态钉死+console 诊断跟进 | **待派（三包验收沉淀）** | 中强模型 |
-| **TO-EXEC-MIMOSA-EXCL** | 测试文件凭据排除（用户已批）+ AGENTS.md 勘误/PACK-C 报告代提交 | **待派（可并行）** | 中强模型 |
+| **TO-EXEC-GATE-V2** | 门禁第二批：radio/roving 聚合+settle+N/A 白名单+route-stable 钉死+console 诊断跟进 | ✅ 闭环（双执行者收敛 12 commit；编排者全站终扫亲证：G6 0/150、G7 1/275、G8 0/200 诊断归零、G9 0/1400；Fetch.enable 伪影结论反转被独立复验支持） | — |
+| **TO-EXEC-MIMOSA-EXCL** | 测试文件凭据排除（用户已批） | ✅ 闭环（wrapper L40-41 实证+负例 fail-closed 保持+两笔 commit 过门；scanner_enobufs 披露如实，全量审计重跑已排程） | — |
 | **TO-EXEC-DATA-SEED-1** | 种子外链占位本地化（三核闸） | **待派（可并行）** | 中强模型 |
+| **TO-EXEC-FIX-CMTINPUT** | community-post #cmtInput 补 clay-input（G7 全站唯一余红，编排者已裁） | **待派（最高优先，一类之修）** | 任意模型 |
 
-> 三包 25/25 页验收 PASS（G8 全站 dev 态+token 终态 0 failed）。三张后续单可并行带走。GATE-V2 验收后：全站 G6-G9 终扫 + G10 回滚实演 + UAT 十场景。
+> GATE-V2 验收后收官三件：FIX-CMTINPUT → 全站四门 25/25 全绿终态 → G10 回滚实演（编排者）→ UAT 十场景（用户在线）。

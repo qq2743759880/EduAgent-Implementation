@@ -672,3 +672,11 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **变更单裁定**：login/两零 API 页 G9=N/A 批准（GATE-V2 白名单机制）；achievements 基线刷新批准；seed cdn.example.com 外链→DATA-SEED-1（三核闸）；verify_pages_cdp 旧端口→GATE-V2 顺修。
 - **遗留清理**：_task106_* 三脚本已按用户指令删除；测试凭据排除已批（MIMOSA-EXCL 单，含 AGENTS.md 勘误+PACK-C 报告代提交）。
 - emoji 残留复核：抽查页各 1-4 枚，属 PACK-B 声明的「头像/吉祥物/内容字段」豁免类（🤖🐣🎖💬 等），非图标违规；✕/⚠ 等符号字形待 GATE-V2 console 诊断跟进时顺带复核。
+
+## GATE-V2 + MIMOSA-EXCL 验收闭环（2026-09-21，编排者全站终扫亲证）
+- **GATE-V2 六工作项 PASS**（双执行者收敛 12 commit，编排者终扫：G6 0/150、G7 1/275、G8 0/200+诊断归零、G9 0/1400）：radio/roving 聚合负控双向、settle 三段验证、update-baseline 整文件覆盖缺陷修复（按页合并——该缺陷若未发现，单页刷新会抹掉 24 页快照，高危）、N/A 白名单负控、assertDevBase 探针选型（webpack-hmr 在 Next16 Turbopack dev 也 404 不可用→_devMiddlewareManifest.json）、JWT 过期预检。
+- **W6 结论反转被独立复验支持**：18 条 console 诊断=G8 Fetch.enable 插桩伪影（编排者 G8 终扫 0 warnings 实证），初判「环境瞬态」被更强复现推翻——「我复现不出不构成反证」教训再入库。
+- **MIMOSA-EXCL PASS**：排除门=hooks 目录包装器（payload 外不破签名），负例 deny 保持 fail-closed；scanner_enobufs fail-open 窗口如实披露，**Mimosa 全量审计重跑已排程**（消除 fail-open+验证全链路）。
+- **双执行竞态披露**：同单双派在同一分支交错作业，靠 mtime 监控接管+分项立即 commit+私有 out 收敛——终态经编排者全站复跑证明功能一致；流程教训已入项目记忆。
+- **余红裁定**：community-post #cmtInput 缺 clay-input（G7 全站唯一 FAIL，25/275）→ 批准一类之修（TO-EXEC-FIX-CMTINPUT 已上板）；G6/G7 数据未就绪竞态机制化→登记为 GATE-V3 候选（courses 动画/my-cohorts 卡片复跑即绿，非阻塞）。
+- 收官路径：FIX-CMTINPUT → 四门 25/25 全绿 → G10 回滚实演 → UAT 十场景。
