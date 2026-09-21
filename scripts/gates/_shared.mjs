@@ -141,12 +141,34 @@ export function makeCheck(name, pass, detail, severity = "error") {
   return { name, pass: Boolean(pass), detail, severity };
 }
 
+// Auth pages render in a degraded state once EDU_GATE_TOKEN expires mid-run (observed:
+// a long --all pass outlived the JWT TTL and coupons.html tab-reachable fell to 14/68
+// with 54 phantom-unreachable elements). Fail fast instead of poisioning the report.
+export function assertFreshGateToken() {
+  const token = process.env.EDU_GATE_TOKEN || "";
+  if (!token || !token.startsWith("eyJ")) return;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      throw new Error(
+        `GATE-TOKEN-EXPIRED: EDU_GATE_TOKEN expired at ${new Date(payload.exp * 1000).toISOString()}. ` +
+        "Re-login (adm02test/Test@123456 → /api/auth/login on :9988) and re-export a fresh token; " +
+        "an expired token silently degrades auth-guard pages and fakes red results."
+      );
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("GATE-TOKEN-EXPIRED")) throw error;
+    // Not a decodable JWT (opaque token) — nothing to check locally.
+  }
+}
+
 // Dev-mode premise: route-stable / aria-freeze checks are only valid against a Next dev
 // server. Under `next start` the auth-guard redirect chain differs (observed: /chat.html →
 // /login-register.html → /, where / is the React root with an unrelated DOM), which once
 // turned a G8 --all run fully red. Probed via a dev-only static asset (Turbopack dev answers
 // 200; webpack-hmr does NOT — it 404s under Next 16 Turbopack).
 export async function assertDevBase(options, targets = []) {
+  assertFreshGateToken();
   const origins = [...new Set([options.base, ...targets.map((target) => new URL(target.url).origin)])];
   const notDev = [];
   for (const origin of origins) {

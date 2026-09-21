@@ -15,7 +15,8 @@
 ## 二、当前全站实测（2026-09-21，dev 3322 + 9988 健康 + 有效 token）
 
 - `node scripts/gates/asset-cache-gate.mjs --all`：**25 页 200 检查，failed=0，warnings=0，诊断合计 0**。
-- 结论：编排者验收窗口观察到的「18 条非阻断 console 诊断（me=14 / dashboard=12 / practice=12 / coupons=8 / courses=8 为头部）」在健康窗口**不可复现**（0 条），属**环境瞬态**而非页面缺陷。
+- **归因更正（2026-09-21，GATE-V2 执行者复核）**：编排者验收窗口的「18 条诊断」**不是环境瞬态，而是门禁自身插桩伪影**——G8 旧实现用 `Fetch.enable`（pattern `*.woff2*`）拦字体，CDP Fetch 域激活后页内 fetch 整批失败（pattern 不匹配也失效），每页 7~14 条 `[EAPI] Failed to fetch` + `LOG: ERR_FAILED`，与验收窗口 14/12/12/8/8 量级吻合（复核实测 106 条/18 页，me=14 完全复现）。已改为 `Network.setBlockedURLs`（commit `1fe9623`）后健康窗口实测 0 条、稳定可复跑。隔离证据：仅开 `Fetch.enable` → 14 诊断；仅 `setCacheDisabled` → 0；二者全关 → 0。
+- 以下 §三 C-1 豁免**降级为条件性安全网**（后端真不可用窗口），健康窗口不参与归因。
 
 ## 三、豁免清单
 
@@ -30,4 +31,4 @@
 
 1. 3322 处于 **dev 态**（G6/G7/G8/G9 已接线 `assertDevBase` fail-fast，prod 态直接拒绝启动）。
 2. 后端 9988 存活且未熔断（`/api/health` 类探测通过）。
-3. `EDU_GATE_TOKEN` 注入有效 admin token（无 token 时 auth 守卫页静默降级，虽不产生 [EAPI] 噪声，但会使守卫页渲染态失真）。
+3. `EDU_GATE_TOKEN` 注入**未过期** admin token（`assertFreshGateToken` 已对可解码 JWT 做 exp 预检，过期直接拒绝启动；实证：token 过期会使 auth 守卫页静默降级，coupons.html 曾假红 tab-reachable 14/68，新 token 复跑即 68/68 全绿）。另注意 `--all` 长跑（约 6 分钟）起跑前必须用新 token，避免中途过期。
