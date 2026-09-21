@@ -727,3 +727,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 双前端对账表入库：React 28 路由全量实证（26 完整接线/2 壳跳板/0 部分/3 死链——MeNavList→coupons/favorites/refunds 路由不存在但 API+后端全就绪=演进 P0）；功能域互有领先（静态独占优惠券/收藏/退款/会话审计 4 域，React 领先售后工单）；React 登录不按角色分流（LoginForm 一律 /dashboard，admin 会落错页）。
 - 口径纠偏两条：静态页实为 26 页（admin-chat-audit.html 晚于 matrix 摄制）；后端 openapi 实测 177 paths/210 ops（216 系旧口径，以实测为准——AGENTS 教训 8 再证：文档口径让位实测）。
 - "困惑根源"定案：两代前端同住 3322 同端口，差异只在 .html 后缀且视觉同源——用户无从分辨；对账表 §1 入口速查已终结此问题。
+
+## AUTO20 T10 验收闭环（2026-09-22，d6bb5b1，诊断域零业务码）
+- R26 ⑯「BGE 冷启动退化」**证伪为探针口径问题**：分段计时（cuda 三轮 18-23s）证明 21s 物理基线中 ~12s 是 Python import（torch 3.3+flagembedding 9），磁盘 1.5-1.8GB/s 健康、CUDA init 0.3s 正常、cpu 对照 24.2s 排除 CUDA 因素；历史 552 次加载 p50=21.7s——**30s 门限本就贴着正常冷启动上限**，"退化"不成立（9/19 后零崩溃而 40s+ 长尾持续存在且分布无漂移）。
+- 40s+ 长尾真因：check-demo ⑯ 自身 5 轮 uvicorn 启停叠加常驻服务（显存 4.5/8GB、GPU 78-81C）+ 预热链串行（warmup 44601ms 实测：bge 29s+reranker 11.9s，sidecar 8601 未启动致 fallback 拖长）。
+- 修复建议四条待用户裁：①⑯ 门限两段式（/health 30s 硬门+warmup 300s 仅告警）②健康带 p50≤25s/p90≤55s/硬红 120s ③C: 页面文件 16MB→扩容（9/18 曾 22 次 os error 1455）④启动 8601 sidecar 砍预热。
+- 教训：R03「GPU 8GB 不可复现」同类——**环境性能类红项先做分段归因再定责**，门限口径问题伪装成硬件退化。
