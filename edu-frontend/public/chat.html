@@ -1054,8 +1054,16 @@ if (!__logon) { renderSides(); draw("history"); }
               setStreaming(false);
               try {
                 var d = JSON.parse(payload);
-                /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染 */
-                if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") return;
+                /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染；
+                   [FEAT-WIRE-V2 #9] 若 pending_confirm 卡从未渲染（hitlPending 为空），
+                   旧版 early return 会把「检索知识库并思考中…」指示器永久残留——补诚实降级态 */
+                if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") {
+                  if (!hitlPending) {
+                    var hp = $("aiResp");
+                    if (hp) hp.innerHTML = '<div class="degrade">本次回答需要人工确认后继续，但确认卡未送达（可重新提问）。</div>';
+                  }
+                  return;
+                }
                 if (d && d.data && d.data.session_id) {
                   if (!sid || (opts.resume && d.data.session_id !== sid)) {
                     activeId = d.data.session_id;      /* 防连续发送再开新会话 */
