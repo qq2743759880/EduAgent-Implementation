@@ -92,6 +92,13 @@ class AgentState(TypedDict):
     #    rewrite_query:str|None, degraded_reason:str|None}
     # 消费方：run_agent 返回体真实回填（修硬编码空 docs）+ 流式适配层 retrieval SSE 帧。
     retrieval: dict | None
+    # C-W1-③（AUTO20 T8）：六节点路径 MCP 工具执行凭据（tool 子代理 call_tool handler 内记录，
+    # fan_out 聚合写入；多轮 reflect 重试累计）。元素：
+    #   {call_id, tool_name, args(内层 MCP 工具参数), status(success|error|timeout),
+    #    latency_ms, result_text(content_text 前 400 字符)}
+    # 消费方：run_agent 返回体 tool_results 真实回填 + graph_stream 合并进 mcp_tool_calls
+    # （复用 MCPToolCallSummary schema）→ T7 护栏 apply_tool_receipt_guard 联动零误标。
+    tool_receipts: list[dict]
 
 
 def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentState:
@@ -114,6 +121,7 @@ def _empty_state(query: str, *, user_id: int, session_id: str | None) -> AgentSt
         active_paths=[],
         context_edit=None,
         retrieval=None,
+        tool_receipts=[],
     )
 
 
@@ -488,6 +496,10 @@ def _build_tool_services(*, user_id: int, thread_id: str | None, capture: dict |
     → run_agent 返回体真实 docs/graph_entities，修 audit P1-5 硬编码空返回）。
     """
     services: dict[str, Any] = {}
+    # C-W1-③（AUTO20 T8）：本次 fan_out 的 MCP 工具执行凭据收集器（call_tool 闭包内记录，
+    # fan_out 聚合进 state.tool_receipts）。闭包内局部收集器，禁模块级共享（并发请求串号）。
+    _tool_receipts: list[dict] = []
+    services["__tool_receipts__"] = _tool_receipts
 
     async def search_knowledge(args: dict | None = None):
         from app.chat.retriever import retrieve_three_channel as _retrieve
@@ -522,13 +534,34 @@ def _build_tool_services(*, user_id: int, thread_id: str | None, capture: dict |
 
         args = args or {}
         # task-T1：路由到工具调用闭环（换参→换工具→熔断→人工指南）
-        return await _mcp_executor.call_tool_with_retry(
+        _t0 = time.perf_counter()
+        resp = await _mcp_executor.call_tool_with_retry(
             tool_name=args.get("tool_name", ""),
             args=args.get("args", {}),
             operator_user_id=int(user_id),
             session_id=thread_id or "",
             trace_id=thread_id or "",
         )
+        # C-W1-③（AUTO20 T8）：本闭包是六节点图路径 MCP 工具执行的唯一断点（tool 子代理
+        # call_tool 服务，_build_tool_services 闭包内）——在此记录调用凭据，经 fan_out 聚合进
+        # state.tool_receipts → run_agent/graph_stream 透传响应体 mcp_tool_calls（复用
+        # MCPToolCallSummary schema 字段口径），T7 护栏据此对六节点路径零误标。
+        # 闭环多步（换参/换工具）以最终 attempt 为准：tool_name/latency 取 resp，args 取最外层入参。
+        try:
+            _se = str(resp.status.value if hasattr(resp.status, "value") else resp.status).strip().lower()
+            _receipt = {
+                "call_id": str(resp.call_id),
+                "tool_name": str(resp.tool_name or args.get("tool_name") or ""),
+                "args": dict(args.get("args") or {}),
+                "status": _se if _se in ("success", "error", "timeout") else "error",
+                "latency_ms": int(resp.latency_ms or max(0, int((time.perf_counter() - _t0) * 1000))),
+                "result_text": str(resp.content_text or "")[:400],
+            }
+            if _receipt["tool_name"]:
+                _tool_receipts.append(_receipt)
+        except Exception as _exc:  # noqa: BLE001 — 凭据记录失败绝不影响工具结果返回
+            logger.debug(f"[graph.call_tool] 工具凭据记录失败（忽略）: {type(_exc).__name__}: {_exc}")
+        return resp
 
     async def recall_memory(args: dict | None = None):
         """GWT②：向量召回 top-3 记忆，供 memory 子代理蒸馏进 lead plan prompt。"""
@@ -918,7 +951,10 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
         "answer": final.get("final_answer", ""),
         "docs": docs_out,
         "graph_entities": graph_out,
-        "tool_results": [],
+        # C-W1-③（AUTO20 T8）：六节点路径 MCP 工具执行凭据真实回填（原恒空 []——工具真实执行
+        # 但响应体零回执，C-W1-③ 根因）。fan_out 收集的 tool_receipts 原样透传，调用方
+        # （service.chat_answer / graph_stream）映射为 MCPToolCallSummary 进响应体 mcp_tool_calls。
+        "tool_results": list(final.get("tool_receipts") or []),
         "loop_count": int(final.get("reflect_count", 0)),
         "latency_ms": latency_ms,
         "intent": final.get("intent", ""),

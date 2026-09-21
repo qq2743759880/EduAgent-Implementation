@@ -310,6 +310,10 @@ async def graph_stream_sse(
         mcp_summaries: list = []
         mcp_context = ""
         mcp_degraded: str | None = None
+        # C-W1-③（AUTO20 T8）：六节点图内 fan_out 透传的 MCP 工具凭据条数（见 fan_out update
+        # 消费处）。_await_mcp 收口旧 MCP 预取时若把 mcp_summaries 整体替换，需先把图内凭据
+        # 摘出来保留（两来源合并：图路径真执行凭据 + 旧启发式预取凭据，二者不重复产生）。
+        graph_receipts_count = 0
 
         # CR-1 方案②：写类挂起流层状态（不依赖图 interrupt）——
         # held_hitl_payload 非 None → 写类工具已挂起（待 confirm/reject），流收束；
@@ -392,12 +396,17 @@ async def graph_stream_sse(
         node_arrivals: dict[str, int] = {}
 
         async def _await_mcp() -> None:
-            nonlocal mcp_summaries, mcp_context, mcp_degraded
+            nonlocal mcp_summaries, mcp_context, mcp_degraded, graph_receipts_count
             if mcp_task is not None:
+                # C-W1-③：先摘出图内凭据（fan_out 追加项），防止下方整体替换把真凭据冲掉
+                _graph_items = mcp_summaries[len(mcp_summaries) - graph_receipts_count:] \
+                    if graph_receipts_count and graph_receipts_count <= len(mcp_summaries) else []
                 try:
                     mcp_summaries, mcp_context, mcp_degraded = await mcp_task
                 except Exception as exc:  # noqa: BLE001 — MCP 失败不影响主响应
                     mcp_summaries, mcp_context, mcp_degraded = [], "", "MCP 工具阶段异常（已跳过）"
+                if _graph_items:
+                    mcp_summaries = list(mcp_summaries) + list(_graph_items)
 
         async def _emit_retrieval() -> AsyncGenerator[bytes, None]:
             """组装并发送 retrieval 帧（等 MCP 并行预取收口，保与旧路径帧内容对齐）。"""
@@ -574,6 +583,30 @@ async def graph_stream_sse(
                                 }
                             if node == "fan_out" and isinstance(update.get("retrieval"), dict):
                                 retrieval_payload = update["retrieval"]
+                            # C-W1-③（AUTO20 T8）：fan_out 节点透传的 MCP 工具执行凭据
+                            # （state.tool_receipts）→ 映射 MCPToolCallSummary 追加进
+                            # mcp_summaries（复用既有 schema，与旧路径 run_chat_tool_calls 产物
+                            # 同构）→ retrieval/done 帧与 T7 护栏 apply_tool_receipt_guard 自动联动
+                            # （六节点路径真执行 → 真凭据 → 零误标）。reflect 再 fan_out 多轮累计。
+                            if node == "fan_out" and isinstance(update.get("tool_receipts"), list):
+                                for _r in update["tool_receipts"]:
+                                    if not isinstance(_r, dict) or not str(_r.get("tool_name") or "").strip():
+                                        continue
+                                    try:
+                                        from app.chat.schemas import MCPToolCallSummary as _MCS
+
+                                        mcp_summaries.append(_MCS(
+                                            call_id=str(_r.get("call_id") or ""),
+                                            tool_name=str(_r.get("tool_name") or ""),
+                                            args_summary=str(json.dumps(
+                                                _r.get("args") or {}, ensure_ascii=False, default=str))[:200],
+                                            status="success" if str(_r.get("status")) == "success" else "error",
+                                            latency_ms=int(_r.get("latency_ms") or 0),
+                                            result_summary=str(_r.get("result_text") or "")[:400],
+                                        ))
+                                        graph_receipts_count += 1
+                                    except Exception:  # noqa: BLE001 — 单条凭据映射失败不影响主链路
+                                        continue
                         if retrieval_payload is not None and not retrieval_emitted:
                             async for frame in _emit_retrieval():
                                 yield frame

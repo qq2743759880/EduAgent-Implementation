@@ -370,7 +370,26 @@ async def chat_answer(
                 rewrite_query=req.query,
                 degraded_reason=_agent_deg,
             )
-            mcp_summaries = agent_result.get("tool_results", [])
+            # C-W1-③（AUTO20 T8）：六节点路径 MCP 工具执行凭据真实透传（原恒空——工具真实执行
+            # 但响应体零回执）。tool_results 为 graph.run_agent 回填的凭据 dict（call_id/tool_name/
+            # args/status/latency_ms/result_text），映射为 MCPToolCallSummary（复用既有 schema，
+            # 与旧回退路径 run_chat_tool_calls 产物同构）；映射失败降级为空不炸响应。
+            _raw_receipts = agent_result.get("tool_results", []) or []
+            mcp_summaries = []
+            for _r in _raw_receipts:
+                if not isinstance(_r, dict) or not str(_r.get("tool_name") or "").strip():
+                    continue
+                try:
+                    mcp_summaries.append(MCPToolCallSummary(
+                        call_id=str(_r.get("call_id") or ""),
+                        tool_name=str(_r.get("tool_name") or ""),
+                        args_summary=str(json.dumps(_r.get("args") or {}, ensure_ascii=False, default=str))[:200],
+                        status="success" if str(_r.get("status")) == "success" else "error",
+                        latency_ms=int(_r.get("latency_ms") or 0),
+                        result_summary=str(_r.get("result_text") or "")[:400],
+                    ))
+                except Exception:
+                    continue
             plan = type("Plan", (), {"need_search": True, "query_rewrite": req.query})()
         except Exception as exc:
             logger.warning(f"[P2 chat_answer] LangGraph Agent 异常，回退检索先行：{type(exc).__name__}: {exc}")
@@ -418,7 +437,11 @@ async def chat_answer(
         # 使「降级答案」对用户可见，且 edu_degraded_total 与响应体口径一致。
         merged_deg = bundle.degraded_reason or None
         mcp_context = ""
-        mcp_summaries = []
+        # C-W1-③（AUTO20 T8）：mcp_summaries 已在上方 agent 分支由 tool_results 映射填充
+        # （六节点路径真执行凭据）——原 `mcp_summaries = []` 硬清空是 C-W1-③ 恒空的第二断点，
+        # 禁删（删掉即回退为恒空）。
+        if not isinstance(mcp_summaries, list):
+            mcp_summaries = []
     latency_ms = int((time.perf_counter() - t0) * 1000)
     # 如果工具成功调用且结果存在，把 answer 开头补一段（本地规则兜底时 LLM 看不到 MCP 片段会被降级，这里显式拼接摘要）
     if mcp_summaries and "fallback_rule" in (merged_deg or ""):

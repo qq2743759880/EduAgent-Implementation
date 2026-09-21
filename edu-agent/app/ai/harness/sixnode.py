@@ -256,6 +256,11 @@ class SixNodeHarness(Harness):
         # 子代理路径：capture 闭包捕获 search_knowledge 真实检索产物（P1-5 回填）
         capture: dict = {}
         services = _graph._build_tool_services(user_id=user_id, thread_id=thread_id, capture=capture)
+        # C-W1-③（AUTO20 T8）：call_tool 闭包内记录的 MCP 工具执行凭据（本子代理路径收集器）。
+        # reflect 回 plan 再 fan_out 时每次 fan_out 新建收集器 → state 聚合列表跨轮累计（LastValue 覆盖）。
+        tool_receipts = services.get("__tool_receipts__")
+        if not isinstance(tool_receipts, list):
+            tool_receipts = []
         sub_tasks: list[SubagentTask] = []
         for t in tasks:
             sub_tasks.append(
@@ -288,6 +293,8 @@ class SixNodeHarness(Harness):
                 "rewrite_query": cap_ret.get("rewrite_query"),
                 "degraded_reason": cap_ret.get("degraded_reason"),
             },
+            # C-W1-③（AUTO20 T8）：MCP 工具执行凭据透传（LastValue 覆盖 + 跨 reflect 轮累计）
+            "tool_receipts": list(state.get("tool_receipts") or []) + list(tool_receipts),
         } | _graph._record(state, "fan_out")
 
     async def merge(self, state: AgentState) -> dict:
