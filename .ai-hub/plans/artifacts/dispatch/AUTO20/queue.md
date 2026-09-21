@@ -19,8 +19,8 @@
 | 15 | 文档同步: 用户使用手册/面试演示方案补新功能（记忆反馈/审计视图/上传/新门禁） | docs/ | pending | — | — |
 | 16 | push GitHub 批量（15 单全部验证后；用户既有多轮 push 指令） | — | pending（user-gate 备注可绕） | — | — |
 | 17 | 缓冲槽: 1-16 返工消化/新批判承接项（动态分配；无则补充轮） | — | pending | — | — |
-| 18 | SEED-VIDEO: 120 真实视频生成+82 万行三核闸接线+播放验证（用户裁定后置） | TO-EXEC-SEED-VIDEO | pending | — | — |
-| 19 | ARKBAT-B: glm-5.3-flash 质量盲评（20 query×2 模型+DeepSeek judge）+故障转移演练（用户裁定后置） | kickoff-ARKAPI 残余 | pending | — | — |
+| 18 | SEED-VIDEO: 120 真实视频生成+82 万行三核闸接线+播放验证（用户裁定后置） | TO-EXEC-SEED-VIDEO | ⏸ 用户暂停（2026-09-22）：先不执行，等解冻令 | — | — |
+| 19 | ARKBAT-B: glm-5.3-flash 质量盲评（20 query×2 模型+DeepSeek judge）+故障转移演练（用户裁定后置） | kickoff-ARKAPI 残余 | ⏸ 用户暂停（2026-09-22）：先不执行，等解冻令 | — | — |
 | 20 | BLIND-WAVE: 执行盲测队列累积场景 B6-B9+增量（用户裁定后置，收尾波次） | blind-test-queue.md | pending | — | — |
 
 ## user-gate（需用户在线，跳过不停轮）
