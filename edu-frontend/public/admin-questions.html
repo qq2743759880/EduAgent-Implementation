@@ -775,6 +775,14 @@ window.bootAdmin=function(){
 
   function toast(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){ d.remove(); },3000); }
   function closeModals(){ document.querySelectorAll(".scrim.show").forEach(function(x){ x.classList.remove("show"); }); }
+  /* [FEAT-WIRE-V2 #2] 三路关闭：×/取消按钮(data-close)、ESC、遮罩空白点击。
+     旧版 closeModals 仅被保存/删除成功路径调用，data-close 按钮无绑定 → 弹窗无法关闭（用户实测缺陷）。
+     锚点说明：编辑题目弹窗实际位于列表页 admin-questions.html（q-form），非 admin-question-detail.html（该页为全页表单无弹窗）。 */
+  document.addEventListener("click",function(e){
+    var c=e.target.closest("[data-close]"); if(c){ closeModals(); return; }
+    if(e.target.classList&&e.target.classList.contains("scrim")&&e.target.classList.contains("show")) closeModals();
+  });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeModals(); });
   function setState3(n1,a1,n2,a2,n3,a3){ qs(n1).classList.toggle("hidden",!a1); qs(n2).classList.toggle("hidden",!a2); qs(n3).classList.toggle("hidden",!a3); }
   function typeName(id){ var t=state.typeMap[id]; return t?t.type_name:("#"+id); }
   function typeObj(id){ var t=state.typeMap[id]; return !!(t&&t.objective_flag); }
