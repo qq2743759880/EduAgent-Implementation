@@ -190,7 +190,9 @@ select,input,textarea{font-family:inherit}
 .acc-ind{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;flex-shrink:0;font-size:11px;font-weight:800;transition:transform .2s ease}
 .acc-head[aria-expanded="true"] .acc-ind{transform:rotate(90deg)}
 .acc-body{display:none;padding:4px 16px 12px 46px}
-.acc[open] .acc-body{display:block}
+/* [FEAT-WIRE-V2 #12] 旧写法 .acc[open] 是属性选择器，而 JS 只切 class "open" → 永不匹配，
+   大纲点击展开视觉零反馈（用户缺陷根因之二）；改为类选择器 .acc.open */
+.acc.open .acc-body{display:block}
 .acc-head .syl-cnt{margin-left:auto;font-size:11px;font-weight:600;color:var(--ink-faint)}
 .session{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--htc-31-31-31-001);font-size:12.5px;color:var(--ink-strong)}
 .session:first-child{border-top:none}
@@ -697,6 +699,20 @@ a.session{text-decoration:none}
     });
     var body = $("#sylBody");
     if (body) body.innerHTML = html || '<p class="intro-p" style="padding:10px 16px">大纲暂无可见课次（未报名或课程无内容）。</p>';
+    // [FEAT-WIRE-V2 #12] 大纲节点展开/收起：acc-head 旧版无任何点击绑定（CSS 期待 .acc[open] 但无人切换）
+    // → 「大纲点击无反应」。绑定：点击切换 open 类 + aria-expanded + 指示符 ▶/▼；不依赖「标记完成」。
+    if (body) {
+      body.querySelectorAll(".acc-head").forEach(function (h) {
+        h.addEventListener("click", function () {
+          var acc = h.parentNode;
+          var open = !acc.classList.contains("open");
+          acc.classList.toggle("open", open);
+          h.setAttribute("aria-expanded", open ? "true" : "false");
+          var ind = h.querySelector(".acc-ind");
+          if (ind) ind.textContent = open ? "▼" : "▶";
+        });
+      });
+    }
   }
 
   function findOutlineSession(sid) {
