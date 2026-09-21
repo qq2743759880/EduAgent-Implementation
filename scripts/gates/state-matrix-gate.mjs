@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   PROJECT_ROOT,
+  assertDevBase,
   createBrowser,
   finalizeReport,
   makeCheck,
@@ -123,6 +124,7 @@ if (options.help) {
 
 if (!process.env.EDU_GATE_TOKEN) process.env.EDU_GATE_TOKEN = "gate-state-token";
 const targets = resolveTargets(options);
+await assertDevBase(options, targets);
 const browser = await createBrowser(options);
 const pages = [];
 
@@ -211,8 +213,11 @@ try {
       const diagnostics = [...browser.cdp.diagnostics];
       const exceptions = diagnostics.filter((entry) => entry.startsWith("EXC:"));
       const expectedNetworkNoise = ["loading", "error", "forbidden", "token-expired", "server-500"].includes(state);
+      const naReason = options.na.has(target.name) ? options.naReasons.get(target.name) || "no reason recorded" : null;
       const checks = [
-        makeCheck("state-intercepted", intercepted > 0, `${intercepted} API requests intercepted.`),
+        makeCheck("state-intercepted", intercepted > 0 || Boolean(naReason), naReason
+          ? `SKIP: structurally N/A for this page (${naReason}); ${intercepted} API requests observed.`
+          : `${intercepted} API requests intercepted.`, naReason ? "skip" : "error"),
         makeCheck("state-route", routeExpected, actual ? `Rendered ${actual.pathname}; source ${requested.pathname}.` : "No rendered URL."),
         makeCheck("state-visible", !runtimeError && layout.bodyTextLength > 0, runtimeError || `Visible text length=${layout.bodyTextLength}.`),
         makeCheck("state-no-horizontal-overflow", !layout.horizontalOverflow, `horizontalOverflow=${layout.horizontalOverflow}.`),

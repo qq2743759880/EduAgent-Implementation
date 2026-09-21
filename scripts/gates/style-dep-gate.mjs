@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   PROJECT_ROOT,
+  assertDevBase,
   createBrowser,
   finalizeReport,
   makeCheck,
@@ -134,6 +135,7 @@ if (options.help) {
 }
 
 const targets = resolveTargets(options);
+await assertDevBase(options, targets);
 const baselinePath = path.join(options.out, "style-dep-snapshot.json");
 const existingBaseline = readJson(baselinePath, { schema_version: 1, pages: {} });
 const browser = await createBrowser(options);

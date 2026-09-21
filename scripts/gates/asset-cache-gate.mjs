@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   PROJECT_ROOT,
+  assertDevBase,
   createBrowser,
   finalizeReport,
   makeCheck,
@@ -50,6 +51,7 @@ if (options.help) {
 }
 
 const targets = resolveTargets(options);
+await assertDevBase(options, targets);
 const browser = await createBrowser(options);
 const pages = [];
 

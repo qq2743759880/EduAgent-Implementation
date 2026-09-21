@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "_comment": "Pages whose G9 state-intercepted check is structurally N/A: the page makes no runtime /api/ calls by design, so '0 intercepted' is expected, not a failure. Extend via --na <page> without editing this file.",
+  "pages": [
+    { "name": "login-register.html", "reason": "load-time zero API (auth calls fire only on user submit)" },
+    { "name": "admin-users-refine-proto.html", "reason": "zero script zero API prototype shell" },
+    { "name": "admin-courses-recycle-proto.html", "reason": "zero script zero API prototype shell" }
+  ]
+}

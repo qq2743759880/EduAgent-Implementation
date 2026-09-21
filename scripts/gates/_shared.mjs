@@ -48,12 +48,29 @@ export function sourcePathForTarget(target) {
   return existsSync(candidate) ? candidate : null;
 }
 
+const NA_PAGES_FILE = path.join(HERE, "na-pages.json");
+
+export function loadNaPages() {
+  const file = readJson(NA_PAGES_FILE, null);
+  const entries = Array.isArray(file?.pages) ? file.pages : [];
+  const names = [];
+  const reasons = new Map();
+  for (const entry of entries) {
+    const name = typeof entry === "string" ? entry : entry?.name;
+    if (!name) continue;
+    names.push(name);
+    reasons.set(name, (typeof entry === "object" && entry?.reason) || "");
+  }
+  return { names, reasons };
+}
+
 export function parseCli(argv, { allowCheck = false, allowBaseline = false } = {}) {
   const options = {
     all: false,
     page: null,
     check: false,
     updateBaseline: false,
+    naArgs: [],
     base: process.env.EDU_GATE_BASE || DEFAULT_BASE,
     out: process.env.EDU_GATE_OUT || DEFAULT_OUT,
     chrome: process.env.EDU_GATE_CHROME || null,
@@ -71,9 +88,14 @@ export function parseCli(argv, { allowCheck = false, allowBaseline = false } = {
     else if (arg === "--settle-ms") options.settleMs = Number(argv[++index]);
     else if (arg === "--check" && allowCheck) options.check = true;
     else if (arg === "--update-baseline" && allowBaseline) options.updateBaseline = true;
+    else if (arg === "--na") options.naArgs.push(...String(argv[++index]).split(",").filter(Boolean));
     else if (arg === "--help" || arg === "-h") options.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
+
+  const na = loadNaPages();
+  options.na = new Set([...na.names, ...options.naArgs]);
+  options.naReasons = na.reasons;
 
   if (!options.help && options.all === Boolean(options.page)) {
     throw new Error("Choose exactly one target mode: --all or --page <url>.");
@@ -119,15 +141,43 @@ export function makeCheck(name, pass, detail, severity = "error") {
   return { name, pass: Boolean(pass), detail, severity };
 }
 
+// Dev-mode premise: route-stable / aria-freeze checks are only valid against a Next dev
+// server. Under `next start` the auth-guard redirect chain differs (observed: /chat.html →
+// /login-register.html → /, where / is the React root with an unrelated DOM), which once
+// turned a G8 --all run fully red. Probed via a dev-only static asset (Turbopack dev answers
+// 200; webpack-hmr does NOT — it 404s under Next 16 Turbopack).
+export async function assertDevBase(options, targets = []) {
+  const origins = [...new Set([options.base, ...targets.map((target) => new URL(target.url).origin)])];
+  const notDev = [];
+  for (const origin of origins) {
+    const probe = `${origin}/_next/static/development/_devMiddlewareManifest.json`;
+    let dev = false;
+    try {
+      dev = (await fetch(probe, { signal: AbortSignal.timeout(5000) })).ok;
+    } catch {}
+    if (!dev) notDev.push(origin);
+  }
+  if (notDev.length) {
+    throw new Error(
+      [
+        `GATE-BASE-MODE: not a Next dev server: ${notDev.join(", ")} (dev-only asset /_next/static/development/_devMiddlewareManifest.json did not return 200).`,
+        "route-stable / aria-freeze checks hold only in dev mode: under next start the auth-guard redirect chain differs.",
+        "Start dev first (in edu-frontend/: node node_modules/next/dist/bin/next dev -p 3322) or point EDU_GATE_BASE at a dev instance.",
+      ].join("\n")
+    );
+  }
+}
+
 export function finalizeReport(gate, pages, extra = {}) {
   const checks = pages.flatMap((page) => page.checks || []);
   const failed = checks.filter((item) => !item.pass && item.severity === "error").length;
   const warnings = checks.filter((item) => !item.pass && item.severity === "warning").length;
+  const skipped = checks.filter((item) => item.severity === "skip").length;
   return {
     gate,
     generated_at: new Date().toISOString(),
     status: failed === 0 ? "PASS" : "FAIL",
-    summary: { pages: pages.length, checks: checks.length, failed, warnings },
+    summary: { pages: pages.length, checks: checks.length, failed, warnings, skipped },
     ...extra,
     pages,
   };
@@ -143,13 +193,13 @@ export function writeGateReports(gate, report, outDir) {
   const lines = [
     `${gate} ${report.status}`,
     `generated_at=${report.generated_at}`,
-    `pages=${report.summary.pages} checks=${report.summary.checks} failed=${report.summary.failed} warnings=${report.summary.warnings}`,
+    `pages=${report.summary.pages} checks=${report.summary.checks} failed=${report.summary.failed} warnings=${report.summary.warnings}${Number.isFinite(report.summary.skipped) ? ` skipped=${report.summary.skipped}` : ""}`,
   ];
   for (const page of report.pages) {
     const pageFailed = (page.checks || []).filter((item) => !item.pass && item.severity === "error").length;
     lines.push("", `[${pageFailed ? "FAIL" : "PASS"}] ${page.name} ${page.url || ""}`.trim());
     for (const item of page.checks || []) {
-      const label = item.pass ? "PASS" : item.severity === "warning" ? "WARN" : "FAIL";
+      const label = item.pass ? item.severity === "skip" ? "SKIP" : "PASS" : item.severity === "warning" ? "WARN" : "FAIL";
       lines.push(`  [${label}] ${item.name}: ${item.detail}`);
     }
   }
@@ -534,6 +584,7 @@ export function usage(script, extras = "") {
   return [
     `Usage: node scripts/gates/${script} --page <url> [--out <dir>]`,
     `       node scripts/gates/${script} --all [--out <dir>]`,
+    `       [--na <page-name>...] marks pages whose excluded check is structurally N/A (recorded as SKIP; file default: scripts/gates/na-pages.json)`,
     extras,
     "Environment: EDU_GATE_BASE, EDU_GATE_CHROME, EDU_GATE_TOKEN, EDU_GATE_REFRESH_TOKEN, EDU_GATE_SETTLE_MS",
   ].filter(Boolean).join("\n");
