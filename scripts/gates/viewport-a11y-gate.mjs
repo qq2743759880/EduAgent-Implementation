@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   PROJECT_ROOT,
+  assertDevBase,
   createBrowser,
   finalizeReport,
   makeCheck,
@@ -210,11 +211,19 @@ const ATTRS_EXPRESSION = `(() => ({
 
 const ATTRS_SETTLE_MS = Number(process.env.EDU_GATE_ATTRS_SETTLE_MS || 200);
 
+// Stable-window settle: re-read attrs until two consecutive samples agree
+// (bounded), so a slow dashboard metrics query can no longer freeze "加载中"
+// placeholders into the snapshot. Same code path serves capture and re-verify.
 async function settledAttrs(cdp) {
-  const first = await cdp.evaluate(ATTRS_EXPRESSION);
-  await sleep(ATTRS_SETTLE_MS);
-  const second = await cdp.evaluate(ATTRS_EXPRESSION);
-  return second.attrs.length >= first.attrs.length ? second : first;
+  let previous = null;
+  for (let sample = 0; sample < 8; sample += 1) {
+    const read = await cdp.evaluate(ATTRS_EXPRESSION);
+    const key = JSON.stringify(read.attrs);
+    if (key === previous) return read;
+    previous = key;
+    await sleep(ATTRS_SETTLE_MS);
+  }
+  return cdp.evaluate(ATTRS_EXPRESSION);
 }
 
 async function tabAudit(cdp, expectedCount) {
@@ -245,6 +254,7 @@ if (options.help) {
 }
 
 const targets = resolveTargets(options);
+await assertDevBase(options, targets);
 const baselinePath = path.join(options.out, "viewport-a11y-snapshot.json");
 const baseline = readJson(baselinePath, { schema_version: 1, pages: {} });
 const browser = await createBrowser(options);

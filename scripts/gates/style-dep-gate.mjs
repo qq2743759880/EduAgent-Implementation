@@ -191,12 +191,15 @@ try {
 }
 
 if (options.updateBaseline || !Object.keys(existingBaseline.pages || {}).length) {
+  // Merge (not replace): a --page refresh must keep the frozen snapshots of pages
+  // outside this run instead of wiping the whole baseline file.
+  const mergedPages = { ...(existingBaseline.pages || {}), ...captured };
   writeJson(baselinePath, {
     schema_version: 1,
     generated_at: new Date().toISOString(),
     chrome: browser.chromeVersion,
-    page_count: Object.keys(captured).length,
-    pages: captured,
+    page_count: Object.keys(mergedPages).length,
+    pages: mergedPages,
   });
 }
 
