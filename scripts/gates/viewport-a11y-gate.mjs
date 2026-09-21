@@ -91,7 +91,23 @@ const A11Y_EXPRESSION = `(() => {
     if (value < 4.5) contrastFailures.push({ selector: cssPath(element) + "::placeholder", text: element.placeholder.slice(0, 100), ratio: Math.round(value * 100) / 100, color: style.color, background: backgroundFor(element).map((part) => Math.round(part * 100) / 100) });
   }
   const focusableSelector = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [role=button]:not([aria-disabled=true]), [role=link], [tabindex]:not([tabindex='-1'])";
-  const focusable = [...document.querySelectorAll(focusableSelector)].filter(visible).map(cssPath);
+  const ROVING_CONTAINER_ROLES = /^(tablist|listbox|menu|tree|grid|radiogroup)$/;
+  // Same-name radios share one Tab stop (HTML standard); tabindex=-1 children of a
+  // roving container (WAI-ARIA) are arrow-key reachable — both aggregate to a reached peer.
+  const groupKeyFor = (element) => {
+    if (element.matches("input[type=radio]") && element.name) return "radio:" + element.name;
+    if (element.hasAttribute("tabindex")) {
+      let node = element.parentElement;
+      while (node && node !== document.body) {
+        const role = node.getAttribute("role");
+        if (role && ROVING_CONTAINER_ROLES.test(role)) return "roving:" + role + "@" + cssPath(node);
+        node = node.parentElement;
+      }
+    }
+    return null;
+  };
+  const focusableInfo = [...document.querySelectorAll(focusableSelector)].filter(visible).map((element) => ({ selector: cssPath(element), groupKey: groupKeyFor(element) }));
+  const focusable = focusableInfo.map((item) => item.selector);
   const unlabeledIconControls = [...document.querySelectorAll("button, [role=button], a[href]")].filter(visible).filter((element) => {
     const text = (element.innerText || "").trim();
     const name = element.getAttribute("aria-label") || element.getAttribute("title") || element.querySelector("img[alt]")?.alt || "";
@@ -112,6 +128,7 @@ const A11Y_EXPRESSION = `(() => {
     contrastChecked: measured.size,
     contrastFailures: contrastFailures.slice(0, 200),
     focusable,
+    focusGroups: focusableInfo,
     unlabeledIconControls,
     attrs,
     reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -139,7 +156,20 @@ const ACTIVE_FOCUS_EXPRESSION = `(() => {
   const style = getComputedStyle(element);
   const rect = element.getBoundingClientRect();
   const ring = (parseFloat(style.outlineWidth) > 0 && style.outlineStyle !== "none") || style.boxShadow !== "none";
-  return { selector: cssPath(element), ring, outline: style.outline, boxShadow: style.boxShadow, visibleInViewport: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth };
+  const ROVING_CONTAINER_ROLES = /^(tablist|listbox|menu|tree|grid|radiogroup)$/;
+  const groupKeyFor = (node) => {
+    if (node.matches("input[type=radio]") && node.name) return "radio:" + node.name;
+    if (node.hasAttribute("tabindex")) {
+      let parent = node.parentElement;
+      while (parent && parent !== document.body) {
+        const role = parent.getAttribute("role");
+        if (role && ROVING_CONTAINER_ROLES.test(role)) return "roving:" + role + "@" + cssPath(parent);
+        parent = parent.parentElement;
+      }
+    }
+    return null;
+  };
+  return { selector: cssPath(element), groupKey: groupKeyFor(element), ring, outline: style.outline, boxShadow: style.boxShadow, visibleInViewport: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth };
 })()`;
 
 function compareAttrs(current, expected) {
@@ -223,15 +253,26 @@ try {
     const focusWithoutRing = focus.unique.filter((item) => !item.ring);
     const focusObscured = focus.unique.filter((item) => !item.visibleInViewport);
     const focusable = canonical.focusable || [];
+    const focusGroups = new Map((canonical.focusGroups || []).map((item) => [item.selector, item.groupKey]));
     const reached = new Set(focus.unique.map((item) => item.selector));
-    const unreachable = focusable.filter((selector) => !reached.has(selector));
+    const reachedGroups = new Set(focus.unique.map((item) => item.groupKey).filter(Boolean));
+    const aggregated = [];
+    const unreachable = focusable.filter((selector) => {
+      if (reached.has(selector)) return false;
+      const group = focusGroups.get(selector);
+      if (group && reachedGroups.has(group)) {
+        aggregated.push({ selector, group });
+        return false;
+      }
+      return true;
+    });
     const runningAnimations = viewportResults.reduce((max, item) => Math.max(max, item.runningAnimations || 0), 0);
     const checks = [
       makeCheck("five-viewports", !runtimeError && viewportResults.length === VIEWPORTS.length, runtimeError || `${viewportResults.length}/${VIEWPORTS.length} viewport screenshots captured.`),
       makeCheck("route-stable", redirected.length === 0, `${redirected.length}/${viewportResults.length} viewport loads redirected away from ${requested.pathname}.`),
       makeCheck("no-horizontal-overflow", overflowViews.length === 0, `${overflowViews.length}/${viewportResults.length} viewports overflow horizontally.`),
       makeCheck("contrast-4.5", contrastFailures.length === 0, `${contrastFailures.length} text samples are below 4.5:1.`),
-      makeCheck("tab-reachable", unreachable.length === 0, `${focus.unique.length}/${focusable.length} visible focusable elements reached by Tab.`),
+      makeCheck("tab-reachable", unreachable.length === 0, `${focus.unique.length}/${focusable.length} visible focusable elements reached by Tab` + (aggregated.length ? ` (+${aggregated.length} aggregated via same-name radio group / roving tabindex container)` : "") + (unreachable.length ? `; ${unreachable.length} unreachable` : "") + "."),
       makeCheck("focus-visible", focusWithoutRing.length === 0, `${focusWithoutRing.length}/${focus.unique.length} reached elements lack a visible focus ring.`),
       makeCheck("focus-not-obscured", focusObscured.length === 0, `${focusObscured.length}/${focus.unique.length} reached elements are outside the visible viewport after focus.`),
       makeCheck("icon-control-name", (canonical.unlabeledIconControls || []).length === 0, `${(canonical.unlabeledIconControls || []).length} visible icon-only controls lack an accessible name.`),
@@ -246,6 +287,7 @@ try {
       focus,
       lostAttrs,
       unreachable: unreachable.slice(0, 200),
+      tabAggregated: aggregated.slice(0, 200),
       focusWithoutRing: focusWithoutRing.slice(0, 200),
       contrastFailures: contrastFailures.slice(0, 300),
       diagnostics: [...browser.cdp.diagnostics],
