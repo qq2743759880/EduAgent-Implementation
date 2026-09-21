@@ -1033,6 +1033,8 @@ window.bootAdmin = function () {
     $("ragAuditPrev").onclick = function () { if (ragAuditPage > 1) refreshRagAudit(ragAuditPage - 1); };
     $("ragAuditNext").onclick = function () { refreshRagAudit(ragAuditPage + 1); };
     $("ragAuditSize").onchange = function () { refreshRagAudit(1); };
+    /* [REWORK P0-3] 页码指示按钮此前无绑定（点击无反应）；现为重新拉取当前页 */
+    $("ragAuditPageBtn").onclick = function () { refreshRagAudit(ragAuditPage); };
   }
 
   /* ---- 高级检索 ---- */

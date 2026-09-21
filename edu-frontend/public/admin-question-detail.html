@@ -670,6 +670,11 @@ window.bootAdmin=function(){
         +'<button class="opt-del" data-optdel="'+kind+'" data-ol="'+l+'">×</button>'
         +'</div>';
     }).join("");
+    /* [REWORK P0-3] 选项删除按钮此前渲染后零绑定（window.delOpt 已定义但从未被调用）→ 点击无反应 */
+    var dels=el.querySelectorAll("[data-optdel]");
+    for(var i=0;i<dels.length;i++){
+      dels[i].onclick=function(){ window.delOpt(this); };
+    }
   }
   window.addOpt=function(kind){
     var next=null;

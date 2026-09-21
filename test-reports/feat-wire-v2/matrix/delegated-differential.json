@@ -1,0 +1,1778 @@
+{
+  "generated_at": "2026-09-21T15:03:47.565Z",
+  "method": "pass1=首次点击差分(观察器缺陷致 mut 恒 0) → pass2=文本精确匹配+修复观察器重测 → 合并终判",
+  "total": 83,
+  "summary": {
+    "disabled-by-design": 13,
+    "wired-network-nav": 26,
+    "wired-dom-mutation": 27,
+    "fixed-this-rework": 3,
+    "prototype-honest": 14
+  },
+  "results": [
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/admin/courses/series?page=1&page_size=20&sale_status=off_sale",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "2",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 4,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "3",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 5,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "…",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "17",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 9,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-courses-recycle-proto.html",
+      "sel": "#pager > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-mcp.html",
+      "sel": "#logPage",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "fixed-this-rework",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      },
+      "note": "MCP 调用日志页码按钮补绑定 loadLog()；CDP 复点日志刷新"
+    },
+    {
+      "page": "admin-question-detail.html",
+      "sel": "#single-body > button.opt-del",
+      "text": "×",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "×"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "fixed-this-rework",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      },
+      "note": "选项删除按钮渲染后零绑定(delOpt 已定义从未调用)→renderOpts 后补 onclick；CDP 实证注入内容被清除"
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-body > button.btn.btn-primary",
+      "text": "管理",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "管理"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/admin/questions/banks/449/questions?page=1&page_size=10",
+          "method": "GET"
+        },
+        {
+          "url": "http://127.0.0.1:9988/api/admin/questions/banks/449/questions?page=1&page_size=10",
+          "method": "OPTIONS"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-body > button.btn.btn-ghost",
+      "text": "编辑",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "编辑"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 20,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-body > button.btn.btn-ghost",
+      "text": "删除",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "删除"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 12,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/admin/questions/banks?page=1&page_size=10",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button",
+      "text": "2",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 16,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button",
+      "text": "3",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 16,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button",
+      "text": "45",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 16,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-questions.html",
+      "sel": "#bank-pager > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-rag-upload.html",
+      "sel": "#taskCard > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 30,
+        "net": 0,
+        "consoleErrs": [
+          "[EAPI] 依赖服务暂不可用，请稍后重试 Error: 依赖服务暂不可用，请稍后重试\n    at apiError (http://127.0.0.1:3322/edu-api.js:120:17)\n    at http://127.0.0.1:3322/edu-api.js:138:15"
+        ]
+      }
+    },
+    {
+      "page": "admin-rag-upload.html",
+      "sel": "#taskCard > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "fixed-this-rework",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      },
+      "note": "audit 分页 cur 按钮补绑定 refreshRagAudit(ragAuditPage)；修后 CDP 复点触发刷新（共 1,389 条重新拉取）"
+    },
+    {
+      "page": "admin-rag-upload.html",
+      "sel": "#taskCard > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "›"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/knowledge/tasks?page=1&page_size=10",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button.btn.btn-ghost",
+      "text": "重置",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "重置"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button.link-btn",
+      "text": "查看",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "查看"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button.btn.btn-ghost",
+      "text": "编辑",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "编辑"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button.btn.btn-ghost",
+      "text": "禁用",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "禁用"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button",
+      "text": "2",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "2"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button",
+      "text": "3",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "3"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button",
+      "text": "10004",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "10004"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s2 > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "›"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s4 > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s4 > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s4 > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "›"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s6 > button.btn.btn-ghost",
+      "text": "取消",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "取消"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s6 > button.btn.btn-primary",
+      "text": "确认禁用",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "确认禁用"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s7 > button.btn.btn-ghost",
+      "text": "取消",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "取消"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users-refine-proto.html",
+      "sel": "#s7 > button.btn.btn-primary",
+      "text": "保存变更",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "保存变更"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "prototype-honest",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-body > button.link-btn",
+      "text": "查看",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "查看"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 28,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-body > button.btn.btn-ghost",
+      "text": "编辑",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "编辑"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 28,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-body > button.btn.btn-ghost",
+      "text": "禁用",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "禁用"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 42,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button",
+      "text": "‹",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button.cur",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/admin/users?page=1&page_size=10",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button",
+      "text": "2",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 35,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button",
+      "text": "3",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 35,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button",
+      "text": "10013",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 35,
+        "net": 2,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "admin-users.html",
+      "sel": "#u-pager > button",
+      "text": "›",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "‹"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "community.html",
+      "sel": "#boards > button.like-btn",
+      "text": "7",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "8"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/1/like",
+          "method": "POST"
+        },
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/1/like",
+          "method": "OPTIONS"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "community.html",
+      "sel": "#boards > button.like-btn",
+      "text": "1",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "2"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/63/like",
+          "method": "POST"
+        },
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/63/like",
+          "method": "OPTIONS"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "community.html",
+      "sel": "#boards > button.like-btn",
+      "text": "0",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/71/like",
+          "method": "POST"
+        },
+        {
+          "url": "http://127.0.0.1:9988/api/community/posts/71/like",
+          "method": "OPTIONS"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#cohortList > button.cohort.selected",
+      "text": "通用编程入门班·直播 202608期\n      已满员08/12 开班\n   ",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "通用编程入门班·直播 202608期\n      已满员08"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#cohortList > button.cohort.disabled",
+      "text": "通用编程入门班·直播 202610期\n      已满员10/25 开班\n   ",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "通用编程入门班·直播 202610期\n      已满员10"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "disabled-by-design",
+      "pass2": {
+        "mutDelta": 0,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "加载",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "加载"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "错误",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "错误"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "未登录",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "未登录"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "375",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "375"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "768",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "768"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "1024",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1024"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "1280",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1280"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "course-detail.html",
+      "sel": "#page > button",
+      "text": "1440",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "1440"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 24,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip.active",
+      "text": "全部",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "💻 编程",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "🖥️ 计算机系统",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "📊 数据与AI",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "🎮 图形与游戏",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "📐 数学",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "🎯 考研/考证/公考",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "📈 管理与职场",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "🏢 企业培训",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#categoryRow > button.chip",
+      "text": "🌱 校园成长",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#deliveryRow > button.chip.active",
+      "text": "全部",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#deliveryRow > button.chip",
+      "text": "在线直播",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#deliveryRow > button.chip",
+      "text": "在线录播",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#deliveryRow > button.chip",
+      "text": "线下面授",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "全部"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#sortRow > button.chip.active",
+      "text": "综合",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "综合"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#sortRow > button.chip",
+      "text": "最新",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "综合"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#sortRow > button.chip",
+      "text": "价格↑",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "综合"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "courses.html",
+      "sel": "#sortRow > button.chip",
+      "text": "价格↓",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "综合"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [
+        {
+          "url": "http://127.0.0.1:9988/api/series?page=1&page_size=15",
+          "method": "GET"
+        }
+      ],
+      "cls": "effect",
+      "final": "wired-network-nav"
+    },
+    {
+      "page": "login-register.html",
+      "sel": "#page-seg > button.on",
+      "text": "登录",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "登录"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 108,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "login-register.html",
+      "sel": "#page-seg > button",
+      "text": "注册",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "登录"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 144,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "login-register.html",
+      "sel": "#login-btn",
+      "text": "登录",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "登录"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 90,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "me.html",
+      "sel": "#pfSave",
+      "text": "保存档案",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "保存档案"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 10,
+        "net": 0,
+        "consoleErrs": []
+      }
+    },
+    {
+      "page": "practice.html",
+      "sel": "#wrongTbody > button.redo",
+      "text": "重做",
+      "click": {
+        "ok": true,
+        "tag": "BUTTON",
+        "text": "重做"
+      },
+      "mutated": false,
+      "mutDelta": 0,
+      "navigated": false,
+      "net": [],
+      "cls": "no-effect",
+      "final": "wired-dom-mutation",
+      "pass2": {
+        "mutDelta": 33,
+        "net": 2,
+        "consoleErrs": []
+      }
+    }
+  ]
+}

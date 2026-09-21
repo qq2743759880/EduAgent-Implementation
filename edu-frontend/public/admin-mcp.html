@@ -665,6 +665,8 @@ function loadLog(){
 }
 $("logPrev").onclick=function(){if(logPage>1){logPage--;loadLog();}};
 $("logNext").onclick=function(){logPage++;loadLog();};
+/* [REWORK P0-3] 页码指示按钮此前无绑定（点击无反应）；现为重新拉取当前页 */
+$("logPage").onclick=function(){loadLog();};
 
 /* ---------- 初始化 ---------- */
 if(!EAPI.store.getToken()){setSub("⚠ 请用管理员账号登录后刷新本页");return;}
