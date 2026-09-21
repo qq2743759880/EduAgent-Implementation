@@ -13,7 +13,7 @@
 | 9 | GATE-V3: 门禁数据就绪竞态机制化（courses 动画/my-cohorts/me 的 settle→数据就绪探测） | tracker 登记 | ✅ 闭环 | ab7e216；waitForReady 稳定窗（网络空闲 250ms+双一致 DOM）三门禁复用+tab walk 前并入；8 组负控（C 组假红首例注入稳定复现→D 组 38/38 修绿）；编排者亲测 me 页 G7 全绿 settled×5 | ab7e216 |
 | 10 | R26: ⑯ BGE 冷启动 40s+ 诊断（崩溃后 GPU 态/进程级加载） | tracker 候选 | ✅ 闭环 | d6bb5b1；结论=C 探针口径为主+A′环境方差为辅（B 硬件退化排除）：21s 物理基线中 12s 是 Python import、40s+ 长尾=体检自身 5 轮启停叠加+预热串行（44601ms 实测）；修复建议四条入库待裁 | d6bb5b1 |
 | 11 | 双前端对账表: React 路由面 vs 25 静态页功能对照（docs/ 入库） | FEAT-WIRE B6 残余 | ✅ 闭环 | d108ec4；React 28 路由实证 26 完整/2 壳+3 死链（MeNavList→coupons/favorites/refunds）；口径纠偏：静态页实为 26 页（admin-chat-audit 追加）、openapi 实测 177 paths/210 ops；对账表+入口速查入库 | d108ec4 |
-| 12 | course_create batch-2: HITL 实弹（测试窗开 HITL_ENABLED→confirm/reject 全链→恢复） | 时光.md §四+变更单 | pending | — | — |
+| 12 | course_create batch-2: HITL 实弹（测试窗开 HITL_ENABLED→confirm/reject 全链→恢复） | 时光.md §四+变更单 | ✅ 闭环 | e7d7176；编排者亲验：挂起 7/注册面 10/course=admin_write/risk=high/favorite=None/矩阵 admin=T student=F manager=F；student 诱导亲测零确认卡；30+140 passed；HITL 开关复原实证（.env 无生效行/settings False） | e7d7176 |
 | 13 | 全站四门终扫+G10 再演（REWORK 全部消化后回归锁定） | GATE-V2 工具 | pending | — | — |
 | 14 | Mimosa 全量审计重跑（消除 scanner_enobufs fail-open 窗口+验证排除门全链路） | MIMOSA-EXCL 披露 | ✅ 闭环 | 17942b3；深扫成功（1219 文件/410 findings/封印齐）enobufs 未复现；排除门未被穿透（两测试文件 findings 0 出现）；如实披露：排除门对 MCP 通道本就不适用+commit-gate fail-open 模式仍在（独立工单建议）；净新增 1 HIGH（artifact_store 路径穿越，0 调用方，P2 登记） | 17942b3 |
 | 15 | 文档同步: 用户使用手册/面试演示方案补新功能（记忆反馈/审计视图/上传/新门禁） | docs/ | pending | — | — |

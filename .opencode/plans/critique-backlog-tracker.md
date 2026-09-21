@@ -746,3 +746,10 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **fail-open 现状如实**：深扫背书补齐 ≠ 消除——commit-gate 通道 inconclusive→兼容放行仍在（38/40 条 history，主因 task baseline 不可得非 enobufs），独立工单治理建议已入报告 §6。
 - **净新增 1 HIGH**：artifact_store.py 三点路径穿越（0918 新文件）——甄别为入口双重约束+0 生产调用方，P2 登记不修（修复另立项）；其余 14 条 app 级与既有登记对齐无回归。
 - 教训：**安全审计结论必须分通道表述**——"扫描成功"不等于"fail-open 消除"，通道间不可互替。
+
+## AUTO20 T12 验收闭环（2026-09-22，e7d7176，chat 后端域）
+- **course_create 高危写工具全链落地（CR-WRITETOOLS-001 第二批）**：闸1 executor 注册（42201 双保险+hitl_confirmed 注入）/闸2 矩阵（挂起 8→7、注册面 9→10、course_create=admin_write=high 按 P2 裁定）/闸3 HITL 五字段帧（risk=high 字节级断言）。
+- **编排者亲验**：矩阵五断言全对（admin_write/high/favorite None/角色矩阵）；**student 诱导亲测零确认卡**（deny 信封路径，未授权者连卡都看不到——盲测 B9 前半 ✅）；30+140 passed 亲跑。
+- **执行者六场景 E2E**（报告三段式）：pending_confirm 帧/reject 0 行/confirm DB id=3135+审计+40901 幂等/清理走 API 软删/student deny/HITL 开关复原（.env 无生效行+settings False 亲验）。
+- 底稿差异处置如实：create_series 实读存在、modules 仅登记回执、institution_id 服务端兜底；批判段登记双通道凭据冗余 P1 观察项。
+- **里程碑**：写类工具面 2/10 实弹（favorite_add user_write 免卡+course_create admin_write 强制卡）——时光.md P1-P6 全部兑现，HITL 主链路首次真实弹卡真实拦截。
