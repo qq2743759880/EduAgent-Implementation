@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<h1>api down sim</h1>
+<script>window.EDU_API_BASE="http://127.0.0.1:19988";</script>
+<script src="/edu-api.js"></script>
+<script>
+EAPI.get("/api/courses?page=1&page_size=1");
+EAPI.get("/api/me/summary");
+EAPI.get("/api/me/favorites?page=1");
+</script>
+</body></html>

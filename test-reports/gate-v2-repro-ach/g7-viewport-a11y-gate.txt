@@ -1,0 +1,16 @@
+g7-viewport-a11y-gate PASS
+generated_at=2026-09-21T01:32:52.555Z
+pages=1 checks=11 failed=0 warnings=0
+
+[PASS] achievements.html http://127.0.0.1:3322/achievements.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /achievements.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 11/11 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/11 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/11 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
