@@ -710,3 +710,8 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 执行者顺带环境治理：Redis 容器（6377）未运行致限流整体降级，已 docker start 恢复。
 - 遗留登记：空壳 TestMiddlewareOrder、旧 app/common/rate_limit.py 死代码；死规则 /api/trade/refund、/api/after_sales/ticket 不擅改保留。全量 1737 passed/5 failed/11 errors=存量数据态+TEST_BASE 默认 8000 旧契约测试（stash 对照隔离验证与本单无关）。
 - 教训：E2E 验收顺序坑——先跑 orders 12 连发验证收窄，再跑 order 超限验 429（顺序反了会被限流窗口互相污染）。
+
+## AUTO20 T7 验收闭环（2026-09-21，d2b6efa，编排者亲证）
+- F-W1-GUARD 硬化闭环：receipt_guard.py 纯函数（写类完成语义∧无 success 凭据→tool_receipt_unverified+诚实修正句；error 凭据不算证据；只读零拦；幂等）+词表配置化+双链路单一事实源（流式 make_stream_finalize/非流式 chat_answer）。
+- 编排者亲测：诱导捏造场景（导入知识库被拒）→标记 True+修正句在答案尾部；17+227+21 passed 亲跑；前端黄条+G3 全站 PASS。
+- 盲测 B6 ✅。C-W1-② 从"部分修"转"已硬化"，tracker 首例 P0 项全周期闭环（发现→缓解→硬化→机检护栏→盲测）。
