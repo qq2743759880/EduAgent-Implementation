@@ -606,8 +606,8 @@ footer{color:var(--ink-faint);font-size:11px;margin-top:26px;line-height:1.7;bor
         <article class="entry purple">
           <div class="accent" aria-hidden="true"></div>
           <span class="ico" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span>
-          <h3>专项练习 <span class="count">按题型选择 · 待联调</span></h3>
-          <p id="topic-note">按题型过滤（单选/多选/填空/判断），定向刷题型，搭配难度过滤。</p>
+          <h3>专项练习 <span class="count">按题型选择 · 六题型</span></h3>
+          <p id="topic-note">按题型过滤（单选/多选/填空/判断/排序/连线），定向刷题型；选题后自动进入下方复习会话，真实判分并回写错题本。</p>
           <button class="go" type="button" aria-describedby="topic-note">去练习</button>
         </article>
       </section>
@@ -1093,6 +1093,9 @@ document.querySelectorAll('.judge-opt').forEach(o => o.addEventListener('click',
     hideQuizDemo();
     renderReviewHead();
     getNext();
+    // [FEAT-WIRE-V2 #7] 复习会话区在页面下方，选题后滚入视口
+    var rv = $$('review-real');
+    if (rv && rv.scrollIntoView) setTimeout(function () { rv.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120);
   }
   function renderReviewHead() {
     $$('review-real').innerHTML =
