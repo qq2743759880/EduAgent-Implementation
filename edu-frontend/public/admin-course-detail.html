@@ -914,14 +914,27 @@ function tlAdd(title,detail,cls){
   d.innerHTML='<span class="tt">'+esc(title)+'</span><span class="td">'+esc(detail)+'</span>';
   $("timeline").appendChild(d);
 }
-function upErr(m){var e=$("upErr");e.textContent="✕ "+m;e.style.display="block";}
+function upErr(m){var e=$("upErr");e.textContent="✕ "+m;e.style.display="block";showRetry();}
+/* [REWORK P0-4] 失败可重试 UI：出错时显示「↻ 重试上传」按钮（S.uploadFile 保留原文件，点击整链重传） */
+function showRetry(){
+  var old=$("upRetry"); if(old) old.remove();
+  if(!S.uploadFile) return;
+  var b=document.createElement("button");
+  b.id="upRetry"; b.type="button"; b.className="btn btn-ghost btn-mini";
+  b.style.cssText="margin-top:6px";
+  b.textContent="↻ 重试上传（"+S.uploadFile.name+"）";
+  b.onclick=function(){ b.disabled=true; var f=S.uploadFile; S.uploading=false; startUpload(f); };
+  $("upErr").parentNode.insertBefore(b, $("upErr").nextSibling);
+}
 function startUpload(file){
   if(S.uploading)return;
   $("upErr").style.display="none";
+  var oldR=$("upRetry"); if(oldR) oldR.remove();
   if(!S.sessionId){upErr("请先从课次列表打开视频面板");return;}
   var ext=(file.name.lastIndexOf(".")>=0?file.name.slice(file.name.lastIndexOf(".")).toLowerCase():"");
   if([".mp4",".mov",".m4v",".webm",".mkv"].indexOf(ext)<0){upErr("不支持的文件类型 "+ext);return;}
   S.uploading=true;
+  S.uploadFile=file; /* [REWORK P0-4] 保留文件引用供失败重试 */
   $("stepper").style.display="";$("timeline").innerHTML="";
   setStep(0,"cur");
   var count=Math.max(1,Math.ceil(file.size/CHUNK));
@@ -933,7 +946,7 @@ function startUpload(file){
     var up=$("up-pg"),mt=$("up-mt");up.style.display="";mt.style.display="";
     $("upMetaL").textContent=file.name+" · "+(file.size/1024/1024).toFixed(1)+"MB · "+count+" 分片";
     var sent=0;
-    function putChunk(i){
+    function putChunk(i,retry){
       if(i>=count)return finalize();
       var startB=i*CHUNK,endB=Math.min(file.size,(i+1)*CHUNK);
       var blob=file.slice(startB,endB);
@@ -945,10 +958,17 @@ function startUpload(file){
         var pct=Math.round((sent+ev.loaded)/file.size*100);
         up.firstElementChild.style.width=pct+"%";$("upMetaR").textContent=pct+"%";}};
       xhr.onload=function(){
-        if(xhr.status>=200&&xhr.status<300){sent+=endB-startB;putChunk(i+1);}
-        else upErr("分片 "+i+" 上传失败：HTTP "+xhr.status);
+        if(xhr.status>=200&&xhr.status<300){sent+=endB-startB;putChunk(i+1,0);}
+        else if((retry||0)<2){ /* [REWORK P0-4] 分片级自动重试（同一分片最多重发 2 次） */
+          tlAdd("分片 "+i+" 失败（HTTP "+xhr.status+"）","自动重试第 "+((retry||0)+1)+" 次","bad");
+          putChunk(i,(retry||0)+1);
+        }
+        else upErr("分片 "+i+" 上传失败：HTTP "+xhr.status+"（已自动重试 2 次，可点下方重试整链）");
       };
-      xhr.onerror=function(){upErr("网络错误：分片 "+i+" 上传失败");};
+      xhr.onerror=function(){
+        if((retry||0)<2){ tlAdd("分片 "+i+" 网络错误","自动重试第 "+((retry||0)+1)+" 次","bad"); putChunk(i,(retry||0)+1); }
+        else upErr("网络错误：分片 "+i+" 上传失败（已自动重试 2 次，可点下方重试整链）");
+      };
       xhr.send(blob);
     }
     function finalize(){
