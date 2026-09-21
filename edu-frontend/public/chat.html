@@ -164,6 +164,12 @@ textarea{font-family:inherit}
 .bubb pre.md-pre{background:var(--surface-code);border:0;border-radius:var(--radius-input);padding:10px 12px;margin:.55em 0;overflow-x:auto;line-height:1.55;max-width:100%;font-family:ui-monospace,Consolas,monospace}
 .bubb pre.md-pre code{background:none;border:none;border-radius:0;padding:0;font-size:12px;color:var(--text-on-dark)}
 .bubb .md-err{margin-top:.6em;font-size:12px;font-weight:800;color:var(--page-danger-ink)}
+/* [REWORK P0-2] 答后记忆反馈条（done 帧 memorized 落库时显示） */
+.bubb .memo-bar{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--status-success-bg,var(--candy-green-soft,#E7F6EC));color:var(--text-strong);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .memo-bar .memo-ic{flex:0 0 auto}
+.bubb .memo-bar .memo-tx{font-weight:600;word-break:break-all}
 .msg .meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.625rem;color:var(--text-muted);font-weight:600}
 .msg.user .meta{justify-content:flex-end}
 .meta .refs{display:inline-flex;align-items:center;gap:4px;color:var(--page-link);font-weight:700}
@@ -980,7 +986,7 @@ if (!__logon) { renderSides(); draw("history"); }
   /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 120ms 节流） */
   function openStream(query, sid, opts) {
     opts = opts || {};
-    var acc = "", gotToken = false, gotDone = false, renderTimer = null;
+    var acc = "", gotToken = false, gotDone = false, renderTimer = null, doneMemo = [];
     function renderStream(final) {
       var el = $("aiResp"); if (!el || !acc) return;
       var htmlOut = md(acc);
@@ -1070,10 +1076,26 @@ if (!__logon) { renderSides(); draw("history"); }
                     loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
                   }
                 }
+                /* [REWORK P0-2] 答后记忆反馈条：缓存到 doneMemo，在下方 renderStream(true) 之后再
+                   追加——renderStream 是整体 innerHTML 重写，先追加会被抹掉（实测踩坑）。 */
+                if (d && d.data && Array.isArray(d.data.memorized) && d.data.memorized.length) {
+                  doneMemo = d.data.memorized;
+                }
               } catch (e) {}
               if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
               if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
               else renderStream(true);
+              if (doneMemo.length) {
+                var mr = $("aiResp");
+                if (mr) {
+                  var bar = document.createElement("div");
+                  bar.className = "memo-bar";
+                  bar.setAttribute("role", "status");
+                  bar.innerHTML = '<span class="memo-ic">💾</span>已记住：<span class="memo-tx">' +
+                    esc(doneMemo.join("；")) + "</span>";
+                  mr.appendChild(bar);
+                }
+              }
             }
             else if (evt === "error") {
               /* task07③：error 事件诚实展示——保留已渲染内容 + 行内中断提示 + toast，不清空舞台 */
