@@ -168,6 +168,11 @@ class RagAnswerResponse(BaseModel):
         default_factory=list,
         description="P8：本轮实际调用的工具摘要列表（空 = 未触发任何工具）",
     )
+    # --- F-W1-GUARD（AUTO20 T7，C-W1-②）答案层写类回执机检护栏 ---
+    tool_receipt_unverified: bool = Field(
+        False,
+        description="F-W1-GUARD：答案提及写类完成语义但无真实工具执行凭据 → True（答案尾部已追加诚实修正句）",
+    )
 
 
 # ============================================================

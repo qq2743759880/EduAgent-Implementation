@@ -33,6 +33,7 @@ from app.chat.schemas import (
 )
 from app.chat.tool_calling import run_chat_tool_calls
 from app.chat.flows.agent import run_agent_turn
+from app.chat.receipt_guard import TOOL_RECEIPT_FLAG, apply_tool_receipt_guard
 from app.common.exceptions import NotFoundError, ValidationError
 from app.common.logging import logger
 from app.config import settings
@@ -428,6 +429,11 @@ async def chat_answer(
     # 4.1) 推断 llm_model_used（简化：降级理由里 LLM 调用失败/本地规则兜底 → fallback_rule；否则用 req.model）
     llm_model_used = "fallback_rule" if (merged_deg and ("LLM 调用失败" in merged_deg or "规则兜底" in merged_deg)) else str(req.model or "fast")
 
+    # 4.05) F-W1-GUARD（AUTO20 T7，C-W1-②）：答案层写类回执机检护栏——
+    #  答案提及写类完成语义 ∧ 无 success 工具凭据 → 追加诚实修正句 + tool_receipt_unverified=True。
+    #  只加提示不改写原答案；有真实凭据零变化（详见 app/chat/receipt_guard.py）。
+    answer, _receipt_unverified = apply_tool_receipt_guard(answer, mcp_tool_calls=mcp_summaries)
+
     # 5) 落库（若有会话）
     message_id_user: str | None = None
     message_id_assistant: str | None = None
@@ -518,6 +524,7 @@ async def chat_answer(
         latency_ms=latency_ms,
         degraded_reason=merged_deg,
         mcp_tool_calls=mcp_summaries,
+        tool_receipt_unverified=_receipt_unverified,
     )
 
 
@@ -559,6 +566,13 @@ def make_stream_finalize(
 
         # 推断 llm_model_used（同非流式逻辑）
         llm_model_used = "fallback_rule" if (merged_deg and ("LLM 调用失败" in merged_deg or "规则兜底" in merged_deg)) else str(req.model or "fast")
+
+        # F-W1-GUARD（AUTO20 T7，C-W1-②）：答案层写类回执机检护栏（两执行体单一事实源）——
+        # 答案提及写类完成语义 ∧ mcp_tool_calls 无 success 凭据 → 答案尾部追加诚实修正句 +
+        # done 帧 data.tool_receipt_unverified=True；只加提示不改写原答案（详见 receipt_guard.py）。
+        final_answer, receipt_unverified = apply_tool_receipt_guard(
+            final_answer, mcp_tool_calls=mcp_summaries,
+        )
 
         message_id_user: str | None = None
         message_id_assistant: str | None = None
@@ -655,6 +669,9 @@ def make_stream_finalize(
             "degraded_reason": merged_deg,
             "mcp_tool_calls": [s.model_dump() for s in mcp_summaries],
             "memorized": memorized,
+            # F-W1-GUARD（AUTO20 T7）：写类回执未验证标记（前端黄色警示条依据）。
+            # 契约侧 test_sse_envelope_contract 用 DONE_DATA_KEYS <= keys 子集断言，加字段不破契约。
+            TOOL_RECEIPT_FLAG: receipt_unverified,
         }
 
     return build_finalize

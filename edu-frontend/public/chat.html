@@ -170,6 +170,13 @@ textarea{font-family:inherit}
   border-radius:10px;padding:7px 10px;line-height:1.5}
 .bubb .memo-bar .memo-ic{flex:0 0 auto}
 .bubb .memo-bar .memo-tx{font-weight:600;word-break:break-all}
+/* [F-W1-GUARD AUTO20 T7] 写类回执未验证警示条（done 帧 tool_receipt_unverified=true 时显示） */
+.bubb .receipt-warn{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--clay-lemon,#FFF4C9);color:var(--text-strong);
+  border:1.5px dashed rgba(190,149,35,.45);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .receipt-warn .receipt-ic{flex:0 0 auto}
+.bubb .receipt-warn .receipt-tx{font-weight:600;word-break:break-all}
 .msg .meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.625rem;color:var(--text-muted);font-weight:600}
 .msg.user .meta{justify-content:flex-end}
 .meta .refs{display:inline-flex;align-items:center;gap:4px;color:var(--page-link);font-weight:700}
@@ -987,6 +994,7 @@ if (!__logon) { renderSides(); draw("history"); }
   function openStream(query, sid, opts) {
     opts = opts || {};
     var acc = "", gotToken = false, gotDone = false, renderTimer = null, doneMemo = [];
+    var doneReceiptWarn = false; /* [F-W1-GUARD AUTO20 T7] done 帧 tool_receipt_unverified=true → 黄色警示条 */
     function renderStream(final) {
       var el = $("aiResp"); if (!el || !acc) return;
       var htmlOut = md(acc);
@@ -1081,10 +1089,26 @@ if (!__logon) { renderSides(); draw("history"); }
                 if (d && d.data && Array.isArray(d.data.memorized) && d.data.memorized.length) {
                   doneMemo = d.data.memorized;
                 }
+                /* [F-W1-GUARD AUTO20 T7] 写类回执未验证标记：缓存到 doneReceiptWarn，
+                   同样在 renderStream(true) 之后追加（防被整体重写抹掉）。 */
+                if (d && d.data && d.data.tool_receipt_unverified === true) {
+                  doneReceiptWarn = true;
+                }
               } catch (e) {}
               if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
               if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
               else renderStream(true);
+              if (doneReceiptWarn) {
+                var wr = $("aiResp");
+                if (wr) {
+                  var warn = document.createElement("div");
+                  warn.className = "receipt-warn";
+                  warn.setAttribute("role", "alert");
+                  warn.innerHTML = '<span class="receipt-ic">⚠️</span><span class="receipt-tx">' +
+                    "上述工具操作未实际执行，请以工具调用记录为准。</span>";
+                  wr.appendChild(warn);
+                }
+              }
               if (doneMemo.length) {
                 var mr = $("aiResp");
                 if (mr) {

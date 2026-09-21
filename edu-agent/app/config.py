@@ -491,6 +491,25 @@ class Settings(BaseSettings):
     TOOL_DECISION_TIMEOUT: float = 5.0    # llm 模式决策超时预算（秒）；超时→规则路由 fallback（防 TTFT 劣化）
 
     # ============================================================
+    # F-W1-GUARD（AUTO20 T7，C-W1-② 硬化）：答案层写类回执机检护栏
+    #   根因：答案 LLM 在工具阶段未真实执行时捏造「已收藏/已提交/已导入」成功回执
+    #   （历史两次实证：权限门拦截后、exact-pin 拒绝后答案仍谎报成功）。
+    #   护栏语义（app/chat/receipt_guard.py，单一事实源）：done/答案组装时检测——
+    #   答案提及写类完成语义 ∧ mcp_tool_calls 无 success 凭据 → 打
+    #   tool_receipt_unverified=True + 答案尾部追加诚实修正句（不改写原答案）。
+    #   关键词/工具名**配置化**（本段），禁在代码里硬编码散落。
+    # ============================================================
+    TOOL_RECEIPT_WRITE_PHRASES: list = [   # 写类完成语义关键词（答案文本 substring 命中即疑）
+        "已收藏", "已提交", "已导入", "已创建", "已删除", "已支付",
+    ]
+    TOOL_RECEIPT_WRITE_TOOLS: list = [     # 写类工具名（词边界匹配；真实类别以 permission_gate 为准）
+        "favorite_add", "knowledge_import", "course_create", "order_create",
+    ]
+    TOOL_RECEIPT_READONLY_TOOLS: list = [  # 只读工具：只提及这些不算写类语义（不拦）
+        "search_knowledge", "calculator", "ping", "echo", "list_alphabet", "add", "sse_health",
+    ]
+
+    # ============================================================
     # 【task-T1 新增段 · 工具调用闭环（换参→换工具→熔断→人工指南）】※ 本段为 task-T1 专属，
     #   对齐 Codex orchestrator.rs / auto-review（3 连续拒绝熔断）/ retry telemetry（production-upgrade-plan P6）。
     #   - TOOL_FALLBACK_MAP：原工具失败后尝试的备用工具（按列表顺序取第一个可用）；
