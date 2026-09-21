@@ -1,0 +1,197 @@
+{
+  "gate": "G6 Style Dependency Gate",
+  "generated_at": "2026-09-21T04:05:12.853Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 6,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "baseline": "test-reports\\gate-dataseed1\\favorites\\style-dep-snapshot.json",
+  "baseline_created": false,
+  "pages": [
+    {
+      "name": "favorites.html",
+      "url": "http://127.0.0.1:3322/favorites.html",
+      "geometrySelectors": [],
+      "snapshot": {
+        "url": "http://127.0.0.1:3322/favorites.html",
+        "title": "我的收藏 · EduAgent",
+        "geometry": [],
+        "zLayers": [
+          {
+            "selector": "#gnav",
+            "zIndex": "130"
+          }
+        ],
+        "thirdParty": [],
+        "interactive": [
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > a.gnav-brand",
+            "tag": "a",
+            "width": 124.2,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "tag": "a",
+            "width": 50,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "tag": "a",
+            "width": 90.3,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "tag": "a",
+            "width": 76,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "tag": "a",
+            "width": 89,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "tag": "a",
+            "width": 95.3,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "tag": "a",
+            "width": 76,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "tag": "a",
+            "width": 76,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "tag": "a",
+            "width": 76,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "tag": "button",
+            "width": 44,
+            "height": 44,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(1)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(2)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(3)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(4)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(5)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          },
+          {
+            "selector": "body > div.glayout:nth-of-type(2) > div.page > div:nth-of-type(1) > div.fav-grid > a.fav-card:nth-of-type(6)",
+            "tag": "a",
+            "width": 265.3,
+            "height": 304.8,
+            "disabled": false
+          }
+        ],
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        }
+      },
+      "drift": {
+        "missing": [],
+        "changed": []
+      },
+      "tooSmall": [],
+      "transparent": [],
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "16 interactive elements inspected.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /favorites.html, rendered /favorites.html.",
+          "severity": "error"
+        },
+        {
+          "name": "layout-blacklist",
+          "pass": true,
+          "detail": "0 missing and 0 changed frozen style entries.",
+          "severity": "error"
+        },
+        {
+          "name": "third-party-background",
+          "pass": true,
+          "detail": "0/0 third-party or rich-content containers have transparent backgrounds.",
+          "severity": "error"
+        },
+        {
+          "name": "interactive-target-44",
+          "pass": true,
+          "detail": "0/16 visible targets are smaller than 44x44 CSS px.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 uncaught runtime or console errors.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}

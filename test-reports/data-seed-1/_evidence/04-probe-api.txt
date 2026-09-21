@@ -1,0 +1,11 @@
+[probe] login user000001: code=0 token=yes
+[probe] GET /api/favorites → total=6 items=6
+    series_id=3      cover_url=/assets/seed/covers/general_purpose_programming_practice.svg local=True HTTP=200 image/svg+xml
+    series_id=2628   cover_url=/assets/seed/covers/middle_high_school_informatics_advanced.svg local=True HTTP=200 image/svg+xml
+    series_id=1005   cover_url=/assets/seed/covers/interactive_media_and_games_practice.svg local=True HTTP=200 image/svg+xml
+    series_id=2      cover_url=/assets/seed/covers/general_purpose_programming_foundation.svg local=True HTTP=200 image/svg+xml
+    series_id=2618   cover_url=/assets/seed/covers/middle_high_school_chemistry_foundation.svg local=True HTTP=200 image/svg+xml
+    series_id=1      cover_url=/assets/seed/covers/general_purpose_programming_foundation.svg local=True HTTP=200 image/svg+xml
+[probe] GET /api/users/me/profile → avatar_url=/assets/seed/avatar-default.svg local=True HTTP=200 image/svg+xml
+[probe] GET /api/users/me → avatar_url=/assets/seed/avatar-default.svg local=True
+[probe] PASS

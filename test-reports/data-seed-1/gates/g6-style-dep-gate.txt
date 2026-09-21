@@ -1,0 +1,11 @@
+g6-style-dep-gate PASS
+generated_at=2026-09-21T03:54:20.997Z
+pages=1 checks=6 failed=0 warnings=0 skipped=0
+
+[PASS] me.html http://127.0.0.1:3322/me.html
+  [PASS] runtime-inspection: 48 interactive elements inspected.
+  [PASS] route-stable: Expected /me.html, rendered /me.html.
+  [PASS] layout-blacklist: No prior snapshot; current values captured.
+  [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
+  [PASS] interactive-target-44: 0/48 visible targets are smaller than 44x44 CSS px.
+  [PASS] console-errors: 0 uncaught runtime or console errors.

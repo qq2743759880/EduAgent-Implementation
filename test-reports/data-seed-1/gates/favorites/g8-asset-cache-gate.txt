@@ -1,0 +1,13 @@
+g8-asset-cache-gate PASS
+generated_at=2026-09-21T04:03:50.749Z
+pages=1 checks=8 failed=0 warnings=0 skipped=0
+
+[PASS] favorites.html http://127.0.0.1:3322/favorites.html
+  [PASS] runtime-inspection: 14 requests observed.
+  [PASS] route-stable: Expected /favorites.html, rendered /favorites.html.
+  [PASS] zero-external-requests: 0 external requests observed.
+  [PASS] theme-version-present: 1 theme.css links; version=7fed87f.
+  [PASS] local-assets-ok: 0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.
+  [PASS] font-fallback-visible: 0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif.
+  [PASS] console-errors: 0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).
+  [PASS] site-theme-version: 1/1 pages versioned; versions=7fed87f.

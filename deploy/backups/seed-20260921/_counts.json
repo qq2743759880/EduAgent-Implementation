@@ -1,0 +1,30 @@
+{
+  "backed_up_at": "2026-09-21T11:47:14",
+  "placeholder_host": "cdn.example.com",
+  "targets": {
+    "series_cover_url": {
+      "table": "series",
+      "column": "cover_url",
+      "predicate": "`cover_url` LIKE 'https://cdn.example.com/course/%'",
+      "rows": 2628,
+      "local_rows_before": 0,
+      "table_total": 2969
+    },
+    "sys_user_avatar_url": {
+      "table": "sys_user",
+      "column": "avatar_url",
+      "predicate": "`avatar_url` LIKE 'https://cdn.example.com/%'",
+      "rows": 100000,
+      "local_rows_before": 0,
+      "table_total": 100127
+    },
+    "user_profile_avatar_url": {
+      "table": "user_profile",
+      "column": "avatar_url",
+      "predicate": "`avatar_url` LIKE 'https://cdn.example.com/%'",
+      "rows": 1,
+      "local_rows_before": 0,
+      "table_total": 823
+    }
+  }
+}

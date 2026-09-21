@@ -1,0 +1,11 @@
+g6-style-dep-gate PASS
+generated_at=2026-09-21T04:05:12.853Z
+pages=1 checks=6 failed=0 warnings=0 skipped=0
+
+[PASS] favorites.html http://127.0.0.1:3322/favorites.html
+  [PASS] runtime-inspection: 16 interactive elements inspected.
+  [PASS] route-stable: Expected /favorites.html, rendered /favorites.html.
+  [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
+  [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
+  [PASS] interactive-target-44: 0/16 visible targets are smaller than 44x44 CSS px.
+  [PASS] console-errors: 0 uncaught runtime or console errors.

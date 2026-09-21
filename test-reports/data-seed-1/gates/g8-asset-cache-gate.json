@@ -1,0 +1,107 @@
+{
+  "gate": "G8 Asset and Cache Gate",
+  "generated_at": "2026-09-21T03:52:46.938Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 8,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "themeVersions": [
+    "7fed87f"
+  ],
+  "versionConsistent": true,
+  "network_policy": "Loopback frontend/API traffic is allowed; every non-loopback HTTP(S) request fails the gate.",
+  "pages": [
+    {
+      "name": "me.html",
+      "url": "http://127.0.0.1:3322/me.html",
+      "pageInfo": {
+        "url": "http://127.0.0.1:3322/me.html",
+        "title": "个人中心 · EduAgent",
+        "themeLinks": [
+          {
+            "href": "http://127.0.0.1:3322/theme.css?v=7fed87f",
+            "version": "7fed87f"
+          }
+        ],
+        "bodyTextLength": 1648,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "requestCount": 20,
+      "external": [],
+      "local404": [],
+      "localFailures": [],
+      "fontSourceErrors": [],
+      "blockedFonts": 0,
+      "fallback": {
+        "url": "http://127.0.0.1:3322/me.html",
+        "title": "个人中心 · EduAgent",
+        "themeLinks": [
+          {
+            "href": "http://127.0.0.1:3322/theme.css?v=7fed87f",
+            "version": "7fed87f"
+          }
+        ],
+        "bodyTextLength": 1648,
+        "bodyFontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+        "visibleText": true
+      },
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "runtime-inspection",
+          "pass": true,
+          "detail": "20 requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "Expected /me.html, rendered /me.html.",
+          "severity": "error"
+        },
+        {
+          "name": "zero-external-requests",
+          "pass": true,
+          "detail": "0 external requests observed.",
+          "severity": "error"
+        },
+        {
+          "name": "theme-version-present",
+          "pass": true,
+          "detail": "1 theme.css links; version=7fed87f.",
+          "severity": "error"
+        },
+        {
+          "name": "local-assets-ok",
+          "pass": true,
+          "detail": "0 local HTTP errors, 0 loading failures, and 0 unavailable blocked-font sources.",
+          "severity": "error"
+        },
+        {
+          "name": "font-fallback-visible",
+          "pass": true,
+          "detail": "0 woff2 requests blocked; visible text=true; fallback=-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 runtime or console diagnostics (reported for G5 follow-up; non-blocking in G8).",
+          "severity": "warning"
+        },
+        {
+          "name": "site-theme-version",
+          "pass": true,
+          "detail": "1/1 pages versioned; versions=7fed87f.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}

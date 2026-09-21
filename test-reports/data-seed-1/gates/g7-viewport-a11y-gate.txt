@@ -1,0 +1,16 @@
+g7-viewport-a11y-gate PASS
+generated_at=2026-09-21T03:54:29.286Z
+pages=1 checks=11 failed=0 warnings=0 skipped=0
+
+[PASS] me.html http://127.0.0.1:3322/me.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /me.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 46/46 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/46 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/46 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
