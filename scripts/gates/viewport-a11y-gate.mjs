@@ -9,6 +9,7 @@ import {
   readJson,
   resolveTargets,
   safeStem,
+  sleep,
   usage,
   writeGateReports,
   writeJson,
@@ -182,6 +183,40 @@ function compareAttrs(current, expected) {
   return missing;
 }
 
+// aria-label/title are read separately so snapshot and re-verify can both wait past
+// slow data loads (e.g. dashboard metrics) that used to freeze "加载中" placeholders.
+const ATTRS_EXPRESSION = `(() => ({
+  url: location.href,
+  attrs: [...document.querySelectorAll("[aria-label], [title]")].map((element) => ({
+    selector: (function cssPath(node) {
+      if (node.id) return "#" + CSS.escape(node.id);
+      const parts = [];
+      let cursor = node;
+      while (cursor && cursor !== document.documentElement && parts.length < 7) {
+        let part = cursor.localName;
+        const stable = [...cursor.classList].filter((name) => !/^(active|open|show|hidden|loading|disabled|on|selected)$/.test(name)).slice(0, 2);
+        if (stable.length) part += stable.map((name) => "." + CSS.escape(name)).join("");
+        const peers = cursor.parentElement ? [...cursor.parentElement.children].filter((peer) => peer.localName === cursor.localName) : [];
+        if (peers.length > 1) part += ":nth-of-type(" + (peers.indexOf(cursor) + 1) + ")";
+        parts.unshift(part);
+        cursor = cursor.parentElement;
+      }
+      return parts.join(" > ");
+    })(element),
+    ariaLabel: element.getAttribute("aria-label"),
+    title: element.getAttribute("title"),
+  })),
+}))()`;
+
+const ATTRS_SETTLE_MS = Number(process.env.EDU_GATE_ATTRS_SETTLE_MS || 200);
+
+async function settledAttrs(cdp) {
+  const first = await cdp.evaluate(ATTRS_EXPRESSION);
+  await sleep(ATTRS_SETTLE_MS);
+  const second = await cdp.evaluate(ATTRS_EXPRESSION);
+  return second.attrs.length >= first.attrs.length ? second : first;
+}
+
 async function tabAudit(cdp, expectedCount) {
   await cdp.evaluate("document.activeElement && document.activeElement.blur(); document.body.tabIndex = -1; document.body.focus(); true");
   const visits = [];
@@ -242,10 +277,27 @@ try {
       focus = await tabAudit(browser.cdp, viewportResults.find((item) => item.width === 1280)?.focusable.length || 0);
     }
 
-    const canonical = viewportResults.find((item) => item.width === 1280) || viewportResults[0] || { attrs: [], focusable: [], unlabeledIconControls: [] };
+    let canonical = viewportResults.find((item) => item.width === 1280) || viewportResults[0] || { attrs: [], focusable: [], unlabeledIconControls: [] };
+    // Prefer the settled read for aria/title: the canonical load above may still show
+    // loading placeholders when metrics/API queries are slow.
+    if (!runtimeError && viewportResults.length) {
+      try {
+        const settled = await settledAttrs(browser.cdp);
+        if (new URL(settled.url).pathname === new URL(target.url).pathname) canonical = { ...canonical, attrs: settled.attrs };
+      } catch {}
+    }
     snapshots[target.name] = { attrs: canonical.attrs || [] };
     const expected = baseline.pages?.[target.name]?.attrs;
-    const lostAttrs = expected ? compareAttrs(canonical.attrs || [], expected) : [];
+    let lostAttrs = expected ? compareAttrs(canonical.attrs || [], expected) : [];
+    if (expected && lostAttrs.length && !runtimeError && viewportResults.length) {
+      // One retry after a longer wait — protects against a still-in-flight slow query.
+      await sleep(ATTRS_SETTLE_MS * 3);
+      try {
+        const retried = await browser.cdp.evaluate(ATTRS_EXPRESSION);
+        canonical = { ...canonical, attrs: retried.attrs };
+        lostAttrs = compareAttrs(retried.attrs, expected);
+      } catch {}
+    }
     const overflowViews = viewportResults.filter((item) => item.overflow);
     const contrastFailures = viewportResults.flatMap((item) => (item.contrastFailures || []).map((failure) => ({ width: item.width, ...failure })));
     const requested = new URL(target.url);
