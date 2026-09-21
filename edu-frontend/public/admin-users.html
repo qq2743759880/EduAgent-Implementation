@@ -758,11 +758,17 @@ function saveEdit(){
   });
 }
 /* ---- modal toast ---- */
-function showModal(id){ document.getElementById(id+"-mask").classList.add("show"); document.getElementById(id).classList.add("show"); }
+/* [FEAT-WIRE-V2 #3] 弹窗元素 id 为 <id>-dlg（learn-dlg/st-dlg/edit-dlg），旧写法 getElementById(id) 取不到 → 遮罩出现但弹窗永不显示（用户实测"无弹窗"根因） */
+function showModal(id){
+  var m=document.getElementById(id+"-mask"), d=document.getElementById(id+"-dlg");
+  if(m) m.classList.add("show");
+  if(d) d.classList.add("show");
+}
 function closeAll(){
   document.querySelectorAll(".mask.show").forEach(function(x){x.classList.remove("show");});
   document.querySelectorAll(".dialog.show").forEach(function(x){x.classList.remove("show");});
 }
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeAll(); });
 document.addEventListener("click",function(e){
   if(e.target.classList && e.target.classList.contains("mask")) closeAll();
   const c=e.target.closest("[data-close]"); if(c) closeAll();
