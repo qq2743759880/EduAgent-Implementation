@@ -733,3 +733,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - 40s+ 长尾真因：check-demo ⑯ 自身 5 轮 uvicorn 启停叠加常驻服务（显存 4.5/8GB、GPU 78-81C）+ 预热链串行（warmup 44601ms 实测：bge 29s+reranker 11.9s，sidecar 8601 未启动致 fallback 拖长）。
 - 修复建议四条待用户裁：①⑯ 门限两段式（/health 30s 硬门+warmup 300s 仅告警）②健康带 p50≤25s/p90≤55s/硬红 120s ③C: 页面文件 16MB→扩容（9/18 曾 22 次 os error 1455）④启动 8601 sidecar 砍预热。
 - 教训：R03「GPU 8GB 不可复现」同类——**环境性能类红项先做分段归因再定责**，门限口径问题伪装成硬件退化。
+
+## AUTO20 T9 验收闭环（2026-09-22，ab7e216，gates 域）
+- GATE-V3 数据就绪稳定窗机制化：waitForReady（网络空闲持续 250ms+连续两次 DOM 快照一致）三门禁复用；负控钩子 setApiDelay（CDP Fetch 拦截延迟放行）稳定复现竞态。
+- 负控 8 组价值点：C 组**首例注入稳定复现编排者实测的 me 页假红同型机制**（tab walk 前缺稳定窗→29/38 假红）→ 当场并入 tab walk 窗口→D 组 38/38 绿；F 组超时语义验证（settled:false 留痕不造红不阻塞）。
+- 编排者亲测：me 页 G7 全绿+settled×5 留痕。既有检查零删、G7 聚合/G9 白名单/community-post 查询串坑全保留。
+- 教训：**负控必须先于修复验收**——先注入复现假红再验修复转绿，单侧绿证不构成机制生效证明（与 GATE-V2 聚合负控同一纪律）。
