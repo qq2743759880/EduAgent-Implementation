@@ -2,11 +2,11 @@
 
 | # | 任务 | 开工令 | 状态 | 验收证据 | SHA |
 |---|---|---|---|---|---|
-| 1 | REWORK-1: P0-1+P0-6 记忆槽位 update 语义+召回最新优先+演示账号治理（三核闸） | REWORK-FEAT-WIRE-V2 §1 | **running** | 待验收 | — |
-| 2 | REWORK-2: P0-2 chat 记忆反馈条（「已记住：…」） | REWORK-FEAT-WIRE-V2 §2 | pending | — | — |
-| 3 | REWORK-3: P0-3 83 个 delegated 元素 CDP 点击差分+坏 handler 修复 | REWORK-FEAT-WIRE-V2 §3 | pending | — | — |
-| 4 | REWORK-4: P0-4 ≥100MB 上传全链+失败注入+错误态 | REWORK-FEAT-WIRE-V2 §4 | pending | — | — |
-| 5 | REWORK-5: P0-5 管理端会话审计只读视图（admin-only 端点+页面+角色硬校验） | REWORK-FEAT-WIRE-V2 §5 | pending | — | — |
+| 1 | REWORK-1: P0-1+P0-6 记忆槽位 update 语义+召回最新优先+演示账号治理（三核闸） | REWORK-FEAT-WIRE-V2 §1 | ✅ 闭环 | 22169b9；编排者亲测 P0-1 E2E=A 说新名→B 3.7s 答对+memorized 帧；199 passed 亲跑；槽位终态唯一 HEAD | 22169b9 |
+| 2 | REWORK-2: P0-2 chat 记忆反馈条（「已记住：…」） | REWORK-FEAT-WIRE-V2 §2 | ✅ 闭环 | a74ea59；done 帧 memorized→气泡尾部绿条（renderStream 重写踩坑已修）；chat.html 机制 grep 6 处在位 | a74ea59 |
+| 3 | REWORK-3: P0-3 83 个 delegated 元素 CDP 点击差分+坏 handler 修复 | REWORK-FEAT-WIRE-V2 §3 | ✅ 闭环 | 6c721d4；三轮扫描修两个测量假阴性→终判 83=47 wired+13 disabled-by-design+14 prototype-honest+3 真死链当场修（RAG 分页/MCP 日志/delOpt）；differential.json 在 | 6c721d4 |
+| 4 | REWORK-4: P0-4 ≥100MB 上传全链+失败注入+错误态 | REWORK-FEAT-WIRE-V2 §4 | ✅ 闭环 | e4dad35；108.8MB/22 分片阻断注入→自动重试 2 次→错误态+重试按钮→解除重传→114,069,910B 落盘可播 | e4dad35 |
+| 5 | REWORK-5: P0-5 管理端会话审计只读视图（admin-only 端点+页面+角色硬校验） | REWORK-FEAT-WIRE-V2 §5 | ✅ 闭环 | 4aa7bff；编排者亲验 admin 320 会话 200/student 直连 403；pytest 5 passed；前端审计页+8 导航入口 | 4aa7bff |
 | 6 | SEED-VIDEO: 120 真实视频生成+82 万行三核闸接线+播放验证 | TO-EXEC-SEED-VIDEO | pending | — | — |
 | 7 | 限流前缀收窄：/api/trade/orders 被 /api/trade/order 规则误伤（429 无 CORS 假红根因） | 新写 | pending | — | — |
 | 8 | F-W1-GUARD: 答案层捏造工具回执机检护栏（answer 提及工具名而凭据空→拦截/降级标） | tracker C-W1-② | pending | — | — |

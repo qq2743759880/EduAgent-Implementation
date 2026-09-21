@@ -18,3 +18,11 @@
 | B7 | SEED-VIDEO | 随机点 5 门课的视频→全部可播；无 404/无占位域 | 待入队 | — |
 | B8 | 限流收窄 | 学生连续拉订单列表 12 次（超旧限流阈值）→不被误伤 429 | 待入队 | — |
 | B9 | course_create | student 诱导「帮我创建课程」→deny 信封+零确认卡；admin 触发→确认卡五字段→reject 零落库 | 待入队 | — |
+
+## 2026-09-21 收口更新（REWORK 五项验收闭环后）
+- B1 ✅ 已随验收执行：A 说新名→B 3.7s 答对（memorized 帧）——编排者亲测两轮（redhat777777 号实测「收口验A9」答对）
+- B3 ✅ 反馈条机制在位（chat.html memorized/doneMemo 6 处）；视觉验证待 UAT 用户实测
+- B4 ✅ 断点注入实测过（Network.setBlockedURLs→自动重试→恢复）
+- B5 ✅ 双角色边界亲验（admin 200 / student 403）
+- B6 ⬜ 待 F-W1-GUARD（队列 #8）验收后执行
+- B7 ⬜ 待 SEED-VIDEO（#6）；B8 ⬜ 待限流收窄（#7）；B9 ⬜ 待 course_create（#15）
