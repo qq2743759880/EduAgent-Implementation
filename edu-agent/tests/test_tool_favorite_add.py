@@ -180,10 +180,7 @@ def test_p3_hitl_single_source():
 
     assert _hitl_risk_level("favorite_add") is None, "user_write 免弹卡（P1/P3）"
     # 挂起/实物工具既有语义零回归（契约面不变）
-    # AUTO20 T12（CR-WRITETOOLS-001 第二批 P2）：course_create 迁入 TOOL_CLASS_MAP=admin_write
-    # → medium（挂起 course_write 语义）变更为 **high**（admin_write L3），由本断言锁定新语义。
-    assert _hitl_risk_level("course_create") == "high"
-    assert _hitl_risk_level("course_update") == "medium"
+    assert _hitl_risk_level("course_create") == "medium"
     assert _hitl_risk_level("points_change") == "high"
     assert _hitl_risk_level("order_create") == "high"
     assert _hitl_risk_level("knowledge_import") == "high"

@@ -51,15 +51,14 @@ from app.ai.permission_gate import (
 
 _EXECUTOR_SRC = Path(__file__).resolve().parents[1] / "app" / "mcp" / "executor.py"
 
-# 真实注册工具（10 个）：按类别拆分——public_read 全角色放行，admin_write 仅 admin
+# 真实注册工具（8 个）：按类别拆分——public_read 全角色放行，admin_write 仅 admin
 READ_TOOL = "search_knowledge"
 REAL_TOOLS = sorted(REGISTERED_TOOLS)
 REAL_READ_TOOLS = sorted(n for n in REGISTERED_TOOLS if classify_tool(n) == "public_read")
 REAL_WRITE_TOOLS = sorted(n for n in REGISTERED_TOOLS if classify_tool(n) in ("course_write", "admin_write"))
 REAL_ADMIN_WRITE_TOOL = "knowledge_import"     # W-NEXT-2 步骤3 上线实物
-REAL_ADMIN_WRITE_HITL_TOOL = "course_create"   # AUTO20 T12（CR-WRITETOOLS-001 第二批）上线实物
 # 契约挂起（无实物）代表工具
-PENDING_COURSE_TOOL = "question_create"
+PENDING_COURSE_TOOL = "course_create"
 PENDING_ADMIN_TOOL = "order_create"
 ALL_ROLES = ["student", "manager", "admin"]
 
@@ -170,29 +169,13 @@ def test_knowledge_import_is_registered_admin_write():
     assert REAL_ADMIN_WRITE_TOOL not in CONTRACT_PENDING_TOOLS
 
 
-def test_course_create_is_registered_admin_write_t12():
-    """AUTO20 T12（CR-WRITETOOLS-001 第二批）：course_create 已从挂起迁入实物映射（admin_write）。
-
-    P2 裁定：仅 admin=allow、manager=deny（原挂起 course_write「manager 放行」矩阵语义变更）。
-    """
-    assert REAL_ADMIN_WRITE_HITL_TOOL in REGISTERED_TOOLS
-    assert classify_tool(REAL_ADMIN_WRITE_HITL_TOOL) == "admin_write"
-    assert REAL_ADMIN_WRITE_HITL_TOOL not in CONTRACT_PENDING_TOOLS
-    assert can_use_tool("admin", REAL_ADMIN_WRITE_HITL_TOOL).allowed is True
-    for role in ("student", "manager", "teacher"):
-        d = can_use_tool(role, REAL_ADMIN_WRITE_HITL_TOOL)
-        assert d.allowed is False and d.action_hint, f"P2：{role} × course_create 必须 deny"
-
-
 def test_contract_matrix_class_semantics_unchanged():
     """G3：契约矩阵「类别→允许角色」语义（CR-ACI-teacher-read 2026-09-15 用户签收后：
     public_read 增补 teacher；course_write/admin_write 语义不变）。"""
     assert class_allowed_roles("public_read") == frozenset({"student", "manager", "admin", "teacher"})
     assert class_allowed_roles("course_write") == frozenset({"manager", "admin"})
     assert class_allowed_roles("admin_write") == frozenset({"admin"})
-    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 10, (
-        "真实工具面应为 10 个（AUTO20 T12 起，course_create 上线：CR-WRITETOOLS-001 第二批）"
-    )
+    assert len(TOOL_CLASS_MAP) == len(REGISTERED_TOOLS) == 9, "真实工具面应为 9 个（W-NEXT-WRITE1 起，favorite_add 上线）"
 
 
 # ============================================================
@@ -217,13 +200,9 @@ def test_teacher_public_read_allowed():
     assert can_use_tool("teacher", "search_knowledge").allowed is True
 
 
-@pytest.mark.parametrize("tool", ["question_create", "question_delete"])
+@pytest.mark.parametrize("tool", ["course_create", "question_delete"])
 def test_teacher_write_denied(tool):
-    """G1：teacher × 课程/题库写类（挂起工具）= denied + action_hint。
-
-    AUTO20 T12：course_create 已迁出挂起区（admin_write 实物）——teacher deny 断言
-    由 test_course_create_is_registered_admin_write_t12 承接。
-    """
+    """G1：teacher × 课程/题库写类（挂起工具）= denied + action_hint。"""
     d = can_use_tool("teacher", tool)
     assert d.allowed is False and d.action_hint
 
@@ -257,11 +236,10 @@ def test_pending_tools_denied_for_all_roles(role, tool):
 def test_pending_tools_absent_from_tool_class_map():
     """G2：挂起名已从 TOOL_CLASS_MAP 移除，转入 CONTRACT_PENDING_TOOLS。
 
-    AUTO20 T12 起为 **7** 个（course_create 已按 CR-WRITETOOLS-001 第二批 P2 裁定上线迁出，
-    改类 admin_write；此前 W-NEXT-WRITE1 迁出 favorite_add 转 user_write、
-    W-NEXT-2 迁出 knowledge_import 转 admin_write 实物映射）。
+    W-NEXT-WRITE1 起为 **8** 个（favorite_add 已按 CR-WRITETOOLS-001 P1 裁定上线迁出，
+    改类 user_write；此前 W-NEXT-2 已迁出 knowledge_import 转 admin_write 实物映射）。
     """
-    assert len(CONTRACT_PENDING_TOOLS) == 7
+    assert len(CONTRACT_PENDING_TOOLS) == 8
     assert set(TOOL_CLASS_MAP) & set(CONTRACT_PENDING_TOOLS) == set()
     for name in CONTRACT_PENDING_TOOLS:
         assert classify_tool(name) is None, f"{name} 不应出现在映射表（无实物注册）"
@@ -300,12 +278,10 @@ WRITE_CLASS_NAMES = sorted(
 
 
 def test_write_class_names_cover_10():
-    """W2-G1：写类名共 9 个（7 个契约挂起 + 2 个已注册实物 knowledge_import/course_create）。
+    """W2-G1：写类名共 9 个（8 个契约挂起 + 1 个已注册实物 knowledge_import）。
 
     W-NEXT-WRITE1（CR-WRITETOOLS-001 P1）：favorite_add 迁出改类 user_write（本人低危写，
-    不属 WRITE_CLASSES HITL 面）→ 10→9；AUTO20 T12（第二批 P2）：course_create 由挂起迁入
-    实物（挂起 -1、注册面 +1）→ 总数不变仍 **9**（挂起 7 + 实物 2）。
-    user_write 角色收口走矩阵+executor 强属性，不在此集。
+    不属 WRITE_CLASSES HITL 面）→ 10→9；user_write 角色收口走矩阵+executor 强属性，不在此集。
     """
     assert len(WRITE_CLASS_NAMES) == 9, f"写类名应为 9 个: {WRITE_CLASS_NAMES}"
 

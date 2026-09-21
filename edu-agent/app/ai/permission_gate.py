@@ -36,20 +36,11 @@ W-NEXT-WRITE1（2026-09-20，CR-WRITETOOLS-001 第一批，用户 P1-P6 裁定�
 WRITE_CLASSES → HITL 免弹卡（本人低危写）；executor 侧仍以注册期强属性
 write_class=True 收口角色校验（双保险）。变更单：`contracts/cr-writetools-001.md`。
 
-AUTO20 T12（2026-09-22，CR-WRITETOOLS-001 第二批，P2/P4 已批裁定）：`course_create`
-真实注册为内置工具（handler 直调 course_admin.service.create_series），从
-`CONTRACT_PENDING_TOOLS` 迁入 `TOOL_CLASS_MAP` = **`admin_write`**。类别语义变更：
-原挂起类别 course_write（矩阵 manager 放行）按 P2 裁定改为 admin_write（**仅 admin**，
-manager=deny，如需放行另走变更单）；medium → **high** HITL 分级（course_write=medium
-语义变更属挂起名迁移动作，P2 批定）。真实注册面变为 **10 个**（5 内置 + 5 DB）；
-挂起清单 8 → **7**。executor 双保险（P4）：handler 首行校验 `_EXEC_CONTEXT["hitl_confirmed"]`
-（服务端在 resume confirm 批准时注入），未确认 → 42201 拒、service 零调用。
-
 R15 原表里的 10 个写类工具名——`course_create` / `course_update` / `course_delete` /
 `question_create` / `question_update` / `question_delete` / `favorite_add` / `points_change` /
 `knowledge_import` / `order_create`——其中前 9 个在 executor 注册面与 `mcp_tool` 表**零命中**
 （DB 反查 `WHERE tool_name IN (...)` 返回空集），是前批从契约中文语义臆译的虚构名；
-`knowledge_import` 已按上述补登记真实上线。其余 7 个仍留在 `CONTRACT_PENDING_TOOLS`
+`knowledge_import` 已按上述补登记真实上线。其余 9 个仍留在 `CONTRACT_PENDING_TOOLS`
 （契约登记、实物未注册 → 映射挂起）：按 fail-closed，这些名字对任意角色**仍然 deny**
 （G2 语义不变）。
 
@@ -105,11 +96,10 @@ def _log(level: str, msg: str) -> None:
 #    ⚠️ 只放「代码/DB 里真实存在」的工具名，禁止臆译契约中文语义后补名进来。
 # ==================================================================
 REGISTERED_BUILTIN_TOOLS = frozenset({
-    "calculator",          # executor.py register_builtin_tool
-    "search_knowledge",    # executor.py register_builtin_tool
-    "knowledge_import",    # executor.py register_builtin_tool（W-NEXT-2 上线的第一条写类工具）
+    "calculator",          # executor.py:933 register_builtin_tool
+    "search_knowledge",    # executor.py:934 register_builtin_tool
+    "knowledge_import",    # executor.py:935 register_builtin_tool（W-NEXT-2 上线的第一条写类工具）
     "favorite_add",        # executor register_builtin_tool（W-NEXT-WRITE1：首条 user_write 工具，CR-WRITETOOLS-001）
-    "course_create",       # executor register_builtin_tool（AUTO20 T12：首条 admin_write 高危写，CR-WRITETOOLS-001 第二批）
 })
 
 REGISTERED_MCP_TOOLS = frozenset({
@@ -124,11 +114,10 @@ REGISTERED_TOOLS: frozenset[str] = REGISTERED_BUILTIN_TOOLS | REGISTERED_MCP_TOO
 
 # 工具名 → 注册出处（file:line 或 SQL 结果），供报告逐名对账与人工复核
 REGISTRY_EVIDENCE: dict[str, str] = {
-    "calculator":       "app/mcp/executor.py register_builtin_tool(\"calculator\", _calculator_handler)",
-    "search_knowledge": "app/mcp/executor.py register_builtin_tool(\"search_knowledge\", _search_knowledge_handler)",
-    "knowledge_import": "app/mcp/executor.py register_builtin_tool(\"knowledge_import\", _knowledge_import_handler)",
+    "calculator":       "app/mcp/executor.py:933 register_builtin_tool(\"calculator\", _calculator_handler)",
+    "search_knowledge": "app/mcp/executor.py:934 register_builtin_tool(\"search_knowledge\", _search_knowledge_handler)",
+    "knowledge_import": "app/mcp/executor.py:935 register_builtin_tool(\"knowledge_import\", _knowledge_import_handler)",
     "favorite_add":     "app/mcp/executor.py register_builtin_tool(\"favorite_add\", _favorite_add_handler, write_class=True)（W-NEXT-WRITE1，CR-WRITETOOLS-001 第一批）",
-    "course_create":    "app/mcp/executor.py register_builtin_tool(\"course_create\", _course_create_handler, write_class=True)（AUTO20 T12，CR-WRITETOOLS-001 第二批）",
     "add":              "SQL mcp_tool: id=2 tool_name=add server_id=1(stdio-echodemo) yn=1",
     "echo":             "SQL mcp_tool: id=3 tool_name=echo server_id=1(stdio-echodemo) yn=1",
     "list_alphabet":    "SQL mcp_tool: id=4 tool_name=list_alphabet server_id=1(stdio-echodemo) yn=1",
@@ -145,9 +134,8 @@ REGISTRY_EVIDENCE: dict[str, str] = {
 #    user_write   ：本人低危写（W-NEXT-WRITE1 起 favorite_add 首例）—— 本人数据操作，
 #                   student/teacher/admin=allow、manager=deny；不入 WRITE_CLASSES（HITL 免卡）
 # ==================================================================
-# 写类内置工具排除集（不属 public_read）：knowledge_import=admin_write、favorite_add=user_write、
-# course_create=admin_write（AUTO20 T12，CR-WRITETOOLS-001 第二批）
-_PUBLIC_READ_EXCLUDE = frozenset({"knowledge_import", "favorite_add", "course_create"})
+# 写类内置工具排除集（不属 public_read）：knowledge_import=admin_write、favorite_add=user_write
+_PUBLIC_READ_EXCLUDE = frozenset({"knowledge_import", "favorite_add"})
 PUBLIC_READ_TOOLS: frozenset[str] = frozenset(
     n for n in REGISTERED_TOOLS if n not in _PUBLIC_READ_EXCLUDE
 )
@@ -156,7 +144,6 @@ TOOL_CLASS_MAP: dict[str, ToolClass] = {
     **{n: "public_read" for n in PUBLIC_READ_TOOLS},
     "knowledge_import": "admin_write",   # W-NEXT-2 步骤3：注册面实物 → 类别入映射表
     "favorite_add": "user_write",        # W-NEXT-WRITE1（CR-WRITETOOLS-001）：本人收藏，P1 矩阵
-    "course_create": "admin_write",      # AUTO20 T12（CR-WRITETOOLS-001 第二批）：P2 裁定仅 admin（manager=deny）
 }
 
 # 写类类别（"一处改类，处处生效"：HITL 分级 / 缓存开关 / 权限门共用本集合）
@@ -176,9 +163,7 @@ WRITE_CLASSES: frozenset[str] = frozenset({"course_write", "admin_write"})
 # ==================================================================
 CONTRACT_PENDING_TOOLS: dict[str, ToolClass] = {
     # 课程/题库写类（契约矩阵：manager 放行）—— 实物未注册
-    # ⚠️ course_create 已于 2026-09-22（AUTO20 T12，CR-WRITETOOLS-001 第二批）真实注册为
-    #    内置写类工具，按 P2 裁定迁入 TOOL_CLASS_MAP（admin_write：仅 admin=allow，
-    #    manager=deny——与原 course_write「manager 放行」矩阵不同，语义变更已批）。
+    "course_create": "course_write",
     "course_update": "course_write",
     "course_delete": "course_write",
     "question_create": "course_write",

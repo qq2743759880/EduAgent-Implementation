@@ -44,9 +44,6 @@ _BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "knowledge_import": "知识库导入（写类，管理员专用）：登记导入任务并后台拉起既有导入管道（visibility=private|public）",
     # W-NEXT-WRITE1（CR-WRITETOOLS-001）：user_write 本人收藏，学生可用（manager 拒），无 HITL 卡
     "favorite_add":     "收藏课程（写本人数据）：收藏指定 series_id 的课程系列（服务端幂等，重复收藏返回原记录）",
-    # AUTO20 T12（CR-WRITETOOLS-001 第二批）：admin_write 高危写，仅 admin（manager 拒），强制 HITL 卡
-    "course_create":    "创建课程系列（高危写类，管理员专用且需人工确认）：按 title（课程标题）+ "
-                        "series_code（系列编码，小写字母/数字/下划线）创建新课程系列，需在确认卡批准后执行",
 }
 @dataclass
 class ToolMeta:
@@ -198,29 +195,6 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
             except Exception:
                 pass
 
-    # 2c. AUTO20 T12（CR-WRITETOOLS-001 第二批）：course_create ——「创建课程/建课/新课」类
-    #    （admin_write 高危写，强制 HITL）。仅在**同时出现标题与系列码**时触发（标题取
-    #    「标题/名为/叫」引号或「标题'X'」写法；系列码取 [a-z0-9_]+ 记号串）；闲聊
-    #    「怎么创建课程？」不误触发。挂起后 pending_args 缓存同键覆盖（Track A 续流）。
-    cc_tool = by_lname.get("course_create")
-    if cc_tool is not None and re.search(r"创建.{0,6}(课程|课|系列)|建课|新课|新增.{0,4}课程", q):
-        tm = (re.search(r"标题[是为:：\s]*[\"'“”‘’]([^\"'“”‘’]{1,60})[\"'“”‘’]", q)
-              or re.search(r"[\"'“”‘’]([^\"'“”‘’]{1,60})[\"'“”‘’]", q))
-        sm = re.search(r"(?:系列码|编码|code)[是为:：\s]*([a-z][a-z0-9_]{1,63})", q_lower)
-        if not sm:
-            sm = re.search(r"\b([a-z][a-z0-9_]{2,63})\b", q_lower)
-        if tm and sm:
-            args_cc: dict = {"title": tm.group(1).strip(), "series_code": sm.group(1).strip()}
-            mm = re.search(r"模块[是为:：\s]*([^\n]{1,80})", q)
-            if mm:
-                mods = [s.strip() for s in re.split(r"[,，、;；]", mm.group(1)) if s.strip()]
-                if mods:
-                    args_cc["modules"] = mods
-            plans.append(ToolPlanItem(
-                tool=cc_tool, args=args_cc,
-                reason=f"命中建课意图：title={args_cc['title']!r} series_code={args_cc['series_code']!r}",
-            ))
-
     # 4. echo 工具：「echo xxx」「重复 xxx」「回显 xxx」→ echo(text=xxx)
     echo_tool = by_lname.get("echo")
     if echo_tool is not None:
@@ -263,11 +237,6 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
         # 对无参数工具允许空 args 直接触发；其余工具若启发式未构建具体 args 则跳过（避免瞎传参报错）
         has_required = _schema_has_required(tm.input_schema_json)
         if has_required:
-            continue
-        # AUTO20 T12（T7 盲测防线）：course_create 关键词兜底命中但 args 仍空 → 跳过。
-        # 高危写工具严禁「空参计划」进挂起弹卡（闲聊「怎么创建课程」必须零计划）；
-        # 真触发只由 _parse_heuristic 的「标题+系列码同现」分支产出（args 非空，不走这里）。
-        if tm.tool_name.strip().lower() == "course_create":
             continue
         # W-NEXT-CHATFLOW-001（CR-T11b-A Track B 修补）：关键词命中后若 args 仍为空，
         # 按工具名填充 _heuristic_arg_defaults 最小可执行 schema 示例——
@@ -348,12 +317,6 @@ def _heuristic_arg_defaults(tool_name: str) -> dict:
         # 启发式默认占位（避免空 args 触发 calculator 字段校验）：a/b/op 最小示例。
         # 真实 _parse_heuristic 已用正则填 a/b（见上面分支）；此处仅作兜底。
         return {"a": 0, "b": 0, "op": "add"}
-    # AUTO20 T12：course_create 是高危写（强制 HITL）——**不给启发式默认参数**。
-    # 关键词兜底若塞占位 args 会造成「闲聊命中 → 挂起弹卡」误触发（T7 盲测防线：
-    # 未带标题+系列码的建课请求必须零计划，走正常 RAG 回答）；真触发只走
-    # _parse_heuristic 的「标题+系列码同现」专用分支。
-    if n == "course_create":
-        return {}
     return {}
 
 

@@ -578,10 +578,6 @@ async def call_tool(*,
         "operator_user_id": int(operator_user_id or 0),
         "tenant_id": str(tenant_id or ""),
         "trace_id": str(trace_id or ""),
-        # AUTO20 T12 双保险注入（CR-WRITETOOLS-001 §1b P4）：hitl_confirmed 仅由服务端在
-        # resume confirm 批准（hitl_decision=True）时置 True——LLM/args 无法伪造；
-        # 高危 handler（course_create）首行校验此键，未确认 → 42201 拒（service 零调用）。
-        "hitl_confirmed": bool(hitl_decision is True),
     })
 
     # W-NEXT-2 步骤3：内置工具优先解析（calculator/search_knowledge/knowledge_import 在
@@ -1253,128 +1249,6 @@ register_builtin_tool("knowledge_import", _knowledge_import_handler, write_class
 register_builtin_tool("favorite_add", _favorite_add_handler, write_class=True)
 
 
-# ============================================================
-# AUTO20 T12（CR-WRITETOOLS-001 第二批，docs/时光.md §四 B1-B5）
-# course_create —— 首个 admin_write 高危写内置工具（强制 HITL）
-# ============================================================
-# 42201：高危写类工具未经人工确认拒绝执行（CR-WRITETOOLS-001 §1b P4 语义；
-# 422xx=校验失败码段，_http_status_for_code 自动映射 HTTP 422）。
-COURSE_CREATE_UNCONFIRMED_CODE = 42201
-
-# arg_schema（exact-pin 语义，与 时光.md §B1 草图一致）——本仓库内置工具走
-# handler 内手工精确校验（与 favorite_add/knowledge_import 同构），此 dict 为
-# 声明性对账面（工具目录/报告可引用），不参与运行时 JSON Schema 校验。
-COURSE_CREATE_ARG_SCHEMA: dict = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "minLength": 1},
-        "series_code": {"type": "string", "pattern": "^[a-z0-9_]+$"},
-        "modules": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": ["title", "series_code"],
-    "additionalProperties": False,
-}
-
-
-async def _course_create_handler(args: dict) -> str:
-    """创建课程系列（admin_write 高危，强制 HITL：仅 admin=allow、manager/student/teacher=deny）。
-
-    双保险第一道（P4 裁定）：handler 首行校验执行上下文 `hitl_confirmed`——该键由
-    executor.call_tool / call_tool_with_retry 在 resume confirm 批准（hitl_decision=True）
-    时服务端注入，LLM/args 伪造结构性不可达；未确认 → 42201 拒，service 零调用。
-
-    单一执行事实源：直调既有 `course_admin.service.create_series`
-    （唯一约束 institution_id + series_code，冲突抛 40901 SERIES_CODE_CONFLICT）。
-    参数精确校验（exact-pin）：title(str 非空) + series_code(str ^[a-z0-9_]+$) 必填，
-    modules(list[str]) 可选，多余键一律拒。
-    """
-    # ⓪ HITL 双保险（P4）：未确认高危写 → 42201 拒（先于一切参数/身份处理，零副作用）
-    ctx = _EXEC_CONTEXT.get() or {}
-    if not ctx.get("hitl_confirmed"):
-        raise AppException(
-            code=COURSE_CREATE_UNCONFIRMED_CODE,
-            message="高危工具未确认，拒绝执行（需管理员在确认卡上批准后重试）",
-            http_status=422,
-        )
-
-    # ① 参数精确校验（exact-pin：非法参数零副作用）
-    title = args.get("title")
-    if not isinstance(title, str) or not title.strip():
-        raise ValueError("course_create 缺少 title（非空字符串，课程标题）")
-    title = title.strip()
-    if len(title) > 128:
-        raise ValueError(f"title 过长（{len(title)} > 128，课程系列名上限）")
-
-    series_code = args.get("series_code")
-    if not isinstance(series_code, str) or not series_code.strip():
-        raise ValueError("course_create 缺少 series_code（字符串，课程系列编码）")
-    series_code = series_code.strip()
-    if len(series_code) > 64 or not re.fullmatch(r"[a-z0-9_]+", series_code):
-        raise ValueError(f"series_code 非法：{series_code!r}（仅允许小写字母/数字/下划线，≤64 字符）")
-
-    modules = args.get("modules")
-    if modules is not None:
-        if not isinstance(modules, list) or any(not isinstance(m, str) or not m.strip() for m in modules):
-            raise ValueError("modules 必须是非空字符串列表（可选参数）")
-    extra = set(args) - {"title", "series_code", "modules"}
-    if extra:
-        raise ValueError(f"course_create 不接受多余参数：{sorted(extra)}（仅 title/series_code/modules）")
-
-    # ② 操作者身份：执行上下文权威（防 args 伪造）
-    user_id = int(ctx.get("operator_user_id") or 0)
-    if user_id <= 0:
-        raise ValueError("course_create 缺少操作者身份（执行上下文 operator_user_id 为空）")
-
-    # ③ 单一执行事实源：course_admin.service.create_series（实物方法，签名为 (data: SeriesCreateAdmin)）
-    #    series 表无默认院校语义，institution_id 必须落库非空——取服务端可校验的最小合法院校
-    #    （org_institution yn=1 最小 id；课程/班次父引用校验同源依据）。args 传 institution_id 视为
-    #    多余键拒绝（exact-pin 防线：防 LLM 臆造父引用）。
-    from app.domains.course_admin.schemas import SeriesCreateAdmin
-    from app.domains.course_admin import service as _course_service
-    from app.database import fetch_one
-
-    inst_row = await fetch_one("SELECT MIN(id) AS min_id FROM org_institution WHERE yn = 1")
-    institution_id = int((inst_row or {}).get("min_id") or 0)
-    if institution_id <= 0:
-        return json.dumps({"ok": False, "code": "40400",
-                           "message": "系统未初始化任何启用院校，无法创建课程系列",
-                           "series_code": series_code}, ensure_ascii=False)
-
-    try:
-        result = await _course_service.create_series(SeriesCreateAdmin(
-            institution_id=institution_id,
-            delivery_mode="online_recorded",
-            series_code=series_code,
-            series_name=title,
-            description="由 AI 助手（course_create 工具，HITL 确认后）创建",
-            created_by=user_id,
-        ))
-    except AppException as exc:
-        # 业务错（编码冲突 40901 等）→ 结构化回传，严禁伪装成功
-        return json.dumps({"ok": False, "code": exc.code, "message": exc.message,
-                           "series_code": series_code}, ensure_ascii=False)
-
-    # ④ 回执如实：created=true（新建成功）；modules 为可选登记项，当前 service 无
-    #    「系列级模块直挂」写入面（module 需 cohort 父引用），如实标注未落库不谎报。
-    return json.dumps({
-        "ok": True,
-        "created": True,
-        "series_id": int(result.id),
-        "series_code": result.series_code,
-        "series_name": result.series_name,
-        "institution_id": int(result.institution_id),
-        "delivery_mode": result.delivery_mode,
-        "sale_status": result.sale_status,
-        "modules_requested": list(modules or []),
-        "modules_note": "modules 仅登记回执，未创建班次/模块（需先建 cohort，走管理端）",
-        "hitl_note": "经人工确认（HITL confirm）后执行",
-        "operator_user_id": user_id,
-    }, ensure_ascii=False)
-
-
-register_builtin_tool("course_create", _course_create_handler, write_class=True)
-
-
 async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str, attempt: int,
                                     operator_user_id: int, tenant_id: str, trace_id: str) -> AttemptOutcome:
     """生产默认执行器：按工具名解析 server，走单步核心。
@@ -1738,10 +1612,6 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
         "operator_user_id": int(operator_user_id or 0),
         "tenant_id": str(tenant_id or ""),
         "trace_id": str(trace_id or ""),
-        # AUTO20 T12 双保险注入（CR-WRITETOOLS-001 §1b P4）：hitl_confirmed 仅由服务端在
-        # resume confirm 批准（hitl_decision=True）时置 True——LLM/args 无法伪造；
-        # 高危 handler（course_create）首行校验此键，未确认 → 42201 拒（service 零调用）。
-        "hitl_confirmed": bool(hitl_decision is True),
     })
     fallback_map = settings.TOOL_FALLBACK_MAP
     max_attempts = settings.MAX_TOOL_ATTEMPTS
