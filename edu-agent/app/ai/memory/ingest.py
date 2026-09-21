@@ -37,6 +37,12 @@ _RE_GOAL = re.compile(
 # 4) 偏好直接声明：我喜欢/我更偏好/偏爱/prefer
 _RE_PREFERENCE = re.compile(r"(我喜欢|我更偏好|偏爱|prefer|hobby|爱好是)", re.IGNORECASE)
 
+# 5) [FEAT-WIRE-V2 #11] 姓名自述：「我叫X / 我的名字叫X / 我的名字是X / 叫我X」
+#    高精度窄匹配（不带「是/叫」泛化，避免「我是学生」类误伤）。
+_RE_NAME = re.compile(
+    r"(?:我(?:的名字|姓名)(?:叫|是)|我叫|叫我)(?P<name>[^\s，。！？,.!?；;]{1,20})"
+)
+
 # 用于提取「想学/想考 什么」的捕获
 _RE_GOAL_SUBJECT = re.compile(
     r"(我想考|我要考|我在准备|目标是考|打算考|打算学|想学|我准备)[：:\s]*(?P<subject>[^，。！？,.!?]{1,40})"
@@ -77,9 +83,19 @@ def detect_memories(text: str) -> list[MemoryCandidate]:
 
     # 1) 明确「记住 X」
     if _RE_EXPLICIT.search(text):
-        rest = _RE_EXPLICIT.split(text, maxsplit=1)[-1]
-        _add(rest, "preference" if _RE_PREFERENCE.search(rest) else "profile",
-             "preferences", "explicit", _importance_for(rest, 5))
+        # [FEAT-WIRE-V2 #11] 旧写法只取「记住」之后的尾巴：「我叫小明，请记住我的名字」
+        # → content=「我的名字」，事实值（在关键词之前）被整段丢弃。改为记整句原话，
+        # 保证「记住 X」中 X 在句中任意位置都能落库。
+        _add(text, "preference" if _RE_PREFERENCE.search(text) else "profile",
+             "preferences", "explicit", _importance_for(text, 5))
+
+    # 1b) [FEAT-WIRE-V2 #11] 姓名自述（高价值 profile，立即写）
+    nm = _RE_NAME.search(text)
+    if nm:
+        name = nm.group("name").strip()
+        # 疑问词守卫：「我叫什么名字？」的「什么名字」不是姓名（#11 E2E 实测误报）
+        if name and len(name) >= 1 and not re.search(r"(什么|啥|谁|哪|吗|呢|怎么)", name):
+            _add(f"用户名字：{name}", "profile", "preferences", "profile", 5)
 
     # 2) 目标：我想考/要考/在准备…
     gm = _RE_GOAL.search(text)

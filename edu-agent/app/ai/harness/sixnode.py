@@ -345,6 +345,24 @@ class SixNodeHarness(Harness):
         context = state.get("merged_context", "")
         skill_context = state.get("skill_context") or ""
 
+        # [FEAT-WIRE-V2 #11 跨会话记忆修复] plan 计划未含 memory 子代理时（chitchat 直答、
+        # 兜底 L1=[search]），记忆从未被召回注入 → 会话A说「我叫X」新会话B问「我叫什么」答不出。
+        # 补一次确定性轻量召回（recall_topk warm 实测 80~120ms）；已跑 memory 子代理则不重复。
+        try:
+            ran_memory = any(
+                isinstance(r, dict) and r.get("subagent") == "memory"
+                for r in (state.get("subagent_results") or [])
+            )
+            if not ran_memory and query:
+                from app.ai.memory.service import recall_topk, format_memories_for_prompt
+
+                top = await recall_topk(int(state["user_id"]), query, top_k=3)
+                mem_text, _ref_map = format_memories_for_prompt(top or [])
+                if mem_text:
+                    context = (context or "") + "\n\n## 用户记忆\n" + mem_text
+        except Exception as exc:  # noqa: BLE001 — 记忆召回失败不阻断回答主链（与 sixnode 降级口径一致）
+            logger.warning(f"[sixnode.answer] 记忆补召回失败（降级跳过）: {type(exc).__name__}: {exc}")
+
         system_content = _graph.ANSWER_SYSTEM_PROMPT + "\n\n## 综合上下文\n" + (context or "（无）")
         # task94 GWT③：skill_context 进入最终回答上下文（命中 skill 的 body 指引被决策链消费）
         if skill_context:
