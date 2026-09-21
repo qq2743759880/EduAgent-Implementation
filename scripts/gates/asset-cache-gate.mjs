@@ -73,22 +73,28 @@ try {
     let runtimeError = null;
     let blockedFonts = 0;
     const blockedFontUrls = [];
-    const onPaused = async (event) => {
-      blockedFonts += 1;
-      blockedFontUrls.push(event.request.url);
-      try { await browser.cdp.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "Failed" }); } catch {}
+    // Font requests are blocked via Network.setBlockedURLs. Do NOT use Fetch.enable here:
+    // with the Fetch domain active, in-page fetch() calls fail wholesale (observed: every
+    // /api/ request died with TypeError: Failed to fetch even with a non-matching pattern),
+    // which faked a wall of [EAPI] console diagnostics on every page.
+    const onFontFailure = (event) => {
+      const url = requests.get(event.requestId)?.url || "";
+      if (/\.woff2([?#]|$)/i.test(url)) {
+        blockedFonts += 1;
+        blockedFontUrls.push(url);
+      }
     };
     try {
-      await browser.cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*.woff2*", requestStage: "Request" }] });
-      browser.cdp.on("Fetch.requestPaused", onPaused);
       await browser.cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
+      await browser.cdp.send("Network.setBlockedURLs", { urls: ["*.woff2*"] });
+      browser.cdp.on("Network.loadingFailed", onFontFailure);
       await browser.navigate(target.url, options.settleMs);
       pageInfo = await browser.cdp.evaluate(PAGE_ASSET_EXPRESSION);
     } catch (error) {
       runtimeError = error.message;
     } finally {
-      browser.cdp.off("Fetch.requestPaused", onPaused);
-      try { await browser.cdp.send("Fetch.disable"); } catch {}
+      browser.cdp.off("Network.loadingFailed", onFontFailure);
+      try { await browser.cdp.send("Network.setBlockedURLs", { urls: [] }); } catch {}
     }
 
     browser.cdp.off("Network.requestWillBeSent", onRequest);
@@ -113,7 +119,7 @@ try {
     const fallback = pageInfo;
     let expectedFontErrors = blockedFonts;
     const diagnostics = browser.cdp.diagnostics.filter((entry) => {
-      if (expectedFontErrors > 0 && entry === "LOG: Failed to load resource: net::ERR_FAILED") {
+      if (expectedFontErrors > 0 && /^LOG: Failed to load resource: net::ERR_(FAILED|BLOCKED_BY_CLIENT)/.test(entry)) {
         expectedFontErrors -= 1;
         return false;
       }
