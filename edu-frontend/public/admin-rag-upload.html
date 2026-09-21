@@ -115,6 +115,19 @@
   .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
   .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
   .pager button:disabled{opacity:.4;cursor:not-allowed}
+  /* [FEAT-WIRE-V2 #4] tab 面板 + 表单栅格 */
+  .rag-panel.hidden{display:none}
+  .rag-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;align-items:end}
+  .rag-form .rf{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .rag-form .rf.wide{grid-column:1/-1}
+  .rag-form .rf label{font-size:12px;color:var(--muted);font-weight:600}
+  .rag-form .rf input,.rag-form .rf select{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);background:var(--ht-fff);width:100%;min-height:44px;box-sizing:border-box}
+  .rag-form .rf input:focus,.rag-form .rf select:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .doc-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:var(--ht-fafbff)}
+  .doc-card .dc-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+  .doc-card .dc-score{font-weight:800;color:var(--primary)}
+  .doc-card .dc-body{margin-top:6px;font-size:0.8125rem;color:var(--ink);white-space:pre-wrap;word-break:break-word;max-height:160px;overflow:auto}
+  @media(max-width:767px){.rag-form{grid-template-columns:minmax(0,1fr)}}
   /* badges */
   .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
   .badge .pd{width:6px;height:6px;border-radius:50%}
@@ -406,16 +419,18 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   <div class="gap-note"><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg> 已接入真实知识库上传闭环：选择/拖入文件 → 前端预校验（扩展名白名单、≤200MB、≤50 个）→ 逐文件上传 →
     导入任务每 5s 轮询跟踪 pending→running→succeeded/failed；支持分区查看与删除。PDF 解析依赖后端 pdfplumber 依赖。</div>
 
-  <!-- RAG 控制台 Tabs：新增「上传」Tab -->
+  <!-- RAG 控制台 Tabs：五 tab 全接线（FEAT-WIRE-V2 #4：旧版仅「上传」有面板，其余四个为死按钮） -->
   <div class="tabs">
-    <button class="tab">集合</button>
-    <button class="tab on">上传<span class="new">+</span></button>
-    <button class="tab">调参</button>
-    <button class="tab">审计日志</button>
-    <button class="tab">高级检索</button>
+    <button class="tab" data-tab="collections">集合</button>
+    <button class="tab on" data-tab="upload">上传<span class="new">+</span></button>
+    <button class="tab" data-tab="presets">调参</button>
+    <button class="tab" data-tab="audit">审计日志</button>
+    <button class="tab" data-tab="search">高级检索</button>
   </div>
 
-  <!-- ① 上传面板 UploadPanel -->
+  <!-- ① 上传面板（含任务列表/分区/健康） -->
+  <div id="rag-panel-upload" class="rag-panel">
+  <!-- 上传面板 UploadPanel -->
   <div class="card" id="upCard">
     <div class="card-h">
       <h3>上传文件</h3>
@@ -510,7 +525,108 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   </div>
 
   <div class="foot-note">知识库上传 · 导入任务 · 分区管理</div>
+</div><!-- /#rag-panel-upload -->
+
+<!-- ② 集合面板（FEAT-WIRE-V2 #4：GET /api/admin/rag/collections + POST rebuild） -->
+<div id="rag-panel-collections" class="rag-panel hidden">
+  <div class="tbl-card">
+    <div class="card-h pad-h">
+      <h3>知识库集合</h3>
+      <span class="hint">GET /api/admin/rag/collections · 列表实时刷新</span>
+    </div>
+    <table>
+      <thead><tr><th>集合</th><th>分区</th><th>显示名</th><th>行数</th><th>状态</th><th>最近重建</th><th style="text-align:right">操作</th></tr></thead>
+      <tbody id="ragColBody"><tr><td colspan="7" class="box-pad">加载中…</td></tr></tbody>
+    </table>
+    <div class="tbl-foot"><span class="cnt">集合健康闭环：重建后行数自动刷新</span></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>索引重建</h3><span class="hint">POST /api/admin/rag/collections/rebuild（202 返回 job_id）</span></div>
+    <div class="rag-form">
+      <div class="rf"><label>集合名</label><input id="ragRbCollection" placeholder="edu_knowledge"></div>
+      <div class="rf"><label>分区</label><input id="ragRbPartition" value="_default"></div>
+      <div class="rf"><label>模式</label>
+        <select id="ragRbMode">
+          <option value="incremental">incremental（补缺失索引）</option>
+          <option value="full">full（清空重建整库，慢而干净）</option>
+        </select>
+      </div>
+      <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragRbBtn" type="button">提交重建</button></div>
+    </div>
+    <div class="muted note-sm" id="ragRbNote" style="margin-top:8px">full 模式有二次确认；提交后可回集合列表观察 status/最近重建时间。</div>
+  </div>
 </div>
+
+<!-- ③ 调参面板（FEAT-WIRE-V2 #4：GET/POST /api/admin/rag/presets） -->
+<div id="rag-panel-presets" class="rag-panel hidden">
+  <div class="tbl-card">
+    <div class="card-h pad-h">
+      <h3>检索参数预设</h3>
+      <span class="hint">GET /api/admin/rag/presets · 新建走 POST 同端点</span>
+    </div>
+    <table>
+      <thead><tr><th>名称</th><th>top_k</th><th>final_max_k</th><th>cutoff</th><th>rrf_k</th><th>HyDE</th><th>图谱</th><th>模型偏好</th><th>描述</th><th>更新时间</th></tr></thead>
+      <tbody id="ragPresetBody"><tr><td colspan="10" class="box-pad">加载中…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>新建预设</h3><span class="hint">POST /api/admin/rag/presets（ParamPresetCreate）</span></div>
+    <div class="rag-form">
+      <div class="rf"><label>名称 *（2-64）</label><input id="ragPpName" placeholder="如：备考-高召回"></div>
+      <div class="rf"><label>top_k（1-200）</label><input id="ragPpTopk" type="number" value="20" min="1" max="200"></div>
+      <div class="rf"><label>final_max_k（1-30）</label><input id="ragPpFinal" type="number" value="6" min="1" max="30"></div>
+      <div class="rf"><label>cutoff（0.05-0.9）</label><input id="ragPpCutoff" type="number" step="0.05" value="0.4" min="0.05" max="0.9"></div>
+      <div class="rf"><label>rrf_k（5-500）</label><input id="ragPpRrf" type="number" value="60" min="5" max="500"></div>
+      <div class="rf"><label>HyDE</label><select id="ragPpHyde"><option value="true">开</option><option value="false">关</option></select></div>
+      <div class="rf"><label>图谱</label><select id="ragPpGraph"><option value="true">开</option><option value="false">关</option></select></div>
+      <div class="rf"><label>模型偏好</label><select id="ragPpModel"><option value="fast">fast</option><option value="quality">quality</option></select></div>
+      <div class="rf"><label>设为默认</label><select id="ragPpDefault"><option value="false">否</option><option value="true">是</option></select></div>
+      <div class="rf wide"><label>描述（≤512）</label><input id="ragPpDesc" placeholder="预设用途说明"></div>
+      <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragPpBtn" type="button">创建预设</button></div>
+    </div>
+    <div class="muted note-sm" id="ragPpNote" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ④ 审计日志面板（FEAT-WIRE-V2 #4：GET /api/admin/rag/audit-log 分页） -->
+<div id="rag-panel-audit" class="rag-panel hidden">
+  <div class="tbl-card">
+    <div class="card-h pad-h">
+      <h3>检索审计日志</h3>
+      <span class="hint">GET /api/admin/rag/audit-log · 倒序分页</span>
+    </div>
+    <table>
+      <thead><tr><th>audit_id</th><th>角色</th><th>query</th><th>召回/最终</th><th>模型</th><th>延迟</th><th>降级/错误</th><th>流式</th><th>时间</th></tr></thead>
+      <tbody id="ragAuditBody"><tr><td colspan="9" class="box-pad">加载中…</td></tr></tbody>
+    </table>
+    <div class="tbl-foot">
+      <span class="cnt" id="ragAuditCnt">共 0 条</span>
+      <div class="pager">
+        <button id="ragAuditPrev" type="button">‹</button>
+        <button class="cur" id="ragAuditPageBtn">1</button>
+        <button id="ragAuditNext" type="button">›</button>
+        <select id="ragAuditSize" style="margin-left:8px"><option>10</option><option>20</option><option>50</option></select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 高级检索面板（FEAT-WIRE-V2 #4：POST /api/admin/rag/search 三通道检索） -->
+<div id="rag-panel-search" class="rag-panel hidden">
+  <div class="card">
+    <div class="card-h"><h3>高级检索（管理员全库）</h3><span class="hint">POST /api/admin/rag/search · AdminSearchRequest</span></div>
+    <div class="rag-form">
+      <div class="rf wide"><label>查询词 *（1-500）</label><input id="ragSQuery" placeholder="如：向量检索 三通道"></div>
+      <div class="rf"><label>top_k（1-200）</label><input id="ragSTopk" type="number" value="20" min="1" max="200"></div>
+      <div class="rf"><label>final_max_k（1-30）</label><input id="ragSFinal" type="number" value="8" min="1" max="30"></div>
+      <div class="rf"><label>参数预设</label><select id="ragSPreset"><option value="">默认（服务端）</option></select></div>
+      <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragSBtn" type="button">检索</button></div>
+    </div>
+    <div id="ragSRes" class="muted note-sm" style="margin-top:10px">输入查询词后点「检索」，结果按 score 降序展示。</div>
+  </div>
+</div>
+
+</div><!-- /.wrap -->
 </div><!-- /.glayout -->
 
 
@@ -764,6 +880,184 @@ window.bootAdmin = function () {
   renderFiles(); updateStartBtn();
   refreshTasks(); startPoll();
   refreshPartitions(); refreshHealth();
+
+  /* ================= ⑥ Tab 切换 + 四面板数据加载（FEAT-WIRE-V2 #4） =================
+     契约（openapi.json 实测）：
+     GET  /api/admin/rag/collections          → [{collection_name,partition_name,display_name,row_count,status,last_rebuild_at,…}]
+     POST /api/admin/rag/collections/rebuild  → 202 {job_id}（full 有二次确认）
+     GET/POST /api/admin/rag/presets          → [{id,preset_name,is_default,description,top_k,final_max_k,cutoff_drop_ratio,rrf_k,use_hyde,enable_graph,llm_model_pref,…}]
+     GET  /api/admin/rag/audit-log?page&size  → {total,page,page_size,items[{audit_id,role,query,retrieved_count,final_count,llm_model,latency_ms,degraded_reason,is_stream,created_at,…}]}
+     POST /api/admin/rag/search               → {docs[{doc_id,score,content,source_file,content_type,tenant_id,visibility,source_channel}]} */
+  var RAG_TABS = ["collections", "upload", "presets", "audit", "search"];
+  function switchRagTab(name) {
+    var btns = document.querySelectorAll(".tabs .tab[data-tab]");
+    for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].getAttribute("data-tab") === name);
+    for (var j = 0; j < RAG_TABS.length; j++) {
+      var p = $("rag-panel-" + RAG_TABS[j]); if (p) p.classList.toggle("hidden", RAG_TABS[j] !== name);
+    }
+    if (name === "collections") refreshRagCollections();
+    else if (name === "presets") refreshRagPresets();
+    else if (name === "audit") refreshRagAudit(1);
+  }
+  (function () {
+    var btns = document.querySelectorAll(".tabs .tab[data-tab]");
+    for (var i = 0; i < btns.length; i++) btns[i].onclick = function () { switchRagTab(this.getAttribute("data-tab")); };
+  })();
+
+  function ragStatusBadge(st) {
+    if (st === "ready") return '<span class="badge b-done"><span class="pd"></span>ready</span>';
+    if (st === "rebuilding") return '<span class="badge b-running"><span class="pd"></span>rebuilding</span>';
+    return '<span class="badge b-failed"><span class="pd"></span>' + esc(st || "—") + '</span>';
+  }
+  function fmtTS(s) { return s ? esc(String(s).replace("T", " ").slice(0, 19)) : "—"; }
+
+  /* ---- 集合 ---- */
+  function refreshRagCollections() {
+    EAPI.get("/api/admin/rag/collections").then(function (cols) {
+      var arr = Array.isArray(cols) ? cols : [];
+      var body = $("ragColBody");
+      if (!arr.length) { body.innerHTML = '<tr><td colspan="7" class="box-pad">暂无集合</td></tr>'; return; }
+      body.innerHTML = arr.map(function (c) {
+        return '<tr><td class="nb">' + esc(c.collection_name || "—") + '</td>'
+          + '<td>' + esc(c.partition_name || "_default") + '</td>'
+          + '<td>' + esc(c.display_name || "—") + '</td>'
+          + '<td class="nb">' + Number(c.row_count || 0).toLocaleString() + '</td>'
+          + '<td>' + ragStatusBadge(c.status) + '</td>'
+          + '<td class="nb">' + fmtTS(c.last_rebuild_at) + '</td>'
+          + '<td style="text-align:right"><button class="btn btn-ghost btn-mini" type="button" data-ragrb="' + esc(c.collection_name || "") + '" data-ragrbp="' + esc(c.partition_name || "_default") + '">重建</button></td></tr>';
+      }).join("");
+      var bs = body.querySelectorAll("[data-ragrb]");
+      for (var k = 0; k < bs.length; k++) bs[k].onclick = function () {
+        $("ragRbCollection").value = this.getAttribute("data-ragrb");
+        $("ragRbPartition").value = this.getAttribute("data-ragrbp");
+        doRagRebuild();
+      };
+    }).catch(function (e) {
+      $("ragColBody").innerHTML = '<tr><td colspan="7" class="box-pad">集合加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+    });
+  }
+  function doRagRebuild() {
+    var col = ($("ragRbCollection").value || "").trim() || "knowledge_chunk_v1";
+    var part = ($("ragRbPartition").value || "").trim() || "_default";
+    var mode = $("ragRbMode").value;
+    var note = $("ragRbNote");
+    if (mode === "full" && !window.confirm("确认对「" + col + " / " + part + "」执行 full 全量重建？将清空后重建整库，耗时较长。")) return;
+    note.textContent = "重建任务提交中…";
+    EAPI.post("/api/admin/rag/collections/rebuild", { collection_name: col, partition_name: part, mode: mode }).then(function (r) {
+      note.textContent = "重建任务已提交（202）：job_id=" + esc((r && (r.job_id || r.task_id)) || JSON.stringify(r || {}).slice(0, 80));
+      setTimeout(refreshRagCollections, 1500);
+    }).catch(function (e) { note.textContent = "重建提交失败：" + esc((e && e.message) || "未知错误"); });
+  }
+  if ($("ragRbBtn")) $("ragRbBtn").onclick = doRagRebuild;
+
+  /* ---- 调参（presets） ---- */
+  function refreshRagPresets() {
+    EAPI.get("/api/admin/rag/presets").then(function (arr) {
+      arr = Array.isArray(arr) ? arr : [];
+      var body = $("ragPresetBody");
+      if (!arr.length) { body.innerHTML = '<tr><td colspan="10" class="box-pad">暂无预设</td></tr>'; }
+      else {
+        body.innerHTML = arr.map(function (p) {
+          return '<tr><td class="nb">' + esc(p.preset_name) + (p.is_default ? ' <span class="badge b-done"><span class="pd"></span>默认</span>' : '') + '</td>'
+            + '<td class="nb">' + esc(p.top_k) + '</td><td class="nb">' + esc(p.final_max_k) + '</td>'
+            + '<td class="nb">' + esc(p.cutoff_drop_ratio) + '</td><td class="nb">' + esc(p.rrf_k) + '</td>'
+            + '<td>' + (p.use_hyde ? "开" : "关") + '</td><td>' + (p.enable_graph ? "开" : "关") + '</td>'
+            + '<td>' + esc(p.llm_model_pref || "—") + '</td>'
+            + '<td class="note-sm" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(p.description || "") + '">' + esc(p.description || "—") + '</td>'
+            + '<td class="nb">' + fmtTS(p.updated_at) + '</td></tr>';
+        }).join("");
+      }
+      var sel = $("ragSPreset");
+      if (sel) {
+        sel.innerHTML = '<option value="">默认（服务端）</option>' + arr.map(function (p) {
+          return '<option value="' + p.id + '">' + esc(p.preset_name) + (p.is_default ? "（默认）" : "") + '</option>';
+        }).join("");
+      }
+    }).catch(function (e) {
+      $("ragPresetBody").innerHTML = '<tr><td colspan="10" class="box-pad">预设加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+    });
+  }
+  if ($("ragPpBtn")) $("ragPpBtn").onclick = function () {
+    var name = $("ragPpName").value.trim();
+    if (!name || name.length < 2) { $("ragPpNote").textContent = "名称必填（2-64 字符）"; return; }
+    var body = {
+      preset_name: name,
+      is_default: $("ragPpDefault").value === "true",
+      top_k: +$("ragPpTopk").value || 20,
+      final_max_k: +$("ragPpFinal").value || 6,
+      cutoff_drop_ratio: +$("ragPpCutoff").value || 0.4,
+      rrf_k: +$("ragPpRrf").value || 60,
+      use_hyde: $("ragPpHyde").value === "true",
+      enable_graph: $("ragPpGraph").value === "true",
+      llm_model_pref: $("ragPpModel").value
+    };
+    var desc = $("ragPpDesc").value.trim(); if (desc) body.description = desc;
+    EAPI.post("/api/admin/rag/presets", body).then(function () {
+      $("ragPpNote").textContent = "预设「" + name + "」已创建（POST 200）";
+      $("ragPpName").value = ""; $("ragPpDesc").value = "";
+      refreshRagPresets();
+    }).catch(function (e) { $("ragPpNote").textContent = "创建失败：" + esc((e && e.message) || "未知错误"); });
+  };
+
+  /* ---- 审计日志 ---- */
+  var ragAuditPage = 1;
+  function refreshRagAudit(page) {
+    ragAuditPage = page || ragAuditPage;
+    var ps = +($("ragAuditSize").value || 10);
+    EAPI.get("/api/admin/rag/audit-log?page=" + ragAuditPage + "&page_size=" + ps).then(function (d) {
+      var items = (d && d.items) || [], total = (d && d.total) || 0, pg = (d && d.page) || ragAuditPage;
+      var body = $("ragAuditBody");
+      if (!items.length) { body.innerHTML = '<tr><td colspan="9" class="box-pad">暂无审计记录</td></tr>'; }
+      else {
+        body.innerHTML = items.map(function (x) {
+          return '<tr><td class="nb">' + esc(x.audit_id || "—") + '</td>'
+            + '<td>' + esc(x.role || "—") + '</td>'
+            + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(x.query || "") + '">' + esc(x.query || "—") + '</td>'
+            + '<td class="nb">' + esc(x.retrieved_count) + ' / ' + esc(x.final_count) + '</td>'
+            + '<td>' + esc(x.llm_model || "—") + '</td>'
+            + '<td class="nb">' + esc(x.latency_ms != null ? x.latency_ms + "ms" : "—") + '</td>'
+            + '<td class="note-sm" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(x.degraded_reason || x.error_message || "") + '">' + esc(x.degraded_reason || x.error_message || "—") + '</td>'
+            + '<td>' + (x.is_stream ? "是" : "否") + '</td>'
+            + '<td class="nb">' + fmtTS(x.created_at) + '</td></tr>';
+        }).join("");
+      }
+      $("ragAuditCnt").textContent = "共 " + Number(total).toLocaleString() + " 条 · 第 " + pg + " 页";
+      $("ragAuditPageBtn").textContent = pg;
+      $("ragAuditPrev").disabled = pg <= 1;
+      $("ragAuditNext").disabled = pg * ps >= total;
+    }).catch(function (e) {
+      $("ragAuditBody").innerHTML = '<tr><td colspan="9" class="box-pad">审计日志加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+    });
+  }
+  if ($("ragAuditPrev")) {
+    $("ragAuditPrev").onclick = function () { if (ragAuditPage > 1) refreshRagAudit(ragAuditPage - 1); };
+    $("ragAuditNext").onclick = function () { refreshRagAudit(ragAuditPage + 1); };
+    $("ragAuditSize").onchange = function () { refreshRagAudit(1); };
+  }
+
+  /* ---- 高级检索 ---- */
+  if ($("ragSBtn")) $("ragSBtn").onclick = function () {
+    var q = $("ragSQuery").value.trim();
+    var res = $("ragSRes");
+    if (!q) { res.innerHTML = '<span style="color:var(--candy-red)">查询词必填</span>'; return; }
+    var body = { query: q, top_k: +$("ragSTopk").value || 20, final_max_k: +$("ragSFinal").value || 8 };
+    var pid = $("ragSPreset").value; if (pid) body.preset_id = +pid;
+    res.textContent = "检索中…（三通道召回 + 融合排序）";
+    EAPI.post("/api/admin/rag/search", body).then(function (r) {
+      var docs = (r && r.docs) || [];
+      if (!docs.length) { res.innerHTML = "无结果（final_count=0）"; return; }
+      res.innerHTML = "命中 " + docs.length + " 条，按 score 降序：" + docs.map(function (d) {
+        return '<div class="doc-card"><div class="dc-h">'
+          + '<span class="dc-score">score ' + Number(d.score || 0).toFixed(4) + '</span>'
+          + '<span>' + esc(d.source_file || "—") + '</span>'
+          + '<span>' + esc(d.content_type || "—") + '</span>'
+          + '<span>tenant ' + esc(d.tenant_id || "—") + '</span>'
+          + '<span>' + esc(d.visibility || "—") + '</span>'
+          + '<span>via ' + esc(d.source_channel || "—") + '</span>'
+          + '</div><div class="dc-body">' + esc(String(d.content || "").slice(0, 400)) + '</div></div>';
+      }).join("");
+    }).catch(function (e) { res.innerHTML = '<span style="color:var(--candy-red)">检索失败：' + esc((e && e.message) || "未知错误") + '</span>'; });
+  };
 };
 </script>
 </body>
