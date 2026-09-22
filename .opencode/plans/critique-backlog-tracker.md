@@ -759,3 +759,9 @@ W0 双闸全过:R20-min 基线(hit 0.9688/mrr 0.9688,nprobe 灵敏度 PASS)+R20-
 - **未达项 16 红全定因不代改**：15=门禁资产过期/身份错配（G3 冻结清单未跟 09-21 三笔改动含 chat-audit 整页缺席；refund 类角色守卫页被 admin token 扫描踢回=route-stable 假红）+1 真实缺陷（admin-chat-audit contrast 5 样本<4.5:1，编排者亲测复现）。
 - 返工输入三条（T13-b 候选）：①重冻结 G3 清单+8 页 hook 漂移 review ②refund 类页扫描身份裁定（豁免或双 token 策略）③chat-audit 对比度修复+history 端点补冻结（G1 in_use_unfrozen=1 同源）。
 - 教训：**"回归锁定"也须防门禁资产自身过期**——功能迭代每笔都可能让冻结快照失真，终扫前应先重冻结再扫描（顺序纪律）。
+
+## AUTO20 T13b 验收闭环（2026-09-22，五 commit，全绿锁达成）
+- 16 红全清偿：G3 重冻结（8 页漂移逐页溯源判定接线改进零恶意）+扫描身份机制定稿（page-roles.json+window.name 门控双脚本——过程中又实证修掉两个假红陷阱：注入时机静默失效/单浏览器 student-mode 全程生效）+对比度 1.37→6.8:1（只动 color）+chat-audit 契约入册（242→244）。
+- 终态五门 0 failed（G3 52/G6 156/G7 286/G8 208/G9 1456+skipped24 白名单）+G1 三零（breakpoints/in_use_unfrozen/unfrozen_only）+296 passed；编排者亲验 chat-audit G7 PASS+G1 三零复跑吻合。
+- **失效模式纪律新例**：身份机制设计选择"失效=假红非假绿"（守卫踢回→route-stable 必红）——门禁失效方向必须朝保守侧，假绿是最危险失效。
+- T13+T13b 合并达成 AUTO20 回归锁定目标。
