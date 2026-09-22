@@ -137,9 +137,8 @@ try {
   await browser.setViewport(1280, 900);
   await browser.setReducedMotion(true);
   for (const target of targets) {
-    // T13B scan identity: role-guarded pages (scripts/gates/page-roles.json) are
-    // scanned under their own role's token (EDU_GATE_STUDENT_TOKEN) so the page's
-    // guard does not redirect the scan away. Falls back to EDU_GATE_TOKEN unchanged.
+    // T13B scan identity (per-page flip: last-writer-wins between the two registered
+    // identity scripts — see _shared.mjs createBrowser).
     // G9 note: the state mocks intercept /api/*, and mockResponse answers auth/me as
     // admin by default — for a student-role page the mock honors the page identity
     // so the guard sees a student, matching the real page contract.

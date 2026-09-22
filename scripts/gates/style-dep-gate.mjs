@@ -160,8 +160,9 @@ try {
     let snapshot = { url: "", geometry: [], zLayers: [], thirdParty: [], interactive: [] };
     let runtimeError = null;
     let readyWindow = null;
-    // T13B scan identity (reported per page; the injection itself is prepared in
-    // createBrowser before this loop — see the studentIdentity resolution above).
+    // T13B scan identity (reported per page; both identity scripts were registered
+    // in createBrowser — flipping studentIdentity per page makes the LAST writer win:
+    // student token for role-guarded pages, admin token for everything else).
     const pageRole = roleForPage(target.name);
     options.studentIdentity = pageRole === "student";
     try {

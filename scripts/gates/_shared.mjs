@@ -613,24 +613,33 @@ export async function createBrowser(options = {}) {
     cdp.send("Network.enable"),
   ]);
 
+  // T13B per-page scan identity: role-guarded pages (refund.html 等) must be scanned
+  // under the STUDENT identity, everything else under the ADMIN identity. CDP
+  // addScriptToEvaluateOnNewDocument scripts run in REGISTRATION ORDER at
+  // document-start of every navigation, so the decision must be readable inside the
+  // page. Mechanism: the STUDENT script registers FIRST, the ADMIN script SECOND —
+  // and the admin script's gate reads window.name, which navigate() sets per page
+  // (window.name persists across same-tab navigations and is readable at
+  // document-start, before any page script):
+  //   student page: navigate() sets window.name="edu-gate-student" -> the admin
+  //       script's gate sees the student marker and skips; the student token stands.
+  //   admin page: navigate() sets window.name="edu-gate-admin" (default) -> the
+  //       admin script overwrites the student token with the admin token.
+  // Net effect: the scan identity matches each page's guard semantics with zero
+  // gate-semantics change. Without EDU_GATE_STUDENT_TOKEN the admin script is
+  // unconditional (exact pre-T13B behavior).
   const token = process.env.EDU_GATE_TOKEN || "";
   const refresh = process.env.EDU_GATE_REFRESH_TOKEN || "";
-  if (token) {
-    await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
-      source: `try { localStorage.setItem("edu:auth:token", ${JSON.stringify(token)}); localStorage.setItem("edu:auth:refresh", ${JSON.stringify(refresh)}); } catch {}`,
-    });
-  }
-  // T13B per-page scan identity: role-guarded pages need their own identity in
-  // localStorage before any page script runs. When a student token is provided, the
-  // student identity REPLACES the admin identity on that page load — the page's guard
-  // IIFE decides via /api/auth/me (edu-api.js reads "edu:auth:token" only, so a
-  // side-by-side key would be ignored and the page would still see the admin token).
-  // The caller (gate loop) swaps per page; default stays EDU_GATE_TOKEN.
   const studentToken = process.env.EDU_GATE_STUDENT_TOKEN || "";
   const studentRefresh = process.env.EDU_GATE_STUDENT_REFRESH_TOKEN || "";
-  if (studentToken && options.studentIdentity) {
+  if (studentToken) {
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
       source: `try { localStorage.setItem("edu:auth:token", ${JSON.stringify(studentToken)}); localStorage.setItem("edu:auth:refresh", ${JSON.stringify(studentRefresh)}); } catch {}`,
+    });
+  }
+  if (token) {
+    await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try { if (!${JSON.stringify(Boolean(studentToken))} || window.name !== "edu-gate-student") { localStorage.setItem("edu:auth:token", ${JSON.stringify(token)}); localStorage.setItem("edu:auth:refresh", ${JSON.stringify(refresh)}); } } catch {}`,
     });
   }
 
@@ -670,6 +679,13 @@ export async function createBrowser(options = {}) {
     },
     async navigate(url, settleMs = options.settleMs ?? 900) {
       cdp.clearDiagnostics();
+      // T13B per-page identity marker (see createBrowser): window.name survives
+      // same-tab navigations and is readable at document-start, so the registered
+      // identity scripts can branch on it before any page script runs.
+      const studentMode = Boolean(options.studentIdentity && studentToken);
+      await cdp.send("Runtime.evaluate", {
+        expression: `window.name = ${studentMode ? '"edu-gate-student"' : '"edu-gate-admin"'}; "ok"`,
+      }).catch(() => {});
       const loaded = cdp.waitFor("Page.loadEventFired", 15000).catch(() => null);
       const response = await cdp.send("Page.navigate", { url });
       await loaded;

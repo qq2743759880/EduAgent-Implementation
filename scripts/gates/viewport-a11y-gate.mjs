@@ -272,9 +272,8 @@ try {
   // reproduce the "data slower than settle" race on a fast local backend.
   await browser.setApiDelay(options.apiDelayMs);
   for (const target of targets) {
-    // T13B scan identity: role-guarded pages (scripts/gates/page-roles.json) are
-    // scanned under their own role's token (EDU_GATE_STUDENT_TOKEN) so the page's
-    // guard does not redirect the scan away. Falls back to EDU_GATE_TOKEN unchanged.
+    // T13B scan identity (per-page flip: last-writer-wins between the two registered
+    // identity scripts — see _shared.mjs createBrowser).
     const pageRole = roleForPage(target.name);
     options.studentIdentity = pageRole === "student";
     const viewportResults = [];
