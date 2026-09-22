@@ -54,6 +54,8 @@
 | 会话审计 | ❌ 无 React 路由 | `admin-chat-audit.html` ✅（`EAPI.get /api/admin/chat-audit/sessions`，commit 4aa7bff p05） | `/api/admin/chat-audit/*` ✅ | **静态独占**（matrix 25 页未含它——matrix 摄于该页诞生前） |
 | 记忆/个性化 | （chat 内 memobar 组件，无独立路由） | （chat.html 内） | `/api/memory` 3 | 无独立页面，双端一致 |
 
+> T12 追记（2026-09-22，AUTO20）：chat 建课工具 `course_create` 上线（commit e7d7176，admin_write+强制 HITL）——它是**后端工具面**新增，不改变本表任何页面归属：两代前端的 chat 页均经 SSE 帧自然获得确认卡/回执能力，无新页面、无新路由。
+
 ---
 
 ## 3. React 28 路由实现态统计
