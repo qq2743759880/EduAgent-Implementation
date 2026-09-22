@@ -332,14 +332,11 @@ async function check(no, name, fn) {
 const FIX = {
   vm: (d) => `开启 VMware 虚拟机: vmrun start "${VMX_PATH}" nogui,等 60s${existsSync(VMX_PATH) ? "" : `(注意:配置的 vmx 路径不存在,请确认虚拟机实际路径)`} [${d}]`,
   redis: (d) => `按 .env REDIS_PORT 端口反查容器名,docker start <容器>(若 docker 引擎未运行,先启动 Docker Desktop)[${d}]`,
-  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port ${BACKEND_PORT}(无声死亡史:可先 .venv\\Scripts\\python.exe scripts\\watchdog_8000.py --once 判读,再起常驻看门狗 python scripts\\watchdog_8000.py;取证见 test-reports/WNEXTSTABILITY1-completion-report.md) [${d}]`,
-  frontend: (d) => `cd edu-frontend && node node_modules/next/dist/bin/next dev -p ${FRONTEND_PORT}(或 deploy.mjs start 生产形态;--frontend-port 已选 ${FRONTEND_PORT}) [${d}]`,
-  debug: (d) => `DEBUG=true 虚拟管理员漏洞,上线前必须 False(settings.DEBUG=false 并重启后端);ENV_NAME 显式非 local 时属生产类环境直接禁止部署(P1-8 两级判据) [${d}]`,
+  backend: (d) => `cd edu-agent && .venv\\Scripts\\python.exe -m uvicorn app.main:app --port ${BACKEND_PORT}(启停统一走仓库根 start/stop-eduagent.cmd;看门狗机制已于 2026-09-22 移除) [${d}]`,
+  frontend: (d) => `cd edu-frontend && set NEXT_PROD_DIST_DIR=.next-prod&& node node_modules\\next\\dist\\bin\\next dev -p ${FRONTEND_PORT} [${d}]`,
+  debug: (d) => `本地开发属预期(EDU_DEBUG=false 后此项转绿;部署前必须改回) [${d}]`,
+  mongo: (d) => `确认虚拟机(192.168.85.101)在岗且 MongoDB 容器/服务运行,再重跑本体检 [${d}]`,
 };
-
-// ---------- 主流程 ----------
-console.log(`${C.b}=== EduAgent 演示前检查单 check-demo.mjs ===${C.x}`);
-console.log(`${C.dim}模式: ${DRILL ? "fail-drill(假端口演练,结果仅验证失败路径)" : "normal"}  前端端口: ${FRONTEND_PORT}${PROD_GATE ? "  [prod-gate:⑧ WARN 升级 FAIL(部署门)]" : ""}  时间: ${new Date().toLocaleString()}${C.x}\n`);
 if (DRILL) {
   console.log(`${C.y}${C.dim}--fail-drill:① Milvus→127.0.0.1:19531 ② Redis→容器内 6380 假端口 ③ Mongo→127.0.0.1:27018(必然失败,验证 FAIL 输出与指引)${C.x}\n`);
 }
