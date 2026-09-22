@@ -288,6 +288,11 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 .admin-html-page .page-head h1{color:var(--text-strong)}
 .admin-html-page .page-head .sub{color:var(--text-muted)}
 .admin-html-page .chip{color:var(--text-muted)!important;background:#EEF0F5!important}
+/* [T13B contrast fix] .chip b 消费 --primary（黏土苔绿 #B8D8A8）在 chip 实心底 #EEF0F5 上
+   实测仅 1.37:1（G7 contrast-4.5 唯一余红，5 视口同现）。苔绿是主题主色令牌不宜全局改，
+   仅对 chip 内强调数字改用深苔绿 #2F5D22：对 #EEF0F5 6.8:1 / 对白卡 7.75:1，过 WCAG AA；
+   只动 color，不动几何/结构。 */
+.admin-html-page .chip b{color:#2F5D22!important}
 .admin-html-page .gap-note{border-radius:var(--radius-input)!important}
 .admin-html-page .muted,.admin-html-page .hint{color:var(--text-muted)}
 .admin-html-page .hint b{color:var(--text-muted)}
