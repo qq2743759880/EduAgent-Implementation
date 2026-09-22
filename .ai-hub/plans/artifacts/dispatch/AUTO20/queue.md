@@ -18,7 +18,7 @@
 | 14 | Mimosa 全量审计重跑（消除 scanner_enobufs fail-open 窗口+验证排除门全链路） | MIMOSA-EXCL 披露 | ✅ 闭环 | 17942b3；深扫成功（1219 文件/410 findings/封印齐）enobufs 未复现；排除门未被穿透（两测试文件 findings 0 出现）；如实披露：排除门对 MCP 通道本就不适用+commit-gate fail-open 模式仍在（独立工单建议）；净新增 1 HIGH（artifact_store 路径穿越，0 调用方，P2 登记） | 17942b3 |
 | 15 | 文档同步: 用户使用手册/面试演示方案补新功能（记忆反馈/审计视图/上传/新门禁） | docs/ | ✅ 闭环 | 581a981；4 文件+100/-11（手册 7 点/演示 5 点含 §11-14/对账表 1 点/新建 changelog）；数字全溯源零编造；两处实测纠偏（上传按钮落点/五 tab）；编排者抽查 changelog+手册新节吻合 | 581a981 |
 | 16 | push GitHub 批量（15 单全部验证后；用户既有多轮 push 指令） | — | ✅ 闭环 | 290e2ac→1ef2efe 117 commit 上行成功（含 AUTO20 全部成果+四单验收文档）；HEAD=origin 快照一致；>4MB blob 扫描安全 | 1ef2efe |
-| 17 | 缓冲槽: 1-16 返工消化/新批判承接项（动态分配；无则补充轮） | — | pending | — | — |
+| 17 | 缓冲槽: 1-16 返工消化/新批判承接项（动态分配；无则补充轮） | — | ✅ 闭环（无待消化返工：T1-T16+T13b 一次通过率 15/15，返工环零触发；衍生项 T7-b/React 死链/commit-gate 工单/artifact_store P2 已单列候选池不入本批） | — | 2ffe303 |
 | 18 | SEED-VIDEO: 120 真实视频生成+82 万行三核闸接线+播放验证（用户裁定后置） | TO-EXEC-SEED-VIDEO | ⏸ 用户暂停（2026-09-22）：先不执行，等解冻令 | — | — |
 | 19 | ARKBAT-B: glm-5.3-flash 质量盲评（20 query×2 模型+DeepSeek judge）+故障转移演练（用户裁定后置） | kickoff-ARKAPI 残余 | ⏸ 用户暂停（2026-09-22）：先不执行，等解冻令 | — | — |
 | 20 | BLIND-WAVE: 执行盲测队列累积场景 B6-B9+增量（用户裁定后置，收尾波次） | blind-test-queue.md | pending | — | — |
