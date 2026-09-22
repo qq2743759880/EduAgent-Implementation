@@ -1,0 +1,20 @@
+{
+  "planId": "reshape-r-chat-audit",
+  "draft": false,
+  "frozen_at": "2026-09-22",
+  "signed_by": "user(项目所有者) 2026-09-16 签字生效（CR-FE-002）；2026-09-22 T13B 按同一授权补冻（REPORT-T13 §3 / REPORT-T13B §4，AUTO20 执行者代办，不新增授权面）",
+  "description": "AUTO20 T13B G1：补冻结管理端会话审计 2 条只读契约（GET /api/admin/chat-audit/sessions 分页+user_id 过滤、GET /api/admin/chat-audit/sessions/{x}/history 只读历史）。来源 4aa7bff P0-5 chat-audit（require_role([ADMIN]) 服务端硬校验），T13 终扫 in_use_unfrozen=1（history）+ unfrozen_only=1（sessions）同源清偿。",
+  "source": "REPORT-T13.md §3（in_use_unfrozen=1/unfrozen_only=1）；febe_contract_check.py [②][③] 段复跑确认",
+  "change_order": "handoffs/CR-FE-002-unfrozen-only.md（既有授权面，本批零新增契约语义，仅把 4aa7bff 已上线的只读端点入册）",
+  "groups": {
+    "G1_admin_chat_audit_readonly": [
+      "GET /api/admin/chat-audit/sessions",
+      "GET /api/admin/chat-audit/sessions/{x}/history"
+    ]
+  },
+  "endpoints": [
+    "GET /api/admin/chat-audit/sessions",
+    "GET /api/admin/chat-audit/sessions/{x}/history"
+  ],
+  "hash_sha256": "568870e22b051d588a8b3205ca810d5dbd2e28f9c1187badbd2144528a92254c"
+}
