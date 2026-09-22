@@ -10,6 +10,8 @@ import {
   printReport,
   readJson,
   resolveTargets,
+  roleReasonForPage,
+  roleForPage,
   usage,
   writeGateReports,
   writeJson,
@@ -138,6 +140,10 @@ const targets = resolveTargets(options);
 await assertDevBase(options, targets);
 const baselinePath = path.join(options.out, "style-dep-snapshot.json");
 const existingBaseline = readJson(baselinePath, { schema_version: 1, pages: {} });
+// T13B scan identity must be resolved BEFORE createBrowser: the identity injection
+// registers Page.addScriptToEvaluateOnNewDocument at browser startup. Creating the
+// browser first would freeze the admin-only injection set for the whole run.
+options.studentIdentity = targets.some((target) => roleForPage(target.name) === "student");
 const browser = await createBrowser(options);
 const captured = {};
 const pages = [];
@@ -154,6 +160,10 @@ try {
     let snapshot = { url: "", geometry: [], zLayers: [], thirdParty: [], interactive: [] };
     let runtimeError = null;
     let readyWindow = null;
+    // T13B scan identity (reported per page; the injection itself is prepared in
+    // createBrowser before this loop — see the studentIdentity resolution above).
+    const pageRole = roleForPage(target.name);
+    options.studentIdentity = pageRole === "student";
     try {
       await browser.navigate(target.url, options.settleMs);
       // GATE-V3 data-ready stable window: wait for network idle + two consistent
@@ -187,6 +197,8 @@ try {
     pages.push({
       name: target.name,
       url: target.url,
+      scan_role: pageRole,
+      scan_role_reason: roleReasonForPage(target.name) || undefined,
       geometrySelectors,
       snapshot,
       drift,
@@ -219,6 +231,7 @@ const report = finalizeReport("G6 Style Dependency Gate", pages, {
   chrome: browser.chromeVersion,
   baseline: path.relative(PROJECT_ROOT, baselinePath),
   baseline_created: options.updateBaseline || !Object.keys(existingBaseline.pages || {}).length,
+  scan_identity: "per-page via scripts/gates/page-roles.json (default admin; role-guarded pages scan under EDU_GATE_STUDENT_TOKEN when set); no check relaxed",
   ready_window: "sample after network idle + two consistent DOM snapshots (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap; timeout records the window as unsettled and samples as-is — informational, never alters check outcomes)",
 });
 const files = writeGateReports("g6-style-dep-gate", report, options.out);

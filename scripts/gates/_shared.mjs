@@ -64,6 +64,48 @@ export function loadNaPages() {
   return { names, reasons };
 }
 
+// T13B scan-identity ruling (page-roles.json): a role-guarded page (e.g. refund.html
+// student-only) redirects admin-identity scans away and fake-reds the route-stable
+// family. Resolution order per page: page-roles.json role -> EDU_GATE_ROLE env ->
+// "admin" (unchanged default). The page-specific token comes from
+// EDU_GATE_<ROLE>_TOKEN when set; otherwise the scan keeps the shared admin token so
+// a missing student env degrades to today's behavior instead of crashing. No check is
+// skipped or relaxed — only the scan identity aligns with the page's own guard.
+const PAGE_ROLES_FILE = path.join(HERE, "page-roles.json");
+
+export function loadPageRoles() {
+  const file = readJson(PAGE_ROLES_FILE, null);
+  const entries = Array.isArray(file?.pages) ? file.pages : [];
+  const roles = new Map();
+  const reasons = new Map();
+  for (const entry of entries) {
+    if (typeof entry?.name !== "string" || typeof entry?.role !== "string") continue;
+    const role = entry.role.toLowerCase();
+    if (!["student", "admin"].includes(role)) continue;
+    roles.set(entry.name, role);
+    reasons.set(entry.name, (typeof entry === "object" && entry?.reason) || "");
+  }
+  const envRole = (process.env.EDU_GATE_ROLE || "").toLowerCase();
+  const envOverride = ["student", "admin"].includes(envRole) ? envRole : null;
+  return { roles, reasons, envOverride };
+}
+
+export function roleForPage(name) {
+  const { roles, envOverride } = loadPageRoles();
+  return envOverride || roles.get(name) || "admin";
+}
+
+export function tokenForPage(name) {
+  const role = roleForPage(name);
+  if (role === "admin") return process.env.EDU_GATE_TOKEN || "";
+  return process.env[`EDU_GATE_${role.toUpperCase()}_TOKEN`] || process.env.EDU_GATE_TOKEN || "";
+}
+
+export function roleReasonForPage(name) {
+  const { roles, reasons } = loadPageRoles();
+  return roles.has(name) ? reasons.get(name) || "" : "";
+}
+
 export function parseCli(argv, { allowCheck = false, allowBaseline = false } = {}) {
   const options = {
     all: false,
@@ -71,6 +113,7 @@ export function parseCli(argv, { allowCheck = false, allowBaseline = false } = {
     check: false,
     updateBaseline: false,
     naArgs: [],
+    studentIdentity: false,
     base: process.env.EDU_GATE_BASE || DEFAULT_BASE,
     out: process.env.EDU_GATE_OUT || DEFAULT_OUT,
     chrome: process.env.EDU_GATE_CHROME || null,
@@ -161,15 +204,24 @@ export function makeCheck(name, pass, detail, severity = "error") {
 // Auth pages render in a degraded state once EDU_GATE_TOKEN expires mid-run (observed:
 // a long --all pass outlived the JWT TTL and coupons.html tab-reachable fell to 14/68
 // with 54 phantom-unreachable elements). Fail fast instead of poisioning the report.
+// T13B: when a student-identity token is provided for role-guarded pages, it is
+// freshness-checked too (same fake-red mechanism under a wrong/expired identity).
 export function assertFreshGateToken() {
   const token = process.env.EDU_GATE_TOKEN || "";
   if (!token || !token.startsWith("eyJ")) return;
+  const label = "EDU_GATE_TOKEN";
+  checkJwtFresh(token, label);
+  const studentToken = process.env.EDU_GATE_STUDENT_TOKEN || "";
+  if (studentToken && studentToken.startsWith("eyJ")) checkJwtFresh(studentToken, "EDU_GATE_STUDENT_TOKEN");
+}
+
+function checkJwtFresh(token, label) {
   try {
     const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       throw new Error(
-        `GATE-TOKEN-EXPIRED: EDU_GATE_TOKEN expired at ${new Date(payload.exp * 1000).toISOString()}. ` +
-        "Re-login (adm02test/Test@123456 → /api/auth/login on :9988) and re-export a fresh token; " +
+        `GATE-TOKEN-EXPIRED: ${label} expired at ${new Date(payload.exp * 1000).toISOString()}. ` +
+        "Re-login (adm02test / user000001, Test@123456 → /api/auth/login on :9988) and re-export a fresh token; " +
         "an expired token silently degrades auth-guard pages and fakes red results."
       );
     }
@@ -568,6 +620,19 @@ export async function createBrowser(options = {}) {
       source: `try { localStorage.setItem("edu:auth:token", ${JSON.stringify(token)}); localStorage.setItem("edu:auth:refresh", ${JSON.stringify(refresh)}); } catch {}`,
     });
   }
+  // T13B per-page scan identity: role-guarded pages need their own identity in
+  // localStorage before any page script runs. When a student token is provided, the
+  // student identity REPLACES the admin identity on that page load — the page's guard
+  // IIFE decides via /api/auth/me (edu-api.js reads "edu:auth:token" only, so a
+  // side-by-side key would be ignored and the page would still see the admin token).
+  // The caller (gate loop) swaps per page; default stays EDU_GATE_TOKEN.
+  const studentToken = process.env.EDU_GATE_STUDENT_TOKEN || "";
+  const studentRefresh = process.env.EDU_GATE_STUDENT_REFRESH_TOKEN || "";
+  if (studentToken && options.studentIdentity) {
+    await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try { localStorage.setItem("edu:auth:token", ${JSON.stringify(studentToken)}); localStorage.setItem("edu:auth:refresh", ${JSON.stringify(studentRefresh)}); } catch {}`,
+    });
+  }
 
   // GATE-V3 network-idle tracking: count in-flight requests from Network events so a
   // caller can wait for "no pending request" instead of guessing a fixed settle.
@@ -714,6 +779,6 @@ export function usage(script, extras = "") {
     `       node scripts/gates/${script} --all [--out <dir>]`,
     `       [--na <page-name>...] marks pages whose excluded check is structurally N/A (recorded as SKIP; file default: scripts/gates/na-pages.json)`,
     extras,
-    "Environment: EDU_GATE_BASE, EDU_GATE_CHROME, EDU_GATE_TOKEN, EDU_GATE_REFRESH_TOKEN, EDU_GATE_SETTLE_MS, EDU_GATE_READY_TIMEOUT_MS (data-ready window cap, default 5000; 0 disables the ready window), EDU_GATE_DELAY_API_MS (negative-control /api/ delay, default 0)",
+    "Environment: EDU_GATE_BASE, EDU_GATE_CHROME, EDU_GATE_TOKEN, EDU_GATE_REFRESH_TOKEN, EDU_GATE_SETTLE_MS, EDU_GATE_READY_TIMEOUT_MS (data-ready window cap, default 5000; 0 disables the ready window), EDU_GATE_DELAY_API_MS (negative-control /api/ delay, default 0), EDU_GATE_ROLE (global scan identity override, admin|student), EDU_GATE_STUDENT_TOKEN (student-identity token; per-page identity comes from scripts/gates/page-roles.json)",
   ].filter(Boolean).join("\n");
 }

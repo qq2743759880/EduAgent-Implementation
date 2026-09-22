@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "_comment": "Gate scan identity per page (T13B). A page's own role guard decides which identity scans it: a student-only page redirects admin sessions away, which fake-reds route-stable family checks. Default identity stays admin (EDU_GATE_TOKEN); a listed page scans under EDU_GATE_<ROLE>_TOKEN when that env is set, else falls back to the admin token unchanged. Gate semantics never weaken: only the scan identity is aligned with the page guard, no check is skipped or relaxed.",
+  "pages": [
+    {
+      "name": "refund.html",
+      "role": "student",
+      "reason": "student-only role guard (refund.html guard IIFE: role!=student -> location.replace('/dashboard.html')); admin-identity scans fake-red route-stable (G6 x1 / G7 x2 / G9 x3, T13 16-red B-group)"
+    }
+  ]
+}

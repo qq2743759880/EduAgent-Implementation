@@ -8,6 +8,8 @@ import {
   parseCli,
   printReport,
   resolveTargets,
+  roleForPage,
+  roleReasonForPage,
   safeStem,
   usage,
   writeGateReports,
@@ -19,8 +21,8 @@ function ok(data) {
   return { code: 0, message: "ok", data };
 }
 
-function authUser() {
-  return ok({ user_id: 1, id: 1, username: "gate-admin", nickname: "Gate Admin", role: "admin", status: 1 });
+function authUser(role) {
+  return ok({ user_id: 1, id: 1, username: role === "student" ? "gate-student" : "gate-admin", nickname: role === "student" ? "Gate Student" : "Gate Admin", role: role || "admin", status: 1 });
 }
 
 function emptyData(url) {
@@ -56,10 +58,10 @@ function populatedData(state) {
   };
 }
 
-function mockResponse(url, state) {
+function mockResponse(url, state, role) {
   const pathname = new URL(url).pathname;
   if (pathname.endsWith("/api/auth/me") && !["forbidden", "token-expired", "server-500"].includes(state)) {
-    return { status: 200, body: authUser() };
+    return { status: 200, body: authUser(role) };
   }
   if (state === "empty") return { status: 200, body: ok(emptyData(url)) };
   if (state === "forbidden") return { status: 403, body: { code: 40300, message: "Gate injected forbidden state", data: null } };
@@ -125,6 +127,9 @@ if (options.help) {
 if (!process.env.EDU_GATE_TOKEN) process.env.EDU_GATE_TOKEN = "gate-state-token";
 const targets = resolveTargets(options);
 await assertDevBase(options, targets);
+// T13B scan identity must be resolved BEFORE createBrowser: the identity injection
+// registers Page.addScriptToEvaluateOnNewDocument at browser startup.
+options.studentIdentity = targets.some((target) => roleForPage(target.name) === "student");
 const browser = await createBrowser(options);
 const pages = [];
 
@@ -132,6 +137,14 @@ try {
   await browser.setViewport(1280, 900);
   await browser.setReducedMotion(true);
   for (const target of targets) {
+    // T13B scan identity: role-guarded pages (scripts/gates/page-roles.json) are
+    // scanned under their own role's token (EDU_GATE_STUDENT_TOKEN) so the page's
+    // guard does not redirect the scan away. Falls back to EDU_GATE_TOKEN unchanged.
+    // G9 note: the state mocks intercept /api/*, and mockResponse answers auth/me as
+    // admin by default — for a student-role page the mock honors the page identity
+    // so the guard sees a student, matching the real page contract.
+    const pageRole = roleForPage(target.name);
+    options.studentIdentity = pageRole === "student";
     const stateResults = [];
     for (const state of STATES) {
       let intercepted = 0;
@@ -160,7 +173,7 @@ try {
             await browser.cdp.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "ConnectionRefused" });
             return;
           }
-          const response = mockResponse(event.request.url, state);
+          const response = mockResponse(event.request.url, state, pageRole);
           const body = Buffer.from(JSON.stringify(response.body), "utf8").toString("base64");
           await browser.cdp.send("Fetch.fulfillRequest", {
             requestId: event.requestId,
@@ -242,7 +255,7 @@ try {
     }
 
     const checks = stateResults.flatMap((result) => result.checks.map((check) => ({ ...check, name: `${result.state}/${check.name}` })));
-    pages.push({ name: target.name, url: target.url, states: stateResults, checks });
+    pages.push({ name: target.name, url: target.url, scan_role: pageRole, scan_role_reason: roleReasonForPage(target.name) || undefined, states: stateResults, checks });
     console.log(`[G9] ${target.name}: ${checks.every((item) => item.pass || item.severity === "warning") ? "PASS" : "FAIL"}`);
   }
 } finally {
@@ -252,7 +265,8 @@ try {
 const report = finalizeReport("G9 State Matrix Gate", pages, {
   chrome: browser.chromeVersion,
   states: STATES,
-  mock_policy: "All loopback /api/ requests are intercepted. auth/me remains an admin success except in authorization and server-failure states.",
+  mock_policy: "All loopback /api/ requests are intercepted. auth/me remains an identity success except in authorization and server-failure states; the identity follows the page scan role (scripts/gates/page-roles.json, default admin).",
+  scan_identity: "per-page via scripts/gates/page-roles.json (default admin; role-guarded pages scan under EDU_GATE_STUDENT_TOKEN when set); no check relaxed",
   ready_window: "mock-driven states (empty/disabled/long-text) sample after network idle + two consistent DOM snapshots (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap); hold/fail states skip the window by design",
 });
 const files = writeGateReports("g9-state-matrix-gate", report, options.out);

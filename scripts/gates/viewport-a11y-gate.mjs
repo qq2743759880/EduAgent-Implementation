@@ -9,6 +9,8 @@ import {
   printReport,
   readJson,
   resolveTargets,
+  roleForPage,
+  roleReasonForPage,
   safeStem,
   sleep,
   usage,
@@ -257,6 +259,9 @@ const targets = resolveTargets(options);
 await assertDevBase(options, targets);
 const baselinePath = path.join(options.out, "viewport-a11y-snapshot.json");
 const baseline = readJson(baselinePath, { schema_version: 1, pages: {} });
+// T13B scan identity must be resolved BEFORE createBrowser: the identity injection
+// registers Page.addScriptToEvaluateOnNewDocument at browser startup.
+options.studentIdentity = targets.some((target) => roleForPage(target.name) === "student");
 const browser = await createBrowser(options);
 const snapshots = {};
 const pages = [];
@@ -267,6 +272,11 @@ try {
   // reproduce the "data slower than settle" race on a fast local backend.
   await browser.setApiDelay(options.apiDelayMs);
   for (const target of targets) {
+    // T13B scan identity: role-guarded pages (scripts/gates/page-roles.json) are
+    // scanned under their own role's token (EDU_GATE_STUDENT_TOKEN) so the page's
+    // guard does not redirect the scan away. Falls back to EDU_GATE_TOKEN unchanged.
+    const pageRole = roleForPage(target.name);
+    options.studentIdentity = pageRole === "student";
     const viewportResults = [];
     let runtimeError = null;
     const readyWindows = [];
@@ -364,6 +374,8 @@ try {
     pages.push({
       name: target.name,
       url: target.url,
+      scan_role: pageRole,
+      scan_role_reason: roleReasonForPage(target.name) || undefined,
       viewportResults,
       focus,
       lostAttrs,
@@ -399,6 +411,7 @@ const report = finalizeReport("G7 Viewport and Accessibility Gate", pages, {
   viewports: VIEWPORTS,
   baseline: path.relative(PROJECT_ROOT, baselinePath),
   baseline_created: options.updateBaseline || !Object.keys(baseline.pages || {}).length,
+  scan_identity: "per-page via scripts/gates/page-roles.json (default admin; role-guarded pages scan under EDU_GATE_STUDENT_TOKEN when set); no check relaxed",
   contrast_note: "Computed solid background-color stack; gradient/image contrast still requires screenshot review.",
   ready_window: "sample after network idle + two consistent DOM snapshots per viewport and before the Tab walk (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap; timeout records the window as unsettled and samples as-is — informational, never alters check outcomes)",
 });
