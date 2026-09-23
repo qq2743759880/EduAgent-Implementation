@@ -990,14 +990,29 @@ if (!__logon) { renderSides(); draw("history"); }
     if (el) el.innerHTML = THINK_HTML;
     openStream(query, threadId, { resume: true });
   }
-  /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 120ms 节流） */
+  /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 打字机揭示节拍） */
   function openStream(query, sid, opts) {
     opts = opts || {};
-    var acc = "", gotToken = false, gotDone = false, renderTimer = null, doneMemo = [];
+    /* [TA1 定因/修复] 揭示节奏与网络到达解耦（打字机队列）
+       定因实测（CDP + 裸 socket，见 REPORT-TA1-3）：上游 LLM 吞吐 400~620 字/秒，
+       整段 token 窗口只有 0.24~1.3s；1:1 渲染（叠加旧 120ms 节流只出 9~11 帧）在肉眼上
+       等同"转圈后整段弹出"。以下只控制**何时显示已到达的增量**：
+       不改答案内容、不改 SSE 事件/字段解析（契约仍为 event: token + j.delta）。 */
+    var acc = "", gotToken = false, gotDone = false, streamClosed = false;
+    var doneMemo = [];
     var doneReceiptWarn = false; /* [F-W1-GUARD AUTO20 T7] done 帧 tool_receipt_unverified=true → 黄色警示条 */
+    var hitlCardShown = false;   /* HITL 确认卡已渲染 → 收尾不得整体重写 innerHTML 冲掉它 */
+    var shown = 0;               /* 已揭示字符数（0..acc.length），acc 始终是"已到达的全量"（事实源） */
+    var pacer = null, revealStart = 0, finished = false;
+    var REVEAL_TICK_MS = 30;     /* 揭示节拍 */
+    var REVEAL_MIN_CPS = 90;     /* 最小揭示速度（字/秒）——低于此肉眼基本看不出逐字 */
+    var REVEAL_TAIL_MS = 2200;   /* 缓冲越多越快：剩余缓冲至多再花这么久排空（防长答案拖尾） */
+    var REVEAL_FORCE_MS = 20000; /* 硬兜底：揭示最长不超过 20s，超时立即全量（防定时器悬挂） */
     function renderStream(final) {
-      var el = $("aiResp"); if (!el || !acc) return;
-      var htmlOut = md(acc);
+      var el = $("aiResp"); if (!el) return;
+      var text = final ? acc : acc.slice(0, shown);
+      if (!text) return;
+      var htmlOut = md(text);
       if (!final) {
         /* 闪烁 cursor 尽量挂在最后一个块级元素内，避免独占一行 */
         if (/<\/(p|h[3-6]|li)>$/.test(htmlOut)) htmlOut = htmlOut.replace(/<\/(p|h[3-6]|li)>$/, CURSOR_HTML + "</$1>");
@@ -1006,12 +1021,67 @@ if (!__logon) { renderSides(); draw("history"); }
       el.innerHTML = htmlOut;
       scrollStage(false);
     }
-    function scheduleRender() { /* 节流：120ms 内多次 token 合并为一次 innerHTML 重排 */
-      if (renderTimer) return;
-      renderTimer = setTimeout(function () { renderTimer = null; renderStream(false); }, 120);
+    function stopPacer() { if (pacer) { clearInterval(pacer); pacer = null; } }
+    /* 揭示一步：速率随剩余缓冲自适应（越大越快），保证既可见又不拖尾 */
+    function revealTick() {
+      if (hitlCardShown) { stopPacer(); return; }
+      var remain = acc.length - shown;
+      if (remain > 0) {
+        var cps = REVEAL_MIN_CPS;
+        var adaptive = remain / (REVEAL_TAIL_MS / 1000);
+        if (adaptive > cps) cps = adaptive;
+        var step = Math.max(1, Math.round(cps * REVEAL_TICK_MS / 1000));
+        shown = Math.min(acc.length, shown + step);
+        renderStream(false);
+      }
+      if (revealStart && Date.now() - revealStart > REVEAL_FORCE_MS && shown < acc.length) {
+        shown = acc.length; renderStream(false);
+      }
+      if (shown >= acc.length) tryFinalize();
+    }
+    function ensurePacer() {
+      if (pacer || finished || hitlCardShown) return;
+      if (!revealStart) revealStart = Date.now();
+      pacer = setInterval(revealTick, REVEAL_TICK_MS);
+    }
+    /* 收尾：揭示排空 **且** 连接已收束才真正结束（否则会在 token 突发后立刻整段弹出） */
+    function tryFinalize() {
+      if (finished || hitlCardShown) return false;
+      if (shown < acc.length || !streamClosed) return false;
+      finished = true;
+      stopPacer();
+      setStreaming(false);
+      if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
+      else renderStream(true);
+      if (doneReceiptWarn) {
+        var wr = $("aiResp");
+        if (wr) {
+          var warn = document.createElement("div");
+          warn.className = "receipt-warn";
+          warn.setAttribute("role", "alert");
+          warn.innerHTML = '<span class="receipt-ic">⚠️</span><span class="receipt-tx">' +
+            "上述工具操作未实际执行，请以工具调用记录为准。</span>";
+          wr.appendChild(warn);
+        }
+      }
+      if (doneMemo.length) {
+        var mr = $("aiResp");
+        if (mr) {
+          var bar = document.createElement("div");
+          bar.className = "memo-bar";
+          bar.setAttribute("role", "status");
+          bar.innerHTML = '<span class="memo-ic">💾</span>已记住：<span class="memo-tx">' +
+            esc(doneMemo.join("；")) + "</span>";
+          mr.appendChild(bar);
+        }
+      }
+      return true;
     }
     function failStream(msg) {
-      if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+      /* 中断诚实降级：立即揭示已到达的全部内容（不再等节拍），并停掉揭示定时器 */
+      finished = true;
+      stopPacer();
+      shown = acc.length;
       setStreaming(false);
       var el = $("aiResp"); if (!el) return;
       el.innerHTML = (acc ? md(acc) : "") +
@@ -1031,9 +1101,17 @@ if (!__logon) { renderSides(); draw("history"); }
       function pump() {
         return reader.read().then(function (r) {
           if (r.done) {
-            if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
-            setStreaming(false);
-            if (!gotDone) { if (acc) renderStream(true); else failStream("连接提前结束"); }
+            /* [TA1] 连接收束 ≠ 渲染收束：token 已全部到达，但揭示节拍可能仍在跑。
+               这里只置 streamClosed，由 tryFinalize 在「揭示排空」后真正收尾——
+               否则 token 突发（0.24~1.3s）一结束就会整段弹出，打字机效果等于没有。 */
+            streamClosed = true;
+            if (!gotDone) {
+              /* 无 done 帧（连接提前结束）：立即全量揭示 + 诚实提示，不静默 */
+              finished = true; stopPacer(); shown = acc.length; setStreaming(false);
+              if (acc) renderStream(true); else failStream("连接提前结束");
+              return;
+            }
+            if (!tryFinalize()) ensurePacer();
             return;
           }
           buf += dec.decode(r.value, { stream: true });
@@ -1045,8 +1123,9 @@ if (!__logon) { renderSides(); draw("history"); }
             if (!line.startsWith("data:")) return;
             var payload = line.slice(5).trim();
             if (evt === "token") {
-              /* 契约实测：token 事件 JSON 的 delta 字段累加（task104） */
-              try { var j = JSON.parse(payload); if (j.delta) { acc += j.delta; gotToken = true; scheduleRender(); } } catch (e) {}
+              /* 契约实测：token 事件 JSON 的 delta 字段累加（task104）。
+                 [TA1] 累加进 acc（全量事实源），由揭示节拍按固定节奏显示 acc.slice(0, shown)。 */
+              try { var j = JSON.parse(payload); if (j.delta) { acc += j.delta; gotToken = true; ensurePacer(); } } catch (e) {}
             }
             else if (evt === "start" || evt === "retrieval") {
               /* start→retrieval→首 token 的检索空窗：思考中动效（首 token 到达后被内容整体替换） */
@@ -1054,6 +1133,7 @@ if (!__logon) { renderSides(); draw("history"); }
             }
             else if (evt === "pending_confirm") {
               /* R11 HITL：高风险工具执行前中断 → 确认卡（工具名+参数+风险级+确认/拒绝） */
+              hitlCardShown = true; stopPacer();   /* [TA1] 揭示节拍必须让位：收尾重写会冲掉确认卡 */
               setStreaming(false);
               try {
                 var pc = JSON.parse(payload);
@@ -1065,13 +1145,13 @@ if (!__logon) { renderSides(); draw("history"); }
               /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
                  流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则立即收编 session_id 并只刷侧栏 */
               gotDone = true;
-              setStreaming(false);
               try {
                 var d = JSON.parse(payload);
                 /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染；
                    [FEAT-WIRE-V2 #9] 若 pending_confirm 卡从未渲染（hitlPending 为空），
                    旧版 early return 会把「检索知识库并思考中…」指示器永久残留——补诚实降级态 */
                 if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") {
+                  finished = true; stopPacer(); setStreaming(false);
                   if (!hitlPending) {
                     var hp = $("aiResp");
                     if (hp) hp.innerHTML = '<div class="degrade">本次回答需要人工确认后继续，但确认卡未送达（可重新提问）。</div>';
@@ -1084,42 +1164,19 @@ if (!__logon) { renderSides(); draw("history"); }
                     loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
                   }
                 }
-                /* [REWORK P0-2] 答后记忆反馈条：缓存到 doneMemo，在下方 renderStream(true) 之后再
+                /* [REWORK P0-2] 答后记忆反馈条：缓存到 doneMemo，在收尾 renderStream(true) 之后再
                    追加——renderStream 是整体 innerHTML 重写，先追加会被抹掉（实测踩坑）。 */
                 if (d && d.data && Array.isArray(d.data.memorized) && d.data.memorized.length) {
                   doneMemo = d.data.memorized;
                 }
                 /* [F-W1-GUARD AUTO20 T7] 写类回执未验证标记：缓存到 doneReceiptWarn，
-                   同样在 renderStream(true) 之后追加（防被整体重写抹掉）。 */
+                   同样在收尾 renderStream(true) 之后追加（防被整体重写抹掉）。 */
                 if (d && d.data && d.data.tool_receipt_unverified === true) {
                   doneReceiptWarn = true;
                 }
               } catch (e) {}
-              if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
-              if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
-              else renderStream(true);
-              if (doneReceiptWarn) {
-                var wr = $("aiResp");
-                if (wr) {
-                  var warn = document.createElement("div");
-                  warn.className = "receipt-warn";
-                  warn.setAttribute("role", "alert");
-                  warn.innerHTML = '<span class="receipt-ic">⚠️</span><span class="receipt-tx">' +
-                    "上述工具操作未实际执行，请以工具调用记录为准。</span>";
-                  wr.appendChild(warn);
-                }
-              }
-              if (doneMemo.length) {
-                var mr = $("aiResp");
-                if (mr) {
-                  var bar = document.createElement("div");
-                  bar.className = "memo-bar";
-                  bar.setAttribute("role", "status");
-                  bar.innerHTML = '<span class="memo-ic">💾</span>已记住：<span class="memo-tx">' +
-                    esc(doneMemo.join("；")) + "</span>";
-                  mr.appendChild(bar);
-                }
-              }
+              /* [TA1] 收尾统一交给 tryFinalize（需 streamClosed + 揭示排空），不再立刻整段弹出 */
+              if (!tryFinalize()) ensurePacer();
             }
             else if (evt === "error") {
               /* task07③：error 事件诚实展示——保留已渲染内容 + 行内中断提示 + toast，不清空舞台 */

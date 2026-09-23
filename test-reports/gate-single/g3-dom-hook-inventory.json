@@ -1,0 +1,42 @@
+{
+  "gate": "G3 DOM Hook Inventory",
+  "generated_at": "2026-09-23T18:01:07.340Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 2,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "mode": "check",
+  "frozen_markdown": "docs\\dom-hooks-frozen.md",
+  "frozen_json": "docs\\dom-hooks-frozen.json",
+  "current_page_count": 1,
+  "dispatch_page_count": 19,
+  "pages": [
+    {
+      "name": "chat.html",
+      "url": "http://127.0.0.1:3322/chat.html",
+      "total": 34,
+      "drift": {
+        "missing": [],
+        "added": []
+      },
+      "checks": [
+        {
+          "name": "frozen-hooks-present",
+          "pass": true,
+          "detail": "0 frozen hook fingerprints missing.",
+          "severity": "error"
+        },
+        {
+          "name": "new-hooks-reviewed",
+          "pass": true,
+          "detail": "0 new hook fingerprints require review.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}
