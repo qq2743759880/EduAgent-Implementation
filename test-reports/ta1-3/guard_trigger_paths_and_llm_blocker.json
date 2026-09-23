@@ -1,0 +1,51 @@
+{
+  "probe": "TA1-3 / TA3 护栏触发路径定因 + LLM 上游阻塞复核",
+  "captured_at": "2026-09-24T01:58:00+08:00",
+  "source_of_truth": {
+    "guard": "edu-agent/app/chat/receipt_guard.py (apply_tool_receipt_guard)",
+    "config": "edu-agent/app/config.py:502-511（TOOL_RECEIPT_WRITE_PHRASES / WRITE_TOOLS / READONLY_TOOLS）",
+    "note": "触发 = 答案提及写类语义(词) ∨ 提及写类工具名(词边界)，且 mcp_tool_calls 无 status==success 凭据"
+  },
+  "guard_config_snapshot": {
+    "TOOL_RECEIPT_WRITE_PHRASES": ["已收藏", "已提交", "已导入", "已创建", "已删除", "已支付"],
+    "TOOL_RECEIPT_WRITE_TOOLS": ["favorite_add", "knowledge_import", "course_create", "order_create"],
+    "TOOL_RECEIPT_READONLY_TOOLS": ["search_knowledge", "calculator", "ping", "echo", "list_alphabet", "add", "sse_health"],
+    "TOOL_RECEIPT_NOTICE": "⚠️ 上述工具操作未实际执行，请以工具调用记录为准。",
+    "TOOL_RECEIPT_FLAG": "tool_receipt_unverified"
+  },
+  "pure_function_regression": {
+    "how": "edu-agent/.venv/Scripts/python.exe -c \"from app.chat.receipt_guard import _mentions_write_semantics ...\"  (MYSQL_HOST=127.0.0.1)",
+    "cases": [
+      {"id": "A", "text": "目标：把《Python 入门》加入你的收藏列表。我会调用 favorite_add 把它写入收藏夹。", "expect": true, "actual": true, "path": "path2_write_tool_name（不含任何完成词）"},
+      {"id": "B", "text": "我调用 search_knowledge 帮你查了这门课的资料，如下。", "expect": false, "actual": false, "path": "只读工具提及 → 不拦（readonly 排除生效）"},
+      {"id": "C", "text": "课程资料已整理如下，供你参考。", "expect": false, "actual": false, "path": "无写类语义 → 不拦"},
+      {"id": "D", "applied": "apply_tool_receipt_guard(A, mcp_tool_calls=[])", "expect_flag": true, "actual_flag": true}
+    ],
+    "conclusion": "触发有【两条独立路径】：① 完成词子串 ② 写类工具名(favorite_add/knowledge_import/course_create/order_create，词边界匹配)。任一命中即打标。"
+  },
+  "real_e2e_trigger_evidence": {
+    "how": "CDP 驱动 chat.html 真实输入 → 真实 LLM → 落库 chat_message 校验（只读 SQL）",
+    "session": {"id": 557, "session_id": "s_7632a42816c3", "user_id": 2},
+    "phrase": "帮我把《Python 入门》这门课收藏起来，并简短说明你会怎么处理。",
+    "runs": [
+      {"msg_id": 908, "at": "2026-09-24T01:32:01", "chars": 278, "has_notice": true, "mentions_favorite_add": true, "verdict": "HIT"},
+      {"msg_id": 910, "at": "2026-09-24T01:32:23", "chars": 14, "has_notice": false, "mentions_favorite_add": false, "verdict": "INTERRUPTED（流被探针中断，内容截断于'1. 调用'，不计入分母）"},
+      {"msg_id": 912, "at": "2026-09-24T01:33:37", "chars": 774, "has_notice": true, "mentions_favorite_add": true, "verdict": "HIT"}
+    ],
+    "rate": "完整完成的 2/2 命中（3 次尝试中 1 次被中断）",
+    "hit_path_proof": "msg912 全文不含完成词(已收藏/已提交/已导入/已创建/已删除/已支付)，但含 `favorite_add` → 由 path2 命中触发；后端追加的警示句已入库(chat_message.content)",
+    "screenshots": [
+      "test-reports/ta1-3/shots/ta3_receipt_warn_run1.png",
+      "test-reports/ta1-3/shots/ta3_receipt_warn_run2.png",
+      "test-reports/ta1-3/shots/ta3_receipt_warn_run3.png"
+    ],
+    "screenshot_note": "三张皆为该会话(557)同一触发答案(msg912)的留档；ta3_result.json 的 hit:null 是探针作用域假阴性（只轮询最后一轮气泡），黄条实际渲染在 msg912 气泡尾部，人眼可见"
+  },
+  "llm_upstream_blocker_recheck": {
+    "how": "直连上游 /chat/completions (max_tokens=4) 与后端 /api/chat/stream（MYSQL_HOST=127.0.0.1）",
+    "strong_deepseek": {"base": "https://api.deepseek.com", "model": "deepseek-flash", "http": 402, "body": "{\"error\":{\"message\":\"Insufficient Balance\",\"type\":\"unknown_error\",\"code\":\"invalid_request_error\"}}"},
+    "fast_ark": {"base": "https://ark.cn-beijing.volces.com/api/plan/v3", "model": "glm-5.3-flash", "http": 400, "body": "{\"error\":{\"code\":\"InvalidSubscription\",\"message\":\"Your account (2120516166) does not have a valid AgentPlan subscription, or your subscription has expired.\"}}"},
+    "backend_degradation": "POST /api/chat/stream → 64.6s 后 token 帧 {\"delta\":\"抱歉，AI 服务暂时不可用（RuntimeError），请稍后重试。\"} + done 帧；非静默失败（诚实降级）",
+    "verdict": "环境阻塞（非代码缺陷）：两个上游配额/订阅同时失效 → 无法再跑真实 LLM 端到端；TA1 双端渐进渲染与 TA3 黄条渲染路径已用帧重放 + 纯函数回归做确定性实证"
+  }
+}
