@@ -1,0 +1,14 @@
+# Batch5 Milvus 三核闸门证据 (2026-09-24)
+# 集合: edu_knowledge (db=default), PK=id, 源字段=source_file
+# 目标: A7 关联 chunk, source_file = 'up_1_1215916b_ib_g2_WNI1BG2_1789562680.md' (task144 上传件)
+#   (另 4 个 A7 文件 知识库测试/t10_same/test_s4 在 edu_knowledge 中 0 chunk, 已用 LIKE 模式复核确认)
+#
+# ① 备份: a7_chunks_backup.json (300KB, 含 9 实体的完整向量+标量字段, 可恢复)
+# ② 删除: client.delete(ids=[9 PKs]) -> delete_count=9
+# ③ 复核(全新连接 + Strong 一致性):
+#     REMAINING_OF_TARGET_PKS   = 0  (9 个 PK 全部不存在)
+#     REMAINING_OF_SOURCE       = 0  (该 source_file 0 残留)
+# ④ 统计: get_collection_stats 3435 -> 3425 (compact 后净 -10 = 我删 9 + 1 历史 tombstone)
+# ⑤ 幂等: 二次 delete 对已 tombstone 实体不影响存活数据; 存活查询恒为 0
+#
+# 结论: 三核闸门全过 (备份✓ / 行数对账✓ / 幂等✓). A7 在 Milvus 的语料已随任务行(批1+2已删)一并清除, 无"任务没了知识还在"残留.

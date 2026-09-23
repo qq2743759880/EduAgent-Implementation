@@ -1,0 +1,14 @@
+# Batch4 MongoDB 三核闸门证据 (2026-09-24)
+# 实例: mongodb://192.168.85.101:27017  db=edu_agent
+# 删除方式: 按备份 manifest 的精确 _id 列表 delete_many (非 drop collection / 非全表删)
+#
+# ① 备份: artifacts.files.json(23KB,41) / artifacts.chunks.json(5.9MB,48) / learning_event.json(7.7KB,20)
+#         + manifest.json (三集合 _id 清单, 可逐条还原)
+# ② 删除 + 对账:
+#   artifacts.files : before=41  deleted_1=41  after=0   idem=0   PASS
+#   artifacts.chunks: before=48  deleted_1=48  after=0   idem=0   PASS  (48 chunk 全部归属 41 个目标 file)
+#   learning_event  : before=20  deleted_1=20  after=0   idem=0   PASS  (20 条全为探针事件)
+# ③ 幂等: 二次 delete_many 均影响 0 行 -> IDEMPOTENT OK
+#
+# 备注: 库 edu_agent_rm1_test (空测试库) 按铁律禁 DROP DATABASE, 未处理。
+# 结论: 三核闸门全过 (备份✓ / 行数对账✓ / 幂等✓)

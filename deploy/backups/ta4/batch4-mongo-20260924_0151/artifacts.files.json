@@ -1,0 +1,823 @@
+[
+  {
+    "_id": {
+      "$oid": "6aad53271dc7c6afc8f9f7a7"
+    },
+    "filename": "eval/runs/rm2_artifact_close.json",
+    "metadata": {
+      "sha256": "80f4002df84ca16315dec58ba79a0a4f13880df2ce2808846a9b5f5b67962e2f",
+      "size": 27293,
+      "created_at": "2026-09-18T15:05:11.749967+00:00",
+      "source": "r20min_run",
+      "kind": "r20min_run_report",
+      "tag": "rm2_artifact_close",
+      "n_cases": 32,
+      "hit_rate@5": 0.9688,
+      "mrr@5": 0.9688
+    },
+    "chunkSize": 261120,
+    "length": 27293,
+    "uploadDate": {
+      "$date": "2026-09-18T15:05:11.887Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad53d67f087644e32b3571"
+    },
+    "filename": "eval/r03/id_map_git_snapshot.json",
+    "metadata": {
+      "sha256": "aa8e9be6417cedb66649b5e24ca705713a73241614526d764412f90158464ddf",
+      "size": 1866921,
+      "created_at": "2026-09-18T15:08:05.229883+00:00",
+      "source": "rm2_close"
+    },
+    "chunkSize": 261120,
+    "length": 1866921,
+    "uploadDate": {
+      "$date": "2026-09-18T15:08:06.127Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad5678ac5775ee79fc6e48"
+    },
+    "filename": "orchestrator-verify-probe.json",
+    "metadata": {
+      "sha256": "f13fb03a1c360a271a80199cab5c66fe3bdc7c7ad94f77fcaf2e21fce9836801",
+      "size": 57,
+      "created_at": "2026-09-18T15:19:19.893715+00:00",
+      "source": "orchestrator-c01"
+    },
+    "chunkSize": 261120,
+    "length": 57,
+    "uploadDate": {
+      "$date": "2026-09-18T15:19:20.606Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad56cb427c59858dad8c9a"
+    },
+    "filename": "orchestrator-verify-probe2.bin",
+    "metadata": {
+      "sha256": "54bee98567317ff41e85f1e80445c2637d68b6f2c86c7103eefd8a972becd69b",
+      "size": 40,
+      "created_at": "2026-09-18T15:20:42.664630+00:00",
+      "source": "orchestrator-c01"
+    },
+    "chunkSize": 261120,
+    "length": 40,
+    "uploadDate": {
+      "$date": "2026-09-18T15:20:43.338Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad6327b1a485dc3ed55a6d"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "c9beec1bb73b3765f94425f97a16c65f68f1f2eed575769bc44faaf0bacaac7f",
+      "size": 19049,
+      "created_at": "2026-09-18T16:13:27.443842+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 10
+    },
+    "chunkSize": 261120,
+    "length": 19049,
+    "uploadDate": {
+      "$date": "2026-09-18T16:13:27.475Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad633eb1a485dc3ed55a6f"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "6aedf4970722eda2784a65635f72782ad3f88caf7a6683054fe7b80238b773ac",
+      "size": 38372,
+      "created_at": "2026-09-18T16:13:50.023717+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 20
+    },
+    "chunkSize": 261120,
+    "length": 38372,
+    "uploadDate": {
+      "$date": "2026-09-18T16:13:50.033Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad6354b1a485dc3ed55a71"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "6c174e2fa30f61f552055c7d9f3d542b2fe526c62ba2abfb6886c4a41b6f5e2d",
+      "size": 57792,
+      "created_at": "2026-09-18T16:14:12.645817+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 30
+    },
+    "chunkSize": 261120,
+    "length": 57792,
+    "uploadDate": {
+      "$date": "2026-09-18T16:14:12.656Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad6374b1a485dc3ed55a73"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "d8191062b9990131db6ba90f885c1ac9d054cc71f3aa564244381c787f337f87",
+      "size": 77736,
+      "created_at": "2026-09-18T16:14:44.476677+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 40
+    },
+    "chunkSize": 261120,
+    "length": 77736,
+    "uploadDate": {
+      "$date": "2026-09-18T16:14:44.487Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad638cb1a485dc3ed55a75"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "ac7ec23c0cc62d22efdcb906546f28b9968570fec93e99eea1453c545a44264c",
+      "size": 96776,
+      "created_at": "2026-09-18T16:15:08.395758+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 50
+    },
+    "chunkSize": 261120,
+    "length": 96776,
+    "uploadDate": {
+      "$date": "2026-09-18T16:15:08.405Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad63a8b1a485dc3ed55a77"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "df5d833d37690a22d30efd7179fc98c520daf7509c1c0595adbe1a8bea446abe",
+      "size": 116581,
+      "created_at": "2026-09-18T16:15:36.592710+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 60
+    },
+    "chunkSize": 261120,
+    "length": 116581,
+    "uploadDate": {
+      "$date": "2026-09-18T16:15:36.603Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad63c5b1a485dc3ed55a79"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "fd52c72c9d6be7bf254c11e3538faeae6ca236ba646caef1223522a03d342103",
+      "size": 136089,
+      "created_at": "2026-09-18T16:16:05.552683+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 70
+    },
+    "chunkSize": 261120,
+    "length": 136089,
+    "uploadDate": {
+      "$date": "2026-09-18T16:16:05.576Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad63e2b1a485dc3ed55a7b"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "cec55491c5a0462d202e9ea7d22e97d4ba167dddb5a4e43967bcf82e65e09f44",
+      "size": 156022,
+      "created_at": "2026-09-18T16:16:34.185648+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 80
+    },
+    "chunkSize": 261120,
+    "length": 156022,
+    "uploadDate": {
+      "$date": "2026-09-18T16:16:34.195Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad63f2b1a485dc3ed55a7d"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "507d73a3e240c6361b0108c0346dd795678f61c5595b9b3a65f985a28679da44",
+      "size": 174802,
+      "created_at": "2026-09-18T16:16:50.027914+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 90
+    },
+    "chunkSize": 261120,
+    "length": 174802,
+    "uploadDate": {
+      "$date": "2026-09-18T16:16:50.042Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad6407b1a485dc3ed55a7f"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "1bf862621846c4222b39856d650bb17b472f996a557dcdc4a9db4d2d5a149af3",
+      "size": 194569,
+      "created_at": "2026-09-18T16:17:11.982842+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": true,
+      "n_results": 100
+    },
+    "chunkSize": 261120,
+    "length": 194569,
+    "uploadDate": {
+      "$date": "2026-09-18T16:17:11.993Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad6bd7b1a485dc3ed55a81"
+    },
+    "filename": "eval/r20b/dualrun_results.json",
+    "metadata": {
+      "sha256": "10d736360a096c933e2bd183f535fc68ba7bd1d88a880ebd8c5e0709df0f97b7",
+      "size": 236106,
+      "created_at": "2026-09-18T16:50:31.705224+00:00",
+      "source": "r20b_dualrun_probe",
+      "kind": "r20b_dualrun_results",
+      "partial": false,
+      "n_results": 100
+    },
+    "chunkSize": 261120,
+    "length": 236106,
+    "uploadDate": {
+      "$date": "2026-09-18T16:50:31.719Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad8ebc00f370990dea4e61"
+    },
+    "filename": "eval/r22_runs/r22_base_run1.json",
+    "metadata": {
+      "sha256": "2521f80444ab3cb3951ff8c3c6ecf9c8e9b3b21a309fc9adb9d9bb9bc93f76c3",
+      "size": 43099,
+      "created_at": "2026-09-18T19:19:23.774614+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r22_base_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-18T19:19:24.089Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad8fd38fe86300c63f6643"
+    },
+    "filename": "eval/r22_runs/r22_base_run2.json",
+    "metadata": {
+      "sha256": "7428fa3c44d9c6a0be98aeb7512bff46fc035124af32364b0a721d031892765d",
+      "size": 43099,
+      "created_at": "2026-09-18T19:24:03.270463+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r22_base_run2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-18T19:24:03.310Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aad90731a9d9d552483b3b7"
+    },
+    "filename": "eval/r22_runs/r22_graded10.json",
+    "metadata": {
+      "sha256": "5ad53e9e5e1b2170c7926a210bf5b2523cc1cf02e8a5d66b4b8ae6e137900b06",
+      "size": 43201,
+      "created_at": "2026-09-18T19:26:43.543148+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r22_graded10",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43201,
+    "uploadDate": {
+      "$date": "2026-09-18T19:26:43.593Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae067e513694e73ef17e52"
+    },
+    "filename": "eval/r22_runs/r23_base_run1.json",
+    "metadata": {
+      "sha256": "7435b6aed38f7a944c40d73a1039aed829d6c7d78943781496c2406d5a5de405",
+      "size": 43099,
+      "created_at": "2026-09-19T03:50:22.536206+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_base_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-19T03:50:22.711Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae076a408033da8f0a032e"
+    },
+    "filename": "eval/r22_runs/r23_base_run2.json",
+    "metadata": {
+      "sha256": "7a082a20e48c29b67904ee1e370eafff9c43a55ee726e88a4cc55abf1f9d6ba7",
+      "size": 43099,
+      "created_at": "2026-09-19T03:54:18.441873+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_base_run2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-19T03:54:18.484Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae0dfbb22d71988836999e"
+    },
+    "filename": "eval/r22_runs/r23_v2on_run1.json",
+    "metadata": {
+      "sha256": "0bd7fc1a50f61de5e3cb34f975f7e54cf568955f59ce8bee5a0793d1afd4f575",
+      "size": 43130,
+      "created_at": "2026-09-19T04:22:19.344421+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43130,
+    "uploadDate": {
+      "$date": "2026-09-19T04:22:19.386Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae0ea0ae1b6e2d765c8a0b"
+    },
+    "filename": "eval/r22_runs/r23_v2on_run1.json",
+    "metadata": {
+      "sha256": "5bfe67248496a3c8a3db54add89ddd83a02fdcdb07e5881384be72e82e8f122e",
+      "size": 43130,
+      "created_at": "2026-09-19T04:25:04.381159+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43130,
+    "uploadDate": {
+      "$date": "2026-09-19T04:25:04.432Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae0f2956704ecf9e2876a9"
+    },
+    "filename": "eval/r22_runs/r23_v2on_run2.json",
+    "metadata": {
+      "sha256": "a8ae747042de6db392f266d6a00ad3e2ec94b7d318dace893f1882e0f5e573fb",
+      "size": 43130,
+      "created_at": "2026-09-19T04:27:21.060268+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_run2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43130,
+    "uploadDate": {
+      "$date": "2026-09-19T04:27:21.094Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae0f7b04ffdb9ee530516c"
+    },
+    "filename": "eval/runs/r23_eval32_v2off.json",
+    "metadata": {
+      "sha256": "5a0e92ada3710476673482c85198a85c658e12aad20d31454ffea9b20537b48f",
+      "size": 47005,
+      "created_at": "2026-09-19T04:28:43.130395+00:00",
+      "source": "r20min_run",
+      "kind": "r20min_run_report",
+      "tag": "r23_eval32_v2off",
+      "n_cases": 32,
+      "hit_rate@5": 0.9688,
+      "mrr@5": 0.9688
+    },
+    "chunkSize": 261120,
+    "length": 47005,
+    "uploadDate": {
+      "$date": "2026-09-19T04:28:43.177Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae0fbef865402629826cda"
+    },
+    "filename": "eval/runs/r23_eval32_v2on.json",
+    "metadata": {
+      "sha256": "dd1144e0aa61fabbaf3d21f1cd421f96c3bec08bf0067e2e5343bb22933d8881",
+      "size": 48802,
+      "created_at": "2026-09-19T04:29:50.165032+00:00",
+      "source": "r20min_run",
+      "kind": "r20min_run_report",
+      "tag": "r23_eval32_v2on",
+      "n_cases": 32,
+      "hit_rate@5": 0.9688,
+      "mrr@5": 0.9688
+    },
+    "chunkSize": 261120,
+    "length": 48802,
+    "uploadDate": {
+      "$date": "2026-09-19T04:29:50.211Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae192886a9f20391f39ad5"
+    },
+    "filename": "eval/r22_runs/r23_base_vrf1.json",
+    "metadata": {
+      "sha256": "eda2e798ffaaec627c6aa8d31255167b7275df9703d59c1e745299606dc85208",
+      "size": 43099,
+      "created_at": "2026-09-19T05:10:00.858374+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_base_vrf1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-19T05:10:00.915Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae19d2ddcb1eb427267d5a"
+    },
+    "filename": "eval/r22_runs/r23_base_vrf2.json",
+    "metadata": {
+      "sha256": "08b52c27af26d1e5a12917a7be6986ec76d3aefb9a48f9eb5c5ca06f6c65e9c1",
+      "size": 43099,
+      "created_at": "2026-09-19T05:12:50.354198+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_base_vrf2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43099,
+    "uploadDate": {
+      "$date": "2026-09-19T05:12:50.414Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae1b254538e58ed52b2447"
+    },
+    "filename": "eval/r22_runs/r23_v2on_vrf1.json",
+    "metadata": {
+      "sha256": "001f39c123de17db12f390ff89523bcd14642ca18364f17a138827c02e131ebb",
+      "size": 43130,
+      "created_at": "2026-09-19T05:18:29.174086+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_vrf1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43130,
+    "uploadDate": {
+      "$date": "2026-09-19T05:18:29.245Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae1bcfa5e8d4c6a900db42"
+    },
+    "filename": "eval/r22_runs/r23_v2on_vrf2.json",
+    "metadata": {
+      "sha256": "0f410b9eae5850c264c4289bb2c6513eba1dffce4a3dc80855dd0351b1608189",
+      "size": 43130,
+      "created_at": "2026-09-19T05:21:19.518956+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_vrf2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43130,
+    "uploadDate": {
+      "$date": "2026-09-19T05:21:19.599Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae1c889717156d04d75c0d"
+    },
+    "filename": "eval/r22_runs/r23_v2on_floor040_vrf1.json",
+    "metadata": {
+      "sha256": "1037ecd42f272bec1f939748772fe640f31d624cf10577f420bdfb126c285bad",
+      "size": 43139,
+      "created_at": "2026-09-19T05:24:24.459041+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r23_v2on_floor040_vrf1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 43139,
+    "uploadDate": {
+      "$date": "2026-09-19T05:24:24.505Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae1cfd2e7123409aba5991"
+    },
+    "filename": "eval/runs/r23_v2on_e32_vrf1.json",
+    "metadata": {
+      "sha256": "863fe5cb79306bd549d892951e24f9a98d2554bd213a7d5030f9b560610a5e2e",
+      "size": 48806,
+      "created_at": "2026-09-19T05:26:21.325882+00:00",
+      "source": "r20min_run",
+      "kind": "r20min_run_report",
+      "tag": "r23_v2on_e32_vrf1",
+      "n_cases": 32,
+      "hit_rate@5": 0.9688,
+      "mrr@5": 0.9688
+    },
+    "chunkSize": 261120,
+    "length": 48806,
+    "uploadDate": {
+      "$date": "2026-09-19T05:26:21.358Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aae1d68ba72220af7faac1b"
+    },
+    "filename": "eval/runs/r23_v2on_e32_vrf2.json",
+    "metadata": {
+      "sha256": "111ac2539fec0f76bc440a8ed2aeac189ec705f69b8afe23ea685e68e5d1a5da",
+      "size": 48806,
+      "created_at": "2026-09-19T05:28:08.827922+00:00",
+      "source": "r20min_run",
+      "kind": "r20min_run_report",
+      "tag": "r23_v2on_e32_vrf2",
+      "n_cases": 32,
+      "hit_rate@5": 0.9688,
+      "mrr@5": 0.9688
+    },
+    "chunkSize": 261120,
+    "length": 48806,
+    "uploadDate": {
+      "$date": "2026-09-19T05:28:08.867Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaea977e2f368557baea1d1"
+    },
+    "filename": "eval/r22_runs/r64v2_base_run1.json",
+    "metadata": {
+      "sha256": "008706796fd580173c2f4fe0210752b4842e695b58a68efe103672c44c057096",
+      "size": 49452,
+      "created_at": "2026-09-19T15:25:43.806923+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v2_base_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 49452,
+    "uploadDate": {
+      "$date": "2026-09-19T15:25:44.066Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaeaa0da71eb9591698cccb"
+    },
+    "filename": "eval/r22_runs/r64v2_base_run2.json",
+    "metadata": {
+      "sha256": "45f78ec41b912719367e75059d818c2f172895fc2af3042d3b43d88bdc191d94",
+      "size": 49448,
+      "created_at": "2026-09-19T15:28:13.016743+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v2_base_run2",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 49448,
+    "uploadDate": {
+      "$date": "2026-09-19T15:28:13.058Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaeaa95a112b961f66a8ba3"
+    },
+    "filename": "eval/r22_runs/r64v1_ctrl_run1.json",
+    "metadata": {
+      "sha256": "664a0f38287232dfa660b7cc77336f06e182706b5d200d57d2b1bb6c9b3a8a79",
+      "size": 48763,
+      "created_at": "2026-09-19T15:30:29.170578+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v1_ctrl_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 48763,
+    "uploadDate": {
+      "$date": "2026-09-19T15:30:29.206Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaed1c2ab469c82f1712a7e"
+    },
+    "filename": "eval/r22_runs/r64v3_base_run1.json",
+    "metadata": {
+      "sha256": "a039252e898df903adefa87ecd6ad78fc5322a7b3f2ff032dbdcccecc25397ec",
+      "size": 49122,
+      "created_at": "2026-09-19T18:17:38.797090+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v3_base_run1",
+      "n_cases": 63
+    },
+    "chunkSize": 261120,
+    "length": 49122,
+    "uploadDate": {
+      "$date": "2026-09-19T18:17:38.842Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaed29dd78f33ebb895b5f2"
+    },
+    "filename": "eval/r22_runs/r64v3_base_run2.json",
+    "metadata": {
+      "sha256": "d937e10991a3f6dd7fad27f9162ce3958c9f15732223f11d401006a6d2436872",
+      "size": 49141,
+      "created_at": "2026-09-19T18:21:17.861286+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v3_base_run2",
+      "n_cases": 63
+    },
+    "chunkSize": 261120,
+    "length": 49141,
+    "uploadDate": {
+      "$date": "2026-09-19T18:21:17.882Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aafae85ad1f0ff5e05b94dd"
+    },
+    "filename": "eval/r22_runs/r64v2gh_run1.json",
+    "metadata": {
+      "sha256": "8199e7ab369ddd1be9afe003b8638311eac3d7c6aae9330bd53412a33e116208",
+      "size": 55019,
+      "created_at": "2026-09-20T09:59:33.897614+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v2gh_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 55019,
+    "uploadDate": {
+      "$date": "2026-09-20T09:59:33.990Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aafaf396095fa1d725f8633"
+    },
+    "filename": "eval/r22_runs/r64v2ctl_run1.json",
+    "metadata": {
+      "sha256": "fb736c8c8d3afaa9aff86f3283ccd44d11d9921b26c49112908d1c81445c7f18",
+      "size": 54956,
+      "created_at": "2026-09-20T10:02:32.983601+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v2ctl_run1",
+      "n_cases": 64
+    },
+    "chunkSize": 261120,
+    "length": 54956,
+    "uploadDate": {
+      "$date": "2026-09-20T10:02:33.013Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aafafd01d1b4e439509a04c"
+    },
+    "filename": "eval/r22_runs/r64v3gh_run1.json",
+    "metadata": {
+      "sha256": "4af370f557f57bece4cfcd2f164107b8c8b7567823466ab4f2d4da9067d672c2",
+      "size": 54633,
+      "created_at": "2026-09-20T10:05:04.708572+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v3gh_run1",
+      "n_cases": 63
+    },
+    "chunkSize": 261120,
+    "length": 54633,
+    "uploadDate": {
+      "$date": "2026-09-20T10:05:04.734Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aafb064f7b74038db408537"
+    },
+    "filename": "eval/r22_runs/r64v3gh_run2.json",
+    "metadata": {
+      "sha256": "714f52a714f5bd8a53169e1d0b0a67cd0bec52d3da9ec95ff881ed85d90cb192",
+      "size": 54635,
+      "created_at": "2026-09-20T10:07:32.076678+00:00",
+      "source": "build_eval_set64",
+      "kind": "r22_run_report",
+      "tag": "r64v3gh_run2",
+      "n_cases": 63
+    },
+    "chunkSize": 261120,
+    "length": 54635,
+    "uploadDate": {
+      "$date": "2026-09-20T10:07:32.099Z"
+    }
+  }
+]

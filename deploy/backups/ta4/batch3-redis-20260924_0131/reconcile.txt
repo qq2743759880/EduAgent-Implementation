@@ -1,0 +1,17 @@
+# Batch3 Redis 三核闸门证据 (2026-09-24)
+# 容器: prisma-ai-redis-container-1 (desktop-linux context), 内部 6379
+# 备份快照时 DBSIZE (before_dbsize.txt): 2547
+# 执行前实时 DBSIZE: 2569  (+22 = 快照后新增/续期键，非本次目标键，无关)
+# 目标键: target_keys.txt 共 133 行
+#   - task26_bigkey_probe            (1)
+#   - breaker:test                  (1)
+#   - edu:ckpt:r20b-*               (131)
+#
+# 执行: docker ... exec ... redis-cli UNLINK <133键>
+UNLINK_RETURN        = 133     # 实际删除数 == 目标数
+BEFORE_DBSIZE        = 2569
+AFTER_DBSIZE         = 2434    # 2569 - 133 = 2434  ✓ 差值恰为133
+UNLINK_RETURN_2      = 0       # 幂等重跑，零删除
+REMAINING_TARGET_KEYS= 0       # EXISTS 复核，0 残留
+#
+# 结论: 三核闸门全过 (备份✓ / 行数对账✓ / 幂等✓)

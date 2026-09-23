@@ -1,0 +1,1 @@
+INSERT INTO `mcp_tool` VALUES (5,2,'sse_health','SSE 健康（占位）','SSE 端占位工具（server 默认 disabled 不会被对话侧启用）。','{\"type\":\"object\",\"properties\":{},\"required\":[]}',NULL,'general',1,'2026-08-09 16:35:35','2026-08-09 16:35:35',NULL,NULL,NULL);

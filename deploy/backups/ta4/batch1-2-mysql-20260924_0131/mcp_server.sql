@@ -1,0 +1,1 @@
+INSERT INTO `mcp_server` VALUES (2,'sse-demo-localhost','SSE 演示站（占位）','SSE 协议示例占位（默认未启，enabled=0；实际部署时把 base_url 指向运行中的 SSE MCP 服务即可）。','self','sse',NULL,NULL,NULL,'http://127.0.0.1:9527/sse',NULL,NULL,5000,30000,0,1,1,'2026-08-09 16:35:35','2026-09-20 02:21:47','2026-09-20 02:21:47',0,'httpx fail: All connection attempts failed');
