@@ -1,0 +1,44 @@
+{
+  "gate": "G3 DOM Hook Inventory",
+  "generated_at": "2026-09-24T02:27:25.418Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 1,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "mode": "inventory",
+  "frozen_markdown": "docs\\dom-hooks-frozen.md",
+  "frozen_json": "docs\\dom-hooks-frozen.json",
+  "current_page_count": 1,
+  "dispatch_page_count": 19,
+  "pages": [
+    {
+      "name": "admin-infra.html",
+      "url": "http://127.0.0.1:3322/admin-infra.html",
+      "total": 33,
+      "counts": {
+        "get-element-by-id": 32,
+        "query-selector": 0,
+        "query-selector-all": 0,
+        "class-list": 0,
+        "closest": 0,
+        "matches": 0,
+        "event-delegation": 0,
+        "dynamic-selector": 0,
+        "form-name-tag": 1,
+        "dom-relations": 0
+      },
+      "checks": [
+        {
+          "name": "source-scan",
+          "pass": true,
+          "detail": "33 hook expressions captured across 10 categories.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}

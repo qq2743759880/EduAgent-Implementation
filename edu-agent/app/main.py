@@ -582,6 +582,8 @@ from app.admin.rag_admin.router import router as rag_admin_router
 app.include_router(rag_admin_router)                   # 管理端 RAG 控制台（P7 路径 B）
 from app.admin.chat_audit.router import router as chat_audit_router
 app.include_router(chat_audit_router)                 # [REWORK P0-5] 管理端会话审计（只读·ADMIN-only）
+from app.admin.infra.router import router as admin_infra_router
+app.include_router(admin_infra_router)                # [TB3] 管理端基础设施实时快照（只读·admin/manager）
 
 from app.domains.kg.router import router as kg_router
 app.include_router(kg_router)                          # 知识图谱 KG-2（R-N1，Neo4j 先修图）

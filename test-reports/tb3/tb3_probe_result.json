@@ -1,0 +1,320 @@
+{
+  "student_http_status": 403,
+  "student_body": {
+    "code": "40300",
+    "message": "角色无权限。当前角色=student，允许角色=['admin', 'manager']",
+    "data": null
+  },
+  "anonymous_http_status": 401,
+  "page_status": null,
+  "first_snapshot": {
+    "successVisible": true,
+    "hits": "136",
+    "rawline": "快照生成 2026-09-24T10:27:37 ｜ Redis DBSIZE=2,440 ｜ 限流 命中=136 拒绝=0 活跃键=35 ｜ 缓存 族=course:series:detail:* 样本=course:series:detail:1 ｜ 锁 0 ｜ 队列 1 条 / 深度 460",
+    "chips": [
+      "Redis redis://127.0.0.1:6377/0 · PING ok",
+      "MongoDB edu_agent",
+      "learning_event"
+    ],
+    "url": "http://127.0.0.1:3322/admin-infra.html"
+  },
+  "panel_ready": true,
+  "panel": {
+    "viewer": "admin · 2026-09-24T10:27:37",
+    "deps": [
+      {
+        "t": "Redis redis://127.0.0.1:6377/0 · PING ok",
+        "ok": true
+      },
+      {
+        "t": "MongoDB edu_agent",
+        "ok": true
+      },
+      {
+        "t": "learning_event",
+        "ok": true
+      }
+    ],
+    "rl": {
+      "hits": "136",
+      "keys": "35",
+      "rej": "0",
+      "rows": [
+        [
+          "/api/auth/me",
+          "60s",
+          "100",
+          "29",
+          "3",
+          "0"
+        ],
+        [
+          "/api/admin/infra/snapshot",
+          "60s",
+          "200",
+          "18",
+          "3",
+          "0"
+        ],
+        [
+          "/api/admin/rag/collections",
+          "60s",
+          "200",
+          "10",
+          "2",
+          "0"
+        ],
+        [
+          "/api/mcp/servers",
+          "60s",
+          "100",
+          "10",
+          "2",
+          "0"
+        ],
+        [
+          "/api/knowledge/tasks",
+          "60s",
+          "100",
+          "7",
+          "2",
+          "0"
+        ],
+        [
+          "/api/admin/rag/audit-log",
+          "60s",
+          "200",
+          "6",
+          "2",
+          "0"
+        ],
+        [
+          "/api/admin/rag/presets",
+          "60s",
+          "200",
+          "6",
+          "2",
+          "0"
+        ],
+        [
+          "/api/knowledge/partitions",
+          "60s",
+          "100",
+          "6",
+          "2",
+          "0"
+        ],
+        [
+          "/api/mcp/call-log",
+          "60s",
+          "100",
+          "6",
+          "2",
+          "0"
+        ],
+        [
+          "/api/mcp/tools",
+          "60s",
+          "100",
+          "6",
+          "2",
+          "0"
+        ],
+        [
+          "/api/gamification/me/badges",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/gamification/me/points",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/gamification/rankings",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/progress/dashboard",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/users/me",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/users/me/learning-summary",
+          "60s",
+          "100",
+          "5",
+          "2",
+          "0"
+        ],
+        [
+          "/api/auth/login",
+          "60s",
+          "10",
+          "2",
+          "1",
+          "0"
+        ],
+        [
+          "/api/admin",
+          "60s",
+          "200",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/after_sales/ticket",
+          "60s",
+          "20",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/auth/refresh",
+          "60s",
+          "30",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/auth/register",
+          "60s",
+          "5",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/chat",
+          "60s",
+          "20",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/trade/coupon/receive",
+          "60s",
+          "30",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/trade/order",
+          "60s",
+          "10",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/trade/payment",
+          "60s",
+          "30",
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "/api/trade/refund",
+          "60s",
+          "5",
+          "0",
+          "0",
+          "0"
+        ]
+      ]
+    },
+    "cache": {
+      "family": "course:series:detail:*",
+      "sample": "course:series:detail:1",
+      "mutex": "0",
+      "cmp": "冷读（首次）1.994 ms热读（第 3 次）1.531 ms速比1.3×样本数1 键 / 同族冷热耗时处于同量级（差异在往返抖动范围内）。本面板**不**声称“缓存快 N 倍”：只读 GET 的往返由连接池与网络主导，真正的量级差需走 get_or_load 的 DB 重建路径才可观测。"
+    },
+    "locks": {
+      "count": "0",
+      "rows": [
+        [
+          "当前无存活锁（无并发写事务时的正常状态）"
+        ]
+      ]
+    },
+    "queues": {
+      "count": "1",
+      "depth": "460",
+      "rows": [
+        [
+          "edu:mem_queue:degraded",
+          "460"
+        ]
+      ]
+    },
+    "mongo": {
+      "db": "edu_agent",
+      "rows": [
+        [
+          "artifacts.files",
+          "0",
+          "无数据"
+        ],
+        [
+          "artifacts.chunks",
+          "0",
+          "无数据"
+        ],
+        [
+          "learning_event",
+          "1",
+          "2026-09-24T09:51:02"
+        ]
+      ]
+    },
+    "event": {
+      "total": "1",
+      "worker": "运行中",
+      "q": "0",
+      "rows": [
+        [
+          "2026-09-24T09:51:02",
+          "session_complete",
+          "1000**",
+          "85",
+          "completed, series_id"
+        ]
+      ],
+      "mask": "隐私核对通过：1/1 条 uid 均已脱敏（面板不出原始 user_id，后端统一掩码）。"
+    },
+    "emojiInPage": false
+  },
+  "second_rawline": "快照生成 2026-09-24T10:27:40 ｜ Redis DBSIZE=2,440 ｜ 限流 命中=138 拒绝=0 活跃键=35 ｜ 缓存 族=course:series:detail:* 样本=course:series:detail:1 ｜ 锁 0 ｜ 队列 1 条 / 深度 460",
+  "screenshot_path": "test-reports/tb3/admin-infra-admin.png",
+  "student_page": {
+    "url": "/dashboard.html",
+    "banner": null
+  }
+}

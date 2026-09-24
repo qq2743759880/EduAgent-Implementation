@@ -1,8 +1,8 @@
 # DOM Hooks Frozen Inventory
 
-Generated: 2026-09-21T23:56:39.166Z
+Generated: 2026-09-24T02:14:10.915Z
 
-Source scope: `edu-frontend/public/*.html` (26 current pages, 1245 hook expressions).
+Source scope: `edu-frontend/public/*.html` (27 current pages, 1278 hook expressions).
 
 > The dispatch document says 19 pages, while the current directory contains 25. The inventory intentionally follows the live filesystem so new pages cannot escape G3.
 
@@ -414,6 +414,59 @@ Total hooks: 31
 | 614 | getElementById | lg-manager | `getElementById("lg-manager")` |
 | 616 | getElementById | updated-at | `getElementById("updated-at")` |
 | 620 | getElementById | err-msg | `getElementById("err-msg")` |
+
+## admin-infra.html
+
+Total hooks: 33
+
+| Category | Count |
+|---|---:|
+| getElementById | 32 |
+| querySelector | 0 |
+| querySelectorAll | 0 |
+| classList operations | 0 |
+| closest | 0 |
+| matches | 0 |
+| event delegation selectors | 0 |
+| dynamic/template selectors | 0 |
+| form.elements / name / tagName | 1 |
+| parentNode / nextSibling family | 0 |
+
+| Line | Category | Selector | Expression |
+|---:|---|---|---|
+| 378 | getElementById | - | `getElementById(v)` |
+| 384 | getElementById | runDemo | `getElementById("runDemo")` |
+| 392 | getElementById | err-msg | `getElementById("err-msg")` |
+| 415 | getElementById | deps | `getElementById("deps")` |
+| 422 | getElementById | viewer-chip | `getElementById("viewer-chip")` |
+| 426 | getElementById | raw-line | `getElementById("raw-line")` |
+| 437 | getElementById | k-rl-hits | `getElementById("k-rl-hits")` |
+| 438 | getElementById | k-rl-keys | `getElementById("k-rl-keys")` |
+| 439 | getElementById | k-rl-rej | `getElementById("k-rl-rej")` |
+| 441 | getElementById | rl-rows | `getElementById("rl-rows")` |
+| 448 | getElementById | rl-bypass | `getElementById("rl-bypass")` |
+| 459 | getElementById | k-cache-keys | `getElementById("k-cache-keys")` |
+| 460 | getElementById | k-cache-mutex | `getElementById("k-cache-mutex")` |
+| 461 | getElementById | k-cache-sample | `getElementById("k-cache-sample")` |
+| 462 | getElementById | cmp-box | `getElementById("cmp-box")` |
+| 479 | getElementById | cmp-verdict | `getElementById("cmp-verdict")` |
+| 492 | getElementById | k-lock-impl | `getElementById("k-lock-impl")` |
+| 493 | getElementById | k-lock-count | `getElementById("k-lock-count")` |
+| 495 | getElementById | lock-rows | `getElementById("lock-rows")` |
+| 504 | getElementById | k-queue-impl | `getElementById("k-queue-impl")` |
+| 505 | getElementById | k-queue-count | `getElementById("k-queue-count")` |
+| 506 | getElementById | k-queue-depth | `getElementById("k-queue-depth")` |
+| 508 | getElementById | queue-rows | `getElementById("queue-rows")` |
+| 516 | getElementById | k-mongo-db | `getElementById("k-mongo-db")` |
+| 518 | getElementById | mongo-rows | `getElementById("mongo-rows")` |
+| 519 | form.elements / name / tagName | - | `.name` |
+| 522 | getElementById | mongo-bad | `getElementById("mongo-bad")` |
+| 530 | getElementById | k-ev-total | `getElementById("k-ev-total")` |
+| 531 | getElementById | k-ev-worker | `getElementById("k-ev-worker")` |
+| 532 | getElementById | k-ev-q | `getElementById("k-ev-q")` |
+| 534 | getElementById | ev-rows | `getElementById("ev-rows")` |
+| 541 | getElementById | ev-mask-note | `getElementById("ev-mask-note")` |
+| 554 | getElementById | runDemo | `getElementById("runDemo")` |
 
 ## admin-mcp.html
 

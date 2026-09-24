@@ -1,0 +1,843 @@
+{
+  "gate": "G7 Viewport and Accessibility Gate",
+  "generated_at": "2026-09-24T02:27:18.167Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 11,
+    "failed": 0,
+    "warnings": 0,
+    "skipped": 0
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "viewports": [
+    360,
+    768,
+    1280,
+    1440,
+    1920
+  ],
+  "baseline": "test-reports\\tb3\\gate\\viewport-a11y-snapshot.json",
+  "baseline_created": false,
+  "scan_identity": "per-page via scripts/gates/page-roles.json (default admin; role-guarded pages scan under EDU_GATE_STUDENT_TOKEN when set); no check relaxed",
+  "contrast_note": "Computed solid background-color stack; gradient/image contrast still requires screenshot review.",
+  "ready_window": "sample after network idle + two consistent DOM snapshots per viewport and before the Tab walk (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap; timeout records the window as unsettled and samples as-is — informational, never alters check outcomes)",
+  "pages": [
+    {
+      "name": "admin-infra.html",
+      "url": "http://127.0.0.1:3322/admin-infra.html",
+      "scan_role": "admin",
+      "viewportResults": [
+        {
+          "width": 360,
+          "screenshot": "test-reports\\tb3\\gate\\g7-screenshots\\admin-infra\\360.jpg",
+          "url": "http://127.0.0.1:3322/admin-infra.html",
+          "viewport": {
+            "width": 360,
+            "height": 900
+          },
+          "scrollWidth": 360,
+          "clientWidth": 360,
+          "overflow": false,
+          "contrastChecked": 287,
+          "contrastFailures": [],
+          "focusable": [
+            "body.admin-html-page > header.gnav > a.gnav-brand",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "#runDemo"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "#runDemo",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnav",
+              "ariaLabel": "管理端导航",
+              "title": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list",
+              "ariaLabel": "管理端页面",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 768,
+          "screenshot": "test-reports\\tb3\\gate\\g7-screenshots\\admin-infra\\768.jpg",
+          "url": "http://127.0.0.1:3322/admin-infra.html",
+          "viewport": {
+            "width": 768,
+            "height": 900
+          },
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflow": false,
+          "contrastChecked": 281,
+          "contrastFailures": [],
+          "focusable": [
+            "body.admin-html-page > header.gnav > a.gnav-brand",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "#runDemo"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "#runDemo",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnav",
+              "ariaLabel": "管理端导航",
+              "title": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list",
+              "ariaLabel": "管理端页面",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1280,
+          "screenshot": "test-reports\\tb3\\gate\\g7-screenshots\\admin-infra\\1280.jpg",
+          "url": "http://127.0.0.1:3322/admin-infra.html",
+          "viewport": {
+            "width": 1280,
+            "height": 900
+          },
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "overflow": false,
+          "contrastChecked": 282,
+          "contrastFailures": [],
+          "focusable": [
+            "body.admin-html-page > header.gnav > a.gnav-brand",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "#runDemo"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "#runDemo",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnav",
+              "ariaLabel": "管理端导航",
+              "title": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list",
+              "ariaLabel": "管理端页面",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1440,
+          "screenshot": "test-reports\\tb3\\gate\\g7-screenshots\\admin-infra\\1440.jpg",
+          "url": "http://127.0.0.1:3322/admin-infra.html",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflow": false,
+          "contrastChecked": 282,
+          "contrastFailures": [],
+          "focusable": [
+            "body.admin-html-page > header.gnav > a.gnav-brand",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "#runDemo"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "#runDemo",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnav",
+              "ariaLabel": "管理端导航",
+              "title": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list",
+              "ariaLabel": "管理端页面",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        },
+        {
+          "width": 1920,
+          "screenshot": "test-reports\\tb3\\gate\\g7-screenshots\\admin-infra\\1920.jpg",
+          "url": "http://127.0.0.1:3322/admin-infra.html",
+          "viewport": {
+            "width": 1920,
+            "height": 900
+          },
+          "scrollWidth": 1920,
+          "clientWidth": 1920,
+          "overflow": false,
+          "contrastChecked": 282,
+          "contrastFailures": [],
+          "focusable": [
+            "body.admin-html-page > header.gnav > a.gnav-brand",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "#runDemo"
+          ],
+          "focusGroups": [
+            {
+              "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+              "groupKey": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+              "groupKey": null
+            },
+            {
+              "selector": "#runDemo",
+              "groupKey": null
+            }
+          ],
+          "unlabeledIconControls": [],
+          "attrs": [
+            {
+              "selector": "#gnav",
+              "ariaLabel": "管理端导航",
+              "title": null
+            },
+            {
+              "selector": "body.admin-html-page > header.gnav > nav.gnav-list",
+              "ariaLabel": "管理端页面",
+              "title": null
+            }
+          ],
+          "reducedMotion": true,
+          "runningAnimations": 0
+        }
+      ],
+      "focus": {
+        "visits": [
+          {
+            "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(107, 101, 128) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#runDemo",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.31) 8px 8px 24px 0px, rgba(214, 82, 70, 0.23) -6px -6px 16px 0px inset, rgba(255, 254, 252, 0.45) 6px 6px 16px 0px inset",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > div.page > section:nth-of-type(3) > div.grid:nth-of-type(2) > div.card:nth-of-type(1) > div.tbl-wrap:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > div.page > section:nth-of-type(3) > div.grid:nth-of-type(2) > div.card:nth-of-type(6) > div.tbl-wrap:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          }
+        ],
+        "unique": [
+          {
+            "selector": "body.admin-html-page > header.gnav > a.gnav-brand",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(1)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(2)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(3)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(5)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(6)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(7)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > nav.gnav-list > a.gnav-item:nth-of-type(8)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "rgba(78, 126, 66, 0.18) 6px 8px 20px 0px",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > a",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > header.gnav > div.gnav-foot:nth-of-type(2) > button",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(107, 101, 128) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "#runDemo",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(158, 201, 240) solid 3px",
+            "boxShadow": "rgba(214, 82, 70, 0.31) 8px 8px 24px 0px, rgba(214, 82, 70, 0.23) -6px -6px 16px 0px inset, rgba(255, 254, 252, 0.45) 6px 6px 16px 0px inset",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > div.page > section:nth-of-type(3) > div.grid:nth-of-type(2) > div.card:nth-of-type(1) > div.tbl-wrap:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          },
+          {
+            "selector": "body.admin-html-page > div.page > section:nth-of-type(3) > div.grid:nth-of-type(2) > div.card:nth-of-type(6) > div.tbl-wrap:nth-of-type(4)",
+            "groupKey": null,
+            "ring": true,
+            "outline": "rgb(46, 42, 63) solid 3px",
+            "boxShadow": "none",
+            "visibleInViewport": true
+          }
+        ]
+      },
+      "lostAttrs": [],
+      "unreachable": [],
+      "tabAggregated": [],
+      "focusWithoutRing": [],
+      "contrastFailures": [],
+      "readyWindows": [
+        {
+          "width": 360,
+          "settled": true,
+          "waitedMs": 633,
+          "polls": 2
+        },
+        {
+          "width": 768,
+          "settled": true,
+          "waitedMs": 618,
+          "polls": 2
+        },
+        {
+          "width": 1280,
+          "settled": true,
+          "waitedMs": 619,
+          "polls": 2
+        },
+        {
+          "width": 1440,
+          "settled": true,
+          "waitedMs": 618,
+          "polls": 2
+        },
+        {
+          "width": 1920,
+          "settled": true,
+          "waitedMs": 664,
+          "polls": 2
+        }
+      ],
+      "diagnostics": [],
+      "checks": [
+        {
+          "name": "five-viewports",
+          "pass": true,
+          "detail": "5/5 viewport screenshots captured.",
+          "severity": "error"
+        },
+        {
+          "name": "route-stable",
+          "pass": true,
+          "detail": "0/5 viewport loads redirected away from /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "no-horizontal-overflow",
+          "pass": true,
+          "detail": "0/5 viewports overflow horizontally.",
+          "severity": "error"
+        },
+        {
+          "name": "contrast-4.5",
+          "pass": true,
+          "detail": "0 text samples are below 4.5:1.",
+          "severity": "error"
+        },
+        {
+          "name": "tab-reachable",
+          "pass": true,
+          "detail": "14/12 visible focusable elements reached by Tab.",
+          "severity": "error"
+        },
+        {
+          "name": "focus-visible",
+          "pass": true,
+          "detail": "0/14 reached elements lack a visible focus ring.",
+          "severity": "error"
+        },
+        {
+          "name": "focus-not-obscured",
+          "pass": true,
+          "detail": "0/14 reached elements are outside the visible viewport after focus.",
+          "severity": "error"
+        },
+        {
+          "name": "icon-control-name",
+          "pass": true,
+          "detail": "0 visible icon-only controls lack an accessible name.",
+          "severity": "error"
+        },
+        {
+          "name": "aria-title-frozen",
+          "pass": true,
+          "detail": "0 frozen aria-label/title entries are missing or changed.",
+          "severity": "error"
+        },
+        {
+          "name": "reduced-motion",
+          "pass": true,
+          "detail": "Media emulation active=true; running animations=0.",
+          "severity": "error"
+        },
+        {
+          "name": "console-errors",
+          "pass": true,
+          "detail": "0 uncaught runtime or console errors after the final load.",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}

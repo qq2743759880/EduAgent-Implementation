@@ -1,0 +1,11 @@
+g6-style-dep-gate PASS
+generated_at=2026-09-24T02:25:51.237Z
+pages=1 checks=6 failed=0 warnings=0 skipped=0
+
+[PASS] admin-infra.html http://127.0.0.1:3322/admin-infra.html
+  [PASS] runtime-inspection: 12 interactive elements inspected.
+  [PASS] route-stable: Expected /admin-infra.html, rendered /admin-infra.html.
+  [PASS] layout-blacklist: 0 missing and 0 changed frozen style entries.
+  [PASS] third-party-background: 0/0 third-party or rich-content containers have transparent backgrounds.
+  [PASS] interactive-target-44: 0/12 visible targets are smaller than 44x44 CSS px.
+  [PASS] console-errors: 0 uncaught runtime or console errors.

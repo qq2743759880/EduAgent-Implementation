@@ -1,0 +1,354 @@
+g7-viewport-a11y-gate FAIL
+generated_at=2026-09-24T02:24:04.507Z
+pages=27 checks=297 failed=1 warnings=0 skipped=0
+
+[PASS] achievements.html http://127.0.0.1:3322/achievements.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /achievements.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 30/30 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/30 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/30 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-chat-audit.html http://127.0.0.1:3322/admin-chat-audit.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-chat-audit.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 34/34 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/34 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/34 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-course-detail.html http://127.0.0.1:3322/admin-course-detail.html?id=1
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-course-detail.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 102/138 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/102 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/102 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-courses-recycle-proto.html http://127.0.0.1:3322/admin-courses-recycle-proto.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-courses-recycle-proto.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 58/58 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/58 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/58 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-courses.html http://127.0.0.1:3322/admin-courses.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-courses.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 170/170 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/170 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/170 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-dashboard.html http://127.0.0.1:3322/admin-dashboard.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-dashboard.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 11/11 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/11 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/11 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[FAIL] admin-infra.html http://127.0.0.1:3322/admin-infra.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-infra.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [FAIL] contrast-4.5: 330 text samples are below 4.5:1.
+  [PASS] tab-reachable: 14/12 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/14 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/14 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-mcp.html http://127.0.0.1:3322/admin-mcp.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-mcp.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 19/19 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/19 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/19 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-question-detail.html http://127.0.0.1:3322/admin-question-detail.html?id=1
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-question-detail.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 32/35 visible focusable elements reached by Tab (+3 aggregated via same-name radio group / roving tabindex container).
+  [PASS] focus-visible: 0/32 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/32 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-questions.html http://127.0.0.1:3322/admin-questions.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-questions.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 51/51 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/51 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/51 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-rag-upload.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 18/18 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/18 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/18 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-users-refine-proto.html http://127.0.0.1:3322/admin-users-refine-proto.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-users-refine-proto.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 63/63 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/63 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/63 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] admin-users.html http://127.0.0.1:3322/admin-users.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-users.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 48/48 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/48 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/48 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] chat.html http://127.0.0.1:3322/chat.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /chat.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 66/65 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/66 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/66 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] community-post.html http://127.0.0.1:3322/community-post.html?post_id=96
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /community-post.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 17/17 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/17 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/17 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] community.html http://127.0.0.1:3322/community.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /community.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 48/48 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/48 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/48 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] coupons.html http://127.0.0.1:3322/coupons.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /coupons.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 69/69 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/69 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/69 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] course-detail.html http://127.0.0.1:3322/course-detail.html?id=1
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /course-detail.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 31/31 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/31 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/31 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] courses.html http://127.0.0.1:3322/courses.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /courses.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 69/69 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/69 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/69 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] dashboard.html http://127.0.0.1:3322/dashboard.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /dashboard.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 13/13 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/13 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/13 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] favorites.html http://127.0.0.1:3322/favorites.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /favorites.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 12/12 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/12 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/12 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] learning.html http://127.0.0.1:3322/learning.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /learning.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 26/28 visible focusable elements reached by Tab (+2 aggregated via same-name radio group / roving tabindex container).
+  [PASS] focus-visible: 0/26 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/26 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] login-register.html http://127.0.0.1:3322/login-register.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /login-register.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 10/10 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/10 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/10 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] me.html http://127.0.0.1:3322/me.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /me.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 39/39 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/39 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/39 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] my-cohorts.html http://127.0.0.1:3322/my-cohorts.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /my-cohorts.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 31/31 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/31 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/31 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] practice.html http://127.0.0.1:3322/practice.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /practice.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 145/145 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/145 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/145 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.
+
+[PASS] refund.html http://127.0.0.1:3322/refund.html
+  [PASS] five-viewports: 5/5 viewport screenshots captured.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /refund.html.
+  [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
+  [PASS] contrast-4.5: 0 text samples are below 4.5:1.
+  [PASS] tab-reachable: 11/11 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/11 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/11 reached elements are outside the visible viewport after focus.
+  [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
+  [PASS] aria-title-frozen: No prior snapshot; current attributes captured.
+  [PASS] reduced-motion: Media emulation active=true; running animations=0.
+  [PASS] console-errors: 0 uncaught runtime or console errors after the final load.

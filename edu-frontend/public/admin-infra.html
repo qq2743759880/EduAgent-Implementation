@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<!--
+  基础设施实时面板 · /admin-infra.html （TO-EXEC-TB3）
+  STYLE: clay（黏土）主题 —— 引 /theme.css?v=7fed87f（同站现行版本）+ clay-* 组件类；
+         图标一律 Phosphor sprite <svg><use href="/assets/icons/icons.svg#ic-*"></svg>，禁 emoji。
+  契约: GET /api/admin/infra/snapshot  → 壳 {code:0,message:"ok",data}
+        data = { generated_at, redis{rate_limit,cache,locks,queues}, mongo, learning_event, viewer }
+        冻结稿见 .ai-hub/plans/artifacts/dispatch/REPORT-TB3.md §0.2
+  鉴权: edu-guard.requireAdmin() 三段不可省
+        1) 本地无 token → 跳 login-register 带 redirect
+        2) 有 token → GET /api/auth/me 校验 role∈{admin,manager}，否则跳 /dashboard.html + 横幅
+        3) auth/me 失败 → 按未授权跳登录
+        守卫通过后才调 window.bootAdmin()（数据注入收敛，与 admin-dashboard 现行实现同构）
+  演示: 「运行演示」按钮实时拉 snapshot 刷新面板；页面加载后自动拉一次。
+  AUDIT LOG:
+    [2026-09-24 TB3] 初稿：Redis 四件套（限流计数/缓存冷热/锁列表/队列深度）+ Mongo 三集合 + learning_event
+      样例（uid 脱敏）+ 事件流运行态；四态（loading/success/error/empty 分节降级）+ 响应式。
+-->
+<html lang="zh-CN" class="" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基础设施面板 · EduAgent 管理端</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<style>
+/* 私有变量挂 body.admin-html-page 作用域：单文件隔离，不外溢；不新增 body 类以保 G7 冻结 cssPath 稳定 */
+body.admin-html-page{
+  --ink:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --line:var(--bg-input); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+
+  /* 预解析实色面：凡承载正文的面一律用实色，不用 color-mix()。
+     原因（TB3 实测，G7 contrast-4.5 误报根因）：Chrome 150 把 color-mix() 计算值序列化成
+     `color(srgb 1 0.901333 0.870667)`（CSS Color 4 语法，分量域 0~1），
+     而 G7 的 parse() 只按 0~255 取数 → 读成 rgb(1,0.9,0.87)≈近黑，
+     折进背景栈后把浅底抬成"黑底"，凭空产出 1.51 / 3.78 这类不可能的比值。
+     改用实色后，栈里每一层都是可被门禁正确解析的 rgb()。 */
+  --metric-mint:#EDF7F0;
+  --metric-moss:#E2F0DC;
+  --metric-peach:#FDF0EA;
+  --metric-lemon:#FBF6DF;
+  --metric-sky:#EAF3FA;
+  --tint-sky:#EEF4FB;
+  --tint-moss:#EAF3E6;
+  --tint-muted:#EDECF2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{min-height:100dvh}
+body{min-height:100dvh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--text-strong);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+*:focus-visible{outline:3px solid var(--clay-sky);outline-offset:2px;border-radius:4px}
+.visually-hidden{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ===== 顶栏导航（与 admin-dashboard 同构；本页高亮）===== */
+.gnav{position:sticky;top:0;z-index:130;display:flex;flex-direction:row;align-items:center;gap:12px;
+  background:var(--bg-raised);border-bottom:2px solid var(--bg-input);padding:10px 18px}
+.gnav-brand{display:flex;align-items:center;gap:8px;min-width:0;text-decoration:none;color:var(--text-strong);min-height:44px}
+.gnav-logo{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--clay-lemon);
+  color:var(--text-strong);font-size:.75rem;font-weight:900;line-height:1;box-shadow:3px 3px 10px rgba(190,149,35,.24)}
+.gnav-name{font-size:.9375rem;font-weight:900;white-space:nowrap}
+.gnav-cap{font-size:.6875rem;font-weight:900;color:var(--text-muted);letter-spacing:.08em;white-space:nowrap}
+.gnav-list{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+.gnav-list::-webkit-scrollbar{display:none}
+.gnav-item{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:.8125rem;
+  font-weight:800;color:var(--text-strong);padding:0 12px;min-height:44px;border-radius:12px;border:2px solid transparent;
+  text-decoration:none;transition:background .15s,color .15s}
+.gnav-item:hover{background:color-mix(in srgb,var(--clay-moss) 30%,var(--bg-raised))}
+.gnav-item.active{background:var(--clay-moss);border-color:transparent;box-shadow:var(--clay-shadow-light)}
+.gnav-foot{margin-left:auto;font-size:.6875rem;color:var(--text-muted);font-weight:700;white-space:nowrap}
+.gnav-foot a,.gnav-foot button{color:inherit;font:inherit;font-weight:700;background:none;border:none;
+  text-decoration:underline;min-height:44px;display:inline-flex;align-items:center}
+
+.page{width:100%;max-width:1180px;margin:0 auto;padding:16px 18px 40px;display:flex;flex-direction:column;gap:var(--space-4)}
+
+/* ===== 页头 ===== */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 4px}
+.head h1{font-size:1.5rem;font-weight:900;letter-spacing:-.01em;line-height:1.15}
+.head .sub{font-size:.8125rem;color:var(--text-strong);margin-top:4px;max-width:660px;line-height:1.6}
+.head .act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.updated{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--text-strong);
+  background:var(--clay-lemon);border-radius:var(--radius-pill);padding:6px 12px}
+
+/* ===== 按钮（clay）===== */
+.btn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:var(--radius-btn);
+  font-weight:800;font-size:.8125rem;padding:0 18px;min-height:44px;min-width:44px;
+  transition:transform .12s,box-shadow .12s}
+.btn svg{width:18px;height:18px}
+.btn-primary{background:var(--clay-moss);color:var(--text-strong);box-shadow:var(--clay-shadow-moss)}
+.btn-coral{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-coral)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.6;cursor:progress;transform:none}
+.btn-primary:active{box-shadow:var(--clay-shadow-press-moss)}
+.btn-coral:active{box-shadow:var(--clay-shadow-press-coral)}
+
+/* ===== 依赖状态条 ===== */
+.deps{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;
+  background:var(--bg-raised);border-radius:var(--radius-pill);padding:6px 12px;box-shadow:var(--clay-shadow-light)}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--text-muted);flex:0 0 auto}
+.chip.ok .dot{background:var(--status-active)}
+.chip.bad .dot{background:var(--status-danger)}
+.chip.bad{color:var(--status-danger)}
+
+/* ===== 卡片网格 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--space-4)}
+.card{background:var(--bg-raised);border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);
+  padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.clay-tint{background:var(--tint-sky)}
+.card .c-title{display:flex;align-items:center;gap:8px;font-size:.9375rem;font-weight:900;color:var(--text-strong);flex-wrap:wrap}
+.card .c-title svg{width:20px;height:20px;flex:0 0 auto}
+.card .c-title .pill{font-size:.625rem;font-weight:800;background:var(--clay-lemon);border-radius:var(--radius-pill);padding:2px 9px}
+.card .c-sub{font-size:12px;color:var(--text-muted);line-height:1.6}
+.card .c-sub code{background:var(--tint-muted);border-radius:5px;padding:1px 5px;font-size:11px}
+
+/* ===== 指标（大数字）===== */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+.metric{background:var(--metric-mint);border-radius:var(--radius-input);padding:10px 12px;min-width:0}
+.metric .m-lb{font-size:11px;font-weight:800;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric .m-val{font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px;color:var(--text-strong)}
+.metric .m-val small{font-size:11px;font-weight:800;color:var(--text-muted)}
+.metric.p{background:var(--metric-peach)}
+.metric.l{background:var(--metric-lemon)}
+.metric.s{background:var(--metric-sky)}
+
+/* ===== 表格 ===== */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--bg-input);white-space:nowrap}
+th{font-size:11px;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+td.num{font-variant-numeric:tabular-nums;font-weight:800}
+tr:last-child td{border-bottom:0}
+td code,td .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px}
+.tag{display:inline-block;font-size:11px;font-weight:800;border-radius:var(--radius-pill);padding:2px 9px;
+  background:var(--metric-moss);color:var(--text-strong)}
+.tag.warn{background:var(--clay-peach)}
+.tag.bad{background:var(--status-danger);color:var(--cta-text)}
+.tag.mute{background:var(--bg-input);color:var(--text-muted)}
+
+/* 对比条（冷热） */
+.cmp{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.cmp-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.cmp-row .lbl{width:96px;flex:0 0 auto;font-weight:800;color:var(--text-muted)}
+.cmp-row .bar{height:16px;border-radius:6px;background:var(--clay-sky);min-width:3px;box-shadow:var(--clay-shadow-light)}
+.cmp-row .bar.hot{background:var(--clay-moss)}
+.cmp-row .v{font-variant-numeric:tabular-nums;font-weight:900}
+
+/* ===== 四态 ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{background:var(--bg-raised);border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:16px;display:flex;flex-direction:column;gap:10px}
+.sk-line{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--bg-input) 25%,color-mix(in srgb,var(--bg-input) 40%,var(--bg-raised)) 50%,var(--bg-input) 75%);
+  background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w40{width:40%}.sk-line.w60{width:60%}.sk-line.w90{width:90%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;
+  padding:44px 20px;background:var(--clay-peach);border-radius:var(--radius-card);box-shadow:var(--clay-shadow-peach)}
+.state svg{width:44px;height:44px;color:var(--text-strong)}
+.state h3{font-size:1.0625rem;font-weight:900}
+.state p{font-size:13.5px;color:var(--text-strong);line-height:1.6;max-width:420px}
+/* 对比度（G7 contrast-4.5 实测修正）：正文一律落在 --bg-raised 实色面上，
+   避免 --text-muted 直接压 --bg-app 只剩 5.11:1 的薄边；
+   并弃用 color-mix 半透明底（G7 按实色栈合成，半透明层会被误合成为脏色）。 */
+.note{font-size:11.5px;color:var(--text-strong);line-height:1.65;background:var(--bg-raised);
+  border-radius:var(--radius-input);padding:10px 12px;box-shadow:var(--clay-shadow-light)}
+.note .mut{color:var(--text-muted);font-weight:800}
+.note b{color:var(--text-strong)}
+.honest{font-size:11.5px;color:var(--status-danger);font-weight:800}
+.dep-bad{border-radius:var(--radius-input);padding:10px 12px;background:var(--clay-peach);
+  font-size:12px;color:var(--text-strong);line-height:1.6}
+.dep-bad b{font-weight:900}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .btn:active{transform:none}
+}
+@media (max-width:820px){
+  .gnav-cap{display:none}
+  .gnav{flex-wrap:wrap}
+  .gnav-foot{width:100%;margin-left:0;text-align:right}
+  .head h1{font-size:1.25rem}
+}
+</style>
+</head>
+<body class="admin-html-page">
+
+<header class="gnav" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">EduAgent 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+    <a class="gnav-item active" href="admin-infra.html" aria-current="page"><span>基础设施</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console · <a href="dashboard.html">返回学习端 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()">退出登录</button></div>
+</header>
+
+<div class="page">
+  <div class="head">
+    <div>
+      <h1>基础设施实时面板</h1>
+      <div class="sub">Redis 四件套（限流计数 / SETNX 缓存 / 分布式锁 / 队列深度）+ MongoDB 三集合 + 学习事件流。
+        数据来自 <code>GET /api/admin/infra/snapshot</code>，<b>全程只读</b>。</div>
+    </div>
+    <div class="act">
+      <span class="updated" id="viewer-chip">待鉴权</span>
+      <button type="button" class="btn btn-coral" id="runDemo">
+        <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg><span>运行演示</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 依赖健康条 -->
+  <div class="deps" id="deps" role="status" aria-live="polite">
+    <span class="chip"><span class="dot"></span>Redis 检测中</span>
+    <span class="chip"><span class="dot"></span>MongoDB 检测中</span>
+    <span class="chip"><span class="dot"></span>事件流检测中</span>
+  </div>
+
+  <!-- ================= 加载态 ================= -->
+  <section id="view-loading" hidden>
+    <div class="sk">
+      <div class="sk-card"><div class="sk-line w40"></div><div class="sk-line w90"></div><div class="sk-line w60"></div></div>
+      <div class="sk-card"><div class="sk-line w40"></div><div class="sk-line w60"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 错误态 ================= -->
+  <section id="view-error" hidden>
+    <div class="state" role="alert">
+      <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>
+      <h3>快照拉取失败</h3>
+      <p id="err-msg">无法获取基础设施快照，请检查后端服务或稍后重试。</p>
+      <button type="button" class="btn btn-coral" onclick="loadInfra()">
+        <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-arrow-right"/></svg><span>重试</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= 成功态 ================= -->
+  <section id="view-success" hidden>
+    <!-- 原始数据基线（供 grep 亲验） -->
+    <div class="note" id="raw-line">快照未加载。</div>
+
+    <div class="grid">
+      <!-- ① 限流计数 -->
+      <div class="card">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>
+          <span>① 限流计数</span><span class="pill">滑动窗口</span>
+        </div>
+        <div class="c-sub">IP + user_id 双维度滑动窗口（<code>app/middleware/rate_limit.py</code>）。
+          以下为 <b>当前窗口真实计数</b>（只读，面板自身不打点）。</div>
+        <div class="metrics">
+          <div class="metric p"><div class="m-lb">窗口命中总数</div><div class="m-val" id="k-rl-hits">—</div></div>
+          <div class="metric"><div class="m-lb">活跃计数键</div><div class="m-val" id="k-rl-keys">—</div></div>
+          <div class="metric l"><div class="m-lb">已拒绝（429）</div><div class="m-val" id="k-rl-rej">—</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <caption class="visually-hidden">限流规则与当前窗口计数</caption>
+            <thead><tr><th>路径</th><th>窗口</th><th>上限</th><th>命中</th><th>键</th><th>拒绝</th></tr></thead>
+            <tbody id="rl-rows"></tbody>
+          </table>
+        </div>
+        <div id="rl-bypass" hidden></div>
+      </div>
+
+      <!-- ② SETNX 缓存 -->
+      <div class="card clay-tint">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>
+          <span>② SETNX 缓存</span><span class="pill">三防</span>
+        </div>
+        <div class="c-sub">穿透空值哨兵 / 击穿 SETNX 互斥 / 雪崩 TTL ±10% 抖动
+          （<code>app/core/cache.py::get_or_load</code>）。现场对真实键做冷读→热读往返测速。</div>
+        <div class="metrics">
+          <div class="metric s"><div class="m-lb">探测键族</div><div class="m-val" id="k-cache-keys" style="font-size:1.1rem">—</div></div>
+          <div class="metric"><div class="m-lb">互斥键存活</div><div class="m-val" id="k-cache-mutex">—</div></div>
+        </div>
+        <div class="c-sub">样本键：<code id="k-cache-sample">—</code></div>
+        <div class="cmp" id="cmp-box"></div>
+        <div class="note">口径说明：本探测仅发 <b>GET</b>（只读，不触发 loader 重建），
+          因此这里是 <b>连接池预热 + 往返</b> 的耗时对比，<b>不是</b>“DB 重建 vs 缓存命中”的量级差
+          （那需走 <code>get_or_load</code> 写路径）。数字不大属正常。</div>
+      </div>
+
+      <!-- ③ 分布式锁 -->
+      <div class="card">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-gear"/></svg>
+          <span>③ 分布式锁</span><span class="pill">SETNX + Lua</span>
+        </div>
+        <div class="c-sub">实现：<code id="k-lock-impl">app/core/lock.py::RedisLock</code>。
+          命名 <code>lock:{name}</code>；释放走 Lua 原子比对 token，防误删他人锁。下表为<b>现存锁</b>与剩余 TTL。</div>
+        <div class="metrics">
+          <div class="metric l"><div class="m-lb">现存锁数</div><div class="m-val" id="k-lock-count">—</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <caption class="visually-hidden">现存分布式锁与 TTL</caption>
+            <thead><tr><th>锁 key</th><th>剩余 TTL</th></tr></thead>
+            <tbody id="lock-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ④ 队列深度 -->
+      <div class="card">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-upload-simple"/></svg>
+          <span>④ 队列深度</span><span class="pill">RPUSH + BLPOP</span>
+        </div>
+        <div class="c-sub">实现：<code id="k-queue-impl">app/core/queue.py::TaskQueue</code>（Redis List，FIFO）。
+          同时扫描 <code>queue:*</code> 与 <code>edu:mem_queue:*</code>。</div>
+        <div class="metrics">
+          <div class="metric p"><div class="m-lb">队列条数</div><div class="m-val" id="k-queue-count">—</div></div>
+          <div class="metric"><div class="m-lb">积压总深度</div><div class="m-val" id="k-queue-depth">—</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <caption class="visually-hidden">队列 key 与深度</caption>
+            <thead><tr><th>队列 key</th><th>深度 (llen)</th></tr></thead>
+            <tbody id="queue-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mongo 三集合 -->
+      <div class="card">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-book-open"/></svg>
+          <span>MongoDB 三集合</span><span class="pill">文档面</span>
+        </div>
+        <div class="c-sub">库 <code id="k-mongo-db">—</code>：知识库向量落盘 + 学习事件流。</div>
+        <div class="tbl-wrap">
+          <table>
+            <caption class="visually-hidden">MongoDB 集合计数与最新时间</caption>
+            <thead><tr><th>集合</th><th>文档数</th><th>最新 ts</th></tr></thead>
+            <tbody id="mongo-rows"></tbody>
+          </table>
+        </div>
+        <div id="mongo-bad" hidden></div>
+      </div>
+
+      <!-- learning_event -->
+      <div class="card">
+        <div class="c-title">
+          <svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg>
+          <span>learning_event 样例</span><span class="pill">最近 5 条</span>
+        </div>
+        <div class="c-sub">append-only 事件流（uid <b>已脱敏</b>）；运行态来自进程内 worker 快照。</div>
+        <div class="metrics">
+          <div class="metric s"><div class="m-lb">事件总数</div><div class="m-val" id="k-ev-total">—</div></div>
+          <div class="metric"><div class="m-lb">worker</div><div class="m-val" id="k-ev-worker" style="font-size:1.05rem">—</div></div>
+          <div class="metric l"><div class="m-lb">队列积压</div><div class="m-val" id="k-ev-q">—</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <caption class="visually-hidden">最近学习事件样例</caption>
+            <thead><tr><th>ts</th><th>type</th><th>uid（脱敏）</th><th>session</th><th>payload 键</th></tr></thead>
+            <tbody id="ev-rows"></tbody>
+          </table>
+        </div>
+        <div class="honest" id="ev-mask-note" hidden></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="/edu-api.js"></script>
+<script src="/edu-guard.js"></script>
+<script>eduGuard.requireAdmin();</script>
+<script>
+/* ===== 守卫通过后由 edu-guard 调用的数据注入入口 ===== */
+window.bootAdmin = function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) return; // 守卫第一段已跳登录，此处静默降级不发请求
+  loadInfra();
+};
+
+var INFRA_SNAP = null;
+
+function fmt(n) { return (n === null || n === undefined) ? "—" : Number(n).toLocaleString("en-US"); }
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function ms(v) { return (v === null || v === undefined) ? "—" : v + " ms"; }
+
+function showView(id) {
+  ["view-loading", "view-error", "view-success"].forEach(function (v) {
+    var el = document.getElementById(v); if (el) el.hidden = (v !== id);
+  });
+}
+
+/* ===== 加载（「运行演示」与自动首拉共用） ===== */
+window.loadInfra = function () {
+  var btn = document.getElementById("runDemo");
+  if (btn) { btn.disabled = true; }
+  showView("view-loading");
+  EAPI.get("/api/admin/infra/snapshot").then(function (d) {
+    INFRA_SNAP = d;
+    render(d);
+    showView("view-success");
+  }).catch(function (err) {
+    var em = document.getElementById("err-msg");
+    if (em) em.textContent = "无法获取基础设施快照：" + ((err && err.message) || "后端不可用")
+      + "（HTTP " + ((err && err.status) || "—") + "）";
+    showView("view-error");
+  }).finally(function () { if (btn) btn.disabled = false; });
+};
+
+/* ===== 渲染 ===== */
+function render(d) {
+  var redis = (d && d.redis) || {};
+  var rl = redis.rate_limit || {};
+  var cache = redis.cache || {};
+  var locks = redis.locks || {};
+  var queues = redis.queues || {};
+  var mongo = (d && d.mongo) || {};
+  var ev = (d && d.learning_event) || {};
+
+  /* 依赖健康条 */
+  var deps = [
+    { ok: !!redis.available, label: "Redis " + (redis.endpoint || "") + (redis.ping ? " · PING ok" : "") },
+    { ok: !!mongo.available, label: "MongoDB " + (mongo.database || "") },
+    { ok: !!ev.available, label: "learning_event" }
+  ];
+  document.getElementById("deps").innerHTML = deps.map(function (x) {
+    return '<span class="chip ' + (x.ok ? "ok" : "bad") + '"><span class="dot"></span>'
+      + esc(x.label) + (x.ok ? "" : " · 不可达") + "</span>";
+  }).join("");
+
+  /* 观察者 + 时间 */
+  var v = d.viewer || {};
+  var chip = document.getElementById("viewer-chip");
+  if (chip) chip.textContent = (v.role || "?") + " · " + (d.generated_at || "—");
+
+  /* 原始数据基线（供 grep 亲验） */
+  var raw = document.getElementById("raw-line");
+  if (raw) {
+    raw.innerHTML = "<b>快照生成</b> " + esc(d.generated_at || "—")
+      + " ｜ <b>Redis</b> DBSIZE=" + fmt(redis.dbsize)
+      + " ｜ <b>限流</b> 命中=" + fmt(rl.hits_total) + " 拒绝=" + fmt(rl.rejected) + " 活跃键=" + fmt(rl.keys_active)
+      + " ｜ <b>缓存</b> 族=" + esc(cache.probe_key_pattern || "—") + " 样本=" + esc(cache.sample_key || "无")
+      + " ｜ <b>锁</b> " + fmt(locks.count)
+      + " ｜ <b>队列</b> " + fmt(queues.count) + " 条 / 深度 " + fmt(queues.total_depth);
+  }
+
+  /* ① 限流 */
+  document.getElementById("k-rl-hits").textContent = fmt(rl.hits_total);
+  document.getElementById("k-rl-keys").textContent = fmt(rl.keys_active);
+  document.getElementById("k-rl-rej").textContent = fmt(rl.rejected);
+  var rules = Array.isArray(rl.rules) ? rl.rules : [];
+  document.getElementById("rl-rows").innerHTML = rules.length ? rules.map(function (r) {
+    var rej = (r.rejected || 0) > 0;
+    return "<tr><td><code>" + esc(r.path) + "</code></td><td class='num'>" + fmt(r.window_seconds) + "s</td>"
+      + "<td class='num'>" + fmt(r.max_requests) + "</td><td class='num'>" + fmt(r.hits) + "</td>"
+      + "<td class='num'>" + fmt(r.keys_active) + "</td>"
+      + "<td>" + (rej ? '<span class="tag bad">' + fmt(r.rejected) + "</span>" : '<span class="tag mute">0</span>') + "</td></tr>";
+  }).join("") : '<tr><td colspan="6" class="tag mute">暂无规则</td></tr>';
+  var byp = document.getElementById("rl-bypass");
+  if (byp) {
+    if (rl.bypass_window) {
+      byp.hidden = false;
+      byp.className = "dep-bad";
+      byp.innerHTML = "<b>Redis 降级窗生效中</b>：限流当前<b>放行不计数</b>（故障自愈探测进行中）。"
+        + "此时命中数为 0 属预期，非缺陷。";
+    } else { byp.hidden = true; }
+  }
+
+  /* ② 缓存 */
+  document.getElementById("k-cache-keys").textContent = (cache.probe_key_pattern || "—");
+  document.getElementById("k-cache-mutex").textContent = fmt(cache.mutex_keys);
+  document.getElementById("k-cache-sample").textContent = cache.sample_key || "（该族当前无键）";
+  var box = document.getElementById("cmp-box");
+  if (cache.sample_key && (cache.cold_ms_first !== null || cache.hot_ms_second !== null)) {
+    var coldV = cache.cold_ms_first, hotV = cache.hot_ms_second;
+    var maxV = Math.max(coldV || 0, hotV || 0, 0.001);
+    function row(label, v, cls) {
+      var pct = Math.max(3, Math.round((v || 0) / maxV * 100));
+      return '<div class="cmp-row"><span class="lbl">' + label + '</span>'
+        + '<span class="bar ' + cls + '" style="width:' + pct + '%"></span>'
+        + '<span class="v">' + ms(v) + "</span></div>";
+    }
+    box.innerHTML = row("冷读（首次）", coldV, "") + row("热读（第 3 次）", hotV, "hot")
+      + '<div class="cmp-row"><span class="lbl">速比</span><span class="v">'
+      + (cache.speedup_ratio === null || cache.speedup_ratio === undefined ? "—" : cache.speedup_ratio + "×")
+      + "</span></div>"
+      + '<div class="cmp-row"><span class="lbl">样本数</span><span class="v">'
+      + fmt(cache.keys_cached) + " 键 / 同族</span></div>"
+      + '<div class="c-sub" id="cmp-verdict"></div>';
+    var verdict = document.getElementById("cmp-verdict");
+    if (verdict) {
+      var r2 = cache.speedup_ratio;
+      verdict.textContent = (r2 !== null && r2 !== undefined && r2 >= 1.5)
+        ? "冷读明显慢于热读（" + r2 + "×）——符合首次往返预热预期。"
+        : "冷热耗时处于同量级（差异在往返抖动范围内）。本面板**不**声称“缓存快 N 倍”："
+          + "只读 GET 的往返由连接池与网络主导，真正的量级差需走 get_or_load 的 DB 重建路径才可观测。";
+    }
+  } else {
+    box.innerHTML = '<div class="c-sub">该探测族当前无缓存键 → 无冷热对比（诚实置空，不伪造）。</div>';
+  }
+
+  /* ③ 锁 */
+  document.getElementById("k-lock-impl").textContent = locks.impl || "app/core/lock.py::RedisLock";
+  document.getElementById("k-lock-count").textContent = fmt(locks.count);
+  var litems = Array.isArray(locks.items) ? locks.items : [];
+  document.getElementById("lock-rows").innerHTML = litems.length ? litems.map(function (x) {
+    var ttl = x.ttl_seconds;
+    var t = (ttl === -1) ? '<span class="tag warn">永久</span>'
+      : (ttl === -2 || ttl === null) ? '<span class="tag mute">已失效</span>'
+      : '<span class="tag">' + fmt(ttl) + "s</span>";
+    return "<tr><td><code>" + esc(x.key) + "</code></td><td>" + t + "</td></tr>";
+  }).join("") : '<tr><td colspan="2"><span class="tag mute">当前无存活锁</span>（无并发写事务时的正常状态）</td></tr>';
+
+  /* ④ 队列 */
+  document.getElementById("k-queue-impl").textContent = queues.impl || "app/core/queue.py::TaskQueue";
+  document.getElementById("k-queue-count").textContent = fmt(queues.count);
+  document.getElementById("k-queue-depth").textContent = fmt(queues.total_depth);
+  var qitems = Array.isArray(queues.items) ? queues.items : [];
+  document.getElementById("queue-rows").innerHTML = qitems.length ? qitems.map(function (x) {
+    var d2 = (x.length === null || x.length === undefined)
+      ? '<span class="tag mute">非队列类型</span>'
+      : '<span class="tag' + (x.length > 100 ? " warn" : "") + '">' + fmt(x.length) + "</span>";
+    return "<tr><td><code>" + esc(x.key) + "</code></td><td>" + d2 + "</td></tr>";
+  }).join("") : '<tr><td colspan="2"><span class="tag mute">当前无队列键</span></td></tr>';
+
+  /* Mongo */
+  document.getElementById("k-mongo-db").textContent = mongo.database || "—";
+  var colls = Array.isArray(mongo.collections) ? mongo.collections : [];
+  document.getElementById("mongo-rows").innerHTML = colls.map(function (c) {
+    return "<tr><td><code>" + esc(c.name) + "</code></td><td class='num'>" + fmt(c.count) + "</td>"
+      + "<td>" + (c.latest_ts ? esc(c.latest_ts) : '<span class="tag mute">无数据</span>') + "</td></tr>";
+  }).join("");
+  var mBad = document.getElementById("mongo-bad");
+  if (mBad) {
+    if (!mongo.available) { mBad.hidden = false; mBad.className = "dep-bad"; mBad.innerHTML = "<b>MongoDB 不可达</b>：" + esc(mongo.error || "连接失败"); }
+    else { mBad.hidden = true; }
+  }
+
+  /* learning_event */
+  var ss = ev.stream_stats || {};
+  document.getElementById("k-ev-total").textContent = fmt(ev.total);
+  document.getElementById("k-ev-worker").textContent = ss.worker_running ? "运行中" : "未运行";
+  document.getElementById("k-ev-q").textContent = fmt(ss.queue_size);
+  var evs = Array.isArray(ev.items) ? ev.items : [];
+  document.getElementById("ev-rows").innerHTML = evs.length ? evs.map(function (e) {
+    var pk = Array.isArray(e.payload_keys) ? (e.payload_keys.join(", ") || "—") : "—";
+    return "<tr><td>" + esc(e.ts || "—") + "</td><td><span class='tag'>" + esc(e.type || "—") + "</span></td>"
+      + "<td class='mono'>" + esc(e.user_id_masked || "—") + "</td>"
+      + "<td class='num'>" + fmt(e.session_id) + "</td><td><code>" + esc(pk) + "</code></td></tr>";
+  }).join("") : '<tr><td colspan="5"><span class="tag mute">暂无事件</span></td></tr>';
+
+  var maskNote = document.getElementById("ev-mask-note");
+  if (maskNote) {
+    var masked = evs.filter(function (e) { return /[*]/.test(String(e.user_id_masked || "")); }).length;
+    if (evs.length && masked === evs.length) {
+      maskNote.hidden = false;
+      maskNote.textContent = "隐私核对通过：" + masked + "/" + evs.length + " 条 uid 均已脱敏（面板不出原始 user_id，后端统一掩码）。";
+    } else if (evs.length && masked !== evs.length) {
+      maskNote.hidden = false;
+      maskNote.textContent = "隐私核对异常：仅 " + masked + "/" + evs.length + " 条 uid 被脱敏，请检查后端 mask_uid。";
+    } else { maskNote.hidden = true; }
+  }
+}
+
+document.getElementById("runDemo").addEventListener("click", function () { loadInfra(); });
+</script>
+</body>
+</html>

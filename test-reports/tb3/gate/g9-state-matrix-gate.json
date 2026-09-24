@@ -1,0 +1,911 @@
+{
+  "gate": "G9 State Matrix Gate",
+  "generated_at": "2026-09-24T02:26:50.671Z",
+  "status": "PASS",
+  "summary": {
+    "pages": 1,
+    "checks": 56,
+    "failed": 0,
+    "warnings": 5,
+    "skipped": 0
+  },
+  "chrome": "Chrome/150.0.7871.181",
+  "states": [
+    "empty",
+    "loading",
+    "error",
+    "forbidden",
+    "disabled",
+    "long-text",
+    "token-expired",
+    "server-500"
+  ],
+  "mock_policy": "All loopback /api/ requests are intercepted. auth/me remains an identity success except in authorization and server-failure states; the identity follows the page scan role (scripts/gates/page-roles.json, default admin).",
+  "scan_identity": "per-page via scripts/gates/page-roles.json (default admin; role-guarded pages scan under EDU_GATE_STUDENT_TOKEN when set); no check relaxed",
+  "ready_window": "mock-driven states (empty/disabled/long-text) sample after network idle + two consistent DOM snapshots (EDU_GATE_READY_TIMEOUT_MS, default 5000ms cap); hold/fail states skip the window by design",
+  "pages": [
+    {
+      "name": "admin-infra.html",
+      "url": "http://127.0.0.1:3322/admin-infra.html",
+      "scan_role": "admin",
+      "states": [
+        {
+          "state": "empty",
+          "intercepted": 4,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 1310,
+            "bodyHeight": 938,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\empty.jpg"
+          },
+          "readyWindow": {
+            "settled": true,
+            "waitedMs": 588,
+            "polls": 2
+          },
+          "diagnostics": [],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "4 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=1310.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": true,
+              "detail": "0 console/log diagnostics.",
+              "severity": "error"
+            }
+          ]
+        },
+        {
+          "state": "loading",
+          "intercepted": 2,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 245,
+            "bodyHeight": 900,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\loading.jpg"
+          },
+          "readyWindow": null,
+          "diagnostics": [
+            "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-infra.html:376:18"
+          ],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "2 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=245.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 1 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": false,
+              "detail": "1 console/log diagnostics.",
+              "severity": "warning"
+            }
+          ]
+        },
+        {
+          "state": "error",
+          "intercepted": 2,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 287,
+            "bodyHeight": 900,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\error.jpg"
+          },
+          "readyWindow": null,
+          "diagnostics": [
+            "LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+            "CONSOLE: [EAPI] Failed to fetch TypeError: Failed to fetch\n    at request (http://127.0.0.1:3322/edu-api.js:214:12)\n    at Object.get (http://127.0.0.1:3322/edu-api.js:296:17)\n    at Object.requireAdmin (http://127.0.0.1:3322/edu-guard.js:61:10)\n    at http://127.0.0.1:3322/admin-infra.html:376:18"
+          ],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "2 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=287.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": false,
+              "detail": "2 console/log diagnostics.",
+              "severity": "warning"
+            }
+          ]
+        },
+        {
+          "state": "forbidden",
+          "intercepted": 2,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 301,
+            "bodyHeight": 900,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\forbidden.jpg"
+          },
+          "readyWindow": null,
+          "diagnostics": [
+            "LOG: Failed to load resource: the server responded with a status of 403 (Gate Injected)",
+            "CONSOLE: [EAPI] Gate injected forbidden state Error: Gate injected forbidden state\n    at apiError (http://127.0.0.1:3322/edu-api.js:120:17)\n    at http://127.0.0.1:3322/edu-api.js:138:15"
+          ],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "2 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=301.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": false,
+              "detail": "2 console/log diagnostics.",
+              "severity": "warning"
+            }
+          ]
+        },
+        {
+          "state": "disabled",
+          "intercepted": 4,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 1310,
+            "bodyHeight": 938,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\disabled.jpg"
+          },
+          "readyWindow": {
+            "settled": true,
+            "waitedMs": 588,
+            "polls": 2
+          },
+          "diagnostics": [],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "4 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=1310.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": true,
+              "detail": "0 console/log diagnostics.",
+              "severity": "error"
+            }
+          ]
+        },
+        {
+          "state": "long-text",
+          "intercepted": 4,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 1310,
+            "bodyHeight": 938,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\long-text.jpg"
+          },
+          "readyWindow": {
+            "settled": true,
+            "waitedMs": 639,
+            "polls": 2
+          },
+          "diagnostics": [],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "4 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=1310.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": true,
+              "detail": "0 console/log diagnostics.",
+              "severity": "error"
+            }
+          ]
+        },
+        {
+          "state": "token-expired",
+          "intercepted": 2,
+          "layout": {
+            "url": "http://127.0.0.1:3322/login-register.html?redirect=%2Fadmin-infra.html",
+            "title": "登录注册 · EduAgent",
+            "bodyTextLength": 98,
+            "bodyHeight": 966,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\token-expired.jpg"
+          },
+          "readyWindow": null,
+          "diagnostics": [
+            "LOG: Failed to load resource: the server responded with a status of 401 (Gate Injected)",
+            "CONSOLE: [EAPI] 登录凭证无效或已过期 Error: 登录凭证无效或已过期\n    at apiError (http://127.0.0.1:3322/edu-api.js:120:17)\n    at handleUnauthorized (http://127.0.0.1:3322/edu-api.js:199:11)\n    at http://127.0.0.1:3322/edu-api.js:225:48"
+          ],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "2 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /login-register.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=98.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": false,
+              "detail": "2 console/log diagnostics.",
+              "severity": "warning"
+            }
+          ]
+        },
+        {
+          "state": "server-500",
+          "intercepted": 2,
+          "layout": {
+            "url": "http://127.0.0.1:3322/admin-infra.html",
+            "title": "基础设施面板 · EduAgent 管理端",
+            "bodyTextLength": 298,
+            "bodyHeight": 900,
+            "viewport": {
+              "width": 1280,
+              "height": 900
+            },
+            "horizontalOverflow": false,
+            "broken": [],
+            "transitional": false,
+            "screenshot": "test-reports\\tb3\\gate\\g9-screenshots\\admin-infra\\server-500.jpg"
+          },
+          "readyWindow": null,
+          "diagnostics": [
+            "LOG: Failed to load resource: the server responded with a status of 500 (Gate Injected)",
+            "CONSOLE: [EAPI] Gate injected server error Error: Gate injected server error\n    at apiError (http://127.0.0.1:3322/edu-api.js:120:17)\n    at http://127.0.0.1:3322/edu-api.js:138:15"
+          ],
+          "checks": [
+            {
+              "name": "state-intercepted",
+              "pass": true,
+              "detail": "2 API requests intercepted.",
+              "severity": "error"
+            },
+            {
+              "name": "state-route",
+              "pass": true,
+              "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+              "severity": "error"
+            },
+            {
+              "name": "state-visible",
+              "pass": true,
+              "detail": "Visible text length=298.",
+              "severity": "error"
+            },
+            {
+              "name": "state-no-horizontal-overflow",
+              "pass": true,
+              "detail": "horizontalOverflow=false.",
+              "severity": "error"
+            },
+            {
+              "name": "state-long-content-fit",
+              "pass": true,
+              "detail": "0 visible elements leak overflowing content.",
+              "severity": "error"
+            },
+            {
+              "name": "state-runtime-exceptions",
+              "pass": true,
+              "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+              "severity": "error"
+            },
+            {
+              "name": "state-console-errors",
+              "pass": false,
+              "detail": "2 console/log diagnostics.",
+              "severity": "warning"
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "name": "empty/state-intercepted",
+          "pass": true,
+          "detail": "4 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-visible",
+          "pass": true,
+          "detail": "Visible text length=1310.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "empty/state-console-errors",
+          "pass": true,
+          "detail": "0 console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-intercepted",
+          "pass": true,
+          "detail": "2 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-visible",
+          "pass": true,
+          "detail": "Visible text length=245.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 1 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "loading/state-console-errors",
+          "pass": false,
+          "detail": "1 console/log diagnostics.",
+          "severity": "warning"
+        },
+        {
+          "name": "error/state-intercepted",
+          "pass": true,
+          "detail": "2 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-visible",
+          "pass": true,
+          "detail": "Visible text length=287.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "error/state-console-errors",
+          "pass": false,
+          "detail": "2 console/log diagnostics.",
+          "severity": "warning"
+        },
+        {
+          "name": "forbidden/state-intercepted",
+          "pass": true,
+          "detail": "2 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-visible",
+          "pass": true,
+          "detail": "Visible text length=301.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "forbidden/state-console-errors",
+          "pass": false,
+          "detail": "2 console/log diagnostics.",
+          "severity": "warning"
+        },
+        {
+          "name": "disabled/state-intercepted",
+          "pass": true,
+          "detail": "4 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-visible",
+          "pass": true,
+          "detail": "Visible text length=1310.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "disabled/state-console-errors",
+          "pass": true,
+          "detail": "0 console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-intercepted",
+          "pass": true,
+          "detail": "4 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-visible",
+          "pass": true,
+          "detail": "Visible text length=1310.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 0 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "long-text/state-console-errors",
+          "pass": true,
+          "detail": "0 console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-intercepted",
+          "pass": true,
+          "detail": "2 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-route",
+          "pass": true,
+          "detail": "Rendered /login-register.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-visible",
+          "pass": true,
+          "detail": "Visible text length=98.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "token-expired/state-console-errors",
+          "pass": false,
+          "detail": "2 console/log diagnostics.",
+          "severity": "warning"
+        },
+        {
+          "name": "server-500/state-intercepted",
+          "pass": true,
+          "detail": "2 API requests intercepted.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-route",
+          "pass": true,
+          "detail": "Rendered /admin-infra.html; source /admin-infra.html.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-visible",
+          "pass": true,
+          "detail": "Visible text length=298.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-no-horizontal-overflow",
+          "pass": true,
+          "detail": "horizontalOverflow=false.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-long-content-fit",
+          "pass": true,
+          "detail": "0 visible elements leak overflowing content.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-runtime-exceptions",
+          "pass": true,
+          "detail": "0 uncaught runtime exceptions; 2 total console/log diagnostics.",
+          "severity": "error"
+        },
+        {
+          "name": "server-500/state-console-errors",
+          "pass": false,
+          "detail": "2 console/log diagnostics.",
+          "severity": "warning"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-21T23:56:39.166Z",
-  "page_count": 26,
+  "generated_at": "2026-09-24T02:14:10.915Z",
+  "page_count": 27,
   "dispatch_page_count": 19,
   "scope_drift": true,
   "categories": {
@@ -1820,6 +1820,222 @@
           "line": 620,
           "selector": "err-msg",
           "expression": "getElementById(\"err-msg\")"
+        }
+      ]
+    },
+    {
+      "name": "admin-infra.html",
+      "counts": {
+        "get-element-by-id": 32,
+        "query-selector": 0,
+        "query-selector-all": 0,
+        "class-list": 0,
+        "closest": 0,
+        "matches": 0,
+        "event-delegation": 0,
+        "dynamic-selector": 0,
+        "form-name-tag": 1,
+        "dom-relations": 0
+      },
+      "total": 33,
+      "entries": [
+        {
+          "category": "get-element-by-id",
+          "line": 378,
+          "selector": null,
+          "expression": "getElementById(v)"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 384,
+          "selector": "runDemo",
+          "expression": "getElementById(\"runDemo\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 392,
+          "selector": "err-msg",
+          "expression": "getElementById(\"err-msg\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 415,
+          "selector": "deps",
+          "expression": "getElementById(\"deps\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 422,
+          "selector": "viewer-chip",
+          "expression": "getElementById(\"viewer-chip\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 426,
+          "selector": "raw-line",
+          "expression": "getElementById(\"raw-line\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 437,
+          "selector": "k-rl-hits",
+          "expression": "getElementById(\"k-rl-hits\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 438,
+          "selector": "k-rl-keys",
+          "expression": "getElementById(\"k-rl-keys\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 439,
+          "selector": "k-rl-rej",
+          "expression": "getElementById(\"k-rl-rej\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 441,
+          "selector": "rl-rows",
+          "expression": "getElementById(\"rl-rows\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 448,
+          "selector": "rl-bypass",
+          "expression": "getElementById(\"rl-bypass\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 459,
+          "selector": "k-cache-keys",
+          "expression": "getElementById(\"k-cache-keys\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 460,
+          "selector": "k-cache-mutex",
+          "expression": "getElementById(\"k-cache-mutex\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 461,
+          "selector": "k-cache-sample",
+          "expression": "getElementById(\"k-cache-sample\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 462,
+          "selector": "cmp-box",
+          "expression": "getElementById(\"cmp-box\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 479,
+          "selector": "cmp-verdict",
+          "expression": "getElementById(\"cmp-verdict\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 492,
+          "selector": "k-lock-impl",
+          "expression": "getElementById(\"k-lock-impl\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 493,
+          "selector": "k-lock-count",
+          "expression": "getElementById(\"k-lock-count\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 495,
+          "selector": "lock-rows",
+          "expression": "getElementById(\"lock-rows\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 504,
+          "selector": "k-queue-impl",
+          "expression": "getElementById(\"k-queue-impl\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 505,
+          "selector": "k-queue-count",
+          "expression": "getElementById(\"k-queue-count\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 506,
+          "selector": "k-queue-depth",
+          "expression": "getElementById(\"k-queue-depth\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 508,
+          "selector": "queue-rows",
+          "expression": "getElementById(\"queue-rows\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 516,
+          "selector": "k-mongo-db",
+          "expression": "getElementById(\"k-mongo-db\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 518,
+          "selector": "mongo-rows",
+          "expression": "getElementById(\"mongo-rows\")"
+        },
+        {
+          "category": "form-name-tag",
+          "line": 519,
+          "selector": null,
+          "expression": ".name"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 522,
+          "selector": "mongo-bad",
+          "expression": "getElementById(\"mongo-bad\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 530,
+          "selector": "k-ev-total",
+          "expression": "getElementById(\"k-ev-total\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 531,
+          "selector": "k-ev-worker",
+          "expression": "getElementById(\"k-ev-worker\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 532,
+          "selector": "k-ev-q",
+          "expression": "getElementById(\"k-ev-q\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 534,
+          "selector": "ev-rows",
+          "expression": "getElementById(\"ev-rows\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 541,
+          "selector": "ev-mask-note",
+          "expression": "getElementById(\"ev-mask-note\")"
+        },
+        {
+          "category": "get-element-by-id",
+          "line": 554,
+          "selector": "runDemo",
+          "expression": "getElementById(\"runDemo\")"
         }
       ]
     },
