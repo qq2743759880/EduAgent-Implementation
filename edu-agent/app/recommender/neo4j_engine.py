@@ -27,6 +27,42 @@ from app.database import get_neo4j_driver
 
 
 # ============================================================
+# TB1：推荐链路查询预算（毫秒）——传给 session.run(timeout=)，让不可达 Neo4j 快速失败。
+# 背景：driver 构造时 connection_timeout 默认 3.0s；而推荐链路预算 1000ms（KG_RECOMMEND_TIMEOUT_MS）。
+# 若不在查询层再设超时，同步连接尝试会顶满 3s（且 asyncio.wait_for 无法取消已运行的线程），
+# 表现为「停机后接口仍耗 2~6s」。neo4j 5.x 的每查询超时是 Session.run 的关键字。
+# ============================================================
+def _session_timeout_s() -> float:
+    """推荐链路单次查询预算（秒）。取 KG_RECOMMEND_TIMEOUT_MS，兜底 1.0s，下限 0.05s。"""
+    try:
+        from app.config import settings
+
+        ms = getattr(settings, "KG_RECOMMEND_TIMEOUT_MS", 1000)
+        return max(0.05, float(ms) / 1000.0)
+    except Exception:
+        return 1.0
+
+
+def _open_session(driver):
+    """打开会话（超时在 run 层按预算施加，见 _run）。"""
+    return driver.session()
+
+
+def _run(session, cypher: str, **params):
+    """按推荐预算执行 Cypher：把 timeout 传给 session.run（neo4j 5.x 的每查询超时）。
+
+    neo4j 5.x 中 timeout 是 Session.run(query, params, timeout=...) 的关键字，
+    而非 session() 的配置项——放错位置会被静默吞掉、不可达时仍顶满连接超时。
+    """
+    try:
+        return session.run(cypher, **params, timeout=_session_timeout_s())
+    except TypeError:
+        # 老版本不支持 timeout 关键字 → 退回默认（外层 asyncio.wait_for 仍兜底）
+        return session.run(cypher, **params)
+
+
+
+# ============================================================
 # 策略 1：最短学习路径（shortestPath）
 # ============================================================
 def find_shortest_learning_path(
@@ -54,10 +90,12 @@ def find_shortest_learning_path(
     if driver is None:
         return []
 
+    # 注意：Neo4j 不允许在可变长度模式 *..$param 中使用参数，必须内插整数字面量
+    # （max_depth 为本函数自有 int 参数，非外部输入，安全）。
     cypher = """
     MATCH path = shortestPath(
       (a:KnowledgePoint {name: $from_name, tenant_id: $tenant_id})
-      -[:PREREQUISITE*..$max_depth]->
+      -[:PREREQUISITE*..%d]->
       (b:KnowledgePoint {name: $to_name, tenant_id: $tenant_id})
     )
     RETURN
@@ -67,16 +105,15 @@ def find_shortest_learning_path(
       reduce(s = 0, r IN relationships(path) | s + coalesce(r.weight, 1)) AS total_weight
     ORDER BY hops ASC
     LIMIT 3
-    """
+    """ % int(max_depth)
 
     try:
-        with driver.session() as session:
-            result = session.run(
+        with _open_session(driver) as session:
+            result = _run(session, 
                 cypher,
                 from_name=from_kp_name,
                 to_name=to_kp_name,
                 tenant_id=tenant_id,
-                max_depth=max_depth,
             )
             paths = []
             for record in result:
@@ -136,8 +173,8 @@ def recommend_by_co_occurrence(
     """
 
     try:
-        with driver.session() as session:
-            result = session.run(
+        with _open_session(driver) as session:
+            result = _run(session, 
                 cypher,
                 kp_name=kp_name,
                 tenant_id=tenant_id,
@@ -199,8 +236,8 @@ def pagerank_importance(
         ORDER BY indegree DESC
         LIMIT $top_n
         """
-        with driver.session() as session:
-            result = session.run(cypher, tenant_id=tenant_id, top_n=top_n)
+        with _open_session(driver) as session:
+            result = _run(session, cypher, tenant_id=tenant_id, top_n=top_n)
             rankings = []
             for record in result:
                 rankings.append({
@@ -242,8 +279,9 @@ def check_learning_path_gaps(
     if driver is None:
         return []
 
+    # 注意：*..$param 非法，内插整数字面量（max_depth 为本函数自有 int 参数，非外部输入，安全）。
     cypher = """
-    MATCH path = (a:KnowledgePoint)-[:PREREQUISITE*..$max_depth]->(b:KnowledgePoint {name: $target_name, tenant_id: $tenant_id})
+    MATCH path = (a:KnowledgePoint)-[:PREREQUISITE*..%d]->(b:KnowledgePoint {name: $target_name, tenant_id: $tenant_id})
     WHERE NOT a.name IN $mastered
     RETURN
       a.name AS gap_kp,
@@ -252,16 +290,15 @@ def check_learning_path_gaps(
       [n IN nodes(path) | n.name] AS full_path
     ORDER BY distance_to_target ASC
     LIMIT 10
-    """
+    """ % int(max_depth)
 
     try:
-        with driver.session() as session:
-            result = session.run(
+        with _open_session(driver) as session:
+            result = _run(session, 
                 cypher,
                 target_name=target_kp_name,
                 mastered=mastered_kp_names,
                 tenant_id=tenant_id,
-                max_depth=max_depth,
             )
             gaps = []
             for record in result:
@@ -274,6 +311,114 @@ def check_learning_path_gaps(
             return gaps
     except Exception as exc:
         print(f"  学习路径缺口查询失败: {exc}")
+        return []
+
+
+# ============================================================
+# 策略 5：批量共现推荐（推荐系统接线用，单查询聚合多种子）
+# ============================================================
+def recommend_knowledge_points(
+    seed_names: list[str],
+    *,
+    tenant_id: str = "_default",
+    top_n: int = 20,
+) -> list[dict[str, Any]]:
+    """给定多个种子知识点名称，聚合其 RELATED_TO 共现邻居，返回推荐知识点列表。
+
+    真实 Neo4j schema（P4 图谱，区别于 kg_sync 的 DocChunk/key/source 范式）：
+      KnowledgePoint 属性 = {name, tenant_id}（**无 code 属性**）；
+      RELATED_TO(KP-KP) 共现边；CourseModule {name} 经 CONTAINS(CourseModule→KP) 归属。
+
+    - 单条 Cypher（UNWIND 多种子）一次性聚合，避免逐种子多次会话（省时、契合 ≤1s 预算）。
+    - 返回 [{kp_name, strength, modules}]；异常 / 空返回 []。
+    """
+    driver = get_neo4j_driver()
+    if driver is None:
+        return []
+    if not seed_names:
+        return []
+    cypher = """
+    UNWIND $seed_names AS sn
+    MATCH (a:KnowledgePoint {name: sn, tenant_id: $tenant_id})
+    OPTIONAL MATCH (a)-[r:RELATED_TO]-(b:KnowledgePoint)
+    WHERE b.name <> a.name
+    WITH b, count(r) AS strength
+    WHERE b IS NOT NULL
+    OPTIONAL MATCH (b)<-[:CONTAINS]-(m:CourseModule)
+    RETURN b.name AS kp_name, sum(strength) AS strength,
+           collect(DISTINCT m.name)[0..3] AS modules
+    ORDER BY strength DESC
+    LIMIT $top_n
+    """
+    try:
+        with _open_session(driver) as session:
+            rows = _run(session, 
+                cypher, seed_names=list(seed_names), tenant_id=tenant_id, top_n=top_n
+            ).data()
+            out = []
+            for r in rows:
+                out.append({
+                    "kp_name": r["kp_name"],
+                    "strength": int(r["strength"] or 0),
+                    "modules": r["modules"] or [],
+                })
+            return out
+    except Exception as exc:
+        print(f"  批量共现推荐查询失败: {exc}")
+        return []
+
+
+# ============================================================
+# 策略 6：hub 高连通种子（冷启动/无画像用户的推荐种子）
+# ============================================================
+def hub_seed_names(*, tenant_id: str = "_default", limit: int = 6) -> list[str]:
+    """返回 Neo4j 中 RELATED_TO 度数最高的若干知识点名称，作为兜底推荐种子。
+
+    MySQL graph_node(KP) 仅 18 条且与 Neo4j 的 1609 KP 不同集，故推荐种子直接取自 Neo4j 侧。
+    """
+    driver = get_neo4j_driver()
+    if driver is None:
+        return []
+    cypher = """
+    MATCH (a:KnowledgePoint {tenant_id: $tenant_id})-[r:RELATED_TO]-()
+    RETURN a.name AS nm, count(r) AS d
+    ORDER BY d DESC LIMIT $limit
+    """
+    try:
+        with _open_session(driver) as session:
+            rows = _run(session, cypher, tenant_id=tenant_id, limit=limit).data()
+            return [r["nm"] for r in rows if r["nm"]]
+    except Exception as exc:
+        print(f"  hub 种子查询失败: {exc}")
+        return []
+
+
+# ============================================================
+# 策略 7：知识点存在性（路径节点 Neo4j 标注用）
+# ============================================================
+def kp_names_present(
+    names: list[str],
+    *,
+    tenant_id: str = "_default",
+) -> list[str]:
+    """返回在 Neo4j 中存在且具备 RELATED_TO 关系的知识点名称（用于路径节点 source 标注）。"""
+    driver = get_neo4j_driver()
+    if driver is None:
+        return []
+    if not names:
+        return []
+    cypher = """
+    UNWIND $names AS nm
+    MATCH (a:KnowledgePoint {name: nm, tenant_id: $tenant_id})
+    WHERE EXISTS { (a)-[:RELATED_TO]-() }
+    RETURN a.name AS nm
+    """
+    try:
+        with _open_session(driver) as session:
+            rows = _run(session, cypher, names=list(names), tenant_id=tenant_id).data()
+            return [r["nm"] for r in rows if r["nm"]]
+    except Exception as exc:
+        print(f"  kp 存在性查询失败: {exc}")
         return []
 
 

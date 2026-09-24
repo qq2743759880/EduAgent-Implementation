@@ -350,6 +350,9 @@ class Settings(BaseSettings):
     OTEL_EXPORT_ENDPOINT: str = ""          # 空=本地 JSONL 落盘；配置后走 OTLP HTTP（可选依赖缺失自动降级 JSONL）
     OTEL_JSONL_DIR: str = "logs/otel"      # JSONL 落盘目录（OTEL_EXPORT_ENDPOINT 空时生效）
     OTEL_SAMPLE_RATE: float = 1.0          # 埋点采样率（0~1，1=全量）
+    # TB2b（断点②修复）：OTLP 投递体形态。otlp=标准 resourceSpans 信封（默认，Jaeger 可识别）；
+    # legacy=旧私有事件 dict（Jaeger 400 reject，仅排障对比用，生产禁启用）。
+    OTEL_EXPORT_ENVELOPE: str = "otlp"
     TRACE_SESSION_LEVEL: bool = True       # 会话级 trace_id：同一会话多次请求复用同一 trace_id（span_id 各异）
 
     # ============================================================
@@ -364,6 +367,9 @@ class Settings(BaseSettings):
     OTEL_SERVICE_NAME: str = "edu-agent"        # resource 属性 service.name（OTel 标准）
     OTEL_EXPORTER_OTLP_TIMEOUT_S: float = 2.0   # 单次 HTTP POST 超时（秒），防 collector 慢拖累主链路
     OTEL_EXPORTER_OTLP_PROBE_ON_START: bool = True  # 启动期是否做一次 SSRF 白名单+探活（False=跳过启动探活）
+    # TB2b（断点①机制修复）：探活形态。http=发真实 OTLP envelope POST（默认，"绿=真通"）；
+    # socket=旧纯 TCP 握手（不发 HTTP，必然 PASS，仅排障对比用，已被证明会掩盖路径误配）。
+    OTEL_EXPORTER_OTLP_PROBE_MODE: str = "http"
 
     # ============================================================
     # AI 助手三层记忆 + 遗忘机制（task25 R7）
@@ -725,6 +731,16 @@ class Settings(BaseSettings):
     KG_EXPAND_MAX_NEIGHBORS: int = 30         # 单次扩展并入候选上限（防 clique 爆炸）
     KG_EXPAND_RRF_K: int = 60                 # RRF k，与 Milvus RRFRanker(k=60) 同范式
     KG_EXPAND_RRF_WEIGHT: float = 0.5         # 通道权重（RRF 项乘子，配置化）
+
+    # ============================================================
+    # R-N3 推荐系统 Neo4j 图谱源（TB1，灰度位，默认演示开）
+    #   推荐 API（/api/recommend/path|next）响应新增 source 字段（"neo4j"|"mysql"）：
+    #   KG_RECOMMEND_ENABLED=true 且 Neo4j 可达 → 图谱候选来自 Neo4j（source=neo4j）；
+    #   任意超时/熔断/不可达 → 1s 预算内回退 MySQL 图（source=mysql），绝不抛 500。
+    #   对齐 KG_EXPAND 的降级范式（app/recommender/engine.py + app/ai/kg_bridge.py）。
+    # ============================================================
+    KG_RECOMMEND_ENABLED: bool = True
+    KG_RECOMMEND_TIMEOUT_MS: int = 1000        # 单查询预算（毫秒）：超预算静默回退 MySQL 图
 
     # ============================================================
     # P7 管理端 RAG：rebuild 状态机（task04 #3/#8）

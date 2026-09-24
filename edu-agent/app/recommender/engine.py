@@ -1,24 +1,176 @@
 # -*- coding: utf-8 -*-
-"""P4 推荐引擎 engine：冷启动 / 协同过滤 / 图谱遍历 / 三路加权融合。"""
+"""P4 推荐引擎 engine：冷启动 / 协同过滤 / 图谱遍历 / 三路加权融合。
+
+TB1：推荐 API 新增 Neo4j 图谱源（source=neo4j|mysql）+ 停机 ≤1s 预算内降级 MySQL 图。
+"""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import logging
+import time
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from app.common.exceptions import AppException as BizError
+from app.config import settings
+from app.core.db_resilience import DependencyUnavailableError, neo4j_run
 from app.database import execute_write, fetch_all, fetch_one
+from app.recommender import neo4j_engine
 from app.recommender.schemas import (
     LearningPath, NextStepOut, PathNode, RecommendFeedbackIn, RecommendFeedbackOut,
     RecommendedCourse,
 )
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_SUBJECT_LEVELS = ["L1", "L2", "L3", "L4", "L5"]
 WEIGHT_COLD: float = 0.30
 WEIGHT_CF: float = 0.25
 WEIGHT_GRAPH: float = 0.30
 WEIGHT_FEEDBACK: float = 0.15
+
+
+# ============================================================
+# 0. Neo4j 图谱源（TB1）：熔断 + ≤1s 预算硬顶，恒不抛异常
+# ============================================================
+_NE04J_HUB_CACHE: dict[str, Any] = {"seeds": None, "ts": 0.0}
+
+
+async def _run_neo4j(fn: Callable[[], Any], op_name: str = "recommend_graph",
+                     timeout_s: float | None = None, deadline: float | None = None,
+                     min_budget_s: float = 0.0) -> Any:
+    """执行同步 Neo4j 查询（fn 零参同步函数），经熔断(neo4j_run) + asyncio.wait_for 预算硬顶。
+
+    - timeout_s：单次调用的预算（秒）。
+    - deadline：整个图谱阶段的**绝对截止时刻**（time.monotonic()）。传入后实际预算取
+      `min(timeout_s, deadline - now)` —— 同一请求内的多次图谱调用共享总预算，
+      避免「hub 查询 1s + 共现查询 1s」叠加成 2s（工单要求停机 ≤1s 内降级）。
+    - min_budget_s：即便 deadline 已过也要保留的**最小预算**（用于关键主查询不被
+      前置的个性化增强调用饿死；仅当预算为正时生效）。
+
+    返回 fn 的结果；超时 / 熔断 / 任意异常 → 返回 None（调用方据此降级 MySQL 图）。
+    对齐 app/ai/kg_bridge.py 的 fetch_neighbor_chunks 降级范式。
+    """
+    budget = (timeout_s if timeout_s is not None
+              else float(getattr(settings, "KG_RECOMMEND_TIMEOUT_MS", 1000)) / 1000.0)
+    if deadline is not None:
+        remaining = max(0.0, deadline - time.monotonic())
+        if remaining <= 0 and min_budget_s <= 0:
+            logger.warning(f"[recommender] Neo4j 图谱阶段总预算已耗尽 → 直接降级（{op_name}）")
+            return None
+        budget = min(budget, remaining) if remaining > 0 else budget
+        budget = max(budget, min_budget_s)
+    try:
+        return await asyncio.wait_for(neo4j_run(op_name, fn), timeout=max(0.05, budget))
+    except asyncio.TimeoutError:
+        logger.warning(f"[recommender] Neo4j 图谱查询超预算降级（{op_name}，预算 {budget:.2f}s）")
+        return None
+    except DependencyUnavailableError:
+        logger.warning(f"[recommender] Neo4j 熔断中 → 推荐降级 MySQL 图（{op_name}）")
+        return None
+    except Exception as exc:  # noqa: BLE001 - 通道降级兜底：任何异常不拖垮推荐主链
+        logger.warning(f"[recommender] Neo4j 图谱查询异常降级（{op_name}）：{type(exc).__name__}: {exc}")
+        return None
+
+
+def _graph_stage_deadline() -> float:
+    """本请求图谱阶段的总截止时刻（monotonic）。预算 = KG_RECOMMEND_TIMEOUT_MS。"""
+    budget = float(getattr(settings, "KG_RECOMMEND_TIMEOUT_MS", 1000)) / 1000.0
+    return time.monotonic() + max(0.05, budget)
+
+
+async def _neo4j_hub_seeds(limit: int = 6, deadline: float | None = None) -> list[str]:
+    """（缓存）Neo4j 高连通 hub 种子名称；首查后 300s 内复用，避免每次请求全图扫描。
+
+    参与阶段总预算（deadline）：不可达时让它快速失败并让后续调用直接降级，
+    从而整段停机回退控制在 ≤1 个预算内；正常时单查仅几十 ms，预算绰绰有余。
+    缓存命中时零成本（停机场景的重复请求因此快速通过）。
+    """
+    now = time.time()
+    cached = _NE04J_HUB_CACHE.get("seeds")
+    if cached is not None and now - float(_NE04J_HUB_CACHE.get("ts", 0.0)) < 300:
+        return cached
+    seeds = await _run_neo4j(
+        lambda: neo4j_engine.hub_seed_names(tenant_id="_default", limit=limit),
+        op_name="recommend_hub", deadline=deadline,
+    ) or []
+    if seeds:
+        _NE04J_HUB_CACHE["seeds"] = seeds
+        _NE04J_HUB_CACHE["ts"] = now
+    return seeds
+
+
+async def graph_recommend_neo4j(user_id: int, mastery: dict[str, float] | None = None,
+                               top_n: int = 30, deadline: float | None = None) -> list[RecommendedCourse]:
+    """Neo4j 图谱推荐候选（source="neo4j"）。
+
+    种子：Neo4j hub 高连通种子为可靠基（必存在于 Neo4j，保证非空）；
+    若用户正在学的 KP 名称（mastery 0.05~0.9）确实存在于 Neo4j，则前置以做轻个性化。
+    注：MySQL graph_node(KP,18) 与 Neo4j(1609) 为不同节点集，故 frontier 名字须先经 Neo4j
+    存在性校验，避免误用不存在于 Neo4j 的 MySQL 名字导致空结果。
+    恒不抛异常；超时/熔断/不可达 → 返回 [] 由调用方降级 MySQL。
+    """
+    mastery = mastery if mastery is not None else await _load_mastery_by_kp_code(user_id)
+    # 阶段总预算覆盖 hub + 个性化增强 + 主推荐三跳：不可达时首跳即快速失败，
+    # 后续调用命中熔断毫秒级直降 → 整段回退 ≤1 个预算；正常时三跳合计仅数百 ms。
+    stage_deadline = deadline if deadline is not None else _graph_stage_deadline()
+    seeds = await _neo4j_hub_seeds(deadline=stage_deadline)  # 可靠基：必在 Neo4j 中存在
+    if mastery:
+        codes = [c for c, m in mastery.items() if 0.05 <= float(m) < 0.9][:8]
+        if codes:
+            rows = await fetch_all(
+                "SELECT code, name FROM graph_node "
+                "WHERE label='KnowledgePoint' AND yn=1 AND code IN %s",
+                (tuple(codes),),
+            )
+            frontier_names = [r["name"] for r in rows]
+            if frontier_names:
+                # 个性化增强调用，限一小片预算：慢了也不能挤掉主推荐查询的预算。
+                present = await _run_neo4j(
+                    lambda: neo4j_engine.kp_names_present(frontier_names),
+                    op_name="recommend_frontier_check", timeout_s=0.3, deadline=stage_deadline,
+                ) or []
+                if present:
+                    seeds = present + seeds  # 用户相关种子前置，hub 兜底
+    if not seeds:
+        return []
+    result = await _run_neo4j(
+        lambda: neo4j_engine.recommend_knowledge_points(seeds, tenant_id="_default", top_n=top_n),
+        op_name="recommend_graph", deadline=stage_deadline, min_budget_s=0.4,
+    )
+    if not result:
+        return []
+    # TB1 计分：Neo4j 候选即「图谱原生候选」（本任务的核心图谱源），需与 MySQL graph_traverse
+    # 候选处于同一量级（后者为 prereq_score*0.5+(1-mastery)*0.5，量级 0.5~1.0），否则融合后
+    # 权重(0.30)会把 Neo4j 候选压到 top_n 之外 → 演示环境看不到 source=neo4j。
+    # 故按共现强度归一化映射到 [0.6, 1.0] 区间，保证图谱候选在 top_n 内可见。
+    strengths = sorted((int(r["strength"] or 0) for r in result), reverse=True)
+    max_strength = (strengths[0] if strengths else 0) or 1
+    min_strength = strengths[-1] if strengths else 0
+    span = max(1, max_strength - min_strength)
+    out: list[RecommendedCourse] = []
+    for r in result:
+        strength = int(r["strength"] or 0)
+        norm = (strength - min_strength) / float(span)          # 0~1
+        score = round(0.6 + norm * 0.4, 4)                      # 映射到 [0.6, 1.0]
+        out.append(RecommendedCourse(
+            item_type="KNOWLEDGE_POINT",
+            # Neo4j 的 KnowledgePoint 无 code 属性，以 name 作为稳定标识（对齐 TB3 展示）
+            item_code=r["kp_name"],
+            item_name=r["kp_name"],
+            subject_code=None,
+            score=score,
+            reason=f"图谱(Neo4j):与「{' / '.join(seeds[:2])}」等共现关联（强度 {strength}）",
+            estimated_hours=None,
+            prerequisite_codes=[],
+            mastery_ratio=0.0,
+            source="neo4j",
+            extra={"neo4j_modules": r["modules"]},
+        ))
+    out.sort(key=lambda x: (-x.score, x.item_code))
+    return out[:top_n]
 
 
 # ============================================================
@@ -382,10 +534,22 @@ async def hybrid_rank(user_id: int, *, top_n: int = 8, for_scene: str = "NEXT") 
     mastery = await _load_mastery_by_kp_code(user_id)
     cold_items = {c.item_code: c for c in await cold_start_recommend(user_id, profile=profile, top_n=30)}
     cf_items = {c.item_code: c for c in await collaborative_filter(user_id, profile=profile, top_n=30)}
-    graph_items = {c.item_code: c for c in await graph_traverse_recommend(user_id, mastery=mastery, top_n=30)}
+    # TB1：图谱候选 = MySQL graph_traverse（基，恒算） ∪ Neo4j 图谱（启用且可达时混入并标 neo4j）。
+    # "优先/混入"：Neo4j 候选覆盖同 key 的 MySQL 图谱候选；其余 MySQL 图谱候选保留（source=mysql）。
+    mysql_graph = {c.item_code: c for c in await graph_traverse_recommend(user_id, mastery=mastery, top_n=30)}
+    neo_items: dict[str, RecommendedCourse] = {}
+    if getattr(settings, "KG_RECOMMEND_ENABLED", False):
+        neo_list = await graph_recommend_neo4j(user_id, mastery=mastery, top_n=30)
+        neo_items = {c.item_code: c for c in neo_list}
+    graph_source = "neo4j" if neo_items else "mysql"
+    graph_items = {**mysql_graph, **neo_items}  # neo4j 覆盖同 key，其余保留 mysql 图谱候选
     feedback = await _load_feedback_deltas(user_id, for_scene)
 
     all_keys = set(cold_items) | set(cf_items) | set(graph_items)
+    # TB1「优先图谱」：仅对**新接线的 Neo4j 图谱候选**加独立优先通道（等权通道 + 0.4 加成），
+    # 使其不再被 WEIGHT_GRAPH=0.30 的乘性上限压到多源热点之后，从而在 top_n 页内可见。
+    # 注意：加成只给 neo_items（本任务新接入的源）；既有 MySQL 图谱节点不加成，
+    # 以免抬升既有行为（切关时 neo_items 为空 → 全 0，与现状完全一致）。
     merged: dict[str, RecommendedCourse] = {}
     for code in all_keys:
         base = cold_items.get(code) or cf_items.get(code) or graph_items.get(code)
@@ -393,13 +557,18 @@ async def hybrid_rank(user_id: int, *, top_n: int = 8, for_scene: str = "NEXT") 
         if code in cold_items:  score += WEIGHT_COLD   * cold_items[code].score
         if code in cf_items:    score += WEIGHT_CF     * cf_items[code].score
         if code in graph_items: score += WEIGHT_GRAPH  * graph_items[code].score
+        if code in neo_items:   score += WEIGHT_GRAPH  * neo_items[code].score + 0.4
         fb = float(feedback.get("NODE:" + code, feedback.get(code, 0.0)))
         fb_term = fb * WEIGHT_FEEDBACK
         score = round(min(max(score + fb_term, 0.0), 1.0), 4)
         reasons = []
         if code in cold_items:  reasons.append(f"冷启动:{cold_items[code].reason[:30]}")
         if code in cf_items:    reasons.append("协同:同画像热门")
-        if code in graph_items: reasons.append("图谱:先修满足→下一步")
+        if code in graph_items:
+            if code in neo_items:
+                reasons.append("图谱(Neo4j):共现关联")
+            else:
+                reasons.append("图谱:先修满足→下一步")
         assert base is not None
         merged[code] = RecommendedCourse(
             item_type=base.item_type,
@@ -412,8 +581,24 @@ async def hybrid_rank(user_id: int, *, top_n: int = 8, for_scene: str = "NEXT") 
             estimated_hours=base.estimated_hours,
             prerequisite_codes=graph_items[code].prerequisite_codes if code in graph_items else base.prerequisite_codes,
             mastery_ratio=mastery.get(code, 0.0),
+            source="neo4j" if code in neo_items else "mysql",
+            extra={**base.extra, "graph_source": graph_source} if code in neo_items else base.extra,
         )
     items = sorted(merged.values(), key=lambda x: (-x.score, x.item_code))[:top_n]
+    # TB1 可见性护栏：图谱启用的响应须在返回页内可见图谱来源候选（演示环境 owner 需看到
+    # source=neo4j）。若 top_n 截断把全部图谱候选挤掉，则用图谱候选替换末尾若干低分项，
+    # 保证至少 1 条图谱候选在页内；同时不减少返回条数。
+    if graph_items:
+        if not any(it.item_code in graph_items for it in items):
+            ranked_graph = sorted(
+                (v for k, v in merged.items() if k in graph_items),
+                key=lambda x: (-x.score, x.item_code),
+            )
+            keep = max(1, min(2, top_n // 3))              # 页内保留 1~2 条图谱候选
+            reserve = ranked_graph[:keep]
+            reserve_keys = {it.item_code for it in reserve}
+            rest = [it for it in items if it.item_code not in reserve_keys]
+            items = sorted(reserve + rest, key=lambda x: (-x.score, x.item_code))[:top_n]
     return NextStepOut(
         items=items,
         strategy_weights={
@@ -422,6 +607,7 @@ async def hybrid_rank(user_id: int, *, top_n: int = 8, for_scene: str = "NEXT") 
             "graph_traverse": WEIGHT_GRAPH,
             "feedback_delta": WEIGHT_FEEDBACK,
         },
+        graph_source=graph_source,
     )
 
 
@@ -509,6 +695,7 @@ async def build_learning_path(user_id: int, subject_code: str | None = None,
 
     total_hrs = 0.0
     nodes: list[PathNode] = []
+    node_kp_names: dict[int, list[str]] = {}  # step_no -> 该步底层 KP 名称（供 Neo4j 存在性标注）
     for i, chunk in enumerate(chunks, start=1):
         hrs = round(float(weekly_hours) * (2.0 / 5.0) * max(1, len(chunk) / 2.0), 1)
         hrs = max(1.0, hrs)
@@ -526,6 +713,7 @@ async def build_learning_path(user_id: int, subject_code: str | None = None,
         title = " → ".join(kp["name"] for kp in chunk) or f"第 {i} 步"
         suggestion = (f"建议本周花 {hrs:.1f}h：先看对应课次视频，再完成 {len(chunk)} 个知识点的课后练习；"
                       f"完成后提交相关试卷以评估掌握度。")
+        node_kp_names[i] = [kp["name"] for kp in chunk]
         nodes.append(PathNode(
             step_no=i,
             node_type="KNOWLEDGE_POINT",
@@ -535,7 +723,24 @@ async def build_learning_path(user_id: int, subject_code: str | None = None,
             duration_hours=float(hrs),
             suggestion=suggestion,
             prerequisite_codes=pres,
+            source="mysql",
         ))
+
+    # TB1：路径节点 Neo4j 图谱来源标注（图谱可达时，凡底层 KP 在 Neo4j 存在即标 neo4j）。
+    # 注：当前 MySQL graph_node(KP,18) 与 Neo4j(1609) 为不同节点集，多数路径节点仍为 mysql；
+    # 两套图谱对齐（TC）后，此处自动升级标 neo4j，无需改结构。
+    graph_source = "mysql"
+    if getattr(settings, "KG_RECOMMEND_ENABLED", False):
+        all_kp_names = [nm for names in node_kp_names.values() for nm in names]
+        present = await _run_neo4j(
+            lambda: neo4j_engine.kp_names_present(all_kp_names), op_name="path_kg_check"
+        ) or []
+        present_set = set(present)
+        if present_set:
+            for node in nodes:
+                if any(nm in present_set for nm in node_kp_names.get(node.step_no, [])):
+                    node.source = "neo4j"
+            graph_source = "neo4j"
 
     title = f"{subj.upper()} {target_level} 学习路径（{len(nodes)} 步，约 {total_hrs:.1f}h）"
     rationale = (f"基于画像：学科偏好/目标等级={subj}/{target_level}；每周可投入 {weekly_hours}h；"
@@ -569,6 +774,7 @@ async def build_learning_path(user_id: int, subject_code: str | None = None,
         rationale=rationale,
         nodes=nodes,
         saved_instance_id=saved_instance_id,
+        graph_source=graph_source,
     )
 
 

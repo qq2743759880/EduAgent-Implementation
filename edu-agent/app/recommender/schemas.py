@@ -22,6 +22,7 @@ class RecommendedCourse(BaseModel):
     estimated_hours: float | None = Field(default=None, ge=0, description="预计耗时（小时）")
     prerequisite_codes: list[str] = Field(default_factory=list)
     mastery_ratio: float = Field(0.0, ge=0, le=1, description="当前用户对该节点已掌握比例（0 未知 → 1 已掌握）")
+    source: str = Field("mysql", description="图谱来源：neo4j=来自 Neo4j 图谱，mysql=来自 MySQL 图")
     extra: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -37,6 +38,7 @@ class PathNode(BaseModel):
     duration_hours: float = Field(..., ge=0)
     suggestion: str = Field(..., max_length=300, description="学习建议，如「先看对应视频，完成课后习题，再做 EX-xxx 试卷」")
     prerequisite_codes: list[str] = Field(default_factory=list)
+    source: str = Field("mysql", description="图谱来源：neo4j=来自 Neo4j 图谱，mysql=来自 MySQL 图")
 
 
 class LearningPath(BaseModel):
@@ -51,6 +53,7 @@ class LearningPath(BaseModel):
     nodes: list[PathNode] = Field(..., min_length=1)
     saved_instance_id: int | None = Field(default=None, description="learning_path_instance.id（若已持久化）")
     created_at: datetime = Field(default_factory=datetime.now)
+    graph_source: str = Field("mysql", description="路径图谱来源：neo4j=含 Neo4j 图谱节点，mysql=纯 MySQL 图")
 
     model_config = ConfigDict(extra="ignore")
 
@@ -78,3 +81,4 @@ class RecommendFeedbackOut(BaseModel):
 class NextStepOut(BaseModel):
     items: list[RecommendedCourse] = Field(..., description="按得分降序 TOP N，默认 TOP 5")
     strategy_weights: dict[str, float] = Field(..., description="本次融合各策略权重：cold/cf/graph/feedback")
+    graph_source: str = Field("mysql", description="图谱来源：neo4j=图谱候选含 Neo4j 来源，mysql=纯 MySQL 图")
