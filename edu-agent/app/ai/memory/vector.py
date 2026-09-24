@@ -41,6 +41,55 @@ def _dim() -> int:
     return int(getattr(settings, "EMBEDDING_DIM", 1024) or 1024)
 
 
+# ============================================================
+# TA7 D3：非有限（NaN/±Inf）向量防护与清洗
+# ============================================================
+# 实测缺陷（TA7 D3）：BGE-M3 走 fp16（`use_fp16=(EMBED_DEVICE=='cuda')`）时，长时间存活的
+# 服务进程会**间歇性**产出非有限稠密向量（同一文本在全新进程里 100% 有限，在运行态进程里
+# 10/10 次非有限）。该向量直接送 Milvus → `MilvusException(code=65535, value 'NaN' is not
+# a number or infinity)` → 写入失败。更糟的是**降级档位不对称**（见 upsert/search 注释），
+# 失败的写入只落到 in-memory，而读取恒先问 Milvus 并在"空结果无异常"时直接 return [] →
+# **跨会话记忆召回恒空**（TC1-F1 / TA7 D3 用户可见症状："新会话答不出用户名字"）。
+#
+# 修法（本域收口，不动 RAG 侧 embedder 的 VEC-LOCK 单一事实源）：
+#   1) 源头防护：SemanticEmbedder 判非有限 → 整批降级确定性哈希向量并如实标注 degraded_reason；
+#   2) 入库前清洗：MemoryVectorStore 侧再校验一遍（含调用方显式传入的 vector=），
+#      非有限 → 换确定性哈希向量（同维、有限、已 L2 归一化），保证 Milvus 一定接受；
+#   3) 档位对称：写失败/读空结果时继续往下一档找（Redis → in-memory），避免"写得进去、
+#      读不出来"的永久性召回空洞。
+def _is_finite_vector(vec: Any) -> bool:
+    """向量是否全为有限数（非 NaN/±Inf）且非空。"""
+    try:
+        seq = list(vec)
+    except TypeError:
+        return False
+    if not seq:
+        return False
+    for x in seq:
+        try:
+            f = float(x)
+        except (TypeError, ValueError):
+            return False
+        if not math.isfinite(f):
+            return False
+    return True
+
+
+def _non_finite_index(vec: Any) -> int | None:
+    """返回第一个非有限分量的下标（无则 None），用于日志精确定位。"""
+    try:
+        seq = list(vec)
+    except TypeError:
+        return None
+    for i, x in enumerate(seq):
+        try:
+            if not math.isfinite(float(x)):
+                return i
+        except (TypeError, ValueError):
+            return i
+    return None
+
+
 class DeterministicEmbedder:
     """离线确定性向量编码（无外部依赖，降级/无 CUDA 环境兜底）。
 
@@ -118,8 +167,18 @@ class SemanticEmbedder:
             # 归一为 python float，并校验维度与 Milvus 对齐
             out = [[float(x) for x in v] for v in vecs]
             if all(len(v) == self.dim for v in out):
-                self.degraded_reason = None
-                return out
+                # TA7 D3 源头防护：fp16/CUDA 偶发 NaN/±Inf → 整批降级确定性哈希向量
+                # （绝不把非有限向量放行到 Milvus；降级如实标注，不静默混空间）。
+                bad_idx = next((i for i, v in enumerate(out) if not _is_finite_vector(v)), None)
+                if bad_idx is None:
+                    self.degraded_reason = None
+                    return out
+                self.degraded_reason = (
+                    f"真实 embedding 含 NaN/±Inf（第 {bad_idx} 条，首个非有限下标 "
+                    f"{_non_finite_index(out[bad_idx])}）→ 清洗为确定性哈希向量（dim={self.dim}）"
+                )
+                logger.warning(f"[Memory:semantic] {self.degraded_reason}")
+                return self._fallback.embed_batch(texts)
             self.degraded_reason = f"真实 embedding 维度不为 {self.dim}（{sorted(set(map(len, out)))})，降级哈希"
             logger.warning(f"[Memory:semantic] {self.degraded_reason}")
         except Exception as exc:
@@ -160,11 +219,30 @@ class MemoryVectorStore:
         if self.backend != "milvus":
             self._try_init_redis()
 
+    def _clean_vector(self, vec: Any, text: str) -> list[float]:
+        """TA7 D3 入库/检索前清洗：非有限（NaN/±Inf）或维度不符 → 确定性哈希向量。
+
+        确定性哈希向量同维（`self.dim`）、有限、已 L2 归一化 → Milvus/Schema 一定接受，
+        记忆不会因为一次 fp16 数值抖动就永久失去可检索性。
+        """
+        try:
+            size = len(list(vec)) if vec is not None else 0
+        except TypeError:
+            size = 0
+        if _is_finite_vector(vec) and size == self.dim:
+            return [float(x) for x in vec]
+        self.degraded_reason = (
+            f"向量非有限（首个非有限下标 {_non_finite_index(vec)}，长度 {size}≠{self.dim} 则为维度问题）"
+            f" → 清洗为确定性哈希向量"
+        )
+        logger.warning(f"[Memory:vector] {self.degraded_reason}（content={(text or '')[:40]!r}）")
+        return DeterministicEmbedder(dim=self.dim).embed(text or "")
+
     def _resolve_embed(self, texts: list[str]) -> list[list[float]]:
-        """统一向量入口：嵌入并同步降级标注到 store 级（GWT③ 可观测）。"""
+        """统一向量入口：嵌入 → 逐条清洗 → 同步降级标注到 store 级（GWT③ 可观测）。"""
         vecs = self.embedder.embed_batch(texts)
         self.degraded_reason = getattr(self.embedder, "degraded_reason", None)
-        return vecs
+        return [self._clean_vector(v, t) for v, t in zip(vecs, texts)]
 
     def _try_init_milvus(self, milvus_uri: str | None) -> None:
         # 显式传 "" = 禁用 Milvus（强制 in-memory）；None = 采用 settings.MILVUS_URI 默认值
@@ -309,6 +387,9 @@ class MemoryVectorStore:
     ) -> None:
         if vector is None:
             vector = self._resolve_embed([content])[0]
+        else:
+            # TA7 D3：调用方显式传入的向量同样要过清洗（防"上游算出来的 NaN"绕过防护）
+            vector = self._clean_vector(vector, content)
         if self.backend == "milvus" and self._milvus is not None:
             try:
                 self._milvus.upsert(
@@ -325,13 +406,17 @@ class MemoryVectorStore:
                 return
             except Exception as exc:
                 logger.warning(f"[Memory:vector] Milvus upsert 失败，转下一档：{exc}")
-        if self.backend == "redis" and await self._redis_ok():
+        # TA7 D3 档位对称修复：原条件 `self.backend == "redis"` 使 backend=milvus 时
+        # **直接跳过 Redis 档**落进 in-memory → 与 search（恒先问 Milvus）不对称，
+        # 形成"写得进去、读不出来"的永久召回空洞。改为按"客户端是否存在"判定。
+        if self._redis is not None:
             try:
-                await self._redis_upsert(
-                    memory_id=int(memory_id), user_id=int(user_id),
-                    vector=list(vector), importance=float(importance),
-                )
-                return
+                if await self._redis_ok():
+                    await self._redis_upsert(
+                        memory_id=int(memory_id), user_id=int(user_id),
+                        vector=list(vector), importance=float(importance),
+                    )
+                    return
             except Exception as exc:
                 logger.warning(f"[Memory:vector] Redis upsert 失败，转 in-memory：{exc}")
         async with self._mem_lock:
@@ -357,6 +442,23 @@ class MemoryVectorStore:
         """task-M2 AC3：valid_to 盖章 / 删除联动 → 从所有后端移除该 memory_id 向量。"""
         await self.delete(int(memory_id))
 
+    async def _search_memory_tier(
+        self, *, user_id: int, query_vec: list[float], top_k: int
+    ) -> list[dict[str, Any]]:
+        """in-memory 档检索（本进程降级写入的记忆）。TA7 D3 抽出复用，逻辑与原实现一致。"""
+        async with self._mem_lock:
+            items = {mid: m for mid, m in self._mem.items() if m["user_id"] == int(user_id)}
+        if not items:
+            return []
+        result: list[dict[str, Any]] = []
+        for mid, m in items.items():
+            v = m["vec"]
+            # cosine（向量已归一化 → 点积即余弦）
+            dot = float(sum(a * b for a, b in zip(v, query_vec, strict=False)))
+            result.append({"memory_id": int(mid), "content": m["content"], "score": round(dot, 4)})
+        result.sort(key=lambda r: r["score"], reverse=True)
+        return result[: int(top_k)] if top_k > 0 else result
+
     async def search(
         self, *, user_id: int, query: str, top_k: int = 3
     ) -> list[dict[str, Any]]:
@@ -372,7 +474,7 @@ class MemoryVectorStore:
                     output_fields=["content"],
                 )
                 hits = res[0] if res else []
-                return [
+                found = [
                     {
                         # Milvus 主键 id 即 user_memory.id（memory_id）
                         "memory_id": int(hit.get("id", 0)),
@@ -381,6 +483,17 @@ class MemoryVectorStore:
                     }
                     for hit in hits
                 ]
+                if len(found) >= int(top_k):
+                    return found
+                # TA7 D3 档位对称：Milvus 命中不足 top_k 时**补 in-memory 档**。
+                # 原实现在"Milvus 返回空但无异常"时直接 return [] → 那些在 Milvus 写入
+                # 失败后落到 in-memory 的记忆永远读不出来（NaN 场景下 = 跨会话召回恒空）。
+                merged = {int(h["memory_id"]): h for h in found}
+                for h in await self._search_memory_tier(
+                    user_id=int(user_id), query_vec=qv, top_k=int(top_k)
+                ):
+                    merged.setdefault(int(h["memory_id"]), h)
+                return sorted(merged.values(), key=lambda h: h["score"], reverse=True)[: int(top_k)]
             except Exception as exc:
                 logger.warning(f"[Memory:vector] Milvus search 失败，转下一档：{exc}")
         if self.backend == "redis" and await self._redis_ok():
@@ -391,18 +504,9 @@ class MemoryVectorStore:
             except Exception as exc:
                 logger.warning(f"[Memory:vector] Redis search 失败，转 in-memory retrieval：{exc}")
         # in-memory cosine
-        async with self._mem_lock:
-            items = {mid: m for mid, m in self._mem.items() if m["user_id"] == int(user_id)}
-        if not items:
-            return []
-        result: list[dict[str, Any]] = []
-        for mid, m in items.items():
-            v = m["vec"]
-            # cosine（向量已归一化 → 点积即余弦）
-            dot = float(sum(a * b for a, b in zip(v, qv, strict=False)))
-            result.append({"memory_id": int(mid), "content": m["content"], "score": round(dot, 4)})
-        result.sort(key=lambda r: r["score"], reverse=True)
-        return result[: int(top_k)] if top_k > 0 else result
+        return await self._search_memory_tier(
+            user_id=int(user_id), query_vec=qv, top_k=int(top_k)
+        )
 
     async def clear_user(self, user_id: int) -> None:
         """测试/管理用：清空某用户向量。"""
