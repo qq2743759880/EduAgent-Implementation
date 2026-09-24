@@ -1,0 +1,27 @@
+{
+ "mode": "b12",
+ "page": "chat.html",
+ "role": "admin",
+ "query": "帮我创建一门课程，名称叫做《盲测B12拒绝课3》，分类为编程，面向零基础学员",
+ "clickR": "CLICKED",
+ "sendWall": 0,
+ "card": {
+  "tool": "course_create",
+  "risk": "高风险",
+  "args": "{\"title\":\"盲测B12拒绝课3\"}",
+  "busy": false,
+  "confirm": true,
+  "reject": true,
+  "atMs": 4044
+ },
+ "cardShown": true,
+ "actionClicked": "CLICKED_reject",
+ "after": {
+  "cardPresent": false,
+  "busy": null,
+  "successHint": "能继续文档正文（直接粘贴，或给出可访问的文件引用）；或确认「使用上下文中提到的 T15 盲测测试文档作为源」；tenant_id，以及你是否具备 admin 权限。⚠️ 说明：本次回答基于检索到的表结构说明作答；若当前会话无 admin 权限，调用将被网关拒绝，我会在拿到你的确认后如实反馈真实调用结果，不会伪造返回值。"
+ },
+ "shotHash": "7d936cdc16d30f810fc9a956b65e9728d7e6d6728411846344409322faa3bb3d",
+ "shotPath": "E:/stu/project/stu/EduAgent实施手册/test-reports/blind-b10-12/b12-r3-reject.png",
+ "diag": []
+}

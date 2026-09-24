@@ -1,0 +1,27 @@
+{
+ "mode": "b12",
+ "page": "chat.html",
+ "role": "admin",
+ "query": "帮我创建一门课程，名称叫做《盲测B12拒绝课A》，分类为编程",
+ "clickR": "CLICKED",
+ "sendWall": 0,
+ "card": {
+  "tool": "course_create",
+  "risk": "高风险",
+  "args": "{\"title\":\"盲测B12拒绝课A\"}",
+  "busy": false,
+  "confirm": true,
+  "reject": true,
+  "atMs": 4038
+ },
+ "cardShown": true,
+ "actionClicked": "CLICKED_reject",
+ "after": {
+  "cardPresent": false,
+  "busy": null,
+  "successHint": "能继续文档正文（直接粘贴，或给出可访问的文件引用）；或确认「使用上下文中提到的 T15 盲测测试文档作为源」；tenant_id，以及你是否具备 admin 权限。⚠️ 说明：本次回答基于检索到的表结构说明作答；若当前会话无 admin 权限，调用将被网关拒绝，我会在拿到你的确认后如实反馈真实调用结果，不会伪造返回值。"
+ },
+ "shotHash": "e15333afe2191c0e8247bc6dfb5614fcdbf8c7df749a11fa3930b94daf31b3ae",
+ "shotPath": "test-reports/blind-b10-12/pilot-b12-reject.png",
+ "diag": []
+}

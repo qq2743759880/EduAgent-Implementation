@@ -1,0 +1,1161 @@
+event: start
+data: {"session_id": null, "query": "帮我把《Python 入门》这门课收藏起来，并简述你会怎么处理"}
+
+event: retrieval
+data: {"docs": [{"doc_id": "_default:7f1c6c89ff1821a0:1", "score": 1.0, "content": "【情境分析题】题目：部署新版本后，部分接口返回 500 错误，但旧版本回滚后恢复正常。你会如何处理？\n答案：先回滚到稳定版本并保护现场日志，再对比新旧版本差异，重点检查配置变更、依赖版本、数据库迁移和兼容性问题；确认根因后再进行修复和补测。\n解析：发布故障题常考回滚、差异对比和配置/依赖排查。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["IT与数字化证书题库", "情境分析题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "_default:d65c7565ae0546b7:1", "score": 0.90449, "content": "【简答题】题目：简述该场景下的处理顺序。\n答案：先讲清产量、质量和节拍；按熟练度分配任务；安排新人跟班复核。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["基层管理题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "_default:618e9fd40e7cd1a8:1", "score": 0.896552, "content": "【简答题】题目：简述该场景下的处理顺序。\n答案：先停用相关设备；确认风险并补记异常；同步主管和接班人。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["基层管理题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "_default:51d89e195aecefbb:1", "score": 0.877202, "content": "【简答题】题目：简述该场景下的处理顺序。\n答案：立即停机；组织撤离；按流程报告。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["安全生产题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}, {"doc_id": "_default:29fbcc866b6d1be0:1", "score": 0.875961, "content": "【简答题】题目：简述该场景下的处理顺序。\n答案：统一处理口径；复核记录；保持动作一致。\n解析：答案应体现顺序感和责任感，不能跳过前置确认步骤。", "source_file": "seeds/3_question/question.csv", "content_type": "question", "series_code": null, "series_name": null, "module_codes": [], "keywords": ["服务规范题库", "简答题"], "tenant_id": "_default", "visibility": "public", "source_channel": "hybrid"}], "graph_entities": [], "retrieved_count": 144, "final_count": 5, "rewrite_query": "帮我把《Python 入门》这门课收藏起来，并简述你会怎么处理", "degraded_reason": "rerank_sidecar_unavailable", "mcp_tool_calls": [{"call_id": "mcp-1790239821168-acf996d4", "tool_name": "favorite_add", "args_summary": "{'course_name': 'Python 入门'}", "status": "success", "latency_ms": 8, "result_summary": "{\"ok\": false, \"code\": \"40400\", \"message\": \"未找到课程「Python 入门」（或该课程已下架）\", \"need_clarify\": true, \"course_name\": \"Python 入门\", \"candidates\": [], \"hint\": \"请如实告知用户未找到该课程，可就近的关键词再确认一次课程名。\"}"}]}
+
+event: token
+data: {"delta": "##"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "处理"}
+
+event: token
+data: {"delta": "方案"}
+
+event: token
+data: {"delta": "\n\n"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "目标"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "把"}
+
+event: token
+data: {"delta": "《"}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "入门"}
+
+event: token
+data: {"delta": "》"}
+
+event: token
+data: {"delta": "加入"}
+
+event: token
+data: {"delta": "你的"}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "列表"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "打算"}
+
+event: token
+data: {"delta": "这样"}
+
+event: token
+data: {"delta": "处理"}
+
+event: token
+data: {"delta": "**\n\n"}
+
+event: token
+data: {"delta": "1"}
+
+event: token
+data: {"delta": "."}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "确认"}
+
+event: token
+data: {"delta": "能力"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "动作"}
+
+event: token
+data: {"delta": "对应"}
+
+event: token
+data: {"delta": "平台"}
+
+event: token
+data: {"delta": "工具"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "f"}
+
+event: token
+data: {"delta": "avorite"}
+
+event: token
+data: {"delta": "_add"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "权限"}
+
+event: token
+data: {"delta": "类型"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "user"}
+
+event: token
+data: {"delta": "_write"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "属于"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "用户"}
+
+event: token
+data: {"delta": "写入"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "类"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "正是"}
+
+event: token
+data: {"delta": "为"}
+
+event: token
+data: {"delta": "这类"}
+
+event: token
+data: {"delta": "个人"}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "场景"}
+
+event: token
+data: {"delta": "准备的"}
+
+event: token
+data: {"delta": "）。\n"}
+
+event: token
+data: {"delta": "2"}
+
+event: token
+data: {"delta": "."}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "准备"}
+
+event: token
+data: {"delta": "参数"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "调用"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "f"}
+
+event: token
+data: {"delta": "avorite"}
+
+event: token
+data: {"delta": "_add"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "并"}
+
+event: token
+data: {"delta": "传入"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": "标识"}
+
+event: token
+data: {"delta": "。"}
+
+event: token
+data: {"delta": "优先"}
+
+event: token
+data: {"delta": "使用"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": "唯一"}
+
+event: token
+data: {"delta": "标识"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "如"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "course"}
+
+event: token
+data: {"delta": "_id"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "）；"}
+
+event: token
+data: {"delta": "若"}
+
+event: token
+data: {"delta": "平台"}
+
+event: token
+data: {"delta": "支持"}
+
+event: token
+data: {"delta": "按"}
+
+event: token
+data: {"delta": "名称"}
+
+event: token
+data: {"delta": "匹配"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "则"}
+
+event: token
+data: {"delta": "直接"}
+
+event: token
+data: {"delta": "传"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "入门"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "。\n"}
+
+event: token
+data: {"delta": "3"}
+
+event: token
+data: {"delta": "."}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "执行"}
+
+event: token
+data: {"delta": "调用"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "发起"}
+
+event: token
+data: {"delta": "工具"}
+
+event: token
+data: {"delta": "调用"}
+
+event: token
+data: {"delta": "并"}
+
+event: token
+data: {"delta": "等待"}
+
+event: token
+data: {"delta": "返回"}
+
+event: token
+data: {"delta": "结果"}
+
+event: token
+data: {"delta": "。\n"}
+
+event: token
+data: {"delta": "4"}
+
+event: token
+data: {"delta": "."}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "如实"}
+
+event: token
+data: {"delta": "反馈"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "拿到"}
+
+event: token
+data: {"delta": "返回值"}
+
+event: token
+data: {"delta": "后"}
+
+event: token
+data: {"delta": "告诉你"}
+
+event: token
+data: {"delta": "成功"}
+
+event: token
+data: {"delta": "或"}
+
+event: token
+data: {"delta": "失败"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "例如"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": "不存在"}
+
+event: token
+data: {"delta": "」「"}
+
+event: token
+data: {"delta": "需要"}
+
+event: token
+data: {"delta": "先"}
+
+event: token
+data: {"delta": "选"}
+
+event: token
+data: {"delta": "课"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "等"}
+
+event: token
+data: {"delta": "），"}
+
+event: token
+data: {"delta": "不会"}
+
+event: token
+data: {"delta": "替你"}
+
+event: token
+data: {"delta": "假设"}
+
+event: token
+data: {"delta": "结果"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "目前"}
+
+event: token
+data: {"delta": "缺"}
+
+event: token
+data: {"delta": "一个"}
+
+event: token
+data: {"delta": "关键"}
+
+event: token
+data: {"delta": "信息"}
+
+event: token
+data: {"delta": "**\n\n"}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "这边"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "没有"}
+
+event: token
+data: {"delta": "拿到"}
+
+event: token
+data: {"delta": "《"}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "入门"}
+
+event: token
+data: {"delta": "》"}
+
+event: token
+data: {"delta": "的"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": " ID"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "当前"}
+
+event: token
+data: {"delta": "上下文"}
+
+event: token
+data: {"delta": "里"}
+
+event: token
+data: {"delta": "也没有"}
+
+event: token
+data: {"delta": "可"}
+
+event: token
+data: {"delta": "用的"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": "列表"}
+
+event: token
+data: {"delta": "检索"}
+
+event: token
+data: {"delta": "结果"}
+
+event: token
+data: {"delta": "。"}
+
+event: token
+data: {"delta": "所以"}
+
+event: token
+data: {"delta": "有两种"}
+
+event: token
+data: {"delta": "走"}
+
+event: token
+data: {"delta": "法"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "你"}
+
+event: token
+data: {"delta": "选"}
+
+event: token
+data: {"delta": "一个"}
+
+event: token
+data: {"delta": "：\n\n"}
+
+event: token
+data: {"delta": "-"}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "走"}
+
+event: token
+data: {"delta": "法"}
+
+event: token
+data: {"delta": " A"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "推荐"}
+
+event: token
+data: {"delta": "）"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "你把"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": " ID"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "或"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": "链接"}
+
+event: token
+data: {"delta": "发"}
+
+event: token
+data: {"delta": "给我"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "直接用"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "f"}
+
+event: token
+data: {"delta": "avorite"}
+
+event: token
+data: {"delta": "_add"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "精准"}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "不会"}
+
+event: token
+data: {"delta": "误"}
+
+event: token
+data: {"delta": "收"}
+
+event: token
+data: {"delta": "同"}
+
+event: token
+data: {"delta": "名的"}
+
+event: token
+data: {"delta": "课"}
+
+event: token
+data: {"delta": "。\n"}
+
+event: token
+data: {"delta": "-"}
+
+event: token
+data: {"delta": " **"}
+
+event: token
+data: {"delta": "走"}
+
+event: token
+data: {"delta": "法"}
+
+event: token
+data: {"delta": " B"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "按"}
+
+event: token
+data: {"delta": "名称"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "Python"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "入门"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "尝试"}
+
+event: token
+data: {"delta": "调用"}
+
+event: token
+data: {"delta": "一次"}
+
+event: token
+data: {"delta": "；"}
+
+event: token
+data: {"delta": "如果"}
+
+event: token
+data: {"delta": "平台"}
+
+event: token
+data: {"delta": "要求"}
+
+event: token
+data: {"delta": " ID"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "返回"}
+
+event: token
+data: {"delta": "错误"}
+
+event: token
+data: {"delta": "后"}
+
+event: token
+data: {"delta": "我再"}
+
+event: token
+data: {"delta": "找"}
+
+event: token
+data: {"delta": "你要"}
+
+event: token
+data: {"delta": " ID"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "两点"}
+
+event: token
+data: {"delta": "说明"}
+
+event: token
+data: {"delta": "**\n\n"}
+
+event: token
+data: {"delta": "-"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "是"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "写"}
+
+event: token
+data: {"delta": "操作"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "会"}
+
+event: token
+data: {"delta": "改变"}
+
+event: token
+data: {"delta": "你"}
+
+event: token
+data: {"delta": "账号"}
+
+event: token
+data: {"delta": "下的"}
+
+event: token
+data: {"delta": "数据"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "所以"}
+
+event: token
+data: {"delta": "我不"}
+
+event: token
+data: {"delta": "做"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "静"}
+
+event: token
+data: {"delta": "默"}
+
+event: token
+data: {"delta": "猜测"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "——"}
+
+event: token
+data: {"delta": "宁可"}
+
+event: token
+data: {"delta": "多"}
+
+event: token
+data: {"delta": "问"}
+
+event: token
+data: {"delta": "一句"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "也不"}
+
+event: token
+data: {"delta": "乱"}
+
+event: token
+data: {"delta": "收"}
+
+event: token
+data: {"delta": "一门"}
+
+event: token
+data: {"delta": "课"}
+
+event: token
+data: {"delta": "。\n"}
+
+event: token
+data: {"delta": "-"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "本次"}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "没有"}
+
+event: token
+data: {"delta": "伪造"}
+
+event: token
+data: {"delta": "调用"}
+
+event: token
+data: {"delta": "结果"}
+
+event: token
+data: {"delta": "**"}
+
+event: token
+data: {"delta": "："}
+
+event: token
+data: {"delta": "在你"}
+
+event: token
+data: {"delta": "确认"}
+
+event: token
+data: {"delta": "走"}
+
+event: token
+data: {"delta": "法"}
+
+event: token
+data: {"delta": "之前"}
+
+event: token
+data: {"delta": "，「"}
+
+event: token
+data: {"delta": "已"}
+
+event: token
+data: {"delta": "收藏"}
+
+event: token
+data: {"delta": "成功"}
+
+event: token
+data: {"delta": "」"}
+
+event: token
+data: {"delta": "这句话"}
+
+event: token
+data: {"delta": "我不能"}
+
+event: token
+data: {"delta": "说"}
+
+event: token
+data: {"delta": "。"}
+
+event: token
+data: {"delta": "另外"}
+
+event: token
+data: {"delta": "本"}
+
+event: token
+data: {"delta": "平台"}
+
+event: token
+data: {"delta": "的真实"}
+
+event: token
+data: {"delta": "可用"}
+
+event: token
+data: {"delta": "工具"}
+
+event: token
+data: {"delta": "就"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "10"}
+
+event: token
+data: {"delta": " "}
+
+event: token
+data: {"delta": "个"}
+
+event: token
+data: {"delta": "（"}
+
+event: token
+data: {"delta": "含"}
+
+event: token
+data: {"delta": " `"}
+
+event: token
+data: {"delta": "f"}
+
+event: token
+data: {"delta": "avorite"}
+
+event: token
+data: {"delta": "_add"}
+
+event: token
+data: {"delta": "`"}
+
+event: token
+data: {"delta": "），"}
+
+event: token
+data: {"delta": "不"}
+
+event: token
+data: {"delta": "包含"}
+
+event: token
+data: {"delta": "文件"}
+
+event: token
+data: {"delta": "浏览"}
+
+event: token
+data: {"delta": "／"}
+
+event: token
+data: {"delta": "命令"}
+
+event: token
+data: {"delta": "执行"}
+
+event: token
+data: {"delta": "类"}
+
+event: token
+data: {"delta": "能力"}
+
+event: token
+data: {"delta": "。\n\n"}
+
+event: token
+data: {"delta": "你"}
+
+event: token
+data: {"delta": "回"}
+
+event: token
+data: {"delta": "一下"}
+
+event: token
+data: {"delta": "课程"}
+
+event: token
+data: {"delta": " ID"}
+
+event: token
+data: {"delta": "，"}
+
+event: token
+data: {"delta": "或者"}
+
+event: token
+data: {"delta": "直接"}
+
+event: token
+data: {"delta": "说"}
+
+event: token
+data: {"delta": "「"}
+
+event: token
+data: {"delta": "按"}
+
+event: token
+data: {"delta": "名称"}
+
+event: token
+data: {"delta": "试"}
+
+event: token
+data: {"delta": "」，"}
+
+event: token
+data: {"delta": "我"}
+
+event: token
+data: {"delta": "立刻"}
+
+event: token
+data: {"delta": "执行"}
+
+event: token
+data: {"delta": "。"}
+
+event: done
+data: {"code": 0, "message": "ok", "data": {"session_id": null, "message_id": null, "retrieved_count": 144, "final_count": 5, "latency_ms": 8458, "rewrite_query": "帮我把《Python 入门》这门课收藏起来，并简述你会怎么处理", "degraded_reason": "rerank_sidecar_unavailable", "mcp_tool_calls": [{"call_id": "mcp-1790239821168-acf996d4", "tool_name": "favorite_add", "args_summary": "{'course_name': 'Python 入门'}", "status": "success", "latency_ms": 8, "result_summary": "{\"ok\": false, \"code\": \"40400\", \"message\": \"未找到课程「Python 入门」（或该课程已下架）\", \"need_clarify\": true, \"course_name\": \"Python 入门\", \"candidates\": [], \"hint\": \"请如实告知用户未找到该课程，可就近的关键词再确认一次课程名。\"}"}], "memorized": [], "tool_receipt_unverified": false}}
+

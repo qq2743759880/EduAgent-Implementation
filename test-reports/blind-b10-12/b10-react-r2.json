@@ -1,0 +1,612 @@
+{
+ "summary": {
+  "page": "http://127.0.0.1:3322/chat",
+  "query": "请用三句话介绍 Python 这门编程语言的特点",
+  "status": 200,
+  "clickAt": 0,
+  "requestAt": 864,
+  "responseAt": 1047,
+  "streamEndAt": 7728,
+  "failed": null,
+  "netChunks": 18,
+  "netFirstT": 1050,
+  "netLastT": 7728,
+  "netSpanMs": 6678,
+  "domMutations": 50,
+  "domAfterClick": 49,
+  "domFirstT": -1748,
+  "domLastT": 9280,
+  "finalTextLen": 2634,
+  "distinctTextLens": 48,
+  "errs": []
+ },
+ "net": [
+  {
+   "t": 1050,
+   "len": 122
+  },
+  {
+   "t": 4388,
+   "len": 5111
+  },
+  {
+   "t": 6802,
+   "len": 36
+  },
+  {
+   "t": 6805,
+   "len": 40
+  },
+  {
+   "t": 6897,
+   "len": 683
+  },
+  {
+   "t": 7016,
+   "len": 659
+  },
+  {
+   "t": 7124,
+   "len": 689
+  },
+  {
+   "t": 7200,
+   "len": 929
+  },
+  {
+   "t": 7270,
+   "len": 357
+  },
+  {
+   "t": 7342,
+   "len": 803
+  },
+  {
+   "t": 7349,
+   "len": 37
+  },
+  {
+   "t": 7415,
+   "len": 499
+  },
+  {
+   "t": 7470,
+   "len": 307
+  },
+  {
+   "t": 7535,
+   "len": 816
+  },
+  {
+   "t": 7565,
+   "len": 157
+  },
+  {
+   "t": 7578,
+   "len": 110
+  },
+  {
+   "t": 7599,
+   "len": 298
+  },
+  {
+   "t": 7728,
+   "len": 383
+  }
+ ],
+ "dom": [
+  {
+   "t": -1748,
+   "html": 98465,
+   "txt": 2237
+  },
+  {
+   "t": 9,
+   "html": 98499,
+   "txt": 2261
+  },
+  {
+   "t": 694,
+   "html": 99204,
+   "txt": 2190
+  },
+  {
+   "t": 750,
+   "html": 101020,
+   "txt": 2214
+  },
+  {
+   "t": 991,
+   "html": 101072,
+   "txt": 2228
+  },
+  {
+   "t": 1181,
+   "html": 99250,
+   "txt": 2190
+  },
+  {
+   "t": 1268,
+   "html": 101328,
+   "txt": 2478
+  },
+  {
+   "t": 6891,
+   "html": 100997,
+   "txt": 2481
+  },
+  {
+   "t": 6997,
+   "html": 101000,
+   "txt": 2484
+  },
+  {
+   "t": 7111,
+   "html": 101002,
+   "txt": 2486
+  },
+  {
+   "t": 7196,
+   "html": 101006,
+   "txt": 2490
+  },
+  {
+   "t": 7269,
+   "html": 101009,
+   "txt": 2493
+  },
+  {
+   "t": 7340,
+   "html": 101024,
+   "txt": 2491
+  },
+  {
+   "t": 7413,
+   "html": 101045,
+   "txt": 2494
+  },
+  {
+   "t": 7469,
+   "html": 101047,
+   "txt": 2496
+  },
+  {
+   "t": 7501,
+   "html": 101050,
+   "txt": 2499
+  },
+  {
+   "t": 7532,
+   "html": 101053,
+   "txt": 2502
+  },
+  {
+   "t": 7562,
+   "html": 101056,
+   "txt": 2505
+  },
+  {
+   "t": 7597,
+   "html": 101072,
+   "txt": 2504
+  },
+  {
+   "t": 7630,
+   "html": 101076,
+   "txt": 2508
+  },
+  {
+   "t": 7662,
+   "html": 101079,
+   "txt": 2511
+  },
+  {
+   "t": 7692,
+   "html": 101082,
+   "txt": 2514
+  },
+  {
+   "t": 7725,
+   "html": 101085,
+   "txt": 2517
+  },
+  {
+   "t": 7756,
+   "html": 101467,
+   "txt": 2560
+  },
+  {
+   "t": 7811,
+   "html": 101470,
+   "txt": 2563
+  },
+  {
+   "t": 7938,
+   "html": 101473,
+   "txt": 2566
+  },
+  {
+   "t": 8049,
+   "html": 101476,
+   "txt": 2569
+  },
+  {
+   "t": 8133,
+   "html": 101479,
+   "txt": 2572
+  },
+  {
+   "t": 8212,
+   "html": 101482,
+   "txt": 2575
+  },
+  {
+   "t": 8279,
+   "html": 101485,
+   "txt": 2578
+  },
+  {
+   "t": 8345,
+   "html": 101488,
+   "txt": 2581
+  },
+  {
+   "t": 8415,
+   "html": 101491,
+   "txt": 2584
+  },
+  {
+   "t": 8459,
+   "html": 101494,
+   "txt": 2587
+  },
+  {
+   "t": 8491,
+   "html": 101497,
+   "txt": 2590
+  },
+  {
+   "t": 8519,
+   "html": 101500,
+   "txt": 2593
+  },
+  {
+   "t": 8550,
+   "html": 101502,
+   "txt": 2595
+  },
+  {
+   "t": 8579,
+   "html": 101506,
+   "txt": 2599
+  },
+  {
+   "t": 8632,
+   "html": 101509,
+   "txt": 2602
+  },
+  {
+   "t": 8665,
+   "html": 101512,
+   "txt": 2605
+  },
+  {
+   "t": 8694,
+   "html": 101526,
+   "txt": 2606
+  },
+  {
+   "t": 8723,
+   "html": 101528,
+   "txt": 2608
+  },
+  {
+   "t": 8751,
+   "html": 101532,
+   "txt": 2612
+  },
+  {
+   "t": 8780,
+   "html": 101535,
+   "txt": 2615
+  },
+  {
+   "t": 8809,
+   "html": 101538,
+   "txt": 2618
+  },
+  {
+   "t": 8838,
+   "html": 101551,
+   "txt": 2618
+  },
+  {
+   "t": 8905,
+   "html": 101555,
+   "txt": 2622
+  },
+  {
+   "t": 8981,
+   "html": 101558,
+   "txt": 2625
+  },
+  {
+   "t": 9064,
+   "html": 101559,
+   "txt": 2626
+  },
+  {
+   "t": 9188,
+   "html": 101578,
+   "txt": 2629
+  },
+  {
+   "t": 9280,
+   "html": 101590,
+   "txt": 2634
+  }
+ ],
+ "raw": {
+  "dom": [
+   {
+    "w": 1790239005327,
+    "html": 98465,
+    "txt": 2237
+   },
+   {
+    "w": 1790239007084,
+    "html": 98499,
+    "txt": 2261
+   },
+   {
+    "w": 1790239007769,
+    "html": 99204,
+    "txt": 2190
+   },
+   {
+    "w": 1790239007825,
+    "html": 101020,
+    "txt": 2214
+   },
+   {
+    "w": 1790239008066,
+    "html": 101072,
+    "txt": 2228
+   },
+   {
+    "w": 1790239008256,
+    "html": 99250,
+    "txt": 2190
+   },
+   {
+    "w": 1790239008343,
+    "html": 101328,
+    "txt": 2478
+   },
+   {
+    "w": 1790239013966,
+    "html": 100997,
+    "txt": 2481
+   },
+   {
+    "w": 1790239014072,
+    "html": 101000,
+    "txt": 2484
+   },
+   {
+    "w": 1790239014186,
+    "html": 101002,
+    "txt": 2486
+   },
+   {
+    "w": 1790239014271,
+    "html": 101006,
+    "txt": 2490
+   },
+   {
+    "w": 1790239014344,
+    "html": 101009,
+    "txt": 2493
+   },
+   {
+    "w": 1790239014415,
+    "html": 101024,
+    "txt": 2491
+   },
+   {
+    "w": 1790239014488,
+    "html": 101045,
+    "txt": 2494
+   },
+   {
+    "w": 1790239014544,
+    "html": 101047,
+    "txt": 2496
+   },
+   {
+    "w": 1790239014576,
+    "html": 101050,
+    "txt": 2499
+   },
+   {
+    "w": 1790239014607,
+    "html": 101053,
+    "txt": 2502
+   },
+   {
+    "w": 1790239014637,
+    "html": 101056,
+    "txt": 2505
+   },
+   {
+    "w": 1790239014672,
+    "html": 101072,
+    "txt": 2504
+   },
+   {
+    "w": 1790239014705,
+    "html": 101076,
+    "txt": 2508
+   },
+   {
+    "w": 1790239014737,
+    "html": 101079,
+    "txt": 2511
+   },
+   {
+    "w": 1790239014767,
+    "html": 101082,
+    "txt": 2514
+   },
+   {
+    "w": 1790239014800,
+    "html": 101085,
+    "txt": 2517
+   },
+   {
+    "w": 1790239014831,
+    "html": 101467,
+    "txt": 2560
+   },
+   {
+    "w": 1790239014886,
+    "html": 101470,
+    "txt": 2563
+   },
+   {
+    "w": 1790239015013,
+    "html": 101473,
+    "txt": 2566
+   },
+   {
+    "w": 1790239015124,
+    "html": 101476,
+    "txt": 2569
+   },
+   {
+    "w": 1790239015208,
+    "html": 101479,
+    "txt": 2572
+   },
+   {
+    "w": 1790239015287,
+    "html": 101482,
+    "txt": 2575
+   },
+   {
+    "w": 1790239015354,
+    "html": 101485,
+    "txt": 2578
+   },
+   {
+    "w": 1790239015420,
+    "html": 101488,
+    "txt": 2581
+   },
+   {
+    "w": 1790239015490,
+    "html": 101491,
+    "txt": 2584
+   },
+   {
+    "w": 1790239015534,
+    "html": 101494,
+    "txt": 2587
+   },
+   {
+    "w": 1790239015566,
+    "html": 101497,
+    "txt": 2590
+   },
+   {
+    "w": 1790239015594,
+    "html": 101500,
+    "txt": 2593
+   },
+   {
+    "w": 1790239015625,
+    "html": 101502,
+    "txt": 2595
+   },
+   {
+    "w": 1790239015654,
+    "html": 101506,
+    "txt": 2599
+   },
+   {
+    "w": 1790239015707,
+    "html": 101509,
+    "txt": 2602
+   },
+   {
+    "w": 1790239015740,
+    "html": 101512,
+    "txt": 2605
+   },
+   {
+    "w": 1790239015769,
+    "html": 101526,
+    "txt": 2606
+   },
+   {
+    "w": 1790239015798,
+    "html": 101528,
+    "txt": 2608
+   },
+   {
+    "w": 1790239015826,
+    "html": 101532,
+    "txt": 2612
+   },
+   {
+    "w": 1790239015855,
+    "html": 101535,
+    "txt": 2615
+   },
+   {
+    "w": 1790239015884,
+    "html": 101538,
+    "txt": 2618
+   },
+   {
+    "w": 1790239015913,
+    "html": 101551,
+    "txt": 2618
+   },
+   {
+    "w": 1790239015980,
+    "html": 101555,
+    "txt": 2622
+   },
+   {
+    "w": 1790239016056,
+    "html": 101558,
+    "txt": 2625
+   },
+   {
+    "w": 1790239016139,
+    "html": 101559,
+    "txt": 2626
+   },
+   {
+    "w": 1790239016263,
+    "html": 101578,
+    "txt": 2629
+   },
+   {
+    "w": 1790239016355,
+    "html": 101590,
+    "txt": 2634
+   }
+  ],
+  "t0": 1790239004173,
+  "errs": [],
+  "observed": "MAIN",
+  "mo": {},
+  "finalDom": {
+   "text": "☰🦊智能问答基于课程知识库，随时问我＋ 新会话请用三句话介绍 Python 这门编程语言的特点😊16:36Python 是一门语法简洁、可读性强的编程语言，用极少代码就能表达完整逻辑，例如一行 print(words[-1]) 即可取出列表末尾元素。\n它的内置数据结构丰富且操作灵活，字符串支持切片（如 text[1:4] 得到 \"yth\"）、列表可用 append 动态追加元素，配合 for 循环能直接遍历字符或元素，写起来非常直观。\nPython 应用领域广泛、生态成熟（基于通用知识），在数据分析、人工智能、Web 开发、自动化脚本和教学入门等场景中都有大量成熟的第三方库支持。🤖16:36🔎 145 篇引用请用三句话介绍 Python 这门编程语言的特点😊16:36Python 的三个特点：\n\n\n语法简洁、可读性强：它接近自然语言，用缩进代替花括号，代码短小清晰，非常适合编程入门——比如取列表最后一个元素只需写 words[-1]，切片 text[1:4] 就能截取子串。\n\n\n**生\n\n🤖16:36🔎 5 篇引用⚠️排队人数较多，已为你降级回答：rerank_sidecar_unavailable■💬 对话列表＋ 新建💬请用三句话介绍 Python 这门编程语言的特点16:36🗑🗂请用三句话介绍 Python 这门语言16:36🗑🗂TC1-mem-B16:28🗑🗂TC1-mem-A16:22🗑🗂把《TA6 验收课程》加入收藏16:21🗑🗂把《通用编程入门班·录播》加入收藏12:23🗑🗂把《TA6 验收课程》加入收藏12:23🗑🗂t01:16🗑🗂t9-22🗑🗂t9-22🗑🗂kg-test9-22🗑🗂svc29-22🗑🗂svc-check9-22🗑🗂t12-verify9-22🗑🗂T12-student-induction9-22🗑🗂t8-verify9-22🗑🗂t7-verify9-22🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员5040，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员9389，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员1803，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员4577，请记住我的名字9-21🗑🗂audit-b9-21🗑🗂audit-a9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明5956，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明1073，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明5737，请记住我的名字9-21🗑🗂w1-fav5-idem9-21🗑🗂w1-fav49-20🗑🗂w1-fav39-20🗑🗂w1-fav29-20🗑🗂w1-fav9-20🗑🗂r23-orch-verify9-19🗑🗂用两句话介绍一下一般过去时9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑会话列表✕💬 对话列表＋ 新建💬请用三句话介绍 Python 这门编程语言的特点16:36🗑🗂请用三句话介绍 Python 这门语言16:36🗑🗂TC1-mem-B16:28🗑🗂TC1-mem-A16:22🗑🗂把《TA6 验收课程》加入收藏16:21🗑🗂把《通用编程入门班·录播》加入收藏12:23🗑🗂把《TA6 验收课程》加入收藏12:23🗑🗂t01:16🗑🗂t9-22🗑🗂t9-22🗑🗂kg-test9-22🗑🗂svc29-22🗑🗂svc-check9-22🗑🗂t12-verify9-22🗑🗂T12-student-induction9-22🗑🗂t8-verify9-22🗑🗂t7-verify9-22🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员5040，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员9389，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员1803，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫返工验收员4577，请记住我的名字9-21🗑🗂audit-b9-21🗑🗂audit-a9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明5956，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明1073，请记住我的名字9-21🗑🗂我叫什么名字？9-21🗑🗂我叫fw2小明5737，请记住我的名字9-21🗑🗂w1-fav5-idem9-21🗑🗂w1-fav49-20🗑🗂w1-fav39-20🗑🗂w1-fav29-20🗑🗂w1-fav9-20🗑🗂r23-orch-verify9-19🗑🗂用两句话介绍一下一般过去时9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂Python 里列表和元组有什么区别9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑🗂解释一下牛顿第二定律 F=ma 的物理意义9-18🗑",
+   "htmlTail": "round\">9-18</span></span><button type=\"button\" aria-label=\"删除会话 解释一下牛顿第二定律 F=ma 的物理意义\" title=\"删除会话\" data-slot=\"chat-session-delete\" class=\"size-5 shrink-0 rounded-md text-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-candy-orange-soft hover:text-candy-orange group-hover:opacity-100 group-focus-within:opacity-100\">🗑</button></div></div></div></div></aside>"
+  },
+  "responseBody": "event: start\ndata: {\"session_id\": \"s_352cfe1cf18f\", \"query\": \"请用三句话介绍 Python 这门编程语言的特点\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:e5a5b2f7ce8e2bd3:1\", \"score\": 1.0, \"content\": \"【编程题】题目：阅读下列程序，写出输出结果：\\n\\n```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\\n答案：grow\\n解析：负下标 -1 表示最后一个元素。\", \"source_file\": \"seeds/3_question/question.csv\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"module_codes\": [], \"keywords\": [\"信息学与编程启蒙题库\", \"编程题\"], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:ea1d7e8f950ddaf6:1\", \"score\": 0.847243, \"content\": \"【简答题】题目：简述全过程人民民主的特点。\\n答案：全过程人民民主强调民主选举、民主协商、民主决策、民主管理和民主监督的有机统一，体现全过程、全链条、全方位。\\n解析：答题要突出“全过程”和“全链条”。\", \"source_file\": \"seeds/3_question/question.csv\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"module_codes\": [], \"keywords\": [\"考研政治题库\", \"简答题\"], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:16697799219c7b95:1\", \"score\": 0.833082, \"content\": \"【编程题】题目：阅读下列程序，写出输出结果：\\n\\n```python\\ntext = \\\"python\\\"\\nprint(text[1:4])\\n```\\n答案：yth\\n解析：切片取下标 1 到 3 的字符。\", \"source_file\": \"seeds/3_question/question.csv\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"module_codes\": [], \"keywords\": [\"信息学与编程启蒙题库\", \"编程题\"], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:a1dc37f1dc5c7a1f:1\", \"score\": 0.798433, \"content\": \"【编程题】题目：阅读下列程序，写出输出结果：\\n\\n```python\\ns = \\\"abc\\\"\\nfor ch in s:\\n    print(ch, end=\\\"-\\\")\\n```\\n答案：a-b-c-\\n解析：循环逐个输出字符串中的字符。\", \"source_file\": \"seeds/3_question/question.csv\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"module_codes\": [], \"keywords\": [\"信息学与编程启蒙题库\", \"编程题\"], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3f0b6ca3aee04f94:1\", \"score\": 0.786381, \"content\": \"【编程题】题目：阅读下列程序，写出输出结果：\\n\\n```python\\narr = [3, 6, 9]\\narr.append(12)\\nprint(arr[-1])\\n```\\n答案：12\\n解析：append 后最后一个元素是 12。\", \"source_file\": \"seeds/3_question/question.csv\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"module_codes\": [], \"keywords\": [\"信息学与编程启蒙题库\", \"编程题\"], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [{\"entity_type\": \"Keyword\", \"entity_name\": \"实习申请实战班\", \"related\": [\"校园成长___大学生成长___实习与求职准备\", \"实习项目经历包装\", \"成长规划\", \"实习与求职准备\", \"模拟面试与反馈优化\", \"高频面试题与案例表达\", \"能力提升\", \"internship_preparation_practice_m2\", \"internship_preparation_practice_m1\", \"internship_preparation_practice_m3\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"校园成长___大学生成长___实习与求职准备\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"实习项目经历包装\", \"related\": [\"实习申请实战班\", \"实习申请实战班·直播\", \"实习申请实战班·录播\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"成长规划\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"实习与求职准备\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"模拟面试与反馈优化\", \"related\": [\"实习申请实战班\", \"实习申请实战班·直播\", \"实习申请实战班·录播\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"高频面试题与案例表达\", \"related\": [\"实习申请实战班\", \"实习申请实战班·直播\", \"实习申请实战班·录播\"], \"hop\": 1}, {\"entity_type\": \"Keyword\", \"entity_name\": \"能力提升\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Module\", \"entity_name\": \"internship_preparation_practice_m2\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Module\", \"entity_name\": \"internship_preparation_practice_m1\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Module\", \"entity_name\": \"internship_preparation_practice_m3\", \"related\": [\"实习申请实战班\"], \"hop\": 1}, {\"entity_type\": \"Series\", \"entity_name\": \"实习申请实战班·直播\", \"related\": [\"实习项目经历包装\", \"模拟面试与反馈优化\", \"高频面试题与案例表达\"], \"hop\": 1}], \"retrieved_count\": 145, \"final_count\": 5, \"rewrite_query\": \"请用三句话介绍 Python 这门编程语言的特点\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"**\"}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"的三个\"}\n\nevent: token\ndata: {\"delta\": \"特点\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"**\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"1\"}\n\nevent: token\ndata: {\"delta\": \".\"}\n\nevent: token\ndata: {\"delta\": \" **\"}\n\nevent: token\ndata: {\"delta\": \"语法\"}\n\nevent: token\ndata: {\"delta\": \"简洁\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性强\"}\n\nevent: token\ndata: {\"delta\": \"**\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"它\"}\n\nevent: token\ndata: {\"delta\": \"接近\"}\n\nevent: token\ndata: {\"delta\": \"自然\"}\n\nevent: token\ndata: {\"delta\": \"语言\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"缩\"}\n\nevent: token\ndata: {\"delta\": \"进\"}\n\nevent: token\ndata: {\"delta\": \"代替\"}\n\nevent: token\ndata: {\"delta\": \"花\"}\n\nevent: token\ndata: {\"delta\": \"括号\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"短\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"清晰\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"非常适合\"}\n\nevent: token\ndata: {\"delta\": \"编程\"}\n\nevent: token\ndata: {\"delta\": \"入门\"}\n\nevent: token\ndata: {\"delta\": \"——\"}\n\nevent: token\ndata: {\"delta\": \"比如\"}\n\nevent: token\ndata: {\"delta\": \"取\"}\n\nevent: token\ndata: {\"delta\": \"列表\"}\n\nevent: token\ndata: {\"delta\": \"最后一个\"}\n\nevent: token\ndata: {\"delta\": \"元素\"}\n\nevent: token\ndata: {\"delta\": \"只需\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"words\"}\n\nevent: token\ndata: {\"delta\": \"[-\"}\n\nevent: token\ndata: {\"delta\": \"1\"}\n\nevent: token\ndata: {\"delta\": \"]\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"切片\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"text\"}\n\nevent: token\ndata: {\"delta\": \"[\"}\n\nevent: token\ndata: {\"delta\": \"1\"}\n\nevent: token\ndata: {\"delta\": \":\"}\n\nevent: token\ndata: {\"delta\": \"4\"}\n\nevent: token\ndata: {\"delta\": \"]\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"就能\"}\n\nevent: token\ndata: {\"delta\": \"截\"}\n\nevent: token\ndata: {\"delta\": \"取\"}\n\nevent: token\ndata: {\"delta\": \"子\"}\n\nevent: token\ndata: {\"delta\": \"串\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"2\"}\n\nevent: token\ndata: {\"delta\": \".\"}\n\nevent: token\ndata: {\"delta\": \" **\"}\n\nevent: token\ndata: {\"delta\": \"生态\"}\n\nevent: token\ndata: {\"delta\": \"丰富\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"用途\"}\n\nevent: token\ndata: {\"delta\": \"广泛\"}\n\nevent: token\ndata: {\"delta\": \"**\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"自带\"}\n\nevent: token\ndata: {\"delta\": \"庞大的\"}\n\nevent: token\ndata: {\"delta\": \"标准\"}\n\nevent: token\ndata: {\"delta\": \"库\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"并有\"}\n\nevent: token\ndata: {\"delta\": \"大量\"}\n\nevent: token\ndata: {\"delta\": \"第三方\"}\n\nevent: token\ndata: {\"delta\": \"库\"}\n\nevent: token\ndata: {\"delta\": \"支持\"}\n\nevent: token\ndata: {\"delta\": \"数据分析\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"p\"}\n\nevent: token\ndata: {\"delta\": \"andas\"}\n\nevent: token\ndata: {\"delta\": \"）、\"}\n\nevent: token\ndata: {\"delta\": \"Web\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"开发\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"D\"}\n\nevent: token\ndata: {\"delta\": \"jango\"}\n\nevent: token\ndata: {\"delta\": \"）、\"}\n\nevent: token\ndata: {\"delta\": \"人工智能\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"Py\"}\n\nevent: token\ndata: {\"delta\": \"Tor\"}\n\nevent: token\ndata: {\"delta\": \"ch\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"等\"}\n\nevent: token\ndata: {\"delta\": \"方向\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"能\"}\n\nevent: token\ndata: {\"delta\": \"跨\"}\n\nevent: token\ndata: {\"delta\": \"平台\"}\n\nevent: token\ndata: {\"delta\": \"运行\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"3\"}\n\nevent: token\ndata: {\"delta\": \".\"}\n\nevent: token\ndata: {\"delta\": \" **\"}\n\nevent: token\ndata: {\"delta\": \"解释\"}\n\nevent: token\ndata: {\"delta\": \"执行\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"开发\"}\n\nevent: token\ndata: {\"delta\": \"效率\"}\n\nevent: token\ndata: {\"delta\": \"高\"}\n\nevent: token\ndata: {\"delta\": \"**\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"作为\"}\n\nevent: token\ndata: {\"delta\": \"解释\"}\n\nevent: token\ndata: {\"delta\": \"型\"}\n\nevent: token\ndata: {\"delta\": \"动态\"}\n\nevent: token\ndata: {\"delta\": \"类型\"}\n\nevent: token\ndata: {\"delta\": \"语言\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"它\"}\n\nevent: token\ndata: {\"delta\": \"支持\"}\n\nevent: token\ndata: {\"delta\": \"面向\"}\n\nevent: token\ndata: {\"delta\": \"对象\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"函数\"}\n\nevent: token\ndata: {\"delta\": \"式\"}\n\nevent: token\ndata: {\"delta\": \"等多种\"}\n\nevent: token\ndata: {\"delta\": \"编程\"}\n\nevent: token\ndata: {\"delta\": \"范式\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"起来\"}\n\nevent: token\ndata: {\"delta\": \"快\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"调试\"}\n\nevent: token\ndata: {\"delta\": \"方便\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"代价\"}\n\nevent: token\ndata: {\"delta\": \"是\"}\n\nevent: token\ndata: {\"delta\": \"运行\"}\n\nevent: token\ndata: {\"delta\": \"速度\"}\n\nevent: token\ndata: {\"delta\": \"通常\"}\n\nevent: token\ndata: {\"delta\": \"慢\"}\n\nevent: token\ndata: {\"delta\": \"于\"}\n\nevent: token\ndata: {\"delta\": \" C\"}\n\nevent: token\ndata: {\"delta\": \"/C\"}\n\nevent: token\ndata: {\"delta\": \"++\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"等\"}\n\nevent: token\ndata: {\"delta\": \"编译\"}\n\nevent: token\ndata: {\"delta\": \"型\"}\n\nevent: token\ndata: {\"delta\": \"语言\"}\n\nevent: token\ndata: {\"delta\": \"。\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": \"s_352cfe1cf18f\", \"message_id\": \"m_8d7c4d6d625d\", \"retrieved_count\": 145, \"final_count\": 5, \"latency_ms\": 6712, \"rewrite_query\": \"请用三句话介绍 Python 这门编程语言的特点\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n"
+ }
+}
