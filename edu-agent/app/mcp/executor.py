@@ -1261,7 +1261,8 @@ async def _favorite_add_handler(args: dict) -> str:
       · `series_id`(int)   —— 直传路径（保留，向后兼容）；
       · `course_name`(str) —— 按课程名解析（用户零 ID 输入）：服务端精确/LIKE 解析 DB，
                               唯一命中则直接收藏；多命中返回候选列表让模型追问一次
-                              （**绝不猜**）；零命中如实回传。
+                              （**绝不猜**）；整串零命中时 TA7 D2 会退化为"最接近候选"
+                              （status=fuzzy，仅建议、一律 need_clarify）；彻底零命中如实回传。
     两者都不传（或同时传）→ 拒。
     """
     # ① 参数精确校验（先于身份校验：非法参数零副作用）
@@ -1298,6 +1299,22 @@ async def _favorite_add_handler(args: dict) -> str:
                 "candidates": resolved["candidates"],
                 "hint": "请用业务语言向用户列出候选课程名并让其选择，不要自行猜测。",
             }, ensure_ascii=False)
+        if resolved["status"] == "fuzzy":
+            # TA7 D2：整串零命中，但有「最接近」候选 → 只建议、不猜（need_clarify）。
+            # 注意与 40930（multiple：真的匹配到多门同名课）区分：这里是"库内没有这个
+            # 名字，以下是名字最接近的几门"，用户点头前**不得**调用收藏。
+            return json.dumps({
+                "ok": False,
+                "code": "40400",
+                "message": f"未找到课程「{cname}」（库内没有此课程名）",
+                "need_clarify": True,
+                "course_name": cname,
+                "candidates": resolved["candidates"],
+                "matched_by": resolved.get("matched_token"),
+                "hint": ("库内没有精确匹配该名称的在售课程。请如实告知用户没找到，并把 candidates 里"
+                         "最接近的课程名**原样列出**（最多 3 个），询问是否要收藏其中某一门；"
+                         "严禁自行挑选/猜测，用户未确认前不得再次调用收藏。"),
+            }, ensure_ascii=False)
         if resolved["status"] == "none" or not resolved.get("series_id"):
             return json.dumps({
                 "ok": False,
@@ -1305,7 +1322,7 @@ async def _favorite_add_handler(args: dict) -> str:
                 "message": f"未找到课程「{cname}」（或该课程已下架）",
                 "need_clarify": True,
                 "course_name": cname,
-                "candidates": [],
+                "candidates": resolved.get("candidates") or [],
                 "hint": "请如实告知用户未找到该课程，可就近的关键词再确认一次课程名。",
             }, ensure_ascii=False)
         sid = int(resolved["series_id"])
@@ -1471,23 +1488,88 @@ def _next_series_code_candidate(base_code: str, attempt: int) -> str:
 #   exact    —— 唯一精确匹配（series_name = 用户给的名称）
 #   unique   —— 唯一模糊匹配（LIKE 命中恰好 1 条）
 #   multiple —— 多条命中考量（返回候选，让模型追问一次，**不许猜**）
-#   none     —— 零命中
+#   fuzzy    —— TA7 D2：精确+整串 LIKE 都零命中，但**逐级放宽词元**后命中若干「最接近」
+#               课程（**仅作建议**：一律 need_clarify 让用户点头，绝不自动收藏）
+#   none     —— 零命中（连放宽词元都没有任何候选）
 COURSE_RESOLVE_LIMIT = 10
+# TA7 D2：模糊兜底词元长度下限 / 中文长片逐级截断的最大前缀长度。
+_FUZZY_TOKEN_MIN_LEN = 2
+_FUZZY_CJK_PREFIX_MAX = 6
+# TA7 D2：单次解析最多发出的放宽查询数（上界，防病态输入打爆 DB）。
+_FUZZY_MAX_PATTERNS = 6
+
+
+def _escape_like(s: str) -> str:
+    """LIKE 元字符转义（`\\`/`%`/`_`）——用户输入一律经此再参数绑定，禁拼 SQL 文本。"""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _fuzzy_like_patterns(key: str) -> list[str]:
+    """TA7 D2：把课程名拆成「由具体到宽泛」的 LIKE 词元（保序去重，上界 6 个）。
+
+    - ASCII 词/数字串整体保留（`Python`、`C++`、`B2`）；
+    - 中文片：长于 6 字的按 6→2 字前缀逐级截断（「量子物理导论第七版完全不存在版」
+      能退到「量子物理」这类真实存在的课程名前缀）；短片原样保留。
+
+    设计取向：**宁少勿滥**——只发少量上界查询，命中即停（第一个非空词元为准），
+    避免"放宽到单字"造成候选爆炸与慢查询。
+    """
+    tokens = re.findall(r"[A-Za-z][A-Za-z0-9+#.]*|[0-9]+|[\u4e00-\u9fff]+", key or "")
+    tokens.sort(key=len, reverse=True)
+    out: list[str] = []
+    for tok in tokens:
+        is_ascii = tok[0].isascii()
+        if is_ascii:
+            cands = [tok] if len(tok) >= _FUZZY_TOKEN_MIN_LEN else []
+        else:
+            top = min(len(tok), _FUZZY_CJK_PREFIX_MAX)
+            cands = [tok[:n] for n in range(top, _FUZZY_TOKEN_MIN_LEN - 1, -1)]
+        for c in cands:
+            if c in out or c == key:
+                continue
+            out.append(c)
+            if len(out) >= _FUZZY_MAX_PATTERNS:
+                return out
+    return out
+
+
+_RESOLVE_SELECT = ("SELECT id AS series_id, series_name, series_code FROM series"
+                   " WHERE series_name = %s AND sale_status = 'on_sale'"
+                   " ORDER BY id LIMIT %s")
+_RESOLVE_LIKE = ("SELECT id AS series_id, series_name, series_code FROM series"
+                 " WHERE series_name LIKE %s AND sale_status = 'on_sale'"
+                 " ORDER BY CHAR_LENGTH(series_name) ASC, id ASC LIMIT %s")
+
+
+def _as_candidates(rows: list[dict]) -> list[dict]:
+    return [
+        {"series_id": int(r["series_id"]),
+         "series_name": r.get("series_name"),
+         "series_code": r.get("series_code")}
+        for r in rows
+    ]
 
 
 async def resolve_series_by_name(name: str) -> dict:
-    """TA6 工作项②：按课程名解析课程系列（只读查询，参数绑定，仅 on_sale 可收藏）。
+    """TA6 工作项②（TA7 D2 增补模糊兜底）：按课程名解析课程系列。
 
-    策略（确定性、可复现，绝不猜）：
+    只读查询、参数绑定，仅 on_sale 可收藏。策略（确定性、可复现，**绝不猜**）：
       1) 精确匹配优先：`series_name = %s`（去首尾空白）命中恰好 1 条 → 唯一确定；
       2) 精确匹配多条（本库 title 有重复行，如「脚本自动化入门班·录播」×6）→ 返回候选让模型追问；
-      3) 精确零命中 → 退化为 LIKE %name% 模糊匹配（**用参数绑定，不做字符串拼接**）：
-         命中恰好 1 条 → 唯一确定；多条 → 候选；零条 → none。
+      3) 精确零命中 → 退化为 LIKE %整串% 模糊匹配（**参数绑定，不做字符串拼接**）：
+         命中恰好 1 条 → 唯一确定；多条 → 候选；零条 → 继续第 4 步；
+      4) **TA7 D2** 整串也零命中 → 逐级放宽词元（`_fuzzy_like_patterns`，长词元优先、
+         中文长片按 6→2 字前缀截断）→ 命中若干 → `status="fuzzy"` 仅给候选供模型追问；
+         仍零命中 → `status="none"`。
 
     返回结构（供 handler 组装回执，勿直出给 LLM 之外的调用方）：
-      {"status": "exact"|"unique"|"multiple"|"none",
+      {"status": "exact"|"unique"|"multiple"|"fuzzy"|"none",
        "series_id": int|None, "series_name": str|None,
-       "candidates": [{"series_id", "series_name", "series_code"}, ...]}
+       "candidates": [{"series_id", "series_name", "series_code"}, ...],
+       "matched_token": str(仅 fuzzy——命中所用的放宽词元，便于排障/报告)}
+
+    ⚠️ `fuzzy` 与 `unique` 语义**不可混用**：`unique` 是"整串模糊命中唯一"（可收藏），
+    `fuzzy` 只是"最接近的几门课"建议（**一律 need_clarify，永不自动收藏**）。
     """
     from app.database import fetch_all
 
@@ -1495,30 +1577,13 @@ async def resolve_series_by_name(name: str) -> dict:
     if not key:
         return {"status": "none", "series_id": None, "series_name": None, "candidates": []}
 
-    rows = await fetch_all(
-        "SELECT id AS series_id, series_name, series_code FROM series"
-        " WHERE series_name = %s AND sale_status = 'on_sale'"
-        " ORDER BY id LIMIT %s",
-        (key, COURSE_RESOLVE_LIMIT),
-    )
+    rows = await fetch_all(_RESOLVE_SELECT, (key, COURSE_RESOLVE_LIMIT))
     status = "exact"
     if not rows:
-        # LIKE 模糊匹配：% 与 _ 是 LIKE 元字符，用户输入需转义（防通配注入扩大命中面）
-        escaped = key.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        rows = await fetch_all(
-            "SELECT id AS series_id, series_name, series_code FROM series"
-            " WHERE series_name LIKE %s AND sale_status = 'on_sale'"
-            " ORDER BY CHAR_LENGTH(series_name) ASC, id ASC LIMIT %s",
-            (f"%{escaped}%", COURSE_RESOLVE_LIMIT),
-        )
+        rows = await fetch_all(_RESOLVE_LIKE, (f"%{_escape_like(key)}%", COURSE_RESOLVE_LIMIT))
         status = "unique"
 
-    candidates = [
-        {"series_id": int(r["series_id"]),
-         "series_name": r.get("series_name"),
-         "series_code": r.get("series_code")}
-        for r in rows
-    ]
+    candidates = _as_candidates(rows)
     if len(candidates) == 1:
         return {"status": ("exact" if status == "exact" else "unique"),
                 "series_id": candidates[0]["series_id"],
@@ -1527,6 +1592,15 @@ async def resolve_series_by_name(name: str) -> dict:
     if len(candidates) > 1:
         return {"status": "multiple", "series_id": None, "series_name": None,
                 "candidates": candidates}
+
+    # ---- TA7 D2：精确 + 整串 LIKE 双零命中 → 逐级放宽词元，给「最接近」候选（不猜）----
+    for tok in _fuzzy_like_patterns(key):
+        fuzzy_rows = await fetch_all(
+            _RESOLVE_LIKE, (f"%{_escape_like(tok)}%", COURSE_RESOLVE_LIMIT))
+        if fuzzy_rows:
+            return {"status": "fuzzy", "series_id": None, "series_name": None,
+                    "candidates": _as_candidates(fuzzy_rows), "matched_token": tok}
+
     return {"status": "none", "series_id": None, "series_name": None, "candidates": []}
 
 
