@@ -179,6 +179,32 @@
   .box-pad{padding:40px 18px;text-align:center;color:var(--muted)}
   .box-pad .ic{font-size:28px;margin-bottom:6px}
   .foot-note{font-size:11px;color:var(--muted);margin-top:2px;text-align:center}
+  /* ===== TB4：tab 功能说明卡 / 空态引导 / 操作反馈 =====
+     说明：新增选择器一律 class 驱动（不用 querySelector 取新节点），避免 G3 冻结指纹漂移；
+     文本背景一律实心 hex（color-mix 会被 G7 对比度采样误解析）。 */
+  .tab-what{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .tab-what .tw-card{flex:1 1 260px;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+  .tab-what .tw-t{display:flex;align-items:center;gap:7px;font-size:0.8125rem;font-weight:800;color:var(--ink);margin-bottom:5px}
+  .tab-what .tw-t svg{width:16px;height:16px;flex-shrink:0}
+  .tab-what .tw-d{font-size:12px;color:var(--muted);line-height:1.6}
+  .tab-what .tw-e{margin-top:7px;background:#EFF6EC;border-radius:9px;padding:7px 9px;font-size:11.5px;color:var(--ink);line-height:1.55}
+  .tab-what .tw-e b{color:var(--ink)}
+  .tab-what .tw-e code{background:var(--ht-eef0f5);border-radius:4px;padding:1px 4px;font-family:ui-monospace,Consolas,monospace;font-size:11px}
+  .tb4-empty{display:flex;align-items:flex-start;gap:10px;text-align:left;background:var(--ht-fafbff);border:1px dashed var(--line);border-radius:12px;padding:14px;margin:4px 0 2px}
+  .tb4-empty svg{width:20px;height:20px;flex-shrink:0;margin-top:1px;color:var(--primary)}
+  .tb4-empty .et{font-size:0.8125rem;font-weight:800;color:var(--ink);margin-bottom:4px}
+  .tb4-empty .ed{font-size:12px;color:var(--muted);line-height:1.6}
+  .tb4-empty .ed ol{margin:5px 0 0;padding-left:18px}
+  .tb4-empty .ed li{margin-top:2px}
+  .tb4-empty .ed code{background:var(--ht-eef0f5);border-radius:4px;padding:1px 4px;font-family:ui-monospace,Consolas,monospace}
+  .feed{display:none;align-items:center;gap:7px;border-radius:9px;padding:8px 11px;font-size:12px;margin-top:10px;line-height:1.5}
+  .feed.show{display:flex}
+  .feed.ok{background:#D8F2E5;color:var(--ink)}
+  .feed.bad{background:#FAF0F4;color:#c2263f}
+  .feed.busy{background:var(--ht-eef0f5);color:var(--ink)}
+  .feed svg{width:15px;height:15px;flex-shrink:0}
+  .spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:tb4spin .7s linear infinite;flex-shrink:0}
+  @keyframes tb4spin{to{transform:rotate(360deg)}}
   /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
   .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
   .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
@@ -378,6 +404,21 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 .admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
 .admin-html-page .poll .dot{background:var(--clay-mint)}
 
+/* --- TB4 新增：tab 说明卡 / 空态引导 / 操作反馈（实心 hex，供 G7 对比度采样） --- */
+.admin-html-page .tab-what .tw-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)!important}
+.admin-html-page .tab-what .tw-t{color:var(--text-strong)}
+.admin-html-page .tab-what .tw-d{color:var(--text-muted)}
+.admin-html-page .tab-what .tw-e{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .tab-what .tw-e b{color:var(--text-strong)}
+.admin-html-page .tab-what .tw-e code{background:#EEF0F5!important;color:var(--text-strong)!important}
+.admin-html-page .tb4-empty{background:var(--bg-raised)!important;border:1px dashed var(--bg-input)!important}
+.admin-html-page .tb4-empty .et{color:var(--text-strong)}
+.admin-html-page .tb4-empty .ed{color:var(--text-muted)}
+.admin-html-page .tb4-empty .ed code{background:#EEF0F5!important;color:var(--text-strong)!important}
+.admin-html-page .feed.ok{background:#D8F2E5!important;color:var(--text-strong)!important}
+.admin-html-page .feed.bad{background:#FAF0F4!important;color:#c2263f!important}
+.admin-html-page .feed.busy{background:#EEF0F5!important;color:var(--text-strong)!important}
+
 /* --- reduced-motion：装饰动画/过渡直接不存在（杜绝轮询点重渲染竞态）--- */
 @media (prefers-reduced-motion: reduce){
   .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
@@ -420,6 +461,22 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   <div class="gap-note"><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg> 已接入真实知识库上传闭环：选择/拖入文件 → 前端预校验（扩展名白名单、≤200MB、≤50 个）→ 逐文件上传 →
     导入任务每 5s 轮询跟踪 pending→running→succeeded/failed；支持分区查看与删除。PDF 解析依赖后端 pdfplumber 依赖。</div>
 
+  <!-- TB4：页面级导览（5 秒能说出本页干什么 / 五个 tab 各管什么） -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>这个页面是什么</div>
+      <div class="tw-d">知识库（RAG）控制台：把资料喂进向量库 → 调检索参数 → 验证检索效果 → 复盘每次检索。
+        五个 tab 是<b>一条流水线</b>，建议按「上传 → 集合 → 调参 → 高级检索 → 审计日志」顺序使用。</div>
+      <div class="tw-e"><b>5 秒版：</b>传文档进知识库、调检索参数、查检索效果与流水。每个 tab 顶部都有一张说明卡，写清「调什么、调完看什么」。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-upload-simple"/></svg>五个 tab 各管什么</div>
+      <div class="tw-d"><b>上传</b> 传文件并看导入任务 · <b>集合</b> 看集合行数、发起索引重建 ·
+        <b>调参</b> 建检索参数预设 · <b>审计日志</b> 查每次检索流水 · <b>高级检索</b> 直连全库试跑检索。</div>
+      <div class="tw-e"><b>新手最短路径：</b>「上传」传一份 <code>.md</code> → 等任务变绿 →「高级检索」查一个关键词，命中就说明整条链路通了。</div>
+    </div>
+  </div>
+
   <!-- RAG 控制台 Tabs：五 tab 全接线（FEAT-WIRE-V2 #4：旧版仅「上传」有面板，其余四个为死按钮） -->
   <div class="tabs">
     <button class="tab" data-tab="collections">集合</button>
@@ -431,6 +488,22 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 
   <!-- ① 上传面板（含任务列表/分区/健康） -->
   <div id="rag-panel-upload" class="rag-panel">
+  <!-- TB4：本 tab 功能说明卡 -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-upload-simple"/></svg>这个 tab 做什么 · 上传</div>
+      <div class="tw-d">把课程资料（<code>.md/.txt/.markdown/.pdf/.docx</code>）丢进来，系统会切分成知识块并写入向量库，供 AI 对话检索引用。
+        下方「导入任务」跟踪每批文件的处理进度，轮询到 <b>完成</b> 才算真正入库。</div>
+      <div class="tw-e"><b>调什么：</b>选文件 → 开始上传。<br><b>调完看什么：</b>任务状态变成绿色「完成」，且「集合健康」里的<b>向量行数</b>变大。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>失败怎么办</div>
+      <div class="tw-d">状态是红色「失败」时，看同行的「错误明细」列：常见是 PDF 解析缺依赖或文件格式异常。
+        前端在选文件阶段就会拦掉非法扩展名 / 超 200MB / 超 50 个。</div>
+      <div class="tw-e"><b>示例：</b>上传 <code>课程大纲.docx</code> 后任务显示 <b>完成</b>、分块进度 100% → 表示可被检索到。</div>
+    </div>
+  </div>
+
   <!-- 上传面板 UploadPanel -->
   <div class="card" id="upCard">
     <div class="card-h">
@@ -457,6 +530,7 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
       <div class="prog-meta" id="upMeta"><b>0/0</b> · 转知识任务中…</div>
       <div class="prog-note" id="upNote">axios onUploadProgress → 进度条实时刷新</div>
     </div>
+    <div class="feed" id="upFeed" role="status" aria-live="polite"></div>
 
     <div class="pick-row">
       <button class="btn-primary btn" id="upBtn">开始上传</button>
@@ -530,6 +604,21 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 
 <!-- ② 集合面板（FEAT-WIRE-V2 #4：GET /api/admin/rag/collections + POST rebuild） -->
 <div id="rag-panel-collections" class="rag-panel hidden">
+  <!-- TB4：本 tab 功能说明卡 -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>这个 tab 做什么 · 集合</div>
+      <div class="tw-d">查看知识库有哪几个<b>集合（collection）</b>及其分区的行数与健康状态，并在这里发起<b>索引重建</b>。
+        集合是向量的物理容器，AI 检索时按集合+分区过滤。</div>
+      <div class="tw-e"><b>调什么：</b>选集合/分区 + 模式（incremental 补漏 / full 清空重建）。<br><b>调完看什么：</b>列表里该行 <code>status</code> 回到 <b>ready</b>、<b>最近重建</b> 时间刷新。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>什么时候用重建</div>
+      <div class="tw-d">上传后检索不到内容、或删过向量感觉行数对不上时，用 <b>incremental</b> 补缺失索引；
+        怀疑索引整体损坏才用 <b>full</b>（会清空重来，耗时最长，有二次确认）。</div>
+      <div class="tw-e"><b>示例：</b>新传 10 份文档后检索命中率偏低 → 选 incremental 重建，看行数是否补上。</div>
+    </div>
+  </div>
   <div class="tbl-card">
     <div class="card-h pad-h">
       <h3>知识库集合</h3>
@@ -544,22 +633,39 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   <div class="card">
     <div class="card-h"><h3>索引重建</h3><span class="hint">POST /api/admin/rag/collections/rebuild（202 返回 job_id）</span></div>
     <div class="rag-form">
-      <div class="rf"><label>集合名</label><input id="ragRbCollection" placeholder="edu_knowledge"></div>
+      <div class="rf"><label>集合名</label><input id="ragRbCollection" placeholder="例：edu_knowledge"></div>
       <div class="rf"><label>分区</label><input id="ragRbPartition" value="_default"></div>
       <div class="rf"><label>模式</label>
         <select id="ragRbMode">
-          <option value="incremental">incremental（补缺失索引）</option>
+          <option value="incremental">incremental（补缺失索引，快）</option>
           <option value="full">full（清空重建整库，慢而干净）</option>
         </select>
       </div>
       <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragRbBtn" type="button">提交重建</button></div>
     </div>
-    <div class="muted note-sm" id="ragRbNote" style="margin-top:8px">full 模式有二次确认；提交后可回集合列表观察 status/最近重建时间。</div>
+    <div class="feed" id="ragRbFeed" role="status" aria-live="polite">提交后会返回 job_id；可回集合列表观察 status / 最近重建时间。</div>
   </div>
 </div>
 
 <!-- ③ 调参面板（FEAT-WIRE-V2 #4：GET/POST /api/admin/rag/presets） -->
 <div id="rag-panel-presets" class="rag-panel hidden">
+  <!-- TB4：本 tab 功能说明卡 -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-gear"/></svg>这个 tab 做什么 · 调参</div>
+      <div class="tw-d">把一套检索参数存成<b>预设</b>，供高级检索或 AI 对话按名字复用，避免每次手填。
+        核心四个旋钮：<code>top_k</code>（召回条数）、<code>final_max_k</code>（最终喂给模型条数）、
+        <code>cutoff</code>（相似度丢弃阈值）、<code>rrf_k</code>（多路融合平滑）。</div>
+      <div class="tw-e"><b>调什么：</b>改上面四个数 + HyDE / 图谱开关，填名称后「创建预设」。<br>
+        <b>调完看什么：</b>列表出现该行；再去「高级检索」选这个预设跑一次，看命中条数与 score 变化。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>怎么调不踩坑</div>
+      <div class="tw-d"><b>想召回更全</b>→ 调大 <code>top_k</code>；<b>想让答案更聚焦</b>→ 调小 <code>final_max_k</code> 或调高 <code>cutoff</code>；
+        改完一定用「高级检索」对比同一条 query 的前后命中，确认真的变好再设为默认。</div>
+      <div class="tw-e"><b>示例：</b>「备考-高召回」＝ <code>top_k 40 / final_max_k 8 / cutoff 0.3</code>，适合问法模糊时。</div>
+    </div>
+  </div>
   <div class="tbl-card">
     <div class="card-h pad-h">
       <h3>检索参数预设</h3>
@@ -573,24 +679,40 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   <div class="card">
     <div class="card-h"><h3>新建预设</h3><span class="hint">POST /api/admin/rag/presets（ParamPresetCreate）</span></div>
     <div class="rag-form">
-      <div class="rf"><label>名称 *（2-64）</label><input id="ragPpName" placeholder="如：备考-高召回"></div>
-      <div class="rf"><label>top_k（1-200）</label><input id="ragPpTopk" type="number" value="20" min="1" max="200"></div>
-      <div class="rf"><label>final_max_k（1-30）</label><input id="ragPpFinal" type="number" value="6" min="1" max="30"></div>
-      <div class="rf"><label>cutoff（0.05-0.9）</label><input id="ragPpCutoff" type="number" step="0.05" value="0.4" min="0.05" max="0.9"></div>
-      <div class="rf"><label>rrf_k（5-500）</label><input id="ragPpRrf" type="number" value="60" min="5" max="500"></div>
+      <div class="rf"><label>名称 *（2-64）</label><input id="ragPpName" placeholder="例：备考-高召回"></div>
+      <div class="rf"><label>top_k（1-200）· 召回条数</label><input id="ragPpTopk" type="number" value="20" min="1" max="200"></div>
+      <div class="rf"><label>final_max_k（1-30）· 最终条数</label><input id="ragPpFinal" type="number" value="6" min="1" max="30"></div>
+      <div class="rf"><label>cutoff（0.05-0.9）· 丢弃阈值</label><input id="ragPpCutoff" type="number" step="0.05" value="0.4" min="0.05" max="0.9"></div>
+      <div class="rf"><label>rrf_k（5-500）· 融合平滑</label><input id="ragPpRrf" type="number" value="60" min="5" max="500"></div>
       <div class="rf"><label>HyDE</label><select id="ragPpHyde"><option value="true">开</option><option value="false">关</option></select></div>
       <div class="rf"><label>图谱</label><select id="ragPpGraph"><option value="true">开</option><option value="false">关</option></select></div>
       <div class="rf"><label>模型偏好</label><select id="ragPpModel"><option value="fast">fast</option><option value="quality">quality</option></select></div>
       <div class="rf"><label>设为默认</label><select id="ragPpDefault"><option value="false">否</option><option value="true">是</option></select></div>
-      <div class="rf wide"><label>描述（≤512）</label><input id="ragPpDesc" placeholder="预设用途说明"></div>
+      <div class="rf wide"><label>描述（≤512）</label><input id="ragPpDesc" placeholder="例：问法模糊、需要更高召回时使用"></div>
       <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragPpBtn" type="button">创建预设</button></div>
     </div>
-    <div class="muted note-sm" id="ragPpNote" style="margin-top:8px"></div>
+    <div class="feed" id="ragPpFeed" role="status" aria-live="polite">创建后可在「高级检索」下拉里选到该预设。</div>
   </div>
 </div>
 
 <!-- ④ 审计日志面板（FEAT-WIRE-V2 #4：GET /api/admin/rag/audit-log 分页） -->
 <div id="rag-panel-audit" class="rag-panel hidden">
+  <!-- TB4：本 tab 功能说明卡 -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>这个 tab 做什么 · 审计日志</div>
+      <div class="tw-d">落库的每一次<b>检索调用</b>流水，用来复盘「AI 为什么这么答」：谁问的（角色）、召回多少条、
+        最终用了几条、走的哪个模型、延迟多少、是否降级。</div>
+      <div class="tw-e"><b>调什么：</b>切每页条数 / 翻页（只读，不改数据）。<br>
+        <b>调完看什么：</b>某条 query 的<b>召回/最终</b> 比例异常（如 20/0）或「降级/错误」列非空 → 说明检索侧有问题。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>和「调参」怎么配合</div>
+      <div class="tw-d">调完预设后在这里按时间倒序找刚跑的 query，对比调整前后的 <b>召回/最终</b> 与 <b>延迟</b>，
+        用真实流水判断这次调参是有效还是白改。延迟明显变大往往意味着 <code>top_k</code> 开太高。</div>
+      <div class="tw-e"><b>示例：</b>调高 top_k 后延迟从 300ms 涨到 1.2s、最终条数没变 → 该旋钮对当前库没收益，回退。</div>
+    </div>
+  </div>
   <div class="tbl-card">
     <div class="card-h pad-h">
       <h3>检索审计日志</h3>
@@ -614,16 +736,33 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 
 <!-- ⑤ 高级检索面板（FEAT-WIRE-V2 #4：POST /api/admin/rag/search 三通道检索） -->
 <div id="rag-panel-search" class="rag-panel hidden">
+  <!-- TB4：本 tab 功能说明卡 -->
+  <div class="tab-what">
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg>这个 tab 做什么 · 高级检索</div>
+      <div class="tw-d">以管理员身份<b>直连全库</b>跑一次检索，看到原始召回结果（含 score / 来源文件 / 命中通道）。
+        这是验证「调参」和「上传」是否生效的<b>唯一直接手段</b>——AI 对话里只能看到最终答案，看不到召回明细。</div>
+      <div class="tw-e"><b>调什么：</b>输入查询词，可选用某个预设，点「检索」。<br>
+        <b>调完看什么：</b>命中条数与 <code>score</code> 排序；<code>via</code> 显示命中了哪条通道（向量/关键词/图谱）。</div>
+    </div>
+    <div class="tw-card">
+      <div class="tw-t"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>结果怎么读</div>
+      <div class="tw-d">「无结果（final_count=0）」＝ 库里有内容但都被 <code>cutoff</code> 丢掉了，回「调参」把阈值调低再试；
+        一直查不到任何东西，先回「上传」确认文件是否真的导入成功。</div>
+      <div class="tw-e"><b>示例：</b>查「向量检索 三通道」→ 命中 6 条、score 0.72 起 → 说明该主题资料已入库且可检索。</div>
+    </div>
+  </div>
   <div class="card">
     <div class="card-h"><h3>高级检索（管理员全库）</h3><span class="hint">POST /api/admin/rag/search · AdminSearchRequest</span></div>
     <div class="rag-form">
-      <div class="rf wide"><label>查询词 *（1-500）</label><input id="ragSQuery" placeholder="如：向量检索 三通道"></div>
+      <div class="rf wide"><label>查询词 *（1-500）</label><input id="ragSQuery" placeholder="例：向量检索 三通道"></div>
       <div class="rf"><label>top_k（1-200）</label><input id="ragSTopk" type="number" value="20" min="1" max="200"></div>
       <div class="rf"><label>final_max_k（1-30）</label><input id="ragSFinal" type="number" value="8" min="1" max="30"></div>
       <div class="rf"><label>参数预设</label><select id="ragSPreset"><option value="">默认（服务端）</option></select></div>
       <div class="rf"><label>&nbsp;</label><button class="btn-primary btn" id="ragSBtn" type="button">检索</button></div>
     </div>
-    <div id="ragSRes" class="muted note-sm" style="margin-top:10px">输入查询词后点「检索」，结果按 score 降序展示。</div>
+    <div class="feed" id="ragSFeed" role="status" aria-live="polite">输入查询词后点「检索」，结果按 score 降序展示。</div>
+    <div id="ragSRes"></div>
   </div>
 </div>
 
@@ -653,6 +792,22 @@ window.bootAdmin = function () {
   var MAX_SIZE = 200 * 1024 * 1024;          // 单文件 ≤200MB（契约⑥）
   var MAX_FILES = 50;                        // ≤50 个（admin/upload 上限，契约⑥）
 
+  /* TB4：统一结果反馈条 + 空态引导（与 admin-mcp 同构） */
+  var ICONS = {
+    ok: '<svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg>',
+    bad: '<svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>',
+    busy: '<span class="spin" aria-hidden="true"></span>'
+  };
+  function feed(id, kind, msg) {
+    var el = $(id); if (!el) return;
+    if (!kind) { el.className = "feed"; el.innerHTML = ""; return; }
+    el.className = "feed show " + kind;
+    el.innerHTML = (ICONS[kind] || ICONS.busy) + "<span>" + esc(msg) + "</span>";
+  }
+  function emptyHint(title, body) {
+    return '<div class="tb4-empty"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg><div><div class="et">' + esc(title) + '</div><div class="ed">' + body + '</div></div></div>';
+  }
+
   var files = [];                            // 已选区：{file, reason}
   var pollTimer = null, partErrEl = null;
 
@@ -679,7 +834,10 @@ window.bootAdmin = function () {
 
   function renderFiles() {
     if (!fileListEl) return;
-    if (!files.length) { fileListEl.innerHTML = '<div class="muted file-note">尚未选择文件 — 最多 50 个，前端即时校验拦截</div>'; return; }
+    if (!files.length) { fileListEl.innerHTML = emptyHint("还没有选择文件",
+      "点击上方虚线区域或把文件拖进来即可。<ol><li>支持 <code>.md / .txt / .markdown / .pdf / .docx</code>；</li>"
+      + '<li>单文件 ≤ 200MB，一次最多 50 个；</li>'
+      + '<li>选完点「开始上传」，下方「导入任务」会显示进度。</li></ol>'); return; }
     fileListEl.innerHTML = files.map(function (it, i) {
       var m = EXT_META[extOf(it.file.name)] || ["?", "fx-other"];
       var st = it.reason
@@ -711,7 +869,13 @@ window.bootAdmin = function () {
       if (files.length >= MAX_FILES) break;
       files.push({ file: incoming[i], reason: validateFile(incoming[i]) });
     }
-    if (files.length - before !== incoming.length) showUploadNote("超过 50 个文件上限，超出部分已忽略");
+    if (files.length - before !== incoming.length) showUploadNote("超过 50 个文件上限，超出部分已忽略", true);
+    var bad = files.filter(function (f) { return f.reason; }).length;
+    var good = files.length - bad;
+    if (files.length) {
+      feed("upFeed", bad ? "bad" : "ok",
+        "已选 " + files.length + " 个文件：合法 " + good + " 个" + (bad ? ("，被拦截 " + bad + " 个（原因见各行右侧）") : "") + "。确认无误后点「开始上传」。");
+    } else { feed("upFeed", null); }
     renderFiles(); updateStartBtn();
   }
   if (fileInput) {
@@ -734,12 +898,13 @@ window.bootAdmin = function () {
   var uploading = false;
   if (upBtn) upBtn.onclick = function () {
     var good = files.filter(function (f) { return !f.reason; });
-    if (!good.length) { showUploadNote("请先选择合法的文档文件", true); return; }
+    if (!good.length) { showUploadNote("请先选择合法的文档文件", true); feed("upFeed", "bad", "没有可上传的文件：请先选择合法文档（.md/.txt/.markdown/.pdf/.docx）"); return; }
     if (uploading) return;
     uploading = true;
     upBtn.disabled = true; upBtn.textContent = "上传中…";
     if (upProg) upProg.classList.add("show");
-    var done = 0, total = good.length;
+    var done = 0, total = good.length, failed = 0;
+    feed("upFeed", "busy", "正在上传 0/" + total + " …（每个文件单独提交，可在「导入任务」跟踪处理进度）");
     function prog() {
       if (upFill) upFill.style.width = (done / total * 100) + "%";
       if (upMeta) upMeta.innerHTML = "<b>" + done + "/" + total + "</b> · 已转交知识任务";
@@ -750,6 +915,9 @@ window.bootAdmin = function () {
         if (upProg) setTimeout(function () { upProg.classList.remove("show"); }, 900);
         if (upMeta) upMeta.innerHTML = "<b>" + done + "/" + total + "</b> · 已创建导入任务";
         showUploadNote("已提交 " + done + " 个文件，进入任务列表跟踪（5s 轮询）");
+        feed("upFeed", failed ? "bad" : "ok",
+          failed ? ("提交结束：" + (total - failed) + " 个成功、" + failed + " 个失败。失败原因见上方提示或「导入任务」。")
+                 : ("已提交 " + done + " 个文件并创建导入任务。请到下方「导入任务」等待状态变为绿色「完成」，那才算真正入库。"));
         var inv = $("invalidateLine"); if (inv) inv.classList.add("show");
         files = []; renderFiles();                // 清空选区，避免重复提交
         refreshTasks(); startPoll();
@@ -765,12 +933,15 @@ window.bootAdmin = function () {
         if (xhr.status >= 200 && xhr.status < 300 && j && j.code === 0) {
           showUploadNote("已提交 " + (done + 1) + "/" + total + "（" + esc(it.file.name) + "）");
         } else {
+          failed++;
           var msg = (j && (j.message || j.detail)) || ("HTTP " + xhr.status);
           showUploadNote("上传失败：" + esc(it.file.name) + " — " + esc(msg), true);
         }
-        done++; prog(); submit(i + 1);
+        done++; prog();
+        feed("upFeed", "busy", "上传中 " + done + "/" + total + " …" + (failed ? ("（已失败 " + failed + " 个）") : ""));
+        submit(i + 1);
       };
-      xhr.onerror = function () { showUploadNote("网络错误：上传 " + esc(it.file.name) + " 失败", true); done++; prog(); submit(i + 1); };
+      xhr.onerror = function () { failed++; showUploadNote("网络错误：上传 " + esc(it.file.name) + " 失败", true); done++; prog(); submit(i + 1); };
       xhr.send(fd);
     }
     prog(); submit(0);
@@ -792,7 +963,11 @@ window.bootAdmin = function () {
     var items = (list && list.items) || (Array.isArray(list) ? list : []);
     var te = $("taskTotal");
     if (te) te.textContent = (list && list.total != null) ? list.total : items.length;
-    if (!items.length) { body.innerHTML = '<tr><td colspan="8" class="box-pad"><div class="ic">📭</div>暂无导入任务</td></tr>'; return; }
+    if (!items.length) { body.innerHTML = '<tr><td colspan="8">' + emptyHint("还没有导入任务",
+      "任务只在<b>真正上传过文件</b>之后才出现，所以首次打开是空的。<ol>"
+      + '<li>回到上方「上传文件」选择 <code>.md/.txt/.markdown/.pdf/.docx</code> 并点「开始上传」；</li>'
+      + '<li>任务会自动出现在这里并从「排队中」→「导入中」→「完成」推进（每 5s 刷新）；</li>'
+      + '<li>看到绿色「完成」＝ 内容已写入向量库，可被 AI 检索。</li></ol>') + '</td></tr>'; return; }
     body.innerHTML = items.map(function (x) {
       var tc = x.total_chunks || 0, ic = x.imported_chunks || 0;
       var pct = tc > 0 ? Math.round(ic / tc * 100) : 0;
@@ -833,7 +1008,9 @@ window.bootAdmin = function () {
       if (!partList) return;
       var hP = $("hParts"); if (hP) hP.textContent = (data && data.total_partitions != null ? data.total_partitions : parts.length);
       if (!parts.length) {
-        if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = '<div class="ic">🗃️</div>暂无分区'; }
+        if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = emptyHint("暂无分区",
+          "分区用来把知识库按业务隔离（如按课程/租户）。<ol><li>上传文件时指定分区名即自动创建；</li>"
+          + '<li>公共分区 <code>_default</code> 由系统预置、不可删除。</li></ol>'); }
         if (defaultHint) defaultHint.style.display = "none";
         partList.innerHTML = ""; return;
       }
@@ -862,7 +1039,9 @@ window.bootAdmin = function () {
         };
       })(ds[n]);
     }).catch(function (e) {
-      if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = '<div class="ic">⚠️</div>分区加载失败：' + esc((e && e.message) || "后端不可用"); }
+      if (partEmpty) { partEmpty.style.display = "block"; partEmpty.innerHTML = emptyHint("分区加载失败",
+        "后端未响应，分区分组暂时取不到。<ol><li>确认后端服务已启动；</li><li>刷新本页重试。</li></ol>"
+        + '<div style="margin-top:6px;color:#c2263f">' + esc((e && e.message) || "后端不可用") + '</div>'); }
     });
   }
 
@@ -917,7 +1096,10 @@ window.bootAdmin = function () {
     EAPI.get("/api/admin/rag/collections").then(function (cols) {
       var arr = Array.isArray(cols) ? cols : [];
       var body = $("ragColBody");
-      if (!arr.length) { body.innerHTML = '<tr><td colspan="7" class="box-pad">暂无集合</td></tr>'; return; }
+      if (!arr.length) { body.innerHTML = '<tr><td colspan="7">' + emptyHint("还没有任何集合",
+        "集合是向量的物理容器，通常由上传流程自动创建。<ol><li>先到「上传」tab 传一份文档；</li>"
+        + '<li>上传完成后回到本 tab，集合与行数会出现在这里；</li>'
+        + '<li>若此处长期为空但「上传」显示完成，说明索引尚未建立，可用下方「索引重建」补一次。</li></ol>') + '</td></tr>'; return; }
       body.innerHTML = arr.map(function (c) {
         return '<tr><td class="nb">' + esc(c.collection_name || "—") + '</td>'
           + '<td>' + esc(c.partition_name || "_default") + '</td>'
@@ -934,20 +1116,25 @@ window.bootAdmin = function () {
         doRagRebuild();
       };
     }).catch(function (e) {
-      $("ragColBody").innerHTML = '<tr><td colspan="7" class="box-pad">集合加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+      $("ragColBody").innerHTML = '<tr><td colspan="7">' + emptyHint("集合加载失败",
+        "后端未响应，集合列表暂时取不到。<ol><li>确认后端服务已启动；</li><li>切到别的 tab 再切回来可重新拉取。</li></ol>"
+        + '<div style="margin-top:6px;color:#c2263f">' + esc((e && e.message) || "后端不可用") + '</div>') + '</td></tr>';
     });
   }
   function doRagRebuild() {
     var col = ($("ragRbCollection").value || "").trim() || "knowledge_chunk_v1";
     var part = ($("ragRbPartition").value || "").trim() || "_default";
     var mode = $("ragRbMode").value;
-    var note = $("ragRbNote");
+    var btn = $("ragRbBtn");
     if (mode === "full" && !window.confirm("确认对「" + col + " / " + part + "」执行 full 全量重建？将清空后重建整库，耗时较长。")) return;
-    note.textContent = "重建任务提交中…";
+    feed("ragRbFeed", "busy", "正在提交重建任务（" + col + " / " + part + " · " + mode + "）…");
+    if (btn) { btn.disabled = true; }
     EAPI.post("/api/admin/rag/collections/rebuild", { collection_name: col, partition_name: part, mode: mode }).then(function (r) {
-      note.textContent = "重建任务已提交（202）：job_id=" + esc((r && (r.job_id || r.task_id)) || JSON.stringify(r || {}).slice(0, 80));
+      var job = (r && (r.job_id || r.task_id)) || JSON.stringify(r || {}).slice(0, 80);
+      feed("ragRbFeed", "ok", "重建任务已提交（202）：job_id=" + job + "。约 1.5s 后自动回集合列表刷新 status / 最近重建时间。");
       setTimeout(refreshRagCollections, 1500);
-    }).catch(function (e) { note.textContent = "重建提交失败：" + esc((e && e.message) || "未知错误"); });
+    }).catch(function (e) { feed("ragRbFeed", "bad", "重建提交失败：" + ((e && e.message) || "未知错误")); })
+      .then(function () { if (btn) btn.disabled = false; });
   }
   if ($("ragRbBtn")) $("ragRbBtn").onclick = doRagRebuild;
 
@@ -956,7 +1143,11 @@ window.bootAdmin = function () {
     EAPI.get("/api/admin/rag/presets").then(function (arr) {
       arr = Array.isArray(arr) ? arr : [];
       var body = $("ragPresetBody");
-      if (!arr.length) { body.innerHTML = '<tr><td colspan="10" class="box-pad">暂无预设</td></tr>'; }
+      if (!arr.length) { body.innerHTML = '<tr><td colspan="10">' + emptyHint("还没有任何预设",
+        "预设＝一整套检索参数的名字，建好后可被高级检索和 AI 对话直接选用。<ol>"
+        + '<li>在下方「新建预设」填名称（例：<code>备考-高召回</code>）；</li>'
+        + '<li>按需改 <code>top_k</code> / <code>final_max_k</code> / <code>cutoff</code> / <code>rrf_k</code>；</li>'
+        + '<li>点「创建预设」，然后用「高级检索」选它跑一次对比效果。</li></ol>') + '</td></tr>'; }
       else {
         body.innerHTML = arr.map(function (p) {
           return '<tr><td class="nb">' + esc(p.preset_name) + (p.is_default ? ' <span class="badge b-done"><span class="pd"></span>默认</span>' : '') + '</td>'
@@ -975,12 +1166,15 @@ window.bootAdmin = function () {
         }).join("");
       }
     }).catch(function (e) {
-      $("ragPresetBody").innerHTML = '<tr><td colspan="10" class="box-pad">预设加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+      $("ragPresetBody").innerHTML = '<tr><td colspan="10">' + emptyHint("预设加载失败",
+        "后端未响应，预设列表暂时取不到。<ol><li>确认后端服务已启动；</li><li>切换 tab 或刷新本页重试。</li></ol>"
+        + '<div style="margin-top:6px;color:#c2263f">' + esc((e && e.message) || "后端不可用") + '</div>') + '</td></tr>';
     });
   }
   if ($("ragPpBtn")) $("ragPpBtn").onclick = function () {
     var name = $("ragPpName").value.trim();
-    if (!name || name.length < 2) { $("ragPpNote").textContent = "名称必填（2-64 字符）"; return; }
+    var btn = $("ragPpBtn");
+    if (!name || name.length < 2) { feed("ragPpFeed", "bad", "名称必填（2-64 字符），例：备考-高召回"); return; }
     var body = {
       preset_name: name,
       is_default: $("ragPpDefault").value === "true",
@@ -993,11 +1187,14 @@ window.bootAdmin = function () {
       llm_model_pref: $("ragPpModel").value
     };
     var desc = $("ragPpDesc").value.trim(); if (desc) body.description = desc;
+    feed("ragPpFeed", "busy", "正在创建预设「" + name + "」…");
+    if (btn) btn.disabled = true;
     EAPI.post("/api/admin/rag/presets", body).then(function () {
-      $("ragPpNote").textContent = "预设「" + name + "」已创建（POST 200）";
+      feed("ragPpFeed", "ok", "预设「" + name + "」已创建。下一步：到「高级检索」选这个预设跑一次，对比命中条数与 score。");
       $("ragPpName").value = ""; $("ragPpDesc").value = "";
       refreshRagPresets();
-    }).catch(function (e) { $("ragPpNote").textContent = "创建失败：" + esc((e && e.message) || "未知错误"); });
+    }).catch(function (e) { feed("ragPpFeed", "bad", "创建失败：" + ((e && e.message) || "未知错误")); })
+      .then(function () { if (btn) btn.disabled = false; });
   };
 
   /* ---- 审计日志 ---- */
@@ -1008,7 +1205,11 @@ window.bootAdmin = function () {
     EAPI.get("/api/admin/rag/audit-log?page=" + ragAuditPage + "&page_size=" + ps).then(function (d) {
       var items = (d && d.items) || [], total = (d && d.total) || 0, pg = (d && d.page) || ragAuditPage;
       var body = $("ragAuditBody");
-      if (!items.length) { body.innerHTML = '<tr><td colspan="9" class="box-pad">暂无审计记录</td></tr>'; }
+      if (!items.length) { body.innerHTML = '<tr><td colspan="9">' + emptyHint("还没有检索审计记录",
+        "这里只记录<b>真实发生过的检索调用</b>。<ol>"
+        + '<li>到「高级检索」tab 输入查询词点「检索」，就会生成一条记录；</li>'
+        + '<li>或让 AI 在对话里问答，其检索也会落库在这里；</li>'
+        + '<li>刷新本 tab 即可看到最新流水。</li></ol>') + '</td></tr>'; }
       else {
         body.innerHTML = items.map(function (x) {
           return '<tr><td class="nb">' + esc(x.audit_id || "—") + '</td>'
@@ -1027,7 +1228,9 @@ window.bootAdmin = function () {
       $("ragAuditPrev").disabled = pg <= 1;
       $("ragAuditNext").disabled = pg * ps >= total;
     }).catch(function (e) {
-      $("ragAuditBody").innerHTML = '<tr><td colspan="9" class="box-pad">审计日志加载失败：' + esc((e && e.message) || "后端不可用") + '</td></tr>';
+      $("ragAuditBody").innerHTML = '<tr><td colspan="9">' + emptyHint("审计日志加载失败",
+        "后端未响应，日志暂时取不到。<ol><li>确认后端服务已启动；</li><li>点页码按钮或切换 tab 重试。</li></ol>"
+        + '<div style="margin-top:6px;color:#c2263f">' + esc((e && e.message) || "后端不可用") + '</div>') + '</td></tr>';
     });
   }
   if ($("ragAuditPrev")) {
@@ -1042,13 +1245,21 @@ window.bootAdmin = function () {
   if ($("ragSBtn")) $("ragSBtn").onclick = function () {
     var q = $("ragSQuery").value.trim();
     var res = $("ragSRes");
-    if (!q) { res.innerHTML = '<span style="color:var(--candy-red)">查询词必填</span>'; return; }
+    var btn = $("ragSBtn");
+    if (!q) { feed("ragSFeed", "bad", "查询词必填（1-500 字符），例：向量检索 三通道"); res.innerHTML = ""; return; }
     var body = { query: q, top_k: +$("ragSTopk").value || 20, final_max_k: +$("ragSFinal").value || 8 };
     var pid = $("ragSPreset").value; if (pid) body.preset_id = +pid;
-    res.textContent = "检索中…（三通道召回 + 融合排序）";
+    feed("ragSFeed", "busy", "正在检索「" + q + "」…（三通道召回 + 融合排序，通常 1-3s）");
+    res.innerHTML = '<div class="doc-card"><div class="dc-h" style="gap:8px"><span class="spin"></span>检索中… 正在召回向量 / 关键词 / 图谱三路结果</div></div>';
+    if (btn) btn.disabled = true;
     EAPI.post("/api/admin/rag/search", body).then(function (r) {
       var docs = (r && r.docs) || [];
-      if (!docs.length) { res.innerHTML = "无结果（final_count=0）"; return; }
+      if (!docs.length) {
+        feed("ragSFeed", "bad", "命中 0 条。库里可能没有这个主题，或相似度都被 cutoff 丢掉了 —— 回「调参」把 cutoff 调低，或到「上传」确认资料已导入。");
+        res.innerHTML = ""; return;
+      }
+      var top = Number((docs[0] && docs[0].score) || 0).toFixed(4);
+      feed("ragSFeed", "ok", "命中 " + docs.length + " 条，按 score 降序；最高分 " + top + "。若条数偏少可回「调参」增大 top_k 后重跑对比。");
       res.innerHTML = "命中 " + docs.length + " 条，按 score 降序：" + docs.map(function (d) {
         return '<div class="doc-card"><div class="dc-h">'
           + '<span class="dc-score">score ' + Number(d.score || 0).toFixed(4) + '</span>'
@@ -1059,7 +1270,10 @@ window.bootAdmin = function () {
           + '<span>via ' + esc(d.source_channel || "—") + '</span>'
           + '</div><div class="dc-body">' + esc(String(d.content || "").slice(0, 400)) + '</div></div>';
       }).join("");
-    }).catch(function (e) { res.innerHTML = '<span style="color:var(--candy-red)">检索失败：' + esc((e && e.message) || "未知错误") + '</span>'; });
+    }).catch(function (e) {
+      feed("ragSFeed", "bad", "检索失败：" + ((e && e.message) || "未知错误"));
+      res.innerHTML = "";
+    }).then(function () { if (btn) btn.disabled = false; });
   };
 };
 </script>

@@ -1,8 +1,8 @@
 # DOM Hooks Frozen Inventory
 
-Generated: 2026-09-24T02:14:10.915Z
+Generated: 2026-09-24T02:35:49.269Z
 
-Source scope: `edu-frontend/public/*.html` (27 current pages, 1278 hook expressions).
+Source scope: `edu-frontend/public/*.html` (27 current pages, 1283 hook expressions).
 
 > The dispatch document says 19 pages, while the current directory contains 25. The inventory intentionally follows the live filesystem so new pages cannot escape G3.
 
@@ -94,23 +94,23 @@ Total hooks: 17
 
 | Line | Category | Selector | Expression |
 |---:|---|---|---|
-| 452 | classList operations | - | `classList.add('open')` |
-| 452 | classList operations | - | `classList.add('open')` |
-| 452 | classList operations | - | `classList.remove('open')` |
-| 452 | classList operations | - | `classList.remove('open')` |
-| 452 | classList operations | - | `classList.contains('open')` |
-| 452 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
-| 452 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
-| 452 | getElementById | gnav | `getElementById('gnav')` |
-| 462 | getElementById | - | `getElementById(id)` |
-| 488 | querySelectorAll | tr[data-sid] | `querySelectorAll("tr[data-sid]")` |
-| 489 | event delegation selectors | [data-hist] | `addEventListener("click",function(ev){ if(ev.target.closest("[data-hist]")` |
-| 490 | closest | [data-hist] | `closest("[data-hist]")` |
-| 494 | querySelectorAll | [data-hist] | `querySelectorAll("[data-hist]")` |
-| 505 | classList operations | - | `classList.add("show")` |
-| 522 | classList operations | - | `classList.remove("show")` |
-| 523 | classList operations | - | `classList.remove("show")` |
-| 524 | classList operations | - | `classList.remove("show")` |
+| 457 | classList operations | - | `classList.add('open')` |
+| 457 | classList operations | - | `classList.add('open')` |
+| 457 | classList operations | - | `classList.remove('open')` |
+| 457 | classList operations | - | `classList.remove('open')` |
+| 457 | classList operations | - | `classList.contains('open')` |
+| 457 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
+| 457 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
+| 457 | getElementById | gnav | `getElementById('gnav')` |
+| 467 | getElementById | - | `getElementById(id)` |
+| 493 | querySelectorAll | tr[data-sid] | `querySelectorAll("tr[data-sid]")` |
+| 494 | event delegation selectors | [data-hist] | `addEventListener("click",function(ev){ if(ev.target.closest("[data-hist]")` |
+| 495 | closest | [data-hist] | `closest("[data-hist]")` |
+| 499 | querySelectorAll | [data-hist] | `querySelectorAll("[data-hist]")` |
+| 510 | classList operations | - | `classList.add("show")` |
+| 527 | classList operations | - | `classList.remove("show")` |
+| 528 | classList operations | - | `classList.remove("show")` |
+| 529 | classList operations | - | `classList.remove("show")` |
 
 ## admin-course-detail.html
 
@@ -383,37 +383,37 @@ Total hooks: 31
 
 | Line | Category | Selector | Expression |
 |---:|---|---|---|
-| 528 | classList operations | - | `classList.add('open')` |
-| 528 | classList operations | - | `classList.add('open')` |
-| 528 | classList operations | - | `classList.remove('open')` |
-| 528 | classList operations | - | `classList.remove('open')` |
-| 528 | classList operations | - | `classList.contains('open')` |
-| 528 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
-| 528 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
-| 528 | getElementById | gnav | `getElementById('gnav')` |
-| 536 | getElementById | view-loading | `getElementById('view-loading')` |
-| 537 | getElementById | view-success | `getElementById('view-success')` |
-| 556 | querySelector | .page-head .sub, .demo-note | `querySelector(".page-head .sub, .demo-note")` |
-| 565 | getElementById | - | `getElementById(v)` |
-| 573 | getElementById | kpi-total | `getElementById("kpi-total")` |
-| 574 | getElementById | kpi-active7d | `getElementById("kpi-active7d")` |
-| 575 | getElementById | kpi-newreg7d | `getElementById("kpi-newreg7d")` |
-| 576 | getElementById | kpi-disabled | `getElementById("kpi-disabled")` |
-| 578 | getElementById | rb-admin | `getElementById("rb-admin")` |
-| 579 | getElementById | rb-manager | `getElementById("rb-manager")` |
-| 580 | getElementById | rb-teacher | `getElementById("rb-teacher")` |
-| 581 | getElementById | rb-student | `getElementById("rb-student")` |
-| 583 | getElementById | kpi-avglogin | `getElementById("kpi-avglogin")` |
-| 587 | getElementById | bars-real | `getElementById("bars-real")` |
-| 602 | getElementById | donut-real | `getElementById("donut-real")` |
-| 608 | getElementById | donut-total | `getElementById("donut-total")` |
-| 609 | getElementById | donut-sub | `getElementById("donut-sub")` |
-| 611 | getElementById | lg-admin | `getElementById("lg-admin")` |
-| 612 | getElementById | lg-student | `getElementById("lg-student")` |
-| 613 | getElementById | lg-teacher | `getElementById("lg-teacher")` |
-| 614 | getElementById | lg-manager | `getElementById("lg-manager")` |
-| 616 | getElementById | updated-at | `getElementById("updated-at")` |
-| 620 | getElementById | err-msg | `getElementById("err-msg")` |
+| 529 | classList operations | - | `classList.add('open')` |
+| 529 | classList operations | - | `classList.add('open')` |
+| 529 | classList operations | - | `classList.remove('open')` |
+| 529 | classList operations | - | `classList.remove('open')` |
+| 529 | classList operations | - | `classList.contains('open')` |
+| 529 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
+| 529 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
+| 529 | getElementById | gnav | `getElementById('gnav')` |
+| 537 | getElementById | view-loading | `getElementById('view-loading')` |
+| 538 | getElementById | view-success | `getElementById('view-success')` |
+| 557 | querySelector | .page-head .sub, .demo-note | `querySelector(".page-head .sub, .demo-note")` |
+| 566 | getElementById | - | `getElementById(v)` |
+| 574 | getElementById | kpi-total | `getElementById("kpi-total")` |
+| 575 | getElementById | kpi-active7d | `getElementById("kpi-active7d")` |
+| 576 | getElementById | kpi-newreg7d | `getElementById("kpi-newreg7d")` |
+| 577 | getElementById | kpi-disabled | `getElementById("kpi-disabled")` |
+| 579 | getElementById | rb-admin | `getElementById("rb-admin")` |
+| 580 | getElementById | rb-manager | `getElementById("rb-manager")` |
+| 581 | getElementById | rb-teacher | `getElementById("rb-teacher")` |
+| 582 | getElementById | rb-student | `getElementById("rb-student")` |
+| 584 | getElementById | kpi-avglogin | `getElementById("kpi-avglogin")` |
+| 588 | getElementById | bars-real | `getElementById("bars-real")` |
+| 603 | getElementById | donut-real | `getElementById("donut-real")` |
+| 609 | getElementById | donut-total | `getElementById("donut-total")` |
+| 610 | getElementById | donut-sub | `getElementById("donut-sub")` |
+| 612 | getElementById | lg-admin | `getElementById("lg-admin")` |
+| 613 | getElementById | lg-student | `getElementById("lg-student")` |
+| 614 | getElementById | lg-teacher | `getElementById("lg-teacher")` |
+| 615 | getElementById | lg-manager | `getElementById("lg-manager")` |
+| 617 | getElementById | updated-at | `getElementById("updated-at")` |
+| 621 | getElementById | err-msg | `getElementById("err-msg")` |
 
 ## admin-infra.html
 
@@ -434,50 +434,50 @@ Total hooks: 33
 
 | Line | Category | Selector | Expression |
 |---:|---|---|---|
-| 378 | getElementById | - | `getElementById(v)` |
-| 384 | getElementById | runDemo | `getElementById("runDemo")` |
-| 392 | getElementById | err-msg | `getElementById("err-msg")` |
-| 415 | getElementById | deps | `getElementById("deps")` |
-| 422 | getElementById | viewer-chip | `getElementById("viewer-chip")` |
-| 426 | getElementById | raw-line | `getElementById("raw-line")` |
-| 437 | getElementById | k-rl-hits | `getElementById("k-rl-hits")` |
-| 438 | getElementById | k-rl-keys | `getElementById("k-rl-keys")` |
-| 439 | getElementById | k-rl-rej | `getElementById("k-rl-rej")` |
-| 441 | getElementById | rl-rows | `getElementById("rl-rows")` |
-| 448 | getElementById | rl-bypass | `getElementById("rl-bypass")` |
-| 459 | getElementById | k-cache-keys | `getElementById("k-cache-keys")` |
-| 460 | getElementById | k-cache-mutex | `getElementById("k-cache-mutex")` |
-| 461 | getElementById | k-cache-sample | `getElementById("k-cache-sample")` |
-| 462 | getElementById | cmp-box | `getElementById("cmp-box")` |
-| 479 | getElementById | cmp-verdict | `getElementById("cmp-verdict")` |
-| 492 | getElementById | k-lock-impl | `getElementById("k-lock-impl")` |
-| 493 | getElementById | k-lock-count | `getElementById("k-lock-count")` |
-| 495 | getElementById | lock-rows | `getElementById("lock-rows")` |
-| 504 | getElementById | k-queue-impl | `getElementById("k-queue-impl")` |
-| 505 | getElementById | k-queue-count | `getElementById("k-queue-count")` |
-| 506 | getElementById | k-queue-depth | `getElementById("k-queue-depth")` |
-| 508 | getElementById | queue-rows | `getElementById("queue-rows")` |
-| 516 | getElementById | k-mongo-db | `getElementById("k-mongo-db")` |
-| 518 | getElementById | mongo-rows | `getElementById("mongo-rows")` |
-| 519 | form.elements / name / tagName | - | `.name` |
-| 522 | getElementById | mongo-bad | `getElementById("mongo-bad")` |
-| 530 | getElementById | k-ev-total | `getElementById("k-ev-total")` |
-| 531 | getElementById | k-ev-worker | `getElementById("k-ev-worker")` |
-| 532 | getElementById | k-ev-q | `getElementById("k-ev-q")` |
-| 534 | getElementById | ev-rows | `getElementById("ev-rows")` |
-| 541 | getElementById | ev-mask-note | `getElementById("ev-mask-note")` |
-| 554 | getElementById | runDemo | `getElementById("runDemo")` |
+| 397 | getElementById | - | `getElementById(v)` |
+| 403 | getElementById | runDemo | `getElementById("runDemo")` |
+| 411 | getElementById | err-msg | `getElementById("err-msg")` |
+| 434 | getElementById | deps | `getElementById("deps")` |
+| 441 | getElementById | viewer-chip | `getElementById("viewer-chip")` |
+| 445 | getElementById | raw-line | `getElementById("raw-line")` |
+| 456 | getElementById | k-rl-hits | `getElementById("k-rl-hits")` |
+| 457 | getElementById | k-rl-keys | `getElementById("k-rl-keys")` |
+| 458 | getElementById | k-rl-rej | `getElementById("k-rl-rej")` |
+| 460 | getElementById | rl-rows | `getElementById("rl-rows")` |
+| 467 | getElementById | rl-bypass | `getElementById("rl-bypass")` |
+| 478 | getElementById | k-cache-keys | `getElementById("k-cache-keys")` |
+| 479 | getElementById | k-cache-mutex | `getElementById("k-cache-mutex")` |
+| 480 | getElementById | k-cache-sample | `getElementById("k-cache-sample")` |
+| 481 | getElementById | cmp-box | `getElementById("cmp-box")` |
+| 498 | getElementById | cmp-verdict | `getElementById("cmp-verdict")` |
+| 511 | getElementById | k-lock-impl | `getElementById("k-lock-impl")` |
+| 512 | getElementById | k-lock-count | `getElementById("k-lock-count")` |
+| 514 | getElementById | lock-rows | `getElementById("lock-rows")` |
+| 523 | getElementById | k-queue-impl | `getElementById("k-queue-impl")` |
+| 524 | getElementById | k-queue-count | `getElementById("k-queue-count")` |
+| 525 | getElementById | k-queue-depth | `getElementById("k-queue-depth")` |
+| 527 | getElementById | queue-rows | `getElementById("queue-rows")` |
+| 535 | getElementById | k-mongo-db | `getElementById("k-mongo-db")` |
+| 537 | getElementById | mongo-rows | `getElementById("mongo-rows")` |
+| 538 | form.elements / name / tagName | - | `.name` |
+| 541 | getElementById | mongo-bad | `getElementById("mongo-bad")` |
+| 549 | getElementById | k-ev-total | `getElementById("k-ev-total")` |
+| 550 | getElementById | k-ev-worker | `getElementById("k-ev-worker")` |
+| 551 | getElementById | k-ev-q | `getElementById("k-ev-q")` |
+| 553 | getElementById | ev-rows | `getElementById("ev-rows")` |
+| 560 | getElementById | ev-mask-note | `getElementById("ev-mask-note")` |
+| 573 | getElementById | runDemo | `getElementById("runDemo")` |
 
 ## admin-mcp.html
 
-Total hooks: 18
+Total hooks: 23
 
 | Category | Count |
 |---|---:|
 | getElementById | 4 |
-| querySelector | 4 |
-| querySelectorAll | 5 |
-| classList operations | 5 |
+| querySelector | 5 |
+| querySelectorAll | 8 |
+| classList operations | 6 |
 | closest | 0 |
 | matches | 0 |
 | event delegation selectors | 0 |
@@ -487,24 +487,29 @@ Total hooks: 18
 
 | Line | Category | Selector | Expression |
 |---:|---|---|---|
-| 489 | classList operations | - | `classList.add('open')` |
-| 489 | classList operations | - | `classList.add('open')` |
-| 489 | classList operations | - | `classList.remove('open')` |
-| 489 | classList operations | - | `classList.remove('open')` |
-| 489 | classList operations | - | `classList.contains('open')` |
-| 489 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
-| 489 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
-| 489 | getElementById | gnav | `getElementById('gnav')` |
-| 499 | getElementById | - | `getElementById(id)` |
-| 510 | querySelector | #srvTable tbody | `querySelector("#srvTable tbody")` |
-| 524 | querySelectorAll | [data-srv-hl] | `querySelectorAll("[data-srv-hl]")` |
-| 525 | querySelectorAll | [data-srv-dc] | `querySelectorAll("[data-srv-dc]")` |
-| 526 | querySelectorAll | [data-srv-en] | `querySelectorAll("[data-srv-en]")` |
-| 527 | querySelectorAll | [data-srv-del] | `querySelectorAll("[data-srv-del]")` |
-| 530 | querySelector | .page-head .sub | `querySelector(".page-head .sub")` |
-| 601 | querySelector | #toolTable tbody | `querySelector("#toolTable tbody")` |
-| 609 | querySelectorAll | [data-tt] | `querySelectorAll("[data-tt]")` |
-| 611 | querySelector | #toolTable tbody | `querySelector("#toolTable tbody")` |
+| 644 | classList operations | - | `classList.add('open')` |
+| 644 | classList operations | - | `classList.add('open')` |
+| 644 | classList operations | - | `classList.remove('open')` |
+| 644 | classList operations | - | `classList.remove('open')` |
+| 644 | classList operations | - | `classList.contains('open')` |
+| 644 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
+| 644 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
+| 644 | getElementById | gnav | `getElementById('gnav')` |
+| 654 | getElementById | - | `getElementById(id)` |
+| 693 | querySelector | #srvTable tbody | `querySelector("#srvTable tbody")` |
+| 713 | querySelectorAll | [data-srv-hl] | `querySelectorAll("[data-srv-hl]")` |
+| 714 | querySelectorAll | [data-srv-dc] | `querySelectorAll("[data-srv-dc]")` |
+| 715 | querySelectorAll | [data-srv-en] | `querySelectorAll("[data-srv-en]")` |
+| 716 | querySelectorAll | [data-srv-del] | `querySelectorAll("[data-srv-del]")` |
+| 719 | querySelector | #srvTable tbody | `querySelector("#srvTable tbody")` |
+| 725 | querySelector | .page-head .sub | `querySelector(".page-head .sub")` |
+| 773 | querySelectorAll | #srvSteps li | `querySelectorAll("#srvSteps li")` |
+| 779 | querySelectorAll | #mdl-server .step-pane | `querySelectorAll("#mdl-server .step-pane")` |
+| 780 | classList operations | - | `classList.toggle("on",+panes[j].getAttribute("data-pane")` |
+| 834 | querySelectorAll | #srvSteps li | `querySelectorAll("#srvSteps li")` |
+| 916 | querySelector | #toolTable tbody | `querySelector("#toolTable tbody")` |
+| 932 | querySelectorAll | [data-tt] | `querySelectorAll("[data-tt]")` |
+| 935 | querySelector | #toolTable tbody | `querySelector("#toolTable tbody")` |
 
 ## admin-question-detail.html
 
@@ -685,43 +690,43 @@ Total hooks: 37
 
 | Line | Category | Selector | Expression |
 |---:|---|---|---|
-| 637 | classList operations | - | `classList.add('open')` |
-| 637 | classList operations | - | `classList.add('open')` |
-| 637 | classList operations | - | `classList.remove('open')` |
-| 637 | classList operations | - | `classList.remove('open')` |
-| 637 | classList operations | - | `classList.contains('open')` |
-| 637 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
-| 637 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
-| 637 | getElementById | gnav | `getElementById('gnav')` |
-| 650 | getElementById | - | `getElementById(id)` |
-| 668 | form.elements / name / tagName | - | `.name` |
-| 684 | form.elements / name / tagName | - | `.name` |
-| 689 | form.elements / name / tagName | - | `.name` |
-| 692 | querySelectorAll | [data-rm] | `querySelectorAll("[data-rm]")` |
-| 725 | classList operations | - | `classList.add("hover")` |
-| 726 | classList operations | - | `classList.remove("hover")` |
-| 728 | classList operations | - | `classList.remove("hover")` |
-| 741 | classList operations | - | `classList.add("show")` |
-| 750 | classList operations | - | `classList.remove("show")` |
-| 753 | classList operations | - | `classList.add("show")` |
-| 766 | form.elements / name / tagName | - | `.name` |
-| 769 | form.elements / name / tagName | - | `.name` |
-| 773 | form.elements / name / tagName | - | `.name` |
-| 790 | querySelector | #taskTable tbody | `querySelector("#taskTable tbody")` |
-| 826 | parentNode / nextSibling family | - | `.parentNode` |
-| 826 | parentNode / nextSibling family | - | `.parentNode` |
+| 776 | classList operations | - | `classList.add('open')` |
+| 776 | classList operations | - | `classList.add('open')` |
+| 776 | classList operations | - | `classList.remove('open')` |
+| 776 | classList operations | - | `classList.remove('open')` |
+| 776 | classList operations | - | `classList.contains('open')` |
+| 776 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
+| 776 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
+| 776 | getElementById | gnav | `getElementById('gnav')` |
+| 789 | getElementById | - | `getElementById(id)` |
+| 823 | form.elements / name / tagName | - | `.name` |
 | 842 | form.elements / name / tagName | - | `.name` |
-| 842 | form.elements / name / tagName | - | `.name` |
-| 849 | form.elements / name / tagName | - | `.name` |
-| 850 | querySelectorAll | [data-del] | `querySelectorAll("[data-del]")` |
-| 856 | parentNode / nextSibling family | - | `.parentNode` |
-| 856 | parentNode / nextSibling family | - | `.parentNode` |
-| 873 | querySelector | [data-collection-count] | `querySelector("[data-collection-count]")` |
-| 894 | querySelectorAll | .tabs .tab[data-tab] | `querySelectorAll(".tabs .tab[data-tab]")` |
-| 895 | classList operations | - | `classList.toggle("on", btns[i].getAttribute("data-tab")` |
-| 897 | classList operations | - | `classList.toggle("hidden", RAG_TABS[j] !== name)` |
-| 904 | querySelectorAll | .tabs .tab[data-tab] | `querySelectorAll(".tabs .tab[data-tab]")` |
-| 930 | querySelectorAll | [data-ragrb] | `querySelectorAll("[data-ragrb]")` |
+| 847 | form.elements / name / tagName | - | `.name` |
+| 850 | querySelectorAll | [data-rm] | `querySelectorAll("[data-rm]")` |
+| 889 | classList operations | - | `classList.add("hover")` |
+| 890 | classList operations | - | `classList.remove("hover")` |
+| 892 | classList operations | - | `classList.remove("hover")` |
+| 905 | classList operations | - | `classList.add("show")` |
+| 915 | classList operations | - | `classList.remove("show")` |
+| 921 | classList operations | - | `classList.add("show")` |
+| 934 | form.elements / name / tagName | - | `.name` |
+| 938 | form.elements / name / tagName | - | `.name` |
+| 944 | form.elements / name / tagName | - | `.name` |
+| 961 | querySelector | #taskTable tbody | `querySelector("#taskTable tbody")` |
+| 1001 | parentNode / nextSibling family | - | `.parentNode` |
+| 1001 | parentNode / nextSibling family | - | `.parentNode` |
+| 1019 | form.elements / name / tagName | - | `.name` |
+| 1019 | form.elements / name / tagName | - | `.name` |
+| 1026 | form.elements / name / tagName | - | `.name` |
+| 1027 | querySelectorAll | [data-del] | `querySelectorAll("[data-del]")` |
+| 1033 | parentNode / nextSibling family | - | `.parentNode` |
+| 1033 | parentNode / nextSibling family | - | `.parentNode` |
+| 1052 | querySelector | [data-collection-count] | `querySelector("[data-collection-count]")` |
+| 1073 | querySelectorAll | .tabs .tab[data-tab] | `querySelectorAll(".tabs .tab[data-tab]")` |
+| 1074 | classList operations | - | `classList.toggle("on", btns[i].getAttribute("data-tab")` |
+| 1076 | classList operations | - | `classList.toggle("hidden", RAG_TABS[j] !== name)` |
+| 1083 | querySelectorAll | .tabs .tab[data-tab] | `querySelectorAll(".tabs .tab[data-tab]")` |
+| 1112 | querySelectorAll | [data-ragrb] | `querySelectorAll("[data-ragrb]")` |
 
 ## admin-users-refine-proto.html
 
@@ -883,16 +888,16 @@ Total hooks: 34
 | 963 | querySelector | .hitl-note | `querySelector(".hitl-note")` |
 | 975 | classList operations | - | `classList.add("hitl-busy")` |
 | 985 | classList operations | - | `classList.remove("hitl-busy")` |
-| 1164 | classList operations | - | `classList.add("open")` |
-| 1165 | classList operations | - | `classList.add("open")` |
-| 1176 | classList operations | - | `classList.add('open')` |
-| 1176 | classList operations | - | `classList.add('open')` |
-| 1176 | classList operations | - | `classList.remove('open')` |
-| 1176 | classList operations | - | `classList.remove('open')` |
-| 1176 | classList operations | - | `classList.contains('open')` |
-| 1176 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
-| 1176 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
-| 1176 | getElementById | gnav | `getElementById('gnav')` |
+| 1221 | classList operations | - | `classList.add("open")` |
+| 1222 | classList operations | - | `classList.add("open")` |
+| 1233 | classList operations | - | `classList.add('open')` |
+| 1233 | classList operations | - | `classList.add('open')` |
+| 1233 | classList operations | - | `classList.remove('open')` |
+| 1233 | classList operations | - | `classList.remove('open')` |
+| 1233 | classList operations | - | `classList.contains('open')` |
+| 1233 | getElementById | gnavToggle | `getElementById('gnavToggle')` |
+| 1233 | getElementById | gnavOverlay | `getElementById('gnavOverlay')` |
+| 1233 | getElementById | gnav | `getElementById('gnav')` |
 
 ## community-post.html
 

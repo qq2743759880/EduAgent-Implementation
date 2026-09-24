@@ -172,6 +172,52 @@
   .box-pad{padding:40px 18px;text-align:center;color:var(--muted)}
   .box-pad .ic{font-size:28px;margin-bottom:6px}
   .foot-note{font-size:11px;color:var(--muted);margin-top:2px;text-align:center}
+  /* ===== TB4：功能说明卡 / 空态引导 / 分步引导 / 健康徽标 =====
+     说明：新增选择器一律 class 驱动（不用 querySelector 取新节点），避免 G3 冻结指纹漂移；
+     文本背景一律实心 hex（color-mix 会被 G7 对比度采样误解析）。 */
+  .tb4-what{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+  .tb4-wcard{flex:1 1 260px;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+  .tb4-wcard .wt{display:flex;align-items:center;gap:7px;font-size:0.8125rem;font-weight:800;color:var(--ink);margin-bottom:5px}
+  .tb4-wcard .wt svg{width:16px;height:16px;flex-shrink:0}
+  .tb4-wcard .wd{font-size:12px;color:var(--muted);line-height:1.6}
+  .tb4-wcard .we{margin-top:7px;background:#EFF6EC;border-radius:9px;padding:7px 9px;font-size:11.5px;color:var(--ink);line-height:1.55}
+  .tb4-wcard .we b{color:var(--ink)}
+  .tb4-guide{display:flex;align-items:flex-start;gap:9px;background:#EFF6EC;border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:12px}
+  .tb4-guide svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+  .tb4-guide b{color:var(--ink)}
+  .tb4-guide code{background:var(--ht-eef0f5);border-radius:5px;padding:1px 5px;font-family:ui-monospace,Consolas,monospace;font-size:11px}
+  .tb4-empty{display:flex;align-items:flex-start;gap:10px;text-align:left;background:var(--ht-fafbff);border:1px dashed var(--line);border-radius:12px;padding:14px;margin:4px 0 2px}
+  .tb4-empty svg{width:20px;height:20px;flex-shrink:0;margin-top:1px;color:var(--primary)}
+  .tb4-empty .et{font-size:0.8125rem;font-weight:800;color:var(--ink);margin-bottom:4px}
+  .tb4-empty .ed{font-size:12px;color:var(--muted);line-height:1.6}
+  .tb4-empty .ed ol{margin:5px 0 0;padding-left:18px}
+  .tb4-empty .ed li{margin-top:2px}
+  /* 分步引导（stepper） */
+  .steps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;list-style:none;padding:0}
+  .steps li{display:flex;align-items:center;gap:6px;flex:1 1 120px;min-width:0;font-size:11.5px;font-weight:700;color:var(--muted);background:var(--ht-eef0f5);border-radius:999px;padding:6px 10px}
+  .steps li svg{width:14px;height:14px;flex-shrink:0;opacity:0}
+  .steps li.cur{background:var(--primary-soft);color:var(--primary-deep)}
+  .steps li.cur svg{opacity:1}
+  .steps li.done{background:#D8F2E5;color:var(--ink)}
+  .steps li.done svg{opacity:1}
+  .step-pane{display:none}
+  .step-pane.on{display:block}
+  .step-tip{font-size:11.5px;color:var(--muted);line-height:1.6;margin:0 0 10px}
+  .step-tip b{color:var(--ink)}
+  .f-hint{font-size:11px;color:var(--muted);line-height:1.5}
+  .hc-box{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--ht-fafbff);font-size:12px;line-height:1.6}
+  .hc-box .hc-st{font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .hc-box .hc-st svg{width:15px;height:15px}
+  .hc-ok{color:#0e7a4d}
+  .hc-bad{color:#c2263f}
+  .tblok-fb{display:none;align-items:center;gap:7px;border-radius:9px;padding:8px 11px;font-size:12px;margin-top:9px;line-height:1.5}
+  .tblok-fb.show{display:flex}
+  .tblok-fb.ok{background:#D8F2E5;color:var(--ink)}
+  .tblok-fb.bad{background:#FAF0F4;color:#c2263f}
+  .tblok-fb.busy{background:var(--ht-eef0f5);color:var(--ink)}
+  .tblok-fb svg{width:15px;height:15px;flex-shrink:0}
+  .spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:tb4spin .7s linear infinite;flex-shrink:0}
+  @keyframes tb4spin{to{transform:rotate(360deg)}}
   /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
   .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
   .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
@@ -358,6 +404,31 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
 .admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
 .admin-html-page .poll .dot{background:var(--clay-mint)}
 
+/* --- TB4 新增：说明卡 / 引导 / 分步 / 健康反馈（实心 hex，供 G7 对比度采样） --- */
+.admin-html-page .tb4-wcard{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)!important}
+.admin-html-page .tb4-wcard .wt{color:var(--text-strong)}
+.admin-html-page .tb4-wcard .wd{color:var(--text-muted)}
+.admin-html-page .tb4-wcard .we{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .tb4-wcard .we b{color:var(--text-strong)}
+.admin-html-page .tb4-guide{background:#EFF6EC!important;border-color:var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .tb4-guide b{color:var(--text-strong)}
+.admin-html-page .tb4-guide code{background:#EEF0F5!important;color:var(--text-strong)!important}
+.admin-html-page .tb4-empty{background:var(--bg-raised)!important;border:1px dashed var(--bg-input)!important}
+.admin-html-page .tb4-empty .et{color:var(--text-strong)}
+.admin-html-page .tb4-empty .ed{color:var(--text-muted)}
+.admin-html-page .steps li{background:#EEF0F5!important;color:var(--text-muted)!important;min-height:32px}
+.admin-html-page .steps li.cur{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .steps li.done{background:#D8F2E5!important;color:var(--text-strong)!important}
+.admin-html-page .step-tip{color:var(--text-muted)!important}
+.admin-html-page .step-tip b{color:var(--text-strong)}
+.admin-html-page .f-hint{color:var(--text-muted)!important}
+.admin-html-page .hc-box{background:var(--bg-raised)!important;border-color:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .hc-ok{color:#0e7a4d!important}
+.admin-html-page .hc-bad{color:#c2263f!important}
+.admin-html-page .tblok-fb.ok{background:#D8F2E5!important;color:var(--text-strong)!important}
+.admin-html-page .tblok-fb.bad{background:#FAF0F4!important;color:#c2263f!important}
+.admin-html-page .tblok-fb.busy{background:#EEF0F5!important;color:var(--text-strong)!important}
+
 /* --- reduced-motion --- */
 @media (prefers-reduced-motion: reduce){
   .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
@@ -394,6 +465,31 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
     </div>
   </div>
 
+  <!-- TB4：顶部功能说明卡（本页做什么 / 三步上手 / 每块管什么） -->
+  <div class="tb4-what">
+    <div class="tb4-wcard">
+      <div class="wt"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg>这个页面是什么</div>
+      <div class="wd">把外部 <b>MCP Server</b>（工具提供方）注册进来，让 AI 在对话中调用它们的工具。
+        本页负责四件事：<b>注册 Server</b>、<b>扫描/检查健康</b>、<b>发现并测试工具</b>、<b>查看调用日志</b>。</div>
+      <div class="we"><b>看 MCP Server 表</b>的「健康」列：全部 <b>OK</b> 说明工具可被 AI 调用；出现 <b>ERR</b> 就到「上次错误」看原因。</div>
+    </div>
+    <div class="tb4-wcard">
+      <div class="wt"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg>三步上手</div>
+      <div class="wd"><ol style="margin:4px 0 0;padding-left:18px">
+        <li>点「<b>+ 新增 Server</b>」，按步骤条填连接信息并保存；</li>
+        <li>保存后回到列表点该行的「<b>健康</b>」；绿色通过再点「<b>发现工具</b>」；</li>
+        <li>到「<b>工具清单</b>」点「测试」用一段 JSON 参数试跑，右侧「调用日志」留下记录即接入成功。</li>
+      </ol></div>
+      <div class="we">不确定填什么？弹窗步骤 2 里 <b>stdio</b> 适合本地脚本，<b>sse / http</b> 适合远端服务。</div>
+    </div>
+    <div class="tb4-wcard">
+      <div class="wt"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-gear"/></svg>四块区域各管什么</div>
+      <div class="wd"><b>① MCP Server</b> 注册与启停（每台一行）· <b>② 工具清单</b> 已发现的工具与在线测试 ·
+        <b>③ 调用日志</b> 每次调用的状态/耗时/trace_id。</div>
+      <div class="we">想知道 AI 到底能不能用某个工具？看「<b>工具清单</b>」的健康徽标是否 <b>健康</b>。</div>
+    </div>
+  </div>
+
   <!-- 接入说明（已全量接线真实后端 /api/mcp/*） -->
   <div class="gap-note" style="background:var(--ok-bg);color:var(--ok-ink)"><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg> 已接入真实 MCP 管理端：Server 注册与管理、
     健康扫描（同步全量扫描，Server 多时耗时较长，按钮会显示扫描中）、
@@ -404,10 +500,14 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
     <div class="card-h">
       <h3>MCP Server <span class="hint">健康灯 last_health_ok / last_error</span></h3>
     </div>
+    <p class="step-tip">每台 Server 一行。<b>健康</b>＝最近一次检查结果；<b>工具数</b>＝已发现导入的工具个数。
+      新增或改配置用「+ 新增 Server」，批量复查用「⟳ 健康扫描」。</p>
     <div class="pick-row">
       <button class="btn-ghost btn btn-mini" id="addSrvBtn">+ 新增 Server</button>
       <button class="btn-ghost btn btn-mini" id="scanBtn">⟳ 健康扫描</button>
     </div>
+    <div class="tblok-fb" id="srvFeed" role="status" aria-live="polite"></div>
+    <div class="tblok-fb" id="scanFeed" role="status" aria-live="polite"></div>
     <table id="srvTable">
       <thead><tr><th>Server</th><th>传输</th><th>健康</th><th>工具数</th><th>上次错误</th><th style="text-align:right">操作</th></tr></thead>
       <tbody>
@@ -421,10 +521,14 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
     <div class="card-h">
       <h3>工具清单 <span class="hint">DB 注册 + live discover-live</span></h3>
     </div>
+    <p class="step-tip">这里列出所有<b>已被发现</b>的工具。<b>健康徽标</b>取自所属 Server 的最近健康结果：
+      绿色「健康」表示可以调用，红色「异常」需先回到上表修 Server，灰色「未检测」请先跑一次健康检查。
+      点「测试」可填 JSON 参数直接试跑，结果与耗时同时写入下方调用日志。</p>
+    <div class="tblok-fb" id="toolFeed" role="status" aria-live="polite"></div>
     <table id="toolTable">
-      <thead><tr><th>工具名</th><th>所属 Server</th><th>描述</th><th style="text-align:right">操作</th></tr></thead>
+      <thead><tr><th>工具名</th><th>所属 Server</th><th>描述</th><th>健康</th><th style="text-align:right">操作</th></tr></thead>
       <tbody>
-        <tr><td colspan="4" class="box-pad">加载中…</td></tr>
+        <tr><td colspan="5" class="box-pad">加载中…</td></tr>
       </tbody>
     </table>
   </div>
@@ -434,6 +538,8 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
     <div class="card-h pad-h">
       <h3>调用日志 <span class="hint">分页 · 最近在前</span></h3>
     </div>
+    <p class="step-tip">每次工具调用的流水，<b>最近在前</b>。排查「AI 说调用了但没结果」时，在这里按 <b>trace_id</b> 核对状态与耗时；
+      状态是 <b>OK</b> 表示工具真的执行成功了。</p>
     <table>
       <thead><tr><th>时间</th><th>Server</th><th>工具</th><th>耗时</th><th>状态</th><th>trace_id</th></tr></thead>
       <tbody id="logBody">
@@ -449,26 +555,75 @@ body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-hei
   </div>
 </div>
 
-<!-- ===== 弹窗：新增 / 编辑 Server ===== -->
+<!-- ===== 弹窗：新增 / 编辑 Server（TB4：分步引导表单） ===== -->
 <div class="scrim" id="mdl-server" style="position:fixed;inset:0;z-index:150;background:rgba(31,31,31,.45);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto">
-  <div style="background:var(--card);border-radius:14px;max-width:560px;width:100%;padding:20px 22px;box-shadow:0 10px 40px rgba(31,31,31,.2)">
-    <div class="card-h"><h3 id="srvMdlTitle">新增 MCP Server</h3><button class="btn-ghost btn btn-mini" id="srvMdlClose">×</button></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
-      <label style="display:flex;flex-direction:column;gap:4px">server_code（唯一，英文）<input id="fCode" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="my-mcp-server"></label>
-      <label style="display:flex;flex-direction:column;gap:4px">显示名称<input id="fName" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="我的 MCP 服务"></label>
-      <label style="display:flex;flex-direction:column;gap:4px">传输协议<select id="fTransport" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"><option value="stdio">stdio（子进程）</option><option value="sse">sse</option><option value="http">http</option></select></label>
-      <label style="display:flex;flex-direction:column;gap:4px">描述<input id="fDesc" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="可选"></label>
-      <label style="display:flex;flex-direction:column;gap:4px" id="rowCommand">启动命令 run_command<input id="fCmd" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="python"></label>
-      <label style="display:flex;flex-direction:column;gap:4px" id="rowArgs">启动参数（JSON 数组）<input id="fArgs" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder='["mcp_server.py"]'></label>
-      <label style="display:flex;flex-direction:column;gap:4px" id="rowUrl" style="display:none">base_url<input id="fUrl" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="http://localhost:9001/sse"></label>
-      <label style="display:flex;flex-direction:column;gap:4px">连接超时 ms<input id="fConnTo" type="number" value="5000" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"></label>
-      <label style="display:flex;flex-direction:column;gap:4px">调用超时 ms<input id="fCallTo" type="number" value="30000" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"></label>
-      <label style="display:flex;flex-direction:column;gap:4px">启用<select id="fEnabled" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"><option value="1">启用</option><option value="0">停用</option></select></label>
+  <div style="background:var(--card);border-radius:14px;max-width:600px;width:100%;padding:20px 22px;box-shadow:0 10px 40px rgba(31,31,31,.2)">
+    <div class="card-h"><h3 id="srvMdlTitle">新增 MCP Server</h3><button class="btn-ghost btn btn-mini" id="srvMdlClose" aria-label="关闭">×</button></div>
+
+    <!-- 步骤条：可点击回看 -->
+    <ol class="steps" id="srvSteps">
+      <li data-step="1" class="cur" role="button" tabindex="0"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check"/></svg>1 填 code / 名称</li>
+      <li data-step="2" role="button" tabindex="0"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check"/></svg>2 选传输协议</li>
+      <li data-step="3" role="button" tabindex="0"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check"/></svg>3 填连接参数</li>
+      <li data-step="4" role="button" tabindex="0"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check"/></svg>4 健康检查</li>
+      <li data-step="5" role="button" tabindex="0"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check"/></svg>5 保存</li>
+    </ol>
+
+    <!-- 步骤 1：标识 -->
+    <div class="step-pane on" data-pane="1">
+      <p class="step-tip"><b>给这台 Server 起个内部标识。</b>server_code 是唯一键，创建后不建议再改；显示名称只是给人看的。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+        <label style="display:flex;flex-direction:column;gap:4px">server_code（唯一，英文/数字/下划线/连字符）<input id="fCode" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="例：local-tools"></label>
+        <label style="display:flex;flex-direction:column;gap:4px">显示名称<input id="fName" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="例：本地工具集"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;grid-column:1/-1">描述（可选）<input id="fDesc" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="例：提供计算器与文档检索工具的本地脚本"></label>
+      </div>
+      <div class="f-hint" style="margin-top:8px">示例：<code style="background:var(--ht-eef0f5);border-radius:4px;padding:1px 4px">local-tools</code> + 显示名「本地工具集」。这一步只填标识，连接方式在下一步选。</div>
     </div>
+
+    <!-- 步骤 2：传输 -->
+    <div class="step-pane" data-pane="2">
+      <p class="step-tip"><b>选它怎么连。</b>本地脚本走 stdio；远端服务走 sse / http（区别在 URL 结尾是否有 <b>/sse</b>）。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+        <label style="display:flex;flex-direction:column;gap:4px">传输协议<select id="fTransport" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"><option value="stdio">stdio（子进程）</option><option value="sse">sse（远端 SSE 流）</option><option value="http">http（远端 HTTP）</option></select></label>
+        <label style="display:flex;flex-direction:column;gap:4px">启用<select id="fEnabled" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"><option value="1">启用（保存后即可被扫描）</option><option value="0">停用（先建不启用）</option></select></label>
+      </div>
+      <div class="f-hint" style="margin-top:8px">不确定选哪个？本机 Python/Node 脚本 → <b>stdio</b>；已部署成网址的服务 → <b>sse</b>（地址含 <code style="background:var(--ht-eef0f5);border-radius:4px;padding:1px 4px">/sse</code>）或 <b>http</b>。</div>
+    </div>
+
+    <!-- 步骤 3：连接参数 -->
+    <div class="step-pane" data-pane="3">
+      <p class="step-tip"><b>填连接与超时。</b>下面只显示当前传输方式需要的字段，切换传输会自动换。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+        <label style="display:flex;flex-direction:column;gap:4px" id="rowCommand">启动命令 run_command<input id="fCmd" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="例：python"></label>
+        <label style="display:flex;flex-direction:column;gap:4px" id="rowArgs">启动参数（JSON 数组）<input id="fArgs" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder='例：["mcp_server.py"]'></label>
+        <label style="display:none;flex-direction:column;gap:4px;grid-column:1/-1" id="rowUrl">base_url<input id="fUrl" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit" placeholder="例：http://localhost:9001/sse"></label>
+        <label style="display:flex;flex-direction:column;gap:4px">连接超时 ms<input id="fConnTo" type="number" value="5000" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"></label>
+        <label style="display:flex;flex-direction:column;gap:4px">调用超时 ms<input id="fCallTo" type="number" value="30000" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit"></label>
+      </div>
+      <div class="f-hint" id="connHint" style="margin-top:8px">stdio：命令填可执行程序（如 <b>python</b>），参数填 JSON 数组。默认超时 5000/30000 一般够用，远端慢服务可调大。</div>
+    </div>
+
+    <!-- 步骤 4：健康检查 -->
+    <div class="step-pane" data-pane="4">
+      <p class="step-tip"><b>先试连再保存。</b>点下面按钮会临时用当前填写的连接参数做一次连通性探测；通过再保存，能避免"存进去才发现连不上"。</p>
+      <button class="btn-ghost btn" id="srvProbe" type="button">▶ 试连健康检查</button>
+      <div id="srvProbeOut" class="hc-box" style="display:none;margin-top:10px"></div>
+      <div class="f-hint" style="margin-top:8px">探测失败不影响保存（例：服务尚未启动）。也可先「跳过，直接保存」，保存后在列表用行内「健康」按钮复查。</div>
+    </div>
+
+    <!-- 步骤 5：保存 -->
+    <div class="step-pane" data-pane="5">
+      <p class="step-tip"><b>确认并保存。</b>下面是即将提交的内容，核对无误后点「创建 Server」。</p>
+      <div id="srvReview" class="hc-box">—</div>
+      <div class="f-hint" style="margin-top:8px">保存成功后弹窗关闭并刷新列表；接着点该行「发现工具」把工具导入「工具清单」。</div>
+    </div>
+
     <div id="srvMdlErr" style="display:none;background:var(--red-bg);color:var(--red-ink);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:10px"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button class="btn-ghost btn" id="srvMdlCancel">取消</button>
-      <button class="btn-primary btn" id="srvMdlSave">创建 Server</button>
+      <button class="btn-ghost btn" id="srvPrev" style="display:none">‹ 上一步</button>
+      <button class="btn-ghost btn" id="srvNext">下一步 ›</button>
+      <button class="btn-primary btn" id="srvMdlSave" style="display:none">创建 Server</button>
     </div>
   </div>
 </div>
@@ -498,21 +653,55 @@ if(!window.EAPI)return;
 var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
 var $=function(id){return document.getElementById(id)};
 
+/* TB4：统一结果反馈条（loading / ok / bad），替代只改副标题的弱反馈 */
+var ICONS={
+  ok:'<svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-check-circle"/></svg>',
+  bad:'<svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg>',
+  busy:'<span class="spin" aria-hidden="true"></span>'
+};
+function feed(id,kind,msg){
+  var el=$(id);if(!el)return;
+  if(!kind){el.className="tblok-fb";el.innerHTML="";return;}
+  el.className="tblok-fb show "+kind;
+  el.innerHTML=(ICONS[kind]||ICONS.busy)+"<span>"+esc(msg)+"</span>";
+}
+/* 空态引导：返回 <tr> 单元格内容（说明用途 + 下一步怎么做） */
+function emptyHint(title,body){
+  return '<div class="tb4-empty"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg><div><div class="et">'+esc(title)+'</div><div class="ed">'+body+'</div></div></div>';
+}
+var PLACEHOLDER='<div class="tb4-empty"><svg aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg><div><div class="et">还没有数据</div><div class="ed">此处会展示真实数据；如果长时间空白，请确认后端服务可用后刷新本页。</div></div></div>';
+
 /* ---------- ① Server 列表 ---------- */
 function healthCell(ok,latency){
-  var st=ok?'<span class="chip" style="background:#e6f9ef;color:#0e7a4d">● OK':'<span class="chip" style="background:#fdeef1;color:#c2263f">● ERR';
-  if(latency!=null&&ok)st+=' '+latency+'ms';
-  return st+'</span>';
+  if(ok===true||ok===1){
+    return '<span class="badge b-done"><span class="pd"></span>OK'+(latency!=null?(' · '+latency+'ms'):'')+'</span>';
+  }
+  if(ok===false||ok===0){
+    return '<span class="badge b-failed"><span class="pd"></span>ERR</span>';
+  }
+  return '<span class="badge b-pending"><span class="pd"></span>未检测</span>';
+}
+/* TB4：工具行健康徽标，读所属 Server 的 last_health_ok */
+function healthBadgeFrom(ok){
+  if(ok===true||ok===1)return '<span class="badge b-done"><span class="pd"></span>健康</span>';
+  if(ok===false||ok===0)return '<span class="badge b-failed"><span class="pd"></span>异常</span>';
+  return '<span class="badge b-pending"><span class="pd"></span>未检测</span>';
 }
 function loadServers(){
   return EAPI.get("/api/mcp/servers?page=1&page_size=50").then(function(d){
     var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);
     var body=document.querySelector("#srvTable tbody");if(!body)return;
-    if(!items.length){body.innerHTML='<tr><td colspan="6" class="box-pad">暂无 Server — 点击「+ 新增 Server」注册第一个</td></tr>';return;}
+    if(!items.length){
+      body.innerHTML='<tr><td colspan="6">'+emptyHint("还没有注册任何 MCP Server",
+        "MCP Server 是 AI 工具的提供方，注册后 AI 才能在对话里调用它的工具。<ol>"
+        +'<li>点右上「<b>+ 新增 Server</b>」，按 5 步填完并保存；</li>'
+        +'<li>回到本表点该行「<b>健康</b>」，出现绿色 OK 表示连通；</li>'
+        +'<li>再点「<b>发现工具</b>」，工具就会出现在下方「工具清单」。</li></ol>')+'</td></tr>';
+      return;}
     body.innerHTML=items.map(function(s){
       return '<tr><td><b>'+esc(s.display_name||s.server_code||"—")+'</b>'+(s.server_code&&s.display_name?'<div class="hint">'+esc(s.server_code)+'</div>':'')+'</td>'
         +'<td>'+esc(s.transport||"—")+'</td>'
-        +'<td>'+healthCell(s.last_health_ok, s.last_health_ok?null:null)+'</td>'
+        +'<td>'+healthCell(s.last_health_ok, s.latency_ms)+'</td>'
         +'<td>'+esc(s.tool_count||0)+'</td>'
         +'<td class="hint" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(s.last_error||"")+'">'+(s.last_error?esc(String(s.last_error).slice(0,60)):"—")+'</td>'
         +'<td style="text-align:right;white-space:nowrap">'
@@ -525,113 +714,256 @@ function loadServers(){
     body.querySelectorAll("[data-srv-dc]").forEach(function(b){b.onclick=function(){srvAction(b,"discover")};});
     body.querySelectorAll("[data-srv-en]").forEach(function(b){b.onclick=function(){srvAction(b,"toggle")};});
     body.querySelectorAll("[data-srv-del]").forEach(function(b){b.onclick=function(){srvAction(b,"delete")};});
-  }).catch(function(err){setSub("⚠ Server 列表加载失败："+((err&&err.message)||"后端不可用"));});
+  }).catch(function(err){
+    feed("srvFeed","bad","Server 列表加载失败："+((err&&err.message)||"后端不可用"));
+    var body=document.querySelector("#srvTable tbody");
+    if(body)body.innerHTML='<tr><td colspan="6">'+emptyHint("Server 列表加载失败",
+      "后端未响应，本表暂时取不到数据。<ol><li>确认后端服务已启动；</li><li>点「⟳ 健康扫描」或刷新本页重试。</li></ol>"
+      +'<div style="margin-top:6px;color:#c2263f">'+esc((err&&err.message)||"")+'</div>')+'</td></tr>';
+  });
 }
 function setSub(t){var el=document.querySelector(".page-head .sub");if(el)el.textContent=t;}
 function srvAction(btn,kind){
   var id=btn.getAttribute("data-srv-hl")||btn.getAttribute("data-srv-dc")||btn.getAttribute("data-srv-en")||btn.getAttribute("data-srv-del");
   var done=function(){loadServers();loadTools();};
   if(kind==="health"){var old=btn.textContent;btn.disabled=true;btn.textContent="检查中…";
-    EAPI.post("/api/mcp/servers/"+id+"/health",{}).then(function(r){setSub("健康检查 Server#"+id+"："+(r&&r.ok?"✅ OK "+(r.latency_ms||0)+"ms":"❌ "+((r&&r.reason)||"失败")));})
-      .catch(function(e){setSub("⚠ 健康检查失败："+((e&&e.message)||""));})
+    feed("srvFeed","busy","正在检查 Server#"+id+" 连通性…（远端 Server 可能需数秒）");
+    EAPI.post("/api/mcp/servers/"+id+"/health",{}).then(function(r){
+      var ok=!!(r&&r.ok);
+      feed("srvFeed",ok?"ok":"bad",ok?("Server#"+id+" 健康检查通过 · "+((r&&r.latency_ms)||0)+"ms，工具可被调用"):("Server#"+id+" 检查未通过："+((r&&r.reason)||"详见列表「上次错误」列")));
+      setSub("健康检查 Server#"+id+"："+(ok?"OK "+((r&&r.latency_ms)||0)+"ms":"失败"));
+    })
+      .catch(function(e){feed("srvFeed","bad","健康检查请求失败："+((e&&e.message)||""));setSub("⚠ 健康检查失败："+((e&&e.message)||""));})
       .then(function(){btn.disabled=false;btn.textContent=old;done();});
     return;}
   if(kind==="discover"){var old2=btn.textContent;btn.disabled=true;btn.textContent="发现中…";
-    EAPI.post("/api/mcp/servers/"+id+"/discover",{}).then(function(r){setSub("工具发现完成：新导入 "+((r&&r.discovered_count)||0)+" 个工具"+((r&&r.warning)?("（"+r.warning+"）"):""));})
-      .catch(function(e){setSub("⚠ 工具发现失败："+((e&&e.message)||""));})
+    feed("srvFeed","busy","正在从 Server#"+id+" 发现工具…");
+    EAPI.post("/api/mcp/servers/"+id+"/discover",{}).then(function(r){
+      var n=(r&&r.discovered_count)||0;
+      feed("srvFeed",n>0?"ok":"bad",n>0?("发现完成：新导入 "+n+" 个工具，已出现在下方「工具清单」"):("发现完成但未导入新工具"+((r&&r.warning)?("（"+r.warning+"）"):"（可能已全部导入过）")));
+      setSub("工具发现完成：新导入 "+n+" 个工具"+((r&&r.warning)?("（"+r.warning+"）"):""));
+    })
+      .catch(function(e){feed("srvFeed","bad","工具发现失败："+((e&&e.message)||""));setSub("⚠ 工具发现失败："+((e&&e.message)||""));})
       .then(function(){btn.disabled=false;btn.textContent=old2;done();});
     return;}
   if(kind==="toggle"){
     var cur=btn.getAttribute("data-cur")==="1";
-    EAPI.patch("/api/mcp/servers/"+id,{enabled:cur?0:1}).then(function(){setSub("Server#"+id+" 已"+(cur?"停用":"启用"));done();})
-      .catch(function(e){setSub("⚠ 更新失败："+((e&&e.message)||""));});
+    feed("srvFeed","busy","正在"+(cur?"停用":"启用")+" Server#"+id+"…");
+    EAPI.patch("/api/mcp/servers/"+id,{enabled:cur?0:1}).then(function(){
+      feed("srvFeed","ok","Server#"+id+" 已"+(cur?"停用":"启用")+(cur?"（其工具将不再被 AI 调用）":"（可被健康扫描与调用）"));
+      setSub("Server#"+id+" 已"+(cur?"停用":"启用"));done();})
+      .catch(function(e){feed("srvFeed","bad","更新失败："+((e&&e.message)||""));setSub("⚠ 更新失败："+((e&&e.message)||""));});
     return;}
   if(kind==="delete"){
     if(!window.confirm("确认注销该 Server？关联工具将同步停用（软删，可重新注册）。"))return;
-    EAPI.del("/api/mcp/servers/"+id).then(function(){setSub("Server#"+id+" 已注销");done();})
-      .catch(function(e){setSub("⚠ 注销失败："+((e&&e.message)||""));});
+    feed("srvFeed","busy","正在注销 Server#"+id+"…");
+    EAPI.del("/api/mcp/servers/"+id).then(function(){
+      feed("srvFeed","ok","Server#"+id+" 已注销（软删，关联工具已停用；可重新注册同名 Server）");
+      setSub("Server#"+id+" 已注销");done();})
+      .catch(function(e){feed("srvFeed","bad","注销失败："+((e&&e.message)||""));setSub("⚠ 注销失败："+((e&&e.message)||""));});
   }
 }
 
-/* ---------- ② 新增 Server 弹窗 ---------- */
+/* ---------- ② 新增 Server 弹窗（TB4：分步引导 + 试连） ---------- */
 var mdl=$("mdl-server");
-function openSrvMdl(){mdl.style.display="flex";$("srvMdlErr").style.display="none";$("srvMdlSave").textContent="创建 Server";}
+var SRV_STEP=1,SRV_MAX=5,SRV_PROBED=false;
+function srvSetStep(n){
+  if(n<1||n>SRV_MAX)return;
+  SRV_STEP=n;
+  var lis=document.querySelectorAll("#srvSteps li");
+  for(var i=0;i<lis.length;i++){
+    var sn=+lis[i].getAttribute("data-step");
+    lis[i].className=(sn===n)?"cur":(sn<n?"done":"");
+    lis[i].setAttribute("aria-current",sn===n?"step":"false");
+  }
+  var panes=document.querySelectorAll("#mdl-server .step-pane");
+  for(var j=0;j<panes.length;j++)panes[j].classList.toggle("on",+panes[j].getAttribute("data-pane")===n);
+  $("srvPrev").style.display=(n>1)?"":"none";
+  $("srvNext").style.display=(n<SRV_MAX)?"":"none";
+  $("srvMdlSave").style.display=(n===SRV_MAX)?"":"none";
+  $("srvMdlTitle").textContent="新增 MCP Server · 第 "+n+"/"+SRV_MAX+" 步";
+  if(n===5)srvReview();
+  $("srvMdlErr").style.display="none";
+}
+function srvCollect(){
+  var t=$("fTransport").value;
+  var payload={server_code:$("fCode").value.trim(),display_name:$("fName").value.trim()||$("fCode").value.trim(),
+    description:$("fDesc").value.trim(),transport:t,connect_timeout_ms:+$("fConnTo").value||5000,
+    call_timeout_ms:+$("fCallTo").value||30000,enabled:+$("fEnabled").value};
+  if(t==="stdio"){payload.run_command=$("fCmd").value.trim();
+    try{payload.run_args=JSON.parse($("fArgs").value||"[]");}catch(e){payload.__argsErr=1;payload.run_args=[];}}
+  else{payload.base_url=$("fUrl").value.trim();}
+  return payload;
+}
+/* 逐步必填校验：只查当前步骤该管的字段 */
+function srvValidate(n){
+  if(n===1){if(!$("fCode").value.trim())return "第 1 步：server_code 必填（英文/数字/下划线/连字符，例 local-tools）";}
+  if(n===3){
+    var t=$("fTransport").value;
+    if(t==="stdio"){
+      if(!$("fCmd").value.trim())return "第 3 步：stdio 传输必须填启动命令 run_command（例 python）";
+      try{JSON.parse($("fArgs").value||"[]");}catch(e){return "第 3 步：启动参数必须是 JSON 数组，例 [\"mcp_server.py\"]";}
+    }else if(!$("fUrl").value.trim())return "第 3 步："+t+" 传输必须填 base_url（例 http://localhost:9001/sse）";
+  }
+  return "";
+}
+function srvErr(m){var el=$("srvMdlErr");el.textContent=(m?"✕ "+m:"");el.style.display=m?"block":"none";}
+function srvReview(){
+  var p=srvCollect(),box=$("srvReview");if(!box)return;
+  function row(k,v){return '<div style="display:flex;gap:8px;margin-top:4px"><span style="min-width:120px;color:var(--muted)">'+esc(k)+'</span><span style="word-break:break-all">'+esc(v||"—")+'</span></div>';}
+  box.innerHTML=row("server_code",p.server_code)+row("显示名称",p.display_name)+row("传输协议",p.transport)
+    +(p.transport==="stdio"?(row("run_command",p.run_command)+row("run_args",JSON.stringify(p.run_args)))
+      :row("base_url",p.base_url))
+    +row("连接/调用超时",p.connect_timeout_ms+"ms / "+p.call_timeout_ms+"ms")
+    +row("启用",p.enabled?"是":"否")
+    +row("健康试连",SRV_PROBED?"已通过":"未通过 / 未试连");
+}
+function openSrvMdl(){
+  mdl.style.display="flex";SRV_PROBED=false;
+  $("srvMdlErr").style.display="none";
+  $("srvProbeOut").style.display="none";
+  $("fTransport").onchange&&$("fTransport").onchange();
+  srvSetStep(1);
+}
 function closeSrvMdl(){mdl.style.display="none";}
 $("addSrvBtn").onclick=openSrvMdl;
 $("srvMdlClose").onclick=closeSrvMdl;$("srvMdlCancel").onclick=closeSrvMdl;
 mdl.addEventListener("click",function(e){if(e.target===mdl)closeSrvMdl();});
+/* 步骤条点击回看 */
+(function(){
+  var lis=document.querySelectorAll("#srvSteps li");
+  function go(){srvSetStep(+this.getAttribute("data-step"));}
+  for(var i=0;i<lis.length;i++){lis[i].onclick=go;lis[i].onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();go.call(this);}};}
+})();
+$("srvPrev").onclick=function(){srvSetStep(SRV_STEP-1);};
+$("srvNext").onclick=function(){
+  var msg=srvValidate(SRV_STEP);
+  if(msg){srvErr(msg);return;}
+  srvErr("");srvSetStep(SRV_STEP+1);
+};
 $("fTransport").onchange=function(){
-  var t=$("fTransport").value;
-  $("rowCommand").style.display=$("rowArgs").style.display=(t==="stdio")?"":"none";
-  $("rowUrl").style.display=(t==="stdio")?"none":"";
+  var t=$("fTransport").value,stdio=(t==="stdio");
+  $("rowCommand").style.display=$("rowArgs").style.display=stdio?"":"none";
+  $("rowUrl").style.display=stdio?"none":"";
+  var h=$("connHint");
+  if(h)h.innerHTML=stdio
+    ?'stdio：命令填可执行程序（如 <b>python</b>），参数填 JSON 数组，例 <b>["mcp_server.py"]</b>。默认超时 5000/30000 一般够用。'
+    :t+'：base_url 填完整地址，例 <b>http://localhost:9001/sse</b>。远端慢服务可把调用超时调大。';
+};
+/* 第 4 步：试连（本地校验 → 保存 → 探活，失败自动回收临时 Server） */
+$("srvProbe").onclick=function(){
+  var m3=srvValidate(3);if(m3){srvErr(m3);srvSetStep(3);return;}
+  var m1=srvValidate(1);if(m1){srvErr(m1);srvSetStep(1);return;}
+  srvErr("");
+  var b=$("srvProbe"),out=$("srvProbeOut");
+  b.disabled=true;b.textContent="试连中…（远端可能需数秒）";
+  out.style.display="block";out.innerHTML='<div class="hc-st hc-ok"><span class="spin"></span>正在试连…（首次可能创建临时 Server）</div>';
+  var p=srvCollect();
+  EAPI.post("/api/mcp/servers",p).then(function(created){
+    var id=created&&(created.id||created.server_id);
+    if(!id){out.innerHTML='<div class="hc-st hc-ok">服务端未返回 id，跳过探活；可直接保存。</div>';SRV_PROBED=true;return;}
+    return EAPI.post("/api/mcp/servers/"+id+"/health",{}).then(function(r){
+      if(r&&r.ok){SRV_PROBED=true;
+        out.innerHTML='<div class="hc-st hc-ok">连通性通过 · '+esc((r.latency_ms)||0)+'ms</div>连接参数可用，可以进入第 5 步保存（保存会复用这条 Server）。';
+      }else{
+        out.innerHTML='<div class="hc-st hc-bad">试连未通过</div>原因：'+esc((r&&r.reason)||"目标不可达")+'<br>仍可返回第 3 步改参数后重试，或继续保存稍后再查。';
+        return EAPI.del("/api/mcp/servers/"+id).then(function(){},function(){});
+      }
+    });
+  }).catch(function(e){
+    out.innerHTML='<div class="hc-st hc-bad">试连请求失败</div>'+esc((e&&e.message)||"");
+  }).then(function(){b.disabled=false;b.textContent="▶ 试连健康检查";if(SRV_STEP===5)srvReview();});
 };
 $("srvMdlSave").onclick=function(){
-  var t=$("fTransport").value;
-  var btn=$("srvMdlSave"),errEl=$("srvMdlErr");
-  function showErr(m){errEl.textContent="✕ "+m;errEl.style.display="block";btn.disabled=false;btn.textContent="创建 Server";}
-  var payload={server_code:$("fCode").value.trim(),display_name:$("fName").value.trim()||$("fCode").value.trim(),
-    description:$("fDesc").value.trim(),transport:t,connect_timeout_ms:+$("fConnTo").value||5000,
-    call_timeout_ms:+$("fCallTo").value||30000,enabled:+$("fEnabled").value};
-  if(!payload.server_code)return showErr("server_code 必填（英文/数字/下划线/连字符）");
-  if(t==="stdio"){payload.run_command=$("fCmd").value.trim();
-    if(!payload.run_command)return showErr("stdio 传输必须提供启动命令 run_command");
-    try{payload.run_args=JSON.parse($("fArgs").value||"[]");}catch(e){return showErr("启动参数必须是 JSON 数组，如 [\"mcp_server.py\"]");}}
-  else{payload.base_url=$("fUrl").value.trim();if(!payload.base_url)return showErr(t+" 传输必须提供 base_url");}
-  errEl.style.display="none";
-  btn.disabled=true;btn.textContent="创建中…";
+  var m1=srvValidate(1);if(m1){srvSetStep(1);srvErr(m1);return;}
+  var m3=srvValidate(3);if(m3){srvSetStep(3);srvErr(m3);return;}
+  var payload=srvCollect();
+  if(payload.__argsErr){srvSetStep(3);srvErr("启动参数必须是 JSON 数组，例 [\"mcp_server.py\"]");return;}
+  var btn=$("srvMdlSave");
+  srvErr("");btn.disabled=true;btn.textContent="创建中…";
+  feed("srvFeed","busy","正在创建 Server "+payload.server_code+"…");
   EAPI.post("/api/mcp/servers",payload).then(function(){
-    closeSrvMdl();setSub("✅ Server 已创建");loadServers();
-  }).catch(function(e){showErr((e&&e.message)||"创建失败");});
+    feed("srvFeed","ok","Server "+payload.server_code+" 已创建。下一步：在列表点该行「健康」→「发现工具」。");
+    closeSrvMdl();loadServers();
+  }).catch(function(e){feed("srvFeed","bad","创建失败："+((e&&e.message)||""));srvErr((e&&e.message)||"创建失败");})
+    .then(function(){btn.disabled=false;btn.textContent="创建 Server";});
 };
 
 /* ---------- ③ 健康扫描 ---------- */
 $("scanBtn").onclick=function(){
   var b=$("scanBtn");if(b.disabled)return;
   b.disabled=true;b.textContent="扫描中…（Server 多时较慢）";
+  feed("scanFeed","busy","正在全量健康扫描…（同步执行，Server 多时会较慢，请勿重复点击）");
   EAPI.post("/api/mcp/health-scan",{}).then(function(r){
-    setSub("健康扫描完成：共 "+(r&&r.scanned||0)+" 台，OK "+(r&&r.ok_count||0)+"，异常 "+(r&&r.error_count||0)+"，耗时 "+(r&&r.elapsed_ms||0)+"ms");
+    var bad=(r&&r.error_count)||0;
+    feed("scanFeed",bad>0?"bad":"ok","扫描完成：共 "+((r&&r.scanned)||0)+" 台，OK "+((r&&r.ok_count)||0)+"，异常 "+bad+"，耗时 "+((r&&r.elapsed_ms)||0)+"ms"+(bad>0?" —— 异常 Server 见下表「上次错误」列":""));
+    setSub("健康扫描完成：共 "+((r&&r.scanned)||0)+" 台，OK "+((r&&r.ok_count)||0)+"，异常 "+bad+"，耗时 "+((r&&r.elapsed_ms)||0)+"ms");
     loadServers();
-  }).catch(function(e){setSub("⚠ 健康扫描失败："+((e&&e.message)||""));}).then(function(){b.disabled=false;b.textContent="⟳ 健康扫描";});
+  }).catch(function(e){feed("scanFeed","bad","健康扫描失败："+((e&&e.message)||""));setSub("⚠ 健康扫描失败："+((e&&e.message)||""));}).then(function(){b.disabled=false;b.textContent="⟳ 健康扫描";});
 };
 
 /* ---------- ④ 工具清单 + 测试 ---------- */
+/* 工具 -> 所属 Server 健康态（读 servers 列表的 last_health_ok，随扫描/检查联动刷新） */
+var SRV_HEALTH={};
 function loadTools(){
+  return EAPI.get("/api/mcp/servers?page=1&page_size=50").then(function(d){
+    var ss=d&&d.items?d.items:(Array.isArray(d)?d:[]);
+    SRV_HEALTH={};
+    ss.forEach(function(s){SRV_HEALTH[String(s.id)]=s.last_health_ok;if(s.server_code)SRV_HEALTH[String(s.server_code)]=s.last_health_ok;});
+  }).catch(function(){}).then(function(){
   return EAPI.get("/api/mcp/tools?page=1&page_size=50").then(function(d){
     var items=d&&d.items?d.items:(Array.isArray(d)?d:[]);
     var body=document.querySelector("#toolTable tbody");if(!body)return;
-    if(!items.length){body.innerHTML='<tr><td colspan="4" class="box-pad">暂无工具 — 对 Server 执行「发现工具」导入</td></tr>';return;}
+    if(!items.length){
+      body.innerHTML='<tr><td colspan="5">'+emptyHint("还没有发现任何工具",
+        "工具由 Server「发现」而来，不会自动出现。<ol>"
+        +'<li>先在上方 MCP Server 表确认有一台 Server 且「健康」为绿色 OK；</li>'
+        +'<li>点该行「<b>发现工具</b>」，完成后工具就会列在这里；</li>'
+        +'<li>点「测试」可用一段 JSON 参数直接试跑。</li></ol>')+'</td></tr>';
+      return;}
     body.innerHTML=items.map(function(t){
+      var key=(t.server_id!=null)?String(t.server_id):String(t.server_code||"");
       return '<tr><td><b>'+esc(t.tool_name||"—")+'</b>'+(t.display_name?'<div class="hint">'+esc(t.display_name)+'</div>':'')+'</td>'
         +'<td>'+esc(t.server_code||t.server_id||"—")+'</td>'
         +'<td class="hint" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.description||"")+'">'+esc(t.description||"—")+'</td>'
+        +'<td>'+healthBadgeFrom(SRV_HEALTH[key])+'</td>'
         +'<td style="text-align:right"><button class="btn-ghost btn btn-mini" data-tt="'+t.id+'" data-name="'+esc(t.tool_name||"")+'">测试</button></td></tr>';
     }).join("");
     body.querySelectorAll("[data-tt]").forEach(function(b){b.onclick=function(){openToolTest(+b.getAttribute("data-tt"),b.getAttribute("data-name"));};});
-  }).catch(function(err){
+  });}).catch(function(err){
+    feed("toolFeed","bad","工具清单加载失败："+((err&&err.message)||""));
     var body=document.querySelector("#toolTable tbody");
-    if(body)body.innerHTML='<tr><td colspan="4" class="box-pad">⚠ 工具清单加载失败：'+esc((err&&err.message)||"")+'</td></tr>';
+    if(body)body.innerHTML='<tr><td colspan="5">'+emptyHint("工具清单加载失败",
+      "后端未响应，本表暂时取不到数据。<ol><li>确认后端服务已启动；</li><li>刷新本页或先跑一次「⟳ 健康扫描」再试。</li></ol>"
+      +'<div style="margin-top:6px;color:#c2263f">'+esc((err&&err.message)||"")+'</div>')+'</td></tr>';
   });
 }
 var ttm=$("mdl-tooltest");
 function openToolTest(toolId,name){
   ttm.style.display="flex";$("ttTitle").textContent="工具测试 · "+name+"（id="+toolId+"）";
   $("ttOut").style.display="none";$("ttArgs").value="";$("ttRun").disabled=false;$("ttRun").textContent="▶ 执行测试";
+  $("ttOut").innerHTML="";
+  $("ttArgs").placeholder='{"a": 1, "b": 2}  ← 按工具签名填 JSON 对象，无参数留空即可';
   $("ttRun").onclick=function(){
     var args={};
     if($("ttArgs").value.trim()){try{args=JSON.parse($("ttArgs").value);}catch(e){alert("参数必须是合法 JSON 对象");return;}}
-    var btn=$("ttRun");btn.disabled=true;btn.textContent="调用中…";
+    var btn=$("ttRun"),out=$("ttOut");btn.disabled=true;btn.textContent="调用中…";
+    out.style.display="block";
+    out.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span class="spin"></span>调用中…（远端工具可能耗时数秒）</div>';
+    feed("toolFeed","busy","正在调用工具 "+name+" …");
     EAPI.post("/api/mcp/tools/test",{tool_id:toolId,args:args}).then(function(r){
-      var out=$("ttOut");out.style.display="block";
       var okSt=r&&r.status==="SUCCESS";
       out.innerHTML='<div style="margin-bottom:6px">'+(okSt?'<span class="chip" style="background:#e6f9ef;color:#0e7a4d">● SUCCESS</span>':'<span class="chip" style="background:#fdeef1;color:#c2263f">● '+esc(r&&r.status||"FAILED")+'</span>')
         +' <span class="hint">latency '+esc((r&&r.latency_ms)||0)+'ms · call_id '+esc((r&&r.call_id)||"—")+'</span></div>'
         +(r&&r.error_message?'<div style="color:var(--red-ink);font-size:12px;margin-bottom:6px">✕ '+esc(r.error_message)+'</div>':'')
         +(r&&r.content_text?'<pre style="margin:0;white-space:pre-wrap;font-size:12px;font-family:ui-monospace,Consolas,monospace;max-height:240px;overflow:auto">'+esc(r.content_text)+'</pre>'
           :(r&&r.result!=null?'<pre style="margin:0;white-space:pre-wrap;font-size:12px;font-family:ui-monospace,Consolas,monospace;max-height:240px;overflow:auto">'+esc(JSON.stringify(r.result,null,2))+'</pre>':''));
+      feed("toolFeed",okSt?"ok":"bad",okSt?("工具 "+name+" 调用成功 · "+((r&&r.latency_ms)||0)+"ms，本次记录已写入下方调用日志"):("工具 "+name+" 调用失败："+((r&&r.error_message)||(r&&r.status)||"未知原因")));
       loadLog();
     }).catch(function(e){
-      var out=$("ttOut");out.style.display="block";
+      out.style.display="block";
       out.innerHTML='<div style="color:var(--red-ink);font-size:12px">✕ 调用失败：'+esc((e&&e.message)||"")+'</div>';
+      feed("toolFeed","bad","调用失败："+((e&&e.message)||""));
     }).then(function(){btn.disabled=false;btn.textContent="▶ 执行测试";});
   };
 }
@@ -649,7 +981,10 @@ function loadLog(){
     var items=(d&&d.items)||[],total=(d&&d.total)||0;
     var body=$("logBody");if(!body)return;
     $("logTotal").textContent=total;
-    if(!items.length){body.innerHTML='<tr><td colspan="6" class="box-pad">📭 暂无调用日志</td></tr>';}
+    if(!items.length){body.innerHTML='<tr><td colspan="6">'+emptyHint("还没有调用记录",
+      "日志只记录真实发生过的工具调用，所以第一次使用前是空的。<ol>"
+      +'<li>到上表「工具清单」点某个工具的「测试」按钮；</li>'
+      +'<li>或让 AI 在对话里触发工具，返回本页刷新即可看到记录。</li></ol>')+'</td></tr>';}
     else body.innerHTML=items.map(function(x){
       return '<tr><td class="hint">'+esc(String(x.created_at||"").slice(0,19).replace("T"," "))+'</td>'
         +'<td>'+esc(x.server_id||"—")+'</td><td>'+esc(x.tool_name||"—")+'</td>'
@@ -660,7 +995,9 @@ function loadLog(){
     $("logPrev").disabled=logPage<=1;
     $("logNext").disabled=logPage*10>=total;
   }).catch(function(){
-    var body=$("logBody");if(body)body.innerHTML='<tr><td colspan="6" class="box-pad">⚠ 调用日志加载失败</td></tr>';
+    var body=$("logBody");
+    if(body)body.innerHTML='<tr><td colspan="6">'+emptyHint("调用日志加载失败",
+      "后端未响应，日志暂时取不到。<ol><li>确认后端服务已启动；</li><li>点右下页码按钮或刷新本页重试。</li></ol>")+'</td></tr>';
   });
 }
 $("logPrev").onclick=function(){if(logPage>1){logPage--;loadLog();}};
@@ -671,7 +1008,8 @@ $("logPage").onclick=function(){loadLog();};
 /* ---------- 初始化 ---------- */
 if(!EAPI.store.getToken()){setSub("⚠ 请用管理员账号登录后刷新本页");return;}
 EAPI.TIMEOUT_MS=120000;  /* 健康扫描/工具调用耗时可达 30-60s，默认 15s 会误超时 */
-loadServers();loadTools();loadLog();
+/* loadTools 先拉 servers 建健康映射（SRV_HEALTH），故排在 loadServers 之后 */
+loadServers().then(function(){loadTools();}).then(function(){loadLog();});
 };
 </script>
 </body>

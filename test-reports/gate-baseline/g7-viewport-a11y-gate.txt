@@ -1,15 +1,15 @@
 g7-viewport-a11y-gate PASS
-generated_at=2026-09-21T02:16:38.568Z
+generated_at=2026-09-24T02:29:38.229Z
 pages=1 checks=11 failed=0 warnings=0 skipped=0
 
-[PASS] courses.html http://127.0.0.1:3322/courses.html
+[PASS] admin-rag-upload.html http://127.0.0.1:3322/admin-rag-upload.html
   [PASS] five-viewports: 5/5 viewport screenshots captured.
-  [PASS] route-stable: 0/5 viewport loads redirected away from /courses.html.
+  [PASS] route-stable: 0/5 viewport loads redirected away from /admin-rag-upload.html.
   [PASS] no-horizontal-overflow: 0/5 viewports overflow horizontally.
   [PASS] contrast-4.5: 0 text samples are below 4.5:1.
-  [PASS] tab-reachable: 69/69 visible focusable elements reached by Tab.
-  [PASS] focus-visible: 0/69 reached elements lack a visible focus ring.
-  [PASS] focus-not-obscured: 0/69 reached elements are outside the visible viewport after focus.
+  [PASS] tab-reachable: 18/18 visible focusable elements reached by Tab.
+  [PASS] focus-visible: 0/18 reached elements lack a visible focus ring.
+  [PASS] focus-not-obscured: 0/18 reached elements are outside the visible viewport after focus.
   [PASS] icon-control-name: 0 visible icon-only controls lack an accessible name.
   [PASS] aria-title-frozen: 0 frozen aria-label/title entries are missing or changed.
   [PASS] reduced-motion: Media emulation active=true; running animations=0.
