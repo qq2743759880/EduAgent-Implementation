@@ -630,11 +630,13 @@ async def graph_stream_sse(
                         else:
                             pending_tokens.append(delta)  # retrieval 帧先行（契约帧序）
             finally:
-                # guard release 成对兜底（astream 异常/客户端断连也必须归还闸位/槽位）
+                # guard release 成对兜底（astream 异常/客户端断连也必须归还闸位/槽位）。
+                # 用 safe_release：SSE 断连/超时会令普通 release 的 await 被 CancelledError 打断，
+                # safe_release 经 asyncio.shield 保证槽位一定归还（修复 TA5 并发槽泄漏）。
                 if guard_held:
                     try:
-                        from app.ai.guard import default_guard
-                        await default_guard().release(int(user_id))
+                        from app.ai.guard import default_guard, safe_release
+                        await safe_release(default_guard(), int(user_id))
                     except Exception:  # noqa: BLE001
                         pass
                     guard_held = False
@@ -672,11 +674,12 @@ async def graph_stream_sse(
             logger.warning(f"[graph_stream] 图执行异常，发 error 事件：{code} {msg} ({e})")
             yield sse_line(SseEventType.ERROR.value, {"code": code, "message": msg})
         finally:
-            # 防御性兜底：图执行前异常（如 _ensure_agent_graph 失败）时归还已持有的闸位
+            # 防御性兜底：图执行前异常（如 _ensure_agent_graph 失败）/ 客户端断连时归还已持有的闸位。
+            # safe_release 对 CancelledError 免疫，保证任何退出路径槽位都归还（TA5）。
             if guard_held:
                 try:
-                    from app.ai.guard import default_guard
-                    await default_guard().release(int(user_id))
+                    from app.ai.guard import default_guard, safe_release
+                    await safe_release(default_guard(), int(user_id))
                 except Exception:  # noqa: BLE001
                     pass
             # MCP 并行预取未消费（error/异常路径）→ 取消，不留悬挂任务

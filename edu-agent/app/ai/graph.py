@@ -925,10 +925,12 @@ async def run_agent(query: str, *, user_id: int, session_id: str | None = None, 
         try:
             final = await g.ainvoke(state, config)
         finally:
-            if guard_entry is not None:
+            # 仅当 guard 实际准入（ok）才释放；拒绝路径（ok=False）从未占用槽位，误释放会使
+            # Redis 计数变负。safe_release 对客户端断连/超时导致的 CancelledError 免疫（TA5）。
+            if guard_entry is not None and guard_entry.get("ok"):
                 try:
-                    from app.ai.guard import default_guard
-                    await default_guard().release(int(user_id))
+                    from app.ai.guard import default_guard, safe_release
+                    await safe_release(default_guard(), int(user_id))
                 except Exception:
                     pass
     except Exception as exc:

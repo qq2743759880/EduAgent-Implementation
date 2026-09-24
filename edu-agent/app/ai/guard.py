@@ -771,6 +771,27 @@ class TokenBudgetGuard(ConcurrencyGuard):
             await asyncio.sleep(min(0.02, remain))
 
 
+async def safe_release(guard: "ConcurrencyGuard", user_id: int) -> None:
+    """取消安全的并发槽释放（修复「失败 / SSE 客户端断连 / 请求超时」路径的槽泄漏）。
+
+    调用方已在 ``finally`` 中成对调用 ``release``，但 SSE 客户端断连或请求超时会令
+    ``await release()`` 被 ``CancelledError`` 打断（``CancelledError`` 是 ``BaseException``，
+    调用处 ``except Exception`` 捕获不到），导致槽位永不归还、该用户被永久限流
+    （进程内计数器泄漏，重启后端才恢复——与 P0 验收复现的 ``user_concurrent_over_limit``
+    永久降级现象一致）。
+
+    用 ``asyncio.shield`` 包裹释放：即便外层 ``await`` 被取消，内部 ``release`` 仍在事件循环上
+    独立跑完，保证槽位一定归还。取消信号本身被静默吞掉（内层已独立继续），不重复释放。
+    """
+    try:
+        await asyncio.shield(guard.release(int(user_id)))
+    except asyncio.CancelledError:
+        # shield 已让内部 release 在后台继续完成，无需重复释放
+        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[guard] 释放并发槽异常（已尽力归还）: {type(exc).__name__}: {exc}")
+
+
 def default_guard() -> ConcurrencyGuard:
     global _guard
     if _guard is None:
