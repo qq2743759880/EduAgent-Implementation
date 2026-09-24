@@ -392,17 +392,57 @@ class SixNodeHarness(Harness):
             except Exception:
                 writer = None
             if writer is not None:
+                # TB2b：`llm_call` 子 span —— 最终回答生成（strong 模型流式）的真实耗时与模型名。
+                # 显式 parent= 当前 retrieval span（graph_stream 已 attach）→ Jaeger 上
+                # retrieval → llm_call 是父子关系，能指认「回答生成段」。
+                _llm_cm = None
+                _llm_handle = None
+                try:
+                    from app.observability import tracing as _otel_t
+
+                    _llm_cm = _otel_t.span(
+                        "llm_call",
+                        kind="client",
+                        attributes={
+                            "model": str(getattr(settings, "LLM_MODEL_STRONG", "") or "strong"),
+                            "model_alias": "strong",
+                            "stream": True,
+                            "max_tokens": int(settings.LLM_MAX_TOKENS),
+                            "messages": len(messages),
+                        },
+                    )
+                    _llm_handle = _llm_cm.__enter__()
+                except Exception:  # noqa: BLE001
+                    _llm_cm, _llm_handle = None, None
                 try:
                     answer = await self._stream_answer_tokens(messages, writer)
+                    if _llm_handle is not None:
+                        try:
+                            _llm_handle.set_attribute("answer_chars", len(answer or ""))
+                            _llm_handle.mark_ok()
+                        except Exception:  # noqa: BLE001
+                            pass
                     return {"final_answer": answer, "degraded_reason": None} | _graph._record(state, "answer")
                 except Exception as exc:
                     # 流式已吐部分 token → 不重试（防重复输出），异常上抛由适配层转 error 事件
+                    if _llm_handle is not None:
+                        try:
+                            _llm_handle.set_attribute("degraded", True)
+                            _llm_handle.mark_error(f"{type(exc).__name__}: {exc}")
+                        except Exception:  # noqa: BLE001
+                            pass
                     if getattr(exc, "stream_tokens_emitted", False):
                         raise
                     logger.warning(
                         f"[sixnode.answer] 流式生成失败（未吐 token，回退阻塞 strong→fast）: {type(exc).__name__}: {exc}"
                     )
                     # 落到下方阻塞降级链（strong 失败语义与原实现一致）
+                finally:
+                    if _llm_cm is not None:
+                        try:
+                            _llm_cm.__exit__(None, None, None)
+                        except Exception:  # noqa: BLE001
+                            pass
 
         try:
             answer = await _graph._llm_call(messages, model="strong", temperature=settings.LLM_TEMPERATURE, max_tokens=settings.LLM_MAX_TOKENS)

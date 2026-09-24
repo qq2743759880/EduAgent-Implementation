@@ -1,0 +1,39 @@
+{
+  "mode": "fail",
+  "query": "请简要介绍一下数据结构中的栈。",
+  "first_token_ms": 40180,
+  "total_ms": 40246,
+  "event_kinds": [
+    "start",
+    "retrieval",
+    "token",
+    "done"
+  ],
+  "done_data": {
+    "session_id": null,
+    "message_id": null,
+    "retrieved_count": 0,
+    "final_count": 0,
+    "latency_ms": 39720,
+    "rewrite_query": "请简要介绍一下数据结构中的栈。",
+    "degraded_reason": "Milvus 检索超时(8.0s)；llm_failed",
+    "mcp_tool_calls": [],
+    "memorized": [],
+    "tool_receipt_unverified": false
+  },
+  "trace_id": "e8e4e287f8ea9806cfaf360c9527ae03",
+  "span_count": 4,
+  "tree": [
+    "- chat.request           kind=server   status=-      dur= 39764.4ms  sid=742b86e3",
+    "  - tool_calls             kind=internal status=-      dur=    20.0ms  sid=9e0a3134",
+    "      · tool_count=0",
+    "  - retrieval              kind=internal status=-      dur= 39519.4ms  sid=28c9cb30",
+    "      · retrieved_count=0",
+    "      · final_count=0",
+    "      · nodes=route,skill,compact,context_edit,plan,fan_out,merge,reflect,answer",
+    "      · degraded_reason=Milvus 检索超时(8.0s)",
+    "    - llm_call               kind=client   status=ERROR  dur=  8335.2ms  sid=9ac58d97",
+    "        · model=deepseek-flash",
+    "[linkage] spans=4 linked_children=3 roots=1"
+  ]
+}

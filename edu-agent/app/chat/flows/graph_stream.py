@@ -253,8 +253,14 @@ async def graph_stream_sse(
     *,
     user_id: int,
     role: UserRole,
+    otel_parent: Any = None,
 ) -> StreamingResponse:
-    """图执行体 SSE 入口。建连前阶段（会话校验）抛异常 → router 转 HTTP 状态码（契约第一段）。"""
+    """图执行体 SSE 入口。建连前阶段（会话校验）抛异常 → router 转 HTTP 状态码（契约第一段）。
+
+    `otel_parent`（TB2b）：router 层开的 `chat.request` root span 句柄。所有子 span
+    （retrieval / llm_call / tool_calls）都显式挂它，使 Jaeger 上是**一棵树**而非散点。
+    None 时子 span 仍会生成（只是不挂父），不影响主链路行为。
+    """
     # 建连前：会话归属校验（与旧路径 service.chat_stream 同源语义）
     session = None
     if req.session_id:
@@ -268,6 +274,14 @@ async def graph_stream_sse(
 
     # R02-c：thread_id——有 session 用 session；匿名请求每请求独立 uuid（禁 task24-{user_id} 共享）
     thread_id = resolve_thread_id(req.session_id, user_id)
+
+    # TB2b：分层 span 基建（子 span 全部显式挂 otel_parent = chat.request root）。
+    # 失败安全：tracing 内部任何异常都退化为 no-op 句柄，绝不干扰 SSE 主链路。
+    _otel = None
+    try:
+        from app.observability import tracing as _otel  # noqa: F401
+    except Exception:  # noqa: BLE001
+        _otel = None
 
     async def _gen() -> AsyncGenerator[bytes, None]:
         t0 = time.perf_counter()
@@ -325,7 +339,6 @@ async def graph_stream_sse(
             from app.chat.tool_calling import run_chat_tool_calls
 
             nonlocal held_hitl_payload
-
             async def _hold_for_confirm(payload: dict) -> bool:
                 nonlocal held_hitl_payload
                 # CR-T11-A（契约补全）：_enrich_hitl_pending_payload 把契约定死的五字段
@@ -362,8 +375,28 @@ async def graph_stream_sse(
                         f"[graph_stream] pending_args 未命中（fallback 启发式兜底）thread_id={thread_id}"
                     )
 
+            # TB2b：`tool_calls` 子 span —— 包住整段 MCP 工具调度（与 retrieval 并行，
+            # Jaeger 上能看到两者时间重叠）。失败路径由 span() 自动记 exception + status=ERROR。
+            _tool_cm = None
+            _tool_handle = None
+            if _otel is not None:
+                try:
+                    _tool_cm = _otel.span(
+                        "tool_calls",
+                        kind="internal",
+                        parent=otel_parent,
+                        attributes={
+                            "user_id": str(user_id),
+                            "query_len": len(req.query or ""),
+                            "hitl_decision": str(mcp_hitl_decision),
+                            "mcp_enabled": bool(req.use_mcp_tools),
+                        },
+                    )
+                    _tool_handle = _tool_cm.__enter__()
+                except Exception:  # noqa: BLE001
+                    _tool_cm, _tool_handle = None, None
             try:
-                return await run_chat_tool_calls(
+                result = await run_chat_tool_calls(
                     query=req.query,
                     operator_user_id=int(user_id),
                     session_id=session_id_out,
@@ -372,11 +405,33 @@ async def graph_stream_sse(
                     on_write_class_pending=_hold_for_confirm,
                     pending_args_override=(_pending_args_override or None),
                 )
+                if _tool_handle is not None:
+                    try:
+                        _summaries = result[0] if isinstance(result, tuple) and result else []
+                        _tool_handle.set_attribute("tool_count", len(_summaries))
+                        _tool_handle.set_attribute(
+                            "tools",
+                            ",".join(str(getattr(s, "tool_name", "") or "") for s in _summaries)[:512],
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+                return result
             except Exception as exc:  # noqa: BLE001
                 logger.warning(f"[graph_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
-                # degraded_reason 会经 make_stream_finalize 进用户可见的 done 帧 → 只给稳定文案，
-                # 不把内部异常类名泄给用户（类名只进 logger，见上行）。
+                # 失败路径：span 标 ERROR 后原样返回降级三元组（主链路行为零变化）
+                if _tool_handle is not None:
+                    try:
+                        _tool_handle.set_attribute("degraded", True)
+                        _tool_handle.mark_error(f"{type(exc).__name__}: {exc}")
+                    except Exception:  # noqa: BLE001
+                        pass
                 return [], "", "MCP 工具阶段异常（已跳过）"
+            finally:
+                if _tool_cm is not None:
+                    try:
+                        _tool_cm.__exit__(None, None, None)
+                    except Exception:  # noqa: BLE001
+                        pass
 
         mcp_task = (
             asyncio.ensure_future(_run_mcp())
@@ -542,6 +597,28 @@ async def graph_stream_sse(
                     return
             state = _empty_state(req.query, user_id=int(user_id), session_id=req.session_id)
             config = {"configurable": {"thread_id": thread_id, "stream_tokens": True}}
+            # TB2b：`retrieval` 子 span —— 包住整段图消费（route→plan→fan_out→merge→reflect→answer）。
+            # 检索（三通道/重排）与 LLM 都在图节点里，故 retrieval 段覆盖「检索+裁决」，
+            # `llm_call` 段单独在 answer 节点边界另开（见下）。失败/取消由 span() 自动标 ERROR。
+            _ret_cm = None
+            _ret_handle = None
+            if _otel is not None:
+                try:
+                    _ret_cm = _otel.span(
+                        "retrieval",
+                        kind="internal",
+                        parent=otel_parent,
+                        attributes={
+                            "channel": "graph",
+                            "use_hyde": bool(req.use_hyde),
+                            "enable_graph": bool(req.enable_graph),
+                            "top_k": int(req.top_k),
+                            "final_max_k": int(req.final_max_k),
+                        },
+                    )
+                    _ret_handle = _ret_cm.__enter__()
+                except Exception:  # noqa: BLE001
+                    _ret_cm, _ret_handle = None, None
             try:
                 async for mode, payload in g.astream(
                     Command(resume=resume_decision_for_graph) if resume_decision_for_graph is not None else state,
@@ -640,6 +717,31 @@ async def graph_stream_sse(
                     except Exception:  # noqa: BLE001
                         pass
                     guard_held = False
+                # TB2b：retrieval 子 span 收口（图消费结束/异常/断连三条路径都到这里）。
+                # 把本轮真实观测到的检索产物体量写进 span，让 Jaeger 上一眼可判「检索有没有真跑」。
+                if _ret_handle is not None:
+                    try:
+                        _payload = retrieval_payload or {}
+                        _ret_handle.set_attribute("retrieved_count", int(_payload.get("retrieved_count") or 0))
+                        _ret_handle.set_attribute("final_count", len(_payload.get("docs") or []))
+                        _ret_handle.set_attribute("graph_entities", len(_payload.get("graph_entities") or []))
+                        _ret_handle.set_attribute("ttft_retrieval_ms", int(ttft_retrieval_ms or 0))
+                        _ret_handle.set_attribute("ttft_first_token_ms", int(ttft_first_token_ms or 0))
+                        _ret_handle.set_attribute("answer_tokens", len(answer_parts))
+                        _ret_handle.set_attribute("nodes", ",".join(list(node_arrivals.keys()))[:512])
+                        _ret_handle.set_attribute(
+                            "node_arrivals_ms",
+                            ",".join(f"{k}:{v}" for k, v in node_arrivals.items())[:512],
+                        )
+                        if _payload.get("degraded_reason"):
+                            _ret_handle.set_attribute("degraded_reason", str(_payload["degraded_reason"])[:256])
+                    except Exception:  # noqa: BLE001
+                        pass
+                if _ret_cm is not None:
+                    try:
+                        _ret_cm.__exit__(None, None, None)
+                    except Exception:  # noqa: BLE001
+                        pass
 
             # CR-1 方案② 兜底：retrieval_payload 始终未置位（如工具意图未走 fan_out 更新）
             # 时，挂起负载可能未在循环内被消费——补发 pending_confirm 并收束，绝不静默吞。

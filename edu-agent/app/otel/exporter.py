@@ -19,6 +19,16 @@
   - 配置后 → OTLP HTTP 导出（POST JSON 到该端点；可选依赖 requests 已为运行时常驻，
     缺失/网络失败 → 自动降级 JSONL 不阻塞主流程）
 
+TB2b 修复（断点②：导出体不是 OTLP）：
+    原实现把**私有事件 dict**（`{ts, trace_id, span_id, event_type, payload, ...}`）
+    直接 POST 给 OTLP 端点，其 docstring 自述「OTLP HTTP 导出」在 Jaeger 上**不成立**
+    —— Jaeger 只认 OTLP `resourceSpans` 信封，收私有 dict 一律 400 reject。
+    现改为：把事件**映射**为合法 OTLP span 后再投递（`_event_to_span`），
+    事件原有字段完整保留为 span attributes（零信息丢失），落盘 JSONL 路径不变
+    （JSONL 侧仍是原始事件行，不受影响）。
+    保留开关 `OTEL_EXPORT_ENVELOPE`：`otlp`（默认，标准信封）| `legacy`（旧私有 dict，
+    仅供排障对比，生产不应启用）。
+
 同时：
   ① 内存环形缓冲（默认上限 MAX_MEMORY_EVENTS，供 /api/metrics/trace/{trace_id} 检索）；
   ② 派发到 5 维指标累加器（app.otel.metrics）实现可溯源计数。
@@ -38,9 +48,40 @@ from app.otel.metrics import get_otel_metrics
 
 MAX_MEMORY_EVENTS = 5000
 
+# TB2b：失败判定词表（payload 命中即 span status=ERROR，供 Jaeger 上直观看失败路径）
+_FAILURE_TOKENS = ("fail", "failed", "error", "timeout", "exception", "denied", "rejected", "unavailable")
+
 
 def _now_ms() -> int:
     return int(time.time() * 1000)
+
+
+def _norm_hex(value: Any, width: int) -> str:
+    """把任意 id 归一为 width 位小写 hex；非法/全零返回空串（调用方自行兜底生成）。"""
+    s = "".join(ch for ch in str(value or "").lower() if ch in "0123456789abcdef")
+    if not s:
+        return ""
+    s = (s + "0" * width)[:width]
+    return "" if set(s) == {"0"} else s
+
+
+def _event_is_failure(event: dict) -> bool:
+    """事件是否表示失败（payload 内 outcome/status/error 命中失败词表）。"""
+    payload = event.get("payload") or {}
+    if not isinstance(payload, dict):
+        return False
+    for key in ("outcome", "status", "error", "result", "reason"):
+        val = payload.get(key)
+        if val is None:
+            continue
+        if isinstance(val, bool):
+            if key == "ok" and not val:
+                return True
+            continue
+        text = str(val).lower()
+        if any(tok in text for tok in _FAILURE_TOKENS):
+            return True
+    return False
 
 
 class OtelExporter:
@@ -180,14 +221,101 @@ class OtelExporter:
                 pass
 
     def _export_otlp(self, event: dict) -> None:
-        """OTLP HTTP 导出（JSON 投递；失败降级 JSONL 不阻塞）。"""
+        """OTLP HTTP 导出（TB2b：标准 resourceSpans 信封；失败降级 JSONL 不阻塞）。
+
+        `OTEL_EXPORT_ENVELOPE=legacy` 时退回旧的私有 dict 投递（排障对比用）——
+        注意该形态会被 Jaeger 400 reject，生产/演示不应启用。
+        """
         try:
             import requests
 
-            requests.post(self._endpoint, json=event, timeout=2.0)
+            if str(getattr(settings, "OTEL_EXPORT_ENVELOPE", "otlp") or "otlp").lower() == "legacy":
+                payload: dict = event
+            else:
+                payload = self._event_to_envelope(event)
+            requests.post(self._endpoint, json=payload, timeout=2.0)
         except Exception:
             # 网络/依赖失败 → 降级落盘
             self._write_jsonl(event)
+
+    # ---- TB2b：私有事件 → 标准 OTLP span 映射 ----
+    def _event_to_envelope(self, event: dict) -> dict:
+        """把一条私有事件映射为合法 OTLP `resourceSpans` 信封。
+
+        - traceId：沿用事件 trace_id（32 位 hex；不足右补 0，全零则随机生成，Jaeger 拒全零）
+        - spanId ：沿用事件 span_id（16 位 hex；不足右补 0，全零则随机生成）
+        - 时间戳 ：startTimeUnixNano / endTimeUnixNano 由 `ts`(ms) ± latency_ms 推出
+        - status ：payload.outcome/status 命中失败词表 → ERROR，否则 OK
+        - 其余字段（event_type/event_id/user_id/model/latency_ms/payload.*）全部落到
+          span attributes，保证 OTLP 与 JSONL 两条通道的信息量一致
+        """
+        trace_id = _norm_hex(event.get("trace_id"), 32) or uuid.uuid4().hex
+        span_id = _norm_hex(event.get("span_id"), 16) or uuid.uuid4().hex[:16]
+
+        ts_ms = int(event.get("ts") or (_now_ms()))
+        latency_ms = event.get("latency_ms")
+        try:
+            latency_ms_f = float(latency_ms) if latency_ms is not None else 0.0
+        except (TypeError, ValueError):
+            latency_ms_f = 0.0
+        start_ns = ts_ms * 1_000_000
+        end_ns = start_ns + int(max(0.0, latency_ms_f) * 1_000_000)
+
+        attrs: list[dict] = [
+            {"key": "event_type", "value": {"stringValue": str(event.get("event_type") or "")}},
+            {"key": "event_id", "value": {"stringValue": str(event.get("event_id") or "")}},
+        ]
+        if event.get("user_id") is not None:
+            attrs.append({"key": "user_id", "value": {"stringValue": str(event["user_id"])}})
+        if event.get("model") is not None:
+            attrs.append({"key": "model", "value": {"stringValue": str(event["model"])}})
+        if latency_ms is not None:
+            attrs.append({"key": "latency_ms", "value": {"doubleValue": latency_ms_f}})
+        payload = event.get("payload") or {}
+        if isinstance(payload, dict):
+            for k, v in payload.items():
+                if v is None:
+                    continue
+                if isinstance(v, bool):
+                    attrs.append({"key": f"payload.{k}", "value": {"boolValue": v}})
+                elif isinstance(v, (int, float)):
+                    attrs.append({"key": f"payload.{k}", "value": {"doubleValue": float(v)}})
+                else:
+                    attrs.append({"key": f"payload.{k}", "value": {"stringValue": str(v)[:512]}})
+
+        failed = _event_is_failure(event)
+        status = {"code": 2, "message": "event reported failure"} if failed else {"code": 1}
+
+        span = {
+            "traceId": trace_id,
+            "spanId": span_id,
+            "name": f"otel.{event.get('event_type') or 'event'}",
+            "kind": 1,  # INTERNAL
+            "startTimeUnixNano": str(start_ns),
+            "endTimeUnixNano": str(end_ns),
+            "attributes": attrs,
+            "status": status,
+        }
+        return {
+            "resourceSpans": [
+                {
+                    "resource": {
+                        "attributes": [
+                            {
+                                "key": "service.name",
+                                "value": {"stringValue": self._service_name()},
+                            }
+                        ]
+                    },
+                    "scopeSpans": [
+                        {"scope": {"name": "edu-agent.otel"}, "spans": [span]}
+                    ],
+                }
+            ]
+        }
+
+    def _service_name(self) -> str:
+        return (getattr(settings, "OTEL_SERVICE_NAME", "") or "edu-agent").strip() or "edu-agent"
 
     # ============================================================
     # 检索（供 /api/metrics/trace/{trace_id}）

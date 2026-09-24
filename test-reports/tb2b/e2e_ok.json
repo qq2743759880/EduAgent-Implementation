@@ -1,0 +1,40 @@
+{
+  "mode": "ok",
+  "query": "Python 入门课程有哪些核心内容？请简要概括。",
+  "first_token_ms": 18552,
+  "total_ms": 20976,
+  "event_kinds": [
+    "start",
+    "retrieval",
+    "token",
+    "done"
+  ],
+  "done_data": {
+    "session_id": null,
+    "message_id": null,
+    "retrieved_count": 0,
+    "final_count": 0,
+    "latency_ms": 20550,
+    "rewrite_query": "Python 入门课程有哪些核心内容？请简要概括。",
+    "degraded_reason": "Milvus 检索超时(8.0s)",
+    "mcp_tool_calls": [],
+    "memorized": [],
+    "tool_receipt_unverified": true
+  },
+  "trace_id": "984dd679cc6eb20e50c53b4d91299c11",
+  "span_count": 4,
+  "tree": [
+    "- chat.request           kind=server   status=-      dur= 20585.2ms  sid=2ad30e12",
+    "  - tool_calls             kind=internal status=-      dur=   111.0ms  sid=c386a819",
+    "      · tool_count=0",
+    "  - retrieval              kind=internal status=-      dur= 20422.2ms  sid=2490c2e5",
+    "      · retrieved_count=0",
+    "      · final_count=0",
+    "      · nodes=route,skill,compact,context_edit,plan,fan_out,merge,reflect,answer",
+    "      · degraded_reason=Milvus 检索超时(8.0s)",
+    "    - llm_call               kind=client   status=OK     dur=  8391.3ms  sid=277a993f",
+    "        · model=deepseek-flash",
+    "        · answer_chars=943",
+    "[linkage] spans=4 linked_children=3 roots=1"
+  ]
+}

@@ -80,6 +80,38 @@ async def _guard_stream_internal(agen, allowed: bool):
         reset_internal_visibility(token)
 
 
+async def _tb2b_close_root_span(agen, root_cm, root_handle):
+    """TB2b：包裹 SSE 响应体迭代器，负责 chat.request root span 的收口。
+
+    必须在响应体迭代结束（或被取消）时才 __exit__——root span 的 duration 才等于
+    用户真实感知的端到端耗时。异常/断连路径标 status=ERROR，保证 Jaeger 上失败可见。
+    """
+    err: BaseException | None = None
+    try:
+        async for chunk in agen:
+            yield chunk
+    except GeneratorExit:
+        # 生成器正常关闭（客户端读完即 aclose）——不是失败，不得标 ERROR
+        # （否则每个正常 SSE 请求的 chat.request 都会在 Jaeger 上显示红条，噪声淹没真错误）。
+        # AsyncGenerator 语义：GeneratorExit 不要 re-raise（会触发 RuntimeError）。
+        err = None
+    except BaseException as exc:  # noqa: BLE001 — 含客户端断连的 CancelledError
+        err = exc
+        try:
+            if root_handle is not None:
+                root_handle.record_exception(exc)
+                root_handle.mark_error(f"{type(exc).__name__}: {exc}")
+        except Exception:  # noqa: BLE001
+            pass
+        raise
+    finally:
+        try:
+            if root_cm is not None:
+                root_cm.__exit__(type(err), err, getattr(err, "__traceback__", None))
+        except Exception:  # noqa: BLE001
+            pass
+
+
 # ============================================================
 # 工具：异常统一映射（AppException → HTTP；code=CHAT_SESSION_FORBIDDEN 专门映射为 403）
 # ============================================================
@@ -296,12 +328,49 @@ async def chat_stream_sse(
         if getattr(settings, "STREAM_VIA_GRAPH", True):
             from app.chat.flows.graph_stream import graph_stream_sse
 
-            resp = await graph_stream_sse(req, user_id=user.user_id, role=user.role)
+            # TB2b（断点③修复）：chat 链路分层 span 的 **root** —— `chat.request`。
+            # 必须在 router 层开、并包裹整个流生命周期（含 body_iterator 异步迭代），
+            # 否则 root 会在 handler return 时就 end，子 span 挂不上去（实测变成孤立 trace）。
+            # 故 root 的 span 上下文挂在响应体迭代器上，由包装后的 aiter 负责 end。
+            from app.observability.tracing import span as _otel_span
+
+            _root_cm = _otel_span(
+                "chat.request",
+                kind="server",
+                attributes={
+                    "user_id": str(getattr(user, "user_id", "")),
+                    "role": str(getattr(user, "role", "")),
+                    "session_id": str(getattr(req, "session_id", "") or ""),
+                    "query": (getattr(req, "query", "") or "")[:256],
+                    "query_len": len(getattr(req, "query", "") or ""),
+                    "channel": "sse",
+                    "trace_id": tid,
+                },
+            )
+            _root_handle = _root_cm.__enter__()
+            try:
+                resp = await graph_stream_sse(
+                    req, user_id=user.user_id, role=user.role, otel_parent=_root_handle,
+                )
+            except BaseException as _exc:
+                # 建连/建图失败：root span 标错收口后原样上抛（保 HTTP 状态码契约）
+                try:
+                    if _root_handle is not None:
+                        _root_handle.record_exception(_exc)
+                        _root_handle.mark_error(f"{type(_exc).__name__}: {_exc}")
+                except Exception:  # noqa: BLE001
+                    pass
+                _root_cm.__exit__(type(_exc), _exc, _exc.__traceback__)
+                raise
             # WNEXT10 F5-a：响应体在 return 之后才被迭代 → 迭代期间重建 internal 可见性
             if hasattr(resp, "body_iterator"):
-                resp.body_iterator = _guard_stream_internal(
+                _body = _guard_stream_internal(
                     resp.body_iterator, role_allows_internal(getattr(user, "role", None))
                 )
+                resp.body_iterator = _tb2b_close_root_span(_body, _root_cm, _root_handle)
+            else:
+                # 无 body_iterator（非预期形态）：root 立即收口，避免悬挂
+                _root_cm.__exit__(None, None, None)
             return resp
 
         session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries = await service_chat_stream(
