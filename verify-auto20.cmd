@@ -78,8 +78,10 @@ set "DISP=%CD%\.ai-hub\plans\artifacts\dispatch"
 
 if not exist "%DISP%\" goto :disp_nodir
 
-for /f %%n in ('dir /b "%DISP%\TO-EXEC-*.md" 2^>nul ^| find /c /v ""') do set TO_N=%%n
-for /f %%n in ('dir /b "%DISP%\REPORT-*.md" 2^>nul ^| find /c /v ""') do set RP_N=%%n
+REM  find 必须写全路径：Git Bash 环境下 PATH 里 GNU find 抢占 Windows find.exe，
+REM  `find /c /v ""` 参数语义不同会导致本步静默挂死（2026-09-24 验收实测）。
+for /f %%n in ('dir /b "%DISP%\TO-EXEC-*.md" 2^>nul ^| "%SystemRoot%\System32\find.exe" /c /v ""') do set TO_N=%%n
+for /f %%n in ('dir /b "%DISP%\REPORT-*.md" 2^>nul ^| "%SystemRoot%\System32\find.exe" /c /v ""') do set RP_N=%%n
 if not defined TO_N set TO_N=0
 if not defined RP_N set RP_N=0
 
