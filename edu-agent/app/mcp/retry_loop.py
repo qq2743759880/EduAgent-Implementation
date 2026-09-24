@@ -43,6 +43,10 @@ class AttemptOutcome:
     latency_ms: int = 0
     error_message: str | None = None
     is_rejection: bool = False                        # isError/权限拒绝 → 计入拒绝熔断
+    # TA7 D1：业务失败（工具真执行了，但业务结果为失败：ok:false / 非 0 code）。
+    # 语义 = 确定性终态：参数/课程名不会因为再试一次就变得存在 → **不重试、不出人工指南**，
+    # 直接把如实标注的 ERROR 响应回传（保留 content 里的 need_clarify/candidates 供模型追问）。
+    is_business_failure: bool = False
     result: Any = None
     content_text: str | None = None
     resp: Any = None                                  # 原始 MCPToolTestResp（如有）

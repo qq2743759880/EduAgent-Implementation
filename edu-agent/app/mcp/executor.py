@@ -828,6 +828,50 @@ def _resolve_builtin_name(tool_id: int | None, server_id: int | None, tool_name:
     return n if n in _BUILTIN_TOOL_HANDLERS else ""
 
 
+# ============================================================
+# TA7 D1（P0）：内置工具「业务失败」不得映射 SUCCESS（凭据语义真化）
+# ============================================================
+# 实测缺陷（TA7 D1，真实 HTTP + DB 双证）：`_favorite_add_handler` 对**业务失败**
+# （课程不存在 → `{"ok": false, "code": "40400", ...}`）是**返回结构化 JSON**而非抛异常，
+# 而内置执行路径此前只看「handler 有没有抛」→ 一律映射 `status=SUCCESS`：
+#   · mcp_tool_call_log.status = 'SUCCESS'（result_json 里却明写 ok:false / 40400）
+#   · SSE `mcp_tool_calls[].status = "success"`
+#   → receipt_guard 判「有 success 凭据」→ 写类护栏**永不触发**，而「AI 说做了但实际没做」
+#     恰是护栏存在的唯一理由（TA6 之前黄条能触发只是"工具执行不了"的副产品）。
+#
+# 语义铁律：调用日志/SSE 的 status 必须如实反映**业务结果**，而不是「handler 是否抛异常」。
+# 判定口径（保守，只认两种显式形态，避免误伤其他 handler 返回体）：
+#   1) JSON 对象含 `ok` 且为 False → 业务失败；
+#   2) 含 `code` 且不是成功码（"0"/"ok"/"success"/"200"）→ 业务失败。
+# 反例保护（不得误判为失败）：calculator 返回 `{"result":…}`、search_knowledge 返回
+# `{"results":…,"degraded":…}`、knowledge_import 返回 `{"status":…}` —— 均无 `ok`/`code` 键。
+_BUILTIN_SUCCESS_CODES = {"0", "ok", "success", "200"}
+
+
+def _builtin_business_failure(content_text: str | None) -> tuple[bool, str | None]:
+    """判定内置 handler 返回体是否为「业务失败」。返回 (is_failure, 说明文本)。
+
+    非 JSON / 非对象 → 不是业务失败（保持既有 SUCCESS 语义，零行为变化）。
+    """
+    raw = str(content_text or "").strip()
+    if not raw or not raw.startswith("{"):
+        return False, None
+    try:
+        obj = json.loads(raw)
+    except Exception:
+        return False, None
+    if not isinstance(obj, dict):
+        return False, None
+    code = obj.get("code")
+    code_s = "" if code is None else str(code).strip().lower()
+    is_fail = obj.get("ok") is False or (code is not None and code_s not in _BUILTIN_SUCCESS_CODES)
+    if not is_fail:
+        return False, None
+    msg = str(obj.get("message") or "").strip()
+    detail = f"[{code_s or 'business_error'}] {msg}" if msg else f"[{code_s or 'business_error'}] 工具业务失败"
+    return True, detail[:1024]
+
+
 async def _execute_builtin_attempt(*, tool_name: str, args: dict, call_id: str,
                                     operator_user_id: int = 0, tenant_id: str = "",
                                     trace_id: str = "") -> "MCPToolTestResp":
@@ -849,10 +893,16 @@ async def _execute_builtin_attempt(*, tool_name: str, args: dict, call_id: str,
     else:
         try:
             content = await handler(dict(args))
+            # TA7 D1：业务失败（ok:false / 非 0 code）**不得**映射 SUCCESS —— 否则
+            # 调用日志与 SSE 会给出假的「成功凭据」，receipt_guard 零触发。此处保留
+            # content_text 原样回传（结构化 need_clarify/candidates 仍给模型用），
+            # 只把 status/error_message 改成如实反映业务结果。
+            _biz_fail, _biz_msg = _builtin_business_failure(content)
             resp = MCPToolTestResp(
-                status=ToolCallStatusEnum.SUCCESS,
+                status=(ToolCallStatusEnum.ERROR if _biz_fail else ToolCallStatusEnum.SUCCESS),
                 latency_ms=int((time.perf_counter() - t0) * 1000),
                 call_id=call_id, server_id=0, tool_name=tool_name, content_text=str(content),
+                error_message=(_biz_msg if _biz_fail else None),
             )
         except Exception as exc:  # noqa: BLE001 — 内置执行失败按 ERROR 返回，不冒泡打崩调用方
             logger.warning(f"[MCP] 内置工具 {tool_name} 执行失败: {type(exc).__name__}: {exc}")
@@ -1629,9 +1679,17 @@ async def _default_attempt_executor(tool_name: str, args: dict, *, call_id: str,
         _t0 = time.perf_counter()
         try:
             content = await builtin(dict(args))
+            # TA7 D1：业务失败（ok:false / 非 0 code）→ ok=False + status=ERROR +
+            # is_business_failure=True。三件事同时成立才能既如实落审计、又让 SSE/护栏
+            # 看到真凭据，同时由 call_tool_with_retry 识别为**终态**（不重试/不出人工指南）。
+            _biz_fail, _biz_msg = _builtin_business_failure(content)
             _outcome = AttemptOutcome(
-                ok=True, status=ToolCallStatusEnum.SUCCESS.value, tool_name=tool_name,
-                args=dict(args), error_message="", latency_ms=0, is_rejection=False,
+                ok=(not _biz_fail),
+                status=(ToolCallStatusEnum.ERROR.value if _biz_fail
+                        else ToolCallStatusEnum.SUCCESS.value),
+                tool_name=tool_name,
+                args=dict(args), error_message=(_biz_msg or ""), latency_ms=0,
+                is_rejection=False, is_business_failure=_biz_fail,
                 result={"content": content}, content_text=content,
             )
         except Exception as exc:  # noqa: BLE001
@@ -2147,6 +2205,23 @@ async def call_tool_with_retry(*, operator_user_id: int, tenant_id: str = "", tr
                 status=ToolCallStatusEnum.SUCCESS, result=outcome.result,
                 error_message=None, latency_ms=outcome.latency_ms, call_id=cid,
                 server_id=server_id_eff, tool_name=step.tool_name, content_text=outcome.content_text,
+            )
+            resp.attempt = step.attempt
+            resp.actions = trail
+            resp.manual_guide = None
+            resp.rejection_limited = False
+            return resp
+
+        # TA7 D1：业务失败 = **确定性终态**（参数本身不成立，如课程名不存在）
+        # → 不重试（换参还是同一个不存在的名字）、不出人工指南（那只是运维模板，
+        #   还会把 content 里的 need_clarify/candidates 冲掉）；也不计入拒绝熔断
+        #（业务失败不是权限/协议拒绝）。如实回传 ERROR + 原始结构化 content。
+        if not outcome.ok and getattr(outcome, "is_business_failure", False):
+            resp = outcome.resp if isinstance(outcome.resp, MCPToolTestResp) else MCPToolTestResp(
+                status=ToolCallStatusEnum.ERROR, result=outcome.result,
+                error_message=outcome.error_message, latency_ms=outcome.latency_ms, call_id=cid,
+                server_id=server_id_eff, tool_name=step.tool_name,
+                content_text=outcome.content_text,
             )
             resp.attempt = step.attempt
             resp.actions = trail
