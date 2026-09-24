@@ -1,0 +1,25 @@
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "session_id": null,
+    "message_id": null,
+    "retrieved_count": 147,
+    "final_count": 5,
+    "latency_ms": 9644,
+    "rewrite_query": "帮我把《量子物理导论第七版完全不存在版》加入收藏",
+    "degraded_reason": "rerank_sidecar_unavailable",
+    "mcp_tool_calls": [
+      {
+        "call_id": "mcp-1790246146704-76496e57",
+        "tool_name": "favorite_add",
+        "args_summary": "{'course_name': '量子物理导论第七版完全不存在版'}",
+        "status": "success",
+        "latency_ms": 8,
+        "result_summary": "{\"ok\": false, \"code\": \"40400\", \"message\": \"未找到课程「量子物理导论第七版完全不存在版」（或该课程已下架）\", \"need_clarify\": true, \"course_name\": \"量子物理导论第七版完全不存在版\", \"candidates\": [], \"hint\": \"请如实告知用户未找到该课程，可就近的关键词再确认一次课程名。\"}"
+      }
+    ],
+    "memorized": [],
+    "tool_receipt_unverified": false
+  }
+}
