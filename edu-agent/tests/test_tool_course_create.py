@@ -13,6 +13,7 @@ CR-WRITETOOLS-001 第二批（用户 P2/P4 已批裁定，docs/时光.md §四 B
 """
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -70,7 +71,6 @@ def test_t4_hitl_confirmed_false_rejected(monkeypatch):
 # ═══════════════════════════════════════════════════════════
 @pytest.mark.parametrize("bad_args,why", [
     ({"series_code": "hitl_test_001"}, "缺 title"),
-    ({"title": "X"}, "缺 series_code"),
     ({"title": "", "series_code": "hitl_test_001"}, "title 空串"),
     ({"title": "   ", "series_code": "hitl_test_001"}, "title 全空白"),
     ({"title": 3, "series_code": "hitl_test_001"}, "title 非字符串"),
@@ -356,12 +356,43 @@ def test_registration_strong_property_and_migration():
 
 
 def test_arg_schema_declaration_matches_exact_pin():
-    """COURSE_CREATE_ARG_SCHEMA 声明面与 handler exact-pin 语义一致（对账锚）。"""
+    """COURSE_CREATE_ARG_SCHEMA 声明面与 handler exact-pin 语义一致（对账锚）。
+
+    TA6：series_code 由「必填」放宽为「可选」——不传时服务端按 title 自动派生合法编码，
+    显式传入仍走 exact-pin 校验（保留用户值）。故 required 仅 title。
+    """
     sch = ex.COURSE_CREATE_ARG_SCHEMA
-    assert sch["required"] == ["title", "series_code"]
+    assert sch["required"] == ["title"]
     assert sch["additionalProperties"] is False
     assert sch["properties"]["series_code"]["pattern"] == "^[a-z0-9_]+$"
     assert sch["properties"]["title"]["minLength"] == 1
+
+
+def test_t1_series_code_optional_autoderive(monkeypatch):
+    """TA6：series_code 改可选——不传时服务端按 title 自动派生合法编码（用户零 ID 输入）。"""
+    captured: dict = {}
+
+    class _F:
+        id = 9001
+        series_code = "auto_x"
+        series_name = "X"
+        institution_id = 1
+        delivery_mode = "online_recorded"
+        sale_status = "draft"
+
+    async def fake_create(data):
+        captured["data"] = data
+        _F.series_code = data.series_code
+        return _F()
+
+    monkeypatch.setattr("app.domains.course_admin.service.create_series", fake_create)
+    monkeypatch.setattr("app.database.fetch_one", lambda q, p=None: _fake_await({"min_id": 1}))
+    _set_exec_ctx(1, hitl_confirmed=True)
+    out = json.loads(asyncio.run(ex._course_create_handler({"title": "X"})))
+    assert out["ok"] is True and out["created"] is True
+    assert out["series_code_source"] == "auto_derived", "未传 series_code 必须服务端自动派生"
+    assert re.fullmatch(r"[a-z0-9_]+", out["series_code"]) and len(out["series_code"]) <= 64
+    assert out["series_code"] == captured["data"].series_code
 
 
 # ═══════════════════════════════════════════════════════════

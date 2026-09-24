@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from app.common.exceptions import AppException
+from app.common.error_codes import SERIES_CODE_CONFLICT
 from app.common.logging import logger
 from app.database import execute_write, fetch_one, get_redis
 from app.config import settings
@@ -1205,17 +1206,60 @@ async def _favorite_add_handler(args: dict) -> str:
     单一执行事实源：直调既有 `market.service.add_favorite`（服务端幂等：已收藏返回原记录、
     软删重收藏激活、未收藏新建）。user_id 以执行上下文为权威（_EXEC_CONTEXT 服务端注入），
     **不从 args 取** —— 伪造他人收藏在结构上不可达。
-    参数精确校验（exact-pin 语义）：仅接受 series_id（int），多余键一律拒。
+
+    参数（exact-pin 语义，多余键一律拒）——TA6 起支持两种寻址方式，二者互斥：
+      · `series_id`(int)   —— 直传路径（保留，向后兼容）；
+      · `course_name`(str) —— 按课程名解析（用户零 ID 输入）：服务端精确/LIKE 解析 DB，
+                              唯一命中则直接收藏；多命中返回候选列表让模型追问一次
+                              （**绝不猜**）；零命中如实回传。
+    两者都不传（或同时传）→ 拒。
     """
     # ① 参数精确校验（先于身份校验：非法参数零副作用）
-    if "series_id" not in args or args.get("series_id") is None:
-        raise ValueError("favorite_add 缺少 series_id（int，课程系列 ID）")
-    sid = args["series_id"]
-    if isinstance(sid, bool) or not isinstance(sid, int):
-        raise ValueError(f"series_id 必须是整数，收到：{type(sid).__name__}")
-    extra = set(args) - {"series_id"}
+    has_id = "series_id" in args and args.get("series_id") is not None
+    has_name = "course_name" in args and str(args.get("course_name") or "").strip()
+    extra = set(args) - {"series_id", "course_name"}
     if extra:
-        raise ValueError(f"favorite_add 不接受多余参数：{sorted(extra)}（仅 series_id）")
+        raise ValueError(
+            f"favorite_add 不接受多余参数：{sorted(extra)}（仅 series_id 或 course_name）")
+    if has_id and has_name:
+        raise ValueError("favorite_add 的 series_id 与 course_name 互斥（二选一，不得同时传）")
+    if not has_id and not has_name:
+        raise ValueError("favorite_add 缺少参数：需 course_name（课程名，推荐）或 series_id（int，课程系列 ID）")
+
+    sid: int
+    if has_id:
+        sid = args["series_id"]
+        if isinstance(sid, bool) or not isinstance(sid, int):
+            raise ValueError(f"favorite_add 的 series_id 必须是整数，收到：{type(sid).__name__}")
+        resolve_note = "by_id"
+    else:
+        # TA6 工作项②：按课程名解析（用户零 ID）——多命中时返回候选让模型追问，不猜
+        cname = str(args["course_name"]).strip()
+        if len(cname) > 128:
+            raise ValueError(f"course_name 过长（{len(cname)} > 128）")
+        resolved = await resolve_series_by_name(cname)
+        if resolved["status"] == "multiple":
+            return json.dumps({
+                "ok": False,
+                "code": "40930",
+                "message": f"课程名「{cname}」匹配到多门课程，需用户确认是哪一门",
+                "need_clarify": True,
+                "course_name": cname,
+                "candidates": resolved["candidates"],
+                "hint": "请用业务语言向用户列出候选课程名并让其选择，不要自行猜测。",
+            }, ensure_ascii=False)
+        if resolved["status"] == "none" or not resolved.get("series_id"):
+            return json.dumps({
+                "ok": False,
+                "code": "40400",
+                "message": f"未找到课程「{cname}」（或该课程已下架）",
+                "need_clarify": True,
+                "course_name": cname,
+                "candidates": [],
+                "hint": "请如实告知用户未找到该课程，可就近的关键词再确认一次课程名。",
+            }, ensure_ascii=False)
+        sid = int(resolved["series_id"])
+        resolve_note = f"by_name({resolved['status']})"
 
     # ② 操作者身份：执行上下文权威（防 args 伪造 user_id）
     ctx = _EXEC_CONTEXT.get() or {}
@@ -1239,6 +1283,7 @@ async def _favorite_add_handler(args: dict) -> str:
         "series_id": int(item.series_id),
         "series_title": item.series_title,
         "favorite_source": _FAVORITE_ADD_SOURCE,
+        "resolve": resolve_note,
         "idempotent_note": "服务端幂等：重复收藏返回原记录",
         "operator_user_id": user_id,
     }, ensure_ascii=False)
@@ -1268,12 +1313,171 @@ COURSE_CREATE_ARG_SCHEMA: dict = {
     "type": "object",
     "properties": {
         "title": {"type": "string", "minLength": 1},
+        # TA6：series_code 由「必填」放宽为「可选」——不传时服务端按 title 自动派生合法编码
+        # （见 _derive_series_code_from_title + 40901 冲突重试）。用户不该被索要任何数据库
+        # 编码类内部参数；显式传入时仍走 exact-pin 校验（保留用户值，不覆盖）。
         "series_code": {"type": "string", "pattern": "^[a-z0-9_]+$"},
         "modules": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["title", "series_code"],
+    "required": ["title"],
     "additionalProperties": False,
 }
+
+# TA6：series_code 自动派生的后缀重试上限（40901 编码冲突时加后缀重试）。
+COURSE_CREATE_CODE_RETRY_MAX = 3
+
+# 中文 title → 可读 ASCII 编码的字符映射（覆盖课程命名常用字；未覆盖字直接跳过）。
+# 目的：派生出的 series_code 既合法（^[a-z0-9_]+$）又尽量可读，便于人工识别与排障。
+_TITLE_ASCII_MAP: dict[str, str] = {
+    "课": "course", "课程": "course", "班": "class", "系列": "series",
+    "入门": "intro", "基础": "basic", "进阶": "advanced", "高级": "advanced",
+    "实战": "practice", "项目": "project", "实战班": "practice",
+    "编程": "programming", "程序": "programming", "代码": "code",
+    "数据": "data", "分析": "analysis", "结构": "structure", "算法": "algorithm",
+    "数学": "math", "英语": "english", "语文": "chinese", "物理": "physics",
+    "化学": "chemistry", "生物": "biology", "历史": "history", "地理": "geography",
+    "自动化": "automation", "脚本": "scripting", "工具": "tooling",
+    "开发": "development", "设计": "design", "测试": "testing", "运维": "operations",
+    "人工智能": "ai", "机器学习": "machine_learning", "深度学习": "deep_learning",
+    "网络": "network", "安全": "security", "数据库": "database",
+    "前端": "frontend", "后端": "backend", "全栈": "fullstack",
+    "学习": "learning", "提升": "improve", "强化": "intensive", "培训": "training",
+    "素养": "literacy", "竞赛": "contest", "建模": "modeling", "证明": "proof",
+    "直播": "online_live", "录播": "online_recorded", "面授": "offline",
+    "信息学": "informatics", "管理": "management", "通用": "general",
+    "系统": "system", "语言": "language", "脚本自动化": "scripting_automation",
+    "办公": "office", "与": "and", "和": "and", "的": "", "之": "",
+    "一": "1", "二": "2", "三": "3", "四": "4", "五": "5",
+    "六": "6", "七": "7", "八": "8", "九": "9", "十": "10",
+    "班·": "_", "·": "_", "（": "_", "）": "_", "(": "_", ")": "_",
+    " ": "_", "-": "_", "—": "_", "、": "_", "/": "_",
+}
+
+
+def _slugify_ascii_part(text: str) -> str:
+    """把 title 的一段做 ASCII slug：ASCII 字母数字保留（小写化），中文按映射表转写。
+
+    未映射的字符（含未收录的中文/符号）直接跳过——保证输出恒满足 ^[a-z0-9_]+$。
+    """
+    out: list[str] = []
+    i = 0
+    # 长键优先匹配（"脚本自动化" 先于 "脚本"/"自动化"；"课程" 先于 "课"）
+    map_keys = sorted(_TITLE_ASCII_MAP.keys(), key=len, reverse=True)
+    while i < len(text):
+        ch = text[i]
+        if ch.isascii() and (ch.isalnum() or ch == "_"):
+            out.append(ch.lower())
+            i += 1
+            continue
+        matched = False
+        for k in map_keys:
+            if k and text.startswith(k, i):
+                out.append(_TITLE_ASCII_MAP[k])
+                i += len(k)
+                matched = True
+                break
+        if not matched:
+            i += 1
+    slug = "".join(out)
+    slug = re.sub(r"_+", "_", slug).strip("_")
+    return slug
+
+
+def _derive_series_code_from_title(title: str) -> str:
+    """TA6 工作项①：由课程 title 自动派生合法 series_code（用户零 ID 输入）。
+
+    规则（自定 slug，稳定可复现）：
+      1) title 转 ASCII slug（ASCII 直留；中文按 _TITLE_ASCII_MAP 可读转写）；
+      2) slug 为空（纯未收录中文等）或长度不足 → 兜底 `course_` 前缀 + 定长短哈希后缀；
+      3) 加 `course_` 前缀时截断至 ≤64（表列上限），保证 re.fullmatch(r"[a-z0-9_]+") 通过。
+
+    短哈希取 sha1(title)，故同一 title 派生结果**确定性可复现**（便于排障与测试锁定）。
+    """
+    slug = _slugify_ascii_part(title or "")
+    if not re.fullmatch(r"[a-z0-9_]+", slug or ""):
+        slug = ""
+    if len(slug) < 3:
+        # 兜底：可读前缀 + 定长短哈希（纯中文/未收录字符场景）
+        digest = hashlib.sha1((title or "").strip().encode("utf-8")).hexdigest()[:8]
+        slug = f"course_{digest}" if not slug else f"{slug}_course_{digest}"
+    if not slug[0].isalpha():
+        slug = f"course_{slug}"
+    return slug[:64]
+
+
+def _next_series_code_candidate(base_code: str, attempt: int) -> str:
+    """TA6：40901 冲突时生成下一个候选编码（加 `_2`/`_3`… 后缀，仍满足 ^[a-z0-9_]+$ ≤64）。
+
+    attempt 从 1 起（第 1 次重试 → 后缀 `_2`）。截断保证加后缀后总长不超 64。
+    """
+    suffix = f"_{attempt + 1}"
+    return (base_code[: 64 - len(suffix)] + suffix)
+
+
+# ============================================================
+# TA6 工作项②：按课程名解析 series_id（用户零 ID 输入）
+# ============================================================
+# 匹配结果状态：
+#   exact    —— 唯一精确匹配（series_name = 用户给的名称）
+#   unique   —— 唯一模糊匹配（LIKE 命中恰好 1 条）
+#   multiple —— 多条命中考量（返回候选，让模型追问一次，**不许猜**）
+#   none     —— 零命中
+COURSE_RESOLVE_LIMIT = 10
+
+
+async def resolve_series_by_name(name: str) -> dict:
+    """TA6 工作项②：按课程名解析课程系列（只读查询，参数绑定，仅 on_sale 可收藏）。
+
+    策略（确定性、可复现，绝不猜）：
+      1) 精确匹配优先：`series_name = %s`（去首尾空白）命中恰好 1 条 → 唯一确定；
+      2) 精确匹配多条（本库 title 有重复行，如「脚本自动化入门班·录播」×6）→ 返回候选让模型追问；
+      3) 精确零命中 → 退化为 LIKE %name% 模糊匹配（**用参数绑定，不做字符串拼接**）：
+         命中恰好 1 条 → 唯一确定；多条 → 候选；零条 → none。
+
+    返回结构（供 handler 组装回执，勿直出给 LLM 之外的调用方）：
+      {"status": "exact"|"unique"|"multiple"|"none",
+       "series_id": int|None, "series_name": str|None,
+       "candidates": [{"series_id", "series_name", "series_code"}, ...]}
+    """
+    from app.database import fetch_all
+
+    key = (name or "").strip()
+    if not key:
+        return {"status": "none", "series_id": None, "series_name": None, "candidates": []}
+
+    rows = await fetch_all(
+        "SELECT id AS series_id, series_name, series_code FROM series"
+        " WHERE series_name = %s AND sale_status = 'on_sale'"
+        " ORDER BY id LIMIT %s",
+        (key, COURSE_RESOLVE_LIMIT),
+    )
+    status = "exact"
+    if not rows:
+        # LIKE 模糊匹配：% 与 _ 是 LIKE 元字符，用户输入需转义（防通配注入扩大命中面）
+        escaped = key.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        rows = await fetch_all(
+            "SELECT id AS series_id, series_name, series_code FROM series"
+            " WHERE series_name LIKE %s AND sale_status = 'on_sale'"
+            " ORDER BY CHAR_LENGTH(series_name) ASC, id ASC LIMIT %s",
+            (f"%{escaped}%", COURSE_RESOLVE_LIMIT),
+        )
+        status = "unique"
+
+    candidates = [
+        {"series_id": int(r["series_id"]),
+         "series_name": r.get("series_name"),
+         "series_code": r.get("series_code")}
+        for r in rows
+    ]
+    if len(candidates) == 1:
+        return {"status": ("exact" if status == "exact" else "unique"),
+                "series_id": candidates[0]["series_id"],
+                "series_name": candidates[0]["series_name"],
+                "candidates": candidates}
+    if len(candidates) > 1:
+        return {"status": "multiple", "series_id": None, "series_name": None,
+                "candidates": candidates}
+    return {"status": "none", "series_id": None, "series_name": None, "candidates": []}
 
 
 async def _course_create_handler(args: dict) -> str:
@@ -1285,7 +1489,8 @@ async def _course_create_handler(args: dict) -> str:
 
     单一执行事实源：直调既有 `course_admin.service.create_series`
     （唯一约束 institution_id + series_code，冲突抛 40901 SERIES_CODE_CONFLICT）。
-    参数精确校验（exact-pin）：title(str 非空) + series_code(str ^[a-z0-9_]+$) 必填，
+    参数精确校验（exact-pin）：title(str 非空) 必填；series_code(str ^[a-z0-9_]+$) **可选**
+    ——TA6 起不传时服务端按 title 自动派生（用户零 ID 输入），显式传入则原样采用；
     modules(list[str]) 可选，多余键一律拒。
     """
     # ⓪ HITL 双保险（P4）：未确认高危写 → 42201 拒（先于一切参数/身份处理，零副作用）
@@ -1305,12 +1510,19 @@ async def _course_create_handler(args: dict) -> str:
     if len(title) > 128:
         raise ValueError(f"title 过长（{len(title)} > 128，课程系列名上限）")
 
-    series_code = args.get("series_code")
-    if not isinstance(series_code, str) or not series_code.strip():
-        raise ValueError("course_create 缺少 series_code（字符串，课程系列编码）")
-    series_code = series_code.strip()
-    if len(series_code) > 64 or not re.fullmatch(r"[a-z0-9_]+", series_code):
-        raise ValueError(f"series_code 非法：{series_code!r}（仅允许小写字母/数字/下划线，≤64 字符）")
+    # TA6 工作项①：series_code 改「可选」——不传/空 时按 title 自动派生（用户零 ID 输入）；
+    # 显式传入时保留 exact-pin 校验（用户值优先，不覆盖）。派生的编码是否可用由 40901
+    # 冲突重试兜底（见下方 create 循环）。
+    raw_code = args.get("series_code")
+    code_explicit = isinstance(raw_code, str) and bool(raw_code.strip())
+    if code_explicit:
+        series_code = raw_code.strip()
+        if len(series_code) > 64 or not re.fullmatch(r"[a-z0-9_]+", series_code):
+            raise ValueError(f"series_code 非法：{series_code!r}（仅允许小写字母/数字/下划线，≤64 字符）")
+    else:
+        if raw_code is not None and not isinstance(raw_code, str):
+            raise ValueError(f"series_code 必须为字符串，收到：{type(raw_code).__name__}")
+        series_code = _derive_series_code_from_title(title)
 
     modules = args.get("modules")
     if modules is not None:
@@ -1340,19 +1552,44 @@ async def _course_create_handler(args: dict) -> str:
                            "message": "系统未初始化任何启用院校，无法创建课程系列",
                            "series_code": series_code}, ensure_ascii=False)
 
-    try:
-        result = await _course_service.create_series(SeriesCreateAdmin(
-            institution_id=institution_id,
-            delivery_mode="online_recorded",
-            series_code=series_code,
-            series_name=title,
-            description="由 AI 助手（course_create 工具，HITL 确认后）创建",
-            created_by=user_id,
-        ))
-    except AppException as exc:
-        # 业务错（编码冲突 40901 等）→ 结构化回传，严禁伪装成功
-        return json.dumps({"ok": False, "code": exc.code, "message": exc.message,
-                           "series_code": series_code}, ensure_ascii=False)
+    # TA6 工作项①：40901 编码冲突重试。仅对**自动派生**的编码重试（用户显式给的值冲突
+    # 必须如实回传 40901，不得静默改写成另一个编码 —— 那会违反用户意图）。
+    code_attempts: list[str] = []
+    result = None
+    last_exc: AppException | None = None
+    max_tries = 1 if code_explicit else COURSE_CREATE_CODE_RETRY_MAX
+    candidate = series_code
+    for attempt in range(max_tries):
+        try:
+            result = await _course_service.create_series(SeriesCreateAdmin(
+                institution_id=institution_id,
+                delivery_mode="online_recorded",
+                series_code=candidate,
+                series_name=title,
+                description="由 AI 助手（course_create 工具，HITL 确认后）创建",
+                created_by=user_id,
+            ))
+            series_code = candidate
+            break
+        except AppException as exc:
+            # 仅编码冲突（40901）可重试；其余业务错（含 404 院校缺失）立即如实回传
+            if str(exc.code) != str(SERIES_CODE_CONFLICT) or attempt >= max_tries - 1:
+                last_exc = exc
+                break
+            code_attempts.append(candidate)
+            candidate = _next_series_code_candidate(series_code, attempt + 1)
+            logger.info(
+                f"[TA6] course_create series_code 冲突重试："
+                f"{code_attempts[-1]!r} → {candidate!r}（第 {attempt + 1} 次）"
+            )
+    if result is None:
+        # 业务错（编码冲突 40901 重试耗尽等）→ 结构化回传，严禁伪装成功
+        exc = last_exc
+        series_code = code_attempts[-1] if code_attempts else series_code
+        return json.dumps({"ok": False, "code": getattr(exc, "code", "50000"),
+                           "message": getattr(exc, "message", "创建课程系列失败"),
+                           "series_code": series_code,
+                           "code_attempts": code_attempts}, ensure_ascii=False)
 
     # ④ 回执如实：created=true（新建成功）；modules 为可选登记项，当前 service 无
     #    「系列级模块直挂」写入面（module 需 cohort 父引用），如实标注未落库不谎报。
@@ -1365,6 +1602,8 @@ async def _course_create_handler(args: dict) -> str:
         "institution_id": int(result.institution_id),
         "delivery_mode": result.delivery_mode,
         "sale_status": result.sale_status,
+        "series_code_source": "user" if code_explicit else "auto_derived",
+        "series_code_attempts": code_attempts,
         "modules_requested": list(modules or []),
         "modules_note": "modules 仅登记回执，未创建班次/模块（需先建 cohort，走管理端）",
         "hitl_note": "经人工确认（HITL confirm）后执行",

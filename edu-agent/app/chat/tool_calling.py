@@ -38,15 +38,27 @@ from app.ai.permission_gate import REGISTERED_BUILTIN_TOOLS
 
 # CR-WNEXT2-toolcatalog-source：内置工具描述（与 executor.py handler docstring 同源语义）。
 # 内置工具在 mcp_tool 表无行，DB 查询天然缺位；此处补齐描述供意图识别/LLM 使用。
+#
+# TA6（2026-09-24）：描述层同步「禁止向用户索要数据库 ID/编码类内部参数」纪律，并把参数
+# 契约改成业务语言（course_name / title），与 executor 的自动派生/按名解析能力对齐。
+# ⚠️ 内置工具在 mcp_tool 表无行，本 dict 是 LLM 可见的工具说明唯一输送点——
+#    改 handler 参数契约必须同步改这里，否则模型仍按旧契约向用户索要 ID。
 _BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "calculator":       "本地四则运算计算器：对两个数字做加减乘除/取模（op=add|sub|mul|div|mod）",
     "search_knowledge": "知识库检索：按关键词 q/query 查询已入库学习资料，返回相关片段（支持降级返回）",
     "knowledge_import": "知识库导入（写类，管理员专用）：登记导入任务并后台拉起既有导入管道（visibility=private|public）",
     # W-NEXT-WRITE1（CR-WRITETOOLS-001）：user_write 本人收藏，学生可用（manager 拒），无 HITL 卡
-    "favorite_add":     "收藏课程（写本人数据）：收藏指定 series_id 的课程系列（服务端幂等，重复收藏返回原记录）",
+    # TA6：**优先用 course_name（课程名）寻址**（服务端按名解析）；series_id 仅作已知 ID 直传通道。
+    "favorite_add":     "收藏课程（写本人数据）：优先传 course_name（课程名，如「脚本自动化入门班·录播」，"
+                        "**推荐**）；仅在你已确知课程系列 ID 时才传 series_id（int）。服务端按课程名"
+                        "解析 DB；匹配到多门课程会返回候选列表，此时请用业务语言向用户确认是哪一门——"
+                        "**严禁向用户索要 course_id/series_id 等数据库 ID**。服务端幂等，重复收藏返回原记录。",
     # AUTO20 T12（CR-WRITETOOLS-001 第二批）：admin_write 高危写，仅 admin（manager 拒），强制 HITL 卡
-    "course_create":    "创建课程系列（高危写类，管理员专用且需人工确认）：按 title（课程标题）+ "
-                        "series_code（系列编码，小写字母/数字/下划线）创建新课程系列，需在确认卡批准后执行",
+    # TA6：只要求 title，series_code 可不传（服务端按 title 自动派生合法编码）。
+    "course_create":    "创建课程系列（高危写类，管理员专用且需人工确认）：**通常只需 title（课程标题，"
+                        "如「TA6 验收课程」）**；series_code（系列编码）不必传——服务端会按 title 自动派生"
+                        "合法编码，**严禁向用户索要任何编码/ID**。仅当用户明确指定了编码时才传 series_code。"
+                        "需在确认卡批准后执行。",
 }
 @dataclass
 class ToolMeta:
@@ -182,8 +194,12 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
         plans.append(ToolPlanItem(tool=ping_tool, args={}, reason="命中 ping 类关键词"))
 
     # 2b. W-NEXT-WRITE1（CR-WRITETOOLS-001）：favorite_add —— 「收藏课程 series_id 为 N」/
-    #    「收藏系列 3」/「收藏 id=3 的课」（user_write 本人收藏）。仅在**明确给出系列 ID** 时触发
-    #    （闲聊"我想收藏点东西"不误触发）；series_id 显式写法优先，次选「收藏+数字」紧凑写法。
+    #    「收藏系列 3」/「收藏 id=3 的课」（user_write 本人收藏）。
+    #    TA6 起支持两种寻址（用户零 ID）：
+    #      a) 显式 series_id 数字写法 → 直传路径（保留原行为）；
+    #      b) 《课程名》/「课程名」/「收藏X这门课」→ course_name 按名解析（服务端解析 DB，
+    #         多命中回候选让模型追问，绝不猜）。
+    #    闲聊"我想收藏点东西"仍不误触发（无书名号、无引号、无数字 → 零计划）。
     fav_tool = by_lname.get("favorite_add")
     if fav_tool is not None and "收藏" in q:
         fm = (re.search(r"series[_\s]*id\s*(?:为|是|=|:|：)?\s*(\d+)", q_lower)
@@ -197,20 +213,58 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
                 ))
             except Exception:
                 pass
+        else:
+            # TA6：按课程名收藏（零 ID 输入）——必须显式给出**可辨识的课程名**才触发：
+            #   《X》/「X」/『X』/“X”/『X』 中的引号名，或「收藏 + 课程名 + 这门课/课程」句式。
+            # 严禁用模糊兜底把「怎么收藏课程？」当成课程名（T7 同源防线：闲聊零计划）。
+            cname = None
+            cm = (re.search(r"《([^《》]{1,60})》", q)
+                  or re.search(r"[「『“\"]([^」』”\"]{1,60})[」』”\"]", q))
+            if cm:
+                cname = cm.group(1).strip()
+            else:
+                # 「收藏<课程名>这门课/课程」——课程名不含标点与「课/收藏」等指令词
+                cm2 = re.search(
+                    r"收藏\s*([^\s，。！？、,;；:：\"'“”《》「」『』]{2,40}?)\s*(?:这门课|这个课|这课程|课程|课)\s*[。！？!?]?$",
+                    q)
+                if cm2:
+                    cname = cm2.group(1).strip()
+                    # 排除把疑问/指令词当课程名（"怎么收藏课程" → "怎么" 之类）
+                    if re.fullmatch(r"(怎么|如何|可以|能|想|要|帮|请|把|将|一下|它|该)", cname or ""):
+                        cname = None
+            if cname and not re.fullmatch(r"[\d\s]+", cname):
+                plans.append(ToolPlanItem(
+                    tool=fav_tool, args={"course_name": cname},
+                    reason=f"命中收藏类课程名：{cname}",
+                ))
 
     # 2c. AUTO20 T12（CR-WRITETOOLS-001 第二批）：course_create ——「创建课程/建课/新课」类
-    #    （admin_write 高危写，强制 HITL）。仅在**同时出现标题与系列码**时触发（标题取
-    #    「标题/名为/叫」引号或「标题'X'」写法；系列码取 [a-z0-9_]+ 记号串）；闲聊
-    #    「怎么创建课程？」不误触发。挂起后 pending_args 缓存同键覆盖（Track A 续流）。
+    #    （admin_write 高危写，强制 HITL）。TA6 起**只要求标题**即触发（series_code 改由服务端
+    #    按 title 自动派生，用户零 ID）；标题取「标题/名为/叫」引号 或 《X》/「X」 引号写法；
+    #    若用户额外显式给了系列码则一并带上（保留 exact-pin 用户值优先）。闲聊
+    #    「怎么创建课程？」仍不误触发（无标题引号 → 零计划）。挂起后 pending_args 缓存同键覆盖。
     cc_tool = by_lname.get("course_create")
-    if cc_tool is not None and re.search(r"创建.{0,6}(课程|课|系列)|建课|新课|新增.{0,4}课程", q):
+    # TA6：建课意图词表扩容——原 `创建.{0,6}(课程|课|系列)` 的 6 字窗口覆盖不到
+    # 「创建一门《TA6 验收课程》」（书名号标题夹在中间，owner GWT 原话），故补：
+    #   ① 书名号/引号标题 + 「创建/新建/上线」动词同现 → 即建课意图；
+    #   ② `.` 窗口放宽到 12 字（覆盖「创建一门XX课程」类插入语）。
+    _cc_intent = bool(
+        re.search(r"创建.{0,12}(课程|课|系列)|建课|新课|新增.{0,4}课程|新建.{0,6}(课程|课)", q)
+        or (re.search(r"创建|新建|开通|上线|加一门|加个", q)
+            and re.search(r"《[^《》]{1,60}》|[\"'“”‘’][^\"'“”‘’]{1,60}[\"'“”‘’]", q))
+    )
+    if cc_tool is not None and _cc_intent:
         tm = (re.search(r"标题[是为:：\s]*[\"'“”‘’]([^\"'“”‘’]{1,60})[\"'“”‘’]", q)
+              or re.search(r"《([^《》]{1,60})》", q)
               or re.search(r"[\"'“”‘’]([^\"'“”‘’]{1,60})[\"'“”‘’]", q))
-        sm = re.search(r"(?:系列码|编码|code)[是为:：\s]*([a-z][a-z0-9_]{1,63})", q_lower)
-        if not sm:
-            sm = re.search(r"\b([a-z][a-z0-9_]{2,63})\b", q_lower)
-        if tm and sm:
-            args_cc: dict = {"title": tm.group(1).strip(), "series_code": sm.group(1).strip()}
+        if tm:
+            args_cc: dict = {"title": tm.group(1).strip()}
+            sm = re.search(r"(?:系列码|编码|code)[是为:：\s]*([a-z][a-z0-9_]{1,63})", q_lower)
+            if not sm:
+                # 显式系列码须带「系列码/编码/code」标签才认（避免把中文标题里的英文词误当编码）
+                sm = None
+            if sm:
+                args_cc["series_code"] = sm.group(1).strip()
             mm = re.search(r"模块[是为:：\s]*([^\n]{1,80})", q)
             if mm:
                 mods = [s.strip() for s in re.split(r"[,，、;；]", mm.group(1)) if s.strip()]
@@ -218,7 +272,9 @@ def _parse_heuristic(query: str, tools: list[ToolMeta]) -> list[ToolPlanItem]:
                     args_cc["modules"] = mods
             plans.append(ToolPlanItem(
                 tool=cc_tool, args=args_cc,
-                reason=f"命中建课意图：title={args_cc['title']!r} series_code={args_cc['series_code']!r}",
+                reason=(f"命中建课意图：title={args_cc['title']!r} "
+                        f"series_code={args_cc.get('series_code')!r}"
+                        f"{'（服务端自动派生）' if not args_cc.get('series_code') else ''}"),
             ))
 
     # 4. echo 工具：「echo xxx」「重复 xxx」「回显 xxx」→ echo(text=xxx)

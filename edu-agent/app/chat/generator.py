@@ -502,7 +502,9 @@ def build_messages(
     """把组件拼起来形成最终 messages（给单元测/路由都能用）。
     mcp_context 非空时，会拼到 system prompt 末尾（P8：工具结果注入）。
     strict_rag=False：用普通对话 prompt（Agent 决策无需检索时，避免闲聊被 RAG 规则拒答）。"""
-    from app.chat.prompts import CHAT_SYSTEM_PROMPT, CHAT_USER_PROMPT
+    from app.chat.prompts import (
+        CHAT_SYSTEM_PROMPT, CHAT_USER_PROMPT, INTERNAL_PARAM_RULE,
+    )
     from app.chat.tool_calling import inject_mcp_into_system_prompt
 
     if strict_rag:
@@ -510,13 +512,19 @@ def build_messages(
             context_str=format_docs_for_prompt(docs),
             graph_str=format_graph_for_prompt(graph_entities),
             platform_rule=platform_rule,
+            # TA6：工具内部参数纪律（禁向用户索要 course_id/series_code 等）——
+            # 与 CHAT 分支同源常量，单一事实源在 app/chat/prompts/__init__.py
+            internal_param_rule=INTERNAL_PARAM_RULE,
         )
         user_prompt = RAG_USER_PROMPT.format(
             history_str=format_history_for_prompt(history_turns),
             query=query,
         )
     else:
-        system_prompt_base = CHAT_SYSTEM_PROMPT.format(platform_rule=platform_rule)
+        system_prompt_base = CHAT_SYSTEM_PROMPT.format(
+            platform_rule=platform_rule,
+            internal_param_rule=INTERNAL_PARAM_RULE,
+        )
         user_prompt = CHAT_USER_PROMPT.format(
             history_str=format_history_for_prompt(history_turns),
             query=query,
