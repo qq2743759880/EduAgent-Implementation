@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+/*
+ * Bili-Study Clay Theme, Gate A frozen tokens
+ *
+ * Icon usage (Phosphor fill, local sprite):
+ * <svg class="ic" aria-hidden="true"><use href="#ic-book-open"></use></svg>
+ * For an icon-only control, put the accessible name on the control (aria-label or visible text).
+ *
+ * Token reference, one variable per line:
+ * --bg-app: purple-tinted near-white application canvas.
+ * --bg-raised: highest neutral surface reserved for dialogs and toasts.
+ * --bg-input: subtly tinted recessed input surface.
+ * --clay-primary: semantic alias for the approved main clay surface.
+ * --clay-moss: approved primary moss green; #2E2A3F contrast is 8.84:1.
+ * --clay-lavender: demoted secondary lavender, never the default surface.
+ * --clay-sky: course and learning surface.
+ * --clay-mint: success, completion, and progress surface.
+ * --clay-peach: practice and quiz surface.
+ * --clay-pink: favorites and community surface.
+ * --clay-lemon: warm accent for reminders and pending work.
+ * --cta-coral: the single saturated primary action color per screen.
+ * --cta-text: primary action text; #2E2A3F on #FF7A6B is 5.43:1.
+ * --status-active: active and successful state color.
+ * --status-pending: pending state color.
+ * --status-archived: archived and inactive state color.
+ * --status-danger: destructive and error state color.
+ * --text-strong: primary ink; intentionally not pure black.
+ * --text-muted: secondary ink for supporting text.
+ * --text-on-dark: text used on the dark code surface.
+ * --surface-code: Markdown code block surface.
+ * --focus-ring: high-contrast keyboard focus indicator.
+ * --radius-card: L1 card radius.
+ * --radius-btn: primary and secondary button radius.
+ * --radius-input: input and compact control radius.
+ * --radius-pill: pill and badge radius.
+ * --radius-icon-tile: icon tile radius.
+ * --space-1: 4px spacing unit.
+ * --space-2: 8px spacing unit.
+ * --space-3: 12px spacing unit.
+ * --space-4: 16px spacing unit and minimum clay-to-clay gap.
+ * --space-6: 24px spacing unit.
+ * --space-8: 32px spacing unit.
+ * --space-12: 48px spacing unit.
+ * --control-min: minimum 44px interaction target.
+ * --control-primary: 54px primary button height within the approved 52-56px range.
+ * --motion-fast: 140ms tactile state duration.
+ * --ease-clay: restrained ease-out curve for hover and press feedback.
+ * --clay-shadow-moss: three-layer moss surface shadow.
+ * --clay-shadow-lavender: three-layer secondary lavender surface shadow.
+ * --clay-shadow-sky: three-layer sky surface shadow.
+ * --clay-shadow-mint: three-layer mint surface shadow.
+ * --clay-shadow-peach: three-layer peach surface shadow.
+ * --clay-shadow-pink: three-layer pink surface shadow.
+ * --clay-shadow-lemon: three-layer lemon surface shadow.
+ * --clay-shadow-coral: three-layer coral action shadow.
+ * --clay-shadow-raised: green-hued L2 shadow for raised neutral surfaces.
+ * --clay-shadow-light: green-hued single-layer shadow for clay-light regions.
+ * --clay-shadow-press-moss: compressed moss shadow for pressed controls.
+ * --clay-shadow-press-coral: compressed coral shadow for pressed primary actions.
+ * --clay-shadow-input: inset moss shadow for recessed fields.
+ * --clay-shadow-input-focus: inset moss shadow plus visible focus halo.
+ * --layer-base: normal document flow.
+ * --layer-sticky: sticky navigation layer.
+ * --layer-dropdown: menu and popover layer.
+ * --layer-overlay: modal scrim layer.
+ * --layer-dialog: dialog layer.
+ * --layer-toast: toast and urgent feedback layer.
+ *
+ * L1 page overrides belong in a .page-<name> namespace. Example:
+ * .page-dashboard { --page-card-gap: var(--space-6); }
+ * Do not place page-specific selectors outside that namespace.
+ */
+
+:root {
+  --bg-app: #F7F5FB;
+  --bg-raised: #FFFFFF;
+  --bg-input: #F7FAF4;
+  --clay-primary: var(--clay-moss);
+  --clay-moss: #B8D8A8;
+  --clay-lavender: #B8A6FF;
+  --clay-sky: #9EC9F0;
+  --clay-mint: #7DD4A8;
+  --clay-peach: #FFB59E;
+  --clay-pink: #F5B8D0;
+  --clay-lemon: #F5D77A;
+  --cta-coral: #FF7A6B;
+  --cta-text: #2E2A3F;
+  --status-active: #7DD4A8;
+  --status-pending: #F5D77A;
+  --status-archived: #C9B5FF;
+  --status-danger: #C63E4A;
+  --text-strong: #2E2A3F;
+  --text-muted: #6B6580;
+  --text-on-dark: #F7F5FB;
+  --surface-code: #2E2A3F;
+  --focus-ring: #453C66;
+
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  --radius-input: 16px;
+  --radius-pill: 999px;
+  --radius-icon-tile: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-min: 44px;
+  --control-primary: 54px;
+
+  --motion-fast: 140ms;
+  --ease-clay: cubic-bezier(.25, 1, .5, 1);
+
+  --clay-shadow-moss:
+    8px 8px 24px rgba(78, 126, 66, .30),
+    inset -6px -6px 16px rgba(78, 126, 66, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .58);
+  --clay-shadow-lavender:
+    8px 8px 24px rgba(126, 105, 181, .28),
+    inset -6px -6px 16px rgba(126, 105, 181, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-sky:
+    8px 8px 24px rgba(80, 142, 196, .30),
+    inset -6px -6px 16px rgba(80, 142, 196, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-mint:
+    8px 8px 24px rgba(43, 153, 103, .29),
+    inset -6px -6px 16px rgba(43, 153, 103, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-peach:
+    8px 8px 24px rgba(218, 111, 82, .29),
+    inset -6px -6px 16px rgba(218, 111, 82, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-pink:
+    8px 8px 24px rgba(188, 99, 137, .28),
+    inset -6px -6px 16px rgba(188, 99, 137, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-lemon:
+    8px 8px 24px rgba(190, 149, 35, .28),
+    inset -6px -6px 16px rgba(190, 149, 35, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-coral:
+    8px 8px 24px rgba(214, 82, 70, .31),
+    inset -6px -6px 16px rgba(214, 82, 70, .23),
+    inset 6px 6px 16px rgba(255, 254, 252, .45);
+  --clay-shadow-raised: 12px 12px 32px rgba(78, 126, 66, .22);
+  --clay-shadow-light: 6px 8px 20px rgba(78, 126, 66, .18);
+  --clay-shadow-press-moss:
+    4px 4px 12px rgba(78, 126, 66, .26),
+    inset -3px -3px 8px rgba(78, 126, 66, .18),
+    inset 3px 3px 8px rgba(255, 254, 252, .46);
+  --clay-shadow-press-coral:
+    4px 4px 12px rgba(214, 82, 70, .27),
+    inset -3px -3px 8px rgba(214, 82, 70, .19),
+    inset 3px 3px 8px rgba(255, 254, 252, .38);
+  --clay-shadow-input:
+    inset 3px 3px 8px rgba(78, 126, 66, .20),
+    inset -3px -3px 8px rgba(255, 254, 252, .88);
+  --clay-shadow-input-focus:
+    inset 3px 3px 8px rgba(78, 126, 66, .24),
+    inset -3px -3px 8px rgba(255, 254, 252, .92),
+    0 0 0 3px rgba(69, 60, 102, .22);
+
+  --layer-base: 0;
+  --layer-sticky: 100;
+  --layer-dropdown: 300;
+  --layer-overlay: 700;
+  --layer-dialog: 800;
+  --layer-toast: 1000;
+}
+
+.ic {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  overflow: visible;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: -.2em;
+}
+
+.clay-card {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-btn-primary,
+.clay-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding-inline: var(--space-6);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--ease-clay),
+    box-shadow var(--motion-fast) var(--ease-clay),
+    background-color var(--motion-fast) var(--ease-clay);
+}
+
+.clay-btn-primary {
+  min-height: var(--control-primary);
+  color: var(--cta-text);
+  background: var(--cta-coral);
+  box-shadow: var(--clay-shadow-coral);
+}
+
+.clay-btn-soft {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-btn-primary:hover,
+.clay-btn-soft:hover {
+  transform: translateY(-2px);
+}
+
+.clay-btn-primary:active,
+.clay-btn-soft:active {
+  transform: scale(.97);
+}
+
+.clay-btn-primary:active {
+  box-shadow: var(--clay-shadow-press-coral);
+}
+
+.clay-btn-soft:active {
+  box-shadow: var(--clay-shadow-press-moss);
+}
+
+.clay-btn-primary:disabled,
+.clay-btn-soft:disabled,
+.clay-btn-primary[aria-disabled="true"],
+.clay-btn-soft[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clay-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: 3px 4px 10px rgba(190, 149, 35, .21);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.clay-input {
+  width: 100%;
+  min-height: var(--control-primary);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-input);
+  box-shadow: var(--clay-shadow-input);
+  font: inherit;
+}
+
+.clay-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.clay-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--clay-shadow-input-focus);
+}
+
+.clay-bubble-user,
+.clay-bubble-ai {
+  max-width: min(80%, 72ch);
+  overflow-wrap: anywhere;
+  border-radius: 24px 24px 24px 8px;
+  padding: var(--space-4) 20px;
+  color: var(--text-strong);
+}
+
+.clay-bubble-user {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-bubble-ai {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-nav {
+  position: relative;
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-nav :where(a, button) {
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+}
+
+.clay-nav :where(.active, [aria-current="page"]) {
+  color: var(--cta-text);
+  background: var(--cta-coral);
+}
+
+.clay-card-placeholder {
+  position: relative;
+  min-height: 144px;
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: var(--clay-shadow-lemon);
+}
+
+.clay-card-placeholder[data-state="closed"] {
+  background: var(--clay-lavender);
+  box-shadow: var(--clay-shadow-lavender);
+}
+
+.clay-card-placeholder[data-state="forbidden"] {
+  outline: 3px solid var(--status-archived);
+  outline-offset: -3px;
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-card-placeholder[data-state="error"] {
+  outline: 3px solid var(--status-danger);
+  outline-offset: -3px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-card :where(pre, code),
+.clay-bubble-ai :where(pre, code),
+.clay-bubble-user :where(pre, code) {
+  color: var(--text-on-dark);
+  background: var(--surface-code);
+}
+
+.clay-card pre,
+.clay-bubble-ai pre,
+.clay-bubble-user pre {
+  overflow: auto;
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+}
+
+:where(.clay-btn-primary, .clay-btn-soft, .clay-nav a, .clay-nav button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Admin fallback: lower visual depth without changing component geometry. */
+.clay-light {
+  --radius-card: 24px;
+}
+
+.clay-card.clay-light,
+.clay-light .clay-card {
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-light :where(table, .table, .chart, [data-chart], [data-table]) {
+  border-radius: var(--radius-input);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-btn-primary,
+  .clay-btn-soft {
+    transition-duration: .01ms;
+  }
+
+  .clay-btn-primary:hover,
+  .clay-btn-primary:active,
+  .clay-btn-soft:hover,
+  .clay-btn-soft:active {
+    transform: none;
+  }
+}
+
+</style>
+<title>退款中心 · Bili-Study</title>
+<!--
+  ============================================================
+  退款页（task66）· 真实契约对接（非 MOCK）
+  接口契约权威来源 = 后端源码（编辑者已核对）：
+    app/domains/trade/refund/router.py     前缀 /api/refunds
+    app/domains/trade/refund/schemas.py    RefundCreateInput / Refund / RefundPage
+    app/domains/trade/order/router.py      /api/trade/orders（refundable=true）
+    app/domains/after_sales/router.py      /api/trade/after_sales/ticket
+    app/domains/trade/refund/service.py    金额服务端强制 ≤ 实付（GWT①）
+  端点清单（均为真实端点，页面逐一对齐）：
+    GET  /api/refunds                    我的退款（倒序，分页 {total,page,page_size,items}）
+    POST /api/refunds                    申请退款（refund_type 四枚举 + 金额服务端校验）
+    POST /api/refunds/{refund_id}/cancel 撤销退款（仅 pending）
+    GET  /api/trade/orders?refundable=true 可退款订单（paid/completed/partial_refunded）
+    POST /api/trade/after_sales/ticket   反馈/退款工单（ticket_type=refund/appeal）
+  金额红线：退款金额须 ≤ 实付；前端做友好提示，服务端强制校验兜底（不信任前端，GWT①）。
+  ============================================================
+-->
+<style>
+  /* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f。
+     G8 清债：移除 Google Fonts 外链（@import Baloo 2）→ 本地系统字体栈（§7.2 离线优先）。
+     三层分离：仅动视觉层——id/data-cancel/表单结构/事件绑定不动；#flash z-index 2147483001 冻结；
+     旧 candy 变量名保留为页内别名(L1)，供脚本内联样式继续解析。 ===== */
+  :root{
+    --font-head:"PingFang SC","Microsoft YaHei",sans-serif;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --candy-orange:var(--cta-coral); --candy-green:var(--clay-mint); --candy-purple:#5B4FC4;
+    --candy-yellow:var(--clay-lemon); --candy-red:var(--status-danger);
+    --primary:var(--clay-mint); --primary-strong:#2E7D4F; --primary-soft:rgba(125,212,168,.22);
+    --accent:var(--cta-coral); --accent-strong:#D65246; --accent-soft:rgba(255,181,158,.30);
+    --secondary:#5B4FC4; --secondary-soft:#EFE9FF;
+    --success:#2E7D4F; --warning:var(--clay-lemon); --destructive:var(--status-danger);
+    --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-soft:var(--text-muted); --ink-faint:var(--text-muted);
+    --bg:var(--bg-app); --card:var(--bg-raised); --line:rgba(46,42,63,.12); --line-strong:rgba(46,42,63,.18);
+    --radius:var(--radius-card); --radius-lg:var(--radius-card); --radius-md:var(--radius-input); --radius-pill:var(--radius-pill);
+    --stroke:0;
+    --shadow-pop:var(--clay-shadow-light);
+    --shadow-md:var(--clay-shadow-light);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 90% 6%,rgba(255,181,158,.28),transparent 24rem),radial-gradient(circle at 4% 96%,rgba(125,212,168,.20),transparent 22rem);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
+  *:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
+  .page{max-width:1060px;margin:0 auto;padding:24px 20px 72px}
+  .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .page-title{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--text-strong);display:inline-flex;align-items:center;gap:8px}
+  .page-title .ic{width:1.05em;height:1.05em;color:var(--text-strong)}
+  .doc-badge{font-size:11px;color:#5B4FC4;background:var(--secondary-soft);border:0;padding:3px 10px;border-radius:var(--radius-pill);font-weight:700}
+  .subtitle{font-size:.8125rem;color:var(--text-muted);margin-bottom:18px}
+  .back{font-size:.8125rem;color:#5B4FC4;text-decoration:none;font-weight:700;margin-left:auto;background:var(--secondary-soft);padding:8px 16px;min-height:44px;display:inline-flex;align-items:center;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light)}
+  .back:hover{color:#5B4FC4}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);padding:22px;box-shadow:var(--clay-shadow-light)}
+  .card h2{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--text-strong);display:flex;align-items:center;gap:8px;margin-bottom:16px}
+  .card h2 .dot{width:12px;height:12px;border-radius:50%}
+
+  /* ===== 表单（input 几何与 JS 校验联动，仅外观调整；≥44px 点击区）===== */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--text-strong);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;min-height:44px;padding:10px 12px;border:2px solid transparent;border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong);outline:none;box-shadow:var(--clay-shadow-input);transition:box-shadow var(--motion-fast) var(--ease-clay)}
+  .field textarea{min-height:88px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{box-shadow:var(--clay-shadow-input-focus)}
+  .field input::placeholder,.field select::placeholder,.field textarea::placeholder{color:var(--text-muted);opacity:1}
+  .field .hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+  .field .err{font-size:12px;color:var(--status-danger);margin-top:4px;display:none;font-weight:600}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:11px 20px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:14px;color:var(--text-strong);background:var(--clay-mint);box-shadow:var(--clay-shadow-mint);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+  .btn:hover{transform:translateY(-2px)}
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+  .btn.ghost{background:#EFE9FF;color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+  .btn.warn{background:var(--cta-coral);color:var(--cta-text);box-shadow:var(--clay-shadow-coral)}
+  .btn.full{width:100%}
+
+  .pill{display:inline-block;padding:4px 12px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:800}
+  .pill.pending{background:var(--clay-lemon);color:var(--text-strong)}
+  .pill.approved{background:rgba(158,201,240,.40);color:var(--text-strong)}
+  .pill.rejected{background:rgba(198,62,74,.14);color:var(--status-danger)}
+  .pill.refunded{background:var(--primary-soft);color:var(--primary-strong)}
+
+  /* ===== 退款列表 ===== */
+  .list-empty{text-align:center;padding:34px 10px;color:var(--text-muted);border:2px dashed rgba(46,42,63,.18);border-radius:var(--radius-card);font-size:14px;background:var(--bg-raised)}
+  .refund-item{border:0;border-radius:var(--radius-card);padding:16px 18px;margin-bottom:12px;background:#FDFCF6;box-shadow:var(--clay-shadow-light)}
+  .refund-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .refund-no{font-family:var(--font-head);font-weight:800;font-size:15px;color:var(--text-strong)}
+  .refund-meta{font-size:13px;color:var(--text-muted);line-height:1.7}
+  .refund-meta b{color:var(--text-strong)}
+  .refund-actions{margin-top:10px;text-align:right}
+  .refund-actions .btn{padding:7px 16px;font-size:13px}
+
+  .pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .pager button{min-height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);padding:6px 14px;font-weight:800;font-size:13px;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+  .pager button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .pager span{font-size:13px;color:var(--text-muted);font-weight:700}
+
+  .msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;max-width:min(92vw,520px);padding:11px 16px;border-radius:var(--radius-btn);font-weight:800;font-size:13px;color:#FFFFFF;box-shadow:var(--clay-shadow-raised);display:none}
+  hr.divider{margin:20px 0;border:0;border-top:2px dashed rgba(46,42,63,.18)}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    .btn:hover,.back:hover{transform:none}
+  }
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="ic-house" viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 256 256"><path d="M240,56V200a8,8,0,0,1-8,8H160a24,24,0,0,0-24,23.94,7.9,7.9,0,0,1-5.12,7.55A8,8,0,0,1,120,232a24,24,0,0,0-24-24H24a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H88a32,32,0,0,1,32,32v87.73a8.17,8.17,0,0,0,7.47,8.25,8,8,0,0,0,8.53-8V80a32,32,0,0,1,32-32h64A8,8,0,0,1,240,56Z"/></symbol>
+  <symbol id="ic-graduation-cap" viewBox="0 0 256 256"><path d="M176,207.24a119,119,0,0,0,16-7.73V240a8,8,0,0,1-16,0Zm11.76-88.43-56-29.87a8,8,0,0,0-7.52,14.12L171,128l17-9.06Zm64-29.87-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V130.67L171,128l-43,22.93L43.83,106l0,0L25,96,128,41.07,231,96l-18.78,10-.06,0L188,118.94a8,8,0,0,1,4,6.93v73.64a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12Z"/></symbol>
+  <symbol id="ic-chat-circle" viewBox="0 0 256 256"><path d="M232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Z"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 256 256"><path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 256 256"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></symbol>
+  <symbol id="ic-sign-in" viewBox="0 0 256 256"><path d="M141.66,133.66l-40,40A8,8,0,0,1,88,168V136H24a8,8,0,0,1,0-16H88V88a8,8,0,0,1,13.66-5.66l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></symbol>
+  <symbol id="ic-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40A8,8,0,0,0,176,88v32H112a8,8,0,0,0,0,16h64v32a8,8,0,0,0,13.66,5.66l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="ic-paper-plane-tilt" viewBox="0 0 256 256"><path d="M231.4,44.34s0,.1,0,.15l-58.2,191.94a15.88,15.88,0,0,1-14,11.51q-.69.06-1.38.06a15.86,15.86,0,0,1-14.42-9.15L107,164.15a4,4,0,0,1,.77-4.58l57.92-57.92a8,8,0,0,0-11.31-11.31L96.43,148.26a4,4,0,0,1-4.58.77L17.08,112.64a16,16,0,0,1,2.49-29.8l191.94-58.2.15,0A16,16,0,0,1,231.4,44.34Z"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,128H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM181.66,170.34a8,8,0,0,1-11.32,11.32L128,139.31,85.66,181.66a8,8,0,0,1-11.32-11.32L116.69,128,74.34,85.66A8,8,0,0,1,85.66,74.34L128,116.69l42.34-42.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+  <symbol id="ic-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-4,48a12,12,0,1,1-12,12A12,12,0,0,1,124,72Zm12,112a16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-magnifying-glass" viewBox="0 0 256 256"><path d="M168,112a56,56,0,1,1-56-56A56,56,0,0,1,168,112Zm61.66,117.66a8,8,0,0,1-11.32,0l-50.06-50.07a88,88,0,1,1,11.32-11.31l50.06,50.06A8,8,0,0,1,229.66,229.66ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 256 256"><path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
+  <symbol id="ic-bookmark-simple" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 256 256"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></symbol>
+  <symbol id="ic-certificate" viewBox="0 0 256 256"><path d="M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H120v64a8,8,0,0,1-13.66,5.66l-72-72a8,8,0,0,1,0-11.32l72-72A8,8,0,0,1,120,56v64h96A8,8,0,0,1,224,128Z"/></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72A8,8,0,0,1,136,200V136H40a8,8,0,0,1,0-16h96V56a8,8,0,0,1,13.66-5.66l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+  <symbol id="ic-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"/></symbol>
+  <symbol id="ic-pencil-simple" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z"/></symbol>
+  <symbol id="ic-upload-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM88,80h32v64a8,8,0,0,0,16,0V80h32a8,8,0,0,0,5.66-13.66l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,88,80Z"/></symbol>
+</svg>
+<div class="page">
+  <div class="topbar">
+    <h1 class="page-title"><svg class="ic" aria-hidden="true"><use href="#ic-info"/></svg> 退款中心</h1>
+    <span class="doc-badge">真实接口 · 金额服务端校验</span>
+    <a class="back" href="dashboard.html">← 返回学习端</a>
+  </div>
+  <p class="subtitle">填写订单 → 发起退款（金额须 ≤ 实付，超出会被系统拦截）→ 待处理中可撤销</p>
+
+  <div class="grid">
+    <!-- ============ 发起退款 ============ -->
+    <section class="card" id="applyCard">
+      <h2><span class="dot" style="background:var(--candy-green)"></span>发起退款</h2>
+      <form id="applyForm" novalidate>
+        <div class="field">
+          <label for="orderSel">可退款订单</label>
+          <select id="orderSel" required>
+            <option value="">— 加载中… —</option>
+          </select>
+          <div class="hint" id="orderHint">仅展示已支付、可退款的订单</div>
+          <div class="err" id="orderErr">请选择一个可退订单</div>
+        </div>
+        <div class="field">
+          <label for="refundType">退款类型</label>
+          <select id="refundType" required>
+            <option value="">请选择退款类型</option>
+            <option value="personal_reason">个人原因</option>
+            <option value="course_unsatisfied">课程不满意</option>
+            <option value="schedule_conflict">时间冲突</option>
+            <option value="duplicate_purchase">重复购买</option>
+          </select>
+          <div class="err" id="typeErr">请选择退款类型</div>
+        </div>
+        <div class="field">
+          <label for="amount">退款金额（¥）</label>
+          <input type="number" id="amount" min="0.01" step="0.01" placeholder="≤ 订单实付金额" required />
+          <div class="hint" id="amountHint">可退订单实付上限以所选订单为准</div>
+          <div class="err" id="amountErr">金额须在 0.01 ~ 实付金额之间</div>
+        </div>
+        <div class="field">
+          <label for="reason">退款原因</label>
+          <textarea id="reason" rows="3" maxlength="2000" placeholder="请简要说明退款原因" required></textarea>
+          <div class="err" id="reasonErr">请填写退款原因</div>
+        </div>
+        <button class="btn warn full" id="applyBtn" type="submit">提交退款申请</button>
+      </form>
+    </section>
+
+    <!-- ============ 反馈 / 退款工单 ============ -->
+    <section class="card">
+      <h2><span class="dot" style="background:var(--candy-purple)"></span>问题反馈工单</h2>
+      <form id="ticketForm" novalidate>
+        <div class="field">
+          <label>工单类型</label>
+          <select id="ticketType" required>
+            <option value="refund">退款问题</option>
+            <option value="appeal">人工申诉</option>
+            <option value="consult">咨询</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>标题</label>
+          <input id="ticketTitle" maxlength="255" placeholder="一句话概述问题" required />
+          <div class="err" id="ttErr">请填写标题</div>
+        </div>
+        <div class="field">
+          <label>内容</label>
+          <textarea id="ticketContent" rows="3" maxlength="4000" placeholder="详细描述（可关联订单号）" required></textarea>
+          <div class="err" id="tcErr">请填写内容</div>
+        </div>
+        <div class="field">
+          <label>关联订单号（可选）</label>
+          <input id="ticketOrder" maxlength="64" placeholder="如 1-260904101919-bf0fb5" />
+        </div>
+        <button class="btn ghost full" id="ticketBtn" type="submit">提交工单</button>
+      </form>
+    </section>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ============ 我的退款 ============ -->
+  <section class="card" style="margin-top:4px">
+    <h2><span class="dot" style="background:var(--candy-orange)"></span>我的退款记录</h2>
+    <div id="refundList"></div>
+    <div class="pager" id="pager" style="display:none">
+      <button id="pgPrev" type="button">上一页</button>
+      <span id="pgInfo"></span>
+      <button id="pgNext" type="button">下一页</button>
+    </div>
+  </section>
+</div>
+
+<div class="msg" id="flash"></div>
+
+<script>
+/* 离线展示 mock：接口回放 2026-10-07 从真实后端捕获的响应；页面渲染代码为原版。 */
+(function (global) {
+  var ROUTES = {"GET /api/auth/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"real_name\":\"展示用户\",\"mobile\":\"展示用户\",\"email\":\"viewer@example.invalid\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"role\":\"student\"}","GET /api/users/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"role\":\"student\",\"email\":\"viewer@example.invalid\",\"mobile\":\"展示用户\",\"real_name\":\"展示用户\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"learning_goal\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[\"programming\",\"math\"],\"profile\":{\"nickname\":\"展示用户\",\"avatar_url\":\"展示用户\",\"gender\":\"female\",\"birthday\":\"2008-09-01\",\"grade_code\":\"senior_high_2\",\"school_name\":null,\"region_code\":null,\"weekly_available_hours\":15,\"study_style\":\"mixed\",\"target_qualification\":null,\"learning_goals\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[{\"subject_code\":\"programming\",\"preference_score\":5},{\"subject_code\":\"math\",\"preference_score\":4}],\"level_assessments\":[],\"interest_tags\":[],\"created_at\":\"2026-08-08T18:54:00\",\"updated_at\":\"2026-09-21T11:47:39\"}}","GET /api/refunds?page=1&page_size=10":"{\"total\":0,\"page\":1,\"page_size\":10,\"items\":[]}","GET /api/trade/orders?refundable=true&page=1&page_size=50":"{\"total\":11,\"page\":1,\"page_size\":50,\"items\":[{\"order_no\":\"1-261006215436-90a6e0\",\"user_id\":901,\"series_id\":3191,\"cohort_id\":8017,\"series_title\":\"AI 开发专题：Python、记忆与 RAG\",\"order_amount\":0,\"discount_amount\":0,\"pay_amount\":0,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-06T21:54:37\",\"paid_at\":\"2026-10-06T21:54:37\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-261005170409-8610f1\",\"user_id\":901,\"series_id\":3190,\"cohort_id\":8016,\"series_title\":\"Cache命中率原理与优化\",\"order_amount\":0,\"discount_amount\":0,\"pay_amount\":0,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-05T17:04:10\",\"paid_at\":\"2026-10-05T17:04:10\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-261004131507-63bdc0\",\"user_id\":901,\"series_id\":3189,\"cohort_id\":8015,\"series_title\":\"LeetCode 算法题精讲\",\"order_amount\":0,\"discount_amount\":0,\"pay_amount\":0,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-04T13:15:08\",\"paid_at\":\"2026-10-04T13:15:08\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"6-261004110437-178dab\",\"user_id\":901,\"series_id\":2627,\"cohort_id\":7881,\"series_title\":\"信息学竞赛入门班·直播\",\"order_amount\":4999,\"discount_amount\":0,\"pay_amount\":4999,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-04T11:04:38\",\"paid_at\":\"2026-10-04T11:04:38\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-261004110407-1f8a47\",\"user_id\":901,\"series_id\":3188,\"cohort_id\":8014,\"series_title\":\"0元直结算契约测试课\",\"order_amount\":0,\"discount_amount\":0,\"pay_amount\":0,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-04T11:04:07\",\"paid_at\":\"2026-10-04T11:04:07\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"6-261002130000-4d8859\",\"user_id\":901,\"series_id\":2628,\"cohort_id\":7882,\"series_title\":\"信息学竞赛入门班·录播\",\"order_amount\":2499,\"discount_amount\":0,\"pay_amount\":2499,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-02T13:00:01\",\"paid_at\":\"2026-10-02T13:00:01\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"6-261002125045-8ea622\",\"user_id\":901,\"series_id\":2628,\"cohort_id\":7883,\"series_title\":\"信息学竞赛入门班·录播\",\"order_amount\":2999,\"discount_amount\":0,\"pay_amount\":2999,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-02T12:50:45\",\"paid_at\":\"2026-10-02T12:50:45\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"6-261002124653-f36b28\",\"user_id\":901,\"series_id\":2628,\"cohort_id\":7884,\"series_title\":\"信息学竞赛入门班·录播\",\"order_amount\":1999,\"discount_amount\":0,\"pay_amount\":1999,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-02T12:46:53\",\"paid_at\":\"2026-10-02T12:46:54\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-261002124528-e5e175\",\"user_id\":901,\"series_id\":8,\"cohort_id\":7897,\"series_title\":\"系统级编程基础班·录播\",\"order_amount\":22,\"discount_amount\":0,\"pay_amount\":22,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-10-02T12:45:28\",\"paid_at\":\"2026-10-02T12:45:29\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-260921130617-6a812c\",\"user_id\":901,\"series_id\":3,\"cohort_id\":9,\"series_title\":\"通用编程项目班·直播\",\"order_amount\":2999,\"discount_amount\":0,\"pay_amount\":2999,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-09-21T13:06:18\",\"paid_at\":\"2026-09-21T13:07:20\",\"cancelled_at\":null,\"items\":[],\"payments\":[]},{\"order_no\":\"1-260904101919-bf0fb5\",\"user_id\":901,\"series_id\":1,\"cohort_id\":2,\"series_title\":\"通用编程入门班·直播\",\"order_amount\":2999,\"discount_amount\":0,\"pay_amount\":2999,\"coupon_id\":null,\"status\":\"paid\",\"created_at\":\"2026-09-04T10:19:19\",\"paid_at\":\"2026-09-04T10:19:28\",\"cancelled_at\":null,\"items\":[],\"payments\":[]}]}"};
+  var SSE = "event: start\ndata: {\"session_id\": null, \"query\": \"用两句话介绍一下 Python 的变量命名规则\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:rec_question_0368a23ca7a7908a:a2e0d29dbe4691a4:a06dc5d5ac0985a6:1:active\", \"score\": 1.0, \"content\": \"```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\", \"source_file\": \"Q-0368a23ca7a7908a.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_9e9e6d15d3af8575:387f30b281347aa0:4212c0eee3a57127:1:active\", \"score\": 0.927492, \"content\": \"```python\\na = 7\\nif a % 2 == 0:\\n    print(\\\"even\\\")\\nelse:\\n    print(\\\"odd\\\")\\n```\", \"source_file\": \"Q-9e9e6d15d3af8575.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_36d5d784dd03db37:cebd03a29f7dd5a7:67595d6294537edb:1:active\", \"score\": 0.915683, \"content\": \"```python\\nx = 5\\nif x > 3:\\n    x -= 2\\nelse:\\n    x += 2\\nprint(x)\\n```\", \"source_file\": \"Q-36d5d784dd03db37.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_e0ea4ffcb08046af:b89eeba397df5f9f:2187b79da4f8eb59:1:active\", \"score\": 0.875034, \"content\": \"```python\\nres = 1\\nfor i in range(1, 4):\\n    res *= i\\nprint(res)\\n```\", \"source_file\": \"Q-e0ea4ffcb08046af.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3c4cfa4e37330763:1\", \"score\": 0.860203, \"content\": \"工作区符号查询会先打开可见源码建立 LSP 工作区；文档修改后同步更新服务器内容。诊断等待实际返回，超时会明确报错，不把“未收到诊断”当作“没有错误”。Python 与 TypeScript 两种标准重命名编辑格式均支持，应用前仍校验全部文件 SHA。\", \"source_file\": \"up_100003_4baa92d1_README.md\", \"content_type\": \"doc_chunk\", \"series_code\": null, \"series_name\": null, \"series_codes\": [], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [], \"retrieved_count\": 149, \"final_count\": 5, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"只能\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"和\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线\"}\n\nevent: token\ndata: {\"delta\": \"组成\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"以\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"开头\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"同时\"}\n\nevent: token\ndata: {\"delta\": \"区分\"}\n\nevent: token\ndata: {\"delta\": \"大小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 和\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"Name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 是\"}\n\nevent: token\ndata: {\"delta\": \"两个\"}\n\nevent: token\ndata: {\"delta\": \"不同的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"）。\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"使用\"}\n\nevent: token\ndata: {\"delta\": \" Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"保留\"}\n\nevent: token\ndata: {\"delta\": \"关键字\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"if\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"for\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"class\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 等\"}\n\nevent: token\ndata: {\"delta\": \"），\"}\n\nevent: token\ndata: {\"delta\": \"并\"}\n\nevent: token\ndata: {\"delta\": \"建议\"}\n\nevent: token\ndata: {\"delta\": \"遵循\"}\n\nevent: token\ndata: {\"delta\": \" P\"}\n\nevent: token\ndata: {\"delta\": \"EP\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"8\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"规\"}\n\nevent: token\ndata: {\"delta\": \"范\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"加\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线的\"}\n\nevent: token\ndata: {\"delta\": \"“\"}\n\nevent: token\ndata: {\"delta\": \"蛇\"}\n\nevent: token\ndata: {\"delta\": \"形\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"法\"}\n\nevent: token\ndata: {\"delta\": \"”（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"student\"}\n\nevent: token\ndata: {\"delta\": \"_name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"来\"}\n\nevent: token\ndata: {\"delta\": \"提高\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"基于\"}\n\nevent: token\ndata: {\"delta\": \"通用\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"综合\"}\n\nevent: token\ndata: {\"delta\": \"上下\"}\n\nevent: token\ndata: {\"delta\": \"文\"}\n\nevent: token\ndata: {\"delta\": \"中的\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"片段\"}\n\nevent: token\ndata: {\"delta\": \"未\"}\n\nevent: token\ndata: {\"delta\": \"涉及\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"规则\"}\n\nevent: token\ndata: {\"delta\": \"说明\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"故\"}\n\nevent: token\ndata: {\"delta\": \"此\"}\n\nevent: token\ndata: {\"delta\": \"回答\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"模型\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"补充。）\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": null, \"message_id\": null, \"retrieved_count\": 149, \"final_count\": 5, \"latency_ms\": 14785, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n";
+  var DEMO_VER = "{\r\n  \"checked_at\": \"2026-10-05T17:04:09+0800\",\r\n  \"kind\": \"saved-real-runtime-acceptance\",\r\n  \"note\": \"保存的真实验收记录，不表示当前仍在执行。Jaeger 重启后可能不再保留内存 Trace。\",\r\n  \"cases\": [\r\n    {\r\n      \"name\": \"P1 本课背景与资料\",\r\n      \"query\": \"我当前学的是什么课程？这一节视频讲什么？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"679eeff149c5d47d836987be0989dce7\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"P1 同课追问\",\r\n      \"query\": \"你刚才提到的哈希表方法，如何保证不会把同一个元素使用两次？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"529bc6336146769bec6947d4f0594b91\",\r\n      \"citations\": 8,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"纯闲聊捷径\",\r\n      \"query\": \"你好\",\r\n      \"pass\": true,\r\n      \"intent\": \"chitchat\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"77a13d96694884ad302505a637a4b6f1\",\r\n      \"citations\": 0,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": null\r\n    },\r\n    {\r\n      \"name\": \"知识问答：九节点\",\r\n      \"query\": \"根据 Cache Learning Notes，TTL 为什么不能保证缓存和数据库的一致性？\",\r\n      \"pass\": true,\r\n      \"intent\": \"knowledge\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"e4a26e0f603e6f77e2b02fbf1a0b38df\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"真实计算器调用\",\r\n      \"query\": \"请使用 calculator 计算 17 * 23，给我结果。\",\r\n      \"pass\": true,\r\n      \"intent\": \"tool\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"2f2338d6106b8e46c00a42f60c35250e\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [\r\n        {\r\n          \"name\": \"add\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"sum\\\": 40, \\\"was_negative\\\": false}\"\r\n        },\r\n        {\r\n          \"name\": \"calculator\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"result\\\": 391.0, \\\"tool\\\": \\\"calculator\\\", \\\"op\\\": \\\"mul\\\"}\"\r\n        }\r\n      ],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"学习规划分支\",\r\n      \"query\": \"请根据我的学习情况给我制定一份学习计划。\",\r\n      \"pass\": true,\r\n      \"intent\": \"learning\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"5c5d8b2a5f487bdbf26f5259c1951038\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"新建 Cache 课程答疑\",\r\n      \"query\": \"我目前正在学什么课程？这节课讲了哪些 Cache 优化思路？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"260ad37dcd96658bccb83c642e30ec7a\",\r\n      \"citations\": 7,\r\n      \"video_ids\": [\r\n        205792\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    }\r\n  ]\r\n}";
+  var ROLE = "student";
+  /* 通配路由（key 含 *）：编译为正则，最长模板优先 */
+  var WILD = [];
+  (function () {
+    var tmp = [];
+    for (var k in ROUTES) {
+      if (k.indexOf("*") < 0) continue;
+      var sp = k.indexOf(" ");
+      tmp.push({ m: k.slice(0, sp), re: new RegExp("^" + k.slice(sp + 1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[^/]*") + "$"), d: ROUTES[k] });
+      delete ROUTES[k];
+    }
+    WILD = tmp.sort(function (a, b) { return b.re.source.length - a.re.source.length; });
+  })();
+  var TOKEN_KEY = "edu:auth:token", REFRESH_KEY = "edu:auth:refresh";
+  var LOGIN_PAGE = "login-register.html";
+  var memoryToken = "offline-" + ROLE;
+  var memoryRefresh = "offline";
+  var errorHandlers = [];
+  function trimSlash(s){ return String(s||"").replace(/\/+$/,""); }
+  function apiError(status, message){ var e = new Error(message || ("HTTP " + status)); e.status = status; e.isApiError = true; return e; }
+  function sanitizeRedirect(r){ if (typeof r !== "string") return ""; var s = r.trim(); if (!s || s.charAt(0) !== "/") return ""; if (s.charAt(1) === "/") return ""; if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) return ""; return s; }
+  function getRedirectParam(){ try { var q = new URLSearchParams(location.search || ""); return sanitizeRedirect(q.get("redirect") || ""); } catch (e) { return ""; } }
+  function pageId(name){ try { var q = new URLSearchParams(location.search || ""); var v = typeof name === "string" ? q.get(name) : q.get("id"); return v === null || v === undefined ? "" : String(v).trim(); } catch (e) { return ""; } }
+  function currentPathWithQuery(){ try { return (location.pathname || "/") + (location.search || ""); } catch (e) { return "/"; } }
+  function onLoginPage(){ try { return /(^|\/)login-register\.html$/.test((location.pathname || "").split("/").pop() || ""); } catch (e) { return false; } }
+  function buildLoginUrl(redirectPath){ var t = sanitizeRedirect(redirectPath || ""); return t ? LOGIN_PAGE + "?redirect=" + encodeURIComponent(t) : LOGIN_PAGE; }
+  function gotoLogin(p){ try { window.location.href = buildLoginUrl(p); } catch (e) {} }
+  function onError(fn){ if (typeof fn !== "function") return function () {}; errorHandlers.push(fn); return function () { var i = errorHandlers.indexOf(fn); if (i >= 0) errorHandlers.splice(i, 1); }; }
+  function emitOnce(err){ if (!err || err.__eapiEmitted) return; err.__eapiEmitted = true; for (var i = 0; i < errorHandlers.length; i++) { try { errorHandlers[i](err); } catch (e) {} } try { console.error("[EAPI]", (err && err.message) || err); } catch (e) {} }
+
+  var store = {
+    getToken: function () { return memoryToken; },
+    setToken: function (t) { memoryToken = t || ""; },
+    getRefreshToken: function () { return memoryRefresh; },
+    setRefreshToken: function (t) { memoryRefresh = t || ""; },
+    clear: function () { memoryToken = ""; memoryRefresh = ""; },
+  };
+
+  function routeLookup(method, pathWithQuery) {
+    var key = method + " " + pathWithQuery;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    var noQ = pathWithQuery.split("?")[0];
+    key = method + " " + noQ;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    for (var wi = 0; wi < WILD.length; wi++) {
+      if (WILD[wi].m === method && WILD[wi].re.test(noQ)) return { status: 200, data: JSON.parse(WILD[wi].d) };
+    }
+    var best = null, bestLen = -1;
+    for (var k in ROUTES) {
+      if (k.indexOf(method + " ") !== 0) continue;
+      var kp = k.slice(method.length + 1).split("?")[0];
+      if (kp === noQ) return { status: 200, data: JSON.parse(ROUTES[k]) };
+      if (noQ.indexOf(kp + "/") === 0 && kp.length > bestLen) { best = k; bestLen = kp.length; }
+    }
+    if (best) return { status: 200, data: JSON.parse(ROUTES[best]) };
+    console.warn("[MOCK] 未匹配的接口（返回诚实空态）:", method, pathWithQuery);
+    if (method === "GET") {
+      var tail = noQ.split("/").pop();
+      var looksList = !tail || pathWithQuery.indexOf("?") >= 0 || /(s|sessions|logs|tasks|items)$/.test(noQ);
+      return { status: 200, data: looksList ? { total: 0, page: 1, page_size: 20, items: [] } : {} };
+    }
+    return { status: 200, data: { ok: true } };
+  }
+
+  var MUTATION_FIX = {
+    "POST /api/auth/login": function (body) {
+      return { access_token: "offline", refresh_token: "offline", user: JSON.parse(ROUTES["GET /api/users/me"] || ROUTES["GET /api/auth/me"] || "{}") };
+    },
+    "POST /api/auth/register": function () { return { user_id: 900001 }; },
+  };
+  function mutate(method, path, body) {
+    var fk = method + " " + path.split("?")[0];
+    if (MUTATION_FIX[fk]) return { status: 200, data: MUTATION_FIX[fk](body) };
+    if (path.indexOf("/api/trade/order") === 0 && method === "POST")
+      return { status: 200, data: { order_id: "MOCKORD1001", status: "pending_pay", pay_url: null, amount_due: (body && body.amount_due) || 0, series_id: body && body.series_id } };
+    if (path.indexOf("/api/trade/payment") === 0) return { status: 200, data: { status: "paid", paid: true, order_id: "MOCKORD1001" } };
+    if (path.indexOf("/api/progress/video") === 0) return { status: 200, data: { play_session_id: 900001 } };
+    if (path.indexOf("/api/community/posts") === 0 && method === "POST")
+      return { status: 200, data: { post_id: 9001, title: (body && body.title) || "演示帖子", content_md: (body && body.content_md) || "", created_at: new Date().toISOString() } };
+    if (path.indexOf("/api/users/me/profile") === 0) return { status: 200, data: Object.assign(JSON.parse(ROUTES["GET /api/users/me/profile"] || "{}"), body || {}) };
+    console.warn("[MOCK] 变更接口（离线演示返回成功）:", method, path);
+    return { status: 200, data: { ok: true, id: 900001 } };
+  }
+
+  function sseResponse() {
+    var enc = new TextEncoder();
+    var frames = SSE.split("\n\n").filter(function (f) { return f.trim(); });
+    var stream = new ReadableStream({
+      start: function (c) {
+        var i = 0;
+        function next() {
+          if (i >= frames.length) { c.close(); return; }
+          c.enqueue(enc.encode(frames[i++] + "\n\n"));
+          setTimeout(next, 40);
+        }
+        next();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  }
+
+  function request(method, path, body) {
+    if (!memoryToken && !onLoginPage()) { gotoLogin(currentPathWithQuery()); return Promise.reject(apiError(401, "登录凭证无效或已过期")); }
+    var p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
+    return new Promise(function (resolve) { setTimeout(resolve, 60); }).then(function () {
+      var out;
+      if (method !== "GET") out = mutate(method, p, body);
+      else out = routeLookup(method, p);
+      if (out.status === 404) throw apiError(404, "资源不存在（离线演示无此数据）");
+      return out.data;
+    }).catch(function (e) { emitOnce(e); throw e; });
+  }
+
+  var EAPI = {
+    BASE: (global.location && global.location.origin) || "",
+    TOKEN_KEY: TOKEN_KEY, TIMEOUT_MS: 15000,
+    get: function (p) { return request("GET", p); },
+    post: function (p, b) { return request("POST", p, b); },
+    put: function (p, b) { return request("PUT", p, b); },
+    patch: function (p, b) { return request("PATCH", p, b); },
+    del: function (p) { return request("DELETE", p); },
+    store: store, logout: function () { store.clear(); if (!onLoginPage()) gotoLogin(currentPathWithQuery()); },
+    onError: onError, getRedirectParam: getRedirectParam, buildLoginUrl: buildLoginUrl, pageId: pageId,
+  };
+  global.EAPI = EAPI;
+
+  var origFetch = global.fetch ? global.fetch.bind(global) : null;
+  global.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/chat/stream") >= 0) return Promise.resolve(sseResponse());
+    if (url.indexOf("demo/verification.json") >= 0)
+      return Promise.resolve(new Response(DEMO_VER, { status: 200, headers: { "Content-Type": "application/json" } }));
+    if (url.indexOf("/api/") >= 0 || url.indexOf("samples/") >= 0 || url.indexOf("/media/") >= 0) {
+      var method = ((init && init.method) || "GET").toUpperCase();
+      var body = null;
+      try { body = init && init.body ? JSON.parse(init.body) : null; } catch (e) {}
+      if (url.indexOf("samples/") >= 0) return origFetch(input, init).catch(function () { return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }); });
+      var out = method === "GET" ? routeLookup(method, url.split(/^[a-z]+:\/\/?[^/]*\/|^[a-z]+:\/\//.test(url) ? url.replace(/^[a-z]+:\/\/[^/]*\//, "/") : url).split("?").length ? urlAfterBase(url) : url) : mutate(method, urlAfterBase(url), body);
+      function urlAfterBase(u) { var i = u.indexOf("/api/"); return i >= 0 ? u.slice(i) : u; }
+      if (out.status === 404) return Promise.resolve(new Response(JSON.stringify({ code: "40400", message: "not found", data: null }), { status: 404, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(new Response(JSON.stringify({ code: 0, message: "ok", data: out.data }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    }
+    return origFetch ? origFetch(input, init) : Promise.reject(new Error("offline: fetch blocked"));
+  };
+})(window);
+</script>
+<script>
+/* task66：退款中心真实数据加载（对接 /api/refunds + /api/trade/orders）。
+ * 角色守卫三段（纪律 lesson10）：
+ *   1) 本地无 token → 跳 login-register 带 redirect
+ *   2) 有 token  → GET /api/auth/me 校验 role=student；admin/manager/teacher → 跳回 dashboard
+ *   3) auth/me 失败无法确认身份 → 按未授权跳登录（防 DEBUG 降级绕过）
+ * 通过后才调 window.bootRefund() 注入真实数据；无 EAPI 时静默降级演示态。
+ */
+(function(){
+  if(!window.EAPI) return;
+  /* task17 修复：本 IIFE 原直接调用 bootRefund 闭包内私有的 flash → ReferenceError: flash is not defined
+   *（非 student 角色 / auth/me 失败路径：提示未弹出且其后的跳转 setTimeout 永不注册，页面卡死）。
+   * 此处提供等价局部 toast（复用 #flash 元素与既有样式语义，非 alert），不改视觉。 */
+  var flash=function(t){ var m=document.getElementById("flash"); if(!m)return;
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#C63E4A" : "#2E7D4F";
+    m.textContent = t; m.style.display="block";
+    clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
+  };
+  var loginUrl;
+  try{ loginUrl = EAPI.buildLoginUrl(location.pathname+location.search); }catch(e){ loginUrl="login-register.html"; }
+  if(!EAPI.store.getToken()){ location.replace(loginUrl); return; }
+  EAPI.get("/api/auth/me").then(function(me){
+    if(me && me.role==="student"){
+      var boot = window.bootRefund;
+      if(typeof boot==="function"){ try{ boot(); }catch(e){ console.error("bootRefund",e); } }
+    } else {
+      flash("当前角色 "+(me&&me.role?me.role:"未知")+" 无权访问退款中心，正在跳回学习端…");
+      setTimeout(function(){ try{ location.replace("dashboard.html"); }catch(e){} },1200);
+    }
+  }).catch(function(){
+    flash("身份校验失败，正在跳转登录…");
+    setTimeout(function(){ try{ location.replace(loginUrl); }catch(e){} },1200);
+  });
+})();
+</script>
+
+<script>
+/* 降级角标：无 EAPI（纯静态打开）时显示「演示数据」标识，正常部署加载 edu-api.js 后不显示 */
+(function(){ if(window.EAPI&&window.EAPI.get)return; var b=document.createElement("div");
+  b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px";
+  document.body.appendChild(b); })();
+</script>
+
+<script>
+/* ===== task66 bootRefund：退款中心真实数据注入 ===== */
+(function(global){
+  if(!global.EAPI) return;
+  var E = global.EAPI;
+  var state = { page:1, pageSize:10, total:0, items:[], orders:[] };
+
+  function $(id){ return document.getElementById(id); }
+  function flash(t){ var m=$("flash"); if(!m)return;
+    m.style.background = t.indexOf("失败")>=0||t.indexOf("超出")>=0 ? "#C63E4A" : "#2E7D4F";
+    m.textContent = t; m.style.display="block";
+    clearTimeout(flash._t); flash._t = setTimeout(function(){ m.style.display="none"; },3200);
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  var TYPE_LABEL = {
+    personal_reason:"个人原因", course_unsatisfied:"课程不满意",
+    schedule_conflict:"时间冲突", duplicate_purchase:"重复购买"
+  };
+  var STATUS = {
+    pending:"pending", approved:"approved", rejected:"rejected", refunded:"refunded"
+  };
+  function statusText(s){
+    switch(s){
+      case "pending": return "到账审核中";
+      case "approved": return "已批准·待退款";
+      case "rejected": return "已拒绝";
+      case "refunded": return "已退款";
+      default: return s || "-";
+    }
+  }
+  function money(v){ var n=Number(v); return isFinite(n)? n.toFixed(2) : "-"; }
+
+  /* ---------- 可退款订单下拉 ---------- */
+  function loadOrders(){
+    var sel=$("orderSel"); if(!sel) return;
+    if(!E.store.getToken()) return;
+    E.get("/api/trade/orders?refundable=true&page=1&page_size=50").then(function(data){
+      data = data || {};
+      var items = data.items || [];
+      state.orders = items;
+      if(!items.length){
+        sel.innerHTML = '<option value="">— 暂无已支付可退订单 —</option>';
+        $("orderHint").textContent = "请先在「课程中心」购买并完成支付";
+        return;
+      }
+      var opts = ['<option value="">请选择订单</option>'].concat(items.map(function(o){
+        return '<option value="'+esc(o.order_no)+'" data-pay="'+Number(o.pay_amount||0)+'" data-title="'+esc(o.series_title||o.order_no)+'">'
+             + esc(o.order_no) + ' · ' + esc(o.series_title||'') + ' · ¥' + money(o.pay_amount||0) + '</option>';
+      }));
+      sel.innerHTML = opts.join("");
+      $("orderHint").textContent = items.length + " 个已支付订单可退款";
+    }).catch(function(){ flash("加载可退订单失败，请重试"); });
+  }
+
+  /* ---------- 退款列表 + 分页 ---------- */
+  function loadRefunds(){
+    var box=$("refundList"); if(!box) return;
+    box.innerHTML = '<div class="list-empty">加载中…</div>';
+    E.get("/api/refunds?page="+state.page+"&page_size="+state.pageSize).then(function(data){
+      data = data || {};
+      var items = data.items || [];
+      state.total = data.total || 0;
+      state.items = items;
+      renderList();
+    }).catch(function(){
+      box.innerHTML = '<div class="list-empty">加载退款记录失败</div>';
+    });
+  }
+
+  function renderList(){
+    var box=$("refundList"), pager=$("pager");
+    if(!state.items.length){
+      box.innerHTML = '<div class="list-empty">暂无退款记录</div>';
+      if(pager) pager.style.display="none";
+      return;
+    }
+    var html = state.items.map(function(it){
+      var type = TYPE_LABEL[it.refund_type] || it.refund_type || "-";
+      var stCls = STATUS[it.refund_status] || "pending";
+      var cancelBtn = "";
+      if(it.refund_status==="pending" && !it.cancelled){
+        cancelBtn = '<div class="refund-actions"><button class="btn warn" data-cancel="'+it.id+'" type="button">撤销申请</button></div>';
+      }
+      var reason = it.remark
+        ? '<div class="refund-meta">处理备注：'+esc(it.remark)+'</div>' : "";
+      return '<div class="refund-item">'
+        + '<div class="refund-head"><span class="refund-no">'+esc(it.refund_no)+'</span>'
+        + '<span class="pill '+stCls+'">'+statusText(it.refund_status)+'</span></div>'
+        + '<div class="refund-meta">关联订单：<b>'+esc(it.order_no)+'</b></div>'
+        + '<div class="refund-meta">类型：'+esc(type)+' · 申请金额：<b>¥'+money(it.apply_amount)+'</b>'
+        + (it.approved_amount!=null ? ' · 批准金额：<b>¥'+money(it.approved_amount)+'</b>' : '') + '</div>'
+        + '<div class="refund-meta">申请时间：'+esc(String(it.applied_at||"").replace("T"," "))+'</div>'
+        + reason
+        + cancelBtn + '</div>';
+    }).join("");
+    box.innerHTML = html;
+    if(pager){
+      var pages = Math.max(1, Math.ceil(state.total/state.pageSize));
+      pager.style.display = "flex";
+      $("pgInfo").textContent = "第 "+state.page+" / "+pages+" 页 · 共 "+state.total+" 条";
+      $("pgPrev").disabled = state.page<=1;
+      $("pgNext").disabled = state.page>=pages;
+    }
+  }
+
+  /* ---------- 发起退款 ---------- */
+  function applyRefund(e){
+    e.preventDefault();
+    var order=$("orderSel").value, type=$("refundType").value;
+    var amount=parseFloat($("amount").value), reason=$("reason").value.trim();
+    var orderErr=$("orderErr"), typeErr=$("typeErr"), amtErr=$("amountErr"), rsErr=$("reasonErr");
+    orderErr.style.display = order?"none":"block";
+    typeErr.style.display = type?"none":"block";
+    rsErr.style.display = reason?"none":"block";
+
+    var orderObj = state.orders.filter(function(o){ return o.order_no===order; })[0];
+    var pay = orderObj ? Number(orderObj.pay_amount||0) : 0;
+    if(!order || !type || !reason){ flash("请完整填写退款申请"); return; }
+
+    // 前端友好校验（硬约束在服务端：≤ 实付）
+    var valid = isFinite(amount) && amount>0 && amount <= pay + 1e-6;
+    amtErr.style.display = valid ? "none":"block";
+    $("amountHint").textContent = orderObj
+      ? "该订单实付 ¥"+money(pay)+"，退款金额不得超过此值（超出由服务端拦截）"
+      : "可退订单实付上限以所选订单为准";
+    if(!valid){ return; }
+
+    var btn=$("applyBtn"); btn.disabled=true; btn.textContent="提交中…";
+    E.post("/api/refunds", {
+      order_no: order, refund_type: type,
+      apply_amount: Math.round(amount*100)/100, reason: reason
+    }).then(function(r){
+      flash("退款申请已提交（"+(r&&r.refund_no)+"），进入到账审核中");
+      $("applyForm").reset();
+      state.page=1; loadRefunds(); loadOrders();
+    }).catch(function(err){
+      var msg = (err&&err.message)||"申请失败";
+      flash(msg); // 覆盖金额超限 / 非可退订单等服务端拒绝反馈
+    }).finally(function(){ btn.disabled=false; btn.textContent="提交退款申请"; });
+  }
+
+  /* ---------- 撤销退款 ---------- */
+  function cancelRefund(id, btn){
+    btn.disabled=true; btn.textContent="撤销中…";
+    E.post("/api/refunds/"+id+"/cancel", {}).then(function(){
+      flash("退款申请已撤销");
+      loadRefunds();
+    }).catch(function(err){
+      flash((err&&err.message)||"撤销失败");
+      btn.disabled=false; btn.textContent="撤销申请";
+    });
+  }
+
+  /* ---------- 工单 ---------- */
+  function submitTicket(e){
+    e.preventDefault();
+    var title=$("ticketTitle").value.trim(), content=$("ticketContent").value.trim();
+    $("ttErr").style.display = title?"none":"block";
+    $("tcErr").style.display = content?"none":"block";
+    if(!title||!content){ flash("请填写工单标题与内容"); return; }
+    var btn=$("ticketBtn"); btn.disabled=true; btn.textContent="提交中…";
+    var body = { ticket_type:$("ticketType").value, title:title, content:content };
+    var ord=$("ticketOrder").value.trim();
+    if(ord) body.order_no = ord;
+    E.post("/api/trade/after_sales/ticket", body).then(function(){
+      flash("工单已提交，客服将尽快处理");
+      $("ticketForm").reset();
+    }).catch(function(err){
+      flash((err&&err.message)||"工单提交失败");
+    }).finally(function(){ btn.disabled=false; btn.textContent="提交工单"; });
+  }
+
+  function wire(){
+    $("applyForm").addEventListener("submit", applyRefund);
+    $("ticketForm").addEventListener("submit", submitTicket);
+    $("pgPrev").addEventListener("click", function(){ if(state.page>1){ state.page--; loadRefunds(); } });
+    $("pgNext").addEventListener("click", function(){ state.page++; loadRefunds(); });
+    $("refundList").addEventListener("click", function(ev){
+      var b = ev.target.closest && ev.target.closest("[data-cancel]");
+      if(b) cancelRefund(Number(b.getAttribute("data-cancel")), b);
+    });
+    $("orderSel").addEventListener("change", function(){
+      var o = state.orders.filter(function(x){ return x.order_no===this.value; }.bind(this))[0];
+      $("amountHint").textContent = o ? "该订单实付 ¥"+money(o.pay_amount||0)+"，退款金额不得超过此值"
+                                      : "可退订单实付上限以所选订单为准";
+    });
+  }
+
+  global.bootRefund = function(){
+    wire();
+    loadRefunds();
+    loadOrders();
+  };
+})(window);
+</script>
+</body>
+</html>

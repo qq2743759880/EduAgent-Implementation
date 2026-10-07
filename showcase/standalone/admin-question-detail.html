@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理端题目编辑 /admin/questions/[id]</title>
+<style>
+/*
+ * Bili-Study Clay Theme, Gate A frozen tokens
+ *
+ * Icon usage (Phosphor fill, local sprite):
+ * <svg class="ic" aria-hidden="true"><use href="#ic-book-open"></use></svg>
+ * For an icon-only control, put the accessible name on the control (aria-label or visible text).
+ *
+ * Token reference, one variable per line:
+ * --bg-app: purple-tinted near-white application canvas.
+ * --bg-raised: highest neutral surface reserved for dialogs and toasts.
+ * --bg-input: subtly tinted recessed input surface.
+ * --clay-primary: semantic alias for the approved main clay surface.
+ * --clay-moss: approved primary moss green; #2E2A3F contrast is 8.84:1.
+ * --clay-lavender: demoted secondary lavender, never the default surface.
+ * --clay-sky: course and learning surface.
+ * --clay-mint: success, completion, and progress surface.
+ * --clay-peach: practice and quiz surface.
+ * --clay-pink: favorites and community surface.
+ * --clay-lemon: warm accent for reminders and pending work.
+ * --cta-coral: the single saturated primary action color per screen.
+ * --cta-text: primary action text; #2E2A3F on #FF7A6B is 5.43:1.
+ * --status-active: active and successful state color.
+ * --status-pending: pending state color.
+ * --status-archived: archived and inactive state color.
+ * --status-danger: destructive and error state color.
+ * --text-strong: primary ink; intentionally not pure black.
+ * --text-muted: secondary ink for supporting text.
+ * --text-on-dark: text used on the dark code surface.
+ * --surface-code: Markdown code block surface.
+ * --focus-ring: high-contrast keyboard focus indicator.
+ * --radius-card: L1 card radius.
+ * --radius-btn: primary and secondary button radius.
+ * --radius-input: input and compact control radius.
+ * --radius-pill: pill and badge radius.
+ * --radius-icon-tile: icon tile radius.
+ * --space-1: 4px spacing unit.
+ * --space-2: 8px spacing unit.
+ * --space-3: 12px spacing unit.
+ * --space-4: 16px spacing unit and minimum clay-to-clay gap.
+ * --space-6: 24px spacing unit.
+ * --space-8: 32px spacing unit.
+ * --space-12: 48px spacing unit.
+ * --control-min: minimum 44px interaction target.
+ * --control-primary: 54px primary button height within the approved 52-56px range.
+ * --motion-fast: 140ms tactile state duration.
+ * --ease-clay: restrained ease-out curve for hover and press feedback.
+ * --clay-shadow-moss: three-layer moss surface shadow.
+ * --clay-shadow-lavender: three-layer secondary lavender surface shadow.
+ * --clay-shadow-sky: three-layer sky surface shadow.
+ * --clay-shadow-mint: three-layer mint surface shadow.
+ * --clay-shadow-peach: three-layer peach surface shadow.
+ * --clay-shadow-pink: three-layer pink surface shadow.
+ * --clay-shadow-lemon: three-layer lemon surface shadow.
+ * --clay-shadow-coral: three-layer coral action shadow.
+ * --clay-shadow-raised: green-hued L2 shadow for raised neutral surfaces.
+ * --clay-shadow-light: green-hued single-layer shadow for clay-light regions.
+ * --clay-shadow-press-moss: compressed moss shadow for pressed controls.
+ * --clay-shadow-press-coral: compressed coral shadow for pressed primary actions.
+ * --clay-shadow-input: inset moss shadow for recessed fields.
+ * --clay-shadow-input-focus: inset moss shadow plus visible focus halo.
+ * --layer-base: normal document flow.
+ * --layer-sticky: sticky navigation layer.
+ * --layer-dropdown: menu and popover layer.
+ * --layer-overlay: modal scrim layer.
+ * --layer-dialog: dialog layer.
+ * --layer-toast: toast and urgent feedback layer.
+ *
+ * L1 page overrides belong in a .page-<name> namespace. Example:
+ * .page-dashboard { --page-card-gap: var(--space-6); }
+ * Do not place page-specific selectors outside that namespace.
+ */
+
+:root {
+  --bg-app: #F7F5FB;
+  --bg-raised: #FFFFFF;
+  --bg-input: #F7FAF4;
+  --clay-primary: var(--clay-moss);
+  --clay-moss: #B8D8A8;
+  --clay-lavender: #B8A6FF;
+  --clay-sky: #9EC9F0;
+  --clay-mint: #7DD4A8;
+  --clay-peach: #FFB59E;
+  --clay-pink: #F5B8D0;
+  --clay-lemon: #F5D77A;
+  --cta-coral: #FF7A6B;
+  --cta-text: #2E2A3F;
+  --status-active: #7DD4A8;
+  --status-pending: #F5D77A;
+  --status-archived: #C9B5FF;
+  --status-danger: #C63E4A;
+  --text-strong: #2E2A3F;
+  --text-muted: #6B6580;
+  --text-on-dark: #F7F5FB;
+  --surface-code: #2E2A3F;
+  --focus-ring: #453C66;
+
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  --radius-input: 16px;
+  --radius-pill: 999px;
+  --radius-icon-tile: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-min: 44px;
+  --control-primary: 54px;
+
+  --motion-fast: 140ms;
+  --ease-clay: cubic-bezier(.25, 1, .5, 1);
+
+  --clay-shadow-moss:
+    8px 8px 24px rgba(78, 126, 66, .30),
+    inset -6px -6px 16px rgba(78, 126, 66, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .58);
+  --clay-shadow-lavender:
+    8px 8px 24px rgba(126, 105, 181, .28),
+    inset -6px -6px 16px rgba(126, 105, 181, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-sky:
+    8px 8px 24px rgba(80, 142, 196, .30),
+    inset -6px -6px 16px rgba(80, 142, 196, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-mint:
+    8px 8px 24px rgba(43, 153, 103, .29),
+    inset -6px -6px 16px rgba(43, 153, 103, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-peach:
+    8px 8px 24px rgba(218, 111, 82, .29),
+    inset -6px -6px 16px rgba(218, 111, 82, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-pink:
+    8px 8px 24px rgba(188, 99, 137, .28),
+    inset -6px -6px 16px rgba(188, 99, 137, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-lemon:
+    8px 8px 24px rgba(190, 149, 35, .28),
+    inset -6px -6px 16px rgba(190, 149, 35, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-coral:
+    8px 8px 24px rgba(214, 82, 70, .31),
+    inset -6px -6px 16px rgba(214, 82, 70, .23),
+    inset 6px 6px 16px rgba(255, 254, 252, .45);
+  --clay-shadow-raised: 12px 12px 32px rgba(78, 126, 66, .22);
+  --clay-shadow-light: 6px 8px 20px rgba(78, 126, 66, .18);
+  --clay-shadow-press-moss:
+    4px 4px 12px rgba(78, 126, 66, .26),
+    inset -3px -3px 8px rgba(78, 126, 66, .18),
+    inset 3px 3px 8px rgba(255, 254, 252, .46);
+  --clay-shadow-press-coral:
+    4px 4px 12px rgba(214, 82, 70, .27),
+    inset -3px -3px 8px rgba(214, 82, 70, .19),
+    inset 3px 3px 8px rgba(255, 254, 252, .38);
+  --clay-shadow-input:
+    inset 3px 3px 8px rgba(78, 126, 66, .20),
+    inset -3px -3px 8px rgba(255, 254, 252, .88);
+  --clay-shadow-input-focus:
+    inset 3px 3px 8px rgba(78, 126, 66, .24),
+    inset -3px -3px 8px rgba(255, 254, 252, .92),
+    0 0 0 3px rgba(69, 60, 102, .22);
+
+  --layer-base: 0;
+  --layer-sticky: 100;
+  --layer-dropdown: 300;
+  --layer-overlay: 700;
+  --layer-dialog: 800;
+  --layer-toast: 1000;
+}
+
+.ic {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  overflow: visible;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: -.2em;
+}
+
+.clay-card {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-btn-primary,
+.clay-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding-inline: var(--space-6);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--ease-clay),
+    box-shadow var(--motion-fast) var(--ease-clay),
+    background-color var(--motion-fast) var(--ease-clay);
+}
+
+.clay-btn-primary {
+  min-height: var(--control-primary);
+  color: var(--cta-text);
+  background: var(--cta-coral);
+  box-shadow: var(--clay-shadow-coral);
+}
+
+.clay-btn-soft {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-btn-primary:hover,
+.clay-btn-soft:hover {
+  transform: translateY(-2px);
+}
+
+.clay-btn-primary:active,
+.clay-btn-soft:active {
+  transform: scale(.97);
+}
+
+.clay-btn-primary:active {
+  box-shadow: var(--clay-shadow-press-coral);
+}
+
+.clay-btn-soft:active {
+  box-shadow: var(--clay-shadow-press-moss);
+}
+
+.clay-btn-primary:disabled,
+.clay-btn-soft:disabled,
+.clay-btn-primary[aria-disabled="true"],
+.clay-btn-soft[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clay-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: 3px 4px 10px rgba(190, 149, 35, .21);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.clay-input {
+  width: 100%;
+  min-height: var(--control-primary);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-input);
+  box-shadow: var(--clay-shadow-input);
+  font: inherit;
+}
+
+.clay-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.clay-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--clay-shadow-input-focus);
+}
+
+.clay-bubble-user,
+.clay-bubble-ai {
+  max-width: min(80%, 72ch);
+  overflow-wrap: anywhere;
+  border-radius: 24px 24px 24px 8px;
+  padding: var(--space-4) 20px;
+  color: var(--text-strong);
+}
+
+.clay-bubble-user {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-bubble-ai {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-nav {
+  position: relative;
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-nav :where(a, button) {
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+}
+
+.clay-nav :where(.active, [aria-current="page"]) {
+  color: var(--cta-text);
+  background: var(--cta-coral);
+}
+
+.clay-card-placeholder {
+  position: relative;
+  min-height: 144px;
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: var(--clay-shadow-lemon);
+}
+
+.clay-card-placeholder[data-state="closed"] {
+  background: var(--clay-lavender);
+  box-shadow: var(--clay-shadow-lavender);
+}
+
+.clay-card-placeholder[data-state="forbidden"] {
+  outline: 3px solid var(--status-archived);
+  outline-offset: -3px;
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-card-placeholder[data-state="error"] {
+  outline: 3px solid var(--status-danger);
+  outline-offset: -3px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-card :where(pre, code),
+.clay-bubble-ai :where(pre, code),
+.clay-bubble-user :where(pre, code) {
+  color: var(--text-on-dark);
+  background: var(--surface-code);
+}
+
+.clay-card pre,
+.clay-bubble-ai pre,
+.clay-bubble-user pre {
+  overflow: auto;
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+}
+
+:where(.clay-btn-primary, .clay-btn-soft, .clay-nav a, .clay-nav button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Admin fallback: lower visual depth without changing component geometry. */
+.clay-light {
+  --radius-card: 24px;
+}
+
+.clay-card.clay-light,
+.clay-light .clay-card {
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-light :where(table, .table, .chart, [data-chart], [data-table]) {
+  border-radius: var(--radius-input);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-btn-primary,
+  .clay-btn-soft {
+    transition-duration: .01ms;
+  }
+
+  .clay-btn-primary:hover,
+  .clay-btn-primary:active,
+  .clay-btn-soft:hover,
+  .clay-btn-soft:active {
+    transform: none;
+  }
+}
+
+</style>
+<!--
+  task59 HTML 原型（审核稿）
+  - P16 风格 candy-playful frozen（复用 task56/57/58 同源样式 token）
+  - 契约为权威：.opencode/handoffs/task13-contract.md（contract④ question 域）
+    本页：/admin/questions/{id} 题目编辑（含解析编辑）
+      读   GET  /questions/{id}          → QuestionResponseAdmin（含 stem/options_json/answer_text/analysis_text）
+      改   PATCH /questions/{id}          → QuestionAdminUpdate { question_type_id?, stem?, options_json?, answer_text?, analysis_text? }
+      题型 GET  /types                    → QuestionTypeResponse（type_code/type_name/objective_flag/auto_marking_flag/sort_no）
+  - 关键对齐说明：
+    · objective_flag：QUESTION 表 / PATCH schema **均无该字段** → 它派生自 dim_question_type.objective_flag（只读展示），
+      不随 PATCH 提交（设计规范 P16 的"客观题开关"在契约④下收敛为【只读徽章】，随题型联动）——已实披露
+    · 题型枚举以契约④为准 5 种：single_choice 单选 / multi_choice 多选 / true_false 判断 / fill_blank 填空 / short_answer 简答
+    · 选项编辑器按题型联动：单选→RadioGroup 组 / 多选→Checkbox 组 / 判断→固定 T·F / 填空·简答→无预置选项（折叠提示）
+    · 已填数据不丢：按 label 归位已填 options_json（切题型时 A/B/C/D 已填内容跨控恢复）
+    · 题干/解析均支持 Markdown/LaTeX → 预览与 user 端 QuizPanel 一致（复用 MarkdownView，skipHtml 安全，无 rehypeRaw）
+    · 下一路由：/admin/questions/{id} tab → 返回 /admin/questions 列表
+  - v0.2.0 灰系清理：本页重写时废弃历史遗留 text-slate-500 等 slate 灰系，一律改用 candy token（var(--muted) 等）
+  - task15 reshape-a（2026-09-12）：本页由纯原型转真实接线页。GET /questions/{id}（题干/选项/答案/解析/题型全量真实渲染，
+      bank 名经 GET /banks/{id} 补全）+ PATCH /questions/{id} 真实保存（stem/answer/analysis 必填校验，解析必修保留）；
+      题型下拉改为题型维表 GET /types 真实 28 项（value=type_id，objective_flag 派生只读徽章随题型联动）；
+      加载态=骨架屏（默认展示）、错误态重试走真实 reload；演示控制器与假数据（OPT_DATA 示例/演示题干）删除（禁 MOCK）。
+  AUDIT LOG:
+    [2026-09-12 task15 reshape-a] 全量接线（curl 实测 2026-09-12：GET questions/{id} 200 / PATCH 200 / banks/{id} 200，
+      40400 题库不存在诚实降级为「题库 #id」）：删除演示控制器/demoType/demoFillMulti/demoEmptyAnalysis/假加载超时；
+      删除原型假题干/假选项/假解析；默认骨架 loading；保存接 PATCH 真实端点（42200 校验失败诚实 toast）。
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-08-24 v1 R1] 初稿提交（面包屑+只读题库/题号头+题型 Select 联动选项编辑器+题干 Markdown Textarea+
+      选项编辑器四态联动(单选Radio/多选Checkbox/判断T·F/填空简答折叠)+答案 Textarea+★解析 analysis_text 必修 Textarea+
+      MarkdownPreview 实时预览+objective 派生只读徽章(随题型联动)+保存/保存并继续/返回列表+预览 Tab 与 QuizPanel 一致的
+      题干+解析渲染+演示控制器(题型切换/已填数据不丢/解析空保存拦截/后端兜底422)+观测点契约对齐）→ SUBMITTED
+-->
+<style>
+  :root{ --htc-0-0-0-0.2: rgba(0,0,0,0.2); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-232a3d: #232a3d; --ht-7c4bd6: #7c4bd6; --ht-eef0f5: #eef0f5; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-0-0-0-002: rgba(0, 0, 0, 0.002); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  .toast-stub{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ht-fff);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px var(--htc-0-0-0-002)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 100px}
+  /* header / breadcrumb */
+  .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted);margin-bottom:12px}
+  .crumb a{color:var(--primary);text-decoration:none}
+  .crumb a:hover{text-decoration:underline}
+  .crumb .sep{opacity:.6}
+  .crumb .code{font-family:ui-monospace,Consolas,monospace;font-weight:600;color:var(--ink)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:2px}
+  .ro-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .ro-pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12px;color:var(--muted)}
+  .ro-pill b{color:var(--ink);font-weight:600}
+  /* buttons */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  /* tabs（编辑 / 预览） */
+  .tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+  .tab{cursor:pointer;border:none;background:transparent;border-radius:9px;padding:8px 20px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted)}
+  .tab.on{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .tab .tip{font-weight:500;font-size:11px;opacity:.8}
+  /* 两张卡：编辑表单 / 预览 */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+  .card + .card{margin-top:14px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .card-h h2{margin:0;font-size:0.9375rem}
+  .card-h .hint{font-size:11px;color:var(--muted)}
+  /* form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+  .fld label .req{color:var(--candy-red);font-weight:700}
+  .fld .ro{display:flex;align-items:center;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:var(--muted-bg);color:var(--ink);font-size:0.8125rem;user-select:none}
+  .fld .ro b{font-weight:600;color:var(--primary)}
+  .fld input,.fld select,.fld textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;font-size:0.8125rem;color:var(--ink);background:var(--ht-fff);width:100%}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .fld textarea{resize:vertical;min-height:80px;line-height:1.6}
+  .fld textarea.lg{min-height:120px}
+  .fld textarea.sm{min-height:64px}
+  .fld .err{font-size:11px;color:var(--candy-red);min-height:14px}
+  .fld-tag{font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.01em}
+  .fld.err input,.fld.err select,.fld.err textarea{border-color:var(--candy-red);outline:2px solid var(--red-bg)}
+  .field-note{font-size:11px;color:var(--muted)}
+  .field-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  /* 选项编辑器（按题型联动） */
+  .opt-editor{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--ht-fafbff)}
+  .opt-editor .oe-h{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);background:var(--ht-fafbff)}
+  .opt-editor .oe-h b{color:var(--ink);font-size:0.8125rem}
+  .opt-editor .oe-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+  .opt-row{display:flex;align-items:flex-start;gap:10px}
+  .opt-ctrl{flex:0 0 auto;display:grid;place-items:center;padding-top:9px}
+  .opt-ctrl input.radio{width:16px;height:16px;accent-color:var(--primary)}
+  .opt-ctrl input.check{width:16px;height:16px;accent-color:var(--primary)}
+  .opt-body{flex:1;display:flex;flex-direction:column;gap:4px}
+  .opt-body input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:0.8125rem}
+  .opt-label{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);font-weight:600}
+  .opt-row .opt-del{cursor:pointer;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:26px;height:26px;color:var(--candy-red);font-size:14px;line-height:1}
+  .opt-row .opt-del:hover{background:var(--red-bg);border-color:var(--candy-red)}
+  .opt-add{align-self:flex-start;cursor:pointer;border:1px dashed var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
+  .opt-add:hover{border-color:var(--primary);color:var(--primary)}
+  .oe-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
+  .oe-empty .big{font-size:22px;margin-bottom:4px}
+  .oe-empty code{background:var(--muted-bg);border-radius:6px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace}
+  /* 判断题固定 T/F */
+  .tf-row{display:flex;gap:10px;flex-wrap:wrap}
+  .tf-opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--ht-fff);cursor:pointer;font-size:0.8125rem;color:var(--ink)}
+  .tf-opt input{accent-color:var(--primary);width:16px;height:16px}
+  .tf-opt.on{border-color:var(--primary);background:var(--primary-soft)}
+  /* objective 派生徽章（只读，来自题型） */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-obj{background:var(--ok-bg);color:var(--ok-ink)} .badge-obj .pd{background:var(--ok-ink)}
+  .badge-subj{background:var(--ht-f3edfe);color:var(--ht-7c4bd6)} .badge-subj .pd{background:var(--ht-7c4bd6)}
+  /* Markdown 预览块 */
+  .md-pre{background:var(--ht-fafbff);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .md-pre .md-title{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:.02em}
+  .md-pre .md-body{font-size:14px;line-height:1.75;color:var(--ink)}
+  .md-pre .md-body h4{margin:10px 0 4px;font-size:14px}
+  .md-pre .md-body p{margin:6px 0}
+  .md-pre .md-body code{background:var(--muted-bg);border-radius:5px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .md-pre .md-body pre{background:var(--ht-232a3d);color:var(--ht-eef0f5);border-radius:10px;padding:10px 12px;overflow:auto;font-size:12px}
+  .md-pre .md-body blockquote{border-left:4px solid var(--line);padding-left:10px;color:var(--muted);margin:6px 0}
+  .md-pre .md-body ul{margin:6px 0;padding-left:20px;list-style:disc}
+  .md-pre .md-body .math-stub{display:inline-block;background:var(--primary-soft);color:var(--primary);border-radius:6px;padding:0 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  /* 用户端 QuizPanel 一致：选项渲染 */
+  .qp-options{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .qp-opt{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--ht-fff)}
+  .qp-opt.checked{border-color:var(--primary);background:var(--primary-soft)}
+  .qp-opt .qp-key{font-family:ui-monospace,Consolas,monospace;font-size:12px;font-weight:700;color:var(--primary);flex:0 0 auto}
+  .qp-opt .qp-body{font-size:0.8125rem;color:var(--ink)}
+  /* action bar */
+  .actionbar{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 20px;margin-top:14px}
+  .actionbar .spacer{flex:1}
+  /* 观测点 */
+  .observe{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;padding:14px 16px;margin-top:16px;font-size:12px;color:var(--muted)}
+  .observe b{color:var(--ink);display:block;margin-bottom:6px;font-size:0.8125rem}
+  .observe .ob{display:flex;gap:8px;padding:3px 0}
+  .observe .ob::before{content:"·";color:var(--primary);font-weight:700}
+  .observe code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace;font-size:11px}
+  .hidden{display:none!important}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="qd-skel">
+  .skld{display:inline-block;height:14px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--card) 50%,var(--line) 75%);background-size:400% 100%;animation:qdsh 1.2s infinite}
+  .w30{width:30%}.w60{width:60%}.w100{width:100%;display:block;margin:6px 0}
+  @keyframes qdsh{0%{background-position:100% 0}100%{background-position:0 0}}
+  .skq{display:block}
+  .skq[hidden]{display:none}
+  .sk-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-top:16px}
+  .sk-card-h{margin-bottom:16px}
+  .sk-row{display:flex;align-items:center;margin:14px 0}
+  .sk-note{color:var(--muted);font-size:0.8125rem;margin:18px 0 0}
+  .sk-err{text-align:center;padding:28px 16px}
+  .sk-err b{color:var(--ink);font-size:1.05rem;display:block;margin-bottom:8px}
+  .sk-err p{color:var(--muted);font-size:0.875rem;margin:0 0 16px}
+  .sk-err .btn{margin-top:4px}
+</style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 ⚠ 为行为层冻结面保留。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-blue:var(--clay-mint); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --subj-bg:#EAE4FF; --subj-ink:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 面包屑/页头 --- */
+.admin-html-page .crumb a{color:var(--text-strong)!important;text-decoration:underline;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+.admin-html-page .crumb .sep{opacity:1}
+.admin-html-page .crumb .code{color:var(--text-strong)}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .ro-pill{color:var(--text-muted)!important}
+.admin-html-page .ro-pill b{color:var(--text-strong)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page #tabhead button{min-height:44px;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page #f-type,.admin-html-page .form-grid select,.admin-html-page .form-grid input,.admin-html-page .form-grid textarea{min-height:44px;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.admin-html-page .form-grid .fld{min-width:0}
+.admin-html-page .fld .ro{min-width:0;flex-wrap:wrap}
+.admin-html-page .fld .ro b{color:var(--text-strong)!important;overflow-wrap:anywhere}
+@media(max-width:767px){.admin-html-page .form-grid{grid-template-columns:minmax(0,1fr)}}
+.admin-html-page .form-grid label,.admin-html-page .field-note,.admin-html-page .fld-tag{color:var(--text-muted)!important}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{min-height:44px;border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .modal .mff textarea{min-height:64px}
+.admin-html-page .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+
+/* --- 选项编辑器：radio/check 自绘 44px + 行控件 44 化 --- */
+.admin-html-page .opt-ctrl{padding-top:0}
+.admin-html-page .opt-ctrl input.radio,.admin-html-page .opt-ctrl input.check{
+  appearance:none;-webkit-appearance:none;width:44px;height:44px;margin:0;border-radius:50%;
+  border:2px solid var(--text-muted);background:var(--bg-raised);cursor:pointer}
+.admin-html-page .opt-ctrl input.radio:checked,.admin-html-page .opt-ctrl input.check:checked{
+  border-color:var(--cta-coral);background:radial-gradient(circle,var(--cta-coral) 0 10px,var(--bg-raised) 11px)}
+.admin-html-page .opt-ctrl input.radio:focus-visible,.admin-html-page .opt-ctrl input.check:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.admin-html-page .opt-body input{min-height:44px;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .opt-label{color:var(--text-strong)!important}
+.admin-html-page .opt-row .opt-del{width:44px;height:44px;min-width:44px;min-height:44px;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .opt-row .opt-del:hover{background:#FAF0F4!important;border-color:var(--status-danger)!important}
+.admin-html-page .opt-add{min-height:44px;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .opt-add:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .opt-editor{border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:#FAFBFF}
+.admin-html-page .opt-editor .oe-h{color:var(--text-muted)!important;border-color:var(--bg-input)}
+.admin-html-page .opt-editor .oe-h b{color:var(--text-strong)}
+
+/* --- 徽章/卡/提示/预览 --- */
+.admin-html-page .badge-obj{color:var(--text-strong)!important}
+.admin-html-page .badge-subj{color:var(--text-strong)!important}
+.admin-html-page .actionbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+.admin-html-page .ob{background:#F9F3D7!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+.admin-html-page [class*="markdown"]{background:var(--bg-raised)}
+.admin-html-page .toast-stub{background:var(--surface-code)!important;color:var(--text-on-dark)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .sk-card{border-radius:var(--radius-card)!important;background:var(--bg-raised)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .sk-err b{color:var(--text-strong)}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
+</head>
+<body class="admin-html-page"><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="ic-house" viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 256 256"><path d="M240,56V200a8,8,0,0,1-8,8H160a24,24,0,0,0-24,23.94,7.9,7.9,0,0,1-5.12,7.55A8,8,0,0,1,120,232a24,24,0,0,0-24-24H24a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H88a32,32,0,0,1,32,32v87.73a8.17,8.17,0,0,0,7.47,8.25,8,8,0,0,0,8.53-8V80a32,32,0,0,1,32-32h64A8,8,0,0,1,240,56Z"/></symbol>
+  <symbol id="ic-graduation-cap" viewBox="0 0 256 256"><path d="M176,207.24a119,119,0,0,0,16-7.73V240a8,8,0,0,1-16,0Zm11.76-88.43-56-29.87a8,8,0,0,0-7.52,14.12L171,128l17-9.06Zm64-29.87-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V130.67L171,128l-43,22.93L43.83,106l0,0L25,96,128,41.07,231,96l-18.78,10-.06,0L188,118.94a8,8,0,0,1,4,6.93v73.64a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12Z"/></symbol>
+  <symbol id="ic-chat-circle" viewBox="0 0 256 256"><path d="M232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Z"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 256 256"><path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 256 256"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></symbol>
+  <symbol id="ic-sign-in" viewBox="0 0 256 256"><path d="M141.66,133.66l-40,40A8,8,0,0,1,88,168V136H24a8,8,0,0,1,0-16H88V88a8,8,0,0,1,13.66-5.66l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></symbol>
+  <symbol id="ic-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40A8,8,0,0,0,176,88v32H112a8,8,0,0,0,0,16h64v32a8,8,0,0,0,13.66,5.66l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="ic-paper-plane-tilt" viewBox="0 0 256 256"><path d="M231.4,44.34s0,.1,0,.15l-58.2,191.94a15.88,15.88,0,0,1-14,11.51q-.69.06-1.38.06a15.86,15.86,0,0,1-14.42-9.15L107,164.15a4,4,0,0,1,.77-4.58l57.92-57.92a8,8,0,0,0-11.31-11.31L96.43,148.26a4,4,0,0,1-4.58.77L17.08,112.64a16,16,0,0,1,2.49-29.8l191.94-58.2.15,0A16,16,0,0,1,231.4,44.34Z"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,128H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM181.66,170.34a8,8,0,0,1-11.32,11.32L128,139.31,85.66,181.66a8,8,0,0,1-11.32-11.32L116.69,128,74.34,85.66A8,8,0,0,1,85.66,74.34L128,116.69l42.34-42.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+  <symbol id="ic-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-4,48a12,12,0,1,1-12,12A12,12,0,0,1,124,72Zm12,112a16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-magnifying-glass" viewBox="0 0 256 256"><path d="M168,112a56,56,0,1,1-56-56A56,56,0,0,1,168,112Zm61.66,117.66a8,8,0,0,1-11.32,0l-50.06-50.07a88,88,0,1,1,11.32-11.31l50.06,50.06A8,8,0,0,1,229.66,229.66ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 256 256"><path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
+  <symbol id="ic-bookmark-simple" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 256 256"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></symbol>
+  <symbol id="ic-certificate" viewBox="0 0 256 256"><path d="M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H120v64a8,8,0,0,1-13.66,5.66l-72-72a8,8,0,0,1,0-11.32l72-72A8,8,0,0,1,120,56v64h96A8,8,0,0,1,224,128Z"/></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72A8,8,0,0,1,136,200V136H40a8,8,0,0,1,0-16h96V56a8,8,0,0,1,13.66-5.66l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+  <symbol id="ic-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"/></symbol>
+  <symbol id="ic-pencil-simple" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z"/></symbol>
+  <symbol id="ic-upload-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM88,80h32v64a8,8,0,0,0,16,0V80h32a8,8,0,0,0,5.66-13.66l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,88,80Z"/></symbol>
+</svg>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">Bili-Study 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item active" href="admin-questions.html" aria-current="page"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console<span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="wrap">
+  <!-- 面包屑 -->
+  <nav class="crumb">
+    <a href="admin-dashboard.html">管理端</a><span class="sep">/</span>
+    <a href="admin-questions.html">题库</a><span class="sep">/</span>
+    <a href="admin-questions.html"><span id="cr-bank">Python 基础编程题库</span></a><span class="sep">/</span>
+    <a href="admin-questions.html"><span id="cr-type">单选题</span></a><span class="sep">/</span>
+    <span class="code" id="cr-code">Q1001</span>
+  </nav>
+
+  <!-- 页头 -->
+  <div class="page-head">
+    <div>
+      <h1>题目编辑</h1>
+      <div class="sub">编辑题干 · 选项 · 答案与解析（解析为必修）</div>
+    </div>
+    <div class="btn btn-ghost" onclick="doBack()"><svg class="ic"><use href="#ic-arrow-left"/></svg> 返回列表</div>
+  </div>
+
+  <!-- 只读头信息 + objective 派生徽章 -->
+  <div class="ro-badges">
+    <span class="ro-pill">所属题库 <b id="ro-bank-id">加载中…</b></span>
+    <span class="ro-pill">题号 <b id="ro-code">—</b></span>
+    <span class="ro-pill">题目 ID <b id="ro-qid">—</b></span>
+    <span class="ro-pill">题型 <b id="ro-obj-label">加载中…</b>
+      <span id="ro-obj-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span>
+    </span>
+  </div>
+
+  <!-- 加载态：骨架屏（按题型区骨架，非 MOCK 数据） -->
+  <section id="view-loading" class="skq">
+    <div class="sk-card">
+      <div class="sk-card-h"><span class="skld w60"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <div class="sk-row"><span class="skld w60"></span><span class="skld w30" style="margin-left:12px"></span></div>
+      <div class="sk-row"><span class="skld w100"></span></div>
+      <p class="sk-note">加载中…（骨架占位）</p>
+    </div>
+  </section>
+
+  <!-- 错误态：加载失败 + 重试 -->
+  <section id="view-error" class="skq" hidden>
+    <div class="sk-card">
+      <div class="sk-err"><b>题目加载失败</b><p id="qd-err-msg">无法读取题目数据，请检查网络或稍后再试。</p><button class="btn btn-ghost" onclick="window.reloadQuestion&&window.reloadQuestion()">重试</button></div>
+    </div>
+  </section>
+
+  <!-- 编辑 / 预览 Tabs -->
+  <div style="margin-top:16px" class="tabs" id="tabhead">
+    <button class="tab on" id="tab-edit" onclick="switchPane('edit')">编辑</button>
+    <button class="tab" id="tab-preview" onclick="switchPane('preview')">预览 · 与用户端 QuizPanel 一致<span class="tip" style="margin-left:6px">题干+解析</span></button>
+  </div>
+
+  <!-- ① 编辑表单卡 -->
+  <div id="pane-edit" class="qd-pane">
+    <div class="card">
+      <div class="card-h">
+        <h2>题目内容</h2>
+        <span class="hint">字段对齐 contract④：<code>/questions/{id}</code></span>
+      </div>
+      <div class="form-grid">
+        <!-- 所属题库 / 题号 只读 -->
+        <div class="fld">
+          <label>所属题库 <span class="req">*</span></label>
+          <div class="ro"><b id="ro-bank-full">加载中…</b></div>
+        </div>
+        <div class="fld">
+          <label>题号（question_code）<span class="req">*</span></label>
+          <div class="ro"><b id="ro-code-full">—</b>（bank_id 内唯一，只读）</div>
+        </div>
+
+        <!-- 题型 Select（联动选项控件；切换已填数据不丢） -->
+        <div class="fld">
+          <label>题型 <span class="req">*</span></label>
+          <select id="f-type" onchange="onTypeChange()">
+            <option value="">加载题型维表…</option>
+          </select>
+          <span class="field-note">题型枚举来自题型维表；客观题标识由题型派生只读</span>
+        </div>
+        <div class="fld">
+          <label>客观性 <span class="fld-tag">派生 · 只读</span></label>
+          <div><span id="obj-input-badge" class="badge badge-obj"><i class="pd"></i>客观 · 自动判题</span></div>
+          <span class="field-note">客观题标识由题型自动派生，暂不支持手动编辑</span>
+        </div>
+
+        <!-- 题干 Textarea（Markdown 支持） -->
+        <div class="fld full">
+          <label>题干 <span class="req">*</span><span class="fld-tag">支持 Markdown / LaTeX</span></label>
+          <textarea id="f-stem" class="lg"></textarea>
+          <span class="err" id="err-stem"></span>
+        </div>
+
+        <!-- 选项编辑器（按题型联动） -->
+        <div class="fld full">
+          <label>选项</label>
+          <!-- 单选：RadioGroup -->
+          <div id="opt-single">
+            <div class="opt-editor">
+              <div class="oe-h"><b>单选题选项（RadioGroup · 唯一答案）</b><span>options_json 数组</span></div>
+              <div class="oe-body" id="single-body"></div>
+              <button class="opt-add" onclick="addOpt('single')">+ 添加选项</button>
+            </div>
+          </div>
+          <!-- 多选：Checkbox 组 -->
+          <div id="opt-multi" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>多选题选项（Checkbox 组 · 可多选）</b><span>options_json 数组</span></div>
+              <div class="oe-body" id="multi-body"></div>
+              <button class="opt-add" onclick="addOpt('multi')">+ 添加选项</button>
+            </div>
+          </div>
+          <!-- 判断：固定 T/F -->
+          <div id="opt-tf" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>判断题（固定 对/错 两项）</b><span>无需 options_json</span></div>
+              <div class="oe-body">
+                <div class="tf-row">
+                  <label class="tf-opt"><input type="radio" name="tfans"> <b>√</b> 正确（True）</label>
+                  <label class="tf-opt"><input type="radio" name="tfans"> <b>×</b> 错误（False）</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 填空 / 简答：无预置选项 -->
+          <div id="opt-none" class="hidden">
+            <div class="opt-editor">
+              <div class="oe-h"><b>无预置选项</b></div>
+              <div class="oe-empty"><div class="big">✏️</div>该题型不提供选项编辑器。<br>填空题请在题干中使用 <code>____</code> 占位，答案填写在下方「答案」；<br>简答题直接在「答案」填写参考答案要点。</div>
+            </div>
+          </div>
+          <span class="err" id="err-opt"></span>
+        </div>
+
+        <!-- 答案 -->
+        <div class="fld full">
+          <label>答案 <span class="req">*</span></label>
+          <textarea id="f-answer" class="sm"></textarea>
+          <span class="field-note" id="answer-hint">单选/多选/判断：答案填选项标号（如 B / AB）；填空：填答案文本；简答：填参考要点</span>
+          <span class="err" id="err-answer"></span>
+        </div>
+
+        <!-- ★ 解析（必修） + Markdown 实时预览 -->
+        <div class="fld full">
+          <label><span class="req">★</span>解析 analysis_text <span class="fld-tag">必修 · 保存前校验非空 · Markdown 预览</span></label>
+          <textarea id="f-analysis" class="lg"></textarea>
+          <div class="md-pre" style="margin-top:2px">
+            <div class="md-title">Markdown 实时预览（与用户端 QuizPanel 一致渲染）</div>
+            <div class="md-body" id="analysis-preview"></div>
+          </div>
+          <span class="err" id="err-analysis"></span>
+          <span class="field-note">★ 解析为必填：为空时前端拦截提示，保存时后端二次校验兜底</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作栏 -->
+    <div class="actionbar">
+      <button class="btn btn-ghost" onclick="doBack()">返回列表</button>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" onclick="doSave(true)">保存并继续⇢</button>
+      <button class="btn btn-primary" onclick="doSave(false)">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- ② 预览卡（编辑/预览 Tabs 之二，与用户端 QuizPanel 一致） -->
+  <div id="pane-preview" class="hidden qd-pane">
+    <div class="card">
+      <div class="card-h">
+        <h2>题目预览 · 用户端 QuizPanel</h2>
+        <span class="hint">题干（Markdown）+ 选项（按题型控件）+ 解析（Markdown）渲染一致</span>
+      </div>
+      <div class="md-pre">
+        <div class="md-title">题干</div>
+        <div class="md-body" id="prev-stem"></div>
+      </div>
+      <div class="qp-options" id="prev-options"></div>
+      <div class="md-pre" style="margin-top:14px">
+        <div class="md-title"><span class="badge badge-subj">解析 · 作答后折叠展示</span></div>
+        <div class="md-body" id="prev-analysis"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 观测点（页面行为说明） -->
+  <div class="observe">
+    <b>页面行为说明</b>
+    <div class="ob">保存后题目内容（题型 / 题干 / 选项 / 答案 / 解析）将持久化到题库</div>
+    <div class="ob">★ 解析必修：解析为空时前端红框拦截并提示「解析为必填」，保存时后端二次校验兜底</div>
+    <div class="ob">题型切换联动选项控件：单选→单选组 / 多选→多选框 / 判断→固定 对·错 / 填空·简答→折叠无选项；<b>已填选项内容跨切换保留（不丢）</b></div>
+    <div class="ob">预览 Tab 同时渲染题干+解析，与用户端练习页一致（支持 Markdown / LaTeX）</div>
+    <div class="ob">客观性：由题型自动派生（只读徽章随题型联动），不支持手动开关</div>
+    <div class="ob">题目不存在或校验失败时给出明确错误提示；题号只读不可修改</div>
+    <div class="ob">界面沿用统一的糖果色设计规范，不使用内联色与任意字号</div>
+  </div>
+</div>
+
+</div><!-- /.glayout -->
+
+<script>
+/* ===== pre-boot（task15 reshape-a）：默认骨架 loading；编辑/预览区在真实数据就绪前隐藏 =====
+ * 演示控制器/演示数据（TYPE_META 假枚举、OPT_DATA 示例、假题干/解析）已删除（禁 MOCK）。
+ * 真实数据由 edu-guard.requireAdmin 三段守卫通过后的 window.bootAdmin() 注入。 */
+(function(){
+  window.setQDState=function(st){ /* loading | success | error */
+    var loading=document.getElementById('view-loading'), err=document.getElementById('view-error');
+    var hd=document.getElementById('tabhead'), panes=document.querySelectorAll('.qd-pane');
+    if(loading) loading.hidden=(st!=='loading');
+    if(err) err.hidden=(st!=='error');
+    if(hd) hd.hidden=(st!=='success');
+    Array.prototype.forEach.call(panes,function(pn){ pn.hidden=(st!=='success'); });
+  };
+  setQDState('loading');
+})();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script>
+/* 离线展示 mock：接口回放 2026-10-07 从真实后端捕获的响应；页面渲染代码为原版。 */
+(function (global) {
+  var ROUTES = {"GET /api/auth/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"real_name\":\"展示用户\",\"mobile\":\"展示用户\",\"email\":\"viewer@example.invalid\",\"gender\":\"male\",\"avatar_url\":null,\"role\":\"admin\"}","GET /api/admin/users/dashboard/metrics":"{\"total_user_count\":100153,\"active_user_count_7d\":0,\"role_breakdown\":{\"admin\":5,\"manager\":3,\"teacher\":3,\"student\":100142},\"disabled_user_count\":3,\"new_register_count_7d\":22,\"avg_login_days_per_user_30d\":0,\"register_trend_7d\":[{\"date\":\"2026-10-01\",\"count\":0},{\"date\":\"2026-10-02\",\"count\":4},{\"date\":\"2026-10-03\",\"count\":0},{\"date\":\"2026-10-04\",\"count\":18},{\"date\":\"2026-10-05\",\"count\":0},{\"date\":\"2026-10-06\",\"count\":0},{\"date\":\"2026-10-07\",\"count\":0}]}","GET /api/admin/questions/types":"{\"items\":[{\"id\":1,\"type_code\":\"single_choice\",\"type_name\":\"单选题\",\"objective_flag\":1,\"auto_marking_flag\":1,\"sort_no\":10},{\"id\":2,\"type_code\":\"multiple_choice\",\"type_name\":\"多选题\",\"objective_flag\":1,\"auto_marking_flag\":1,\"sort_no\":20},{\"id\":3,\"type_code\":\"true_false\",\"type_name\":\"判断题\",\"objective_flag\":1,\"auto_marking_flag\":1,\"sort_no\":30},{\"id\":4,\"type_code\":\"fill_blank\",\"type_name\":\"填空题\",\"objective_flag\":1,\"auto_marking_flag\":0,\"sort_no\":40},{\"id\":5,\"type_code\":\"short_answer\",\"type_name\":\"简答题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":50},{\"id\":6,\"type_code\":\"essay\",\"type_name\":\"论述题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":60},{\"id\":7,\"type_code\":\"calculation\",\"type_name\":\"计算题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":70},{\"id\":8,\"type_code\":\"composition\",\"type_name\":\"作文题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":80},{\"id\":9,\"type_code\":\"reading_comprehension\",\"type_name\":\"阅读理解题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":90},{\"id\":10,\"type_code\":\"material_analysis\",\"type_name\":\"材料分析题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":100},{\"id\":11,\"type_code\":\"case_study\",\"type_name\":\"案例分析题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":110},{\"id\":12,\"type_code\":\"oral_test\",\"type_name\":\"口语题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":120},{\"id\":13,\"type_code\":\"coding\",\"type_name\":\"编程题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":130},{\"id\":14,\"type_code\":\"matching\",\"type_name\":\"连线题\",\"objective_flag\":1,\"auto_marking_flag\":1,\"sort_no\":140},{\"id\":15,\"type_code\":\"ordering\",\"type_name\":\"排序题\",\"objective_flag\":1,\"auto_marking_flag\":1,\"sort_no\":150},{\"id\":16,\"type_code\":\"cloze\",\"type_name\":\"完形填空题\",\"objective_flag\":1,\"auto_marking_flag\":0,\"sort_no\":160},{\"id\":17,\"type_code\":\"translation\",\"type_name\":\"翻译题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":170},{\"id\":18,\"type_code\":\"listening\",\"type_name\":\"听力题\",\"objective_flag\":1,\"auto_marking_flag\":0,\"sort_no\":180},{\"id\":19,\"type_code\":\"practical_operation\",\"type_name\":\"实操题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":190},{\"id\":20,\"type_code\":\"project\",\"type_name\":\"项目题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":200},{\"id\":21,\"type_code\":\"drawing\",\"type_name\":\"作图题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":210},{\"id\":22,\"type_code\":\"proof\",\"type_name\":\"证明题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":220},{\"id\":23,\"type_code\":\"experiment\",\"type_name\":\"实验题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":230},{\"id\":24,\"type_code\":\"scenario_analysis\",\"type_name\":\"情境分析题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":240},{\"id\":25,\"type_code\":\"audio_video_analysis\",\"type_name\":\"音视频分析题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":250},{\"id\":26,\"type_code\":\"formula_derivation\",\"type_name\":\"公式推导题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":260},{\"id\":27,\"type_code\":\"document_revision\",\"type_name\":\"文稿修改题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":270},{\"id\":28,\"type_code\":\"data_analysis\",\"type_name\":\"数据分析题\",\"objective_flag\":0,\"auto_marking_flag\":0,\"sort_no\":280}],\"total\":28}","GET /api/admin/questions/banks?page=1&page_size=20":"{\"items\":[{\"id\":474,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2\",\"bank_name\":\"Python六大数据类型 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":473,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205795_35a6c1827196798c0f98dec9a95eff0f\",\"bank_name\":\"零基础入门Python第一节：内置函数与基础语法 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T09:51:32\",\"updated_at\":\"2026-10-07T09:51:32\"},{\"id\":472,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205794_4b5a8e500713ada638a3ebce1ae36eb5\",\"bank_name\":\"RAG入门课程：核心原理与流程详解 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T09:36:02\",\"updated_at\":\"2026-10-07T09:36:02\"},{\"id\":471,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205793_2a5fcceea4bb22c122bdd427837fec2c\",\"bank_name\":\"智能体长期记忆的框架与Langmem库介绍 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T09:35:47\",\"updated_at\":\"2026-10-07T09:35:47\"},{\"id\":470,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205796_a6cb30d1f3f3599b74c07f43eabc31f6\",\"bank_name\":\"Python六大数据类型详解 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T09:32:37\",\"updated_at\":\"2026-10-07T09:32:37\"},{\"id\":469,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205792_04cf4cd910956fc5dede5a63edc5b656\",\"bank_name\":\"Agent的prefix cache命中率原理与优化 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T09:00:00\",\"updated_at\":\"2026-10-07T09:00:00\"},{\"id\":468,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"6666\",\"bank_name\":\"tt python 666\",\"yn\":1,\"created_at\":\"2026-09-24T09:38:56\",\"updated_at\":\"2026-09-24T09:38:56\"},{\"id\":438,\"institution_id\":6,\"category_id\":96,\"bank_code\":\"middle_high_school_informatics_bank\",\"bank_name\":\"信息学与编程启蒙题库\",\"yn\":1,\"created_at\":\"2024-06-11T01:04:03\",\"updated_at\":\"2026-09-14T00:10:29\"},{\"id\":437,\"institution_id\":6,\"category_id\":95,\"bank_code\":\"middle_high_school_chemistry_bank\",\"bank_name\":\"中学化学提升题库\",\"yn\":1,\"created_at\":\"2025-01-17T06:40:15\",\"updated_at\":\"2025-06-18T17:08:52\"},{\"id\":436,\"institution_id\":6,\"category_id\":94,\"bank_code\":\"middle_high_school_physics_bank\",\"bank_name\":\"中学物理提升题库\",\"yn\":1,\"created_at\":\"2023-03-22T08:21:51\",\"updated_at\":\"2023-12-11T14:10:44\"},{\"id\":435,\"institution_id\":6,\"category_id\":93,\"bank_code\":\"middle_high_school_english_bank\",\"bank_name\":\"中学英语提升题库\",\"yn\":1,\"created_at\":\"2026-01-23T07:56:11\",\"updated_at\":\"2026-03-04T01:53:59\"},{\"id\":434,\"institution_id\":6,\"category_id\":92,\"bank_code\":\"middle_high_school_math_bank\",\"bank_name\":\"中学数学提升题库\",\"yn\":1,\"created_at\":\"2023-10-05T00:58:12\",\"updated_at\":\"2026-04-16T10:01:26\"},{\"id\":433,\"institution_id\":6,\"category_id\":91,\"bank_code\":\"senior_transition_bank\",\"bank_name\":\"高中关键学科衔接题库\",\"yn\":1,\"created_at\":\"2024-12-19T18:03:28\",\"updated_at\":\"2026-04-22T08:54:07\"},{\"id\":432,\"institution_id\":6,\"category_id\":90,\"bank_code\":\"academic_planning_bank\",\"bank_name\":\"升学与学业规划题库\",\"yn\":1,\"created_at\":\"2022-08-25T21:43:16\",\"updated_at\":\"2023-04-06T19:08:14\"},{\"id\":431,\"institution_id\":6,\"category_id\":89,\"bank_code\":\"internship_preparation_bank\",\"bank_name\":\"实习与求职准备题库\",\"yn\":1,\"created_at\":\"2022-07-14T20:47:44\",\"updated_at\":\"2024-08-19T12:41:15\"},{\"id\":430,\"institution_id\":6,\"category_id\":88,\"bank_code\":\"campus_employability_bank\",\"bank_name\":\"就业竞争力题库\",\"yn\":1,\"created_at\":\"2022-07-27T06:41:23\",\"updated_at\":\"2023-03-18T09:13:29\"},{\"id\":429,\"institution_id\":6,\"category_id\":87,\"bank_code\":\"service_standard_bank\",\"bank_name\":\"服务规范题库\",\"yn\":1,\"created_at\":\"2025-11-30T16:15:16\",\"updated_at\":\"2026-01-30T22:41:29\"},{\"id\":428,\"institution_id\":6,\"category_id\":86,\"bank_code\":\"workplace_safety_bank\",\"bank_name\":\"安全生产题库\",\"yn\":1,\"created_at\":\"2025-01-12T15:52:45\",\"updated_at\":\"2026-03-20T05:47:55\"},{\"id\":427,\"institution_id\":6,\"category_id\":85,\"bank_code\":\"data_compliance_bank\",\"bank_name\":\"数据合规题库\",\"yn\":1,\"created_at\":\"2021-10-03T02:56:02\",\"updated_at\":\"2024-06-23T17:09:43\"},{\"id\":426,\"institution_id\":6,\"category_id\":84,\"bank_code\":\"customer_service_training_bank\",\"bank_name\":\"客服培训题库\",\"yn\":1,\"created_at\":\"2025-07-05T11:46:12\",\"updated_at\":\"2025-09-15T17:51:03\"}],\"total\":445,\"page\":1,\"page_size\":20}","GET /api/admin/questions/banks/474":"{\"id\":474,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2\",\"bank_name\":\"Python六大数据类型 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}","GET /api/admin/questions/banks/474/questions?page=1&page_size=20":"{\"items\":[{\"id\":10593,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q04\",\"question_type_id\":1,\"stem\":\"Python集合的特点不包括以下哪项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"元素不重复\"},{\"label\":\"B\",\"content\":\"元素无序\"},{\"label\":\"C\",\"content\":\"支持索引访问\"},{\"label\":\"D\",\"content\":\"自动去重重复元素\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中提到集合元素无序、不重复且会自动去重，由于元素无序，集合不支持索引访问，因此C选项符合题意。\\n\\n视频依据：2528.31–2557.31 秒。\\n原文：还有我们的一个集合\\n放进来创建\\n当然了我们的空机盒\\n只能使用我们的一个CAD的推荐\\n如果是一个这样子的一个是呢\\n推出的是什么\\n是一个空字点\\n我们稍微讲了一个关于它的一个字点\\n结合空间好吧\\n结合的一个特点\\n是没有顺床的\\n是不重复的\\n结合中的元素\\n是并没有顺床的\\n所以它并不是我们的所以\\n和切片\\n因为它的元素并没有一个先户的程序\\n同时它的元素的受唯一的\\n它会给它做一个自动的去床\\n如果集合中有一些重复的元素\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10592,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q03\",\"question_type_id\":1,\"stem\":\"以下哪种Python数据类型是可变的？\",\"options_json\":[{\"label\":\"A\",\"content\":\"字符串\"},{\"label\":\"B\",\"content\":\"元组\"},{\"label\":\"C\",\"content\":\"列表\"},{\"label\":\"D\",\"content\":\"整数\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中指出列表是可变数据类型，而字符串、元组、整数均为不可变数据类型，因此C选项正确。\\n\\n视频依据：1819.59–1847.59 秒。\\n原文：好\\n我们讲解三个内表\\nNist\\n内表是我们最平衡的一个顺利型\\n它是我们的方法来定义\\n手段的格开\\n它这是我们的一个数字不算\\n甚至可以包含一个内表的线套\\n它的一个元素来\\n也是可编的\\n内表的元素是可编的\\n所以它说明它是一个可编的\\n一个数据内型\\n好\\n我们这会给大家做个总结\\n关于这部分的一个可编不可编\\n我们再叫我胡看\\n关于内表中\\n每个字都对内表的一个位置\\n所以\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10591,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q02\",\"question_type_id\":1,\"stem\":\"Python字符串的索引起始值是多少？\",\"options_json\":[{\"label\":\"A\",\"content\":\"0\"},{\"label\":\"B\",\"content\":\"1\"},{\"label\":\"C\",\"content\":\"-1\"},{\"label\":\"D\",\"content\":\"任意整数\"}],\"answer_text\":\"A\",\"analysis_text\":\"视频中明确提到Python字符串的索引值从零开始，因此A选项正确。\\n\\n视频依据：1017.24–1042.24 秒。\\n原文：当然了变量的一个\\n大条鞋\\n是区别的\\n比如大鞋A\\n小鞋鞋是一样的\\n好吧\\n这是一个字不串的一个定义\\n我们再展下我们的字不串\\n还有哪些特性\\n比如字不串\\n它是有一个所引的\\n所引值是从零开始\\n然后复硬的是摸尾\\n比如我们定义的一个字不串\\n哈诺尔特\\n第一个哈诺\\n它的出所为止\\n就是代表是您\\n1,2,3,4\\n这是我们的一个字不串\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10590,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q01\",\"question_type_id\":1,\"stem\":\"Python中布尔类型的假值不包含以下哪个选项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"空字符串\"},{\"label\":\"B\",\"content\":\"数字0\"},{\"label\":\"C\",\"content\":\"非空字符串\"},{\"label\":\"D\",\"content\":\"None值\"}],\"answer_text\":\"C\",\"analysis_text\":\"根据视频内容，Python中布尔类型的假值包括空字符串、数字0、None等，非空字符串会被判定为真值，因此C选项符合题意。\\n\\n视频依据：871.67–893.67 秒。\\n原文：它里面有些代表\\n就比如是非领数\\n比如是1,2,3,4,5,6,7,8,9\\n都是真\\n非空自补串\\n或者是这个处\\n都是为这个针\\n为Force呢\\n是什么\\n比如我们的空的自补串\\n比如您\\n比如N1\\n比如我们的Force\\n都是为假\\n我们来打一下\\n打一这个处\\n打一这个哈加衣\\n然后打一它的一个类型\\n打一Force\\n打一Force加衣\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}],\"total\":4,\"page\":1,\"page_size\":20}","GET /api/admin/questions/questions/10593":"{\"id\":10593,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q04\",\"question_type_id\":1,\"stem\":\"Python集合的特点不包括以下哪项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"元素不重复\"},{\"label\":\"B\",\"content\":\"元素无序\"},{\"label\":\"C\",\"content\":\"支持索引访问\"},{\"label\":\"D\",\"content\":\"自动去重重复元素\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中提到集合元素无序、不重复且会自动去重，由于元素无序，集合不支持索引访问，因此C选项符合题意。\\n\\n视频依据：2528.31–2557.31 秒。\\n原文：还有我们的一个集合\\n放进来创建\\n当然了我们的空机盒\\n只能使用我们的一个CAD的推荐\\n如果是一个这样子的一个是呢\\n推出的是什么\\n是一个空字点\\n我们稍微讲了一个关于它的一个字点\\n结合空间好吧\\n结合的一个特点\\n是没有顺床的\\n是不重复的\\n结合中的元素\\n是并没有顺床的\\n所以它并不是我们的所以\\n和切片\\n因为它的元素并没有一个先户的程序\\n同时它的元素的受唯一的\\n它会给它做一个自动的去床\\n如果集合中有一些重复的元素\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}","GET /api/admin/questions/banks/*":"{\"id\":474,\"institution_id\":1,\"category_id\":1,\"bank_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2\",\"bank_name\":\"Python六大数据类型 · 视频习题\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}","GET /api/admin/questions/questions/*":"{\"id\":10593,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q04\",\"question_type_id\":1,\"stem\":\"Python集合的特点不包括以下哪项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"元素不重复\"},{\"label\":\"B\",\"content\":\"元素无序\"},{\"label\":\"C\",\"content\":\"支持索引访问\"},{\"label\":\"D\",\"content\":\"自动去重重复元素\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中提到集合元素无序、不重复且会自动去重，由于元素无序，集合不支持索引访问，因此C选项符合题意。\\n\\n视频依据：2528.31–2557.31 秒。\\n原文：还有我们的一个集合\\n放进来创建\\n当然了我们的空机盒\\n只能使用我们的一个CAD的推荐\\n如果是一个这样子的一个是呢\\n推出的是什么\\n是一个空字点\\n我们稍微讲了一个关于它的一个字点\\n结合空间好吧\\n结合的一个特点\\n是没有顺床的\\n是不重复的\\n结合中的元素\\n是并没有顺床的\\n所以它并不是我们的所以\\n和切片\\n因为它的元素并没有一个先户的程序\\n同时它的元素的受唯一的\\n它会给它做一个自动的去床\\n如果集合中有一些重复的元素\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}","GET /api/admin/questions/banks/*/questions*":"{\"items\":[{\"id\":10593,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q04\",\"question_type_id\":1,\"stem\":\"Python集合的特点不包括以下哪项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"元素不重复\"},{\"label\":\"B\",\"content\":\"元素无序\"},{\"label\":\"C\",\"content\":\"支持索引访问\"},{\"label\":\"D\",\"content\":\"自动去重重复元素\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中提到集合元素无序、不重复且会自动去重，由于元素无序，集合不支持索引访问，因此C选项符合题意。\\n\\n视频依据：2528.31–2557.31 秒。\\n原文：还有我们的一个集合\\n放进来创建\\n当然了我们的空机盒\\n只能使用我们的一个CAD的推荐\\n如果是一个这样子的一个是呢\\n推出的是什么\\n是一个空字点\\n我们稍微讲了一个关于它的一个字点\\n结合空间好吧\\n结合的一个特点\\n是没有顺床的\\n是不重复的\\n结合中的元素\\n是并没有顺床的\\n所以它并不是我们的所以\\n和切片\\n因为它的元素并没有一个先户的程序\\n同时它的元素的受唯一的\\n它会给它做一个自动的去床\\n如果集合中有一些重复的元素\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10592,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q03\",\"question_type_id\":1,\"stem\":\"以下哪种Python数据类型是可变的？\",\"options_json\":[{\"label\":\"A\",\"content\":\"字符串\"},{\"label\":\"B\",\"content\":\"元组\"},{\"label\":\"C\",\"content\":\"列表\"},{\"label\":\"D\",\"content\":\"整数\"}],\"answer_text\":\"C\",\"analysis_text\":\"视频中指出列表是可变数据类型，而字符串、元组、整数均为不可变数据类型，因此C选项正确。\\n\\n视频依据：1819.59–1847.59 秒。\\n原文：好\\n我们讲解三个内表\\nNist\\n内表是我们最平衡的一个顺利型\\n它是我们的方法来定义\\n手段的格开\\n它这是我们的一个数字不算\\n甚至可以包含一个内表的线套\\n它的一个元素来\\n也是可编的\\n内表的元素是可编的\\n所以它说明它是一个可编的\\n一个数据内型\\n好\\n我们这会给大家做个总结\\n关于这部分的一个可编不可编\\n我们再叫我胡看\\n关于内表中\\n每个字都对内表的一个位置\\n所以\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10591,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q02\",\"question_type_id\":1,\"stem\":\"Python字符串的索引起始值是多少？\",\"options_json\":[{\"label\":\"A\",\"content\":\"0\"},{\"label\":\"B\",\"content\":\"1\"},{\"label\":\"C\",\"content\":\"-1\"},{\"label\":\"D\",\"content\":\"任意整数\"}],\"answer_text\":\"A\",\"analysis_text\":\"视频中明确提到Python字符串的索引值从零开始，因此A选项正确。\\n\\n视频依据：1017.24–1042.24 秒。\\n原文：当然了变量的一个\\n大条鞋\\n是区别的\\n比如大鞋A\\n小鞋鞋是一样的\\n好吧\\n这是一个字不串的一个定义\\n我们再展下我们的字不串\\n还有哪些特性\\n比如字不串\\n它是有一个所引的\\n所引值是从零开始\\n然后复硬的是摸尾\\n比如我们定义的一个字不串\\n哈诺尔特\\n第一个哈诺\\n它的出所为止\\n就是代表是您\\n1,2,3,4\\n这是我们的一个字不串\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"},{\"id\":10590,\"bank_id\":474,\"question_code\":\"vk_205796_fa348e5348114dcd4bbaecaca8742ee2_q01\",\"question_type_id\":1,\"stem\":\"Python中布尔类型的假值不包含以下哪个选项？\",\"options_json\":[{\"label\":\"A\",\"content\":\"空字符串\"},{\"label\":\"B\",\"content\":\"数字0\"},{\"label\":\"C\",\"content\":\"非空字符串\"},{\"label\":\"D\",\"content\":\"None值\"}],\"answer_text\":\"C\",\"analysis_text\":\"根据视频内容，Python中布尔类型的假值包括空字符串、数字0、None等，非空字符串会被判定为真值，因此C选项符合题意。\\n\\n视频依据：871.67–893.67 秒。\\n原文：它里面有些代表\\n就比如是非领数\\n比如是1,2,3,4,5,6,7,8,9\\n都是真\\n非空自补串\\n或者是这个处\\n都是为这个针\\n为Force呢\\n是什么\\n比如我们的空的自补串\\n比如您\\n比如N1\\n比如我们的Force\\n都是为假\\n我们来打一下\\n打一这个处\\n打一这个哈加衣\\n然后打一它的一个类型\\n打一Force\\n打一Force加衣\",\"yn\":1,\"created_at\":\"2026-10-07T10:33:04\",\"updated_at\":\"2026-10-07T10:33:04\"}],\"total\":4,\"page\":1,\"page_size\":20}"};
+  var SSE = "event: start\ndata: {\"session_id\": null, \"query\": \"用两句话介绍一下 Python 的变量命名规则\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:rec_question_0368a23ca7a7908a:a2e0d29dbe4691a4:a06dc5d5ac0985a6:1:active\", \"score\": 1.0, \"content\": \"```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\", \"source_file\": \"Q-0368a23ca7a7908a.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_9e9e6d15d3af8575:387f30b281347aa0:4212c0eee3a57127:1:active\", \"score\": 0.927492, \"content\": \"```python\\na = 7\\nif a % 2 == 0:\\n    print(\\\"even\\\")\\nelse:\\n    print(\\\"odd\\\")\\n```\", \"source_file\": \"Q-9e9e6d15d3af8575.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_36d5d784dd03db37:cebd03a29f7dd5a7:67595d6294537edb:1:active\", \"score\": 0.915683, \"content\": \"```python\\nx = 5\\nif x > 3:\\n    x -= 2\\nelse:\\n    x += 2\\nprint(x)\\n```\", \"source_file\": \"Q-36d5d784dd03db37.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_e0ea4ffcb08046af:b89eeba397df5f9f:2187b79da4f8eb59:1:active\", \"score\": 0.875034, \"content\": \"```python\\nres = 1\\nfor i in range(1, 4):\\n    res *= i\\nprint(res)\\n```\", \"source_file\": \"Q-e0ea4ffcb08046af.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3c4cfa4e37330763:1\", \"score\": 0.860203, \"content\": \"工作区符号查询会先打开可见源码建立 LSP 工作区；文档修改后同步更新服务器内容。诊断等待实际返回，超时会明确报错，不把“未收到诊断”当作“没有错误”。Python 与 TypeScript 两种标准重命名编辑格式均支持，应用前仍校验全部文件 SHA。\", \"source_file\": \"up_100003_4baa92d1_README.md\", \"content_type\": \"doc_chunk\", \"series_code\": null, \"series_name\": null, \"series_codes\": [], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [], \"retrieved_count\": 149, \"final_count\": 5, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"只能\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"和\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线\"}\n\nevent: token\ndata: {\"delta\": \"组成\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"以\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"开头\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"同时\"}\n\nevent: token\ndata: {\"delta\": \"区分\"}\n\nevent: token\ndata: {\"delta\": \"大小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 和\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"Name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 是\"}\n\nevent: token\ndata: {\"delta\": \"两个\"}\n\nevent: token\ndata: {\"delta\": \"不同的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"）。\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"使用\"}\n\nevent: token\ndata: {\"delta\": \" Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"保留\"}\n\nevent: token\ndata: {\"delta\": \"关键字\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"if\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"for\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"class\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 等\"}\n\nevent: token\ndata: {\"delta\": \"），\"}\n\nevent: token\ndata: {\"delta\": \"并\"}\n\nevent: token\ndata: {\"delta\": \"建议\"}\n\nevent: token\ndata: {\"delta\": \"遵循\"}\n\nevent: token\ndata: {\"delta\": \" P\"}\n\nevent: token\ndata: {\"delta\": \"EP\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"8\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"规\"}\n\nevent: token\ndata: {\"delta\": \"范\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"加\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线的\"}\n\nevent: token\ndata: {\"delta\": \"“\"}\n\nevent: token\ndata: {\"delta\": \"蛇\"}\n\nevent: token\ndata: {\"delta\": \"形\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"法\"}\n\nevent: token\ndata: {\"delta\": \"”（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"student\"}\n\nevent: token\ndata: {\"delta\": \"_name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"来\"}\n\nevent: token\ndata: {\"delta\": \"提高\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"基于\"}\n\nevent: token\ndata: {\"delta\": \"通用\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"综合\"}\n\nevent: token\ndata: {\"delta\": \"上下\"}\n\nevent: token\ndata: {\"delta\": \"文\"}\n\nevent: token\ndata: {\"delta\": \"中的\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"片段\"}\n\nevent: token\ndata: {\"delta\": \"未\"}\n\nevent: token\ndata: {\"delta\": \"涉及\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"规则\"}\n\nevent: token\ndata: {\"delta\": \"说明\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"故\"}\n\nevent: token\ndata: {\"delta\": \"此\"}\n\nevent: token\ndata: {\"delta\": \"回答\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"模型\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"补充。）\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": null, \"message_id\": null, \"retrieved_count\": 149, \"final_count\": 5, \"latency_ms\": 14785, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n";
+  var DEMO_VER = "{\r\n  \"checked_at\": \"2026-10-05T17:04:09+0800\",\r\n  \"kind\": \"saved-real-runtime-acceptance\",\r\n  \"note\": \"保存的真实验收记录，不表示当前仍在执行。Jaeger 重启后可能不再保留内存 Trace。\",\r\n  \"cases\": [\r\n    {\r\n      \"name\": \"P1 本课背景与资料\",\r\n      \"query\": \"我当前学的是什么课程？这一节视频讲什么？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"679eeff149c5d47d836987be0989dce7\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"P1 同课追问\",\r\n      \"query\": \"你刚才提到的哈希表方法，如何保证不会把同一个元素使用两次？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"529bc6336146769bec6947d4f0594b91\",\r\n      \"citations\": 8,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"纯闲聊捷径\",\r\n      \"query\": \"你好\",\r\n      \"pass\": true,\r\n      \"intent\": \"chitchat\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"77a13d96694884ad302505a637a4b6f1\",\r\n      \"citations\": 0,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": null\r\n    },\r\n    {\r\n      \"name\": \"知识问答：九节点\",\r\n      \"query\": \"根据 Cache Learning Notes，TTL 为什么不能保证缓存和数据库的一致性？\",\r\n      \"pass\": true,\r\n      \"intent\": \"knowledge\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"e4a26e0f603e6f77e2b02fbf1a0b38df\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"真实计算器调用\",\r\n      \"query\": \"请使用 calculator 计算 17 * 23，给我结果。\",\r\n      \"pass\": true,\r\n      \"intent\": \"tool\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"2f2338d6106b8e46c00a42f60c35250e\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [\r\n        {\r\n          \"name\": \"add\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"sum\\\": 40, \\\"was_negative\\\": false}\"\r\n        },\r\n        {\r\n          \"name\": \"calculator\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"result\\\": 391.0, \\\"tool\\\": \\\"calculator\\\", \\\"op\\\": \\\"mul\\\"}\"\r\n        }\r\n      ],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"学习规划分支\",\r\n      \"query\": \"请根据我的学习情况给我制定一份学习计划。\",\r\n      \"pass\": true,\r\n      \"intent\": \"learning\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"5c5d8b2a5f487bdbf26f5259c1951038\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"新建 Cache 课程答疑\",\r\n      \"query\": \"我目前正在学什么课程？这节课讲了哪些 Cache 优化思路？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"260ad37dcd96658bccb83c642e30ec7a\",\r\n      \"citations\": 7,\r\n      \"video_ids\": [\r\n        205792\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    }\r\n  ]\r\n}";
+  var ROLE = "admin";
+  /* 通配路由（key 含 *）：编译为正则，最长模板优先 */
+  var WILD = [];
+  (function () {
+    var tmp = [];
+    for (var k in ROUTES) {
+      if (k.indexOf("*") < 0) continue;
+      var sp = k.indexOf(" ");
+      tmp.push({ m: k.slice(0, sp), re: new RegExp("^" + k.slice(sp + 1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[^/]*") + "$"), d: ROUTES[k] });
+      delete ROUTES[k];
+    }
+    WILD = tmp.sort(function (a, b) { return b.re.source.length - a.re.source.length; });
+  })();
+  var TOKEN_KEY = "edu:auth:token", REFRESH_KEY = "edu:auth:refresh";
+  var LOGIN_PAGE = "login-register.html";
+  var memoryToken = "offline-" + ROLE;
+  var memoryRefresh = "offline";
+  var errorHandlers = [];
+  function trimSlash(s){ return String(s||"").replace(/\/+$/,""); }
+  function apiError(status, message){ var e = new Error(message || ("HTTP " + status)); e.status = status; e.isApiError = true; return e; }
+  function sanitizeRedirect(r){ if (typeof r !== "string") return ""; var s = r.trim(); if (!s || s.charAt(0) !== "/") return ""; if (s.charAt(1) === "/") return ""; if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) return ""; return s; }
+  function getRedirectParam(){ try { var q = new URLSearchParams(location.search || ""); return sanitizeRedirect(q.get("redirect") || ""); } catch (e) { return ""; } }
+  function pageId(name){ try { var q = new URLSearchParams(location.search || ""); var v = typeof name === "string" ? q.get(name) : q.get("id"); return v === null || v === undefined ? "" : String(v).trim(); } catch (e) { return ""; } }
+  function currentPathWithQuery(){ try { return (location.pathname || "/") + (location.search || ""); } catch (e) { return "/"; } }
+  function onLoginPage(){ try { return /(^|\/)login-register\.html$/.test((location.pathname || "").split("/").pop() || ""); } catch (e) { return false; } }
+  function buildLoginUrl(redirectPath){ var t = sanitizeRedirect(redirectPath || ""); return t ? LOGIN_PAGE + "?redirect=" + encodeURIComponent(t) : LOGIN_PAGE; }
+  function gotoLogin(p){ try { window.location.href = buildLoginUrl(p); } catch (e) {} }
+  function onError(fn){ if (typeof fn !== "function") return function () {}; errorHandlers.push(fn); return function () { var i = errorHandlers.indexOf(fn); if (i >= 0) errorHandlers.splice(i, 1); }; }
+  function emitOnce(err){ if (!err || err.__eapiEmitted) return; err.__eapiEmitted = true; for (var i = 0; i < errorHandlers.length; i++) { try { errorHandlers[i](err); } catch (e) {} } try { console.error("[EAPI]", (err && err.message) || err); } catch (e) {} }
+
+  var store = {
+    getToken: function () { return memoryToken; },
+    setToken: function (t) { memoryToken = t || ""; },
+    getRefreshToken: function () { return memoryRefresh; },
+    setRefreshToken: function (t) { memoryRefresh = t || ""; },
+    clear: function () { memoryToken = ""; memoryRefresh = ""; },
+  };
+
+  function routeLookup(method, pathWithQuery) {
+    var key = method + " " + pathWithQuery;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    var noQ = pathWithQuery.split("?")[0];
+    key = method + " " + noQ;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    for (var wi = 0; wi < WILD.length; wi++) {
+      if (WILD[wi].m === method && WILD[wi].re.test(noQ)) return { status: 200, data: JSON.parse(WILD[wi].d) };
+    }
+    var best = null, bestLen = -1;
+    for (var k in ROUTES) {
+      if (k.indexOf(method + " ") !== 0) continue;
+      var kp = k.slice(method.length + 1).split("?")[0];
+      if (kp === noQ) return { status: 200, data: JSON.parse(ROUTES[k]) };
+      if (noQ.indexOf(kp + "/") === 0 && kp.length > bestLen) { best = k; bestLen = kp.length; }
+    }
+    if (best) return { status: 200, data: JSON.parse(ROUTES[best]) };
+    console.warn("[MOCK] 未匹配的接口（返回诚实空态）:", method, pathWithQuery);
+    if (method === "GET") {
+      var tail = noQ.split("/").pop();
+      var looksList = !tail || pathWithQuery.indexOf("?") >= 0 || /(s|sessions|logs|tasks|items)$/.test(noQ);
+      return { status: 200, data: looksList ? { total: 0, page: 1, page_size: 20, items: [] } : {} };
+    }
+    return { status: 200, data: { ok: true } };
+  }
+
+  var MUTATION_FIX = {
+    "POST /api/auth/login": function (body) {
+      return { access_token: "offline", refresh_token: "offline", user: JSON.parse(ROUTES["GET /api/users/me"] || ROUTES["GET /api/auth/me"] || "{}") };
+    },
+    "POST /api/auth/register": function () { return { user_id: 900001 }; },
+  };
+  function mutate(method, path, body) {
+    var fk = method + " " + path.split("?")[0];
+    if (MUTATION_FIX[fk]) return { status: 200, data: MUTATION_FIX[fk](body) };
+    if (path.indexOf("/api/trade/order") === 0 && method === "POST")
+      return { status: 200, data: { order_id: "MOCKORD1001", status: "pending_pay", pay_url: null, amount_due: (body && body.amount_due) || 0, series_id: body && body.series_id } };
+    if (path.indexOf("/api/trade/payment") === 0) return { status: 200, data: { status: "paid", paid: true, order_id: "MOCKORD1001" } };
+    if (path.indexOf("/api/progress/video") === 0) return { status: 200, data: { play_session_id: 900001 } };
+    if (path.indexOf("/api/community/posts") === 0 && method === "POST")
+      return { status: 200, data: { post_id: 9001, title: (body && body.title) || "演示帖子", content_md: (body && body.content_md) || "", created_at: new Date().toISOString() } };
+    if (path.indexOf("/api/users/me/profile") === 0) return { status: 200, data: Object.assign(JSON.parse(ROUTES["GET /api/users/me/profile"] || "{}"), body || {}) };
+    console.warn("[MOCK] 变更接口（离线演示返回成功）:", method, path);
+    return { status: 200, data: { ok: true, id: 900001 } };
+  }
+
+  function sseResponse() {
+    var enc = new TextEncoder();
+    var frames = SSE.split("\n\n").filter(function (f) { return f.trim(); });
+    var stream = new ReadableStream({
+      start: function (c) {
+        var i = 0;
+        function next() {
+          if (i >= frames.length) { c.close(); return; }
+          c.enqueue(enc.encode(frames[i++] + "\n\n"));
+          setTimeout(next, 40);
+        }
+        next();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  }
+
+  function request(method, path, body) {
+    if (!memoryToken && !onLoginPage()) { gotoLogin(currentPathWithQuery()); return Promise.reject(apiError(401, "登录凭证无效或已过期")); }
+    var p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
+    return new Promise(function (resolve) { setTimeout(resolve, 60); }).then(function () {
+      var out;
+      if (method !== "GET") out = mutate(method, p, body);
+      else out = routeLookup(method, p);
+      if (out.status === 404) throw apiError(404, "资源不存在（离线演示无此数据）");
+      return out.data;
+    }).catch(function (e) { emitOnce(e); throw e; });
+  }
+
+  var EAPI = {
+    BASE: (global.location && global.location.origin) || "",
+    TOKEN_KEY: TOKEN_KEY, TIMEOUT_MS: 15000,
+    get: function (p) { return request("GET", p); },
+    post: function (p, b) { return request("POST", p, b); },
+    put: function (p, b) { return request("PUT", p, b); },
+    patch: function (p, b) { return request("PATCH", p, b); },
+    del: function (p) { return request("DELETE", p); },
+    store: store, logout: function () { store.clear(); if (!onLoginPage()) gotoLogin(currentPathWithQuery()); },
+    onError: onError, getRedirectParam: getRedirectParam, buildLoginUrl: buildLoginUrl, pageId: pageId,
+  };
+  global.EAPI = EAPI;
+
+  var origFetch = global.fetch ? global.fetch.bind(global) : null;
+  global.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/chat/stream") >= 0) return Promise.resolve(sseResponse());
+    if (url.indexOf("demo/verification.json") >= 0)
+      return Promise.resolve(new Response(DEMO_VER, { status: 200, headers: { "Content-Type": "application/json" } }));
+    if (url.indexOf("/api/") >= 0 || url.indexOf("samples/") >= 0 || url.indexOf("/media/") >= 0) {
+      var method = ((init && init.method) || "GET").toUpperCase();
+      var body = null;
+      try { body = init && init.body ? JSON.parse(init.body) : null; } catch (e) {}
+      if (url.indexOf("samples/") >= 0) return origFetch(input, init).catch(function () { return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }); });
+      var out = method === "GET" ? routeLookup(method, url.split(/^[a-z]+:\/\/?[^/]*\/|^[a-z]+:\/\//.test(url) ? url.replace(/^[a-z]+:\/\/[^/]*\//, "/") : url).split("?").length ? urlAfterBase(url) : url) : mutate(method, urlAfterBase(url), body);
+      function urlAfterBase(u) { var i = u.indexOf("/api/"); return i >= 0 ? u.slice(i) : u; }
+      if (out.status === 404) return Promise.resolve(new Response(JSON.stringify({ code: "40400", message: "not found", data: null }), { status: 404, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(new Response(JSON.stringify({ code: 0, message: "ok", data: out.data }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    }
+    return origFetch ? origFetch(input, init) : Promise.reject(new Error("offline: fetch blocked"));
+  };
+})(window);
+</script>
+<script>
+/* Bili-Study 管理端角色守卫（task109 共用片段：8 个 admin 页内联 → 抽离单点）
+ * 用法（admin-*.html，先于各页 bootAdmin 定义引入，避免重定义全局 $ 覆盖原脚本）：
+ *   <script src="/edu-api.js"><\/script>
+ *   <script src="/edu-guard.js"><\/script>
+ *   <script>eduGuard.requireAdmin();<\/script>
+ * 守卫三段（纪律 lesson10 不可省）：
+ *   1) 本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——防 DEBUG 态虚拟 admin 绕过）
+ *   2) 有 token   → GET /api/auth/me 校验 role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ *   3) auth/me 失败(网络/停机)无法确认身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入收敛为 window.bootAdmin()，由守卫通过后调用。
+ * 兼容性：requireAdmin(onPass?) 缺省 onPass 时，通过后轮询 window.bootAdmin（向后兼容原 runBoot，
+ *          因为各页 bootAdmin 定义在其后独立 <script>，需等待其就绪）。
+ * [H3-temp 2026-09-12] manager 过守卫后灰显导航例外入口（GWT③ 签字口径）：admin-users/admin-mcp/
+ *          admin-dashboard 三页链接 pointer-events:none+opacity:.45+title「仅 ADMIN 可用」；
+ *          admin 不受影响；rag 页不灰显。一行级过渡措施，不改页面文件；B3-impl（admin-users
+ *          Refine 版权限对齐）落地后由横幅/诚实空态口径取代。
+ */
+(function (global) {
+  var ADMIN = { admin: 1, manager: 1 };
+
+  function banner(txt) {
+    try {
+      var d = document.createElement("div");
+      d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+      d.textContent = txt;
+      document.body.appendChild(d);
+    } catch (e) {}
+  }
+
+  // 缺省回调：轮询 window.bootAdmin 最多 30 次（3s），兜底页面 bootAdmin 定义滞后的竞态
+  var __rt = 0;
+  function runBoot() {
+    var fn = global.bootAdmin;
+    if (typeof fn === "function") { try { fn(); } catch (e) {} }
+    else if (__rt++ < 30) setTimeout(runBoot, 10);
+  }
+
+  function gotoLogin(redir) {
+    var target = "";
+    try { target = EAPI.buildLoginUrl(redir); } catch (e) { target = "login-register.html"; }
+    try { location.replace(target); } catch (e) {}
+  }
+
+  // [H3-temp] manager 导航例外灰显：users/mcp/dashboard 链接禁点+降透明+title（rag/admin 不受影响）
+  function grayManagerNav() {
+    var LOCK = { "admin-users.html": 1, "admin-mcp.html": 1, "admin-dashboard.html": 1 };
+    try {
+      var links = document.querySelectorAll("a[href]");
+      for (var i = 0; i < links.length; i++) {
+        var f = (links[i].getAttribute("href") || "").split("#")[0].split("?")[0].split("/").pop();
+        if (LOCK[f]) { links[i].style.pointerEvents = "none"; links[i].style.opacity = ".45"; links[i].title = "仅 ADMIN 可用"; }
+      }
+    } catch (e) {}
+  }
+
+  function requireAdmin(onPass) {
+    if (!global.EAPI) return; // edu-api.js 未加载则不守卫（页面正常都已先引 edu-api.js）
+    var redir = "";
+    try { redir = location.pathname + location.search; } catch (e) { redir = "/"; }
+    if (!EAPI.store.getToken()) { gotoLogin(redir); return; } // 第一道判定：无 token 直接跳登录
+    EAPI.get("/api/auth/me").then(function (me) {
+      if (me && ADMIN[me.role]) {
+        if (me.role === "manager") grayManagerNav(); // [H3-temp] 导航例外灰显（过渡措施，admin 不受影响）
+        if (typeof onPass === "function") { try { onPass(); } catch (e) {} }
+        else runBoot();
+      } else {
+        banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…");
+        setTimeout(function () { try { location.replace("dashboard.html"); } catch (e) {} }, 1200);
+      }
+    }).catch(function () {
+      banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+      setTimeout(function () { gotoLogin(redir); }, 1200);
+    });
+  }
+
+  global.eduGuard = { requireAdmin: requireAdmin };
+})(window);
+
+</script>
+<script>eduGuard.requireAdmin();</script>
+<script>
+/* ===== task15 真实全量接线（reshape-a，curl 实测 2026-09-12）=====
+ * 读   GET  /api/admin/questions/questions/{id} → QuestionResponseAdmin{id,bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text,yn,...}
+ *      GET  /api/admin/questions/types        → 题型维表 28 项（type_code/type_name/objective_flag/sort_no）
+ *      GET  /api/admin/questions/banks/{id}   → 题库名（40400 → 诚实显示「题库 #id」）
+ * 改   PATCH /api/admin/questions/questions/{id} body{question_type_id,stem,options_json,answer_text,analysis_text}（实测 200）
+ * 守卫三段由 edu-guard.requireAdmin 承担；id 取参走 EAPI.pageId("id")（禁正则 match）。
+ */
+window.bootAdmin=function(){
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()){
+    var t=document.querySelector(".page-head .sub");
+    if(t && t.textContent.indexOf("管理员账号")<0) t.textContent="⚠ 请用管理员账号登录后刷新本页";
+    return;
+  }
+  var esc=function(v){ var d=document.createElement("div"); d.textContent=(v==null?"":String(v)); return d.innerHTML; };
+  var state={ qid:"", types:{}, typeOrder:[], q:null, bankLabel:"", optData:{}, curType:null, tfBusy:false };
+  var OPT_LABELS=["A","B","C","D","E","F","G","H"];
+
+  window.reloadQuestion=loadQuestion; // 错误态重试入口
+
+  /* ---- 类型维表 ---- */
+  function loadTypes(){
+    return EAPI.get("/api/admin/questions/types").then(function(d){
+      var items=(d&&d.items)||[];
+      items.forEach(function(t){ state.types[t.id]=t; });
+      state.typeOrder=items.slice().sort(function(a,b){ return (a.sort_no||0)-(b.sort_no||0); });
+      var sel=document.getElementById("f-type");
+      if(sel){ sel.innerHTML=state.typeOrder.map(function(t){ return '<option value="'+t.id+'">'+esc(t.type_name)+'（'+esc(t.type_code)+'）</option>'; }).join(""); }
+    }).catch(function(){ /* 维表失败不阻塞：详情仍可读，题型显示 #id */ });
+  }
+  function typeMeta(tId){ return state.types[tId]||null; }
+
+  /* ---- 选项编辑器（按题型联动；已填内容按 label 跨切换保留） ---- */
+  function optLabels(){
+    var used={}; Object.keys(state.optData).forEach(function(l){ used[l]=1; });
+    var labels=[];
+    OPT_LABELS.forEach(function(l){ if(state.optData.hasOwnProperty(l)||labels.length<4) labels.push(l); });
+    Object.keys(state.optData).forEach(function(l){ if(labels.indexOf(l)<0) labels.push(l); }); // 超出 A-H 的历史选项保留
+    return labels;
+  }
+  function renderOpts(kind){
+    var el=document.getElementById(kind+"-body"); if(!el) return;
+    el.innerHTML=optLabels().map(function(l){
+      return '<div class="opt-row" data-l="'+l+'">'
+        +'<div class="opt-ctrl">'+(kind==="single"?'<input type="radio" class="radio" name="opt-radio">':'<input type="checkbox" class="check">')+'</div>'
+        +'<div class="opt-body"><div class="opt-label">'+l+'</div>'
+        +'<input class="opt-input" data-ol="'+l+'" placeholder="选项 '+l+' 内容…" value="'+esc(state.optData[l]||"")+'"></div>'
+        +'<button class="opt-del" data-optdel="'+kind+'" data-ol="'+l+'">×</button>'
+        +'</div>';
+    }).join("");
+    /* [REWORK P0-3] 选项删除按钮此前渲染后零绑定（window.delOpt 已定义但从未被调用）→ 点击无反应 */
+    var dels=el.querySelectorAll("[data-optdel]");
+    for(var i=0;i<dels.length;i++){
+      dels[i].onclick=function(){ window.delOpt(this); };
+    }
+  }
+  window.addOpt=function(kind){
+    var next=null;
+    for(var i=0;i<OPT_LABELS.length;i++){ if(!state.optData.hasOwnProperty(OPT_LABELS[i])){ next=OPT_LABELS[i]; break; } }
+    if(!next){ toastStub("已达 8 个选项上限（A-H）"); return; }
+    state.optData[next]="";
+    renderOpts(kind);
+  };
+  window.delOpt=function(btn){
+    var l=btn.getAttribute("data-ol"), kind=btn.getAttribute("data-optdel");
+    delete state.optData[l];
+    renderOpts(kind);
+  };
+  function collectOpts(){
+    document.querySelectorAll(".opt-input[data-ol]").forEach(function(inp){
+      var l=inp.getAttribute("data-ol"); state.optData[l]=inp.value;
+    });
+  }
+  /* ---- 题型联动 ---- */
+  function applyTypeUI(tId){
+    collectOpts();
+    state.curType=tId;
+    var m=typeMeta(tId);
+    var mName=m?m.type_name:("题型 #"+tId);
+    var obj=m?!!m.objective_flag:false;
+    // 面包屑 + 只读徽章
+    var cr=document.getElementById("cr-type"); if(cr) cr.textContent=mName;
+    var text=obj?"客观 · 自动判题":"主观 · 人工批改";
+    ["ro-obj-badge","obj-input-badge"].forEach(function(id){
+      var el=document.getElementById(id); if(el){ el.textContent=""; el.className="badge "+(obj?"badge-obj":"badge-subj"); el.innerHTML="<i class='pd'></i>"+text; }
+    });
+    var rl=document.getElementById("ro-obj-label"); if(rl) rl.textContent=mName+"（"+(obj?"客观":"主观")+"）";
+    // 选项控件显示
+    ["opt-single","opt-multi","opt-tf","opt-none"].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add("hidden"); });
+    if(tId===1) { document.getElementById("opt-single").classList.remove("hidden"); renderOpts("single"); }
+    else if(tId===2){ document.getElementById("opt-multi").classList.remove("hidden"); renderOpts("multi"); }
+    else if(tId===3) document.getElementById("opt-tf").classList.remove("hidden");
+    else document.getElementById("opt-none").classList.remove("hidden");
+    var hint=document.getElementById("answer-hint");
+    if(hint) hint.textContent=(tId===1)?"单选：答案填选项标号（如 A）":(tId===2)?"多选：答案填连续字母（如 AB）":(tId===3)?"判断：答案填 正确 / 错误":(tId===undefined)?"":"填空：填答案文本；简答/论述等：填参考答案要点";
+  }
+  window.onTypeChange=function(){ var v=+document.getElementById("f-type").value; if(v) applyTypeUI(v); };
+
+  /* ---- 判断题 T/F 同步答案输入框 ---- */
+  document.getElementById("opt-tf").addEventListener("change", function(e){
+    var r=e.target.closest("input[type=radio]"); if(!r) return;
+    var label=r.parentElement.textContent.indexOf("正确")>=0?"正确":"错误";
+    document.getElementById("f-answer").value=label;
+  });
+
+  /* ---- Markdown 预览（与用户端 QuizPanel 一致的轻量渲染；LaTeX 以公式占位呈现） ---- */
+  function md2html(src){
+    var s=String(src||"");
+    s=s.replace(/\$\$?([^$\n]+?)\$\$?/g,'<span class="math-stub"> Σ $1 </span>');
+    s=s.replace(/```(\w+)?\n([\s\S]*?)```/g, function(_,lang,c){ return "<pre>"+c.replace(/</g,"&lt;")+"</pre>"; });
+    s=s.replace(/`([^`\n]+)`/g,function(_,c){ return "<code>"+c+"</code>"; });
+    s=s.replace(/^&gt;\s?(.+)$/gm,"<blockquote>$1</blockquote>");
+    s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+    var lines=s.split("\n"), html="", inU=false;
+    lines.forEach(function(l){
+      var m=l.match(/^\s*[-*]\s+(.+)$/);
+      if(m){ if(!inU){ html+="<ul>"; inU=true;} html+="<li>"+m[1]+"</li>"; }
+      else { if(inU){ html+="</ul>"; inU=false;} html+="<p>"+l+"</p>"; }
+    });
+    if(inU) html+="</ul>";
+    return html.replace(/\n/g,"");
+  }
+  function renderPreviews(){
+    document.getElementById("analysis-preview").innerHTML=md2html(document.getElementById("f-analysis").value);
+    document.getElementById("prev-stem").innerHTML=md2html(document.getElementById("f-stem").value);
+    document.getElementById("prev-analysis").innerHTML=md2html(document.getElementById("f-analysis").value);
+  }
+  function renderPrevOptions(){
+    var t=state.curType, el=document.getElementById("prev-options"), html="";
+    if(t===3){
+      html='<div class="qp-opt"><span class="qp-key">√</span><div class="qp-body">正确</div></div>'
+          +'<div class="qp-opt"><span class="qp-key">×</span><div class="qp-body">错误</div></div>';
+    } else if(t===1||t===2){
+      var labels=optLabels().filter(function(l){ return (state.optData[l]||"").trim(); });
+      html=labels.map(function(l){ return '<div class="qp-opt"><span class="qp-key">'+l+'</span><div class="qp-body">'+esc(state.optData[l])+'</div></div>'; }).join("");
+    }
+    el.innerHTML=html;
+  }
+
+  /* ---- Tabs ---- */
+  window.switchPane=function(pi){
+    document.getElementById("pane-edit").classList.toggle("hidden",pi!=="edit");
+    document.getElementById("pane-preview").classList.toggle("hidden",pi!=="preview");
+    document.getElementById("tab-edit").classList.toggle("on",pi==="edit");
+    document.getElementById("tab-preview").classList.toggle("on",pi==="preview");
+    if(pi==="preview"){ collectOpts(); renderPreviews(); renderPrevOptions(); }
+  };
+  // 题干/解析输入 → 实时预览（节流）
+  ["f-analysis"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){ renderPreviews(); });
+  });
+
+  /* ---- 校验（解析必修保留） ---- */
+  function markErr(id,errId,bad,msg){
+    var f=document.getElementById(id), e=document.getElementById(errId);
+    var fld=f.closest(".fld");
+    if(fld) fld.classList.toggle("err",bad);
+    if(e) e.textContent=bad?msg:"";
+    return !bad;
+  }
+  function validateForm(){
+    var ok=true;
+    ok=markErr("f-stem","err-stem",!document.getElementById("f-stem").value.trim(),"题干为必填")&&ok;
+    ok=markErr("f-answer","err-answer",!document.getElementById("f-answer").value.trim(),"答案为必填")&&ok;
+    ok=markErr("f-analysis","err-analysis",!document.getElementById("f-analysis").value.trim(),"解析（analysis_text）为必填，请填写本题解析")&&ok;
+    return ok;
+  }
+  function gv(id){ return document.getElementById(id).value; }
+
+  /* ---- 保存（真实 PATCH） ---- */
+  window.doSave=function(andContinue){
+    if(!state.q){ return; }
+    collectOpts();
+    if(!validateForm()){ toastStub("保存被拦截：存在必填项未填写（含解析必修）"); return; }
+    var tId=state.curType;
+    var body={ question_type_id:tId, stem:gv("f-stem"), answer_text:gv("f-answer"), analysis_text:gv("f-analysis") };
+    if(tId===1||tId===2){
+      body.options_json=OPT_LABELS.filter(function(l){ return (state.optData[l]||"").trim(); }).map(function(l){ return {label:l,content:state.optData[l].trim()}; });
+      if(!body.options_json.length){ toastStub("请填写至少一项选项内容"); return; }
+    } else { body.options_json=null; }
+    EAPI.patch("/api/admin/questions/questions/"+state.qid, body).then(function(updated){
+      if(updated) state.q=updated;
+      renderPreviews();
+      toastStub((andContinue?"保存并继续":"保存")+"成功（PATCH 200 · "+((typeMeta(tId)||{}).type_name||("题型 #"+tId))+" · analysis_text "+body.analysis_text.length+" 字）");
+    }).catch(function(err){
+      toastStub("保存失败："+((err&&err.message)||"未知错误")+"（HTTP "+((err&&err.status)||"—")+"）");
+    });
+  };
+  window.doBack=function(){ window.location.href="admin-questions.html"; };
+
+  /* ---- 真实加载：GET questions/{id}（+ banks/{id} 题库名） ---- */
+  function loadQuestion(){
+    setQDState("loading");
+    var id=EAPI.pageId("id");
+    if(!id){
+      var em0=document.getElementById("qd-err-msg");
+      if(em0) em0.textContent="URL 缺少 ?id= 参数（入口应为 admin-questions.html 列表行点击）。";
+      setQDState("error");
+      return;
+    }
+    state.qid=id;
+    return EAPI.get("/api/admin/questions/questions/"+id).then(function(q){
+      if(!q){ throw new Error("空响应"); }
+      state.q=q;
+      state.optData={};
+      (q.options_json||[]).forEach(function(o){ if(o&&o.label) state.optData[o.label]=o.content==null?"":String(o.content); });
+      // 填充只读头 + 面包屑
+      document.getElementById("cr-code").textContent=q.question_code||"—";
+      document.getElementById("cr-bank").textContent=state.bankLabel||("题库 #"+q.bank_id);
+      document.getElementById("ro-bank-id").textContent=state.bankLabel||("题库 #"+q.bank_id);
+      document.getElementById("ro-code").textContent=q.question_code||"—";
+      document.getElementById("ro-qid").textContent="#"+q.id;
+      document.getElementById("ro-bank-full").textContent=(state.bankLabel||("题库 #"+q.bank_id))+"（bank_id="+q.bank_id+"）";
+      document.getElementById("ro-code-full").textContent=q.question_code||"—";
+      // 表单
+      var sel=document.getElementById("f-type");
+      if(sel&&state.types[q.question_type_id]) sel.value=String(q.question_type_id);
+      document.getElementById("f-stem").value=q.stem||"";
+      document.getElementById("f-answer").value=q.answer_text||"";
+      document.getElementById("f-analysis").value=q.analysis_text||"";
+      applyTypeUI(q.question_type_id);
+      if(q.question_type_id===3){ // 判断题答案回显到 T/F 单选
+        var want=(q.answer_text||"").indexOf("错")<0; // 默认正确
+        var boxes=document.querySelectorAll("#opt-tf input[type=radio]");
+        if(boxes.length>=2){ boxes[0].checked=want; boxes[1].checked=!want; }
+      }
+      renderPreviews(); renderPrevOptions();
+      setQDState("success");
+    }).catch(function(err){
+      var em=document.getElementById("qd-err-msg");
+      if(em) em.textContent="无法读取题目 "+state.qid+"："+((err&&err.message)||"未知错误")+"（HTTP "+((err&&err.status)||"—")+"）";
+      setQDState("error");
+    });
+  }
+  function loadBankLabel(bankId){
+    return EAPI.get("/api/admin/questions/banks/"+bankId).then(function(b){
+      state.bankLabel=(b&&b.bank_name)?b.bank_name:("题库 #"+bankId);
+    }).catch(function(){ state.bankLabel="题库 #"+bankId; }); // 40400 软删/不存在：诚实显示编号
+  }
+
+  /* ---- 入口 ---- */
+  loadTypes().then(function(){
+    var id=EAPI.pageId("id");
+    if(id) return EAPI.get("/api/admin/questions/questions/"+id).then(function(q){ if(q) return loadBankLabel(q.bank_id); }).catch(function(){});
+  }).then(function(){ return loadQuestion(); });
+};
+</script></body>
+</html>

@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task50-fix v2 效果图 · 在 v1 已签收的消息区/输入区/五态基础上，新增【会话列表窗口】
+  （批判 1/2：P1 会话列表缺失 + chat.html 未画会话列表 → v2 补齐）
+  > 会话列表 = 桌面左侧糖果侧栏（标题/时间/当前高亮/新建/删除/点选切换）+ 移动端抽屉
+  > 数据形状对齐契约⑬：GET /api/chat/sessions → 列表；/{id}/history → 消息；POST stream；DELETE /{id}
+  AUDIT LOG:
+    [2026-08-21 v2 R3] 响应式机制改为 @container(container-name:app on body)→演示切视口与真实拖窗口同源生效；
+     控制条改 flex 顶行(去除 sticky)杜绝重叠；.page margin:auto 保证水平居中、body overflow-x:hidden 无横滚 → SUBMITTED
+    [2026-08-21 v2 R2] 可视口比例批判性修复：App 壳(flex:1 确定高度) + spacer(flex:0 0 auto 去 sticky)
+     + .main/.side 等高内滚(min-height:0) + 侧栏宽度 clamp + 断点(940/760/440/矮窗560) + 100dvh → 加入 R3
+    [2026-08-21 v2 R1] 会话列表窗口新增（侧栏+抽屉+高亮/删除/新建/点选切换）→ 并入 R3
+    [2026-09-05 md-fix] 流式/历史接入 EduMD 极简 Markdown 渲染（先 HTML 转义防 XSS）+ 120ms 节流
+      + start/retrieval→首 token 思考中动效 + .md-* 排版 CSS；发送改为追加不清空历史
+    [2026-09-21 PACK-B clay] 视觉层黏土重塑：接入 /theme.css?v=7fed87f（Gate A 批款 chat=B 渐变黏土气泡）；
+      emoji 结构图标→Phosphor 本地 sprite；gnav/按钮 44px 点击区清偿 G6 存量债；reduced-motion 落块。
+      三层分离：JS 依赖的 id/class/data-*、状态类(.on/.open/.stop/.hitl-busy)显隐语义、
+      输入区(textarea 44..120 clamp)/HITL 卡几何(max-height/overflow/pointer-events)、z-index 层级表全部冻结。
+      旧 candy 变量名保留为页内别名(L1)供共享块 aihub-topnav-fix 与 JS 内联样式继续解析。
+-->
+<html lang="zh-CN" data-theme="light"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/*
+ * Bili-Study Clay Theme, Gate A frozen tokens
+ *
+ * Icon usage (Phosphor fill, local sprite):
+ * <svg class="ic" aria-hidden="true"><use href="#ic-book-open"></use></svg>
+ * For an icon-only control, put the accessible name on the control (aria-label or visible text).
+ *
+ * Token reference, one variable per line:
+ * --bg-app: purple-tinted near-white application canvas.
+ * --bg-raised: highest neutral surface reserved for dialogs and toasts.
+ * --bg-input: subtly tinted recessed input surface.
+ * --clay-primary: semantic alias for the approved main clay surface.
+ * --clay-moss: approved primary moss green; #2E2A3F contrast is 8.84:1.
+ * --clay-lavender: demoted secondary lavender, never the default surface.
+ * --clay-sky: course and learning surface.
+ * --clay-mint: success, completion, and progress surface.
+ * --clay-peach: practice and quiz surface.
+ * --clay-pink: favorites and community surface.
+ * --clay-lemon: warm accent for reminders and pending work.
+ * --cta-coral: the single saturated primary action color per screen.
+ * --cta-text: primary action text; #2E2A3F on #FF7A6B is 5.43:1.
+ * --status-active: active and successful state color.
+ * --status-pending: pending state color.
+ * --status-archived: archived and inactive state color.
+ * --status-danger: destructive and error state color.
+ * --text-strong: primary ink; intentionally not pure black.
+ * --text-muted: secondary ink for supporting text.
+ * --text-on-dark: text used on the dark code surface.
+ * --surface-code: Markdown code block surface.
+ * --focus-ring: high-contrast keyboard focus indicator.
+ * --radius-card: L1 card radius.
+ * --radius-btn: primary and secondary button radius.
+ * --radius-input: input and compact control radius.
+ * --radius-pill: pill and badge radius.
+ * --radius-icon-tile: icon tile radius.
+ * --space-1: 4px spacing unit.
+ * --space-2: 8px spacing unit.
+ * --space-3: 12px spacing unit.
+ * --space-4: 16px spacing unit and minimum clay-to-clay gap.
+ * --space-6: 24px spacing unit.
+ * --space-8: 32px spacing unit.
+ * --space-12: 48px spacing unit.
+ * --control-min: minimum 44px interaction target.
+ * --control-primary: 54px primary button height within the approved 52-56px range.
+ * --motion-fast: 140ms tactile state duration.
+ * --ease-clay: restrained ease-out curve for hover and press feedback.
+ * --clay-shadow-moss: three-layer moss surface shadow.
+ * --clay-shadow-lavender: three-layer secondary lavender surface shadow.
+ * --clay-shadow-sky: three-layer sky surface shadow.
+ * --clay-shadow-mint: three-layer mint surface shadow.
+ * --clay-shadow-peach: three-layer peach surface shadow.
+ * --clay-shadow-pink: three-layer pink surface shadow.
+ * --clay-shadow-lemon: three-layer lemon surface shadow.
+ * --clay-shadow-coral: three-layer coral action shadow.
+ * --clay-shadow-raised: green-hued L2 shadow for raised neutral surfaces.
+ * --clay-shadow-light: green-hued single-layer shadow for clay-light regions.
+ * --clay-shadow-press-moss: compressed moss shadow for pressed controls.
+ * --clay-shadow-press-coral: compressed coral shadow for pressed primary actions.
+ * --clay-shadow-input: inset moss shadow for recessed fields.
+ * --clay-shadow-input-focus: inset moss shadow plus visible focus halo.
+ * --layer-base: normal document flow.
+ * --layer-sticky: sticky navigation layer.
+ * --layer-dropdown: menu and popover layer.
+ * --layer-overlay: modal scrim layer.
+ * --layer-dialog: dialog layer.
+ * --layer-toast: toast and urgent feedback layer.
+ *
+ * L1 page overrides belong in a .page-<name> namespace. Example:
+ * .page-dashboard { --page-card-gap: var(--space-6); }
+ * Do not place page-specific selectors outside that namespace.
+ */
+
+:root {
+  --bg-app: #F7F5FB;
+  --bg-raised: #FFFFFF;
+  --bg-input: #F7FAF4;
+  --clay-primary: var(--clay-moss);
+  --clay-moss: #B8D8A8;
+  --clay-lavender: #B8A6FF;
+  --clay-sky: #9EC9F0;
+  --clay-mint: #7DD4A8;
+  --clay-peach: #FFB59E;
+  --clay-pink: #F5B8D0;
+  --clay-lemon: #F5D77A;
+  --cta-coral: #FF7A6B;
+  --cta-text: #2E2A3F;
+  --status-active: #7DD4A8;
+  --status-pending: #F5D77A;
+  --status-archived: #C9B5FF;
+  --status-danger: #C63E4A;
+  --text-strong: #2E2A3F;
+  --text-muted: #6B6580;
+  --text-on-dark: #F7F5FB;
+  --surface-code: #2E2A3F;
+  --focus-ring: #453C66;
+
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  --radius-input: 16px;
+  --radius-pill: 999px;
+  --radius-icon-tile: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-min: 44px;
+  --control-primary: 54px;
+
+  --motion-fast: 140ms;
+  --ease-clay: cubic-bezier(.25, 1, .5, 1);
+
+  --clay-shadow-moss:
+    8px 8px 24px rgba(78, 126, 66, .30),
+    inset -6px -6px 16px rgba(78, 126, 66, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .58);
+  --clay-shadow-lavender:
+    8px 8px 24px rgba(126, 105, 181, .28),
+    inset -6px -6px 16px rgba(126, 105, 181, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-sky:
+    8px 8px 24px rgba(80, 142, 196, .30),
+    inset -6px -6px 16px rgba(80, 142, 196, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-mint:
+    8px 8px 24px rgba(43, 153, 103, .29),
+    inset -6px -6px 16px rgba(43, 153, 103, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-peach:
+    8px 8px 24px rgba(218, 111, 82, .29),
+    inset -6px -6px 16px rgba(218, 111, 82, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-pink:
+    8px 8px 24px rgba(188, 99, 137, .28),
+    inset -6px -6px 16px rgba(188, 99, 137, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-lemon:
+    8px 8px 24px rgba(190, 149, 35, .28),
+    inset -6px -6px 16px rgba(190, 149, 35, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-coral:
+    8px 8px 24px rgba(214, 82, 70, .31),
+    inset -6px -6px 16px rgba(214, 82, 70, .23),
+    inset 6px 6px 16px rgba(255, 254, 252, .45);
+  --clay-shadow-raised: 12px 12px 32px rgba(78, 126, 66, .22);
+  --clay-shadow-light: 6px 8px 20px rgba(78, 126, 66, .18);
+  --clay-shadow-press-moss:
+    4px 4px 12px rgba(78, 126, 66, .26),
+    inset -3px -3px 8px rgba(78, 126, 66, .18),
+    inset 3px 3px 8px rgba(255, 254, 252, .46);
+  --clay-shadow-press-coral:
+    4px 4px 12px rgba(214, 82, 70, .27),
+    inset -3px -3px 8px rgba(214, 82, 70, .19),
+    inset 3px 3px 8px rgba(255, 254, 252, .38);
+  --clay-shadow-input:
+    inset 3px 3px 8px rgba(78, 126, 66, .20),
+    inset -3px -3px 8px rgba(255, 254, 252, .88);
+  --clay-shadow-input-focus:
+    inset 3px 3px 8px rgba(78, 126, 66, .24),
+    inset -3px -3px 8px rgba(255, 254, 252, .92),
+    0 0 0 3px rgba(69, 60, 102, .22);
+
+  --layer-base: 0;
+  --layer-sticky: 100;
+  --layer-dropdown: 300;
+  --layer-overlay: 700;
+  --layer-dialog: 800;
+  --layer-toast: 1000;
+}
+
+.ic {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  overflow: visible;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: -.2em;
+}
+
+.clay-card {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-btn-primary,
+.clay-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding-inline: var(--space-6);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--ease-clay),
+    box-shadow var(--motion-fast) var(--ease-clay),
+    background-color var(--motion-fast) var(--ease-clay);
+}
+
+.clay-btn-primary {
+  min-height: var(--control-primary);
+  color: var(--cta-text);
+  background: var(--cta-coral);
+  box-shadow: var(--clay-shadow-coral);
+}
+
+.clay-btn-soft {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-btn-primary:hover,
+.clay-btn-soft:hover {
+  transform: translateY(-2px);
+}
+
+.clay-btn-primary:active,
+.clay-btn-soft:active {
+  transform: scale(.97);
+}
+
+.clay-btn-primary:active {
+  box-shadow: var(--clay-shadow-press-coral);
+}
+
+.clay-btn-soft:active {
+  box-shadow: var(--clay-shadow-press-moss);
+}
+
+.clay-btn-primary:disabled,
+.clay-btn-soft:disabled,
+.clay-btn-primary[aria-disabled="true"],
+.clay-btn-soft[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clay-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: 3px 4px 10px rgba(190, 149, 35, .21);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.clay-input {
+  width: 100%;
+  min-height: var(--control-primary);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-input);
+  box-shadow: var(--clay-shadow-input);
+  font: inherit;
+}
+
+.clay-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.clay-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--clay-shadow-input-focus);
+}
+
+.clay-bubble-user,
+.clay-bubble-ai {
+  max-width: min(80%, 72ch);
+  overflow-wrap: anywhere;
+  border-radius: 24px 24px 24px 8px;
+  padding: var(--space-4) 20px;
+  color: var(--text-strong);
+}
+
+.clay-bubble-user {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-bubble-ai {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-nav {
+  position: relative;
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-nav :where(a, button) {
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+}
+
+.clay-nav :where(.active, [aria-current="page"]) {
+  color: var(--cta-text);
+  background: var(--cta-coral);
+}
+
+.clay-card-placeholder {
+  position: relative;
+  min-height: 144px;
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: var(--clay-shadow-lemon);
+}
+
+.clay-card-placeholder[data-state="closed"] {
+  background: var(--clay-lavender);
+  box-shadow: var(--clay-shadow-lavender);
+}
+
+.clay-card-placeholder[data-state="forbidden"] {
+  outline: 3px solid var(--status-archived);
+  outline-offset: -3px;
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-card-placeholder[data-state="error"] {
+  outline: 3px solid var(--status-danger);
+  outline-offset: -3px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-card :where(pre, code),
+.clay-bubble-ai :where(pre, code),
+.clay-bubble-user :where(pre, code) {
+  color: var(--text-on-dark);
+  background: var(--surface-code);
+}
+
+.clay-card pre,
+.clay-bubble-ai pre,
+.clay-bubble-user pre {
+  overflow: auto;
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+}
+
+:where(.clay-btn-primary, .clay-btn-soft, .clay-nav a, .clay-nav button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Admin fallback: lower visual depth without changing component geometry. */
+.clay-light {
+  --radius-card: 24px;
+}
+
+.clay-card.clay-light,
+.clay-light .clay-card {
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-light :where(table, .table, .chart, [data-chart], [data-table]) {
+  border-radius: var(--radius-input);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-btn-primary,
+  .clay-btn-soft {
+    transition-duration: .01ms;
+  }
+
+  .clay-btn-primary:hover,
+  .clay-btn-primary:active,
+  .clay-btn-soft:hover,
+  .clay-btn-soft:active {
+    transform: none;
+  }
+}
+
+</style>
+<title>智能问答 · Bili-Study</title>
+<style>
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f（Gate A 批款 chat=B 渐变黏土气泡）。
+   三层分离：本块仅动视觉层——JS 依赖的 id/class/data-*、状态类(.on/.open/.stop/.hitl-busy)显隐语义、
+   输入区(textarea 44..120 clamp)/HITL 卡几何(max-height/overflow/pointer-events)、z-index 层级表全部冻结。
+   旧 candy 变量名保留为页内别名(L1)，供共享块 aihub-topnav-fix 与 JS 内联样式(var(--ink-faint) 等)继续解析。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix / JS 内联样式仍引用，禁删）—— */
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --ink-faint:var(--text-muted); --muted:var(--text-muted); --foreground:var(--text-strong);
+  --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--cta-coral); --candy-green-deep:#D65246;
+  --candy-purple-soft:#EFE9FF; --candy-purple:#5B4FC4;
+  --candy-red:var(--status-danger); --ht-c22:#A03240;
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16); --shadow:0 6px 18px rgba(78,126,66,.14);
+  --r:12px;
+  /* —— 页内派生色（L1，仅本页；对比度均已按 4.5:1 校验）—— */
+  --page-link:#2B2E6E;        /* 链接/引用：lavender #B8A6FF 上 5.7:1、peach 上 7.2:1 */
+  --page-accent:#5B4FC4;      /* 淡紫底强调字：#EFE9FF 上 5.4:1 */
+  --page-danger-ink:#7A1E2C   /* lavender 气泡上的错误字：4.8:1 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100dvh}
+/* App 壳：body 固定视口高 + 纵向 flex；container-type:inline-size → 演示切视口与真实拖窗口同源生效 */
+body{height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 85% 15%,rgba(245,184,208,.32),transparent 28rem),radial-gradient(circle at 8% 90%,rgba(125,212,168,.24),transparent 26rem);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+textarea{font-family:inherit}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+/* 页面区：flex:1 撑满剩余视口高（确定高度）+ 水平居中 → 无横向溢出 */
+.page{flex:1;min-height:0;width:100%;max-width:1240px;margin-left:auto;margin-right:auto;padding:14px 16px 16px;display:flex;gap:16px}
+
+/* ===== 布局：主区（flex column，确定高度内聊天区独立滚动、composer 常驻底部）===== */
+.main{flex:1;min-width:0;min-height:0;background:rgba(255,255,255,.88);border:0;box-shadow:10px 10px 30px rgba(126,105,181,.20);padding:14px 18px;border-radius:var(--radius-card);display:flex;flex-direction:column}
+
+/* ===== 会话列表侧栏（sky 渐变黏土；宽度随视口 clamp，内部独立滚动）===== */
+.side{flex:0 0 clamp(216px,21vw,264px);min-width:0;min-height:0;display:flex;flex-direction:column;background-color:var(--clay-sky);background-image:linear-gradient(145deg,#D5EAFB,var(--clay-sky));box-shadow:var(--clay-shadow-sky);border-radius:var(--radius-card);padding:12px}
+.side .side-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.side .side-head .st{display:inline-flex;align-items:center;gap:6px;font-size:0.9375rem;font-weight:800;letter-spacing:-.01em}
+.side .side-head .new{display:inline-flex;align-items:center;justify-content:center;gap:5px;margin-left:auto;min-width:44px;min-height:44px;border:0;background-color:var(--clay-mint);background-image:linear-gradient(145deg,#A9E5C6,var(--clay-mint));color:var(--text-strong);font-weight:800;font-size:12px;border-radius:var(--radius-btn);padding:0 14px;box-shadow:var(--clay-shadow-mint);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.side .side-head .new:hover{transform:translateY(-2px)}
+.side .side-head .new:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-moss)}
+.side .sess-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.sess{display:flex;align-items:center;gap:9px;min-height:44px;border:2px solid transparent;border-radius:var(--radius-btn);padding:8px 10px;background:rgba(255,255,255,.72);transition:background var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay);text-align:left;width:100%}
+.sess:hover{background:rgba(255,255,255,.92)}
+.sess.on{background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));border-color:transparent;box-shadow:var(--clay-shadow-lavender)}
+.sess .ic{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.55);display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.sess.on .ic{background:rgba(255,255,255,.42)}
+.sess .si{min-width:0;flex:1}
+.sess .si .t{font-size:12.5px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess .si .d{font-size:0.625rem;color:var(--text-muted);margin-top:2px}
+.sess.on .si .d{color:var(--text-strong)}
+.sess .del{width:26px;height:26px;border:none;background:transparent;border-radius:8px;color:var(--text-muted);font-size:0.8125rem;flex-shrink:0;opacity:0;transition:opacity var(--motion-fast),background var(--motion-fast),color var(--motion-fast)}
+.sess:hover .del,.sess.on .del{opacity:1}
+.sess .del:hover{background:rgba(198,62,74,.14);color:var(--status-danger)}
+.side .sess-empty{padding:26px 12px;text-align:center;color:var(--text-strong);font-size:11.5px;line-height:1.6}
+
+/* ===== 聊天页头部 ===== */
+.chat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.chat-head .hamb{display:none;width:44px;height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);font-size:0.875rem;font-weight:800;place-items:center;box-shadow:var(--clay-shadow-light)}
+.chat-head .mascot{font-size:30px;filter:drop-shadow(0 3px 0 rgba(78,126,66,.15));animation:mascot 3.4s ease-in-out infinite}
+@keyframes mascot{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-5deg) translateY(-4px)}}
+.chat-head .tt{min-width:0}
+.chat-head h1{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+.chat-head .sub{font-size:12px;color:var(--text-muted)}
+.chat-head .acts{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* ===== 按钮（44px 起步；squish 按压）===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:12.5px;padding:8px 16px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay),background var(--motion-fast) var(--ease-clay);user-select:none}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+.btn-primary{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}
+.btn-primary:active{box-shadow:var(--clay-shadow-press-coral)}
+.btn-danger{color:#FFFFFF;background:var(--status-danger);box-shadow:4px 6px 14px rgba(198,62,74,.32)}
+.btn-ghost{background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-purple{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+
+/* ===== 消息区（flex:1 + min-height:0 → 卡片内确定高度滚动，长聊不撑破双栏比例）===== */
+.chat-stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:10px 4px 6px;overflow-y:auto;scroll-behavior:smooth}
+/* 空态（C7） */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:56px 20px;animation:fade .3s ease}
+.empty .ic{width:84px;height:84px;border-radius:50%;background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));display:grid;place-items:center;font-size:44px;box-shadow:var(--clay-shadow-lavender);animation:floaty 3s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.empty .t{font-size:1.125rem;font-weight:800}
+.empty .d{font-size:12px;color:var(--text-muted);max-width:340px;line-height:1.6}
+.empty .sug{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:420px}
+.empty .sug button{min-height:44px;border:2px solid var(--clay-lavender);background:var(--bg-raised);color:var(--text-strong);font-size:12px;font-weight:700;padding:8px 14px;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light);transition:background var(--motion-fast) var(--ease-clay)}
+.empty .sug button:hover{background:var(--candy-purple-soft)}
+/* 错误态（C8） */
+.error-st{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:48px 20px;animation:fade .3s ease}
+.error-st .ic{width:64px;height:64px;border-radius:50%;background-color:var(--clay-peach);background-image:linear-gradient(145deg,#FFD0C1,var(--clay-peach));display:grid;place-items:center;font-size:30px;box-shadow:var(--clay-shadow-peach)}
+.error-st .t{font-size:1rem;font-weight:800}
+.error-st .d{font-size:12px;color:var(--text-muted);max-width:360px;line-height:1.6}
+/* R11 HITL 确认卡（pending_confirm）：只换肤——id/结构/事件绑定/几何(max-height、overflow、
+   hitl-busy 的 pointer-events 语义)全部冻结（favorite_add 确认链已实测闭环，勿破坏） */
+.hitl-card{border:0;border-radius:var(--radius-card);background-color:var(--clay-lemon);background-image:linear-gradient(145deg,#FFEBAB,var(--clay-lemon));box-shadow:var(--clay-shadow-lemon);padding:14px;display:flex;flex-direction:column;gap:8px;animation:fade .25s ease}
+.hitl-card.hitl-busy{opacity:.65;pointer-events:none}
+.hitl-ic{font-size:26px;color:var(--text-strong)}
+.hitl-title{font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--text-strong)}
+.hitl-tool{font-size:12.5px;color:var(--text-strong)}
+.hitl-tool code{background:rgba(255,255,255,.72);border:0;border-radius:7px;padding:1px 6px;font-size:12px}
+.hitl-risk{display:inline-flex;align-items:center;align-self:flex-start;font-size:11px;font-weight:800;border:0;border-radius:var(--radius-pill);padding:3px 11px}
+.hitl-risk-high{background:var(--status-danger);color:#FFFFFF}
+.hitl-risk-medium{background:var(--bg-raised);color:var(--text-strong)}
+.hitl-risk-low{background:var(--clay-mint);color:var(--text-strong)}
+.hitl-args{font-size:11.5px;color:var(--text-strong);background:rgba(255,255,255,.66);border:2px dashed rgba(190,149,35,.45);border-radius:var(--radius-input);padding:7px 9px;word-break:break-all;max-height:76px;overflow:auto;white-space:pre-wrap}
+.hitl-acts{display:flex;gap:8px;margin-top:4px}
+.hitl-acts .btn{padding:6px 16px;font-size:12.5px}
+.hitl-note{font-size:11px;color:var(--text-strong)}
+.hitl-note .hitl-tick{font-weight:800;color:var(--text-strong)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== 消息气泡（批款 chat=B：渐变黏土，AI=lavender / 用户=peach）===== */
+.msg{display:flex;gap:10px;max-width:86%;animation:fade .25s ease}
+.msg .avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:1.125rem;flex-shrink:0;box-shadow:var(--clay-shadow-light)}
+.msg.user{flex-direction:row-reverse;margin-left:auto;align-self:flex-end}
+.msg.user .avatar{background:var(--clay-peach)}
+.msg.ai .avatar{background:var(--clay-lavender)}
+.msg .box{min-width:0}
+.msg .bubb{background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));border:0;border-radius:24px 24px 24px 8px;box-shadow:var(--clay-shadow-lavender);padding:12px 15px;font-size:13.5px;line-height:1.75;color:var(--text-strong)}
+.msg.user .bubb{background-color:var(--clay-peach);background-image:linear-gradient(145deg,#FFD0C1,var(--clay-peach));color:var(--text-strong);border-bottom-right-radius:6px}
+.msg.ai .bubb{border-bottom-left-radius:6px}
+.bubb b{color:var(--text-strong);font-weight:800}
+.msg.user .bubb b{color:var(--text-strong)}
+.bubb a{color:var(--page-link);font-weight:700;text-decoration:none}
+.bubb code{background:var(--surface-code);border-radius:6px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--text-on-dark)}
+/* ===== Markdown 排版（EduMD 渲染的 AI 回答；§7.5 第三方渲染区覆盖：容器继承令牌、代码块深色底）===== */
+.bubb p{margin:0 0 .55em;line-height:1.6}
+.bubb p:last-child,.bubb ul.md-list:last-child,.bubb ol.md-list:last-child,.bubb pre.md-pre:last-child,.bubb h3.md-h:last-child,.bubb h4.md-h:last-child,.bubb h5.md-h:last-child,.bubb h6.md-h:last-child{margin-bottom:0}
+.bubb h3.md-h,.bubb h4.md-h,.bubb h5.md-h,.bubb h6.md-h{margin:.75em 0 .35em;line-height:1.4;letter-spacing:-.01em;color:var(--text-strong)}
+.bubb h3.md-h{font-size:1.12em}.bubb h4.md-h{font-size:1.05em}.bubb h5.md-h{font-size:1em}.bubb h6.md-h{font-size:.95em;color:var(--text-strong)}
+.bubb ul.md-list,.bubb ol.md-list{margin:.3em 0 .6em;padding-left:1.5em}
+.bubb ul.md-list li,.bubb ol.md-list li{margin:.15em 0}
+.bubb ul.md-list li::marker{color:var(--page-accent)}
+.bubb ol.md-list li::marker{color:var(--page-accent);font-weight:800}
+.bubb pre.md-pre{background:var(--surface-code);border:0;border-radius:var(--radius-input);padding:10px 12px;margin:.55em 0;overflow-x:auto;line-height:1.55;max-width:100%;font-family:ui-monospace,Consolas,monospace}
+.bubb pre.md-pre code{background:none;border:none;border-radius:0;padding:0;font-size:12px;color:var(--text-on-dark)}
+.bubb .md-err{margin-top:.6em;font-size:12px;font-weight:800;color:var(--page-danger-ink)}
+/* [REWORK P0-2] 答后记忆反馈条（done 帧 memorized 落库时显示） */
+.bubb .memo-bar{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--status-success-bg,var(--candy-green-soft,#E7F6EC));color:var(--text-strong);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .memo-bar .memo-ic{flex:0 0 auto}
+.bubb .memo-bar .memo-tx{font-weight:600;word-break:break-all}
+/* [F-W1-GUARD AUTO20 T7] 写类回执未验证警示条（done 帧 tool_receipt_unverified=true 时显示） */
+.bubb .receipt-warn{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--clay-lemon,#FFF4C9);color:var(--text-strong);
+  border:1.5px dashed rgba(190,149,35,.45);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .receipt-warn .receipt-ic{flex:0 0 auto}
+.bubb .receipt-warn .receipt-tx{font-weight:600;word-break:break-all}
+.msg .meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.625rem;color:var(--text-muted);font-weight:600}
+.msg.user .meta{justify-content:flex-end}
+.meta .refs{display:inline-flex;align-items:center;gap:4px;color:var(--page-link);font-weight:700}
+/* 流式态：闪烁 cursor */
+.cursor{display:inline-block;width:8px;height:16px;border-radius:2px;background:var(--clay-mint);margin-left:2px;vertical-align:-2px;animation:blink .85s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* 检索/排队提示（start / retrieval 期间） */
+.think{display:inline-flex;align-items:center;gap:7px;background:rgba(125,212,168,.20);border:0;color:var(--text-strong);font-size:12px;font-weight:800;padding:6px 12px;border-radius:var(--radius-pill)}
+.spinner{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(43,153,103,.35);border-top-color:var(--clay-mint);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.think .txt{animation:thinkPulse 1.2s ease-in-out infinite}
+@keyframes thinkPulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* ===== 输入区（flex:0 0 auto 常驻 .main 卡片底部；textarea 几何与 JS clamp(44..120) 联动冻结）===== */
+.composer{flex:0 0 auto;background:transparent;padding-top:10px;border-top:2px solid rgba(184,166,255,.28)}
+.composer .hint{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.hint .pill{font-size:11px;font-weight:700;border-radius:var(--radius-pill);padding:4px 10px;border:1px solid var(--border-chip);background:var(--bg-raised);color:var(--text-strong)}
+.hint .pill.ctx{background:var(--candy-purple-soft);border-color:transparent;color:var(--page-accent)}
+.hint .pill.queue{background:rgba(125,212,168,.20);border-color:transparent;color:var(--text-strong);display:inline-flex;align-items:center;gap:6px}
+.hint .pill.on-left{margin-left:auto}
+/* 降级 banner（done.data.degraded_reason） */
+.degrade{display:flex;align-items:flex-start;gap:9px;background-color:var(--clay-lemon);background-image:linear-gradient(145deg,#FFEBAB,var(--clay-lemon));border:2px dashed rgba(190,149,35,.45);border-radius:var(--radius-input);padding:9px 13px;font-size:11.5px;color:var(--text-strong);line-height:1.55;margin-bottom:8px}
+.degrade .ic{font-size:0.9375rem;flex-shrink:0;margin-top:1px;display:inline-flex;color:var(--text-strong)}
+.degrade b{font-weight:800}
+.input-row{display:flex;align-items:flex-end;gap:10px;background:var(--bg-raised);border:0;border-radius:var(--radius-btn);box-shadow:var(--clay-shadow-input);padding:10px 12px}
+.input-row textarea{flex:1;border:none;outline:none;resize:none;font-size:14px;line-height:1.6;color:var(--text-strong);max-height:120px;min-height:44px;padding:9px 4px;background:transparent}
+.input-row textarea:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.input-row textarea::placeholder{color:var(--text-muted);opacity:1}
+.input-row .send{width:52px;height:52px;border:0;border-radius:var(--radius-btn);color:var(--cta-text);background:var(--cta-coral);font-size:22px;display:grid;place-items:center;box-shadow:var(--clay-shadow-coral);flex-shrink:0;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.input-row .send:hover{transform:translateY(-2px)}
+.input-row .send:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)}
+.input-row .send .ic{width:22px;height:22px}
+.input-row .send.stop{background:var(--status-danger);color:#FFFFFF;box-shadow:4px 6px 14px rgba(198,62,74,.32)}
+.input-row .send.stop .ic{width:18px;height:18px}
+
+/* ===== Toast（流 error 事件提示，浮层；z-index 冻结 60）===== */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;background:var(--status-danger);color:#FFFFFF;font-size:12.5px;font-weight:700;border:0;border-radius:var(--radius-btn);box-shadow:var(--clay-shadow-raised);padding:10px 14px;max-width:88%}
+.toast .ic{display:inline-flex}
+.toast .x{cursor:pointer;font-weight:800;opacity:.75}
+.toast .x:hover{opacity:1}
+
+/* ===== 移动端抽屉（会话列表；z-index 70/80 与显隐语义冻结）===== */
+.scrim{position:fixed;inset:0;background:rgba(46,42,63,.35);z-index:70;display:none}
+.scrim.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);background:var(--bg-app);z-index:80;padding:16px;border:0;box-shadow:var(--clay-shadow-raised);display:flex;flex-direction:column;transform:translateX(-105%);transition:transform .22s var(--ease-clay)}
+.drawer.open{transform:translateX(0)}
+/* 关闭态只隐藏子元素（抽屉本体保持布局可见，z 层表与 G6 冻结快照一致）：
+   子元素 visibility:hidden → 不可 Tab 聚焦（G7 focus-not-obscured），开启时随滑动恢复 */
+.drawer:not(.open) *{visibility:hidden;transition:visibility 0s .22s}
+.drawer.open *{visibility:visible;transition:visibility 0s 0s}
+.drawer .close{align-self:flex-end;min-width:44px;min-height:44px;border:none;background:var(--bg-raised);border-radius:var(--radius-btn);font-weight:800;color:var(--text-strong);margin-bottom:6px;box-shadow:var(--clay-shadow-light)}
+.drawer .side{width:auto;min-height:0;flex:1;border:0}
+
+/* ===== 响应式断点（@container 以 body 宽度驱动 → 演示按钮切视口与真实拖窗口两路都生效）===== */
+@container app (min-width:520px){
+  .msg{max-width:78%}
+  .msg .bubb{font-size:14px}
+}
+/* 中屏到窄屏：收紧左侧栏宽度 */
+@container app (max-width:940px){
+  .side.scrollside{flex-basis:clamp(200px,26vw,232px)}
+}
+/* 到手机宽度：切换单栏，隐藏桌面侧栏、亮出汉堡 → 抽屉 */
+@container app (max-width:760px){
+  .page{flex-direction:column}
+  .side.scrollside{display:none}
+  .chat-head .hamb{display:grid}
+}
+/* 小屏：收紧页边距与间距，气泡加宽以利用窄空间 */
+@container app (max-width:440px){
+  .page{padding:10px 8px 12px;gap:10px}
+  .main{padding:12px}
+  .side,.main{border-radius:1.2rem}
+  .chat-stage{gap:11px}
+  .msg{max-width:92%}
+  .chat-head{margin-bottom:10px}
+  .chat-head .mascot{font-size:1.5rem}
+  .chat-head h1{font-size:17px}
+  .input-row{padding:9px 10px}
+  .input-row .send{width:46px;height:46px}
+}
+/* 矮窗（略宽横屏/低分辨率）：压缩纵向留白，保住双栏比例，长内容走内部滚动 */
+@media (max-height:560px) and (min-width:761px){
+  .page{padding-top:10px}
+  .main{padding:10px 14px}
+  .side{padding:10px}
+  .chat-head{margin-bottom:8px}
+  .chat-head h1{font-size:1.125rem}
+  .chat-stage{gap:10px;padding-top:6px}
+  .empty{padding:30px 16px}
+  .empty .ic{width:64px;height:64px;font-size:34px}
+}
+/* reduced-motion：关位移/动画，保状态色（G7 断言） */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .mascot,.empty .ic{animation:none!important}
+  .btn:hover,.btn:active,.side .side-head .new:hover,.side .side-head .new:active,.input-row .send:hover,.input-row .send:active{transform:none!important}
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债。
+   置于该块之后以覆盖其 !important 同名规则；z-index/显隐语义不动） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-admin .gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
+</head>
+<body style="position: relative; width: 1024px; margin: 0px auto;"><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="ic-house" viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 256 256"><path d="M240,56V200a8,8,0,0,1-8,8H160a24,24,0,0,0-24,23.94,7.9,7.9,0,0,1-5.12,7.55A8,8,0,0,1,120,232a24,24,0,0,0-24-24H24a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H88a32,32,0,0,1,32,32v87.73a8.17,8.17,0,0,0,7.47,8.25,8,8,0,0,0,8.53-8V80a32,32,0,0,1,32-32h64A8,8,0,0,1,240,56Z"/></symbol>
+  <symbol id="ic-graduation-cap" viewBox="0 0 256 256"><path d="M176,207.24a119,119,0,0,0,16-7.73V240a8,8,0,0,1-16,0Zm11.76-88.43-56-29.87a8,8,0,0,0-7.52,14.12L171,128l17-9.06Zm64-29.87-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V130.67L171,128l-43,22.93L43.83,106l0,0L25,96,128,41.07,231,96l-18.78,10-.06,0L188,118.94a8,8,0,0,1,4,6.93v73.64a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12Z"/></symbol>
+  <symbol id="ic-chat-circle" viewBox="0 0 256 256"><path d="M232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Z"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 256 256"><path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 256 256"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></symbol>
+  <symbol id="ic-sign-in" viewBox="0 0 256 256"><path d="M141.66,133.66l-40,40A8,8,0,0,1,88,168V136H24a8,8,0,0,1,0-16H88V88a8,8,0,0,1,13.66-5.66l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></symbol>
+  <symbol id="ic-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40A8,8,0,0,0,176,88v32H112a8,8,0,0,0,0,16h64v32a8,8,0,0,0,13.66,5.66l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="ic-paper-plane-tilt" viewBox="0 0 256 256"><path d="M231.4,44.34s0,.1,0,.15l-58.2,191.94a15.88,15.88,0,0,1-14,11.51q-.69.06-1.38.06a15.86,15.86,0,0,1-14.42-9.15L107,164.15a4,4,0,0,1,.77-4.58l57.92-57.92a8,8,0,0,0-11.31-11.31L96.43,148.26a4,4,0,0,1-4.58.77L17.08,112.64a16,16,0,0,1,2.49-29.8l191.94-58.2.15,0A16,16,0,0,1,231.4,44.34Z"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,128H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM181.66,170.34a8,8,0,0,1-11.32,11.32L128,139.31,85.66,181.66a8,8,0,0,1-11.32-11.32L116.69,128,74.34,85.66A8,8,0,0,1,85.66,74.34L128,116.69l42.34-42.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+  <symbol id="ic-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-4,48a12,12,0,1,1-12,12A12,12,0,0,1,124,72Zm12,112a16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-magnifying-glass" viewBox="0 0 256 256"><path d="M168,112a56,56,0,1,1-56-56A56,56,0,0,1,168,112Zm61.66,117.66a8,8,0,0,1-11.32,0l-50.06-50.07a88,88,0,1,1,11.32-11.31l50.06,50.06A8,8,0,0,1,229.66,229.66ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 256 256"><path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
+  <symbol id="ic-bookmark-simple" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 256 256"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></symbol>
+  <symbol id="ic-certificate" viewBox="0 0 256 256"><path d="M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H120v64a8,8,0,0,1-13.66,5.66l-72-72a8,8,0,0,1,0-11.32l72-72A8,8,0,0,1,120,56v64h96A8,8,0,0,1,224,128Z"/></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72A8,8,0,0,1,136,200V136H40a8,8,0,0,1,0-16h96V56a8,8,0,0,1,13.66-5.66l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+  <symbol id="ic-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"/></symbol>
+  <symbol id="ic-pencil-simple" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z"/></symbol>
+  <symbol id="ic-upload-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM88,80h32v64a8,8,0,0,0,16,0V80h32a8,8,0,0,0,5.66-13.66l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,88,80Z"/></symbol>
+</svg>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item active" href="chat.html" aria-current="page"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="page chat-page">
+
+  <!-- 会话列表侧栏（task50-fix 新增：标题/时间/当前高亮/新建入口/删除） -->
+  <aside class="side scrollside" id="side">
+    <div class="side-head">
+      <span class="st"><svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg>对话列表</span>
+      <button class="new" id="sideNew">＋ 新建</button>
+    </div>
+    <div class="sess-list" id="sideList" style="width: 222.667px; height: 572.667px; transform: matrix(1, 0, 0, 1, -4, -7.62939e-06);"><button class="sess " data-id="s1">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">深度学习的反向传播</span><span class="d">10:04</span></span>
+    <span class="del" data-del="s1" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess on" data-id="s2">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg></span>
+    <span class="si"><span class="t">脚本与自动化编程方向</span><span class="d">10:02</span></span>
+    <span class="del" data-del="s2" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s3">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">第三章重点整理</span><span class="d">09:48</span></span>
+    <span class="del" data-del="s3" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s4">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">制定一周学习计划</span><span class="d">昨日</span></span>
+    <span class="del" data-del="s4" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button></div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <div class="chat-head">
+      <button class="hamb" id="hamb" aria-label="打开会话列表">菜单</button>
+      <div class="mascot">🦊</div>
+      <div class="tt">
+        <h1 id="chatTitle">智能问答</h1>
+        <div class="sub">基于课程知识库，随时问我</div>
+      </div>
+      <div class="acts">
+        <button class="btn btn-ghost" id="newSession">＋ 新会话</button>
+      </div>
+    </div>
+
+    <!-- 消息区 -->
+    <div class="chat-stage" id="stage"><div class="msg user"><div class="avatar">😊</div>
+    <div class="box"><div class="bubb">什么是「脚本与自动化编程」方向？适合什么人学？</div>
+    <div class="meta"><span>10:02</span></div></div></div><div class="msg ai"><div class="avatar">🤖</div>
+    <div class="box"><div class="bubb"><b>脚本与自动化编程</b>属于<b>编程</b>大类下的二级方向，聚焦用脚本语言解决<b>重复性、批量化</b>的工程与办公任务。</div>
+    <div class="meta"><span>10:02</span><span class="refs"><svg class="ic" aria-hidden="true"><use href="#ic-magnifying-glass"/></svg>12 篇引用</span></div></div></div></div>
+
+    <!-- 输入区 -->
+    <div class="composer">
+      <div class="hint">
+        <span class="pill ctx" id="ctxTag" style="">📎 来自 · 通用编程入门班 第3讲</span>
+        <span class="pill queue" id="queueHint" style="display: none;"><span class="spinner"></span> AI 正在思考…</span>
+      </div>
+      <div class="degrade" id="degradeBanner" style="display: none;">
+        <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></span>
+        <span><b>排队人数较多，已为你降级回答：</b><span id="degradeTxt">当前咨询人数较多，返回了通用知识答案（未命中课程资料）。</span></span>
+      </div>
+      <div class="input-row">
+        <textarea id="composerInput" rows="1" placeholder="输入你的问题…（Enter 发送 / Shift+Enter 换行）"></textarea>
+        <button class="send" id="sendBtn" aria-label="发送"><span class="play-ic"><svg class="ic" aria-hidden="true"><use href="#ic-paper-plane-tilt"/></svg></span></button>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- 移动端抽屉 -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="移动端对话列表">
+  <button class="close" id="drawerClose" aria-label="关闭">✕</button>
+  <div class="side">
+    <div class="side-head">
+      <span class="st"><svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg>对话列表</span>
+      <button class="new" id="drawerNew">＋ 新建</button>
+    </div>
+    <div class="sess-list" id="drawerList"><button class="sess " data-id="s1">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">深度学习的反向传播</span><span class="d">10:04</span></span>
+    <span class="del" data-del="s1" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess on" data-id="s2">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg></span>
+    <span class="si"><span class="t">脚本与自动化编程方向</span><span class="d">10:02</span></span>
+    <span class="del" data-del="s2" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s3">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">第三章重点整理</span><span class="d">09:48</span></span>
+    <span class="del" data-del="s3" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s4">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">制定一周学习计划</span><span class="d">昨日</span></span>
+    <span class="del" data-del="s4" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button></div>
+  </div>
+</aside>
+
+<p class="toast" id="toast" style="display:none">
+  <span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></span>
+  <span id="toastMsg">AI 响应中断（error 事件）：已保留已生成内容，可点击重试。</span>
+  <span class="x" id="toastClose">✕</span>
+</p>
+
+<!-- 演示状态条（respbar）已移除：属 HTML 效果图审核工具残留，无 token 演示态由脚本保底渲染，前端不保留开发工具栏 -->
+
+<script>
+/* =====================================================================
+ * task50-fix 效果图 v2 —— 纯前端演示（数据形状对齐契约⑬ chat + SSE 壳 + sessions）
+ * 新增：会话列表窗口（桌面侧栏 + 移动抽屉）→ 标题/时间、当前高亮、新建、删除、点选切换
+ * React 实现阶段将真实请求 GET /api/chat/sessions + /{id}/history + POST stream + DELETE
+ * ===================================================================== */
+const $ = (s)=>document.querySelectorAll(s)[0];
+
+/* ---- 会话数据（模拟 GET /api/chat/sessions 契约形状）---- */
+const MESSAGES = {
+  s1:[
+    {role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`},
+    {role:"ai", time:"10:04", refs:"5", html:`反向传播（Backpropagation）的核心是<b>用链式法则高效地计算损失函数对每个参数的梯度</b>，从而指导梯度下降更新权重。<br><br>具体分三步：① 前向传播计算输出与损失；② 反向逐层求导，把误差从输出层传回输入层；③ 沿梯度反方向更新参数`},
+  ],
+  s2:[
+    {role:"user", time:"10:02", html:`什么是「脚本与自动化编程」方向？适合什么人学？`},
+    {role:"ai", time:"10:02", refs:"12", html:`<b>脚本与自动化编程</b>属于<b>编程</b>大类下的二级方向，聚焦用脚本语言解决<b>重复性、批量化</b>的工程与办公任务。<br><br>它适合想提升效率、经常处理文件整理/数据清洗/批量报表/网页信息采集的学习者，也适合作为 Python 入门后的第一个应用方向。<br><br>建议学习顺序是：先掌握变量、条件、循环和函数，再练习文件读写、表格处理、定时任务与 API 调用，最后把脚本封装成可复用的小工具。`},
+  ],
+  s3:[
+    {role:"user", time:"09:48", html:`帮我整理第三章的重点难点。`},
+    {role:"ai", time:"09:48", refs:"8", html:`第三章聚焦<b>循环与函数</b>：<br>① <code>for/while</code> 的边界控制<br>② 函数参数与作用域<br>③ 递归的基线条件`},
+  ],
+  s4:[
+    {role:"user", time:"昨日", html:`帮我制定一周的深度学习学习计划。`},
+    {role:"ai", time:"昨日", refs:"0", html:`以下是一周计划……（略）`},
+  ],
+};
+let sessions = [
+  {id:"s1", title:"深度学习的反向传播", date:"10:04"},
+  {id:"s2", title:"脚本与自动化编程方向", date:"10:02"},
+  {id:"s3", title:"第三章重点整理", date:"09:48"},
+  {id:"s4", title:"制定一周学习计划", date:"昨日"},
+];
+let activeId = "s2";
+let seq = 0;
+let state = "history"; // history|streaming|degraded|error|empty
+
+/* task104：登录态（localStorage 有 token = 有登录）时解绑 demo 控制器，
+   避免 document 级委托与注入元素级监听双绑定 .sess → 点真实会话读 MESSAGES[realId] 抛 TypeError，
+   以及 demo 的 newSession/hamb 用演示数据覆盖真实列表。无 token 时演示态保留（chat 页本会跳登录）。 */
+let __logon = false;
+try { __logon = !!window.localStorage.getItem("edu:auth:token"); } catch (e) { __logon = false; }
+
+/* ---- 会话列表渲染（双容器：侧栏 + 抽屉）---- */
+function sessCard(s){
+  const on = s.id===activeId;
+  return `<button class="sess ${on?'on':''}" data-id="${s.id}">
+    <span class="ic">${on?'<svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg>':'<svg class="ic" aria-hidden="true"><use href="#ic-bookmark-simple"/></svg>'}</span>
+    <span class="si"><span class="t">${s.title}</span><span class="d">${s.date}</span></span>
+    <span class="del" data-del="${s.id}" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span>
+  </button>`;
+}
+function renderSides(){
+  $("#sideList").innerHTML = sessions.length ? sessions.map(sessCard).join("") : `<div class="sess-empty">还没有会话，点右上「＋ 新建」开始第一段对话吧</div>`;
+  $("#drawerList").innerHTML = sessions.length ? sessions.map(sessCard).join("") : `<div class="sess-empty">还没有会话，点右上「＋ 新建」开始第一段对话吧</div>`;
+}
+/* 点选会话 → 高亮 + 加载历史（模拟 getChatHistory） */
+function onPick(id){
+  activeId = id;
+  renderSides();
+  draw("history"); // 切会话 → 历史态
+}
+function ensureMsg(id){
+  if(!MESSAGES[id]) MESSAGES[id] = [
+    {role:"user", time:"刚刚", html:`你好，请介绍一下。`},
+    {role:"ai", time:"刚刚", refs:"0", html:`你好！我是你的 AI 学习助手，可以帮你讲解知识点、整理重点、出题讲解、制定学习计划。`},
+  ];
+}
+
+/* ---- 状态演示 ---- */
+const bubble = (msg)=>{
+  const user = msg.role === "user";
+  return `<div class="msg ${user?'user':'ai'}"><div class="avatar">${user?'😊':'🤖'}</div>
+    <div class="box"><div class="bubb">${msg.html}</div>
+    <div class="meta"><span>${msg.time}</span>${msg.refs?`<span class="refs"><svg class="ic" aria-hidden="true"><use href="#ic-magnifying-glass"/></svg>${msg.refs} 篇引用</span>`:""}</div></div></div>`;
+};
+
+function htmlHistory(){ return MESSAGES[activeId].map(bubble).join(""); }
+function htmlStreaming(){
+  return bubble({role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`})
+    + `<div class="msg ai"><div class="avatar">🤖</div><div class="box">
+        <div class="bubb">反向传播（Backpropagation）的核心是<b>用链式法则高效地计算梯度</b>……<span class="cursor"></span></div>
+        <div class="meta"><span>10:04</span><span class="refs"><svg class="ic" aria-hidden="true"><use href="#ic-magnifying-glass"/></svg>5 篇引用</span></div></div></div>`;
+}
+function htmlDegraded(){
+  return bubble({role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`})
+    + bubble({role:"ai", time:"10:04", refs:"0", html:`由于当前<b>咨询人数较多</b>，未能命中课程资料，以下为通用知识回答（降级）：<br><br>反向传播通过<b>链式法则</b>逐层计算梯度并更新参数。`});
+}
+function htmlErrorState(){
+  return `<div class="error-st"><div class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></div><div class="t">历史消息加载失败</div>
+    <div class="d">无法获取会话历史（HTTP 500，<b>code:"5xxxx"</b>）。请稍后重试，或新建会话。</div>
+    <button class="btn btn-ghost" onclick="draw('empty')" style="margin-top:6px">↻ 重试</button></div>`;
+}
+function htmlEmpty(){
+  return `<div class="empty"><div class="ic">🦊</div><div class="t">开始你的 AI 学习助手</div>
+    <div class="d">我可以基于<b>课程知识库</b>回答你的问题：课程大纲、知识点讲解、题目解析、学习计划……在下方输入即可。</div>
+    <div class="sug">
+      <button>什么是反向传播？</button><button>帮我整理第三章重点</button>
+      <button>这道题怎么做？</button><button>制定一周学习计划</button>
+    </div></div>`;
+}
+
+function draw(s){
+  state = s;
+  const stage = $("#stage");
+  const isStream = s==="streaming";
+  const ctxTag=$("#ctxTag"), qHint=$("#queueHint"), dg=$("#degradeBanner"), input=$("#composerInput"), send=$("#sendBtn");
+  if(s==="empty"||s==="error"){ hd(); ctxTag.style.display="none"; } // 空态/错误态无会话上下文
+  else ctxTag.style.display="";
+  qHint.style.display = isStream ? "" : "none";
+  dg.style.display = s==="degraded" ? "" : "none";
+  send.classList.toggle("stop", isStream);
+  send.innerHTML = isStream ? '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="#ic-x"/></svg></span>' : '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="#ic-paper-plane-tilt"/></svg></span>';
+  send.disabled = false; input.disabled = false;
+  input.placeholder = isStream ? "AI 正在回答…" : (s==="error" ? "历史加载失败，无法发送" : "输入你的问题…（Enter 发送 / Shift+Enter 换行）");
+  input.value = isStream ? "帮我讲一下深度学习的「反向传播」核心思想。" : "";
+  if(s==="history") stage.innerHTML = htmlHistory();
+  else if(s==="streaming") stage.innerHTML = htmlStreaming();
+  else if(s==="degraded") stage.innerHTML = htmlDegraded();
+  else if(s==="error"){ send.disabled=true; input.disabled=true; stage.innerHTML = htmlErrorState(); }
+  else stage.innerHTML = htmlEmpty();
+}
+function hd(){ /* 空态时不展示上下文徽标 */ document.getElementById("degradeBanner").style.display="none"; }
+
+/* ---- 新建会话（模拟 createChatSession）---- */
+function newSession(){
+  const id = "s_n"+(++seq);
+  sessions.unshift({id, title:"开始新对话", date:"刚刚"});
+  activeId = id;
+  MESSAGES[id] = [];
+  renderSides();
+  draw("empty");
+}
+
+/* ---- 删除会话（模拟 deleteChatSession）---- */
+function delSession(id){
+  const i = sessions.findIndex(s=>s.id===id);
+  if(i<0) return;
+  sessions.splice(i,1);
+  delete MESSAGES[id];
+  if(activeId===id) activeId = sessions.length ? sessions[0].id : null;
+  if(activeId) ensureMsg(activeId);
+  renderSides();
+  if(!activeId){ draw("empty"); drawer(false); }
+}
+
+/* ---- 事件绑定（委托：侧栏 + 抽屉）---- */
+if (!__logon) {
+  document.addEventListener("click", (e)=>{
+    const del = e.target.closest("[data-del]");
+    if(del){ e.stopPropagation(); delSession(del.dataset.del); return; }
+    const row = e.target.closest(".sess");
+    if(row){ onPick(row.dataset.id); drawer(false); }
+  });
+  $("#sideNew").addEventListener("click", newSession);
+  $("#drawerNew").addEventListener("click", newSession);
+  $("#newSession").addEventListener("click", newSession);
+}
+$("#toastClose").addEventListener("click", ()=>document.getElementById("toast").style.display="none");
+
+/* ---- 移动抽屉开关 ---- */
+function drawer(open){
+  $("#drawer").classList.toggle("open", open);
+  $("#scrim").classList.toggle("open", open);
+}
+$("#hamb").addEventListener("click", ()=>{ if(!__logon) renderSides(); drawer(true); });
+$("#drawerClose").addEventListener("click", ()=>drawer(false));
+$("#scrim").addEventListener("click", ()=>drawer(false));
+
+/* 视口切换/状态演示绑定已随 respbar 一并移除（开发工具残留）；
+   __logon 仅用于保底决定是否渲染演示会话，无 token 时演示态保留。 */
+document.getElementById("composerInput").addEventListener("input",e=>{ e.target.style.height="auto"; e.target.style.height=Math.min(120,Math.max(44,e.target.scrollHeight))+"px"; });
+
+/* ---- 首屏：历史态 + 渲染侧栏（仅演示态；登录态由注入 loadSessions 接管）---- */
+window.addEventListener("resize", ()=>{ if(window.innerWidth>760) drawer(false); });
+if (!__logon) { renderSides(); draw("history"); }
+</script>
+<script>
+/* 离线展示 mock：接口回放 2026-10-07 从真实后端捕获的响应；页面渲染代码为原版。 */
+(function (global) {
+  var ROUTES = {"GET /api/auth/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"real_name\":\"展示用户\",\"mobile\":\"展示用户\",\"email\":\"viewer@example.invalid\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"role\":\"student\"}","GET /api/users/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"role\":\"student\",\"email\":\"viewer@example.invalid\",\"mobile\":\"展示用户\",\"real_name\":\"展示用户\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"learning_goal\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[\"programming\",\"math\"],\"profile\":{\"nickname\":\"展示用户\",\"avatar_url\":\"展示用户\",\"gender\":\"female\",\"birthday\":\"2008-09-01\",\"grade_code\":\"senior_high_2\",\"school_name\":null,\"region_code\":null,\"weekly_available_hours\":15,\"study_style\":\"mixed\",\"target_qualification\":null,\"learning_goals\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[{\"subject_code\":\"programming\",\"preference_score\":5},{\"subject_code\":\"math\",\"preference_score\":4}],\"level_assessments\":[],\"interest_tags\":[],\"created_at\":\"2026-08-08T18:54:00\",\"updated_at\":\"2026-09-21T11:47:39\"}}","GET /api/chat/sessions?limit=50":"[{\"session_id\":\"s_06486b7212f0\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-06T23:02:31.755000\",\"created_at\":\"2026-10-06T23:02:16.555000\",\"updated_at\":\"2026-10-06T23:02:31.755000\",\"yn\":1},{\"session_id\":\"s_3b4d77bc3914\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-06T22:57:00.723000\",\"created_at\":\"2026-10-06T22:56:48.464000\",\"updated_at\":\"2026-10-06T22:57:00.723000\",\"yn\":1},{\"session_id\":\"s_2f0ded77ee76\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-06T22:47:55.478000\",\"created_at\":\"2026-10-06T22:46:41.655000\",\"updated_at\":\"2026-10-06T22:47:55.478000\",\"yn\":1},{\"session_id\":\"s_2d612c2e2952\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-06T22:15:04.184000\",\"created_at\":\"2026-10-06T22:14:44.179000\",\"updated_at\":\"2026-10-06T22:15:04.184000\",\"yn\":1},{\"session_id\":\"s_22dd111c9136\",\"user_id\":901,\"title\":\"Cache 真实本课答疑验收\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T17:04:18.844000\",\"created_at\":\"2026-10-05T17:04:09.896000\",\"updated_at\":\"2026-10-05T17:04:18.844000\",\"yn\":1},{\"session_id\":\"s_35c17aee524f\",\"user_id\":901,\"title\":\"实机验证 chitchat\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:49:17.929000\",\"created_at\":\"2026-10-05T16:49:11.353000\",\"updated_at\":\"2026-10-05T16:49:17.929000\",\"yn\":1},{\"session_id\":\"s_904b59790237\",\"user_id\":901,\"title\":\"实机验证 learning\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:47:39.733000\",\"created_at\":\"2026-10-05T16:47:07.055000\",\"updated_at\":\"2026-10-05T16:47:39.733000\",\"yn\":1},{\"session_id\":\"s_b0e107efa296\",\"user_id\":901,\"title\":\"实机验证 tool\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:47:06.923000\",\"created_at\":\"2026-10-05T16:46:43.810000\",\"updated_at\":\"2026-10-05T16:47:06.923000\",\"yn\":1},{\"session_id\":\"s_75cd9959f9f1\",\"user_id\":901,\"title\":\"实机验证 knowledge\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:46:43.651000\",\"created_at\":\"2026-10-05T16:46:17.675000\",\"updated_at\":\"2026-10-05T16:46:43.651000\",\"yn\":1},{\"session_id\":\"s_846a9da2e583\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:46:31.556000\",\"created_at\":\"2026-10-05T16:46:19.046000\",\"updated_at\":\"2026-10-05T16:46:31.556000\",\"yn\":1},{\"session_id\":\"s_27e9836d19c4\",\"user_id\":901,\"title\":\"实机验证 chitchat\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:46:17.534000\",\"created_at\":\"2026-10-05T16:46:05.985000\",\"updated_at\":\"2026-10-05T16:46:17.534000\",\"yn\":1},{\"session_id\":\"s_8c7df28808c6\",\"user_id\":901,\"title\":\"实机验证 course_identity\",\"visibility\":\"private\",\"message_count\":4,\"last_message_at\":\"2026-10-05T16:46:05.881000\",\"created_at\":\"2026-10-05T16:45:51.851000\",\"updated_at\":\"2026-10-05T16:46:05.881000\",\"yn\":1},{\"session_id\":\"s_b242178cf072\",\"user_id\":901,\"title\":\"本课答疑故障复现\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:26:41.845000\",\"created_at\":\"2026-10-05T16:26:35.531000\",\"updated_at\":\"2026-10-05T16:26:41.845000\",\"yn\":1},{\"session_id\":\"s_ed118c4b3a55\",\"user_id\":901,\"title\":\"MinerU Neo4j OTel 实机演示\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:08:33.316000\",\"created_at\":\"2026-10-05T16:07:48.707000\",\"updated_at\":\"2026-10-05T16:08:33.316000\",\"yn\":1},{\"session_id\":\"s_1ba30f4e7acf\",\"user_id\":901,\"title\":\"MinerU Neo4j OTel 实机演示\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:02:56.668000\",\"created_at\":\"2026-10-05T16:02:24.076000\",\"updated_at\":\"2026-10-05T16:02:56.668000\",\"yn\":1},{\"session_id\":\"s_2e6eedf91c2b\",\"user_id\":901,\"title\":\"MinerU Neo4j OTel 实机演示\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-05T16:01:47.180000\",\"created_at\":\"2026-10-05T16:00:36.037000\",\"updated_at\":\"2026-10-05T16:01:47.180000\",\"yn\":1},{\"session_id\":\"s_db4285bb6867\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-04T21:37:57.051000\",\"created_at\":\"2026-10-04T21:34:20.523000\",\"updated_at\":\"2026-10-04T21:37:57.051000\",\"yn\":1},{\"session_id\":\"s_13568cba07e7\",\"user_id\":901,\"title\":\"本课答疑\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-10-04T14:03:50.604000\",\"created_at\":\"2026-10-04T14:02:47.621000\",\"updated_at\":\"2026-10-04T14:03:50.604000\",\"yn\":1},{\"session_id\":\"s_8a3c62873a1b\",\"user_id\":901,\"title\":\"deep-accept-A\",\"visibility\":\"private\",\"message_count\":4,\"last_message_at\":\"2026-10-02T12:59:59.281000\",\"created_at\":\"2026-10-02T12:59:17.941000\",\"updated_at\":\"2026-10-02T12:59:59.281000\",\"yn\":1},{\"session_id\":\"s_7908cc976bf6\",\"user_id\":901,\"title\":\"deep-accept-A\",\"visibility\":\"private\",\"message_count\":4,\"last_message_at\":\"2026-10-02T12:50:44.894000\",\"created_at\":\"2026-10-02T12:49:58.879000\",\"updated_at\":\"2026-10-02T12:50:44.894000\",\"yn\":1},{\"session_id\":\"s_d201b89e9a28\",\"user_id\":901,\"title\":\"请用三句话介绍 Python 这门编程语言的特点\",\"visibility\":\"private\",\"message_count\":8,\"last_message_at\":\"2026-09-24T16:40:35.641000\",\"created_at\":\"2026-09-24T16:37:02.024000\",\"updated_at\":\"2026-09-24T16:40:35.641000\",\"yn\":1},{\"session_id\":\"s_352cfe1cf18f\",\"user_id\":901,\"title\":\"请用三句话介绍 Python 这门编程语言的特点\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-24T16:36:54.716000\",\"created_at\":\"2026-09-24T16:36:47.792000\",\"updated_at\":\"2026-09-24T16:36:54.716000\",\"yn\":1},{\"session_id\":\"s_51ad097f9bd3\",\"user_id\":901,\"title\":\"请用三句话介绍 Python 这门编程语言的特点\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-24T16:36:39.930000\",\"created_at\":\"2026-09-24T16:36:34.285000\",\"updated_at\":\"2026-09-24T16:36:39.930000\",\"yn\":1},{\"session_id\":\"s_f295beeb48c2\",\"user_id\":901,\"title\":\"请用三句话介绍 Python 这门语言\",\"visibility\":\"private\",\"message_count\":8,\"last_message_at\":\"2026-09-24T16:36:26.960000\",\"created_at\":\"2026-09-24T16:30:10.853000\",\"updated_at\":\"2026-09-24T16:36:26.960000\",\"yn\":1},{\"session_id\":\"s_dba9bd7d88e8\",\"user_id\":901,\"title\":\"TC1-mem-B\",\"visibility\":\"private\",\"message_count\":6,\"last_message_at\":\"2026-09-24T16:28:10.677000\",\"created_at\":\"2026-09-24T16:22:30.213000\",\"updated_at\":\"2026-09-24T16:28:10.677000\",\"yn\":1},{\"session_id\":\"s_53a804d68758\",\"user_id\":901,\"title\":\"TC1-mem-A\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-24T16:22:29.661000\",\"created_at\":\"2026-09-24T16:22:21.989000\",\"updated_at\":\"2026-09-24T16:22:29.661000\",\"yn\":1},{\"session_id\":\"s_1f01d681fb84\",\"user_id\":901,\"title\":\"把《TA6 验收课程》加入收藏\",\"visibility\":\"private\",\"message_count\":4,\"last_message_at\":\"2026-09-24T16:21:01.472000\",\"created_at\":\"2026-09-24T12:26:48.616000\",\"updated_at\":\"2026-09-24T16:21:01.472000\",\"yn\":1},{\"session_id\":\"s_21c4166a8588\",\"user_id\":901,\"title\":\"把《通用编程入门班·录播》加入收藏\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-24T12:23:36.559000\",\"created_at\":\"2026-09-24T12:23:28.403000\",\"updated_at\":\"2026-09-24T12:23:36.559000\",\"yn\":1},{\"session_id\":\"s_cf9ebd24b20a\",\"user_id\":901,\"title\":\"把《TA6 验收课程》加入收藏\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-24T12:23:21.901000\",\"created_at\":\"2026-09-24T12:23:12.598000\",\"updated_at\":\"2026-09-24T12:23:21.901000\",\"yn\":1},{\"session_id\":\"s_35c88a41a8e0\",\"user_id\":901,\"title\":\"t\",\"visibility\":\"private\",\"message_count\":8,\"last_message_at\":\"2026-09-24T01:16:15.418000\",\"created_at\":\"2026-09-22T12:51:06.898000\",\"updated_at\":\"2026-09-24T01:16:15.418000\",\"yn\":1},{\"session_id\":\"s_956a99befb14\",\"user_id\":901,\"title\":\"t\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T12:51:06.778000\",\"created_at\":\"2026-09-22T12:51:03.241000\",\"updated_at\":\"2026-09-22T12:51:06.778000\",\"yn\":1},{\"session_id\":\"s_382614cbf3ab\",\"user_id\":901,\"title\":\"t\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T12:51:03.117000\",\"created_at\":\"2026-09-22T12:50:58.647000\",\"updated_at\":\"2026-09-22T12:51:03.117000\",\"yn\":1},{\"session_id\":\"s_6ccb533cdba3\",\"user_id\":901,\"title\":\"kg-test\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T12:49:45.900000\",\"created_at\":\"2026-09-22T12:49:21.424000\",\"updated_at\":\"2026-09-22T12:49:45.900000\",\"yn\":1},{\"session_id\":\"s_fc125a760c9a\",\"user_id\":901,\"title\":\"svc2\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T11:51:48.196000\",\"created_at\":\"2026-09-22T11:51:41.251000\",\"updated_at\":\"2026-09-22T11:51:48.196000\",\"yn\":1},{\"session_id\":\"s_138847a06a8e\",\"user_id\":901,\"title\":\"svc-check\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T11:51:21.200000\",\"created_at\":\"2026-09-22T11:51:00.924000\",\"updated_at\":\"2026-09-22T11:51:21.200000\",\"yn\":1},{\"session_id\":\"s_3f3bfa4b9898\",\"user_id\":901,\"title\":\"t12-verify\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T07:17:53.779000\",\"created_at\":\"2026-09-22T07:17:40.118000\",\"updated_at\":\"2026-09-22T07:17:53.779000\",\"yn\":1},{\"session_id\":\"s_a9cc2b4beb25\",\"user_id\":901,\"title\":\"T12-student-induction\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T07:11:23.715000\",\"created_at\":\"2026-09-22T07:11:08.161000\",\"updated_at\":\"2026-09-22T07:11:23.715000\",\"yn\":1},{\"session_id\":\"s_fe8673479275\",\"user_id\":901,\"title\":\"t8-verify\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T05:24:17.855000\",\"created_at\":\"2026-09-22T05:23:33.777000\",\"updated_at\":\"2026-09-22T05:24:17.855000\",\"yn\":1},{\"session_id\":\"s_05a8f852731a\",\"user_id\":901,\"title\":\"t7-verify\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-22T04:11:28.211000\",\"created_at\":\"2026-09-22T04:11:24.146000\",\"updated_at\":\"2026-09-22T04:11:28.211000\",\"yn\":1},{\"session_id\":\"s_3a1f6ac97705\",\"user_id\":901,\"title\":\"我叫什么名字？\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T23:28:17.421000\",\"created_at\":\"2026-09-21T23:27:44.861000\",\"updated_at\":\"2026-09-21T23:28:17.421000\",\"yn\":1},{\"session_id\":\"s_3b2ba361b5a9\",\"user_id\":901,\"title\":\"我叫返工验收员5040，请记住我的名字\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T23:27:44.240000\",\"created_at\":\"2026-09-21T23:27:00.392000\",\"updated_at\":\"2026-09-21T23:27:44.240000\",\"yn\":1},{\"session_id\":\"s_aafda8969cef\",\"user_id\":901,\"title\":\"我叫什么名字？\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:41:14.012000\",\"created_at\":\"2026-09-21T21:40:31.548000\",\"updated_at\":\"2026-09-21T21:41:14.012000\",\"yn\":1},{\"session_id\":\"s_2eb8f3e635b4\",\"user_id\":901,\"title\":\"我叫返工验收员9389，请记住我的名字\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:40:28.705000\",\"created_at\":\"2026-09-21T21:39:38.256000\",\"updated_at\":\"2026-09-21T21:40:28.705000\",\"yn\":1},{\"session_id\":\"s_a37b16d7d470\",\"user_id\":901,\"title\":\"我叫什么名字？\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:32:11.452000\",\"created_at\":\"2026-09-21T21:32:07.073000\",\"updated_at\":\"2026-09-21T21:32:11.452000\",\"yn\":1},{\"session_id\":\"s_ba1fdd771d40\",\"user_id\":901,\"title\":\"我叫返工验收员1803，请记住我的名字\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:32:05.976000\",\"created_at\":\"2026-09-21T21:31:46.911000\",\"updated_at\":\"2026-09-21T21:32:05.976000\",\"yn\":1},{\"session_id\":\"s_f643ae3618af\",\"user_id\":901,\"title\":\"我叫什么名字？\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:21:52.096000\",\"created_at\":\"2026-09-21T21:21:48.364000\",\"updated_at\":\"2026-09-21T21:21:52.096000\",\"yn\":1},{\"session_id\":\"s_5dc85016182d\",\"user_id\":901,\"title\":\"我叫返工验收员4577，请记住我的名字\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T21:21:47.485000\",\"created_at\":\"2026-09-21T21:21:39.755000\",\"updated_at\":\"2026-09-21T21:21:47.485000\",\"yn\":1},{\"session_id\":\"s_7ace3a447dab\",\"user_id\":901,\"title\":\"audit-b\",\"visibility\":\"private\",\"message_count\":4,\"last_message_at\":\"2026-09-21T19:27:18.938000\",\"created_at\":\"2026-09-21T19:26:08.074000\",\"updated_at\":\"2026-09-21T19:27:18.938000\",\"yn\":1},{\"session_id\":\"s_125fee2eaa9f\",\"user_id\":901,\"title\":\"audit-a\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T19:26:07.973000\",\"created_at\":\"2026-09-21T19:26:03.446000\",\"updated_at\":\"2026-09-21T19:26:07.973000\",\"yn\":1},{\"session_id\":\"s_149ac3dc8c1f\",\"user_id\":901,\"title\":\"我叫什么名字？\",\"visibility\":\"private\",\"message_count\":2,\"last_message_at\":\"2026-09-21T18:58:43.545000\",\"created_at\":\"2026-09-21T18:58:37.823000\",\"updated_at\":\"2026-09-21T18:58:43.545000\",\"yn\":1}]","GET /api/chat/sessions/s_06486b7212f0/history?limit=100":"[{\"message_id\":\"m_57d08fadd8b3\",\"session_id\":\"s_06486b7212f0\",\"user_id\":901,\"role\":\"user\",\"content\":\"本课介绍的 RAG 离线准备和线上提问分别有哪些步骤？为什么知识切分不能过长或过短？请附视频时间依据。\",\"rag_query_rewrite\":null,\"rag_retrieved_count\":null,\"rag_final_count\":null,\"rag_docs_json\":null,\"rag_error\":null,\"latency_ms\":null,\"mcp_tool_calls_json\":null,\"mcp_called_count\":null,\"created_at\":\"2026-10-06T23:02:31.755000\"},{\"message_id\":\"m_86892a7ffade\",\"session_id\":\"s_06486b7212f0\",\"user_id\":901,\"role\":\"assistant\",\"content\":\"### RAG离线准备（索引阶段）步骤\\n依据doc[3]（视频依据07:45–09:19）、doc[7]（视频依据08:05–08:43）、doc[8]（视频依据09:59–10:34），离线准备（索引阶段）的步骤为：\\n1. 处理文档：将原始文档通过切割器进行切分，得到一个个知识块；\\n2. 向量转化：将切分后的知识块转化为向量；\\n3. 存储向量：把转化后的向量存储到数据库中，完成知识库准备。\\n\\n### RAG线上提问（在线过程）步骤\\n依据doc[3]（视频依据07:45–09:19）、doc[8]（视频依据09:59–10:34），线上提问的步骤为：\\n1. 检索匹配（减锁阶段）：根据用户问题从已构建的知识库中检索匹配的相关文档；\\n2. 生成回答：拿着检索到的相关材料，结合大模型生成最终回答。\\n\\n### 知识切分不能过长或过短的原因\\n依据doc[4]（视频依据09:19–17:10），知识切分需保障语意连贯性，文本块过长或过短都会影响RAG的效果。\",\"rag_query_rewrite\":\"本课介绍的 RAG 离线准备和线上提问分别有哪些步骤？为什么知识切分不能过长或过短？请附视频时间依据。\",\"rag_retrieved_count\":8,\"rag_final_count\":8,\"rag_docs_json\":\"[{\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:3a61f0cf74926935:1:active\\\", \\\"score\\\": 0.120682, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的核心定义与作用 [04:19–06:57]\\\\n明确RAG的核心是根据用户问题从支持库中检索合适参考内容，结合大模型生成回答，介绍RAG在AI客服、政策查询、AI搜索等场景的应用，以Kimi为例说明RAG的实际应用情况。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 259.5, \\\"end_seconds\\\": 417.66, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:e1e4b616fb34e1ba:1:active\\\", \\\"score\\\": 0.123087, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的三大核心要素 [06:57–07:45]\\\\n介绍RAG的三大核心要素为支持库、检索、回答，说明支持库对企业和Kimi的不同含义，强调检索是RAG的核心，以及生成阶段需考虑的文档排序、输入方式等问题。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 417.66, \\\"end_seconds\\\": 465.3, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:0d3e0265676e0172:1:active\\\", \\\"score\\\": 1.0, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的完整流程拆解 [07:45–09:19]\\\\n详细讲解RAG的流程，分为离线准备（知识库构建）和线上提问两大阶段，说明各阶段的具体步骤，包括知识切分、向量转化、检索匹配、提示词组装等，解释流程中关键节点的作用。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 465.3, \\\"end_seconds\\\": 559.58, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:3f9788a90ea356bc:1:active\\\", \\\"score\\\": 0.785527, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG流程关键节点详解 [09:19–17:10]\\\\n讲解知识切分的原因和要求，说明切分需保障语意连贯性，避免文本块过长或过短影响效果，介绍四种常见的知识切分方法，以及无需切分的特殊场景。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 559.58, \\\"end_seconds\\\": 1030.36, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:c4dfe77a04a8df7f:1:active\\\", \\\"score\\\": 0.14167, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：向量转化与存储方法 [17:10–24:15]\\\\n解释文本需转化为向量才能被计算机处理，介绍常见的向量转化方法，包括词频倒排文档频率法等，说明向量数据库的作用和常见类型。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 1030.36, \\\"end_seconds\\\": 1455.61, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:76514c2cfc4ee653:1:active\\\", \\\"score\\\": 0.139921, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG检索与生成阶段 [24:15–70:03]\\\\n介绍RAG检索阶段的两种方法，基于相似度和关键字检索，说明两种方法的区别和适用场景，讲解生成阶段的提示词构造和模型选择要点。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 1455.61, \\\"end_seconds\\\": 4203.0, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:e635c2a12220c20f:1:active\\\", \\\"score\\\": 0.805203, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\nASR 转写 [08:05–08:43]\\\\n[08:05] 蓝色的是\\\\n[08:06] 线上的这个提问过程\\\\n[08:08] 比如说对于知识库准备来说\\\\n[08:10] 一开始\\\\n[08:11] 你会有一个这个文档\\\\n[08:13] 然后这个文档需要通过切割器去进行一个切分\\\\n[08:17] 就切分之后我们就得到了具体的一个一个的知识块\\\\n[08:21] 那这些知识块它是\\\\n[08:23] 不会直接纯粒数据库的\\\\n[08:25] 它要先转化成为项量\\\\n[08:27] 然后才把这个项量纯粒\\\\n[08:30] 这个数据库\\\\n[08:31] 那这样的话这个知识库就准备好了\\\\n[08:35] 那有了这个知识库之后就可以开始用于\\\\n[08:39] 线上的提问环节\\\\n[08:41] 比如说你这里问了一个问题\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 485.08, \\\"end_seconds\\\": 523.22, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:c03ffe6bf1a3283b:1:active\\\", \\\"score\\\": 0.580837, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\nASR 转写 [09:59–10:34]\\\\n[09:59] 我们刚说了蓝色的这个我们称他为再线过程就是你在线应用的这个阶段嘛\\\\n[10:05] 红色的它是一个离线准备的过程所以这两个阶段是\\\\n[10:09] 可以分开的\\\\n[10:10] 那更具体的来看\\\\n[10:12] 红色的这个我们称他为所引阶段\\\\n[10:17] 蓝色的这里\\\\n[10:18] 这一款我们称他为\\\\n[10:21] 减锁阶段\\\\n[10:23] 这里称为生成阶段\\\\n[10:25] 那\\\\n[10:26] 减锁阶段的目的就是要减锁出这个相关的文档\\\\n[10:30] 生成阶段是\\\\n[10:31] 拿着减锁到的材料去生成这个结果\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 599.4, \\\"end_seconds\\\": 634.22, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}]\",\"rag_error\":\"rerank_sidecar_unavailable\",\"latency_ms\":7517,\"mcp_tool_calls_json\":null,\"mcp_called_count\":null,\"created_at\":\"2026-10-06T23:02:31.756000\"}]","GET /api/study/contexts/sc_24ggLieOLHlgsY_rJPAswgow7YOMKSXG":"{\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"series_id\":3191,\"session_id\":205794,\"video_title\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"knowledge_ready\":true}","GET /api/study/contexts/*":"{\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"series_id\":3191,\"session_id\":205794,\"video_title\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"knowledge_ready\":true}","GET /api/chat/sessions/*/history*":"[{\"message_id\":\"m_57d08fadd8b3\",\"session_id\":\"s_06486b7212f0\",\"user_id\":901,\"role\":\"user\",\"content\":\"本课介绍的 RAG 离线准备和线上提问分别有哪些步骤？为什么知识切分不能过长或过短？请附视频时间依据。\",\"rag_query_rewrite\":null,\"rag_retrieved_count\":null,\"rag_final_count\":null,\"rag_docs_json\":null,\"rag_error\":null,\"latency_ms\":null,\"mcp_tool_calls_json\":null,\"mcp_called_count\":null,\"created_at\":\"2026-10-06T23:02:31.755000\"},{\"message_id\":\"m_86892a7ffade\",\"session_id\":\"s_06486b7212f0\",\"user_id\":901,\"role\":\"assistant\",\"content\":\"### RAG离线准备（索引阶段）步骤\\n依据doc[3]（视频依据07:45–09:19）、doc[7]（视频依据08:05–08:43）、doc[8]（视频依据09:59–10:34），离线准备（索引阶段）的步骤为：\\n1. 处理文档：将原始文档通过切割器进行切分，得到一个个知识块；\\n2. 向量转化：将切分后的知识块转化为向量；\\n3. 存储向量：把转化后的向量存储到数据库中，完成知识库准备。\\n\\n### RAG线上提问（在线过程）步骤\\n依据doc[3]（视频依据07:45–09:19）、doc[8]（视频依据09:59–10:34），线上提问的步骤为：\\n1. 检索匹配（减锁阶段）：根据用户问题从已构建的知识库中检索匹配的相关文档；\\n2. 生成回答：拿着检索到的相关材料，结合大模型生成最终回答。\\n\\n### 知识切分不能过长或过短的原因\\n依据doc[4]（视频依据09:19–17:10），知识切分需保障语意连贯性，文本块过长或过短都会影响RAG的效果。\",\"rag_query_rewrite\":\"本课介绍的 RAG 离线准备和线上提问分别有哪些步骤？为什么知识切分不能过长或过短？请附视频时间依据。\",\"rag_retrieved_count\":8,\"rag_final_count\":8,\"rag_docs_json\":\"[{\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:3a61f0cf74926935:1:active\\\", \\\"score\\\": 0.120682, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的核心定义与作用 [04:19–06:57]\\\\n明确RAG的核心是根据用户问题从支持库中检索合适参考内容，结合大模型生成回答，介绍RAG在AI客服、政策查询、AI搜索等场景的应用，以Kimi为例说明RAG的实际应用情况。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 259.5, \\\"end_seconds\\\": 417.66, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:e1e4b616fb34e1ba:1:active\\\", \\\"score\\\": 0.123087, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的三大核心要素 [06:57–07:45]\\\\n介绍RAG的三大核心要素为支持库、检索、回答，说明支持库对企业和Kimi的不同含义，强调检索是RAG的核心，以及生成阶段需考虑的文档排序、输入方式等问题。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 417.66, \\\"end_seconds\\\": 465.3, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:0d3e0265676e0172:1:active\\\", \\\"score\\\": 1.0, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG的完整流程拆解 [07:45–09:19]\\\\n详细讲解RAG的流程，分为离线准备（知识库构建）和线上提问两大阶段，说明各阶段的具体步骤，包括知识切分、向量转化、检索匹配、提示词组装等，解释流程中关键节点的作用。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 465.3, \\\"end_seconds\\\": 559.58, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:3f9788a90ea356bc:1:active\\\", \\\"score\\\": 0.785527, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG流程关键节点详解 [09:19–17:10]\\\\n讲解知识切分的原因和要求，说明切分需保障语意连贯性，避免文本块过长或过短影响效果，介绍四种常见的知识切分方法，以及无需切分的特殊场景。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 559.58, \\\"end_seconds\\\": 1030.36, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:c4dfe77a04a8df7f:1:active\\\", \\\"score\\\": 0.14167, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：向量转化与存储方法 [17:10–24:15]\\\\n解释文本需转化为向量才能被计算机处理，介绍常见的向量转化方法，包括词频倒排文档频率法等，说明向量数据库的作用和常见类型。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 1030.36, \\\"end_seconds\\\": 1455.61, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:76514c2cfc4ee653:1:active\\\", \\\"score\\\": 0.139921, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\n章节：RAG检索与生成阶段 [24:15–70:03]\\\\n介绍RAG检索阶段的两种方法，基于相似度和关键字检索，说明两种方法的区别和适用场景，讲解生成阶段的提示词构造和模型选择要点。\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 1455.61, \\\"end_seconds\\\": 4203.0, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:e635c2a12220c20f:1:active\\\", \\\"score\\\": 0.805203, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\nASR 转写 [08:05–08:43]\\\\n[08:05] 蓝色的是\\\\n[08:06] 线上的这个提问过程\\\\n[08:08] 比如说对于知识库准备来说\\\\n[08:10] 一开始\\\\n[08:11] 你会有一个这个文档\\\\n[08:13] 然后这个文档需要通过切割器去进行一个切分\\\\n[08:17] 就切分之后我们就得到了具体的一个一个的知识块\\\\n[08:21] 那这些知识块它是\\\\n[08:23] 不会直接纯粒数据库的\\\\n[08:25] 它要先转化成为项量\\\\n[08:27] 然后才把这个项量纯粒\\\\n[08:30] 这个数据库\\\\n[08:31] 那这样的话这个知识库就准备好了\\\\n[08:35] 那有了这个知识库之后就可以开始用于\\\\n[08:39] 线上的提问环节\\\\n[08:41] 比如说你这里问了一个问题\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 485.08, \\\"end_seconds\\\": 523.22, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}, {\\\"doc_id\\\": \\\"course_public:2fca00e310fb472bb0f656090438533f:605ce8d767a24e69:c03ffe6bf1a3283b:1:active\\\", \\\"score\\\": 0.580837, \\\"content\\\": \\\"【RAG-全集】最适合新手的大模型RAG入门课程（大佬勿扰啦）\\\\nASR 转写 [09:59–10:34]\\\\n[09:59] 我们刚说了蓝色的这个我们称他为再线过程就是你在线应用的这个阶段嘛\\\\n[10:05] 红色的它是一个离线准备的过程所以这两个阶段是\\\\n[10:09] 可以分开的\\\\n[10:10] 那更具体的来看\\\\n[10:12] 红色的这个我们称他为所引阶段\\\\n[10:17] 蓝色的这里\\\\n[10:18] 这一款我们称他为\\\\n[10:21] 减锁阶段\\\\n[10:23] 这里称为生成阶段\\\\n[10:25] 那\\\\n[10:26] 减锁阶段的目的就是要减锁出这个相关的文档\\\\n[10:30] 生成阶段是\\\\n[10:31] 拿着减锁到的材料去生成这个结果\\\", \\\"source_file\\\": \\\"BV1hj5DzyE5d_P1.asr.json\\\", \\\"content_type\\\": \\\"doc_chunk\\\", \\\"series_code\\\": \\\"ai_video_topics_20261006\\\", \\\"series_name\\\": \\\"AI 开发专题：Python、记忆与 RAG\\\", \\\"series_codes\\\": [], \\\"module_codes\\\": [], \\\"series_id\\\": 3191, \\\"session_id\\\": 205796, \\\"video_id\\\": 205794, \\\"start_seconds\\\": 599.4, \\\"end_seconds\\\": 634.22, \\\"distill_artifact_id\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"distill_artifact_sha256\\\": \\\"4b5a8e500713ada638a3ebce1ae36eb514f961e23cc5f217de7492d3b2831f1c\\\", \\\"source_bvid\\\": \\\"BV1hj5DzyE5d\\\", \\\"source_cid\\\": 29546973634, \\\"compiler_version\\\": \\\"2\\\", \\\"generation\\\": \\\"ddba6648af055317a94e955325a9d3e0dd89db2fbdefa1716e3047bd6c646774\\\", \\\"keywords\\\": [], \\\"tenant_id\\\": \\\"course_public\\\", \\\"visibility\\\": \\\"public\\\", \\\"source_channel\\\": \\\"hybrid\\\"}]\",\"rag_error\":\"rerank_sidecar_unavailable\",\"latency_ms\":7517,\"mcp_tool_calls_json\":null,\"mcp_called_count\":null,\"created_at\":\"2026-10-06T23:02:31.756000\"}]"};
+  var SSE = "event: start\ndata: {\"session_id\": null, \"query\": \"用两句话介绍一下 Python 的变量命名规则\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:rec_question_0368a23ca7a7908a:a2e0d29dbe4691a4:a06dc5d5ac0985a6:1:active\", \"score\": 1.0, \"content\": \"```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\", \"source_file\": \"Q-0368a23ca7a7908a.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_9e9e6d15d3af8575:387f30b281347aa0:4212c0eee3a57127:1:active\", \"score\": 0.927492, \"content\": \"```python\\na = 7\\nif a % 2 == 0:\\n    print(\\\"even\\\")\\nelse:\\n    print(\\\"odd\\\")\\n```\", \"source_file\": \"Q-9e9e6d15d3af8575.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_36d5d784dd03db37:cebd03a29f7dd5a7:67595d6294537edb:1:active\", \"score\": 0.915683, \"content\": \"```python\\nx = 5\\nif x > 3:\\n    x -= 2\\nelse:\\n    x += 2\\nprint(x)\\n```\", \"source_file\": \"Q-36d5d784dd03db37.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_e0ea4ffcb08046af:b89eeba397df5f9f:2187b79da4f8eb59:1:active\", \"score\": 0.875034, \"content\": \"```python\\nres = 1\\nfor i in range(1, 4):\\n    res *= i\\nprint(res)\\n```\", \"source_file\": \"Q-e0ea4ffcb08046af.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3c4cfa4e37330763:1\", \"score\": 0.860203, \"content\": \"工作区符号查询会先打开可见源码建立 LSP 工作区；文档修改后同步更新服务器内容。诊断等待实际返回，超时会明确报错，不把“未收到诊断”当作“没有错误”。Python 与 TypeScript 两种标准重命名编辑格式均支持，应用前仍校验全部文件 SHA。\", \"source_file\": \"up_100003_4baa92d1_README.md\", \"content_type\": \"doc_chunk\", \"series_code\": null, \"series_name\": null, \"series_codes\": [], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [], \"retrieved_count\": 149, \"final_count\": 5, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"只能\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"和\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线\"}\n\nevent: token\ndata: {\"delta\": \"组成\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"以\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"开头\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"同时\"}\n\nevent: token\ndata: {\"delta\": \"区分\"}\n\nevent: token\ndata: {\"delta\": \"大小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 和\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"Name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 是\"}\n\nevent: token\ndata: {\"delta\": \"两个\"}\n\nevent: token\ndata: {\"delta\": \"不同的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"）。\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"使用\"}\n\nevent: token\ndata: {\"delta\": \" Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"保留\"}\n\nevent: token\ndata: {\"delta\": \"关键字\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"if\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"for\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"class\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 等\"}\n\nevent: token\ndata: {\"delta\": \"），\"}\n\nevent: token\ndata: {\"delta\": \"并\"}\n\nevent: token\ndata: {\"delta\": \"建议\"}\n\nevent: token\ndata: {\"delta\": \"遵循\"}\n\nevent: token\ndata: {\"delta\": \" P\"}\n\nevent: token\ndata: {\"delta\": \"EP\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"8\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"规\"}\n\nevent: token\ndata: {\"delta\": \"范\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"加\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线的\"}\n\nevent: token\ndata: {\"delta\": \"“\"}\n\nevent: token\ndata: {\"delta\": \"蛇\"}\n\nevent: token\ndata: {\"delta\": \"形\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"法\"}\n\nevent: token\ndata: {\"delta\": \"”（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"student\"}\n\nevent: token\ndata: {\"delta\": \"_name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"来\"}\n\nevent: token\ndata: {\"delta\": \"提高\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"基于\"}\n\nevent: token\ndata: {\"delta\": \"通用\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"综合\"}\n\nevent: token\ndata: {\"delta\": \"上下\"}\n\nevent: token\ndata: {\"delta\": \"文\"}\n\nevent: token\ndata: {\"delta\": \"中的\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"片段\"}\n\nevent: token\ndata: {\"delta\": \"未\"}\n\nevent: token\ndata: {\"delta\": \"涉及\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"规则\"}\n\nevent: token\ndata: {\"delta\": \"说明\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"故\"}\n\nevent: token\ndata: {\"delta\": \"此\"}\n\nevent: token\ndata: {\"delta\": \"回答\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"模型\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"补充。）\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": null, \"message_id\": null, \"retrieved_count\": 149, \"final_count\": 5, \"latency_ms\": 14785, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n";
+  var DEMO_VER = "{\r\n  \"checked_at\": \"2026-10-05T17:04:09+0800\",\r\n  \"kind\": \"saved-real-runtime-acceptance\",\r\n  \"note\": \"保存的真实验收记录，不表示当前仍在执行。Jaeger 重启后可能不再保留内存 Trace。\",\r\n  \"cases\": [\r\n    {\r\n      \"name\": \"P1 本课背景与资料\",\r\n      \"query\": \"我当前学的是什么课程？这一节视频讲什么？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"679eeff149c5d47d836987be0989dce7\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"P1 同课追问\",\r\n      \"query\": \"你刚才提到的哈希表方法，如何保证不会把同一个元素使用两次？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"529bc6336146769bec6947d4f0594b91\",\r\n      \"citations\": 8,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"纯闲聊捷径\",\r\n      \"query\": \"你好\",\r\n      \"pass\": true,\r\n      \"intent\": \"chitchat\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"77a13d96694884ad302505a637a4b6f1\",\r\n      \"citations\": 0,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": null\r\n    },\r\n    {\r\n      \"name\": \"知识问答：九节点\",\r\n      \"query\": \"根据 Cache Learning Notes，TTL 为什么不能保证缓存和数据库的一致性？\",\r\n      \"pass\": true,\r\n      \"intent\": \"knowledge\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"e4a26e0f603e6f77e2b02fbf1a0b38df\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"真实计算器调用\",\r\n      \"query\": \"请使用 calculator 计算 17 * 23，给我结果。\",\r\n      \"pass\": true,\r\n      \"intent\": \"tool\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"2f2338d6106b8e46c00a42f60c35250e\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [\r\n        {\r\n          \"name\": \"add\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"sum\\\": 40, \\\"was_negative\\\": false}\"\r\n        },\r\n        {\r\n          \"name\": \"calculator\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"result\\\": 391.0, \\\"tool\\\": \\\"calculator\\\", \\\"op\\\": \\\"mul\\\"}\"\r\n        }\r\n      ],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"学习规划分支\",\r\n      \"query\": \"请根据我的学习情况给我制定一份学习计划。\",\r\n      \"pass\": true,\r\n      \"intent\": \"learning\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"5c5d8b2a5f487bdbf26f5259c1951038\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"新建 Cache 课程答疑\",\r\n      \"query\": \"我目前正在学什么课程？这节课讲了哪些 Cache 优化思路？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"260ad37dcd96658bccb83c642e30ec7a\",\r\n      \"citations\": 7,\r\n      \"video_ids\": [\r\n        205792\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    }\r\n  ]\r\n}";
+  var ROLE = "student";
+  /* 通配路由（key 含 *）：编译为正则，最长模板优先 */
+  var WILD = [];
+  (function () {
+    var tmp = [];
+    for (var k in ROUTES) {
+      if (k.indexOf("*") < 0) continue;
+      var sp = k.indexOf(" ");
+      tmp.push({ m: k.slice(0, sp), re: new RegExp("^" + k.slice(sp + 1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[^/]*") + "$"), d: ROUTES[k] });
+      delete ROUTES[k];
+    }
+    WILD = tmp.sort(function (a, b) { return b.re.source.length - a.re.source.length; });
+  })();
+  var TOKEN_KEY = "edu:auth:token", REFRESH_KEY = "edu:auth:refresh";
+  var LOGIN_PAGE = "login-register.html";
+  var memoryToken = "offline-" + ROLE;
+  var memoryRefresh = "offline";
+  var errorHandlers = [];
+  function trimSlash(s){ return String(s||"").replace(/\/+$/,""); }
+  function apiError(status, message){ var e = new Error(message || ("HTTP " + status)); e.status = status; e.isApiError = true; return e; }
+  function sanitizeRedirect(r){ if (typeof r !== "string") return ""; var s = r.trim(); if (!s || s.charAt(0) !== "/") return ""; if (s.charAt(1) === "/") return ""; if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) return ""; return s; }
+  function getRedirectParam(){ try { var q = new URLSearchParams(location.search || ""); return sanitizeRedirect(q.get("redirect") || ""); } catch (e) { return ""; } }
+  function pageId(name){ try { var q = new URLSearchParams(location.search || ""); var v = typeof name === "string" ? q.get(name) : q.get("id"); return v === null || v === undefined ? "" : String(v).trim(); } catch (e) { return ""; } }
+  function currentPathWithQuery(){ try { return (location.pathname || "/") + (location.search || ""); } catch (e) { return "/"; } }
+  function onLoginPage(){ try { return /(^|\/)login-register\.html$/.test((location.pathname || "").split("/").pop() || ""); } catch (e) { return false; } }
+  function buildLoginUrl(redirectPath){ var t = sanitizeRedirect(redirectPath || ""); return t ? LOGIN_PAGE + "?redirect=" + encodeURIComponent(t) : LOGIN_PAGE; }
+  function gotoLogin(p){ try { window.location.href = buildLoginUrl(p); } catch (e) {} }
+  function onError(fn){ if (typeof fn !== "function") return function () {}; errorHandlers.push(fn); return function () { var i = errorHandlers.indexOf(fn); if (i >= 0) errorHandlers.splice(i, 1); }; }
+  function emitOnce(err){ if (!err || err.__eapiEmitted) return; err.__eapiEmitted = true; for (var i = 0; i < errorHandlers.length; i++) { try { errorHandlers[i](err); } catch (e) {} } try { console.error("[EAPI]", (err && err.message) || err); } catch (e) {} }
+
+  var store = {
+    getToken: function () { return memoryToken; },
+    setToken: function (t) { memoryToken = t || ""; },
+    getRefreshToken: function () { return memoryRefresh; },
+    setRefreshToken: function (t) { memoryRefresh = t || ""; },
+    clear: function () { memoryToken = ""; memoryRefresh = ""; },
+  };
+
+  function routeLookup(method, pathWithQuery) {
+    var key = method + " " + pathWithQuery;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    var noQ = pathWithQuery.split("?")[0];
+    key = method + " " + noQ;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    for (var wi = 0; wi < WILD.length; wi++) {
+      if (WILD[wi].m === method && WILD[wi].re.test(noQ)) return { status: 200, data: JSON.parse(WILD[wi].d) };
+    }
+    var best = null, bestLen = -1;
+    for (var k in ROUTES) {
+      if (k.indexOf(method + " ") !== 0) continue;
+      var kp = k.slice(method.length + 1).split("?")[0];
+      if (kp === noQ) return { status: 200, data: JSON.parse(ROUTES[k]) };
+      if (noQ.indexOf(kp + "/") === 0 && kp.length > bestLen) { best = k; bestLen = kp.length; }
+    }
+    if (best) return { status: 200, data: JSON.parse(ROUTES[best]) };
+    console.warn("[MOCK] 未匹配的接口（返回诚实空态）:", method, pathWithQuery);
+    if (method === "GET") {
+      var tail = noQ.split("/").pop();
+      var looksList = !tail || pathWithQuery.indexOf("?") >= 0 || /(s|sessions|logs|tasks|items)$/.test(noQ);
+      return { status: 200, data: looksList ? { total: 0, page: 1, page_size: 20, items: [] } : {} };
+    }
+    return { status: 200, data: { ok: true } };
+  }
+
+  var MUTATION_FIX = {
+    "POST /api/auth/login": function (body) {
+      return { access_token: "offline", refresh_token: "offline", user: JSON.parse(ROUTES["GET /api/users/me"] || ROUTES["GET /api/auth/me"] || "{}") };
+    },
+    "POST /api/auth/register": function () { return { user_id: 900001 }; },
+  };
+  function mutate(method, path, body) {
+    var fk = method + " " + path.split("?")[0];
+    if (MUTATION_FIX[fk]) return { status: 200, data: MUTATION_FIX[fk](body) };
+    if (path.indexOf("/api/trade/order") === 0 && method === "POST")
+      return { status: 200, data: { order_id: "MOCKORD1001", status: "pending_pay", pay_url: null, amount_due: (body && body.amount_due) || 0, series_id: body && body.series_id } };
+    if (path.indexOf("/api/trade/payment") === 0) return { status: 200, data: { status: "paid", paid: true, order_id: "MOCKORD1001" } };
+    if (path.indexOf("/api/progress/video") === 0) return { status: 200, data: { play_session_id: 900001 } };
+    if (path.indexOf("/api/community/posts") === 0 && method === "POST")
+      return { status: 200, data: { post_id: 9001, title: (body && body.title) || "演示帖子", content_md: (body && body.content_md) || "", created_at: new Date().toISOString() } };
+    if (path.indexOf("/api/users/me/profile") === 0) return { status: 200, data: Object.assign(JSON.parse(ROUTES["GET /api/users/me/profile"] || "{}"), body || {}) };
+    console.warn("[MOCK] 变更接口（离线演示返回成功）:", method, path);
+    return { status: 200, data: { ok: true, id: 900001 } };
+  }
+
+  function sseResponse() {
+    var enc = new TextEncoder();
+    var frames = SSE.split("\n\n").filter(function (f) { return f.trim(); });
+    var stream = new ReadableStream({
+      start: function (c) {
+        var i = 0;
+        function next() {
+          if (i >= frames.length) { c.close(); return; }
+          c.enqueue(enc.encode(frames[i++] + "\n\n"));
+          setTimeout(next, 40);
+        }
+        next();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  }
+
+  function request(method, path, body) {
+    if (!memoryToken && !onLoginPage()) { gotoLogin(currentPathWithQuery()); return Promise.reject(apiError(401, "登录凭证无效或已过期")); }
+    var p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
+    return new Promise(function (resolve) { setTimeout(resolve, 60); }).then(function () {
+      var out;
+      if (method !== "GET") out = mutate(method, p, body);
+      else out = routeLookup(method, p);
+      if (out.status === 404) throw apiError(404, "资源不存在（离线演示无此数据）");
+      return out.data;
+    }).catch(function (e) { emitOnce(e); throw e; });
+  }
+
+  var EAPI = {
+    BASE: (global.location && global.location.origin) || "",
+    TOKEN_KEY: TOKEN_KEY, TIMEOUT_MS: 15000,
+    get: function (p) { return request("GET", p); },
+    post: function (p, b) { return request("POST", p, b); },
+    put: function (p, b) { return request("PUT", p, b); },
+    patch: function (p, b) { return request("PATCH", p, b); },
+    del: function (p) { return request("DELETE", p); },
+    store: store, logout: function () { store.clear(); if (!onLoginPage()) gotoLogin(currentPathWithQuery()); },
+    onError: onError, getRedirectParam: getRedirectParam, buildLoginUrl: buildLoginUrl, pageId: pageId,
+  };
+  global.EAPI = EAPI;
+
+  var origFetch = global.fetch ? global.fetch.bind(global) : null;
+  global.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/chat/stream") >= 0) return Promise.resolve(sseResponse());
+    if (url.indexOf("demo/verification.json") >= 0)
+      return Promise.resolve(new Response(DEMO_VER, { status: 200, headers: { "Content-Type": "application/json" } }));
+    if (url.indexOf("/api/") >= 0 || url.indexOf("samples/") >= 0 || url.indexOf("/media/") >= 0) {
+      var method = ((init && init.method) || "GET").toUpperCase();
+      var body = null;
+      try { body = init && init.body ? JSON.parse(init.body) : null; } catch (e) {}
+      if (url.indexOf("samples/") >= 0) return origFetch(input, init).catch(function () { return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }); });
+      var out = method === "GET" ? routeLookup(method, url.split(/^[a-z]+:\/\/?[^/]*\/|^[a-z]+:\/\//.test(url) ? url.replace(/^[a-z]+:\/\/[^/]*\//, "/") : url).split("?").length ? urlAfterBase(url) : url) : mutate(method, urlAfterBase(url), body);
+      function urlAfterBase(u) { var i = u.indexOf("/api/"); return i >= 0 ? u.slice(i) : u; }
+      if (out.status === 404) return Promise.resolve(new Response(JSON.stringify({ code: "40400", message: "not found", data: null }), { status: 404, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(new Response(JSON.stringify({ code: 0, message: "ok", data: out.data }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    }
+    return origFetch ? origFetch(input, init) : Promise.reject(new Error("offline: fetch blocked"));
+  };
+})(window);
+</script>
+<script>
+/* EduMD：极简 Markdown→HTML（AI 回答渲染用，离线零依赖，~55 行手写）
+   规则：先整体 HTML 转义（& < > "）再做 Markdown 转换 → 标签/属性注入全部失效（防 XSS）；
+   支持 #~#### 标题、无序(-*•)/有序(1. 1、1))列表、```围栏代码块（流式未闭合也按代码块渲染）、
+   行内 code（反引号）、**加粗**、*斜体*、[文字](链接)（仅放行 http(s)/站内相对/#，其余替换为 #）、
+   空行分段 + 段内单换行转 <br> */
+(function (global) {
+  function mdToHtml(src) {
+    var s = String(src == null ? "" : src).replace(/\r\n?/g, "\n")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    var blocks = [];
+    s = s.replace(/```[\w-]*\n?([\s\S]*?)(?:```|$)/g, function (m, code) {
+      blocks.push('<pre class="md-pre"><code>' + code.replace(/\n+$/, "") + "</code></pre>");
+      return "\u0000B" + (blocks.length - 1) + "\u0000";
+    });
+    function inline(x) {
+      var codes = [];
+      x = x.replace(/`([^`\n]+)`/g, function (m, c) {
+        codes.push("<code>" + c + "</code>");
+        return "\u0000C" + (codes.length - 1) + "\u0000";
+      });
+      x = x.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
+        var href = /^(https?:\/\/|\/|#)/i.test(u) ? u : "#";
+        return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + t + "</a>";
+      });
+      x = x.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+      x = x.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>");
+      return x.replace(/\u0000C(\d+)\u0000/g, function (m, i) { return codes[+i]; });
+    }
+    var lines = s.split("\n"), out = [], i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      var bm = line.match(/^\u0000B(\d+)\u0000\s*$/);
+      if (bm) { out.push(blocks[+bm[1]]); i++; continue; }
+      var h = line.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { var lv = h[1].length + 2; out.push('<h' + lv + ' class="md-h">' + inline(h[2]) + "</h" + lv + ">"); i++; continue; }
+      var isUl = /^\s*[-*•]\s+/.test(line), isOl = /^\s*\d+[.、)]\s+/.test(line);
+      if (isUl || isOl) {
+        var tag = isUl ? "ul" : "ol";
+        var re = isUl ? /^\s*[-*•]\s+(.*)$/ : /^\s*\d+[.、)]\s+(.*)$/;
+        var items = [];
+        while (i < lines.length) { var lm = lines[i].match(re); if (!lm) break; items.push("<li>" + inline(lm[1]) + "</li>"); i++; }
+        out.push('<' + tag + ' class="md-list">' + items.join("") + "</" + tag + ">");
+        continue;
+      }
+      if (!line.trim()) { i++; continue; }
+      var para = [line]; i++;
+      while (i < lines.length && lines[i].trim() &&
+             !/^\u0000B\d+\u0000/.test(lines[i]) && !/^(#{1,4})\s/.test(lines[i]) &&
+             !/^\s*([-*•]|\d+[.、)])\s+/.test(lines[i])) { para.push(lines[i]); i++; }
+      out.push("<p>" + para.map(inline).join("<br>") + "</p>");
+    }
+    return out.join("").replace(/\u0000B(\d+)\u0000/g, function (m, i) { return blocks[+i]; });
+  }
+  global.EduMD = { toHtml: mdToHtml };
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function (global) {
+  "use strict";
+  function escape(value) {
+    return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function stamp(value) {
+    var seconds = Math.floor(value);
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  global.EduVideoCitations = function (docs) {
+    if (!Array.isArray(docs)) return "";
+    var links = [];
+    docs.forEach(function (doc, index) {
+      if (!doc || !Number.isInteger(doc.series_id) || doc.series_id <= 0 ||
+          !Number.isInteger(doc.session_id) || doc.session_id <= 0 ||
+          !Number.isInteger(doc.video_id) || doc.video_id <= 0 ||
+          !Number.isFinite(doc.start_seconds) || !Number.isFinite(doc.end_seconds) ||
+          doc.start_seconds < 0 || doc.end_seconds <= doc.start_seconds) return;
+      var params = new URLSearchParams({ series_id: String(doc.series_id), session_id: String(doc.session_id), t: String(doc.start_seconds) });
+      links.push('<li><a href="learning.html?' + escape(params.toString()) + '">doc[' + (index + 1) + '] · ' +
+        escape(doc.series_name || "本课视频") + ' · ' + stamp(doc.start_seconds) + '–' + stamp(doc.end_seconds) +
+        ' · 跳到视频依据</a></li>');
+    });
+    return links.length ? '<div class="video-citations"><b>视频依据</b><ul>' + links.join("") + '</ul></div>' : "";
+  };
+})(window);
+
+</script>
+
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* ===== 对接真实后端（chat · task07 补全）=====
+   curl 实测契约（2026-09-06，学生 token，详见 test-reports/task07-completion-report-reshape-a.md）：
+   - GET    /api/chat/sessions?limit=50 → data: ChatSession[] 扁平数组（session_id/title/message_count/last_message_at）
+   - POST   /api/chat/sessions {}       → data: ChatSession（title 默认「新会话 xxxxxx」）
+   - GET    /api/chat/sessions/{id}/history?limit=N（1..500，>500→422）→ data: ChatMessage[] 按 created_at ASC，
+              仅 limit 截断、无 page/offset；GET /sessions/{id} 无详情端点（405）——漂移已登记报告
+   - DELETE /api/chat/sessions/{id}     → data:{ok:true}（软删）；404 code:"CHAT_SESSION_NOT_FOUND"（字符串码）
+   task07 改动（SSE 主解析逻辑未动）：
+   ①历史 limit=500 + 按 message_count 诚实截断横幅（ASC→最早 N 条）
+   ②会话列表/历史加载失败渲染诚实错误态（原 .catch 静默吞 → 登录态残留静态 demo 假数据）
+   ③流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效复用
+   ④done→keepView 只刷侧栏（原 loadSessions() 整页刷新会把视图弹回列表头部并重载历史）
+   ⑤offline/读取中断降级提示；会话标题 esc 转义（原直接 innerHTML 注入）
+   ⑥隐藏静态 ctxTag「通用编程入门班 第3讲」假上下文徽标 */
+(function () {
+  if (!window.EAPI) return;
+  var token = EAPI.store.getToken();
+  if (!token) { window.location.href = "login-register.html"; return; }
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $("stage");
+  var sessions = [], activeId = null;
+  var studyContextId = new URLSearchParams(window.location.search).get("study_context_id") || null;
+  var studyContextSessionId = null;
+  if (studyContextId) {
+    $("chatTitle").textContent = "本课答疑";
+    var courseSubtitle = document.querySelector(".chat-head .sub");
+    if (courseSubtitle) courseSubtitle.textContent = "结合本课视频、笔记和字幕回答，点击视频依据可返回对应片段";
+  }
+  var HISTORY_LIMIT = 500; /* 实测上限 500，超限 422；契约无 page/offset */
+  var streaming = false;
+  var notifyStreamFail = null; /* doSend 内 failStream 的外露槽：offline 监听复用（作用域桥接） */
+
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+  /* EduMD 未加载（脚本被拦等）时静默降级为纯文本转义 */
+  var md = (window.EduMD && window.EduMD.toHtml) ? window.EduMD.toHtml : esc;
+
+  function fmt(ts) {
+    if (!ts) return "刚刚";
+    var d = new Date(String(ts).replace(" ", "T"));
+    if (isNaN(d)) return "最近";
+    var h = d.getHours().toString().padStart(2, "0"), m = d.getMinutes().toString().padStart(2, "0");
+    var today = new Date();
+    if (d.toDateString() === today.toDateString()) return h + ":" + m;
+    return (d.getMonth() + 1) + "-" + d.getDate();
+  }
+
+  /* ---- 诚实错误态（会话/历史加载失败；替换原静默吞错导致的 demo 假数据残留）---- */
+  function errState(title, msg, retry) {
+    stage.innerHTML = '<div class="error-st"><div class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></div><div class="t">' + esc(title) + '</div>'
+      + '<div class="d">' + esc(msg || "") + '</div>'
+      + (retry ? '<button class="btn btn-ghost" id="stageRetry">↻ 重试</button>' : "") + '</div>';
+    var rb = $("stageRetry");
+    if (rb && retry) rb.addEventListener("click", retry);
+  }
+
+  /* keepView=true：只刷新侧栏，不切换会话/不重载历史（done 后刷列表用，防视图弹跳） */
+  function loadSessions(opts) {
+    var keepView = !!(opts && opts.keepView);
+    return EAPI.get("/api/chat/sessions?limit=50").then(function (list) {
+      sessions = (Array.isArray(list) ? list : []).map(function (s) {
+        return { id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 };
+      });
+      if (studyContextId && !studyContextSessionId) {
+        return EAPI.post("/api/chat/sessions", { title: "本课答疑" }).then(function (s) {
+          if (!s || !s.session_id) throw new Error("本课会话创建失败");
+          studyContextSessionId = s.session_id;
+          activeId = s.session_id;
+          sessions = [{ id: s.session_id, title: s.title || "本课答疑", date: fmt(s.last_message_at), count: 0 }];
+          renderSides();
+          stage.innerHTML = emptyHtml();
+        });
+      }
+      if (studyContextId && studyContextSessionId) {
+        sessions = sessions.filter(function (s) { return s.id === studyContextSessionId; });
+        activeId = studyContextSessionId;
+      }
+      if (keepView) { renderSides(); return; }
+      var alive = sessions.some(function (s) { return s.id === activeId; });
+      if (!alive) activeId = sessions.length ? sessions[0].id : null;
+      if (activeId) { renderSides(); loadHistory(activeId); }
+      else emptyState();
+    }).catch(function (e) {
+      sessions = []; renderSides();
+      errState("会话列表加载失败", (e && e.message) || "网络错误", function () { loadSessions(); });
+    });
+  }
+
+  function renderSides() {
+    var html = sessions.map(function (s) {
+      return '<button class="sess ' + (s.id === activeId ? "on" : "") + '" data-id="' + s.id + '"><span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-chat-circle"/></svg></span><span class="si"><span class="t">' + esc(s.title) + '</span><span class="d">' + s.date + '</span></span><span class="del" data-del="' + s.id + '" title="删除会话"><svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg></span></button>';
+    }).join("");
+    ["sideList", "drawerList"].forEach(function (id) { if ($(id)) $(id).innerHTML = html; });
+    ["sideList", "drawerList"].forEach(function (id) {
+      if (!$(id)) return;
+      $(id).querySelectorAll(".sess").forEach(function (b) {
+        b.addEventListener("click", function () { if (streaming || studyContextId) return; activeId = b.dataset.id; renderSides(); loadHistory(activeId); });
+      });
+      $(id).querySelectorAll(".del").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (studyContextId) return;
+          if (b.dataset.del === activeId && streaming) return; /* 流式中禁删当前会话（防渲染目标丢失） */
+          delSession(b.dataset.del);
+        });
+      });
+    });
+  }
+
+  /* ---- 历史消息：?limit=500（实测契约，无分页参数）；超 message_count 截断诚实横幅 ---- */
+  function loadHistory(sid) {
+    var sess = null;
+    for (var i = 0; i < sessions.length; i++) if (sessions[i].id === sid) sess = sessions[i];
+    stage.innerHTML = '<div style="display:flex;justify-content:center;padding:24px 0"><span class="think"><span class="spinner"></span><span class="txt">加载历史消息…</span></span></div>';
+    EAPI.get("/api/chat/sessions/" + sid + "/history?limit=" + HISTORY_LIMIT).then(function (msgs) {
+      if (activeId !== sid) return; /* 用户已切走：丢弃过期渲染（快速切换竞态防护） */
+      var list = Array.isArray(msgs) ? msgs : [];
+      var html = list.map(historyBubble).join("");
+      if (sess && sess.count > list.length) {
+        html += '<div class="degrade" style="margin:4px 0 0"><span class="ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></span><span><b>历史较长：</b>接口仅支持 limit 截断（无分页参数），已加载最早 ' + list.length + ' 条 / 共 ' + sess.count + ' 条。</span></div>';
+      }
+      stage.innerHTML = html || emptyHtml();
+      stage.scrollTop = stage.scrollHeight; /* ASC 列表末尾 = 最新消息 */
+    }).catch(function (e) {
+      if (activeId !== sid) return;
+      errState("历史消息加载失败", (e && e.message) || "网络错误", function () { loadHistory(sid); });
+    });
+  }
+
+  function historyBubble(m) {
+    var isUser = m.role === "user" || m.role === "human";
+    /* AI 消息走 EduMD Markdown 渲染；用户消息纯文本转义 + 换行 */
+    var body = isUser ? esc(m.content || m.text || "").replace(/\n/g, "<br>") : md(m.content || m.text || "");
+    if (!isUser && window.EduVideoCitations && m.rag_docs_json) {
+      try { body += window.EduVideoCitations(JSON.parse(m.rag_docs_json)); } catch (ignore) {}
+    }
+    var meta = '<span>' + fmt(m.created_at) + '</span>';
+    var refs = (m.rag_final_count != null) ? m.rag_final_count : m.rag_retrieved_count;
+    if (!isUser && refs != null) meta += '<span class="refs"><svg class="ic" aria-hidden="true"><use href="#ic-magnifying-glass"/></svg>' + refs + ' 篇引用</span>';
+    return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="avatar">' + (isUser ? "😊" : "🤖") + '</div>'
+      + '<div class="box"><div class="bubb">' + body + '</div><div class="meta">' + meta + '</div></div></div>';
+  }
+
+  function emptyHtml() { return '<div class="empty" style="text-align:center;color:var(--ink-faint);padding:60px 0">开始和 Bili-Study 对话吧</div>'; }
+  function emptyState() { activeId = null; renderSides(); stage.innerHTML = emptyHtml(); }
+
+  /* ---- 删除会话（DELETE /api/chat/sessions/{id}，实测软删 data:{ok:true}；失败 toast 由 EAPI 钩子提示）---- */
+  function delSession(id) {
+    EAPI.del("/api/chat/sessions/" + id).then(function () {
+      sessions = sessions.filter(function (s) { return s.id !== id; });
+      if (activeId === id) {
+        activeId = sessions.length ? sessions[0].id : null;
+        if (activeId) { renderSides(); loadHistory(activeId); }
+        else emptyState();
+      } else renderSides();
+    }).catch(function () { /* 403 跨用户 / 404 已删 → EAPI 全局钩子 toast */ });
+  }
+
+  /* ---- 发送：SSE 流式（EduMD Markdown 渲染 + 120ms 节流；start/retrieval→首 token 思考中动效）---- */
+  var input = $("composerInput"), send = $("sendBtn");
+  var THINK_HTML = '<span class="think"><span class="spinner"></span><span class="txt">检索知识库并思考中…</span></span>';
+  var CURSOR_HTML = '<span class="cursor"></span>';
+  function nearBottom() { return stage.scrollHeight - stage.scrollTop - stage.clientHeight < 90; }
+  function scrollStage(force) { if (force || nearBottom()) stage.scrollTop = stage.scrollHeight; }
+  /* task07③：流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效 + 按钮状态 */
+  function setStreaming(on) {
+    streaming = on;
+    var qh = $("queueHint");
+    if (qh) qh.style.display = on ? "" : "none";
+    send.disabled = on;
+    send.classList.toggle("stop", on);
+    send.innerHTML = on ? '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="#ic-x"/></svg></span>' : '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="#ic-paper-plane-tilt"/></svg></span>';
+  }
+  function doSend() {
+    var text = (input.value || "").trim();
+    if (!text) return;
+    if (streaming) return;                        /* 流式中禁止并发发送 */
+    /* task07④：断网诚实降级——不发请求，保留输入 */
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      var to = $("toast"), tom = $("toastMsg");
+      if (to) { if (tom) tom.textContent = "当前设备已断网，请检查网络连接后重试"; to.style.display = ""; }
+      input.focus();
+      return;
+    }
+    var sid = activeId;
+    lastQuery = text;                     /* R11 HITL：确认后续流需重发原提问（同 thread_id 重开流） */
+    /* 追加新气泡（不再清空既有历史；移除空态/错误态占位） */
+    var ph = stage.querySelector(".empty,.error-st"); if (ph) ph.parentNode.removeChild(ph);
+    stage.insertAdjacentHTML("beforeend",
+      '<div class="msg user"><div class="bubb">' + esc(text).replace(/\n/g, "<br>") + '</div></div>' +
+      '<div class="msg ai"><div class="bubb" id="aiResp">' + THINK_HTML + '</div></div>');
+    scrollStage(true);
+    input.value = "";
+    setStreaming(true);
+    openStream(text, sid, {});
+  }
+  /* ---- R11 HITL：pending_confirm 确认卡 + resume 决策 + 同 thread_id 续流（契约 reshape-r-hitl.json）---- */
+  var hitlPending = null, hitlTimer = null, lastQuery = "";
+  function riskLabel(r) { return ({ low: "低风险", medium: "中风险", high: "高风险" })[r] || "未知风险"; }
+  function renderHitlCard(pc) {
+    hitlPending = pc;
+    var el = $("aiResp"); if (!el) return;
+    var argsText = "";
+    try { argsText = JSON.stringify(pc.args || {}); } catch (e) { argsText = String(pc.args || ""); }
+    if (argsText.length > 200) argsText = argsText.slice(0, 200) + "…";
+    el.innerHTML =
+      '<div class="hitl-card" id="hitlCard">' +
+        '<div class="hitl-ic"><svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg></div>' +
+        '<div class="hitl-title">高风险操作需要您的确认</div>' +
+        '<div class="hitl-tool">工具：<code>' + esc(pc.tool_name || "未知工具") + '</code></div>' +
+        '<div class="hitl-risk hitl-risk-' + esc(pc.risk_level || "high") + '">' + esc(riskLabel(pc.risk_level)) + '</div>' +
+        '<div class="hitl-args">' + esc(argsText) + '</div>' +
+        '<div class="hitl-note">请确认是否执行该操作：确认后立即执行；拒绝将中断执行。<span class="hitl-tick" id="hitlTick"></span></div>' +
+        '<div class="hitl-acts">' +
+          '<button class="btn btn-danger hitl-reject" type="button">拒绝</button>' +
+          '<button class="btn btn-primary hitl-confirm" type="button">确认执行</button>' +
+        '</div>' +
+      '</div>';
+    var okBtn = el.querySelector(".hitl-confirm");
+    var noBtn = el.querySelector(".hitl-reject");
+    if (okBtn) okBtn.addEventListener("click", function () { resumeHitl("confirm", ""); });
+    if (noBtn) noBtn.addEventListener("click", function () { resumeHitl("reject", ""); });
+    /* 超时自动按 reject 处理（契约：TTL 到期决策失效 → 渲染超时态 + 按 reject） */
+    var ttl = Number(pc.timeout_s) > 0 ? Number(pc.timeout_s) : 300;
+    var tick = $("hitlTick"), left = ttl;
+    if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+    hitlTimer = setInterval(function () {
+      left--;
+      if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+      if (left <= 0) {
+        clearInterval(hitlTimer); hitlTimer = null;
+        var card = $("hitlCard");
+        if (card) {
+          card.classList.add("hitl-busy");
+          var n = card.querySelector(".hitl-note");
+          if (n) n.textContent = "确认超时，已按拒绝处理";
+        }
+        resumeHitl("reject", "确认超时");
+      }
+    }, 1000);
+    scrollStage(true);
+  }
+  function resumeHitl(action, reason) {
+    if (!hitlPending || !hitlPending.thread_id) return;
+    if (hitlTimer) { clearInterval(hitlTimer); hitlTimer = null; }
+    var card = $("hitlCard");
+    if (card) card.classList.add("hitl-busy");
+    var q = lastQuery || "";
+    EAPI.post("/api/chat/resume", { thread_id: hitlPending.thread_id, action: action, reason: reason || undefined })
+      .then(function (s) {
+        /* resumed → 以同 thread_id 重开流续跑挂起图（graph_stream 检测决策 → Command(resume)） */
+        var pc = hitlPending; hitlPending = null;
+        if (q) continueStream(q, pc.thread_id);
+        else failStream("无法续流：原提问已丢失");
+      })
+      .catch(function () {
+        if (card) card.classList.remove("hitl-busy");
+      });
+  }
+  function continueStream(query, threadId) {
+    var el = $("aiResp");
+    if (el) el.innerHTML = THINK_HTML;
+    openStream(query, threadId, { resume: true });
+  }
+  /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 打字机揭示节拍） */
+  function openStream(query, sid, opts) {
+    opts = opts || {};
+    /* [TA1 定因/修复] 揭示节奏与网络到达解耦（打字机队列）
+       定因实测（CDP + 裸 socket，见 REPORT-TA1-3）：上游 LLM 吞吐 400~620 字/秒，
+       整段 token 窗口只有 0.24~1.3s；1:1 渲染（叠加旧 120ms 节流只出 9~11 帧）在肉眼上
+       等同"转圈后整段弹出"。以下只控制**何时显示已到达的增量**：
+       不改答案内容、不改 SSE 事件/字段解析（契约仍为 event: token + j.delta）。 */
+    var acc = "", gotToken = false, gotDone = false, streamClosed = false;
+    var doneMemo = [], videoDocs = [];
+    var doneReceiptWarn = false; /* [F-W1-GUARD AUTO20 T7] done 帧 tool_receipt_unverified=true → 黄色警示条 */
+    var hitlCardShown = false;   /* HITL 确认卡已渲染 → 收尾不得整体重写 innerHTML 冲掉它 */
+    var shown = 0;               /* 已揭示字符数（0..acc.length），acc 始终是"已到达的全量"（事实源） */
+    var pacer = null, revealStart = 0, finished = false;
+    var REVEAL_TICK_MS = 30;     /* 揭示节拍 */
+    var REVEAL_MIN_CPS = 90;     /* 最小揭示速度（字/秒）——低于此肉眼基本看不出逐字 */
+    var REVEAL_TAIL_MS = 2200;   /* 缓冲越多越快：剩余缓冲至多再花这么久排空（防长答案拖尾） */
+    var REVEAL_FORCE_MS = 20000; /* 硬兜底：揭示最长不超过 20s，超时立即全量（防定时器悬挂） */
+    function renderStream(final) {
+      var el = $("aiResp"); if (!el) return;
+      var text = final ? acc : acc.slice(0, shown);
+      if (!text) return;
+      var htmlOut = md(text);
+      if (!final) {
+        /* 闪烁 cursor 尽量挂在最后一个块级元素内，避免独占一行 */
+        if (/<\/(p|h[3-6]|li)>$/.test(htmlOut)) htmlOut = htmlOut.replace(/<\/(p|h[3-6]|li)>$/, CURSOR_HTML + "</$1>");
+        else htmlOut += CURSOR_HTML;
+      }
+      el.innerHTML = htmlOut;
+      scrollStage(false);
+    }
+    function stopPacer() { if (pacer) { clearInterval(pacer); pacer = null; } }
+    /* 揭示一步：速率随剩余缓冲自适应（越大越快），保证既可见又不拖尾 */
+    function revealTick() {
+      if (hitlCardShown) { stopPacer(); return; }
+      var remain = acc.length - shown;
+      if (remain > 0) {
+        var cps = REVEAL_MIN_CPS;
+        var adaptive = remain / (REVEAL_TAIL_MS / 1000);
+        if (adaptive > cps) cps = adaptive;
+        var step = Math.max(1, Math.round(cps * REVEAL_TICK_MS / 1000));
+        shown = Math.min(acc.length, shown + step);
+        renderStream(false);
+      }
+      if (revealStart && Date.now() - revealStart > REVEAL_FORCE_MS && shown < acc.length) {
+        shown = acc.length; renderStream(false);
+      }
+      if (shown >= acc.length) tryFinalize();
+    }
+    function ensurePacer() {
+      if (pacer || finished || hitlCardShown) return;
+      if (!revealStart) revealStart = Date.now();
+      pacer = setInterval(revealTick, REVEAL_TICK_MS);
+    }
+    /* 收尾：揭示排空 **且** 连接已收束才真正结束（否则会在 token 突发后立刻整段弹出） */
+    function tryFinalize() {
+      if (finished || hitlCardShown) return false;
+      if (shown < acc.length || !streamClosed) return false;
+      finished = true;
+      stopPacer();
+      setStreaming(false);
+      if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
+      else renderStream(true);
+      if (window.EduVideoCitations) {
+        var citationBox = $("aiResp");
+        if (citationBox) citationBox.insertAdjacentHTML("beforeend", window.EduVideoCitations(videoDocs));
+      }
+      if (doneReceiptWarn) {
+        var wr = $("aiResp");
+        if (wr) {
+          var warn = document.createElement("div");
+          warn.className = "receipt-warn";
+          warn.setAttribute("role", "alert");
+          warn.innerHTML = '<span class="receipt-ic">⚠️</span><span class="receipt-tx">' +
+            "上述工具操作未实际执行，请以工具调用记录为准。</span>";
+          wr.appendChild(warn);
+        }
+      }
+      if (doneMemo.length) {
+        var mr = $("aiResp");
+        if (mr) {
+          var bar = document.createElement("div");
+          bar.className = "memo-bar";
+          bar.setAttribute("role", "status");
+          bar.innerHTML = '<span class="memo-ic">💾</span>已记住：<span class="memo-tx">' +
+            esc(doneMemo.join("；")) + "</span>";
+          mr.appendChild(bar);
+        }
+      }
+      return true;
+    }
+    function failStream(msg) {
+      /* 中断诚实降级：立即揭示已到达的全部内容（不再等节拍），并停掉揭示定时器 */
+      finished = true;
+      stopPacer();
+      shown = acc.length;
+      setStreaming(false);
+      var el = $("aiResp"); if (!el) return;
+      el.innerHTML = (acc ? md(acc) : "") +
+        '<div class="md-err">回答中断：' + esc(msg || "未知错误") + (acc ? "（已保留已生成部分）" : "") + '</div>';
+      var t = $("toast"), tm = $("toastMsg");
+      if (t) { if (tm) tm.textContent = "AI 响应中断：" + (msg || "未知错误"); t.style.display = ""; }
+      scrollStage(false);
+    }
+    notifyStreamFail = failStream; /* offline 监听复用（流式中断降级） */
+    fetch(EAPI.BASE + "/api/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
+      body: JSON.stringify({ query: query, session_id: sid || null, stream: true,
+        study_context_id: studyContextId, final_max_k: studyContextId ? 3 : 5 }),
+    }).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var reader = resp.body.getReader(), dec = new TextDecoder(), buf = "", evt = "";
+      function pump() {
+        return reader.read().then(function (r) {
+          if (r.done) {
+            /* [TA1] 连接收束 ≠ 渲染收束：token 已全部到达，但揭示节拍可能仍在跑。
+               这里只置 streamClosed，由 tryFinalize 在「揭示排空」后真正收尾——
+               否则 token 突发（0.24~1.3s）一结束就会整段弹出，打字机效果等于没有。 */
+            streamClosed = true;
+            if (!gotDone) {
+              /* 无 done 帧（连接提前结束）：立即全量揭示 + 诚实提示，不静默 */
+              finished = true; stopPacer(); shown = acc.length; setStreaming(false);
+              if (acc) renderStream(true); else failStream("连接提前结束");
+              return;
+            }
+            if (!tryFinalize()) ensurePacer();
+            return;
+          }
+          buf += dec.decode(r.value, { stream: true });
+          var lines = buf.split("\n"); buf = lines.pop();
+          lines.forEach(function (line) {
+            line = line.trim();
+            if (!line) return;
+            if (line.startsWith("event:")) { evt = line.slice(6).trim(); return; }
+            if (!line.startsWith("data:")) return;
+            var payload = line.slice(5).trim();
+            if (evt === "token") {
+              /* 契约实测：token 事件 JSON 的 delta 字段累加（task104）。
+                 [TA1] 累加进 acc（全量事实源），由揭示节拍按固定节奏显示 acc.slice(0, shown)。 */
+              try { var j = JSON.parse(payload); if (j.delta) { acc += j.delta; gotToken = true; ensurePacer(); } } catch (e) {}
+            }
+            else if (evt === "start" || evt === "retrieval") {
+              if (evt === "retrieval") {
+                try { videoDocs = JSON.parse(payload).docs || []; } catch (ignore) {}
+              }
+              /* start→retrieval→首 token 的检索空窗：思考中动效（首 token 到达后被内容整体替换） */
+              if (!gotToken) { var th = $("aiResp"); if (th) th.innerHTML = THINK_HTML; }
+            }
+            else if (evt === "pending_confirm") {
+              /* R11 HITL：高风险工具执行前中断 → 确认卡（工具名+参数+风险级+确认/拒绝） */
+              hitlCardShown = true; stopPacer();   /* [TA1] 揭示节拍必须让位：收尾重写会冲掉确认卡 */
+              setStreaming(false);
+              try {
+                var pc = JSON.parse(payload);
+                if (!pc || !pc.thread_id) { failStream("确认事件缺少 thread_id"); return; }
+                renderHitlCard(pc);
+              } catch (e) { failStream("确认事件解析失败"); }
+            }
+            else if (evt === "done") {
+              /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
+                 流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则立即收编 session_id 并只刷侧栏 */
+              gotDone = true;
+              try {
+                var d = JSON.parse(payload);
+                /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染；
+                   [FEAT-WIRE-V2 #9] 若 pending_confirm 卡从未渲染（hitlPending 为空），
+                   旧版 early return 会把「检索知识库并思考中…」指示器永久残留——补诚实降级态 */
+                if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") {
+                  finished = true; stopPacer(); setStreaming(false);
+                  if (!hitlPending) {
+                    var hp = $("aiResp");
+                    if (hp) hp.innerHTML = '<div class="degrade">本次回答需要人工确认后继续，但确认卡未送达（可重新提问）。</div>';
+                  }
+                  return;
+                }
+                if (d && d.data && d.data.session_id) {
+                  if (!sid || (opts.resume && d.data.session_id !== sid)) {
+                    activeId = d.data.session_id;      /* 防连续发送再开新会话 */
+                    loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
+                  }
+                }
+                /* [REWORK P0-2] 答后记忆反馈条：缓存到 doneMemo，在收尾 renderStream(true) 之后再
+                   追加——renderStream 是整体 innerHTML 重写，先追加会被抹掉（实测踩坑）。 */
+                if (d && d.data && Array.isArray(d.data.memorized) && d.data.memorized.length) {
+                  doneMemo = d.data.memorized;
+                }
+                /* [F-W1-GUARD AUTO20 T7] 写类回执未验证标记：缓存到 doneReceiptWarn，
+                   同样在收尾 renderStream(true) 之后追加（防被整体重写抹掉）。 */
+                if (d && d.data && d.data.tool_receipt_unverified === true) {
+                  doneReceiptWarn = true;
+                }
+              } catch (e) {}
+              /* [TA1] 收尾统一交给 tryFinalize（需 streamClosed + 揭示排空），不再立刻整段弹出 */
+              if (!tryFinalize()) ensurePacer();
+            }
+            else if (evt === "error") {
+              /* task07③：error 事件诚实展示——保留已渲染内容 + 行内中断提示 + toast，不清空舞台 */
+              try { var er = JSON.parse(payload); failStream(er.message || "未知错误"); } catch (e) { failStream("未知错误"); }
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function (e) {
+      failStream(e && e.message ? e.message : "网络错误");
+    });
+  }
+  send.addEventListener("click", doSend);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+  /* task07④：网络断开（流式中掉线）→ 诚实中断提示，不打断已渲染内容 */
+  window.addEventListener("offline", function () {
+    if (streaming && notifyStreamFail) notifyStreamFail("网络连接已断开（offline）");
+  });
+
+  /* ---- task07①：新建会话（POST /api/chat/sessions，curl 实测 title 默认「新会话 xxxxxx」）---- */
+  function createSession() {
+    var btns = ["newSession", "sideNew", "drawerNew"].map(function (id) { return $(id); }).filter(Boolean);
+    btns.forEach(function (b) { b.disabled = true; });   /* 防重复创建 */
+    return EAPI.post("/api/chat/sessions", {}).then(function (s) {
+      if (!s || !s.session_id) return;
+      sessions.unshift({ id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 });
+      activeId = s.session_id;
+      renderSides();
+      stage.innerHTML = emptyHtml();
+    }).catch(function () { /* 失败由 EAPI 全局钩子 toast 诚实提示 */ })
+      .finally(function () { btns.forEach(function (b) { b.disabled = false; }); });
+  }
+  ["newSession", "sideNew", "drawerNew"].forEach(function (id) {
+    var el = $(id); if (el) el.addEventListener("click", function (e) { e.preventDefault(); createSession(); });
+  });
+  /* 登录态下 hamb 由注入接管（demo 版已解绑），打开移动抽屉并渲染真实会话列表 */
+  var hamb = $("hamb");
+  if (hamb) hamb.addEventListener("click", function () {
+    renderSides();
+    var dr = $("drawer"); if (dr) dr.classList.add("open");
+    var sc = $("scrim"); if (sc) sc.classList.add("open");
+  });
+
+  /* task07⑥：chat 契约无「课程上下文」字段，隐藏静态假上下文徽标（诚实展示） */
+  var ctxTag = $("ctxTag"); if (ctxTag) ctxTag.style.display = "none";
+
+  function loadStudyContext() {
+    $("sendBtn").disabled = true;
+    errState("正在读取本课学习上下文", "验证课程授权与正式资料，请稍候。", null);
+    return EAPI.get("/api/study/contexts/" + encodeURIComponent(studyContextId)).then(function (context) {
+      var subtitle = document.querySelector(".chat-head .sub");
+      if (subtitle) subtitle.textContent = context.series_name + " · " + context.session_title
+        + (context.knowledge_ready ? " · 正式视频资料已接入，可点击回答中的时间引用" : " · 正式视频资料尚未就绪；仅使用已绑定的普通课程资料，原视频可继续观看");
+      $("sendBtn").disabled = false;
+      loadSessions();
+    }).catch(function (error) {
+      $("sendBtn").disabled = true;
+      var retry = error.isNetworkError || error.isTimeout ? loadStudyContext : null;
+      errState("本课学习上下文不可用", error.message + (retry ? "。可点击重试读取同一本课上下文。" : "。请从学习页重新进入本课答疑。"), retry);
+    });
+  }
+  if (studyContextId) loadStudyContext(); else loadSessions();
+})();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</div>
+</body></html>

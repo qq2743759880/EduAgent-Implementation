@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>页面导航（离线版） · Bili-Study 展示包</title>
+<style>
+  body{margin:0;background:#F7F5FB;color:#2E2A3F;font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;padding:48px 24px 64px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:26px}
+  .note{background:#FFF7E0;border:1px solid #F2D98A;border-radius:12px;padding:12px 16px;margin:16px 0;font-size:14px}
+  h2{font-size:19px;margin:30px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  a.card{display:block;background:#fff;border-radius:14px;padding:14px 16px;text-decoration:none;color:#2E2A3F;box-shadow:0 2px 10px rgba(46,42,63,.06)}
+  a.card:hover{box-shadow:0 6px 16px rgba(46,42,63,.12)}
+  a.card b{display:block;font-size:14px;word-break:break-all}
+  a.card span{color:#6B667C;font-size:13px}
+  footer{margin-top:40px;color:#6B667C;font-size:13px}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<div class="wrap">
+  <h1>Bili-Study 前端页面导航（离线展示版）</h1>
+  <div class="note">
+    <b>离线快照说明</b>：每个页面均为自包含单文件，双击即可打开（无需联网 / 后端 / 服务器）。
+    页面渲染代码为项目原版，接口数据为 2026-10-07 从真实后端捕获的响应快照（由内置 mock 回放）；
+    登录、收发消息、点赞等写操作仅返回演示成功，不落库。视频播放按页面自身的"外部地址暂不可播"诚实占位展示。
+  </div>
+  <h2>学生端 / 通用（15）</h2>
+  <div class="grid">
+    <a class="card" href="login-register.html"><b>login-register.html</b><span>登录注册</span></a>
+    <a class="card" href="dashboard.html"><b>dashboard.html</b><span>学习仪表盘</span></a>
+    <a class="card" href="courses.html"><b>courses.html</b><span>课程中心</span></a>
+    <a class="card" href="course-detail.html"><b>course-detail.html</b><span>课程详情 ?id=3191</span></a>
+    <a class="card" href="learning.html"><b>learning.html</b><span>学习播放（AI 资料/导图/字幕）</span></a>
+    <a class="card" href="chat.html"><b>chat.html</b><span>智能问答（可离线对话流）</span></a>
+    <a class="card" href="practice.html"><b>practice.html</b><span>复习中心</span></a>
+    <a class="card" href="community.html"><b>community.html</b><span>社区互助</span></a>
+    <a class="card" href="community-post.html"><b>community-post.html</b><span>帖子详情 ?id=1</span></a>
+    <a class="card" href="coupons.html"><b>coupons.html</b><span>我的优惠券</span></a>
+    <a class="card" href="achievements.html"><b>achievements.html</b><span>成就中心</span></a>
+    <a class="card" href="favorites.html"><b>favorites.html</b><span>我的收藏</span></a>
+    <a class="card" href="me.html"><b>me.html</b><span>个人中心</span></a>
+    <a class="card" href="my-cohorts.html"><b>my-cohorts.html</b><span>我的班次</span></a>
+    <a class="card" href="refund.html"><b>refund.html</b><span>退款中心</span></a>
+  </div>
+  <h2>管理端（10）</h2>
+  <div class="grid">
+    <a class="card" href="admin-dashboard.html"><b>admin-dashboard.html</b><span>管理端仪表盘</span></a>
+    <a class="card" href="admin-courses.html"><b>admin-courses.html</b><span>管理端课程管理</span></a>
+    <a class="card" href="admin-course-detail.html"><b>admin-course-detail.html</b><span>管理端系列详情 ?id=3191</span></a>
+    <a class="card" href="admin-users.html"><b>admin-users.html</b><span>管理端用户</span></a>
+    <a class="card" href="admin-questions.html"><b>admin-questions.html</b><span>管理端题库</span></a>
+    <a class="card" href="admin-question-detail.html"><b>admin-question-detail.html</b><span>管理端题目编辑</span></a>
+    <a class="card" href="admin-rag-upload.html"><b>admin-rag-upload.html</b><span>管理端 RAG 控制台</span></a>
+    <a class="card" href="admin-mcp.html"><b>admin-mcp.html</b><span>管理端 MCP 控制台</span></a>
+    <a class="card" href="admin-chat-audit.html"><b>admin-chat-audit.html</b><span>会话审计</span></a>
+    <a class="card" href="admin-infra.html"><b>admin-infra.html</b><span>基础设施面板</span></a>
+  </div>
+  <footer>采集自 edu-frontend/public（2026-10-07）· 联机完整版（真实后端数据）见 showcase/html-pages + start-showcase.cmd</footer>
+</div>
+</body>
+</html>

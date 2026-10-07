@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<style>
+.vk-map-scroll{overflow:auto;max-height:640px;padding:20px 12px;border:1px solid var(--clay-lavender);border-radius:16px;scroll-padding:18px}
+.vk-map-diagram,.vk-map-diagram ul{list-style:none;margin:0;padding:0}
+.vk-map-diagram{min-width:700px;width:max-content}
+.vk-map-diagram li{display:flex;align-items:center;position:relative}
+.vk-map-diagram>li{align-items:flex-start}
+.vk-map-diagram>li>.vk-map-box{position:sticky;top:12px}
+.vk-map-box{width:220px;flex:none}
+.vk-map-diagram ul{display:flex;flex-direction:column;gap:16px;margin-left:32px;padding-left:24px;border-left:2px solid var(--clay-lavender)}
+.vk-map-diagram li>ul::before{content:'';position:absolute;width:32px;left:220px;top:50%;border-top:2px solid var(--clay-lavender)}
+.vk-map-diagram>li>ul::before{top:36px}
+.vk-map-diagram ul[hidden]{display:none}
+.vk-map-diagram ul>li::before{content:'';position:absolute;left:-24px;width:24px;border-top:2px solid var(--clay-lavender)}
+.vk-map-node{width:220px;min-height:64px;flex:none;padding:12px 14px;text-align:left;font:inherit;font-weight:600;line-height:1.5;border:1px solid var(--clay-lavender);border-radius:12px;background:var(--bg-raised);color:var(--text-strong);cursor:pointer;overflow-wrap:anywhere}
+.vk-map-node[aria-pressed=true]{border-color:var(--focus-ring);background:var(--clay-lavender)}
+.vk-map-label{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vk-map-expand{font:inherit;font-size:.8em;min-height:32px;background:var(--bg-input);color:var(--text-strong);border:1px solid var(--clay-lavender);border-radius:8px;cursor:pointer;margin-top:4px;padding:4px 10px}
+.vk-map-time{display:block;margin-top:6px;color:var(--focus-ring);font-size:.85em;font-weight:400}
+.vk-map-detail{margin-top:14px;padding:16px;border-radius:12px;background:var(--clay-lavender);line-height:1.75}
+.vk-map-detail p{margin:8px 0}
+.vk-map-node:focus-visible,.vk-map-scroll:focus-visible{outline:3px solid var(--focus-ring);outline-offset:3px}
+
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理端系列详情 · Bili-Study</title>
+<style>
+/*
+ * Bili-Study Clay Theme, Gate A frozen tokens
+ *
+ * Icon usage (Phosphor fill, local sprite):
+ * <svg class="ic" aria-hidden="true"><use href="#ic-book-open"></use></svg>
+ * For an icon-only control, put the accessible name on the control (aria-label or visible text).
+ *
+ * Token reference, one variable per line:
+ * --bg-app: purple-tinted near-white application canvas.
+ * --bg-raised: highest neutral surface reserved for dialogs and toasts.
+ * --bg-input: subtly tinted recessed input surface.
+ * --clay-primary: semantic alias for the approved main clay surface.
+ * --clay-moss: approved primary moss green; #2E2A3F contrast is 8.84:1.
+ * --clay-lavender: demoted secondary lavender, never the default surface.
+ * --clay-sky: course and learning surface.
+ * --clay-mint: success, completion, and progress surface.
+ * --clay-peach: practice and quiz surface.
+ * --clay-pink: favorites and community surface.
+ * --clay-lemon: warm accent for reminders and pending work.
+ * --cta-coral: the single saturated primary action color per screen.
+ * --cta-text: primary action text; #2E2A3F on #FF7A6B is 5.43:1.
+ * --status-active: active and successful state color.
+ * --status-pending: pending state color.
+ * --status-archived: archived and inactive state color.
+ * --status-danger: destructive and error state color.
+ * --text-strong: primary ink; intentionally not pure black.
+ * --text-muted: secondary ink for supporting text.
+ * --text-on-dark: text used on the dark code surface.
+ * --surface-code: Markdown code block surface.
+ * --focus-ring: high-contrast keyboard focus indicator.
+ * --radius-card: L1 card radius.
+ * --radius-btn: primary and secondary button radius.
+ * --radius-input: input and compact control radius.
+ * --radius-pill: pill and badge radius.
+ * --radius-icon-tile: icon tile radius.
+ * --space-1: 4px spacing unit.
+ * --space-2: 8px spacing unit.
+ * --space-3: 12px spacing unit.
+ * --space-4: 16px spacing unit and minimum clay-to-clay gap.
+ * --space-6: 24px spacing unit.
+ * --space-8: 32px spacing unit.
+ * --space-12: 48px spacing unit.
+ * --control-min: minimum 44px interaction target.
+ * --control-primary: 54px primary button height within the approved 52-56px range.
+ * --motion-fast: 140ms tactile state duration.
+ * --ease-clay: restrained ease-out curve for hover and press feedback.
+ * --clay-shadow-moss: three-layer moss surface shadow.
+ * --clay-shadow-lavender: three-layer secondary lavender surface shadow.
+ * --clay-shadow-sky: three-layer sky surface shadow.
+ * --clay-shadow-mint: three-layer mint surface shadow.
+ * --clay-shadow-peach: three-layer peach surface shadow.
+ * --clay-shadow-pink: three-layer pink surface shadow.
+ * --clay-shadow-lemon: three-layer lemon surface shadow.
+ * --clay-shadow-coral: three-layer coral action shadow.
+ * --clay-shadow-raised: green-hued L2 shadow for raised neutral surfaces.
+ * --clay-shadow-light: green-hued single-layer shadow for clay-light regions.
+ * --clay-shadow-press-moss: compressed moss shadow for pressed controls.
+ * --clay-shadow-press-coral: compressed coral shadow for pressed primary actions.
+ * --clay-shadow-input: inset moss shadow for recessed fields.
+ * --clay-shadow-input-focus: inset moss shadow plus visible focus halo.
+ * --layer-base: normal document flow.
+ * --layer-sticky: sticky navigation layer.
+ * --layer-dropdown: menu and popover layer.
+ * --layer-overlay: modal scrim layer.
+ * --layer-dialog: dialog layer.
+ * --layer-toast: toast and urgent feedback layer.
+ *
+ * L1 page overrides belong in a .page-<name> namespace. Example:
+ * .page-dashboard { --page-card-gap: var(--space-6); }
+ * Do not place page-specific selectors outside that namespace.
+ */
+
+:root {
+  --bg-app: #F7F5FB;
+  --bg-raised: #FFFFFF;
+  --bg-input: #F7FAF4;
+  --clay-primary: var(--clay-moss);
+  --clay-moss: #B8D8A8;
+  --clay-lavender: #B8A6FF;
+  --clay-sky: #9EC9F0;
+  --clay-mint: #7DD4A8;
+  --clay-peach: #FFB59E;
+  --clay-pink: #F5B8D0;
+  --clay-lemon: #F5D77A;
+  --cta-coral: #FF7A6B;
+  --cta-text: #2E2A3F;
+  --status-active: #7DD4A8;
+  --status-pending: #F5D77A;
+  --status-archived: #C9B5FF;
+  --status-danger: #C63E4A;
+  --text-strong: #2E2A3F;
+  --text-muted: #6B6580;
+  --text-on-dark: #F7F5FB;
+  --surface-code: #2E2A3F;
+  --focus-ring: #453C66;
+
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  --radius-input: 16px;
+  --radius-pill: 999px;
+  --radius-icon-tile: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-min: 44px;
+  --control-primary: 54px;
+
+  --motion-fast: 140ms;
+  --ease-clay: cubic-bezier(.25, 1, .5, 1);
+
+  --clay-shadow-moss:
+    8px 8px 24px rgba(78, 126, 66, .30),
+    inset -6px -6px 16px rgba(78, 126, 66, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .58);
+  --clay-shadow-lavender:
+    8px 8px 24px rgba(126, 105, 181, .28),
+    inset -6px -6px 16px rgba(126, 105, 181, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-sky:
+    8px 8px 24px rgba(80, 142, 196, .30),
+    inset -6px -6px 16px rgba(80, 142, 196, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-mint:
+    8px 8px 24px rgba(43, 153, 103, .29),
+    inset -6px -6px 16px rgba(43, 153, 103, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-peach:
+    8px 8px 24px rgba(218, 111, 82, .29),
+    inset -6px -6px 16px rgba(218, 111, 82, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-pink:
+    8px 8px 24px rgba(188, 99, 137, .28),
+    inset -6px -6px 16px rgba(188, 99, 137, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-lemon:
+    8px 8px 24px rgba(190, 149, 35, .28),
+    inset -6px -6px 16px rgba(190, 149, 35, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-coral:
+    8px 8px 24px rgba(214, 82, 70, .31),
+    inset -6px -6px 16px rgba(214, 82, 70, .23),
+    inset 6px 6px 16px rgba(255, 254, 252, .45);
+  --clay-shadow-raised: 12px 12px 32px rgba(78, 126, 66, .22);
+  --clay-shadow-light: 6px 8px 20px rgba(78, 126, 66, .18);
+  --clay-shadow-press-moss:
+    4px 4px 12px rgba(78, 126, 66, .26),
+    inset -3px -3px 8px rgba(78, 126, 66, .18),
+    inset 3px 3px 8px rgba(255, 254, 252, .46);
+  --clay-shadow-press-coral:
+    4px 4px 12px rgba(214, 82, 70, .27),
+    inset -3px -3px 8px rgba(214, 82, 70, .19),
+    inset 3px 3px 8px rgba(255, 254, 252, .38);
+  --clay-shadow-input:
+    inset 3px 3px 8px rgba(78, 126, 66, .20),
+    inset -3px -3px 8px rgba(255, 254, 252, .88);
+  --clay-shadow-input-focus:
+    inset 3px 3px 8px rgba(78, 126, 66, .24),
+    inset -3px -3px 8px rgba(255, 254, 252, .92),
+    0 0 0 3px rgba(69, 60, 102, .22);
+
+  --layer-base: 0;
+  --layer-sticky: 100;
+  --layer-dropdown: 300;
+  --layer-overlay: 700;
+  --layer-dialog: 800;
+  --layer-toast: 1000;
+}
+
+.ic {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  overflow: visible;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: -.2em;
+}
+
+.clay-card {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-btn-primary,
+.clay-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding-inline: var(--space-6);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--ease-clay),
+    box-shadow var(--motion-fast) var(--ease-clay),
+    background-color var(--motion-fast) var(--ease-clay);
+}
+
+.clay-btn-primary {
+  min-height: var(--control-primary);
+  color: var(--cta-text);
+  background: var(--cta-coral);
+  box-shadow: var(--clay-shadow-coral);
+}
+
+.clay-btn-soft {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-btn-primary:hover,
+.clay-btn-soft:hover {
+  transform: translateY(-2px);
+}
+
+.clay-btn-primary:active,
+.clay-btn-soft:active {
+  transform: scale(.97);
+}
+
+.clay-btn-primary:active {
+  box-shadow: var(--clay-shadow-press-coral);
+}
+
+.clay-btn-soft:active {
+  box-shadow: var(--clay-shadow-press-moss);
+}
+
+.clay-btn-primary:disabled,
+.clay-btn-soft:disabled,
+.clay-btn-primary[aria-disabled="true"],
+.clay-btn-soft[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clay-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: 3px 4px 10px rgba(190, 149, 35, .21);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.clay-input {
+  width: 100%;
+  min-height: var(--control-primary);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-input);
+  box-shadow: var(--clay-shadow-input);
+  font: inherit;
+}
+
+.clay-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.clay-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--clay-shadow-input-focus);
+}
+
+.clay-bubble-user,
+.clay-bubble-ai {
+  max-width: min(80%, 72ch);
+  overflow-wrap: anywhere;
+  border-radius: 24px 24px 24px 8px;
+  padding: var(--space-4) 20px;
+  color: var(--text-strong);
+}
+
+.clay-bubble-user {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-bubble-ai {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-nav {
+  position: relative;
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-nav :where(a, button) {
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+}
+
+.clay-nav :where(.active, [aria-current="page"]) {
+  color: var(--cta-text);
+  background: var(--cta-coral);
+}
+
+.clay-card-placeholder {
+  position: relative;
+  min-height: 144px;
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: var(--clay-shadow-lemon);
+}
+
+.clay-card-placeholder[data-state="closed"] {
+  background: var(--clay-lavender);
+  box-shadow: var(--clay-shadow-lavender);
+}
+
+.clay-card-placeholder[data-state="forbidden"] {
+  outline: 3px solid var(--status-archived);
+  outline-offset: -3px;
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-card-placeholder[data-state="error"] {
+  outline: 3px solid var(--status-danger);
+  outline-offset: -3px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-card :where(pre, code),
+.clay-bubble-ai :where(pre, code),
+.clay-bubble-user :where(pre, code) {
+  color: var(--text-on-dark);
+  background: var(--surface-code);
+}
+
+.clay-card pre,
+.clay-bubble-ai pre,
+.clay-bubble-user pre {
+  overflow: auto;
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+}
+
+:where(.clay-btn-primary, .clay-btn-soft, .clay-nav a, .clay-nav button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Admin fallback: lower visual depth without changing component geometry. */
+.clay-light {
+  --radius-card: 24px;
+}
+
+.clay-card.clay-light,
+.clay-light .clay-card {
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-light :where(table, .table, .chart, [data-chart], [data-table]) {
+  border-radius: var(--radius-input);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-btn-primary,
+  .clay-btn-soft {
+    transition-duration: .01ms;
+  }
+
+  .clay-btn-primary:hover,
+  .clay-btn-primary:active,
+  .clay-btn-soft:hover,
+  .clay-btn-soft:active {
+    transform: none;
+  }
+}
+
+</style>
+<!--
+  task57 HTML 原型（审核稿）
+  - P14 风格 candy-playful frozen（复用 task56 admin-courses → admin-course-detail 同源样式）
+  - 契约：app/domains/course_admin（权威，task12-contract.md 契约③）
+    四级 CRUD：Series→Cohort→Module→Session（各含 list/detail/create/patch/delete）
+    归属字段：Module 归属 cohort_id；Session 归属 series_cohort_course_id；Cohort 创建必填 head_teacher_id+institution_id
+    视频分片：POST /videos/init-chunked → /finalize-chunked → /bind-session → GET /videos/{id}/transcode-status
+    转码枚举：transcode_status ∈ pending|in_progress|completed|failed；review_status ∈ pending|approved|rejected
+    唯一约束：40901 系列 / 40902 班次 / 40903 模块阶段 / 40904 课次 / 40905 资源 / 40906 视频 / 40907 章节
+  - 契约缺口（实披露，不做 MOCK）：
+    · 资源 4 入口（课件/视频/作业/考试）：仅「视频」有真实端点（分片→转码）；课件/作业/考试无 sessions/{id}/assets 活跃端点 → 占位提示
+    · 章节管理 session_video_chapter：路由层无 CRUD 端点 → 表单位置标注「待后端端点接线」，列表做存量展示样
+  - 审核态多开：默认「管理班次」选中第一班次 → 展开模块半「已绑定视频 转码中」场景
+  AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-08-24 v1 R1] 初稿提交（系列信息卡可编辑 + 新增班次 + 班次表 + 模块 Accordion + 课次列表 resource 4 入口 + 视频分片 Stepper/转码轮询徽章/Timeline + 章节管理 + 全软删 + 演示控制器多态）→ SUBMITTED
+    [2026-08-24 v1.1 R2] 修演示控制器多态切换 Bug：从「空班次」切回成功/转码状态时，班次行被永久隐藏（applyView 未恢复 tr.display 且空态占位重复追加）。改为 else 分支统一恢复 data-seat 行可见 + 移除空态占位，空态分支只隐藏 data-seat 行且空态占位判重 → 已修复重交
+-->
+<style>
+  :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-4338ca: #4338ca; --ht-6a4fd0: #6a4fd0; --ht-6b7280: #6b7280; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 90px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:220px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* back link + head */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.8125rem;margin-bottom:14px}
+  .back-link:hover{color:var(--primary)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .page-head h1{margin:0;font-size:21px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  /* series info card */
+  .series-card{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:18px}
+  .series-card .si-left{display:flex;gap:14px;min-width:0}
+  .series-card .si-ico{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--primary-deep),var(--primary));color:var(--ht-fff);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .series-card .si-info h2{margin:0 0 6px;font-size:1.125rem}
+  .series-card .si-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .series-card .si-tags code{background:var(--muted-bg);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Consolas,monospace}
+  .series-card .si-desc{margin-top:8px;color:var(--muted);font-size:0.8125rem;max-width:640px}
+  .series-card .si-actions{display:flex;gap:8px;align-items:center}
+  /* generic elements */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .card-h h3{margin:0;font-size:0.9375rem;display:flex;align-items:center;gap:8px}
+  .card-h .cnt{color:var(--muted);font-weight:500}
+  .card-b{padding:6px 18px 16px}
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.row-hover:hover{background:var(--ht-fafbff)}
+  .row-click{cursor:pointer}
+  .row-click.sel{background:var(--primary-soft)!important}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted)}
+  .cell-strong{font-weight:600;color:var(--ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .muted{color:var(--muted)}
+  /* badge 通用 */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)}.badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)}.badge-mut .pd{background:var(--muted-ink)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn-ink)}.badge-warn .pd{background:var(--warn-ink)}
+  .badge-red{background:var(--red-bg);color:var(--red-ink)}.badge-red .pd{background:var(--red-ink)}
+  .badge-primary{background:var(--primary-soft);color:var(--primary)}.badge-primary .pd{background:var(--primary)}
+  .b-dm{display:inline-block;border-radius:7px;padding:2px 8px;font-size:12px;font-weight:600}
+  .b-live{background:var(--ht-e6f3fe);color:var(--ht-0b6bc2)}.b-rec{background:var(--ht-f1ecfe);color:var(--ht-6a4fd0)}.b-offline{background:var(--ht-fdf0e4);color:var(--ht-b4600e)}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:150px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)}.dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center}
+  .dd-sep{height:1px;background:var(--line);margin:4px 0}
+  /* accordion module panel */
+  .module-panel{border:1px solid var(--line);border-radius:12px;background:var(--ht-fff);margin-bottom:11px;overflow:hidden}
+  .mp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--ht-fafbff);border-bottom:1px solid var(--line)}
+  .mp-h .tl{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+  .mp-h .chev{color:var(--muted);transition:.2s}
+  .mp-h .chev.open{transform:rotate(90deg)}
+  .mp-h .mn{font-weight:600}
+  .mp-h .mt{color:var(--muted);font-size:12px}
+  .mp-b{padding:8px 14px 14px}
+  /* pilot */
+  .pilot{height:100%;}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:540px;max-height:88vh;overflow:auto}
+  .modal.wide{max-width:680px}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .field-tip{font-size:11px;color:var(--muted)}
+  .confirm .modal{max-width:420px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* upload stepper */
+  .stepper{display:flex;align-items:center;gap:6px;margin:14px 0 16px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .stp .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--muted-bg);color:var(--muted-ink);font-size:12px}
+  .stp.done .dot{background:var(--ok-bg);color:var(--ok-ink)}
+  .stp.cur .dot{background:var(--primary);color:var(--ht-fff)}
+  .stp-conn{width:26px;height:2px;background:var(--line)}
+  .stp-conn.done{background:var(--ok-ink)}
+  /* upload dropzone + progress + chips */
+  .up-drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:0.8125rem;cursor:pointer}
+  .up-drop:hover{border-color:var(--primary);color:var(--primary)}
+  .up-prog{height:9px;border-radius:999px;background:var(--muted-bg);overflow:hidden;margin:12px 0 6px}
+  .up-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-blue),var(--primary));border-radius:999px;transition:width .2s}
+  .up-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  /* timeline */
+  .tl{position:relative;margin-left:6px;padding-left:20px}
+  .tl::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl-item{position:relative;display:flex;gap:12px;padding:6px 0}
+  .tl-item::before{content:"";position:absolute;left:-20px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--ht-fff);border:2px solid var(--muted)}
+  .tl-item.ok::before{border-color:var(--ok-ink);background:var(--ok-ink)}
+  .tl-item.cur::before{border-color:var(--primary);background:var(--primary)}
+  .tl-item .tt{font-size:0.8125rem;font-weight:600;color:var(--ink);min-width:96px}
+  .tl-item .td{font-size:12px;color:var(--muted);padding-top:1px}
+  /* chapter manager */
+  .chapter-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:0.8125rem;flex-wrap:wrap}
+  .chapter-row:last-child{border-bottom:none}
+  .ch-no{font-family:ui-monospace,monospace;color:var(--muted)}
+  .ch-sec{display:flex;align-items:center;gap:5px;margin-left:auto}
+  .ch-sec input{width:64px;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font:inherit;font-size:12px;text-align:right}
+  .seg{font-size:12px;color:var(--muted)}
+  .gap-tag{display:inline-block;margin-left:8px;font-size:11px;background:var(--warn-bg);color:var(--warn-ink);border-radius:6px;padding:1px 6px}
+  .res-4{display:flex;gap:8px}
+  .res-4 button{cursor:pointer;border:1px solid var(--line);background:var(--ht-fff);border-radius:9px;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;gap:5px;align-items:center}
+  .res-4 button:hover{border-color:var(--primary);color:var(--primary)}
+  .res-4 button.video{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+  /* states */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skline{height:13px;border-radius:6px}
+  /* responsive */
+  @media(max-width:760px){
+    .demo-ctrl{font-size:11px}.demo-ctrl .row{max-width:150px}
+    .series-card{flex-direction:column}
+    .card-b{padding:4px 12px 12px}
+    .res-4{flex-wrap:wrap}
+    .ch-sec{width:100%;margin-left:0}
+    .modal .mf{grid-template-columns:1fr}
+  }
+  /* 面包屑 */
+  .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted,var(--ht-6b7280));margin-bottom:14px}
+  .crumb a{color:var(--primary,var(--ht-4338ca));text-decoration:none}
+  .crumb a:hover{text-decoration:underline}
+  .crumb .sep{opacity:.6}
+  .crumb span.cur{color:var(--ink);font-weight:700}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 ⚠/∅ 为消息文本前缀（行为层冻结面保留）。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-orange:var(--status-danger); --candy-blue:var(--clay-mint); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --ht-0b6bc2:var(--text-strong); --ht-e6f3fe:#E2EFFA;
+  --ht-6a4fd0:var(--text-strong); --ht-f1ecfe:#EAE4FF;
+  --ht-b4600e:var(--text-strong); --ht-fdf0e4:#FFE9E2;
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 面包屑/页头/返回 --- */
+.admin-html-page .crumb a{color:var(--text-strong)!important;text-decoration:underline;min-height:44px;display:inline-flex;align-items:center}
+.admin-html-page .crumb .sep{opacity:1}
+.admin-html-page .crumb span.cur{color:var(--text-strong)}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .modal input,.admin-html-page .modal select,.admin-html-page .modal textarea{min-height:44px}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .modal .mff label,.admin-html-page .field-tip{color:var(--text-muted)}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .modal .mh,.admin-html-page .modal .mfoot{border-color:var(--bg-input)}
+.admin-html-page .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+.admin-html-page .modal .mff input:focus,.admin-html-page .modal .mff select:focus{outline:2px solid var(--focus-ring)}
+.admin-html-page #chTitle,.admin-html-page #chStart,.admin-html-page #chEnd{min-height:44px;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+
+/* --- 系列信息卡 / 演示控制器 / 徽标 --- */
+.admin-html-page .series-card{background:var(--clay-moss)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-moss)!important}
+.admin-html-page .series-card .si-left{flex-wrap:wrap;min-width:0}
+.admin-html-page .series-card .si-info{min-width:0;flex:1 1 160px}
+.admin-html-page .series-card .si-tags code{overflow-wrap:anywhere}
+.admin-html-page .series-card .si-desc{max-width:100%}
+.admin-html-page .series-card .si-info h2{color:var(--text-strong)}
+.admin-html-page .series-card .si-tags{color:var(--text-strong)}
+.admin-html-page .series-card .si-desc{color:var(--text-strong)}
+.admin-html-page .series-card .si-tags code{background:#DFEDD8}
+.admin-html-page .si-ico{background-color:var(--clay-lemon)!important;background-image:none!important;color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important;box-shadow:3px 4px 10px rgba(190,149,35,.24)!important}
+.admin-html-page .demo-ctrl{background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-muted)!important}
+.admin-html-page .demo-ctrl b{color:var(--text-strong)}
+.admin-html-page .demo-ctrl button{min-height:44px;min-width:44px;color:var(--text-muted);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .demo-ctrl button.on{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+.admin-html-page .badge-on{color:var(--text-strong)!important}
+.admin-html-page .badge-warn{background:#F9F3D7!important;color:var(--text-strong)!important}
+.admin-html-page .badge-warn .pd{background:var(--status-pending)!important}
+.admin-html-page .badge-red{color:var(--status-danger)!important}
+.admin-html-page .badge-primary{color:var(--text-strong)!important}
+.admin-html-page .b-live,.admin-html-page .b-rec,.admin-html-page .b-offline{color:var(--text-strong)!important}
+.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .nb{color:var(--text-muted)}
+.admin-html-page .cell-strong{color:var(--text-strong)}
+
+/* --- 表格/卡片/模块手风琴 --- */
+.admin-html-page .card{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .card-b{overflow-x:auto}
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .mp-h{background:#FAFBFF}
+.admin-html-page .mp-h .chev{color:var(--text-muted)}
+.admin-html-page .mp-h .mt{color:var(--text-muted)}
+.admin-html-page .module-panel{border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .res-4 button{min-height:44px;color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .res-4 button:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .res-4 button.video{background:#E2EFFA!important;border-color:transparent!important;color:var(--text-strong)!important}
+.admin-html-page .confirm .c-ico{background:var(--bg-raised)!important;color:var(--status-danger)!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .confirm .c-msg p{color:var(--text-muted)}
+
+/* --- 上传/时间线 --- */
+.admin-html-page .stp{color:var(--text-muted)}
+.admin-html-page .stp .dot{background:#EEF0F5;color:var(--text-strong)}
+.admin-html-page .stp.done .dot{background:#D8F2E5;color:var(--text-strong)}
+.admin-html-page .stp.cur .dot{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.admin-html-page .up-drop{color:var(--text-muted);border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .up-drop:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .up-prog{background:#EEF0F5}
+.admin-html-page .up-prog i{background-image:linear-gradient(90deg,var(--clay-mint),var(--clay-moss))}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
+<style id="video-knowledge-admin-style">
+  .vka{margin:18px 0;padding:18px;border:2px solid var(--primary);border-radius:14px;background:var(--primary-soft)}
+  .vka[hidden],.vka [hidden]{display:none!important}
+  .vka-head{display:flex;align-items:start;justify-content:space-between;gap:12px}.vka h3{margin:0;font-size:18px}.vka-head p{margin:6px 0;font-weight:700}
+  .vka-help{font-size:13px;color:var(--ink);line-height:1.65}.vka-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+  .vka label{display:flex;flex-direction:column;gap:6px;font-weight:600}.vka input:not([type=checkbox]),.vka select,.vka textarea{min-height:44px;width:100%;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit}
+  .vka .vka-regenerate{flex-direction:row;align-items:center;margin:14px 0;font-weight:500}.vka input[type=checkbox]{width:20px;height:20px}
+  .vka button{min-height:44px}.vka button:disabled{opacity:.55;cursor:not-allowed}.vka :focus-visible{outline:3px solid var(--primary-deep);outline-offset:3px}
+  .vka-status{margin-top:14px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card)}.vka-status p{margin:8px 0;line-height:1.7}
+  #vkNotice{font-weight:600;min-height:24px;overflow-wrap:anywhere}#vkTaskError{color:var(--red-ink)}.vka-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+  .vka-review{margin-top:18px;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-wrap:anywhere}.vka-review>h4{margin-top:0}
+  .vka-review details{border-top:1px solid var(--line);padding:12px 0}.vka-review summary{cursor:pointer;font-weight:700;font-size:15px;min-height:30px}.vka-review p{line-height:1.8}
+  .vka-review article{padding:10px 0}.vka-time{font-family:ui-monospace,monospace;color:var(--primary-deep);white-space:nowrap}.vka-transcript{max-height:360px;overflow:auto}.vka-review pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px}.vka-review li{margin:8px 0}
+  #vkDecisions{margin-top:14px}@media(max-width:640px){.vka{padding:12px}.vka-fields{grid-template-columns:1fr}.vka-head{flex-wrap:wrap}.vka-actions button{flex:1}.vka-review{padding:12px}}
+</style>
+</head>
+<body class="admin-html-page"><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="ic-house" viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 256 256"><path d="M240,56V200a8,8,0,0,1-8,8H160a24,24,0,0,0-24,23.94,7.9,7.9,0,0,1-5.12,7.55A8,8,0,0,1,120,232a24,24,0,0,0-24-24H24a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H88a32,32,0,0,1,32,32v87.73a8.17,8.17,0,0,0,7.47,8.25,8,8,0,0,0,8.53-8V80a32,32,0,0,1,32-32h64A8,8,0,0,1,240,56Z"/></symbol>
+  <symbol id="ic-graduation-cap" viewBox="0 0 256 256"><path d="M176,207.24a119,119,0,0,0,16-7.73V240a8,8,0,0,1-16,0Zm11.76-88.43-56-29.87a8,8,0,0,0-7.52,14.12L171,128l17-9.06Zm64-29.87-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V130.67L171,128l-43,22.93L43.83,106l0,0L25,96,128,41.07,231,96l-18.78,10-.06,0L188,118.94a8,8,0,0,1,4,6.93v73.64a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12Z"/></symbol>
+  <symbol id="ic-chat-circle" viewBox="0 0 256 256"><path d="M232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Z"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 256 256"><path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 256 256"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></symbol>
+  <symbol id="ic-sign-in" viewBox="0 0 256 256"><path d="M141.66,133.66l-40,40A8,8,0,0,1,88,168V136H24a8,8,0,0,1,0-16H88V88a8,8,0,0,1,13.66-5.66l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></symbol>
+  <symbol id="ic-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40A8,8,0,0,0,176,88v32H112a8,8,0,0,0,0,16h64v32a8,8,0,0,0,13.66,5.66l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="ic-paper-plane-tilt" viewBox="0 0 256 256"><path d="M231.4,44.34s0,.1,0,.15l-58.2,191.94a15.88,15.88,0,0,1-14,11.51q-.69.06-1.38.06a15.86,15.86,0,0,1-14.42-9.15L107,164.15a4,4,0,0,1,.77-4.58l57.92-57.92a8,8,0,0,0-11.31-11.31L96.43,148.26a4,4,0,0,1-4.58.77L17.08,112.64a16,16,0,0,1,2.49-29.8l191.94-58.2.15,0A16,16,0,0,1,231.4,44.34Z"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,128H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM181.66,170.34a8,8,0,0,1-11.32,11.32L128,139.31,85.66,181.66a8,8,0,0,1-11.32-11.32L116.69,128,74.34,85.66A8,8,0,0,1,85.66,74.34L128,116.69l42.34-42.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+  <symbol id="ic-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-4,48a12,12,0,1,1-12,12A12,12,0,0,1,124,72Zm12,112a16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-magnifying-glass" viewBox="0 0 256 256"><path d="M168,112a56,56,0,1,1-56-56A56,56,0,0,1,168,112Zm61.66,117.66a8,8,0,0,1-11.32,0l-50.06-50.07a88,88,0,1,1,11.32-11.31l50.06,50.06A8,8,0,0,1,229.66,229.66ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 256 256"><path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
+  <symbol id="ic-bookmark-simple" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 256 256"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></symbol>
+  <symbol id="ic-certificate" viewBox="0 0 256 256"><path d="M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H120v64a8,8,0,0,1-13.66,5.66l-72-72a8,8,0,0,1,0-11.32l72-72A8,8,0,0,1,120,56v64h96A8,8,0,0,1,224,128Z"/></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72A8,8,0,0,1,136,200V136H40a8,8,0,0,1,0-16h96V56a8,8,0,0,1,13.66-5.66l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+  <symbol id="ic-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"/></symbol>
+  <symbol id="ic-pencil-simple" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z"/></symbol>
+  <symbol id="ic-upload-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM88,80h32v64a8,8,0,0,0,16,0V80h32a8,8,0,0,0,5.66-13.66l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,88,80Z"/></symbol>
+</svg>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">Bili-Study 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item active" href="admin-courses.html" aria-current="page"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console<span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="wrap">
+  <!-- 面包屑 -->
+  <nav class="crumb">
+    <a href="admin-courses.html">课程管理</a>
+    <span class="sep">/</span>
+    <span id="crumbSeries">系列详情</span>
+    <span class="sep">/</span>
+    <span class="cur">管理</span>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1 id="pageTitle">系列详情</h1>
+      <div class="sub" id="pageSub">正在加载课程与班次…</div>
+    </div>
+  </div>
+
+  <!-- ========== 系列信息卡（可编辑） ========== -->
+  <div class="series-card" id="seriesCard" style="display:none">
+    <div class="si-left">
+      <div class="si-ico" id="siIco">CO</div>
+      <div class="si-info">
+        <h2 id="siName">—</h2>
+        <div class="si-tags" id="siTags"></div>
+        <div class="si-desc" id="siDesc"></div>
+      </div>
+    </div>
+    <div class="si-actions">
+      <button class="btn btn-ghost btn-mini" id="editSeriesBtn">编辑系列</button>
+      <button class="btn btn-primary btn-mini" id="addCohortBtn"><svg class="ic"><use href="#ic-plus"/></svg> 新增班次</button>
+    </div>
+  </div>
+
+  <!-- ========== 班次 DataTable（选中 ➝ 下方模块管理） ========== -->
+  <div class="card" id="cohortCard" style="display:none">
+    <div class="card-h">
+      <h3>班次 <span class="cnt" id="cohortCnt">共 0 个</span></h3>
+      <div class="muted" style="font-size:12px">点击行选中班次，下方面板展开其模块与课次管理</div>
+    </div>
+    <div class="card-b" style="padding:0">
+      <table>
+        <thead>
+          <tr><th>班次</th><th>售价</th><th>容量（已报）</th><th>起止</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="cohortBody">
+          <tr><td colspan="6" class="box-pad">加载班次中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== 模块 Accordion（选中班次） ========== -->
+  <div class="card" id="moduleCard" style="display:none">
+    <div class="card-h">
+      <h3>模块与课次 · <span id="moduleCohortName">—</span> <span class="cnt" id="moduleCnt"></span></h3>
+      <button class="btn btn-primary btn-mini" id="addModuleBtn"><svg class="ic"><use href="#ic-plus"/></svg> 新增模块</button>
+    </div>
+    <div class="card-b" style="padding-top:14px" id="moduleWrap">
+      <div class="box-pad">加载模块中…</div>
+    </div>
+  </div>
+
+  <!-- ========== 视频上传 Stepper + 转码轮询 + 章节（选中课次后打开） ========== -->
+  <div class="card" id="video-panel" style="display:none">
+    <div class="card-h">
+      <h3 id="vpTitle">视频管理 · — <span class="badge badge-mut" id="tc-badge" style="display:none"><i class="pd"></i>—</span></h3>
+      <button class="btn btn-ghost btn-mini" id="vpClose">关闭</button>
+    </div>
+    <div class="card-b">
+      <!-- 已绑视频列表 -->
+      <div id="videoList" style="margin-bottom:14px"></div>
+
+      <section id="videoKnowledgeAdmin" class="vka" aria-labelledby="vkHeading" hidden>
+        <div class="vka-head"><div><h3 id="vkHeading">AI 学习资料</h3><p id="vkLesson"></p></div><button type="button" class="btn btn-ghost" id="vkRefresh">刷新状态</button></div>
+        <p id="vkSafety" class="vka-help">生成成功并通过校验后自动发布、入库，知识就绪后学生可用。原视频可独立播放；新版失败不会使原视频和旧正式资料失效。</p>
+        <div id="vkProgress" class="vka-status" role="status" aria-live="polite" hidden><strong id="vkProgressTitle"></strong><p id="vkProgressDetail"></p><small id="vkSync"></small></div>
+        <div class="vka-fields">
+          <label for="vkSource">视频来源<select id="vkSource"><option value="existing_video">已绑定视频 / 本地上传</option><option value="bilibili">导入 Bilibili 视频</option></select></label>
+          <label for="vkVideo" id="vkVideoField">选择本课视频<select id="vkVideo"></select></label>
+          <label for="vkBvid" id="vkBiliField" hidden>Bilibili 链接或 BVID<input id="vkBvid" placeholder="粘贴视频链接或 BV 号" autocomplete="off"></label>
+          <label for="vkPage" id="vkPageField" hidden>分 P<input id="vkPage" type="number" min="1" max="1000" value="1"></label>
+          <label for="vkMode">转写方式<select id="vkMode"><option value="auto">自动（字幕优先；本地视频使用语音识别）</option><option value="asr">语音识别</option></select></label>
+        </div>
+        <p class="vka-help" id="vkUploadHint">需要新视频？在下方上传区选择本地文件，上传完成后会出现在这里。</p>
+        <label class="vka-regenerate"><input type="checkbox" id="vkRegenerate">明确生成新版资料（保留原视频及当前正式版本）</label>
+        <button type="button" class="btn btn-primary" id="vkGenerate">生成 AI 学习资料</button>
+        <button type="button" class="btn btn-ghost" id="vkExercises" disabled>补生成本课习题（不重编资料）</button>
+        <p class="vka-help">新视频会同时生成 4～6 道与视频及导图节点对应的单选练习，资料正式就绪后学生可在「本课练习」作答。已有正式资料可只补生成习题。</p>
+        <p id="vkNotice" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div class="vka-status"><label for="vkTask">生产记录<select id="vkTask"></select></label><p id="vkWorker"></p><p id="vkTaskStatus"></p><p id="vkTaskError"></p>
+          <div class="vka-actions"><button type="button" class="btn btn-ghost" id="vkRetry" disabled>重试失败阶段</button><button type="button" class="btn btn-ghost" id="vkPreview" disabled>预览本版资料</button></div>
+        </div>
+        <div id="vkReview" class="vka-review" hidden></div>
+        <div id="vkDecisions" hidden><label for="vkReason">审核意见（驳回时必填）<textarea id="vkReason" maxlength="1000" rows="3" placeholder="指出需要修正的内容；系统会保留历次意见"></textarea></label>
+          <div class="vka-actions"><button type="button" class="btn btn-danger" id="vkReject" disabled>驳回并按意见修改</button><button type="button" class="btn btn-primary" id="vkApprove" disabled>批准本版并发布</button></div>
+          <p class="vka-help">批准仅针对上方实际预览的版本。发布后系统自动接入课程知识，完成前会分别显示资料发布和检索状态。</p>
+        </div>
+      </section>
+
+      <!-- Stepper -->
+      <div class="stepper" id="stepper" style="display:none">
+        <span class="stp" id="stp0"><span class="dot">1</span>准备上传</span>
+        <span class="stp-conn" id="stpC0"></span>
+        <span class="stp" id="stp1"><span class="dot">2</span>上传文件</span>
+        <span class="stp-conn" id="stpC1"></span>
+        <span class="stp" id="stp2"><span class="dot">3</span>验证媒体</span>
+        <span class="stp-conn" id="stpC2"></span>
+        <span class="stp" id="stp3"><span class="dot">4</span>绑定课次</span>
+      </div>
+
+      <!-- 上传区 -->
+      <div id="upzone">
+        <input type="file" id="videoFile" accept=".mp4,.m4v,.webm" style="display:none">
+        <div class="up-drop" id="up-z">点击或拖拽 MP4、M4V 或 WebM 视频到此处（自动分片上传；上传后验证媒体与视频编码，推荐 H.264 MP4；不自动转码）</div>
+        <div class="up-prog" id="up-pg" style="display:none"><i style="width:0%"></i></div>
+        <div class="up-meta" id="up-mt" style="display:none"><span id="upMetaL">—</span><span id="upMetaR">0%</span></div>
+        <div class="muted" id="upErr" style="display:none;color:var(--red-ink);font-size:12px;margin-top:6px"></div>
+      </div>
+
+      <!-- 转码 Timeline 轨迹 -->
+      <details id="timelineWrap" style="margin-top:16px;display:none">
+        <summary class="muted" style="font-size:12px;margin-bottom:8px;cursor:pointer">查看上传处理详情</summary>
+        <div class="tl" id="timeline"></div>
+      </details>
+
+      <!-- 章节管理（真实 CRUD：GET/POST/PATCH/DELETE /chapters） -->
+      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px;display:none" id="chapterSec">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">
+          章节管理（session_video_chapter）· 视频 <b id="chapVideoId">—</b>
+        </div>
+        <div id="chapter-list"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;font-size:12px">
+          <label>章名<input id="chTitle" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;margin-left:4px" placeholder="如：环境安装"></label>
+          <label>开始(秒)<input id="chStart" type="number" min="0" value="0" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <label>结束(秒)<input id="chEnd" type="number" min="1" value="60" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <button class="btn btn-primary btn-mini" id="chAddBtn"><svg class="ic"><use href="#ic-plus"/></svg> 添加章节</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：编辑系列 ===== -->
+<div class="scrim" id="mdl-series">
+  <div class="modal">
+    <div class="mh"><h3>编辑系列</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>系列名称</label><input id="seName"></div>
+      <div class="mff"><label>售卖状态</label><select id="seStatus"><option value="draft">draft 草稿</option><option value="on_sale">on_sale 在售</option><option value="off_sale">off_sale 下架</option></select></div>
+      <div class="mff"><label>交付方式</label><select id="seMode"><option value="online_recorded">online_recorded 录播</option><option value="online_live">online_live 直播</option><option value="offline_face_to_face">offline_face_to_face 面授</option></select></div>
+      <div class="mff full"><label>描述</label><input id="seDesc"></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="seSave">保存修改</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑班次 ===== -->
+<div class="scrim" id="mdl-cohort">
+  <div class="modal">
+    <div class="mh"><h3 id="coMdlTitle">新增班次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>班次编码（唯一）</label><input id="coCode" placeholder="COH-2026C"></div>
+      <div class="mff"><label>班次名称</label><input id="coName" placeholder="2026 秋季 C 班"></div>
+      <div class="mff"><label>负责人 head_teacher_id</label><input id="coTeacher" type="number" value="16"></div>
+      <div class="mff"><label>售价（元）</label><input id="coPrice" type="number" step="0.01" value="399"></div>
+      <div class="mff"><label>容量</label><input id="coCap" type="number" value="60"></div>
+      <div class="mff"><label>已报人数</label><input id="coCur" type="number" value="0"></div>
+      <div class="mff"><label>开课日期</label><input id="coStart" type="date"></div>
+      <div class="mff"><label>结课日期</label><input id="coEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">创建时默认归属当前系列与机构，并指定负责人教师；编码冲突时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="coSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑模块 ===== -->
+<div class="scrim" id="mdl-module">
+  <div class="modal">
+    <div class="mh"><h3 id="moMdlTitle">新增模块</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>模块编码</label><input id="moCode" placeholder="MOD-01"></div>
+      <div class="mff"><label>模块名称</label><input id="moName" placeholder="Python 基础语法"></div>
+      <div class="mff"><label>阶段序号（唯一）</label><input id="moStage" type="number" value="1"></div>
+      <div class="mff"><label>课次数</label><input id="moLessons" type="number" value="4"></div>
+      <div class="mff"><label>总学时</label><input id="moHours" type="number" step="0.5" value="12"></div>
+      <div class="mff"><label>开始日期</label><input id="moStart" type="date"></div>
+      <div class="mff"><label>结束日期</label><input id="moEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">模块归属当前选中的班次；同班次内阶段序号重复时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="moSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑课次 ===== -->
+<div class="scrim" id="mdl-session">
+  <div class="modal">
+    <div class="mh"><h3 id="seMdlTitle">新增课次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>课次序号（唯一）</label><input id="ssNo" type="number" value="1"></div>
+      <div class="mff"><label>教学状态</label><select id="ssStatus"><option value="scheduled">scheduled 未开始</option><option value="in_progress">in_progress 进行中</option><option value="completed">completed 已完成</option><option value="cancelled">cancelled 已取消</option></select></div>
+      <div class="mff full"><label>课次标题</label><input id="ssTitle" placeholder="第 1 讲 · 变量与类型"></div>
+      <div class="mff"><label for="ssDate">授课日期（必填）</label><input id="ssDate" type="date" required></div>
+      <div class="mff"><label>签到 checkin_required</label><select id="ssCheckin"><option value="0">0 无需签到</option><option value="1">1 必签</option></select></div>
+      <div class="mff"><label>开始时间</label><input id="ssStart" type="time"></div>
+      <div class="mff"><label>结束时间</label><input id="ssEnd" type="time"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">课次归属当前选中的模块；同模块内课次序号重复时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="ssSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 通用确认 ===== -->
+<div class="scrim confirm" id="mdl-confirm">
+  <div class="modal">
+    <div class="mb"><div class="c-msg">
+      <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+      <div id="cfMsg"><b>确认删除？</b><p>软删后不再展示。</p></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="cfOk">确认删除（软删）</button></div>
+  </div>
+</div>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script>
+/* 离线展示 mock：接口回放 2026-10-07 从真实后端捕获的响应；页面渲染代码为原版。 */
+(function (global) {
+  var ROUTES = {"GET /api/auth/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"real_name\":\"展示用户\",\"mobile\":\"展示用户\",\"email\":\"viewer@example.invalid\",\"gender\":\"male\",\"avatar_url\":null,\"role\":\"admin\"}","GET /api/admin/users/dashboard/metrics":"{\"total_user_count\":100153,\"active_user_count_7d\":0,\"role_breakdown\":{\"admin\":5,\"manager\":3,\"teacher\":3,\"student\":100142},\"disabled_user_count\":3,\"new_register_count_7d\":22,\"avg_login_days_per_user_30d\":0,\"register_trend_7d\":[{\"date\":\"2026-10-01\",\"count\":0},{\"date\":\"2026-10-02\",\"count\":4},{\"date\":\"2026-10-03\",\"count\":0},{\"date\":\"2026-10-04\",\"count\":18},{\"date\":\"2026-10-05\",\"count\":0},{\"date\":\"2026-10-06\",\"count\":0},{\"date\":\"2026-10-07\",\"count\":0}]}","GET /api/admin/courses/series?page=1&page_size=20":"{\"items\":[{\"id\":3191,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ai_video_topics_20261006\",\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"description\":\"三个真实 Bilibili 来源的 P1 专题：深度学习 Python 基础、语义/情景/程序记忆与 Laying 库介绍、RAG 入门。原视频独立播放，生成资料自动发布并接入课程知识。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":100003,\"created_at\":\"2026-10-06T21:20:16\",\"updated_at\":\"2026-10-06T21:40:50\"},{\"id\":3190,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"1\",\"series_name\":\"Cache命中率原理与优化\",\"description\":\"\",\"cover_url\":\"https://www.bilibili.com/video/BV1jPJP6REKS/\",\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":100003,\"created_at\":\"2026-10-05T13:40:32\",\"updated_at\":\"2026-10-05T13:40:49\"},{\"id\":3189,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"curated_algorithms_leetcode\",\"series_name\":\"LeetCode 算法题精讲\",\"description\":\"真实 LeetCode 算法题精讲。当前开放三节：两数之和（P1）、有效的括号（P3）、2 的幂（P26）。均提供原视频、带时间戳转写、AI 笔记、章节、思维导图和本课答疑；P1/P3 使用原生字幕，P26 为真实视频 ASR 转写。来源：BV1xa411A76q。此课程为题解合集，不是完整算法与数据结构系统课。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":100003,\"created_at\":\"2026-10-04T13:13:42\",\"updated_at\":\"2026-10-04T19:24:35\"},{\"id\":3188,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"curated_zeropay_test_20261004\",\"series_name\":\"0元直结算契约测试课\",\"description\":\"Zero-Pay live test fixture\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":1,\"created_at\":\"2026-10-04T10:57:18\",\"updated_at\":\"2026-10-04T10:57:18\"},{\"id\":3151,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"b12course3\",\"series_name\":\"盲测B12拒绝课3\",\"description\":\"由 AI 助手（course_create 工具，HITL 确认后）创建\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-10-01T17:45:04\",\"updated_at\":\"2026-10-01T17:45:04\"},{\"id\":3150,\"institution_id\":2,\"delivery_mode\":\"online_live\",\"series_code\":\"22\",\"series_name\":\"2021\",\"description\":null,\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-10-01T11:27:55\",\"updated_at\":\"2026-10-01T11:27:55\"},{\"id\":3140,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"b12course1\",\"series_name\":\"盲测B12验证课1\",\"description\":\"由 AI 助手（course_create 工具，HITL 确认后）创建\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-24T16:42:09\",\"updated_at\":\"2026-10-05T13:42:38\"},{\"id\":3139,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"b12course\",\"series_name\":\"盲测B12验证课\",\"description\":\"由 AI 助手（course_create 工具，HITL 确认后）创建\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-24T16:30:49\",\"updated_at\":\"2026-09-24T16:30:49\"},{\"id\":3138,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ta6_fcourse\",\"series_name\":\"TA6 验收F课程\",\"description\":\"由 AI 助手（course_create 工具，HITL 确认后）创建\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-24T13:40:08\",\"updated_at\":\"2026-09-24T13:40:08\"},{\"id\":3136,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ta2_demo_a\",\"series_name\":\"TA2演示课程A\",\"description\":\"由 AI 助手（course_create 工具，HITL 确认后）创建\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-24T01:17:27\",\"updated_at\":\"2026-09-24T01:17:27\"},{\"id\":2763,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"h1c1789268706442\",\"series_name\":\"H1c冲突测试h1c1789268706442\",\"description\":null,\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-13T11:05:06\",\"updated_at\":\"2026-09-21T15:24:16\"},{\"id\":2654,\"institution_id\":1,\"delivery_mode\":\"offline_face_to_face\",\"series_code\":\"itest-series-1\",\"series_name\":\"ITest系列\",\"description\":null,\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"draft\",\"created_by\":100003,\"created_at\":\"2026-09-04T00:44:07\",\"updated_at\":\"2026-09-14T00:02:27\"},{\"id\":2628,\"institution_id\":6,\"delivery_mode\":\"online_recorded\",\"series_code\":\"middle_high_school_informatics_advanced_online_recorded\",\"series_name\":\"信息学竞赛入门班·录播\",\"description\":\"校园成长线下的信息学竞赛入门班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_advanced.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":274,\"created_at\":\"2026-08-07T19:28:04\",\"updated_at\":\"2026-08-16T15:08:28\"},{\"id\":2611,\"institution_id\":6,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_physics_foundation_online_live\",\"series_name\":\"中学物理同步班·直播\",\"description\":\"校园成长线下的中学物理同步班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_physics_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":260,\"created_at\":\"2026-08-09T02:07:39\",\"updated_at\":\"2026-08-17T02:08:48\"},{\"id\":1540,\"institution_id\":4,\"delivery_mode\":\"online_recorded\",\"series_code\":\"postgraduate_math_practice_online_recorded\",\"series_name\":\"考研数学强化刷题班·录播\",\"description\":\"考试与升学线下的考研数学强化刷题班课程。\",\"cover_url\":\"assets/seed/covers/postgraduate_math_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\",\"working_professional\",\"job_seeker\"],\"target_learning_goal_codes\":[\"exam_preparation\",\"postgraduate_exam\",\"score_improvement\"],\"target_grade_codes\":[\"undergraduate\",\"master\"],\"sale_status\":\"on_sale\",\"created_by\":198,\"created_at\":\"2025-10-10T02:30:46\",\"updated_at\":\"2026-06-26T21:29:13\"},{\"id\":435,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_informatics_practice_online_live\",\"series_name\":\"编程素养提升班·直播\",\"description\":\"校园成长线下的编程素养提升班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":106,\"created_at\":\"2024-12-21T01:02:07\",\"updated_at\":\"2025-02-03T21:31:37\"},{\"id\":433,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_informatics_foundation_online_live\",\"series_name\":\"信息科技启蒙班·直播\",\"description\":\"校园成长线下的信息科技启蒙班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":84,\"created_at\":\"2024-12-18T04:24:28\",\"updated_at\":\"2025-12-14T06:27:42\"},{\"id\":431,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_advanced_online_live\",\"series_name\":\"高中化学原理突破班·直播\",\"description\":\"校园成长线下的高中化学原理突破班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_advanced.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":64,\"created_at\":\"2024-12-16T09:24:23\",\"updated_at\":\"2025-03-05T20:46:54\"},{\"id\":429,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_practice_online_live\",\"series_name\":\"中高考化学提分班·直播\",\"description\":\"校园成长线下的中高考化学提分班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":50,\"created_at\":\"2024-12-20T16:00:57\",\"updated_at\":\"2025-09-23T06:52:09\"},{\"id\":427,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_foundation_online_live\",\"series_name\":\"中学化学同步班·直播\",\"description\":\"校园成长线下的中学化学同步班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"created_by\":56,\"created_at\":\"2024-12-08T06:50:26\",\"updated_at\":\"2024-12-16T23:00:43\"}],\"total\":231,\"page\":1,\"page_size\":20}","GET /api/admin/courses/series/3191":"{\"id\":3191,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ai_video_topics_20261006\",\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"description\":\"三个真实 Bilibili 来源的 P1 专题：深度学习 Python 基础、语义/情景/程序记忆与 Laying 库介绍、RAG 入门。原视频独立播放，生成资料自动发布并接入课程知识。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":100003,\"created_at\":\"2026-10-06T21:20:16\",\"updated_at\":\"2026-10-06T21:40:50\"}","GET /api/admin/courses/series/3191/cohorts":"[{\"id\":8017,\"institution_id\":1,\"series_id\":3191,\"campus_id\":null,\"head_teacher_id\":16,\"cohort_code\":\"AI-VIDEO-20261006\",\"cohort_name\":\"AI 开发专题 · 实机学习班\",\"sale_price\":\"0.00\",\"max_student_count\":60,\"current_student_count\":2,\"yn\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:33\",\"updated_at\":\"2026-10-07T08:32:51\"}]","GET /api/admin/courses/cohorts/8017":"{\"id\":8017,\"institution_id\":1,\"series_id\":3191,\"campus_id\":null,\"head_teacher_id\":16,\"cohort_code\":\"AI-VIDEO-20261006\",\"cohort_name\":\"AI 开发专题 · 实机学习班\",\"sale_price\":\"0.00\",\"max_student_count\":60,\"current_student_count\":2,\"yn\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:33\",\"updated_at\":\"2026-10-07T08:32:51\"}","GET /api/admin/courses/cohorts/8017/modules":"[{\"id\":23677,\"cohort_id\":8017,\"module_code\":\"AI-TOPICS-01\",\"module_name\":\"Python / Agent 记忆 / RAG 三个专题\",\"description\":null,\"lesson_count\":3,\"total_hours\":\"2.00\",\"stage_no\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:56\",\"updated_at\":\"2026-10-06T21:20:56\"}]","GET /api/admin/courses/modules/23677":"{\"id\":23677,\"cohort_id\":8017,\"module_code\":\"AI-TOPICS-01\",\"module_name\":\"Python / Agent 记忆 / RAG 三个专题\",\"description\":null,\"lesson_count\":3,\"total_hours\":\"2.00\",\"stage_no\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:56\",\"updated_at\":\"2026-10-06T21:20:56\"}","GET /api/admin/courses/modules/23677/sessions":"[{\"id\":205794,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":1,\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:21:06\",\"updated_at\":\"2026-10-06T21:21:06\"},{\"id\":205795,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":2,\"session_title\":\"深度学习 Python 基础\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:22:06\",\"updated_at\":\"2026-10-06T21:22:06\"},{\"id\":205796,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":3,\"session_title\":\"大模型 RAG 入门课程（完整视频）\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:22:42\",\"updated_at\":\"2026-10-06T21:22:42\"},{\"id\":205797,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":4,\"session_title\":\"Python 六大数据类型\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-07\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-07T09:02:21\",\"updated_at\":\"2026-10-07T09:02:21\"}]","GET /api/admin/courses/sessions/205794":"{\"id\":205794,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":1,\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:21:06\",\"updated_at\":\"2026-10-06T21:21:06\"}","GET /api/admin/courses/sessions/205794/assets":"[{\"id\":617347,\"session_id\":205794,\"asset_code\":\"BV1cRoKBFE4M_P1_37658429319\",\"asset_name\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"file_type\":\"mp4\",\"material_category\":\"video\",\"sort_no\":0,\"access_scope\":\"enrolled_only\",\"file_url\":\"minio://edu-course/video/BV1cRoKBFE4M/p1/20f082a240b3542ae7a2b377c0c8c4ef4fbaa22a31f8059856f6f21bc208067c.mp4\",\"file_size\":17873012,\"uploader_user_id\":100003,\"created_at\":\"2026-10-06T21:22:15\",\"updated_at\":\"2026-10-06T21:22:15\",\"videos\":[{\"id\":205793,\"asset_id\":617347,\"video_code\":\"BV1cRoKBFE4M_P1_37658429319\",\"video_title\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"cover_url\":null,\"duration_seconds\":151,\"resolution_label\":null,\"bitrate_kbps\":947,\"transcode_status\":\"completed\",\"review_status\":\"approved\",\"created_at\":\"2026-10-06T21:22:15\",\"updated_at\":\"2026-10-06T21:22:15\"}],\"playback_url\":\"https://example.com/offline-video.mp4\"}]","GET /api/admin/courses/series/*":"{\"id\":3191,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ai_video_topics_20261006\",\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"description\":\"三个真实 Bilibili 来源的 P1 专题：深度学习 Python 基础、语义/情景/程序记忆与 Laying 库介绍、RAG 入门。原视频独立播放，生成资料自动发布并接入课程知识。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"created_by\":100003,\"created_at\":\"2026-10-06T21:20:16\",\"updated_at\":\"2026-10-06T21:40:50\"}","GET /api/admin/courses/series/*/cohorts":"[{\"id\":8017,\"institution_id\":1,\"series_id\":3191,\"campus_id\":null,\"head_teacher_id\":16,\"cohort_code\":\"AI-VIDEO-20261006\",\"cohort_name\":\"AI 开发专题 · 实机学习班\",\"sale_price\":\"0.00\",\"max_student_count\":60,\"current_student_count\":2,\"yn\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:33\",\"updated_at\":\"2026-10-07T08:32:51\"}]","GET /api/admin/courses/cohorts/*":"{\"id\":8017,\"institution_id\":1,\"series_id\":3191,\"campus_id\":null,\"head_teacher_id\":16,\"cohort_code\":\"AI-VIDEO-20261006\",\"cohort_name\":\"AI 开发专题 · 实机学习班\",\"sale_price\":\"0.00\",\"max_student_count\":60,\"current_student_count\":2,\"yn\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:33\",\"updated_at\":\"2026-10-07T08:32:51\"}","GET /api/admin/courses/cohorts/*/modules":"[{\"id\":23677,\"cohort_id\":8017,\"module_code\":\"AI-TOPICS-01\",\"module_name\":\"Python / Agent 记忆 / RAG 三个专题\",\"description\":null,\"lesson_count\":3,\"total_hours\":\"2.00\",\"stage_no\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:56\",\"updated_at\":\"2026-10-06T21:20:56\"}]","GET /api/admin/courses/modules/*":"{\"id\":23677,\"cohort_id\":8017,\"module_code\":\"AI-TOPICS-01\",\"module_name\":\"Python / Agent 记忆 / RAG 三个专题\",\"description\":null,\"lesson_count\":3,\"total_hours\":\"2.00\",\"stage_no\":1,\"start_date\":\"2026-10-06\",\"end_date\":\"2027-10-06\",\"created_at\":\"2026-10-06T21:20:56\",\"updated_at\":\"2026-10-06T21:20:56\"}","GET /api/admin/courses/modules/*/sessions":"[{\"id\":205794,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":1,\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:21:06\",\"updated_at\":\"2026-10-06T21:21:06\"},{\"id\":205795,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":2,\"session_title\":\"深度学习 Python 基础\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:22:06\",\"updated_at\":\"2026-10-06T21:22:06\"},{\"id\":205796,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":3,\"session_title\":\"大模型 RAG 入门课程（完整视频）\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:22:42\",\"updated_at\":\"2026-10-06T21:22:42\"},{\"id\":205797,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":4,\"session_title\":\"Python 六大数据类型\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-07\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-07T09:02:21\",\"updated_at\":\"2026-10-07T09:02:21\"}]","GET /api/admin/courses/sessions/*":"{\"id\":205794,\"series_cohort_course_id\":23677,\"room_id\":null,\"session_no\":1,\"session_title\":\"Agent 记忆：语义、情景、程序记忆与 Laying 库介绍\",\"teaching_status\":\"scheduled\",\"checkin_required\":0,\"teaching_date\":\"2026-10-06\",\"start_time\":null,\"end_time\":null,\"created_at\":\"2026-10-06T21:21:06\",\"updated_at\":\"2026-10-06T21:21:06\"}","GET /api/admin/courses/sessions/*/assets":"[{\"id\":617347,\"session_id\":205794,\"asset_code\":\"BV1cRoKBFE4M_P1_37658429319\",\"asset_name\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"file_type\":\"mp4\",\"material_category\":\"video\",\"sort_no\":0,\"access_scope\":\"enrolled_only\",\"file_url\":\"minio://edu-course/video/BV1cRoKBFE4M/p1/20f082a240b3542ae7a2b377c0c8c4ef4fbaa22a31f8059856f6f21bc208067c.mp4\",\"file_size\":17873012,\"uploader_user_id\":100003,\"created_at\":\"2026-10-06T21:22:15\",\"updated_at\":\"2026-10-06T21:22:15\",\"videos\":[{\"id\":205793,\"asset_id\":617347,\"video_code\":\"BV1cRoKBFE4M_P1_37658429319\",\"video_title\":\"1-Introduction 介绍（语义/情景/程序记忆与Laying库）\",\"cover_url\":null,\"duration_seconds\":151,\"resolution_label\":null,\"bitrate_kbps\":947,\"transcode_status\":\"completed\",\"review_status\":\"approved\",\"created_at\":\"2026-10-06T21:22:15\",\"updated_at\":\"2026-10-06T21:22:15\"}],\"playback_url\":\"https://example.com/offline-video.mp4\"}]"};
+  var SSE = "event: start\ndata: {\"session_id\": null, \"query\": \"用两句话介绍一下 Python 的变量命名规则\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:rec_question_0368a23ca7a7908a:a2e0d29dbe4691a4:a06dc5d5ac0985a6:1:active\", \"score\": 1.0, \"content\": \"```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\", \"source_file\": \"Q-0368a23ca7a7908a.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_9e9e6d15d3af8575:387f30b281347aa0:4212c0eee3a57127:1:active\", \"score\": 0.927492, \"content\": \"```python\\na = 7\\nif a % 2 == 0:\\n    print(\\\"even\\\")\\nelse:\\n    print(\\\"odd\\\")\\n```\", \"source_file\": \"Q-9e9e6d15d3af8575.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_36d5d784dd03db37:cebd03a29f7dd5a7:67595d6294537edb:1:active\", \"score\": 0.915683, \"content\": \"```python\\nx = 5\\nif x > 3:\\n    x -= 2\\nelse:\\n    x += 2\\nprint(x)\\n```\", \"source_file\": \"Q-36d5d784dd03db37.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_e0ea4ffcb08046af:b89eeba397df5f9f:2187b79da4f8eb59:1:active\", \"score\": 0.875034, \"content\": \"```python\\nres = 1\\nfor i in range(1, 4):\\n    res *= i\\nprint(res)\\n```\", \"source_file\": \"Q-e0ea4ffcb08046af.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3c4cfa4e37330763:1\", \"score\": 0.860203, \"content\": \"工作区符号查询会先打开可见源码建立 LSP 工作区；文档修改后同步更新服务器内容。诊断等待实际返回，超时会明确报错，不把“未收到诊断”当作“没有错误”。Python 与 TypeScript 两种标准重命名编辑格式均支持，应用前仍校验全部文件 SHA。\", \"source_file\": \"up_100003_4baa92d1_README.md\", \"content_type\": \"doc_chunk\", \"series_code\": null, \"series_name\": null, \"series_codes\": [], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [], \"retrieved_count\": 149, \"final_count\": 5, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"只能\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"和\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线\"}\n\nevent: token\ndata: {\"delta\": \"组成\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"以\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"开头\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"同时\"}\n\nevent: token\ndata: {\"delta\": \"区分\"}\n\nevent: token\ndata: {\"delta\": \"大小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 和\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"Name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 是\"}\n\nevent: token\ndata: {\"delta\": \"两个\"}\n\nevent: token\ndata: {\"delta\": \"不同的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"）。\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"使用\"}\n\nevent: token\ndata: {\"delta\": \" Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"保留\"}\n\nevent: token\ndata: {\"delta\": \"关键字\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"if\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"for\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"class\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 等\"}\n\nevent: token\ndata: {\"delta\": \"），\"}\n\nevent: token\ndata: {\"delta\": \"并\"}\n\nevent: token\ndata: {\"delta\": \"建议\"}\n\nevent: token\ndata: {\"delta\": \"遵循\"}\n\nevent: token\ndata: {\"delta\": \" P\"}\n\nevent: token\ndata: {\"delta\": \"EP\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"8\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"规\"}\n\nevent: token\ndata: {\"delta\": \"范\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"加\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线的\"}\n\nevent: token\ndata: {\"delta\": \"“\"}\n\nevent: token\ndata: {\"delta\": \"蛇\"}\n\nevent: token\ndata: {\"delta\": \"形\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"法\"}\n\nevent: token\ndata: {\"delta\": \"”（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"student\"}\n\nevent: token\ndata: {\"delta\": \"_name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"来\"}\n\nevent: token\ndata: {\"delta\": \"提高\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"基于\"}\n\nevent: token\ndata: {\"delta\": \"通用\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"综合\"}\n\nevent: token\ndata: {\"delta\": \"上下\"}\n\nevent: token\ndata: {\"delta\": \"文\"}\n\nevent: token\ndata: {\"delta\": \"中的\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"片段\"}\n\nevent: token\ndata: {\"delta\": \"未\"}\n\nevent: token\ndata: {\"delta\": \"涉及\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"规则\"}\n\nevent: token\ndata: {\"delta\": \"说明\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"故\"}\n\nevent: token\ndata: {\"delta\": \"此\"}\n\nevent: token\ndata: {\"delta\": \"回答\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"模型\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"补充。）\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": null, \"message_id\": null, \"retrieved_count\": 149, \"final_count\": 5, \"latency_ms\": 14785, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n";
+  var DEMO_VER = "{\r\n  \"checked_at\": \"2026-10-05T17:04:09+0800\",\r\n  \"kind\": \"saved-real-runtime-acceptance\",\r\n  \"note\": \"保存的真实验收记录，不表示当前仍在执行。Jaeger 重启后可能不再保留内存 Trace。\",\r\n  \"cases\": [\r\n    {\r\n      \"name\": \"P1 本课背景与资料\",\r\n      \"query\": \"我当前学的是什么课程？这一节视频讲什么？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"679eeff149c5d47d836987be0989dce7\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"P1 同课追问\",\r\n      \"query\": \"你刚才提到的哈希表方法，如何保证不会把同一个元素使用两次？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"529bc6336146769bec6947d4f0594b91\",\r\n      \"citations\": 8,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"纯闲聊捷径\",\r\n      \"query\": \"你好\",\r\n      \"pass\": true,\r\n      \"intent\": \"chitchat\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"77a13d96694884ad302505a637a4b6f1\",\r\n      \"citations\": 0,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": null\r\n    },\r\n    {\r\n      \"name\": \"知识问答：九节点\",\r\n      \"query\": \"根据 Cache Learning Notes，TTL 为什么不能保证缓存和数据库的一致性？\",\r\n      \"pass\": true,\r\n      \"intent\": \"knowledge\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"e4a26e0f603e6f77e2b02fbf1a0b38df\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"真实计算器调用\",\r\n      \"query\": \"请使用 calculator 计算 17 * 23，给我结果。\",\r\n      \"pass\": true,\r\n      \"intent\": \"tool\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"2f2338d6106b8e46c00a42f60c35250e\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [\r\n        {\r\n          \"name\": \"add\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"sum\\\": 40, \\\"was_negative\\\": false}\"\r\n        },\r\n        {\r\n          \"name\": \"calculator\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"result\\\": 391.0, \\\"tool\\\": \\\"calculator\\\", \\\"op\\\": \\\"mul\\\"}\"\r\n        }\r\n      ],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"学习规划分支\",\r\n      \"query\": \"请根据我的学习情况给我制定一份学习计划。\",\r\n      \"pass\": true,\r\n      \"intent\": \"learning\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"5c5d8b2a5f487bdbf26f5259c1951038\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"新建 Cache 课程答疑\",\r\n      \"query\": \"我目前正在学什么课程？这节课讲了哪些 Cache 优化思路？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"260ad37dcd96658bccb83c642e30ec7a\",\r\n      \"citations\": 7,\r\n      \"video_ids\": [\r\n        205792\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    }\r\n  ]\r\n}";
+  var ROLE = "admin";
+  /* 通配路由（key 含 *）：编译为正则，最长模板优先 */
+  var WILD = [];
+  (function () {
+    var tmp = [];
+    for (var k in ROUTES) {
+      if (k.indexOf("*") < 0) continue;
+      var sp = k.indexOf(" ");
+      tmp.push({ m: k.slice(0, sp), re: new RegExp("^" + k.slice(sp + 1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[^/]*") + "$"), d: ROUTES[k] });
+      delete ROUTES[k];
+    }
+    WILD = tmp.sort(function (a, b) { return b.re.source.length - a.re.source.length; });
+  })();
+  var TOKEN_KEY = "edu:auth:token", REFRESH_KEY = "edu:auth:refresh";
+  var LOGIN_PAGE = "login-register.html";
+  var memoryToken = "offline-" + ROLE;
+  var memoryRefresh = "offline";
+  var errorHandlers = [];
+  function trimSlash(s){ return String(s||"").replace(/\/+$/,""); }
+  function apiError(status, message){ var e = new Error(message || ("HTTP " + status)); e.status = status; e.isApiError = true; return e; }
+  function sanitizeRedirect(r){ if (typeof r !== "string") return ""; var s = r.trim(); if (!s || s.charAt(0) !== "/") return ""; if (s.charAt(1) === "/") return ""; if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) return ""; return s; }
+  function getRedirectParam(){ try { var q = new URLSearchParams(location.search || ""); return sanitizeRedirect(q.get("redirect") || ""); } catch (e) { return ""; } }
+  function pageId(name){ try { var q = new URLSearchParams(location.search || ""); var v = typeof name === "string" ? q.get(name) : q.get("id"); return v === null || v === undefined ? "" : String(v).trim(); } catch (e) { return ""; } }
+  function currentPathWithQuery(){ try { return (location.pathname || "/") + (location.search || ""); } catch (e) { return "/"; } }
+  function onLoginPage(){ try { return /(^|\/)login-register\.html$/.test((location.pathname || "").split("/").pop() || ""); } catch (e) { return false; } }
+  function buildLoginUrl(redirectPath){ var t = sanitizeRedirect(redirectPath || ""); return t ? LOGIN_PAGE + "?redirect=" + encodeURIComponent(t) : LOGIN_PAGE; }
+  function gotoLogin(p){ try { window.location.href = buildLoginUrl(p); } catch (e) {} }
+  function onError(fn){ if (typeof fn !== "function") return function () {}; errorHandlers.push(fn); return function () { var i = errorHandlers.indexOf(fn); if (i >= 0) errorHandlers.splice(i, 1); }; }
+  function emitOnce(err){ if (!err || err.__eapiEmitted) return; err.__eapiEmitted = true; for (var i = 0; i < errorHandlers.length; i++) { try { errorHandlers[i](err); } catch (e) {} } try { console.error("[EAPI]", (err && err.message) || err); } catch (e) {} }
+
+  var store = {
+    getToken: function () { return memoryToken; },
+    setToken: function (t) { memoryToken = t || ""; },
+    getRefreshToken: function () { return memoryRefresh; },
+    setRefreshToken: function (t) { memoryRefresh = t || ""; },
+    clear: function () { memoryToken = ""; memoryRefresh = ""; },
+  };
+
+  function routeLookup(method, pathWithQuery) {
+    var key = method + " " + pathWithQuery;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    var noQ = pathWithQuery.split("?")[0];
+    key = method + " " + noQ;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    for (var wi = 0; wi < WILD.length; wi++) {
+      if (WILD[wi].m === method && WILD[wi].re.test(noQ)) return { status: 200, data: JSON.parse(WILD[wi].d) };
+    }
+    var best = null, bestLen = -1;
+    for (var k in ROUTES) {
+      if (k.indexOf(method + " ") !== 0) continue;
+      var kp = k.slice(method.length + 1).split("?")[0];
+      if (kp === noQ) return { status: 200, data: JSON.parse(ROUTES[k]) };
+      if (noQ.indexOf(kp + "/") === 0 && kp.length > bestLen) { best = k; bestLen = kp.length; }
+    }
+    if (best) return { status: 200, data: JSON.parse(ROUTES[best]) };
+    console.warn("[MOCK] 未匹配的接口（返回诚实空态）:", method, pathWithQuery);
+    if (method === "GET") {
+      var tail = noQ.split("/").pop();
+      var looksList = !tail || pathWithQuery.indexOf("?") >= 0 || /(s|sessions|logs|tasks|items)$/.test(noQ);
+      return { status: 200, data: looksList ? { total: 0, page: 1, page_size: 20, items: [] } : {} };
+    }
+    return { status: 200, data: { ok: true } };
+  }
+
+  var MUTATION_FIX = {
+    "POST /api/auth/login": function (body) {
+      return { access_token: "offline", refresh_token: "offline", user: JSON.parse(ROUTES["GET /api/users/me"] || ROUTES["GET /api/auth/me"] || "{}") };
+    },
+    "POST /api/auth/register": function () { return { user_id: 900001 }; },
+  };
+  function mutate(method, path, body) {
+    var fk = method + " " + path.split("?")[0];
+    if (MUTATION_FIX[fk]) return { status: 200, data: MUTATION_FIX[fk](body) };
+    if (path.indexOf("/api/trade/order") === 0 && method === "POST")
+      return { status: 200, data: { order_id: "MOCKORD1001", status: "pending_pay", pay_url: null, amount_due: (body && body.amount_due) || 0, series_id: body && body.series_id } };
+    if (path.indexOf("/api/trade/payment") === 0) return { status: 200, data: { status: "paid", paid: true, order_id: "MOCKORD1001" } };
+    if (path.indexOf("/api/progress/video") === 0) return { status: 200, data: { play_session_id: 900001 } };
+    if (path.indexOf("/api/community/posts") === 0 && method === "POST")
+      return { status: 200, data: { post_id: 9001, title: (body && body.title) || "演示帖子", content_md: (body && body.content_md) || "", created_at: new Date().toISOString() } };
+    if (path.indexOf("/api/users/me/profile") === 0) return { status: 200, data: Object.assign(JSON.parse(ROUTES["GET /api/users/me/profile"] || "{}"), body || {}) };
+    console.warn("[MOCK] 变更接口（离线演示返回成功）:", method, path);
+    return { status: 200, data: { ok: true, id: 900001 } };
+  }
+
+  function sseResponse() {
+    var enc = new TextEncoder();
+    var frames = SSE.split("\n\n").filter(function (f) { return f.trim(); });
+    var stream = new ReadableStream({
+      start: function (c) {
+        var i = 0;
+        function next() {
+          if (i >= frames.length) { c.close(); return; }
+          c.enqueue(enc.encode(frames[i++] + "\n\n"));
+          setTimeout(next, 40);
+        }
+        next();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  }
+
+  function request(method, path, body) {
+    if (!memoryToken && !onLoginPage()) { gotoLogin(currentPathWithQuery()); return Promise.reject(apiError(401, "登录凭证无效或已过期")); }
+    var p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
+    return new Promise(function (resolve) { setTimeout(resolve, 60); }).then(function () {
+      var out;
+      if (method !== "GET") out = mutate(method, p, body);
+      else out = routeLookup(method, p);
+      if (out.status === 404) throw apiError(404, "资源不存在（离线演示无此数据）");
+      return out.data;
+    }).catch(function (e) { emitOnce(e); throw e; });
+  }
+
+  var EAPI = {
+    BASE: (global.location && global.location.origin) || "",
+    TOKEN_KEY: TOKEN_KEY, TIMEOUT_MS: 15000,
+    get: function (p) { return request("GET", p); },
+    post: function (p, b) { return request("POST", p, b); },
+    put: function (p, b) { return request("PUT", p, b); },
+    patch: function (p, b) { return request("PATCH", p, b); },
+    del: function (p) { return request("DELETE", p); },
+    store: store, logout: function () { store.clear(); if (!onLoginPage()) gotoLogin(currentPathWithQuery()); },
+    onError: onError, getRedirectParam: getRedirectParam, buildLoginUrl: buildLoginUrl, pageId: pageId,
+  };
+  global.EAPI = EAPI;
+
+  var origFetch = global.fetch ? global.fetch.bind(global) : null;
+  global.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/chat/stream") >= 0) return Promise.resolve(sseResponse());
+    if (url.indexOf("demo/verification.json") >= 0)
+      return Promise.resolve(new Response(DEMO_VER, { status: 200, headers: { "Content-Type": "application/json" } }));
+    if (url.indexOf("/api/") >= 0 || url.indexOf("samples/") >= 0 || url.indexOf("/media/") >= 0) {
+      var method = ((init && init.method) || "GET").toUpperCase();
+      var body = null;
+      try { body = init && init.body ? JSON.parse(init.body) : null; } catch (e) {}
+      if (url.indexOf("samples/") >= 0) return origFetch(input, init).catch(function () { return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }); });
+      var out = method === "GET" ? routeLookup(method, url.split(/^[a-z]+:\/\/?[^/]*\/|^[a-z]+:\/\//.test(url) ? url.replace(/^[a-z]+:\/\/[^/]*\//, "/") : url).split("?").length ? urlAfterBase(url) : url) : mutate(method, urlAfterBase(url), body);
+      function urlAfterBase(u) { var i = u.indexOf("/api/"); return i >= 0 ? u.slice(i) : u; }
+      if (out.status === 404) return Promise.resolve(new Response(JSON.stringify({ code: "40400", message: "not found", data: null }), { status: 404, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(new Response(JSON.stringify({ code: 0, message: "ok", data: out.data }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    }
+    return origFetch ? origFetch(input, init) : Promise.reject(new Error("offline: fetch blocked"));
+  };
+})(window);
+</script>
+<script>
+/* Bili-Study 管理端角色守卫（task109 共用片段：8 个 admin 页内联 → 抽离单点）
+ * 用法（admin-*.html，先于各页 bootAdmin 定义引入，避免重定义全局 $ 覆盖原脚本）：
+ *   <script src="/edu-api.js"><\/script>
+ *   <script src="/edu-guard.js"><\/script>
+ *   <script>eduGuard.requireAdmin();<\/script>
+ * 守卫三段（纪律 lesson10 不可省）：
+ *   1) 本地无 token → 跳 login-register 带 redirect（第一道判定，不依赖后端——防 DEBUG 态虚拟 admin 绕过）
+ *   2) 有 token   → GET /api/auth/me 校验 role∈{admin,manager}，否则跳 /dashboard.html + 横幅"无管理权限"
+ *   3) auth/me 失败(网络/停机)无法确认身份 → 按未授权跳登录，不静默
+ * 守卫通过前不发任何 admin API 请求：数据注入收敛为 window.bootAdmin()，由守卫通过后调用。
+ * 兼容性：requireAdmin(onPass?) 缺省 onPass 时，通过后轮询 window.bootAdmin（向后兼容原 runBoot，
+ *          因为各页 bootAdmin 定义在其后独立 <script>，需等待其就绪）。
+ * [H3-temp 2026-09-12] manager 过守卫后灰显导航例外入口（GWT③ 签字口径）：admin-users/admin-mcp/
+ *          admin-dashboard 三页链接 pointer-events:none+opacity:.45+title「仅 ADMIN 可用」；
+ *          admin 不受影响；rag 页不灰显。一行级过渡措施，不改页面文件；B3-impl（admin-users
+ *          Refine 版权限对齐）落地后由横幅/诚实空态口径取代。
+ */
+(function (global) {
+  var ADMIN = { admin: 1, manager: 1 };
+
+  function banner(txt) {
+    try {
+      var d = document.createElement("div");
+      d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+      d.textContent = txt;
+      document.body.appendChild(d);
+    } catch (e) {}
+  }
+
+  // 缺省回调：轮询 window.bootAdmin 最多 30 次（3s），兜底页面 bootAdmin 定义滞后的竞态
+  var __rt = 0;
+  function runBoot() {
+    var fn = global.bootAdmin;
+    if (typeof fn === "function") { try { fn(); } catch (e) {} }
+    else if (__rt++ < 30) setTimeout(runBoot, 10);
+  }
+
+  function gotoLogin(redir) {
+    var target = "";
+    try { target = EAPI.buildLoginUrl(redir); } catch (e) { target = "login-register.html"; }
+    try { location.replace(target); } catch (e) {}
+  }
+
+  // [H3-temp] manager 导航例外灰显：users/mcp/dashboard 链接禁点+降透明+title（rag/admin 不受影响）
+  function grayManagerNav() {
+    var LOCK = { "admin-users.html": 1, "admin-mcp.html": 1, "admin-dashboard.html": 1 };
+    try {
+      var links = document.querySelectorAll("a[href]");
+      for (var i = 0; i < links.length; i++) {
+        var f = (links[i].getAttribute("href") || "").split("#")[0].split("?")[0].split("/").pop();
+        if (LOCK[f]) { links[i].style.pointerEvents = "none"; links[i].style.opacity = ".45"; links[i].title = "仅 ADMIN 可用"; }
+      }
+    } catch (e) {}
+  }
+
+  function requireAdmin(onPass) {
+    if (!global.EAPI) return; // edu-api.js 未加载则不守卫（页面正常都已先引 edu-api.js）
+    var redir = "";
+    try { redir = location.pathname + location.search; } catch (e) { redir = "/"; }
+    if (!EAPI.store.getToken()) { gotoLogin(redir); return; } // 第一道判定：无 token 直接跳登录
+    EAPI.get("/api/auth/me").then(function (me) {
+      if (me && ADMIN[me.role]) {
+        if (me.role === "manager") grayManagerNav(); // [H3-temp] 导航例外灰显（过渡措施，admin 不受影响）
+        if (typeof onPass === "function") { try { onPass(); } catch (e) {} }
+        else runBoot();
+      } else {
+        banner("无管理权限（当前角色 " + (me && me.role ? me.role : "未知") + "），正在跳回学习端…");
+        setTimeout(function () { try { location.replace("dashboard.html"); } catch (e) {} }, 1200);
+      }
+    }).catch(function () {
+      banner("身份校验失败，无法确认管理权限，正在跳转登录…");
+      setTimeout(function () { gotoLogin(redir); }, 1200);
+    });
+  }
+
+  global.eduGuard = { requireAdmin: requireAdmin };
+})(window);
+
+</script>
+<script>eduGuard.requireAdmin();</script>
+<script>
+/* EduMD：极简 Markdown→HTML（AI 回答渲染用，离线零依赖，~55 行手写）
+   规则：先整体 HTML 转义（& < > "）再做 Markdown 转换 → 标签/属性注入全部失效（防 XSS）；
+   支持 #~#### 标题、无序(-*•)/有序(1. 1、1))列表、```围栏代码块（流式未闭合也按代码块渲染）、
+   行内 code（反引号）、**加粗**、*斜体*、[文字](链接)（仅放行 http(s)/站内相对/#，其余替换为 #）、
+   空行分段 + 段内单换行转 <br> */
+(function (global) {
+  function mdToHtml(src) {
+    var s = String(src == null ? "" : src).replace(/\r\n?/g, "\n")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    var blocks = [];
+    s = s.replace(/```[\w-]*\n?([\s\S]*?)(?:```|$)/g, function (m, code) {
+      blocks.push('<pre class="md-pre"><code>' + code.replace(/\n+$/, "") + "</code></pre>");
+      return "\u0000B" + (blocks.length - 1) + "\u0000";
+    });
+    function inline(x) {
+      var codes = [];
+      x = x.replace(/`([^`\n]+)`/g, function (m, c) {
+        codes.push("<code>" + c + "</code>");
+        return "\u0000C" + (codes.length - 1) + "\u0000";
+      });
+      x = x.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
+        var href = /^(https?:\/\/|\/|#)/i.test(u) ? u : "#";
+        return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + t + "</a>";
+      });
+      x = x.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+      x = x.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>");
+      return x.replace(/\u0000C(\d+)\u0000/g, function (m, i) { return codes[+i]; });
+    }
+    var lines = s.split("\n"), out = [], i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      var bm = line.match(/^\u0000B(\d+)\u0000\s*$/);
+      if (bm) { out.push(blocks[+bm[1]]); i++; continue; }
+      var h = line.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { var lv = h[1].length + 2; out.push('<h' + lv + ' class="md-h">' + inline(h[2]) + "</h" + lv + ">"); i++; continue; }
+      var isUl = /^\s*[-*•]\s+/.test(line), isOl = /^\s*\d+[.、)]\s+/.test(line);
+      if (isUl || isOl) {
+        var tag = isUl ? "ul" : "ol";
+        var re = isUl ? /^\s*[-*•]\s+(.*)$/ : /^\s*\d+[.、)]\s+(.*)$/;
+        var items = [];
+        while (i < lines.length) { var lm = lines[i].match(re); if (!lm) break; items.push("<li>" + inline(lm[1]) + "</li>"); i++; }
+        out.push('<' + tag + ' class="md-list">' + items.join("") + "</" + tag + ">");
+        continue;
+      }
+      if (!line.trim()) { i++; continue; }
+      var para = [line]; i++;
+      while (i < lines.length && lines[i].trim() &&
+             !/^\u0000B\d+\u0000/.test(lines[i]) && !/^(#{1,4})\s/.test(lines[i]) &&
+             !/^\s*([-*•]|\d+[.、)])\s+/.test(lines[i])) { para.push(lines[i]); i++; }
+      out.push("<p>" + para.map(inline).join("<br>") + "</p>");
+    }
+    return out.join("").replace(/\u0000B(\d+)\u0000/g, function (m, i) { return blocks[+i]; });
+  }
+  global.EduMD = { toHtml: mdToHtml };
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* One native node/connector renderer for student and administrator previews. */
+(function(global){
+  'use strict';
+  function el(tag,text,cls){var n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;}
+  function stamp(t){t=Math.max(0,Math.floor(Number(t)||0));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');}
+  global.EduVideoMindMap=function(map,onSeek){
+    var wrap=el('div',null,'vk-map'),scroll=el('div',null,'vk-map-scroll'),tree=el('ul',null,'vk-mindmap vk-map-diagram');
+    var detail=el('section','点击节点查看要点；使用详情中的回看按钮跳到原视频。','vk-map-detail');
+    detail.setAttribute('aria-live','polite');scroll.setAttribute('aria-label','课程思维导图，可横向滚动');
+    scroll.tabIndex=0;
+    function node(value,depth){
+      var li=el('li'),box=el('div',null,'vk-map-box'),card=el('button',null,'vk-map-node');card.type='button';card.setAttribute('aria-pressed','false');
+      card.setAttribute('aria-label',value.label);card.appendChild(el('span',value.label,'vk-map-label'));
+      if(value.time_anchor!=null)card.appendChild(el('span','▶ '+stamp(value.time_anchor),'vk-map-time'));
+      card.addEventListener('click',function(){
+        tree.querySelectorAll('.vk-map-node').forEach(function(b){b.setAttribute('aria-pressed',String(b===card));});
+        detail.replaceChildren(el('strong',value.label),el('p',value.summary||''));
+        if(value.time_anchor!=null&&onSeek){
+          var jump=el('button','跳到视频 '+stamp(value.time_anchor),'vk-jump');jump.type='button';
+          jump.addEventListener('click',function(){onSeek(value.time_anchor);});detail.appendChild(jump);
+        }
+      });
+      box.appendChild(card);li.appendChild(box);
+      if(value.children&&value.children.length){
+        var children=el('ul');children.hidden=depth>0;
+        value.children.forEach(function(c){children.appendChild(node(c,depth+1));});li.appendChild(children);
+        if(depth>0){var expand=el('button','展开 '+value.children.length+' 个要点','vk-map-expand');expand.type='button';expand.setAttribute('aria-expanded','false');expand.addEventListener('click',function(){children.hidden=!children.hidden;expand.setAttribute('aria-expanded',String(!children.hidden));expand.textContent=children.hidden?'展开 '+value.children.length+' 个要点':'收起要点';});box.appendChild(expand);}
+      }
+      return li;
+    }
+    (map.nodes||[]).forEach(function(n){tree.appendChild(node(n,0));});scroll.appendChild(tree);wrap.appendChild(scroll);wrap.appendChild(detail);return wrap;
+  };
+})(window);
+
+</script>
+<script>
+/* Admin course video production: one client of the existing authorized API.
+ * open is called only inside bootAdmin after course/video assets are loaded.
+ * A preview identity is retained until an explicit decision; polling never
+ * approves or rejects a replacement generation on the operator's behalf. */
+(function(global){
+  "use strict";
+  var root=document.getElementById("videoKnowledgeAdmin");if(!root)return;
+  var $=function(id){return document.getElementById(id);}, base="/api/admin/video-knowledge/tasks";
+  var context=null,tasks=[],current=null,review=null,epoch=0,pending=false,timer=null,refreshing=false;
+  var stages={acquire:"获取视频",acquiring:"获取视频",bind:"校验并绑定播放源",transcribe:"字幕 / 语音识别",transcribing:"字幕 / 语音识别",compile:"生成学习资料",compiling:"生成学习资料",exercises:"生成本课习题",review:"资料已生成",publish:"发布正式资料",publishing:"发布正式资料",rag:"接入课程知识",completed:"完成",complete:"完成",ingest:"接入课程知识",ingesting:"接入课程知识"};
+  var states={queued:"等待处理",running:"处理中",awaiting_review:"资料已生成",approved:"准备发布 / 入库",completed:"已完成",failed:"处理失败"};
+  var esc=function(value){var d=document.createElement("div");d.textContent=value==null?"":String(value);return d.innerHTML;};
+  function stamp(value){var n=Math.max(0,Math.floor(Number(value)||0));return Math.floor(n/60)+":"+String(n%60).padStart(2,"0");}
+  function generationLabel(value){return "生成发起时间："+String(value.created_at||"未提供").replace("T"," ").replace(/\.\d+/,"")+" · 本次修订 "+Number(value.review_revision||0)+" 次";}
+  function notice(value){$("vkNotice").textContent=value;}
+  function invalidate(){review=null;$("vkReview").hidden=true;$("vkDecisions").hidden=true;$("vkReason").value="";buttons();}
+  function sameReview(){return review&&current&&review.task_id===current.id&&review.artifact_sha256===current.artifact_sha256&&review.review_revision===current.review_revision;}
+  function buttons(){
+    $("vkExercises").disabled=pending||!context||!context.videos.length||!!(current&&current.status!=="completed")||!!(current&&current.exercise_count);
+    var videoReady=$("vkSource").value==="bilibili"||!!$("vkVideo").value;
+    $("vkGenerate").disabled=pending||!context||!videoReady;
+    $("vkRefresh").disabled=pending;$("vkTask").disabled=pending;
+    $("vkRetry").disabled=pending||!current||!current.retry_allowed;
+    $("vkPreview").disabled=pending||!current||!current.artifact_sha256;
+    $("vkApprove").disabled=$("vkReject").disabled=pending||!sameReview()||!current.review_allowed;
+    ["vkSource","vkVideo","vkBvid","vkPage","vkMode","vkRegenerate"].forEach(function(id){$(id).disabled=pending;});
+  }
+  function renderTask(){
+    $("vkProgress").hidden=!current;
+    if(!current){$("vkTaskStatus").textContent="尚未创建资料生产任务。";$("vkTaskError").textContent="";buttons();return;}
+    var label=states[current.status]||current.status, stage=stages[current.stage]||current.stage||"等待处理";
+    var parts=[label+" · "+stage,generationLabel(current)];
+    if(current.exercises_only)parts.push("仅补生成本课习题；原视频与正式资料版本保留");
+    else if(current.previous_task_id||current.previous_publication_id)parts.push("基于已发布资料重新生成，旧版仍可用");
+    if(current.lease_expired&&current.status==="running")parts.push(current.retry_allowed?"租约已过期，任务停滞；可安全重试":"租约已过期，但工作进程仍在执行；等待安全释放后再重试");
+    if(current.published&&!current.exercises_only)parts.push(current.rag_ready?"资料已发布":"审核通过资料已保存");
+    if(current.rag_ready)parts.push("课程知识已可检索，学生可向 Tutor 提问");
+    else if(current.published&&!current.exercises_only){
+      parts.push("课程知识检索尚未就绪；待课程知识入库完成后学生可用");
+      if(current.previous_publication_id)parts.push("已有旧正式版本继续可用");
+    }
+    if(current.playback_available)parts.push("原视频可播放");
+    $("vkTaskStatus").textContent=parts.join(" · ");
+    $("vkTaskError").textContent=current.error_message?("失败阶段："+stage+"。"+current.error_message):"";
+    var headline=label+" · "+stage, detail="";
+    if(current.status==="queued"){headline="任务已提交 · 等待后台接单";detail="接单后会自动更新处理阶段，无需重复提交。";}
+    if(current.status==="running"){headline="后台已接单 · 正在"+stage;detail=current.stage==="transcribing"?"字幕提取或语音识别可能需要数分钟；完成后自动进入学习资料生成，无需重复提交。":"正在处理，完成本阶段后会自动更新，无需重复提交。";}
+    if(current.status==="awaiting_review"){headline="AI 学习资料已生成";detail="点击「预览本版资料」查看总结、笔记、章节、字幕和导图；阅读后批准或驳回。新版尚未正式发布。";}
+    if(current.status==="approved"){headline="学习资料已校验 · 正在发布和入库";detail="系统会自动发布并接入课程知识；RAG 就绪前不会替换学生使用的正式版本。";}
+    if(current.published&&!current.rag_ready&&!current.exercises_only){headline="新版资料已保存 · 课程知识入库尚未完成";detail="请等待入库完成；原视频和已有正式版本继续可用。";}
+    if(current.status==="failed"){headline="处理失败 · "+stage;detail=current.error_message||"请查看下方失败原因及可用的重试操作。";}
+    if(current.lease_expired){headline="任务更新异常 · "+stage;detail=current.retry_allowed?"执行租约已过期，可点击「重试失败阶段」。":"执行租约已过期，仍需等待后台安全释放，不能抢占执行。";}
+    if(current.rag_ready){headline="已完成 · 学生资料和课程知识均已就绪";detail="学生可以查看正式资料，并向 Course Tutor 提问。"+(current.exercise_count?"本课 "+current.exercise_count+" 道视频习题已接入本课练习。":"旧视频尚未生成对应习题，可点击「补生成本课习题」。");}
+    var updated=String(current.updated_at||"").replace("T"," ").replace(/\.\d+/,"");
+    $("vkProgressTitle").textContent=headline;
+    $("vkProgressDetail").textContent=detail+(updated?" 后台最近更新："+updated+"。":"");
+    if(review&&!sameReview()){invalidate();notice("候选版本已更新。请重新预览后再审核；原视频和旧正式资料保留。");}
+    buttons();
+  }
+  function selectedTask(syncSource){
+    var id=$("vkTask").value;current=tasks.find(function(t){return t.id===id;})||null;
+    if(syncSource&&current){$("vkBvid").value=current.bvid||"";$("vkPage").value=current.page||1;$("vkMode").value=current.transcript_mode||"auto";}
+    renderTask();
+  }
+  async function refresh(){
+    if(!context||refreshing)return;var e=epoch,sid=context.session_id;refreshing=true;
+    try{
+      var data=await EAPI.get(base+"?session_id="+sid);
+      if(e!==epoch)return;
+      tasks=(data.items||[]).filter(function(t){return Number(t.session_id)===Number(sid);});
+      var keep=current&&current.id;
+      $("vkTask").innerHTML=tasks.length?tasks.map(function(t,index){return '<option value="'+esc(t.id)+'">'+(index===0?"最新生产记录":"历史生产记录")+" · "+esc(states[t.status]||t.status)+" · "+esc(generationLabel(t))+"</option>";}).join(""):'<option value="">尚无生产记录</option>';
+      if(tasks.some(function(t){return t.id===keep;}))$("vkTask").value=keep;
+      var worker=data.worker||{},labels={running:"处理服务运行中",offline:"处理服务离线，任务等待服务恢复",paused:"处理服务暂停，任务尚未继续",stopping:"处理服务正在安全停止"};
+      $("vkWorker").textContent=labels[worker.state]||"暂时无法确认处理服务状态";
+      $("vkSync").textContent="最近同步："+new Date().toLocaleTimeString("zh-CN",{hour12:false})+" · 此面板可见时每 5 秒自动刷新；也可点击「刷新状态」。";
+      if($("vkNotice").textContent.startsWith("状态读取失败："))notice("");
+      selectedTask(!keep||!tasks.some(function(t){return t.id===keep;}));
+    }catch(error){if(e===epoch){$("vkSync").textContent="同步失败，当前显示旧状态。请点击「刷新状态」重试。";notice("状态读取失败："+(error.message||"网络错误")+"。原视频可继续播放。");}}
+    finally{if(e===epoch)refreshing=false;}
+  }
+  function sourceChange(){
+    var bili=$("vkSource").value==="bilibili";
+    $("vkVideoField").hidden=bili;$("vkBiliField").hidden=$("vkPageField").hidden=!bili;
+    $("vkUploadHint").hidden=bili;buttons();
+  }
+  function biliInput(){
+    var raw=$("vkBvid").value.trim(),bvid=raw,page=Number($("vkPage").value);
+    if(raw.indexOf("https://")===0){
+      var url;try{url=new URL(raw);}catch(_){throw new Error("请填写有效的 Bilibili 视频链接");}
+      if(url.hostname!=="www.bilibili.com"&&url.hostname!=="bilibili.com")throw new Error("请填写 Bilibili 官方视频链接");
+      bvid=url.pathname.split("/").filter(Boolean)[1]||"";
+      if(url.searchParams.has("p"))page=Number(url.searchParams.get("p"));
+    }
+    if(!/^BV[0-9A-Za-z]{10}$/.test(bvid))throw new Error("请填写完整 BV 号或官方视频链接");
+    if(!Number.isInteger(page)||page<1||page>1000)throw new Error("分 P 必须是 1 至 1000 的整数");
+    return {bvid:bvid,page:page};
+  }
+  async function mutate(action,payload){
+    if(pending||!context)return;var e=epoch;pending=true;buttons();notice("正在提交，请等待…");
+    try{
+      var value=await EAPI.post(action,payload);
+      if(e!==epoch)return;
+      if(action===base)$("vkRegenerate").checked=false;
+      invalidate();current=value;notice(payload.exercises_only||value.exercises_only?"本课习题生成已提交。原视频与正式资料版本保留，请查看真实处理阶段。":"操作已提交。生成成功后自动发布并入库，请查看真实处理阶段；原视频保持可用。");
+      await refresh();
+      global.dispatchEvent(new CustomEvent("edu:video-knowledge-task-changed",{detail:{session_id:context.session_id,task:value}}));
+    }catch(error){
+      if(e!==epoch)return;
+      if(error.status===409){invalidate();notice("状态或版本已更新。请刷新状态并重新预览后再审核；不会自动批准新版本。 "+(error.message||""));}
+      else notice("操作失败："+(error.message||"网络错误")+"。原视频及旧正式资料保留，可安全重试。");
+    }finally{if(e===epoch){pending=false;buttons();}}
+  }
+  $("vkGenerate").onclick=function(){
+    if(pending||!context)return;
+    try{
+      var source=$("vkSource").value,payload={session_id:context.session_id,source_kind:source,transcript_mode:$("vkMode").value,regenerate:$("vkRegenerate").checked};
+      if(source==="bilibili")Object.assign(payload,biliInput());
+      else {payload.video_id=Number($("vkVideo").value);if(!payload.video_id)throw new Error("请先上传或选择本课视频");}
+      if(current&&current.status==="completed"&&!payload.regenerate)throw new Error("已有完成的资料。如需重新生成，请勾选生成新版资料。");
+      mutate(base,payload);
+    }catch(error){notice(error.message);}
+  };
+  $("vkRetry").onclick=function(){if(current&&current.retry_allowed)mutate(base+"/"+current.id+"/retry",{});};
+  $("vkExercises").onclick=function(){if(pending||!context)return;var id=Number($("vkVideo").value);if(!id)return notice("请先选择已正式发布的本课视频");mutate(base,{session_id:context.session_id,source_kind:"existing_video",video_id:id,transcript_mode:"auto",exercises_only:true});};
+  $("vkRefresh").onclick=refresh;$("vkSource").onchange=sourceChange;$("vkVideo").onchange=buttons;
+  $("vkTask").onchange=function(){invalidate();selectedTask(true);};
+  $("vkPreview").onclick=async function(){
+    if(!current||pending)return;var e=epoch,taskId=current.id;pending=true;buttons();notice("正在读取本版资料…");
+    try{
+      var data=await EAPI.get(base+"/"+taskId+"/preview");
+      if(e!==epoch||!current||current.id!==taskId)return;
+      if(data.artifact_sha256!==current.artifact_sha256||data.review_revision!==current.review_revision){invalidate();notice("版本已更新，请刷新状态并重新预览。");return;}
+      review={task_id:taskId,artifact_sha256:data.artifact_sha256,review_revision:data.review_revision};
+      var summary=data.summary||{},transcript=data.transcript||{},chapters=data.chapters||[];
+      $("vkReview").innerHTML='<h4>当前预览 · '+esc((data.source||{}).title||summary.title||"当前视频")+'</h4><p>'+esc(generationLabel(current))+'</p>'
+        +'<p class="vka-help">转写来源：'+(data.transcript_origin==="platform_subtitle"?"原生字幕":"语音识别")+' · '+(transcript.segments||[]).length+' 段字幕 · '+chapters.length+' 个章节</p>'
+        +'<details open><summary>课程总结</summary><h4>'+esc(summary.title)+'</h4><p>'+esc(summary.overview)+'</p><ul>'+(summary.key_points||[]).map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul></details>'
+        +'<details open><summary>AI 笔记</summary><div class="vka-note">'+(global.EduMD?EduMD.toHtml(data.knowledge_note):esc(data.knowledge_note))+'</div></details>'
+        +'<details><summary>章节（'+chapters.length+'）</summary>'+chapters.map(function(c){return '<article><span class="vka-time">'+stamp(c.start)+'</span> <b>'+esc(c.title)+'</b><p>'+esc(c.summary)+'</p></article>';}).join('')+'</details>'
+        +'<details><summary>带时间戳字幕（'+(transcript.segments||[]).length+'）</summary><div class="vka-transcript">'+(transcript.segments||[]).map(function(s){return '<p><span class="vka-time">'+stamp(s.start)+'–'+stamp(s.end)+'</span> '+esc(s.text)+'</p>';}).join('')+'</div></details>'
+        +'<details><summary>思维导图</summary><div id="vkPreviewMap"></div></details>'
+        +'<details><summary>本课视频习题（'+(data.exercise_questions||[]).length+'）</summary>'+(data.exercise_questions||[]).map(function(q,i){return '<article><b>'+Number(i+1)+'. '+esc(q.stem)+'</b>'+q.options.map(function(o){return '<p>'+esc(o.label)+'. '+esc(o.content)+'</p>';}).join('')+'<p>答案：'+esc(q.answer)+' · '+esc(q.analysis)+'</p><p>视频依据 '+stamp(q.start_seconds)+'–'+stamp(q.end_seconds)+' · 导图节点 '+esc(q.node_id)+'</p></article>';}).join('')+'</details>';
+      $("vkPreviewMap").appendChild(global.EduVideoMindMap(data.mindmap||{nodes:[]}));
+      $("vkReview").hidden=false;$("vkDecisions").hidden=!current.review_allowed;
+      notice(current.review_allowed?"已打开本版资料。请阅读内容后作出审核决定。":current.rag_ready?"本版已完成发布与入库，可直接阅读预览，无需人工审核。":"已打开本版资料。系统将自动发布和入库，学生可用状态以下方处理结果为准。");
+    }catch(error){if(e===epoch){invalidate();notice("预览失败："+(error.message||"网络错误")+"。请刷新状态后重试。");}}
+    finally{if(e===epoch){pending=false;buttons();}}
+  };
+  $("vkApprove").onclick=function(){if(sameReview()&&current.review_allowed)mutate(base+"/"+review.task_id+"/approve",{artifact_sha256:review.artifact_sha256,review_revision:review.review_revision});};
+  $("vkReject").onclick=function(){
+    if(!sameReview()||!current.review_allowed)return;
+    var reason=$("vkReason").value.trim();if(!reason){notice("请填写具体审核意见再驳回。");$("vkReason").focus();return;}
+    mutate(base+"/"+review.task_id+"/reject",{reason:reason,artifact_sha256:review.artifact_sha256,review_revision:review.review_revision});
+  };
+  global.AdminVideoKnowledge={open:async function(value){
+    epoch++;var openedEpoch=epoch;context=value;tasks=[];current=null;pending=false;refreshing=false;root.hidden=false;invalidate();
+    $("vkLesson").textContent="当前课次："+value.title;notice("");$("vkRegenerate").checked=false;
+    $("vkBvid").value="";$("vkPage").value=1;$("vkMode").value="auto";
+    $("vkVideo").innerHTML=value.videos.length?value.videos.map(function(v){return '<option value="'+Number(v.id)+'">'+esc(v.video_title||v.asset_name||"本课视频")+'</option>';}).join(''):'<option value="">尚无绑定视频，请在下方上传</option>';
+    $("vkSource").value=value.videos.length?"existing_video":"bilibili";sourceChange();
+    if(timer)clearInterval(timer);await refresh();if(openedEpoch===epoch)timer=setInterval(function(){if(!document.hidden&&!pending)refresh();},5000);
+  },close:function(){epoch++;context=null;pending=false;refreshing=false;root.hidden=true;invalidate();if(timer)clearInterval(timer);timer=null;}};
+})(window);
+
+</script>
+<script>
+/* ===== 对接真实后端（course_admin 四级 CRUD + 视频分片上传 + 章节 CRUD，契约 = app/domains/course_admin/router.py）===== */
+window.bootAdmin=function(){
+if(!window.EAPI)return;
+var $=function(id){return document.getElementById(id)};
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+if(!EAPI.store.getToken()){$("pageSub").textContent="⚠ 请用管理员账号登录后刷新本页";return;}
+EAPI.TIMEOUT_MS=120000;
+
+var S={id:EAPI.pageId("id"),series:null,cohorts:[],cohortId:null,modules:[],sessions:{},moduleId:null,sessionId:null,videos:[],videoId:null,uploading:false,poll:null,editCohort:null,editModule:null,editSession:null,editVideo:null};
+
+function sub(t){$("pageSub").textContent=t}
+function badge(txt,cls){return '<span class="badge '+(cls||"badge-mut")+'"><i class="pd"></i>'+esc(txt)+'</span>'}
+var DM={online_live:"直播",online_recorded:"录播",offline_face_to_face:"面授"};
+var SS={scheduled:["未开始","badge-mut"],in_progress:["进行中","badge-primary"],completed:["已完成","badge-on"],cancelled:["已取消","badge-red"]};
+
+/* ── 系列 ── */
+function loadSeries(){
+  if(!S.id){$("pageTitle").textContent="未指定系列 id";sub("请从 课程管理 列表进入：admin-course-detail.html?id=<系列ID>");return;}
+  return EAPI.get("/api/admin/courses/series/"+S.id).then(function(s){
+    S.series=s;
+    $("crumbSeries").textContent=s.series_name||("系列 #"+S.id);
+    $("pageTitle").textContent=s.series_name||("系列 #"+S.id);
+    $("seriesCard").style.display="";$("cohortCard").style.display="";
+    $("siName").textContent=s.series_name||"—";
+    $("siIco").textContent=(s.series_name||"CO").slice(0,2).toUpperCase();
+    $("siTags").innerHTML='<code>'+esc(s.series_code||"—")+'</code>'
+      +'<span class="b-dm">'+esc(DM[s.delivery_mode]||s.delivery_mode||"—")+'</span>'
+      +badge(s.sale_status==="on_sale"?"在售":(s.sale_status==="off_sale"?"已下架":"草稿"),s.sale_status==="on_sale"?"badge-on":"badge-mut")
+      +'<span>机构 #'+esc(s.institution_id)+'</span>';
+    $("siDesc").textContent=s.description||"—（无描述）";
+    sub("管理课程、班次与课次；在课次的视频区域上传视频并制作 AI 学习资料。");
+  }).catch(function(e){sub("⚠ 系列加载失败："+((e&&e.message)||""));});
+}
+$("editSeriesBtn").onclick=function(){
+  var s=S.series;if(!s)return;
+  $("seName").value=s.series_name||"";$("seStatus").value=s.sale_status||"draft";
+  $("seMode").value=s.delivery_mode||"online_recorded";$("seDesc").value=s.description||"";
+  openMdl("mdl-series");
+};
+$("seSave").onclick=function(){
+  var btn=$("seSave");btn.disabled=true;
+  EAPI.patch("/api/admin/courses/series/"+S.id,{
+    series_name:$("seName").value.trim(),sale_status:$("seStatus").value,
+    delivery_mode:$("seMode").value,description:$("seDesc").value.trim()
+  }).then(function(){closeMdl("mdl-series");loadSeries();})
+    .catch(function(e){alert("保存失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 班次 ── */
+function loadCohorts(){
+  return EAPI.get("/api/admin/courses/series/"+S.id+"/cohorts").then(function(list){
+    S.cohorts=list||[];
+    $("cohortCnt").textContent="共 "+S.cohorts.length+" 个";
+    var body=$("cohortBody");
+    if(!S.cohorts.length){body.innerHTML='<tr><td colspan="6" class="box-pad"><div class="st-ico">∅</div>暂无班次 — 点击「＋ 新增班次」开始搭建</td></tr>';return;}
+    body.innerHTML=S.cohorts.map(function(c){
+      return '<tr class="row-hover row-click'+(c.id===S.cohortId?" sel":"")+'" data-cohort="'+c.id+'">'
+        +'<td><span class="cell-strong">'+esc(c.cohort_name||"—")+'</span><br><span class="nb">'+esc(c.cohort_code||"")+'</span></td>'
+        +'<td>¥'+esc(c.sale_price!=null?c.sale_price:"—")+'</td>'
+        +'<td><b>'+esc(c.current_student_count||0)+'</b>/'+esc(c.max_student_count||"—")+'</td>'
+        +'<td>'+esc(String(c.start_date||"").slice(0,10))+' ~ '+esc(String(c.end_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(c.yn?"启用":"已停用",c.yn?"badge-on":"badge-mut")+'</td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-coedit="'+c.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-codel="'+c.id+'">删除</button></td></tr>';
+    }).join("");
+    body.querySelectorAll("[data-cohort]").forEach(function(r){r.onclick=function(ev){
+      if(ev.target.closest("button"))return;selectCohort(+r.getAttribute("data-cohort"));};});
+    body.querySelectorAll("[data-coedit]").forEach(function(b){b.onclick=function(){openCohortMdl(+b.getAttribute("data-coedit"))};});
+    body.querySelectorAll("[data-codel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该班次？（软删 yn=0，模块/课次级联不可见）",function(){
+      return EAPI.del("/api/admin/courses/cohorts/"+b.getAttribute("data-codel")).then(function(){
+        if(S.cohortId===+b.getAttribute("data-codel")){S.cohortId=null;S.modules=[];renderModules();}
+        loadCohorts();});});};});
+    if(!S.cohortId&&S.cohorts.length)selectCohort(S.cohorts[0].id);
+  }).catch(function(e){$("cohortBody").innerHTML='<tr><td colspan="6" class="box-pad">⚠ 班次加载失败：'+esc((e&&e.message)||"")+'</td></tr>';});
+}
+function selectCohort(id){
+  S.cohortId=id;
+  var c=S.cohorts.filter(function(x){return x.id===id})[0];
+  $("moduleCard").style.display="";$("moduleCohortName").textContent=c?c.cohort_name:("班次 #"+id);
+  $("video-panel").style.display="none";
+  if(window.AdminVideoKnowledge)AdminVideoKnowledge.close();
+  renderModules();
+  EAPI.get("/api/admin/courses/cohorts/"+id+"/modules").then(function(list){
+    S.modules=list||[];
+    return Promise.all(S.modules.map(function(m){
+      return EAPI.get("/api/admin/courses/modules/"+m.id+"/sessions").then(function(ss){S.sessions[m.id]=ss||[];});
+    }));
+  }).then(function(){renderModules();}).catch(function(e){
+    $("moduleWrap").innerHTML='<div class="box-pad">⚠ 模块加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("addCohortBtn").onclick=function(){openCohortMdl(null)};
+function openCohortMdl(id){
+  S.editCohort=id?S.cohorts.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editCohort;
+  $("coMdlTitle").textContent=e?("编辑班次 · "+e.cohort_code):"新增班次";
+  $("coCode").value=e?e.cohort_code:"";$("coCode").disabled=!!e;
+  $("coName").value=e?e.cohort_name:"";$("coTeacher").value=e?e.head_teacher_id:"";
+  $("coPrice").value=e?e.sale_price:"";$("coCap").value=e?e.max_student_count:60;
+  $("coCur").value=e?(e.current_student_count||0):0;
+  $("coStart").value=e?String(e.start_date||"").slice(0,10):"";$("coEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-cohort");
+}
+$("coSave").onclick=function(){
+  var e=S.editCohort,btn=$("coSave");btn.disabled=true;
+  var payload={cohort_code:$("coCode").value.trim(),cohort_name:$("coName").value.trim(),
+    head_teacher_id:+$("coTeacher").value||0,sale_price:+$("coPrice").value||0,
+    max_student_count:+$("coCap").value||1,current_student_count:+$("coCur").value||0,
+    start_date:$("coStart").value,end_date:$("coEnd").value||null};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/cohorts/"+e.id,payload);}
+  else{
+    if(!S.series){btn.disabled=false;return;}
+    payload.institution_id=S.series.institution_id;payload.series_id=S.id;
+    p=EAPI.post("/api/admin/courses/cohorts",payload);
+  }
+  p.then(function(){closeMdl("mdl-cohort");loadCohorts();})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 模块 + 课次 ── */
+function renderModules(){
+  var w=$("moduleWrap");
+  $("moduleCnt").textContent="共 "+S.modules.length+" 模块 / "+S.modules.reduce(function(a,m){return a+((S.sessions[m.id]||[]).length)},0)+" 课次";
+  if(!S.modules.length){
+    w.innerHTML='<div class="box-pad"><strong>准备上传视频：先建立模块和课次</strong><p>视频按课次保存。先新增一个模块，再新增课次；课次创建后会显示「上传视频」和 AI 学习资料入口。</p><p class="muted">例如：模块「第一章」，课次「第一讲」。模块名称与课次内容由你填写。</p><button type="button" class="btn btn-primary" data-video-setup-module>'+(S.cohortId?'新增模块，开始添加视频':'先新增班次')+'</button></div>';
+    w.querySelector('[data-video-setup-module]').onclick=function(){if(S.cohortId)openModuleMdl(null);else openCohortMdl(null);};
+    return;
+  }
+  w.innerHTML=S.modules.map(function(m){
+    var ss=S.sessions[m.id]||[];
+    var rows=ss.map(function(x){
+      var st=SS[x.teaching_status]||[x.teaching_status,"badge-mut"];
+      return '<tr class="row-hover">'
+        +'<td class="nb">#'+esc(x.session_no)+'</td>'
+        +'<td><span class="cell-strong">'+esc(x.session_title||"—")+'</span></td>'
+        +'<td>'+esc(String(x.teaching_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(st[0],st[1])+'</td>'
+        +'<td><div class="res-4"><button class="video" data-vid="'+x.id+'">▶ 视频</button><button data-upl="'+x.id+'">⬆ 上传视频</button></div></td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssedit="'+x.id+'" data-mid="'+m.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-ssdel="'+x.id+'">删除</button></td></tr>';
+    }).join("");
+    return '<div class="module-panel"><div class="mp-h"><div class="tl">'
+      +'<span class="chev">▸</span><span class="mn">'+esc(m.module_name||"—")+'</span>'
+      +'<span class="badge badge-mut">stage_no '+esc(m.stage_no)+'</span>'
+      +'<span class="mt">'+ss.length+' 课次 / '+esc(m.total_hours||0)+' 学时</span></div>'
+      +'<div class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssadd="'+m.id+'">＋ 新增课次</button>'
+      +'<button class="btn btn-ghost btn-mini" data-moedit="'+m.id+'">编辑</button>'
+      +'<button class="btn btn-danger btn-mini" data-model="'+m.id+'">删除</button></div></div>'
+      +'<div class="mp-b"><table><thead><tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th style="text-align:right">操作</th></tr></thead>'
+      +'<tbody>'+(rows||'<tr><td colspan="6" class="box-pad"><strong>还没有课次，尚不能上传视频</strong><p>新增课次后，在该课次行点击「上传视频」，上传完成后即可生成 AI 学习资料。</p><button type="button" class="btn btn-primary btn-mini" data-video-setup-session="'+m.id+'">新增课次，启用视频上传</button></td></tr>')+'</tbody></table></div></div>';
+  }).join("");
+  w.querySelectorAll(".mp-h").forEach(function(h){h.addEventListener("click",function(ev){
+    if(ev.target.closest("button"))return;
+    var b=h.parentNode.querySelector(".mp-b");b.style.display=b.style.display==="none"?"":"none";
+    h.querySelector(".chev").classList.toggle("open");});});
+  w.querySelectorAll("[data-ssadd]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-ssadd"),null)};});
+  w.querySelectorAll("[data-video-setup-session]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-video-setup-session"),null)};});
+  w.querySelectorAll("[data-moedit]").forEach(function(b){b.onclick=function(){openModuleMdl(+b.getAttribute("data-moedit"))};});
+  w.querySelectorAll("[data-model]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该模块？（软删，其下课次级联不可见）",function(){
+    return EAPI.del("/api/admin/courses/modules/"+b.getAttribute("data-model")).then(function(){selectCohort(S.cohortId);});});};});
+  w.querySelectorAll("[data-vid]").forEach(function(b){b.onclick=function(){openVideoPanel(+b.getAttribute("data-vid"))};});
+  w.querySelectorAll("[data-upl]").forEach(function(b){b.onclick=function(){
+    var sid=+b.getAttribute("data-upl");
+    openVideoPanel(sid);
+    setTimeout(function(){
+      var vp=$("video-panel");
+      if(vp){vp.scrollIntoView({behavior:"smooth",block:"center"});}
+      var uz=$("up-z");if(uz){uz.style.outline="3px solid var(--primary)";uz.style.outlineOffset="3px";setTimeout(function(){uz.style.outline="";},1800);}
+    },250);
+  };});
+  w.querySelectorAll("[data-ssedit]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-mid"),+b.getAttribute("data-ssedit"))};});
+  w.querySelectorAll("[data-ssdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该课次？（软删）",function(){
+    return EAPI.del("/api/admin/courses/sessions/"+b.getAttribute("data-ssdel")).then(function(){selectCohort(S.cohortId);});});};});
+}
+$("addModuleBtn").onclick=function(){openModuleMdl(null)};
+function openModuleMdl(id){
+  S.editModule=id?S.modules.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editModule;
+  $("moMdlTitle").textContent=e?("编辑模块 · "+e.module_name):"新增模块";
+  $("moCode").value=e?e.module_code:"";$("moCode").disabled=!!e;
+  $("moName").value=e?e.module_name:"";$("moStage").value=e?e.stage_no:(S.modules.length+1);
+  $("moLessons").value=e?e.lesson_count:4;$("moHours").value=e?e.total_hours:12;
+  $("moStart").value=e?String(e.start_date||"").slice(0,10):"";$("moEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-module");
+}
+$("moSave").onclick=function(){
+  var e=S.editModule,btn=$("moSave");btn.disabled=true;
+  var payload={module_code:$("moCode").value.trim(),module_name:$("moName").value.trim(),
+    stage_no:+$("moStage").value||1,lesson_count:+$("moLessons").value||1,
+    total_hours:+$("moHours").value||0,start_date:$("moStart").value,end_date:$("moEnd").value};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/modules/"+e.id,payload);}
+  else{if(!S.cohortId){btn.disabled=false;alert("请先选中班次");return;}payload.cohort_id=S.cohortId;
+    p=EAPI.post("/api/admin/courses/modules",payload);}
+  p.then(function(){closeMdl("mdl-module");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 课次弹窗 ── */
+function openSessionMdl(moduleId,sessionId){
+  S.moduleId=moduleId;S.editSession=sessionId?findSession(sessionId):null;
+  var e=S.editSession;
+  $("seMdlTitle").textContent=e?("编辑课次 · "+e.session_title):"新增课次";
+  $("ssNo").value=e?e.session_no:((S.sessions[moduleId]||[]).length+1);
+  $("ssTitle").value=e?e.session_title:"";$("ssStatus").value=e?e.teaching_status:"scheduled";
+  $("ssDate").value=e?String(e.teaching_date||"").slice(0,10):"";
+  $("ssCheckin").value=e?String(e.checkin_required||0):"0";
+  $("ssStart").value=e?(e.start_time||""):"";$("ssEnd").value=e?(e.end_time||""):"";
+  openMdl("mdl-session");
+}
+function findSession(sid){
+  for(var i=0;i<S.modules.length;i++){var arr=S.sessions[S.modules[i].id]||[];
+    for(var k=0;k<arr.length;k++)if(arr[k].id===sid)return arr[k];}
+  return null;
+}
+$("ssSave").onclick=function(){
+  var e=S.editSession,btn=$("ssSave");btn.disabled=true;
+  if(!e&&!$("ssDate").value){$("ssDate").reportValidity();$("ssDate").focus();btn.disabled=false;return;}
+  var payload={session_no:+$("ssNo").value||1,session_title:$("ssTitle").value.trim(),
+    teaching_status:$("ssStatus").value,checkin_required:+$("ssCheckin").value,
+    start_time:$("ssStart").value||null,end_time:$("ssEnd").value||null};
+  if($("ssDate").value)payload.teaching_date=$("ssDate").value;
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/sessions/"+e.id,payload);}
+  else{payload.series_cohort_course_id=S.moduleId;p=EAPI.post("/api/admin/courses/sessions",payload);}
+  p.then(function(){closeMdl("mdl-session");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 视频面板：资源列表 + 分片上传 + 转码轮询 + 章节 ── */
+function openVideoPanel(sessionId){
+  S.sessionId=sessionId;
+  $("video-panel").style.display="";
+  var selected=findSession(sessionId);
+  $("vpTitle").firstChild.textContent="视频管理 · "+(selected?selected.session_title:("课次 #"+sessionId))+" ";
+  if(S.poll){clearInterval(S.poll);S.poll=null;}
+  S.videoId=null;
+  $("stepper").style.display="none";$("timelineWrap").style.display="none";
+  $("chapterSec").style.display="none";$("tc-badge").style.display="none";
+  EAPI.get("/api/admin/courses/sessions/"+sessionId+"/assets").then(function(list){
+    if(S.sessionId!==sessionId)return;
+    S.videos=[];
+    (list||[]).forEach(function(a){(a.videos||[]).forEach(function(v){v.file_url=a.playback_url||a.file_url;v.asset_name=a.asset_name;S.videos.push(v);});});
+    renderVideos();
+    if(window.AdminVideoKnowledge)AdminVideoKnowledge.open({session_id:sessionId,title:selected?selected.session_title:"当前课次",videos:S.videos});
+  }).catch(function(e){$("videoList").innerHTML='<div class="muted" style="font-size:12px">⚠ 资源加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("vpClose").onclick=function(){$("video-panel").style.display="none";if(S.poll){clearInterval(S.poll);S.poll=null;}if(window.AdminVideoKnowledge)AdminVideoKnowledge.close();};
+function renderVideos(){
+  var w=$("videoList");
+  if(!S.videos.length){w.innerHTML='<div class="muted" style="font-size:12px">该课次还没有视频 — 下方上传后自动注册并绑定。</div>';return;}
+  w.innerHTML=S.videos.map(function(v){
+    var previewUrl=safeVideoUrl(v.file_url);
+    var tcMap={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+    var t=tcMap[v.transcode_status]||[v.transcode_status,"badge-mut"];
+    return '<div style="display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap">'
+      +'<b style="font-size:13px">'+esc(v.video_title||v.video_code)+'</b>'
+      +'<span class="nb">'+esc(v.video_code)+'</span>'+badge(t[0],t[1])+badge("审核 "+(v.review_status||"pending"),"badge-mut")
+      +(previewUrl?'<a href="'+esc(previewUrl)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--primary);margin-left:auto">预览原视频</a>':'<span class="muted">播放链接暂不可用，请刷新视频面板</span>')
+      +'<button class="btn btn-ghost btn-mini" data-chap="'+v.id+'">章节管理</button></div>';
+  }).join("");
+  w.querySelectorAll("[data-chap]").forEach(function(b){b.onclick=function(){openChapters(+b.getAttribute("data-chap"))};});
+  if(S.videos.length&&!S.videoId)openChapters(S.videos[0].id);
+}
+function safeVideoUrl(value){
+  if(typeof value!=="string"||!value||/[\u0000-\u0020\\]/.test(value))return null;
+  if(value.startsWith("/")&&!value.startsWith("//"))return value;
+  try{var parsed=new URL(value);return (parsed.protocol==="https:"||parsed.protocol==="http:")&&!parsed.username&&!parsed.password?value:null;}catch(_){return null;}
+}
+
+/* 分片上传（真实：init → PUT chunks → finalize → transcode poll） */
+var CHUNK=5*1024*1024;
+var drop=$("up-z");
+$("up-z").onclick=function(){$("videoFile").click();};
+["dragover","dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev,function(e){e.preventDefault();
+    drop.classList.toggle("hover",ev==="dragover");
+    if(ev==="drop"&&e.dataTransfer&&e.dataTransfer.files.length)startUpload(e.dataTransfer.files[0]);});
+});
+$("videoFile").onchange=function(){if(this.files.length)startUpload(this.files[0]);this.value="";};
+function setStep(i,cls){$("stp"+i).className="stp "+cls;
+  if(i>0)$("stpC"+(i-1)).className="stp-conn "+(cls==="done"?"done":"");}
+function tlAdd(title,detail,cls){
+  $("timelineWrap").style.display="";
+  var d=document.createElement("div");d.className="tl-item "+(cls||"ok");
+  d.innerHTML='<span class="tt">'+esc(title)+'</span><span class="td">'+esc(detail)+'</span>';
+  $("timeline").appendChild(d);
+}
+function upErr(m){var e=$("upErr");e.textContent="✕ "+m;e.style.display="block";showRetry();}
+/* [REWORK P0-4] 失败可重试 UI：出错时显示「↻ 重试上传」按钮（S.uploadFile 保留原文件，点击整链重传） */
+function showRetry(){
+  var old=$("upRetry"); if(old) old.remove();
+  if(!S.uploadFile) return;
+  var b=document.createElement("button");
+  b.id="upRetry"; b.type="button"; b.className="btn btn-ghost btn-mini";
+  b.style.cssText="margin-top:6px";
+  b.textContent="↻ 重试上传（"+S.uploadFile.name+"）";
+  b.onclick=function(){ b.disabled=true; var f=S.uploadFile; S.uploading=false; startUpload(f); };
+  $("upErr").parentNode.insertBefore(b, $("upErr").nextSibling);
+}
+function startUpload(file){
+  if(S.uploading)return;
+  $("upErr").style.display="none";
+  var oldR=$("upRetry"); if(oldR) oldR.remove();
+  if(!S.sessionId){upErr("请先从课次列表打开视频面板");return;}
+  var uploadSessionId=S.sessionId;
+  var ext=(file.name.lastIndexOf(".")>=0?file.name.slice(file.name.lastIndexOf(".")).toLowerCase():"");
+  if([".mp4",".m4v",".webm"].indexOf(ext)<0){upErr("不支持的文件类型 "+ext+"，请选择 MP4、M4V 或 WebM；上传后仍需验证媒体与视频编码");return;}
+  S.uploading=true;
+  S.uploadFile=file; /* [REWORK P0-4] 保留文件引用供失败重试 */
+  $("stepper").style.display="";$("timeline").innerHTML="";
+  setStep(0,"cur");
+  var count=Math.max(1,Math.ceil(file.size/CHUNK));
+  EAPI.post("/api/admin/courses/videos/init-chunked?session_id="+uploadSessionId
+      +"&file_name="+encodeURIComponent(file.name)+"&file_size="+file.size+"&chunk_count="+count,{})
+  .then(function(r){
+    setStep(0,"done");setStep(1,"cur");
+    tlAdd("init-chunked","upload_id="+r.upload_id+" · "+count+" 分片 · "+(r.chunk_size/1024/1024).toFixed(1)+"MB/片");
+    var up=$("up-pg"),mt=$("up-mt");up.style.display="";mt.style.display="";
+    $("upMetaL").textContent=file.name+" · "+(file.size/1024/1024).toFixed(1)+"MB · "+count+" 分片";
+    var sent=0;
+    function putChunk(i,retry){
+      if(i>=count)return finalize();
+      var startB=i*CHUNK,endB=Math.min(file.size,(i+1)*CHUNK);
+      var blob=file.slice(startB,endB);
+      var xhr=new XMLHttpRequest();
+      xhr.open("PUT",EAPI.BASE+"/api/admin/courses/videos/upload-chunk/"+r.upload_id+"/"+i);
+      xhr.setRequestHeader("Authorization","Bearer "+(EAPI.store.getToken()||""));
+      xhr.setRequestHeader("Content-Type","application/octet-stream");
+      xhr.upload.onprogress=function(ev){if(ev.lengthComputable){
+        var pct=Math.round((sent+ev.loaded)/file.size*100);
+        up.firstElementChild.style.width=pct+"%";$("upMetaR").textContent=pct+"%";}};
+      xhr.onload=function(){
+        if(xhr.status>=200&&xhr.status<300){sent+=endB-startB;putChunk(i+1,0);}
+        else if((retry||0)<2){ /* [REWORK P0-4] 分片级自动重试（同一分片最多重发 2 次） */
+          tlAdd("分片 "+i+" 失败（HTTP "+xhr.status+"）","自动重试第 "+((retry||0)+1)+" 次","bad");
+          putChunk(i,(retry||0)+1);
+        }
+        else upErr("分片 "+i+" 上传失败：HTTP "+xhr.status+"（已自动重试 2 次，可点下方重试整链）");
+      };
+      xhr.onerror=function(){
+        if((retry||0)<2){ tlAdd("分片 "+i+" 网络错误","自动重试第 "+((retry||0)+1)+" 次","bad"); putChunk(i,(retry||0)+1); }
+        else upErr("网络错误：分片 "+i+" 上传失败（已自动重试 2 次，可点下方重试整链）");
+      };
+      xhr.send(blob);
+    }
+    function finalize(){
+      setStep(1,"done");setStep(2,"cur");
+      EAPI.post("/api/admin/courses/videos/finalize-chunked?upload_id="+r.upload_id,{})
+      .then(function(f){
+        setStep(2,"done");setStep(3,"cur");
+        tlAdd("finalize","video_id="+f.video_id+" · "+(f.file_size/1024/1024).toFixed(1)+"MB · "+f.file_url);
+        return EAPI.post("/api/admin/courses/videos/bind-session?session_id="+uploadSessionId+"&video_id="+f.video_id+"&sort_no=0",{})
+        .then(function(){
+          if(S.sessionId!==uploadSessionId){S.uploading=false;return;}
+          tlAdd("bind-session","绑定到课次 #"+uploadSessionId);
+          up.style.display="none";mt.style.display="none";
+          S.videoId=f.video_id;openVideoPanel(uploadSessionId);pollTranscode(f.video_id);
+        });
+      }).catch(function(e){upErr("finalize 失败："+((e&&e.message)||""));S.uploading=false;});
+    }
+    putChunk(0);
+  }).catch(function(e){upErr("init 失败："+((e&&e.message)||""));S.uploading=false;});
+}
+function pollTranscode(videoId){
+  if(S.poll)clearInterval(S.poll);
+  var b=$("tc-badge");b.style.display="";
+  b.className="badge badge-warn";b.innerHTML='<i class="pd"></i>转码中';
+  S.poll=setInterval(function(){
+    EAPI.get("/api/admin/courses/videos/"+videoId+"/transcode-status").then(function(st){
+      var map={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+      var m=map[st.transcode_status]||[st.transcode_status,"badge-mut"];
+      b.className=m[1];b.innerHTML='<i class="pd"></i>'+m[0];
+      if(st.transcode_status==="completed"||st.transcode_status==="failed"){
+        clearInterval(S.poll);S.poll=null;setStep(3,"done");S.uploading=false;
+        tlAdd("转码",st.transcode_status+" · review "+st.review_status,st.transcode_status==="completed"?"ok":"bad");
+      }
+    }).catch(function(){});
+  },3000);
+}
+
+/* 章节 CRUD */
+function openChapters(videoId){
+  S.videoId=videoId;
+  $("chapterSec").style.display="";
+  $("chapVideoId").textContent="video_id="+videoId;
+  EAPI.get("/api/admin/courses/videos/"+videoId+"/chapters").then(function(list){
+    renderChapters(list||[]);
+  }).catch(function(e){$("chapter-list").innerHTML='<div class="muted" style="font-size:12px">⚠ 章节加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+function renderChapters(list){
+  var w=$("chapter-list");
+  if(!list.length){w.innerHTML='<div class="muted" style="font-size:12px;padding:8px 0">∅ 暂无章节 — 下方添加</div>';return;}
+  w.innerHTML=list.map(function(c){
+    return '<div class="chapter-row"><span class="ch-no">CH-'+esc(c.chapter_no)+'</span><span>'+esc(c.chapter_title||"")+'</span>'
+      +'<span class="ch-sec"><span class="nb">'+esc(c.start_second)+'s ~ '+esc(c.end_second)+'s</span>'
+      +'<button class="btn btn-danger btn-mini" data-chdel="'+c.id+'">删除</button></span></div>';
+  }).join("");
+  w.querySelectorAll("[data-chdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该章节？（物理删除）",function(){
+    return EAPI.del("/api/admin/courses/chapters/"+b.getAttribute("data-chdel")).then(function(){openChapters(S.videoId);});});};});
+}
+$("chAddBtn").onclick=function(){
+  if(!S.videoId){alert("请先选择视频");return;}
+  var btn=$("chAddBtn");btn.disabled=true;
+  EAPI.post("/api/admin/courses/chapters",{
+    video_id:S.videoId,chapter_title:$("chTitle").value.trim()||("章节 "+new Date().toLocaleTimeString()),
+    start_second:+$("chStart").value||0,end_second:+$("chEnd").value||1
+  }).then(function(){openChapters(S.videoId);$("chTitle").value="";})
+    .catch(function(e){alert("添加失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 通用弹窗/确认 ── */
+function openMdl(id){$(id).classList.add("show")}
+function closeMdl(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){b.closest(".scrim").classList.remove("show")})});
+document.querySelectorAll(".scrim").forEach(function(s){s.addEventListener("click",function(e){if(e.target===s)s.classList.remove("show")})});
+function confirmDel(msg,fn){
+  $("cfMsg").innerHTML='<b>'+esc(msg)+'</b>';
+  openMdl("mdl-confirm");
+  $("cfOk").onclick=function(){fn().catch(function(e){alert("删除失败："+((e&&e.message)||""));}).then(function(){closeMdl("mdl-confirm");});};
+}
+
+loadSeries().then(loadCohorts);
+};
+</script>
+</body>
+</html>

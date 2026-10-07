@@ -1,0 +1,252 @@
+[
+  {
+    "question_code": "EDU_PY_DEMO_20261005_01",
+    "question_type_id": 1,
+    "stem": "执行 len([10, 20, 30]) 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "2"
+      },
+      {
+        "label": "B",
+        "content": "3"
+      },
+      {
+        "label": "C",
+        "content": "4"
+      },
+      {
+        "label": "D",
+        "content": "30"
+      }
+    ],
+    "answer_text": "B",
+    "analysis_text": "len 返回列表元素个数，这个列表有 3 个元素。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_02",
+    "question_type_id": 1,
+    "stem": "下列哪一种 Python 内置类型是不可变序列？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "list"
+      },
+      {
+        "label": "B",
+        "content": "dict"
+      },
+      {
+        "label": "C",
+        "content": "set"
+      },
+      {
+        "label": "D",
+        "content": "tuple"
+      }
+    ],
+    "answer_text": "D",
+    "analysis_text": "tuple 是不可变序列；列表、字典和集合均可修改。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_03",
+    "question_type_id": 1,
+    "stem": "执行 {\"a\": 1}.get(\"b\", 0) 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "1"
+      },
+      {
+        "label": "B",
+        "content": "None"
+      },
+      {
+        "label": "C",
+        "content": "0"
+      },
+      {
+        "label": "D",
+        "content": "抛出 KeyError"
+      }
+    ],
+    "answer_text": "C",
+    "analysis_text": "get 在键不存在时返回指定的默认值 0。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_04",
+    "question_type_id": 1,
+    "stem": "执行 sum(range(5)) 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "5"
+      },
+      {
+        "label": "B",
+        "content": "10"
+      },
+      {
+        "label": "C",
+        "content": "15"
+      },
+      {
+        "label": "D",
+        "content": "20"
+      }
+    ],
+    "answer_text": "B",
+    "analysis_text": "range(5) 生成 0 到 4，求和为 0+1+2+3+4=10。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_05",
+    "question_type_id": 1,
+    "stem": "nums = [0, 1, 2, 3, 4]，执行 nums[1:4] 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "[1, 2, 3]"
+      },
+      {
+        "label": "B",
+        "content": "[1, 2, 3, 4]"
+      },
+      {
+        "label": "C",
+        "content": "[0, 1, 2, 3]"
+      },
+      {
+        "label": "D",
+        "content": "[2, 3, 4]"
+      }
+    ],
+    "answer_text": "A",
+    "analysis_text": "切片包含起始下标 1，不包含结束下标 4。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_06",
+    "question_type_id": 1,
+    "stem": "Python 中 == 运算符主要比较什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "对象是否为同一个对象"
+      },
+      {
+        "label": "B",
+        "content": "对象的值是否相等"
+      },
+      {
+        "label": "C",
+        "content": "变量名称是否相同"
+      },
+      {
+        "label": "D",
+        "content": "对象的内存占用是否相同"
+      }
+    ],
+    "answer_text": "B",
+    "analysis_text": "== 比较值是否相等；is 比较是否为同一个对象。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_07",
+    "question_type_id": 1,
+    "stem": "执行 bool([]) 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "True"
+      },
+      {
+        "label": "B",
+        "content": "False"
+      },
+      {
+        "label": "C",
+        "content": "None"
+      },
+      {
+        "label": "D",
+        "content": "抛出异常"
+      }
+    ],
+    "answer_text": "B",
+    "analysis_text": "空列表在布尔上下文中为 False。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_08",
+    "question_type_id": 1,
+    "stem": "执行 items = [1]; result = items.append(2) 后，result 是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "[1, 2]"
+      },
+      {
+        "label": "B",
+        "content": "2"
+      },
+      {
+        "label": "C",
+        "content": "None"
+      },
+      {
+        "label": "D",
+        "content": "[2]"
+      }
+    ],
+    "answer_text": "C",
+    "analysis_text": "append 原地修改列表并返回 None，items 变为 [1, 2]。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_09",
+    "question_type_id": 1,
+    "stem": "循环中的 break 语句有什么作用？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "跳过当前迭代，继续下一次"
+      },
+      {
+        "label": "B",
+        "content": "结束当前所在的最内层循环"
+      },
+      {
+        "label": "C",
+        "content": "结束整个 Python 程序"
+      },
+      {
+        "label": "D",
+        "content": "暂停循环一秒"
+      }
+    ],
+    "answer_text": "B",
+    "analysis_text": "break 退出当前所在的最内层循环；continue 跳过本次迭代的剩余部分。"
+  },
+  {
+    "question_code": "EDU_PY_DEMO_20261005_10",
+    "question_type_id": 1,
+    "stem": "cache = {\"user:1\": \"Alice\"}，表达式 \"user:1\" in cache 的结果是什么？",
+    "options_json": [
+      {
+        "label": "A",
+        "content": "True"
+      },
+      {
+        "label": "B",
+        "content": "False"
+      },
+      {
+        "label": "C",
+        "content": "Alice"
+      },
+      {
+        "label": "D",
+        "content": "抛出异常"
+      }
+    ],
+    "answer_text": "A",
+    "analysis_text": "in 用于字典时检查键是否存在，因此可以用于判断缓存键是否命中。"
+  }
+]

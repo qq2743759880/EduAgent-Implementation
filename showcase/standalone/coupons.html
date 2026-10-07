@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/*
+ * Bili-Study Clay Theme, Gate A frozen tokens
+ *
+ * Icon usage (Phosphor fill, local sprite):
+ * <svg class="ic" aria-hidden="true"><use href="#ic-book-open"></use></svg>
+ * For an icon-only control, put the accessible name on the control (aria-label or visible text).
+ *
+ * Token reference, one variable per line:
+ * --bg-app: purple-tinted near-white application canvas.
+ * --bg-raised: highest neutral surface reserved for dialogs and toasts.
+ * --bg-input: subtly tinted recessed input surface.
+ * --clay-primary: semantic alias for the approved main clay surface.
+ * --clay-moss: approved primary moss green; #2E2A3F contrast is 8.84:1.
+ * --clay-lavender: demoted secondary lavender, never the default surface.
+ * --clay-sky: course and learning surface.
+ * --clay-mint: success, completion, and progress surface.
+ * --clay-peach: practice and quiz surface.
+ * --clay-pink: favorites and community surface.
+ * --clay-lemon: warm accent for reminders and pending work.
+ * --cta-coral: the single saturated primary action color per screen.
+ * --cta-text: primary action text; #2E2A3F on #FF7A6B is 5.43:1.
+ * --status-active: active and successful state color.
+ * --status-pending: pending state color.
+ * --status-archived: archived and inactive state color.
+ * --status-danger: destructive and error state color.
+ * --text-strong: primary ink; intentionally not pure black.
+ * --text-muted: secondary ink for supporting text.
+ * --text-on-dark: text used on the dark code surface.
+ * --surface-code: Markdown code block surface.
+ * --focus-ring: high-contrast keyboard focus indicator.
+ * --radius-card: L1 card radius.
+ * --radius-btn: primary and secondary button radius.
+ * --radius-input: input and compact control radius.
+ * --radius-pill: pill and badge radius.
+ * --radius-icon-tile: icon tile radius.
+ * --space-1: 4px spacing unit.
+ * --space-2: 8px spacing unit.
+ * --space-3: 12px spacing unit.
+ * --space-4: 16px spacing unit and minimum clay-to-clay gap.
+ * --space-6: 24px spacing unit.
+ * --space-8: 32px spacing unit.
+ * --space-12: 48px spacing unit.
+ * --control-min: minimum 44px interaction target.
+ * --control-primary: 54px primary button height within the approved 52-56px range.
+ * --motion-fast: 140ms tactile state duration.
+ * --ease-clay: restrained ease-out curve for hover and press feedback.
+ * --clay-shadow-moss: three-layer moss surface shadow.
+ * --clay-shadow-lavender: three-layer secondary lavender surface shadow.
+ * --clay-shadow-sky: three-layer sky surface shadow.
+ * --clay-shadow-mint: three-layer mint surface shadow.
+ * --clay-shadow-peach: three-layer peach surface shadow.
+ * --clay-shadow-pink: three-layer pink surface shadow.
+ * --clay-shadow-lemon: three-layer lemon surface shadow.
+ * --clay-shadow-coral: three-layer coral action shadow.
+ * --clay-shadow-raised: green-hued L2 shadow for raised neutral surfaces.
+ * --clay-shadow-light: green-hued single-layer shadow for clay-light regions.
+ * --clay-shadow-press-moss: compressed moss shadow for pressed controls.
+ * --clay-shadow-press-coral: compressed coral shadow for pressed primary actions.
+ * --clay-shadow-input: inset moss shadow for recessed fields.
+ * --clay-shadow-input-focus: inset moss shadow plus visible focus halo.
+ * --layer-base: normal document flow.
+ * --layer-sticky: sticky navigation layer.
+ * --layer-dropdown: menu and popover layer.
+ * --layer-overlay: modal scrim layer.
+ * --layer-dialog: dialog layer.
+ * --layer-toast: toast and urgent feedback layer.
+ *
+ * L1 page overrides belong in a .page-<name> namespace. Example:
+ * .page-dashboard { --page-card-gap: var(--space-6); }
+ * Do not place page-specific selectors outside that namespace.
+ */
+
+:root {
+  --bg-app: #F7F5FB;
+  --bg-raised: #FFFFFF;
+  --bg-input: #F7FAF4;
+  --clay-primary: var(--clay-moss);
+  --clay-moss: #B8D8A8;
+  --clay-lavender: #B8A6FF;
+  --clay-sky: #9EC9F0;
+  --clay-mint: #7DD4A8;
+  --clay-peach: #FFB59E;
+  --clay-pink: #F5B8D0;
+  --clay-lemon: #F5D77A;
+  --cta-coral: #FF7A6B;
+  --cta-text: #2E2A3F;
+  --status-active: #7DD4A8;
+  --status-pending: #F5D77A;
+  --status-archived: #C9B5FF;
+  --status-danger: #C63E4A;
+  --text-strong: #2E2A3F;
+  --text-muted: #6B6580;
+  --text-on-dark: #F7F5FB;
+  --surface-code: #2E2A3F;
+  --focus-ring: #453C66;
+
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  --radius-input: 16px;
+  --radius-pill: 999px;
+  --radius-icon-tile: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-min: 44px;
+  --control-primary: 54px;
+
+  --motion-fast: 140ms;
+  --ease-clay: cubic-bezier(.25, 1, .5, 1);
+
+  --clay-shadow-moss:
+    8px 8px 24px rgba(78, 126, 66, .30),
+    inset -6px -6px 16px rgba(78, 126, 66, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .58);
+  --clay-shadow-lavender:
+    8px 8px 24px rgba(126, 105, 181, .28),
+    inset -6px -6px 16px rgba(126, 105, 181, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-sky:
+    8px 8px 24px rgba(80, 142, 196, .30),
+    inset -6px -6px 16px rgba(80, 142, 196, .22),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-mint:
+    8px 8px 24px rgba(43, 153, 103, .29),
+    inset -6px -6px 16px rgba(43, 153, 103, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-peach:
+    8px 8px 24px rgba(218, 111, 82, .29),
+    inset -6px -6px 16px rgba(218, 111, 82, .21),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-pink:
+    8px 8px 24px rgba(188, 99, 137, .28),
+    inset -6px -6px 16px rgba(188, 99, 137, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .56);
+  --clay-shadow-lemon:
+    8px 8px 24px rgba(190, 149, 35, .28),
+    inset -6px -6px 16px rgba(190, 149, 35, .20),
+    inset 6px 6px 16px rgba(255, 254, 252, .54);
+  --clay-shadow-coral:
+    8px 8px 24px rgba(214, 82, 70, .31),
+    inset -6px -6px 16px rgba(214, 82, 70, .23),
+    inset 6px 6px 16px rgba(255, 254, 252, .45);
+  --clay-shadow-raised: 12px 12px 32px rgba(78, 126, 66, .22);
+  --clay-shadow-light: 6px 8px 20px rgba(78, 126, 66, .18);
+  --clay-shadow-press-moss:
+    4px 4px 12px rgba(78, 126, 66, .26),
+    inset -3px -3px 8px rgba(78, 126, 66, .18),
+    inset 3px 3px 8px rgba(255, 254, 252, .46);
+  --clay-shadow-press-coral:
+    4px 4px 12px rgba(214, 82, 70, .27),
+    inset -3px -3px 8px rgba(214, 82, 70, .19),
+    inset 3px 3px 8px rgba(255, 254, 252, .38);
+  --clay-shadow-input:
+    inset 3px 3px 8px rgba(78, 126, 66, .20),
+    inset -3px -3px 8px rgba(255, 254, 252, .88);
+  --clay-shadow-input-focus:
+    inset 3px 3px 8px rgba(78, 126, 66, .24),
+    inset -3px -3px 8px rgba(255, 254, 252, .92),
+    0 0 0 3px rgba(69, 60, 102, .22);
+
+  --layer-base: 0;
+  --layer-sticky: 100;
+  --layer-dropdown: 300;
+  --layer-overlay: 700;
+  --layer-dialog: 800;
+  --layer-toast: 1000;
+}
+
+.ic {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  overflow: visible;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: -.2em;
+}
+
+.clay-card {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--text-strong);
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-btn-primary,
+.clay-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding-inline: var(--space-6);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--ease-clay),
+    box-shadow var(--motion-fast) var(--ease-clay),
+    background-color var(--motion-fast) var(--ease-clay);
+}
+
+.clay-btn-primary {
+  min-height: var(--control-primary);
+  color: var(--cta-text);
+  background: var(--cta-coral);
+  box-shadow: var(--clay-shadow-coral);
+}
+
+.clay-btn-soft {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-btn-primary:hover,
+.clay-btn-soft:hover {
+  transform: translateY(-2px);
+}
+
+.clay-btn-primary:active,
+.clay-btn-soft:active {
+  transform: scale(.97);
+}
+
+.clay-btn-primary:active {
+  box-shadow: var(--clay-shadow-press-coral);
+}
+
+.clay-btn-soft:active {
+  box-shadow: var(--clay-shadow-press-moss);
+}
+
+.clay-btn-primary:disabled,
+.clay-btn-soft:disabled,
+.clay-btn-primary[aria-disabled="true"],
+.clay-btn-soft[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clay-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: 3px 4px 10px rgba(190, 149, 35, .21);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.clay-input {
+  width: 100%;
+  min-height: var(--control-primary);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-input);
+  box-shadow: var(--clay-shadow-input);
+  font: inherit;
+}
+
+.clay-input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.clay-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--clay-shadow-input-focus);
+}
+
+.clay-bubble-user,
+.clay-bubble-ai {
+  max-width: min(80%, 72ch);
+  overflow-wrap: anywhere;
+  border-radius: 24px 24px 24px 8px;
+  padding: var(--space-4) 20px;
+  color: var(--text-strong);
+}
+
+.clay-bubble-user {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-bubble-ai {
+  background: var(--clay-primary);
+  box-shadow: var(--clay-shadow-moss);
+}
+
+.clay-nav {
+  position: relative;
+  z-index: var(--layer-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-strong);
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-nav :where(a, button) {
+  min-width: var(--control-min);
+  min-height: var(--control-min);
+}
+
+.clay-nav :where(.active, [aria-current="page"]) {
+  color: var(--cta-text);
+  background: var(--cta-coral);
+}
+
+.clay-card-placeholder {
+  position: relative;
+  min-height: 144px;
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  color: var(--text-strong);
+  background: var(--clay-lemon);
+  box-shadow: var(--clay-shadow-lemon);
+}
+
+.clay-card-placeholder[data-state="closed"] {
+  background: var(--clay-lavender);
+  box-shadow: var(--clay-shadow-lavender);
+}
+
+.clay-card-placeholder[data-state="forbidden"] {
+  outline: 3px solid var(--status-archived);
+  outline-offset: -3px;
+  background: var(--bg-raised);
+  box-shadow: var(--clay-shadow-raised);
+}
+
+.clay-card-placeholder[data-state="error"] {
+  outline: 3px solid var(--status-danger);
+  outline-offset: -3px;
+  background: var(--clay-peach);
+  box-shadow: var(--clay-shadow-peach);
+}
+
+.clay-card :where(pre, code),
+.clay-bubble-ai :where(pre, code),
+.clay-bubble-user :where(pre, code) {
+  color: var(--text-on-dark);
+  background: var(--surface-code);
+}
+
+.clay-card pre,
+.clay-bubble-ai pre,
+.clay-bubble-user pre {
+  overflow: auto;
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+}
+
+:where(.clay-btn-primary, .clay-btn-soft, .clay-nav a, .clay-nav button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Admin fallback: lower visual depth without changing component geometry. */
+.clay-light {
+  --radius-card: 24px;
+}
+
+.clay-card.clay-light,
+.clay-light .clay-card {
+  box-shadow: var(--clay-shadow-light);
+}
+
+.clay-light :where(table, .table, .chart, [data-chart], [data-table]) {
+  border-radius: var(--radius-input);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-btn-primary,
+  .clay-btn-soft {
+    transition-duration: .01ms;
+  }
+
+  .clay-btn-primary:hover,
+  .clay-btn-primary:active,
+  .clay-btn-soft:hover,
+  .clay-btn-soft:active {
+    transform: none;
+  }
+}
+
+</style>
+<title>我的优惠券 · Bili-Study</title>
+<style>
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f。
+   三层分离：仅动视觉层——id/class/data-type/data-status/.on/.open/.show 显隐语义、
+   z-index(gnav 130/overlay 120/toast 2147483000/om 150)冻结；
+   旧 candy 变量名保留为页内别名(L1)，供脚本内联样式继续解析。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（脚本内联样式仍引用，禁删）—— */
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --ink-faint:var(--text-muted);
+  --white:var(--bg-raised); --ht-fff:var(--bg-raised); --candy-bg:var(--bg-app);
+  --candy-silver:rgba(107,101,128,.18); --ht-eee:#ECE9F4;
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --gray-300:rgba(46,42,63,.12);
+  --candy-green:var(--clay-mint); --candy-green-deep:#2E7D4F; --candy-green-hover:var(--clay-mint);
+  --candy-purple-soft:#EFE9FF; --candy-purple:#5B4FC4;
+  --candy-orange:var(--cta-coral); --candy-orange-deep:#D65246;
+  --candy-red:var(--status-danger); --candy-red-deep:var(--status-danger);
+  --candy-blue:var(--focus-ring); --candy-blue-deep:#2B2E6E;
+  --candy-blue-soft:rgba(158,201,240,.35); --candy-green-soft:rgba(125,212,168,.22); --candy-orange-soft:rgba(255,181,158,.30);
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16);
+  --radius-md:0.9rem; --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --htc-31-31-31-014:rgba(78,126,66,.14); --htc-31-31-31-018:rgba(78,126,66,.18);
+  --htc-31-31-31-045:rgba(46,42,63,.45); --htc-255-200-0-022:rgba(214,82,70,.22);
+  /* —— 页内派生色（L1，仅本页）—— */
+  --page-accent:#5B4FC4
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{min-height:100dvh}
+body{min-height:100dvh;font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 90% 8%,rgba(184,166,255,.22),transparent 24rem),radial-gradient(circle at 4% 94%,rgba(125,212,168,.20),transparent 22rem);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
+
+/* ===== 全局导航（黏土；44px 点击区清偿 G6 存量债）===== */
+.gnav-toggle{display:none;position:fixed;top:12px;right:12px;z-index:140;width:44px;height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);font-size:.875rem;font-weight:900;place-items:center;box-shadow:var(--clay-shadow-light);cursor:pointer;color:var(--text-strong)}
+.gnav-overlay{position:fixed;inset:0;z-index:120;background:rgba(46,42,63,.45);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+.gnav-overlay.open{opacity:1;visibility:visible}
+.glayout{display:block;max-width:1180px;margin:0 auto;padding:0}
+.gnav{position:sticky;top:0;z-index:130;display:flex;flex-direction:row;align-items:center;gap:12px;width:auto;max-height:none;overflow:visible;background:var(--bg-raised);border:0;border-bottom:2px solid rgba(184,166,255,.28);border-radius:0;box-shadow:0 2px 12px rgba(78,126,66,.10);padding:10px 18px}
+.gnav-brand{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;padding:0;margin:0;text-decoration:none;color:var(--text-strong);border-radius:var(--radius-pill)}
+.gnav-logo{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--cta-coral);color:var(--cta-text);font-size:.75rem;font-weight:900;line-height:1;box-shadow:3px 4px 10px rgba(214,82,70,.28)}
+.gnav-name{font-size:.9375rem;font-weight:900;color:var(--text-strong);white-space:nowrap}
+.gnav-cap{font-size:.6875rem;font-weight:900;color:var(--text-muted);letter-spacing:.08em;white-space:nowrap}
+.gnav-list{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+.gnav-list::-webkit-scrollbar{display:none}
+.gnav-item{display:inline-flex;align-items:center;justify-content:center;width:auto;min-height:44px;white-space:nowrap;font-size:.8125rem;font-weight:800;color:var(--text-strong);padding:0 14px;border-radius:var(--radius-pill);border:2px solid transparent;transition:background var(--motion-fast) var(--ease-clay),color var(--motion-fast) var(--ease-clay);text-decoration:none}
+.gnav-item:hover{background:var(--candy-purple-soft);color:var(--page-accent)}
+.gnav-item.active{background:var(--cta-coral);color:var(--cta-text);border-color:transparent;box-shadow:3px 4px 10px rgba(214,82,70,.30)}
+.gnav-foot{margin-left:auto;margin-top:0;border:0;padding:0;font-size:.6875rem;color:var(--text-muted);font-weight:700;white-space:nowrap}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+@media(max-width:767px){
+  .gnav-toggle{display:grid}
+  .glayout{padding:0}
+  .gnav{position:fixed;right:0;left:auto;top:0;bottom:0;z-index:130;width:min(320px,88vw);height:100dvh;align-items:stretch;flex-direction:column;gap:8px;padding:16px;transform:translateX(100%);transition:transform .24s var(--ease-clay);box-shadow:var(--clay-shadow-raised);border-left:0;border-bottom:0}
+  .gnav.open{transform:translateX(0)}
+  .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip)}
+  .gnav-cap{padding-top:4px}
+  .gnav-list{flex-direction:column;align-items:stretch;overflow-y:auto}
+  .gnav-item{justify-content:flex-start;width:100%;min-height:44px}
+  .gnav-foot{margin:0;padding-top:8px;border-top:2px solid var(--border-chip)}
+}
+
+/* ===== 页面主体 ===== */
+.page{max-width:860px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:16px}
+.page-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.page-head .mascot{display:grid;place-items:center;width:52px;height:52px;border:0;border-radius:var(--radius-icon-tile);background:var(--candy-purple-soft);font-size:26px;box-shadow:var(--clay-shadow-light)}
+.page-head h1{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--text-strong)}
+.page-head .sub{font-size:12.5px;color:var(--text-muted);font-weight:600;margin-top:2px}
+
+/* ===== 状态 tab ===== */
+.tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tab{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:2px solid transparent;background:var(--bg-raised);color:var(--text-strong);font-weight:800;font-size:13.5px;border-radius:var(--radius-pill);padding:8px 16px;box-shadow:var(--clay-shadow-light);transition:transform var(--motion-fast) var(--ease-clay),background var(--motion-fast) var(--ease-clay),color var(--motion-fast) var(--ease-clay)}
+.tab:hover{transform:translateY(-2px)}
+.tab.on{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+.tab .cnt{font-size:12px;font-weight:900;background:var(--clay-lemon);color:var(--text-strong);border-radius:999px;padding:1px 8px}
+.tab.on .cnt{background:rgba(255,255,255,.72);color:var(--text-strong)}
+
+/* ===== 券卡片 ===== */
+.cp-list{display:flex;flex-direction:column;gap:12px}
+.cp-card{position:relative;display:flex;align-items:stretch;gap:0;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);overflow:hidden}
+.cp-card.dim{filter:grayscale(.85);opacity:.75}
+.cp-left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:128px;padding:16px 14px;border-right:3px dashed rgba(46,42,63,.14);background:#F1ECFF;flex-shrink:0}
+.cp-card[data-type="cash"] .cp-left{background:rgba(125,212,168,.28)}
+.cp-card[data-type="discount"] .cp-left{background:rgba(255,181,158,.35)}
+.cp-card[data-type="trial"] .cp-left,.cp-card[data-type="gift"] .cp-left{background:rgba(158,201,240,.35)}
+.cp-val{font-size:24px;font-weight:900;color:var(--text-strong);letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:center;line-height:1.15}
+.cp-min{font-size:11.5px;font-weight:800;color:var(--text-strong);text-align:center}
+.cp-body{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;flex:1;padding:14px 16px}
+.cp-name{font-size:15px;font-weight:800;color:var(--text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-meta{font-size:12px;color:var(--text-muted);font-weight:600}
+.cp-meta b{color:var(--text-strong);font-weight:800}
+.cp-status{position:absolute;top:10px;right:10px;font-size:11px;font-weight:900;border:0;border-radius:var(--radius-pill);padding:2px 10px}
+.cp-status.unused{background:var(--clay-mint);color:var(--text-strong)}
+.cp-status.used{background:var(--candy-silver);color:var(--text-strong)}
+.cp-status.expired{background:var(--status-danger);color:#FFFFFF}
+
+/* ===== 空态 / 错误态 / 分页 ===== */
+.state{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:var(--bg-raised);border:2px dashed var(--border-chip);border-radius:var(--radius-card);padding:36px 20px}
+.state .st-emoji{font-size:40px;color:var(--text-strong);display:inline-flex}
+.state h3{font-size:16px;font-weight:900;color:var(--text-strong)}
+.state p{font-size:13px;color:var(--text-muted);font-weight:600}
+.state .btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:0;background:var(--cta-coral);color:var(--cta-text);font-weight:900;font-size:13.5px;border-radius:var(--radius-btn);padding:9px 20px;box-shadow:var(--clay-shadow-coral);text-decoration:none}
+.state .btn:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.pager button{min-height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);padding:7px 16px;font-weight:800;font-size:13px;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.pager button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.pager .pg-info{font-size:13px;color:var(--text-muted);font-weight:700}
+
+/* ===== 加载骨架 ===== */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk-card{border:2px solid var(--border-chip);border-radius:var(--radius-card);padding:16px;display:flex;gap:14px}
+.sk-line{height:14px;border-radius:7px;background:linear-gradient(90deg,#ECE9F4 25%,#F7F5FB 50%,#ECE9F4 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w60{width:60%}.sk-line.w90{width:90%}.sk-line.w40{width:40%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+
+/* ===== 分区标题 / 卡片操作区（task05，仅复用既有 token）===== */
+.tpl-sec{margin-top:6px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sec-head h2{font-size:16.5px;font-weight:900;color:var(--text-strong);display:flex;align-items:center;gap:8px}
+.sec-cap{font-size:12px;color:var(--text-muted);font-weight:600}
+.cp-actions{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 16px;flex-shrink:0}
+.cp-btn{border:0;border-radius:var(--radius-btn);background:var(--cta-coral);color:var(--cta-text);font-weight:900;font-size:13px;min-height:44px;padding:8px 18px;box-shadow:var(--clay-shadow-coral);white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.cp-btn:hover{transform:translateY(-2px)}
+.cp-btn:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)}
+.cp-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.cp-btn.ghost{background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.cp-remain{font-size:11px;font-weight:800;color:var(--text-strong);text-align:center}
+.head-link{margin-left:auto}
+
+/* ===== 成功提示条（本地 toast，仅正向消息；错误提示由 EAPI 全局 toast 承担；z-index 冻结）===== */
+.cp-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:2147483000;display:none;max-width:min(92vw,520px);background:var(--surface-code);border:0;border-radius:var(--radius-btn);padding:10px 16px;font-size:13px;font-weight:800;color:var(--text-on-dark);box-shadow:var(--clay-shadow-raised);text-align:center;word-break:break-word}
+.cp-toast.show{display:block}
+
+/* ===== 下单弹窗（task05）===== */
+.om-overlay{position:fixed;inset:0;z-index:150;background:rgba(46,42,63,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:16px}
+.om-overlay.open{display:flex}
+.omodal{width:min(560px,94vw);max-height:86dvh;overflow:auto;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-raised);display:flex;flex-direction:column}
+.om-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:2px solid var(--border-chip)}
+.om-title{font-size:15.5px;font-weight:900;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.om-x{width:44px;height:44px;flex-shrink:0;border:0;border-radius:var(--radius-btn);background:var(--bg-raised);font-weight:900;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.om-body{padding:14px 16px 18px;display:flex;flex-direction:column;gap:12px}
+.om-chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;border:0;border-radius:var(--radius-pill);padding:3px 10px;font-size:12px;font-weight:800;background:var(--candy-purple-soft);color:var(--text-strong)}
+.om-search{display:flex;gap:8px}
+.om-search input{flex:1;min-width:0;min-height:44px;border:2px solid transparent;border-radius:var(--radius-input);padding:9px 12px;font:inherit;font-weight:700;background:var(--bg-input);color:var(--text-strong);box-shadow:var(--clay-shadow-input)}
+.om-search input:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.pick-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto}
+.pick-item{display:flex;align-items:center;gap:10px;text-align:left;border:2px solid transparent;border-radius:var(--radius-btn);background:var(--bg-raised);padding:10px 12px;font:inherit;color:var(--text-strong);box-shadow:var(--clay-shadow-light);width:100%}
+.pick-item:hover{border-color:var(--clay-lavender)}
+.pick-item.on{border-color:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}
+.pick-item:disabled{opacity:.5;cursor:not-allowed}
+.pick-item .pk-main{flex:1;min-width:0}
+.pick-item .pk-name{font-weight:800;font-size:13.5px;color:var(--text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-item .pk-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:2px}
+.pick-item .pk-price{font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-strong)}
+.om-pager{display:flex;align-items:center;justify-content:center;gap:10px}
+.om-pager button{min-height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);padding:6px 14px;font-weight:800;font-size:12.5px;color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.om-pager button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.om-pager .pg-info{font-size:12px;color:var(--text-muted);font-weight:700}
+.om-rows{border:2px dashed var(--border-chip);border-radius:var(--radius-md);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.om-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;color:var(--text-strong)}
+.om-row b{font-variant-numeric:tabular-nums;color:var(--text-strong);text-align:right;word-break:break-all}
+.om-row.total b{font-size:16px;color:var(--page-accent)}
+.om-msg{font-size:12.5px;font-weight:800;border-radius:var(--radius-input);padding:8px 12px;display:none}
+.om-msg.warn{display:block;background:rgba(255,181,158,.35);color:var(--text-strong)}
+.om-msg.err{display:block;background:rgba(198,62,74,.14);color:var(--status-danger)}
+.om-note{font-size:11.5px;color:var(--text-muted);font-weight:600}
+.om-back{background:none;border:none;font:inherit;font-size:12.5px;font-weight:800;color:#2B2E6E;text-decoration:underline;padding:0;min-height:44px;align-self:flex-start;cursor:pointer}
+.om-success{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;padding:8px 0 4px}
+.om-no{font-size:14.5px;font-weight:900;letter-spacing:.02em;background:rgba(125,212,168,.22);border:2px dashed #2E7D4F;border-radius:var(--radius-input);padding:10px 14px;font-variant-numeric:tabular-nums;word-break:break-all;color:var(--text-strong)}
+.om-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.om-actions .btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:0;background:var(--cta-coral);color:var(--cta-text);font-weight:900;font-size:13.5px;border-radius:var(--radius-btn);padding:9px 20px;box-shadow:var(--clay-shadow-coral);text-decoration:none}
+.om-actions .btn:active{transform:scale(.97)}
+.om-mini{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;padding:14px 0;font-size:13px;color:var(--text-muted);font-weight:700}
+.om-mini .sk-line{width:80%}
+.om-mini .ic{width:28px;height:28px}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:2147483647;padding:10px 18px;background:#fff4ce;color:#352f24;font:14px/1.5 system-ui;border-bottom:1px solid #dfc483">Bili-Study · 离线界面快照：匿名化接口快照；登录、消息与写操作仅回放，不调用真实系统；不包含视频或在线模型。</div>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="ic-house" viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 256 256"><path d="M240,56V200a8,8,0,0,1-8,8H160a24,24,0,0,0-24,23.94,7.9,7.9,0,0,1-5.12,7.55A8,8,0,0,1,120,232a24,24,0,0,0-24-24H24a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H88a32,32,0,0,1,32,32v87.73a8.17,8.17,0,0,0,7.47,8.25,8,8,0,0,0,8.53-8V80a32,32,0,0,1,32-32h64A8,8,0,0,1,240,56Z"/></symbol>
+  <symbol id="ic-graduation-cap" viewBox="0 0 256 256"><path d="M176,207.24a119,119,0,0,0,16-7.73V240a8,8,0,0,1-16,0Zm11.76-88.43-56-29.87a8,8,0,0,0-7.52,14.12L171,128l17-9.06Zm64-29.87-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V130.67L171,128l-43,22.93L43.83,106l0,0L25,96,128,41.07,231,96l-18.78,10-.06,0L188,118.94a8,8,0,0,1,4,6.93v73.64a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12Z"/></symbol>
+  <symbol id="ic-chat-circle" viewBox="0 0 256 256"><path d="M232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Z"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 256 256"><path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 256 256"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></symbol>
+  <symbol id="ic-sign-in" viewBox="0 0 256 256"><path d="M141.66,133.66l-40,40A8,8,0,0,1,88,168V136H24a8,8,0,0,1,0-16H88V88a8,8,0,0,1,13.66-5.66l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></symbol>
+  <symbol id="ic-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40A8,8,0,0,0,176,88v32H112a8,8,0,0,0,0,16h64v32a8,8,0,0,0,13.66,5.66l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="ic-paper-plane-tilt" viewBox="0 0 256 256"><path d="M231.4,44.34s0,.1,0,.15l-58.2,191.94a15.88,15.88,0,0,1-14,11.51q-.69.06-1.38.06a15.86,15.86,0,0,1-14.42-9.15L107,164.15a4,4,0,0,1,.77-4.58l57.92-57.92a8,8,0,0,0-11.31-11.31L96.43,148.26a4,4,0,0,1-4.58.77L17.08,112.64a16,16,0,0,1,2.49-29.8l191.94-58.2.15,0A16,16,0,0,1,231.4,44.34Z"/></symbol>
+  <symbol id="ic-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32Zm-8,128H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM181.66,170.34a8,8,0,0,1-11.32,11.32L128,139.31,85.66,181.66a8,8,0,0,1-11.32-11.32L116.69,128,74.34,85.66A8,8,0,0,1,85.66,74.34L128,116.69l42.34-42.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+  <symbol id="ic-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-4,48a12,12,0,1,1-12,12A12,12,0,0,1,124,72Zm12,112a16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-magnifying-glass" viewBox="0 0 256 256"><path d="M168,112a56,56,0,1,1-56-56A56,56,0,0,1,168,112Zm61.66,117.66a8,8,0,0,1-11.32,0l-50.06-50.07a88,88,0,1,1,11.32-11.31l50.06,50.06A8,8,0,0,1,229.66,229.66ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 256 256"><path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></symbol>
+  <symbol id="ic-bookmark-simple" viewBox="0 0 256 256"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Z"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 256 256"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></symbol>
+  <symbol id="ic-certificate" viewBox="0 0 256 256"><path d="M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H120v64a8,8,0,0,1-13.66,5.66l-72-72a8,8,0,0,1,0-11.32l72-72A8,8,0,0,1,120,56v64h96A8,8,0,0,1,224,128Z"/></symbol>
+  <symbol id="ic-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72A8,8,0,0,1,136,200V136H40a8,8,0,0,1,0-16h96V56a8,8,0,0,1,13.66-5.66l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+  <symbol id="ic-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"/></symbol>
+  <symbol id="ic-pencil-simple" viewBox="0 0 256 256"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z"/></symbol>
+  <symbol id="ic-upload-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM88,80h32v64a8,8,0,0,0,16,0V80h32a8,8,0,0,0,5.66-13.66l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,88,80Z"/></symbol>
+</svg>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">EA</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item active" href="me.html" aria-current="page"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+
+<div class="page">
+  <header class="page-head">
+    <span class="mascot" aria-hidden="true">🎟️</span>
+    <div>
+      <h1>我的优惠券</h1>
+      <p class="sub">领券 / 下单真实闭环</p>
+    </div>
+    <a class="cp-btn ghost head-link" href="me.html">我的订单（个人中心）</a>
+  </header>
+
+  <section class="tpl-sec" aria-labelledby="tplHead">
+    <div class="sec-head">
+      <h2 id="tplHead">领券中心</h2>
+      <span class="sec-cap">可领券模板（真实数据）</span>
+    </div>
+    <!-- 领券区：JS 在 #tplStage 内渲染 模板列表 / 空态 / 错误态 / 骨架 -->
+    <div id="tplStage" aria-live="polite"></div>
+  </section>
+
+  <div class="sec-head">
+    <h2>我的优惠券</h2>
+    <span class="sec-cap">可使用 / 已使用 / 已过期（真实数据）</span>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="优惠券状态">
+    <button class="tab on" role="tab" aria-selected="true" data-status="unused" id="tabUnused">可使用</button>
+    <button class="tab" role="tab" aria-selected="false" data-status="used" id="tabUsed">已使用</button>
+    <button class="tab" role="tab" aria-selected="false" data-status="expired" id="tabExpired">已过期</button>
+  </div>
+
+  <!-- 主内容区：JS 在 #cpStage 内渲染 列表 / 空态 / 错误态 / 骨架 -->
+  <div id="cpStage" aria-live="polite"></div>
+
+  <div class="pager" id="cpPager" style="display:none">
+    <button type="button" id="pgPrev">‹ 上一页</button>
+    <span class="pg-info" id="pgInfo"></span>
+    <button type="button" id="pgNext">下一页 ›</button>
+  </div>
+</div>
+
+<!-- 下单弹窗（task05：选系列 → 选班次 → 提交订单 → 订单号） -->
+<div class="om-overlay" id="omOverlay">
+  <div class="omodal" role="dialog" aria-modal="true" aria-labelledby="omTitle" id="omodal">
+    <div class="om-head">
+      <span class="om-title" id="omTitle">使用优惠券下单</span>
+      <button type="button" class="om-x" id="omClose" aria-label="关闭下单弹窗">✕</button>
+    </div>
+    <div class="om-body" id="omBody"></div>
+  </div>
+</div>
+</div>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script>
+/* 离线展示 mock：接口回放 2026-10-07 从真实后端捕获的响应；页面渲染代码为原版。 */
+(function (global) {
+  var ROUTES = {"GET /api/auth/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"real_name\":\"展示用户\",\"mobile\":\"展示用户\",\"email\":\"viewer@example.invalid\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"role\":\"student\"}","GET /api/users/me":"{\"user_id\":901,\"account\":\"展示用户\",\"username\":\"展示用户\",\"nickname\":\"展示用户\",\"role\":\"student\",\"email\":\"viewer@example.invalid\",\"mobile\":\"展示用户\",\"real_name\":\"展示用户\",\"gender\":\"female\",\"avatar_url\":\"展示用户\",\"learning_goal\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[\"programming\",\"math\"],\"profile\":{\"nickname\":\"展示用户\",\"avatar_url\":\"展示用户\",\"gender\":\"female\",\"birthday\":\"2008-09-01\",\"grade_code\":\"senior_high_2\",\"school_name\":null,\"region_code\":null,\"weekly_available_hours\":15,\"study_style\":\"mixed\",\"target_qualification\":null,\"learning_goals\":[\"编程入门\",\"升学备考\"],\"subject_preferences\":[{\"subject_code\":\"programming\",\"preference_score\":5},{\"subject_code\":\"math\",\"preference_score\":4}],\"level_assessments\":[],\"interest_tags\":[],\"created_at\":\"2026-08-08T18:54:00\",\"updated_at\":\"2026-09-21T11:47:39\"}}","GET /api/coupons?page=1&page_size=20":"{\"total\":100,\"page\":1,\"page_size\":20,\"items\":[{\"coupon_id\":51121,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"used\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":\"2026-09-05T12:43:37\",\"order_no\":null},{\"coupon_id\":51120,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51119,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51118,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51117,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51116,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51115,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51114,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51113,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51112,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51111,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51110,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51109,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51108,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51107,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51106,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51105,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51104,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51103,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51102,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null}]}","GET /api/coupons?page=1&page_size=20&status=unused":"{\"total\":96,\"page\":1,\"page_size\":20,\"items\":[{\"coupon_id\":51120,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51119,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51118,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51117,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51116,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51115,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51114,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51113,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51112,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51111,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51110,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51109,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51108,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51107,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51106,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51105,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51104,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51103,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51102,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51101,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null}]}","GET /api/coupons?page=1&page_size=100":"{\"total\":100,\"page\":1,\"page_size\":100,\"items\":[{\"coupon_id\":51121,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"used\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":\"2026-09-05T12:43:37\",\"order_no\":null},{\"coupon_id\":51120,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51119,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51118,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51117,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51116,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51115,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51114,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51113,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51112,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51111,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51110,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51109,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51108,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51107,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51106,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51105,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51104,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51103,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51102,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51101,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51100,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51099,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51098,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51097,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51096,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51095,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51094,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51093,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51092,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51091,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51090,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51089,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51088,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51087,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51086,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51085,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51084,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51083,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51082,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51081,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51080,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51079,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51078,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51077,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51076,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51075,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51074,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51073,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51072,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51071,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51070,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51069,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51068,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51067,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51066,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51065,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51064,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51063,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51062,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51061,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51060,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51059,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51058,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51057,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51056,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51055,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51054,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51053,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51052,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51051,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51050,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51049,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51048,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51047,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51046,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51045,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51044,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51043,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51042,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51041,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51040,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51039,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51038,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51037,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51036,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51035,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51034,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51033,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51032,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51031,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51030,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51029,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51028,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51027,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51026,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51025,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"unused\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":null,\"order_no\":null},{\"coupon_id\":51024,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"used\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":\"2026-09-05T09:19:44\",\"order_no\":null},{\"coupon_id\":51023,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"used\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":\"2026-09-05T09:19:44\",\"order_no\":null},{\"coupon_id\":51022,\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"status\":\"used\",\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"received_at\":\"2026-09-05T09:18:56\",\"used_at\":\"2026-09-05T09:19:44\",\"order_no\":null}]}","GET /api/coupons/templates":"[{\"coupon_template_id\":1,\"coupon_name\":\"平台满减券01\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2020-10-16T18:48:06\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":737,\"per_user_limit\":1},{\"coupon_template_id\":2,\"coupon_name\":\"平台折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2023-09-15T03:34:57\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":738,\"per_user_limit\":1},{\"coupon_template_id\":3,\"coupon_name\":\"平台满减券03\",\"coupon_type\":\"cash\",\"face_value\":150,\"min_spend\":750,\"valid_from\":\"2021-12-07T19:41:17\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":10000,\"received_count\":738,\"per_user_limit\":1},{\"coupon_template_id\":4,\"coupon_name\":\"平台折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2018-04-25T02:27:18\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":5,\"coupon_name\":\"平台满减券05\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2024-09-05T04:03:09\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":6,\"coupon_name\":\"平台折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2025-05-15T14:14:14\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":7,\"coupon_name\":\"平台满减券07\",\"coupon_type\":\"cash\",\"face_value\":200,\"min_spend\":1000,\"valid_from\":\"2024-03-20T21:10:25\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":8,\"coupon_name\":\"平台折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2020-06-18T20:26:34\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":9,\"coupon_name\":\"平台满减券09\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2020-01-16T08:02:39\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":10,\"coupon_name\":\"平台折扣券10\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2023-10-11T18:53:53\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":10000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":11,\"coupon_name\":\"平台满减券11\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2025-04-28T00:30:12\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":1000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":12,\"coupon_name\":\"平台折扣券12\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2022-09-17T21:19:54\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":10000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":13,\"coupon_name\":\"平台满减券13\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2020-09-14T08:44:31\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":5000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":14,\"coupon_name\":\"平台折扣券14\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2019-06-24T11:33:22\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":15,\"coupon_name\":\"平台满减券15\",\"coupon_type\":\"cash\",\"face_value\":200,\"min_spend\":1000,\"valid_from\":\"2025-09-17T22:49:41\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":16,\"coupon_name\":\"平台折扣券16\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2020-08-19T03:20:53\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":737,\"per_user_limit\":1},{\"coupon_template_id\":17,\"coupon_name\":\"平台满减券17\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2022-10-01T04:28:47\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":2000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":18,\"coupon_name\":\"平台折扣券18\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2024-09-29T02:30:28\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":10000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":19,\"coupon_name\":\"平台满减券19\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2020-10-28T04:50:25\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":1000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":20,\"coupon_name\":\"平台折扣券20\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2024-02-13T11:26:26\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":736,\"per_user_limit\":1},{\"coupon_template_id\":21,\"coupon_name\":\"星航教育满减券01\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2019-12-24T19:59:33\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":22,\"coupon_name\":\"星航教育折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2025-01-08T21:31:21\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":23,\"coupon_name\":\"星航教育满减券03\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2018-10-01T16:31:53\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":24,\"coupon_name\":\"星航教育折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2020-04-12T22:40:48\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":25,\"coupon_name\":\"星航教育满减券05\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2022-07-25T22:01:30\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":26,\"coupon_name\":\"星航教育折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2018-09-25T19:39:24\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":27,\"coupon_name\":\"星航教育满减券07\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2026-07-04T14:54:55\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":28,\"coupon_name\":\"星航教育折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2022-06-30T00:20:40\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":29,\"coupon_name\":\"青藤学堂满减券01\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2023-03-27T14:37:28\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":30,\"coupon_name\":\"青藤学堂折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2019-10-03T09:09:34\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":31,\"coupon_name\":\"青藤学堂满减券03\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2021-09-30T17:57:05\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":32,\"coupon_name\":\"青藤学堂折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2022-08-28T02:16:54\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":33,\"coupon_name\":\"青藤学堂满减券05\",\"coupon_type\":\"cash\",\"face_value\":200,\"min_spend\":1000,\"valid_from\":\"2025-03-29T02:12:58\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":34,\"coupon_name\":\"青藤学堂折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2025-04-05T20:32:25\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":35,\"coupon_name\":\"青藤学堂满减券07\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2026-05-06T23:35:33\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":36,\"coupon_name\":\"青藤学堂折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2025-04-14T22:41:07\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":37,\"coupon_name\":\"知行书院满减券01\",\"coupon_type\":\"cash\",\"face_value\":200,\"min_spend\":1000,\"valid_from\":\"2026-02-17T09:26:13\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":38,\"coupon_name\":\"知行书院折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2025-12-22T16:19:21\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":39,\"coupon_name\":\"知行书院满减券03\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2025-10-19T12:16:10\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":40,\"coupon_name\":\"知行书院折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2022-06-29T20:09:44\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":41,\"coupon_name\":\"知行书院满减券05\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2022-09-08T23:59:46\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":42,\"coupon_name\":\"知行书院折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2019-12-07T14:16:08\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":43,\"coupon_name\":\"知行书院满减券07\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2019-12-26T07:46:59\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":44,\"coupon_name\":\"知行书院折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2021-05-19T01:27:49\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":45,\"coupon_name\":\"启明课堂满减券01\",\"coupon_type\":\"cash\",\"face_value\":150,\"min_spend\":750,\"valid_from\":\"2023-09-13T12:27:34\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":46,\"coupon_name\":\"启明课堂折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2019-12-31T02:45:59\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":47,\"coupon_name\":\"启明课堂满减券03\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2020-12-12T03:04:05\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":48,\"coupon_name\":\"启明课堂折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2023-07-24T02:15:52\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":49,\"coupon_name\":\"启明课堂满减券05\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2020-06-22T05:39:38\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":50,\"coupon_name\":\"启明课堂折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2020-12-30T06:59:44\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":51,\"coupon_name\":\"启明课堂满减券07\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2024-05-23T13:35:57\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":52,\"coupon_name\":\"启明课堂折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2021-08-25T11:23:22\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":53,\"coupon_name\":\"优学工坊满减券01\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2022-07-22T13:18:25\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":54,\"coupon_name\":\"优学工坊折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2024-07-11T01:13:03\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":55,\"coupon_name\":\"优学工坊满减券03\",\"coupon_type\":\"cash\",\"face_value\":50,\"min_spend\":250,\"valid_from\":\"2020-09-18T06:47:27\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":56,\"coupon_name\":\"优学工坊折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2021-04-03T10:17:43\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":57,\"coupon_name\":\"优学工坊满减券05\",\"coupon_type\":\"cash\",\"face_value\":150,\"min_spend\":750,\"valid_from\":\"2025-08-24T12:38:57\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":58,\"coupon_name\":\"优学工坊折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2023-05-15T05:50:54\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":1000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":59,\"coupon_name\":\"优学工坊满减券07\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2025-07-12T17:39:12\",\"valid_to\":\"2026-12-15T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":60,\"coupon_name\":\"优学工坊折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.85,\"min_spend\":0,\"valid_from\":\"2025-10-30T04:43:14\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":61,\"coupon_name\":\"进阶学院满减券01\",\"coupon_type\":\"cash\",\"face_value\":80,\"min_spend\":400,\"valid_from\":\"2021-08-18T03:36:31\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":10000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":62,\"coupon_name\":\"进阶学院折扣券02\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2022-10-25T17:32:13\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":63,\"coupon_name\":\"进阶学院满减券03\",\"coupon_type\":\"cash\",\"face_value\":200,\"min_spend\":1000,\"valid_from\":\"2021-09-01T09:42:52\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":64,\"coupon_name\":\"进阶学院折扣券04\",\"coupon_type\":\"discount\",\"face_value\":0.95,\"min_spend\":0,\"valid_from\":\"2023-02-04T20:32:52\",\"valid_to\":\"2026-09-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":65,\"coupon_name\":\"进阶学院满减券05\",\"coupon_type\":\"cash\",\"face_value\":100,\"min_spend\":500,\"valid_from\":\"2023-09-18T22:15:00\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":66,\"coupon_name\":\"进阶学院折扣券06\",\"coupon_type\":\"discount\",\"face_value\":0.9,\"min_spend\":0,\"valid_from\":\"2024-03-15T06:29:18\",\"valid_to\":\"2026-10-16T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":67,\"coupon_name\":\"进阶学院满减券07\",\"coupon_type\":\"cash\",\"face_value\":150,\"min_spend\":750,\"valid_from\":\"2025-05-26T12:15:25\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":5000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":68,\"coupon_name\":\"进阶学院折扣券08\",\"coupon_type\":\"discount\",\"face_value\":0.8,\"min_spend\":0,\"valid_from\":\"2024-01-24T15:22:15\",\"valid_to\":\"2026-11-15T16:10:52\",\"total_count\":2000,\"received_count\":735,\"per_user_limit\":1},{\"coupon_template_id\":71,\"coupon_name\":\"平台通用解锁券·减10000\",\"coupon_type\":\"cash\",\"face_value\":10000,\"min_spend\":0,\"valid_from\":\"2026-09-05T09:18:56\",\"valid_to\":\"2028-09-04T09:18:56\",\"total_count\":-1,\"received_count\":109,\"per_user_limit\":100}]","GET /api/series?page=1&page_size=12":"{\"total\":223,\"page\":1,\"page_size\":12,\"items\":[{\"id\":3191,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"ai_video_topics_20261006\",\"series_name\":\"AI 开发专题：Python、记忆与 RAG\",\"description\":\"三个真实 Bilibili 来源的 P1 专题：深度学习 Python 基础、语义/情景/程序记忆与 Laying 库介绍、RAG 入门。原视频独立播放，生成资料自动发布并接入课程知识。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"min_price\":\"0.00\",\"category_names\":[],\"created_at\":\"2026-10-06T21:20:16\",\"updated_at\":\"2026-10-06T21:40:50\"},{\"id\":3190,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"1\",\"series_name\":\"Cache命中率原理与优化\",\"description\":\"\",\"cover_url\":\"https://www.bilibili.com/video/BV1jPJP6REKS/\",\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"min_price\":\"0.00\",\"category_names\":[],\"created_at\":\"2026-10-05T13:40:32\",\"updated_at\":\"2026-10-05T13:40:49\"},{\"id\":3189,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"curated_algorithms_leetcode\",\"series_name\":\"LeetCode 算法题精讲\",\"description\":\"真实 LeetCode 算法题精讲。当前开放三节：两数之和（P1）、有效的括号（P3）、2 的幂（P26）。均提供原视频、带时间戳转写、AI 笔记、章节、思维导图和本课答疑；P1/P3 使用原生字幕，P26 为真实视频 ASR 转写。来源：BV1xa411A76q。此课程为题解合集，不是完整算法与数据结构系统课。\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"min_price\":\"0.00\",\"category_names\":[],\"created_at\":\"2026-10-04T13:13:42\",\"updated_at\":\"2026-10-04T19:24:35\"},{\"id\":3188,\"institution_id\":1,\"delivery_mode\":\"online_recorded\",\"series_code\":\"curated_zeropay_test_20261004\",\"series_name\":\"0元直结算契约测试课\",\"description\":\"Zero-Pay live test fixture\",\"cover_url\":null,\"target_learner_identity_codes\":null,\"target_learning_goal_codes\":null,\"target_grade_codes\":null,\"sale_status\":\"on_sale\",\"min_price\":\"0.00\",\"category_names\":[],\"created_at\":\"2026-10-04T10:57:18\",\"updated_at\":\"2026-10-04T10:57:18\"},{\"id\":2628,\"institution_id\":6,\"delivery_mode\":\"online_recorded\",\"series_code\":\"middle_high_school_informatics_advanced_online_recorded\",\"series_name\":\"信息学竞赛入门班·录播\",\"description\":\"校园成长线下的信息学竞赛入门班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_advanced.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"1999.00\",\"category_names\":[\"信息学与编程启蒙\"],\"created_at\":\"2026-08-07T19:28:04\",\"updated_at\":\"2026-08-16T15:08:28\"},{\"id\":2611,\"institution_id\":6,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_physics_foundation_online_live\",\"series_name\":\"中学物理同步班·直播\",\"description\":\"校园成长线下的中学物理同步班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_physics_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"中学物理提升\"],\"created_at\":\"2026-08-09T02:07:39\",\"updated_at\":\"2026-08-17T02:08:48\"},{\"id\":1540,\"institution_id\":4,\"delivery_mode\":\"online_recorded\",\"series_code\":\"postgraduate_math_practice_online_recorded\",\"series_name\":\"考研数学强化刷题班·录播\",\"description\":\"考试与升学线下的考研数学强化刷题班课程。\",\"cover_url\":\"assets/seed/covers/postgraduate_math_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\",\"working_professional\",\"job_seeker\"],\"target_learning_goal_codes\":[\"exam_preparation\",\"postgraduate_exam\",\"score_improvement\"],\"target_grade_codes\":[\"undergraduate\",\"master\"],\"sale_status\":\"on_sale\",\"min_price\":\"1999.00\",\"category_names\":[\"考研数学\"],\"created_at\":\"2025-10-10T02:30:46\",\"updated_at\":\"2026-06-26T21:29:13\"},{\"id\":435,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_informatics_practice_online_live\",\"series_name\":\"编程素养提升班·直播\",\"description\":\"校园成长线下的编程素养提升班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"信息学与编程启蒙\"],\"created_at\":\"2024-12-21T01:02:07\",\"updated_at\":\"2025-02-03T21:31:37\"},{\"id\":433,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_informatics_foundation_online_live\",\"series_name\":\"信息科技启蒙班·直播\",\"description\":\"校园成长线下的信息科技启蒙班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_informatics_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"interest_learning\",\"skill_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"信息学与编程启蒙\"],\"created_at\":\"2024-12-18T04:24:28\",\"updated_at\":\"2025-12-14T06:27:42\"},{\"id\":431,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_advanced_online_live\",\"series_name\":\"高中化学原理突破班·直播\",\"description\":\"校园成长线下的高中化学原理突破班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_advanced.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"中学化学提升\"],\"created_at\":\"2024-12-16T09:24:23\",\"updated_at\":\"2025-03-05T20:46:54\"},{\"id\":429,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_practice_online_live\",\"series_name\":\"中高考化学提分班·直播\",\"description\":\"校园成长线下的中高考化学提分班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_practice.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"中学化学提升\"],\"created_at\":\"2024-12-20T16:00:57\",\"updated_at\":\"2025-09-23T06:52:09\"},{\"id\":427,\"institution_id\":1,\"delivery_mode\":\"online_live\",\"series_code\":\"middle_high_school_chemistry_foundation_online_live\",\"series_name\":\"中学化学同步班·直播\",\"description\":\"校园成长线下的中学化学同步班课程。\",\"cover_url\":\"assets/seed/covers/middle_high_school_chemistry_foundation.svg\",\"target_learner_identity_codes\":[\"in_school_student\"],\"target_learning_goal_codes\":[\"school_sync\",\"score_improvement\",\"exam_preparation\"],\"target_grade_codes\":[\"junior_middle\",\"senior_high\"],\"sale_status\":\"on_sale\",\"min_price\":\"2999.00\",\"category_names\":[\"中学化学提升\"],\"created_at\":\"2024-12-08T06:50:26\",\"updated_at\":\"2024-12-16T23:00:43\"}]}"};
+  var SSE = "event: start\ndata: {\"session_id\": null, \"query\": \"用两句话介绍一下 Python 的变量命名规则\"}\n\nevent: retrieval\ndata: {\"docs\": [{\"doc_id\": \"_default:rec_question_0368a23ca7a7908a:a2e0d29dbe4691a4:a06dc5d5ac0985a6:1:active\", \"score\": 1.0, \"content\": \"```python\\nwords = [\\\"study\\\", \\\"plan\\\", \\\"grow\\\"]\\nprint(words[-1])\\n```\", \"source_file\": \"Q-0368a23ca7a7908a.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_9e9e6d15d3af8575:387f30b281347aa0:4212c0eee3a57127:1:active\", \"score\": 0.927492, \"content\": \"```python\\na = 7\\nif a % 2 == 0:\\n    print(\\\"even\\\")\\nelse:\\n    print(\\\"odd\\\")\\n```\", \"source_file\": \"Q-9e9e6d15d3af8575.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_36d5d784dd03db37:cebd03a29f7dd5a7:67595d6294537edb:1:active\", \"score\": 0.915683, \"content\": \"```python\\nx = 5\\nif x > 3:\\n    x -= 2\\nelse:\\n    x += 2\\nprint(x)\\n```\", \"source_file\": \"Q-36d5d784dd03db37.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:rec_question_e0ea4ffcb08046af:b89eeba397df5f9f:2187b79da4f8eb59:1:active\", \"score\": 0.875034, \"content\": \"```python\\nres = 1\\nfor i in range(1, 4):\\n    res *= i\\nprint(res)\\n```\", \"source_file\": \"Q-e0ea4ffcb08046af.md\", \"content_type\": \"question\", \"series_code\": null, \"series_name\": null, \"series_codes\": [\"middle_high_school_informatics_advanced_online_live\", \"middle_high_school_informatics_foundation_online_live\", \"middle_high_school_informatics_practice_offline_face_to_face\", \"middle_high_school_informatics_practice_online_live\"], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}, {\"doc_id\": \"_default:3c4cfa4e37330763:1\", \"score\": 0.860203, \"content\": \"工作区符号查询会先打开可见源码建立 LSP 工作区；文档修改后同步更新服务器内容。诊断等待实际返回，超时会明确报错，不把“未收到诊断”当作“没有错误”。Python 与 TypeScript 两种标准重命名编辑格式均支持，应用前仍校验全部文件 SHA。\", \"source_file\": \"up_100003_4baa92d1_README.md\", \"content_type\": \"doc_chunk\", \"series_code\": null, \"series_name\": null, \"series_codes\": [], \"module_codes\": [], \"series_id\": null, \"session_id\": null, \"video_id\": null, \"start_seconds\": null, \"end_seconds\": null, \"distill_artifact_id\": null, \"distill_artifact_sha256\": null, \"source_bvid\": null, \"source_cid\": null, \"compiler_version\": null, \"generation\": null, \"keywords\": [], \"tenant_id\": \"_default\", \"visibility\": \"public\", \"source_channel\": \"hybrid\"}], \"graph_entities\": [], \"retrieved_count\": 149, \"final_count\": 5, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": []}\n\nevent: token\ndata: {\"delta\": \"Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"只能\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"和\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线\"}\n\nevent: token\ndata: {\"delta\": \"组成\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"且\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"以\"}\n\nevent: token\ndata: {\"delta\": \"数字\"}\n\nevent: token\ndata: {\"delta\": \"开头\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"同时\"}\n\nevent: token\ndata: {\"delta\": \"区分\"}\n\nevent: token\ndata: {\"delta\": \"大小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 和\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"Name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 是\"}\n\nevent: token\ndata: {\"delta\": \"两个\"}\n\nevent: token\ndata: {\"delta\": \"不同的\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"）。\"}\n\nevent: token\ndata: {\"delta\": \"变量\"}\n\nevent: token\ndata: {\"delta\": \"名\"}\n\nevent: token\ndata: {\"delta\": \"不能\"}\n\nevent: token\ndata: {\"delta\": \"使用\"}\n\nevent: token\ndata: {\"delta\": \" Python\"}\n\nevent: token\ndata: {\"delta\": \" 的\"}\n\nevent: token\ndata: {\"delta\": \"保留\"}\n\nevent: token\ndata: {\"delta\": \"关键字\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"if\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"for\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"、\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"class\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \" 等\"}\n\nevent: token\ndata: {\"delta\": \"），\"}\n\nevent: token\ndata: {\"delta\": \"并\"}\n\nevent: token\ndata: {\"delta\": \"建议\"}\n\nevent: token\ndata: {\"delta\": \"遵循\"}\n\nevent: token\ndata: {\"delta\": \" P\"}\n\nevent: token\ndata: {\"delta\": \"EP\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"8\"}\n\nevent: token\ndata: {\"delta\": \" \"}\n\nevent: token\ndata: {\"delta\": \"规\"}\n\nevent: token\ndata: {\"delta\": \"范\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"用\"}\n\nevent: token\ndata: {\"delta\": \"小\"}\n\nevent: token\ndata: {\"delta\": \"写\"}\n\nevent: token\ndata: {\"delta\": \"字母\"}\n\nevent: token\ndata: {\"delta\": \"加\"}\n\nevent: token\ndata: {\"delta\": \"下\"}\n\nevent: token\ndata: {\"delta\": \"划\"}\n\nevent: token\ndata: {\"delta\": \"线的\"}\n\nevent: token\ndata: {\"delta\": \"“\"}\n\nevent: token\ndata: {\"delta\": \"蛇\"}\n\nevent: token\ndata: {\"delta\": \"形\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"法\"}\n\nevent: token\ndata: {\"delta\": \"”（\"}\n\nevent: token\ndata: {\"delta\": \"如\"}\n\nevent: token\ndata: {\"delta\": \" `\"}\n\nevent: token\ndata: {\"delta\": \"student\"}\n\nevent: token\ndata: {\"delta\": \"_name\"}\n\nevent: token\ndata: {\"delta\": \"`\"}\n\nevent: token\ndata: {\"delta\": \"）\"}\n\nevent: token\ndata: {\"delta\": \"来\"}\n\nevent: token\ndata: {\"delta\": \"提高\"}\n\nevent: token\ndata: {\"delta\": \"可\"}\n\nevent: token\ndata: {\"delta\": \"读\"}\n\nevent: token\ndata: {\"delta\": \"性\"}\n\nevent: token\ndata: {\"delta\": \"。\\n\\n\"}\n\nevent: token\ndata: {\"delta\": \"（\"}\n\nevent: token\ndata: {\"delta\": \"基于\"}\n\nevent: token\ndata: {\"delta\": \"通用\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"：\"}\n\nevent: token\ndata: {\"delta\": \"综合\"}\n\nevent: token\ndata: {\"delta\": \"上下\"}\n\nevent: token\ndata: {\"delta\": \"文\"}\n\nevent: token\ndata: {\"delta\": \"中的\"}\n\nevent: token\ndata: {\"delta\": \"代码\"}\n\nevent: token\ndata: {\"delta\": \"片段\"}\n\nevent: token\ndata: {\"delta\": \"未\"}\n\nevent: token\ndata: {\"delta\": \"涉及\"}\n\nevent: token\ndata: {\"delta\": \"命名\"}\n\nevent: token\ndata: {\"delta\": \"规则\"}\n\nevent: token\ndata: {\"delta\": \"说明\"}\n\nevent: token\ndata: {\"delta\": \"，\"}\n\nevent: token\ndata: {\"delta\": \"故\"}\n\nevent: token\ndata: {\"delta\": \"此\"}\n\nevent: token\ndata: {\"delta\": \"回答\"}\n\nevent: token\ndata: {\"delta\": \"由\"}\n\nevent: token\ndata: {\"delta\": \"模型\"}\n\nevent: token\ndata: {\"delta\": \"知识\"}\n\nevent: token\ndata: {\"delta\": \"补充。）\"}\n\nevent: done\ndata: {\"code\": 0, \"message\": \"ok\", \"data\": {\"session_id\": null, \"message_id\": null, \"retrieved_count\": 149, \"final_count\": 5, \"latency_ms\": 14785, \"rewrite_query\": \"用两句话介绍一下 Python 的变量命名规则\", \"degraded_reason\": \"rerank_sidecar_unavailable\", \"mcp_tool_calls\": [], \"memorized\": [], \"tool_receipt_unverified\": false}}\n\n";
+  var DEMO_VER = "{\r\n  \"checked_at\": \"2026-10-05T17:04:09+0800\",\r\n  \"kind\": \"saved-real-runtime-acceptance\",\r\n  \"note\": \"保存的真实验收记录，不表示当前仍在执行。Jaeger 重启后可能不再保留内存 Trace。\",\r\n  \"cases\": [\r\n    {\r\n      \"name\": \"P1 本课背景与资料\",\r\n      \"query\": \"我当前学的是什么课程？这一节视频讲什么？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"679eeff149c5d47d836987be0989dce7\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"P1 同课追问\",\r\n      \"query\": \"你刚才提到的哈希表方法，如何保证不会把同一个元素使用两次？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"529bc6336146769bec6947d4f0594b91\",\r\n      \"citations\": 8,\r\n      \"video_ids\": [\r\n        205787\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"纯闲聊捷径\",\r\n      \"query\": \"你好\",\r\n      \"pass\": true,\r\n      \"intent\": \"chitchat\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"77a13d96694884ad302505a637a4b6f1\",\r\n      \"citations\": 0,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": null\r\n    },\r\n    {\r\n      \"name\": \"知识问答：九节点\",\r\n      \"query\": \"根据 Cache Learning Notes，TTL 为什么不能保证缓存和数据库的一致性？\",\r\n      \"pass\": true,\r\n      \"intent\": \"knowledge\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"e4a26e0f603e6f77e2b02fbf1a0b38df\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"真实计算器调用\",\r\n      \"query\": \"请使用 calculator 计算 17 * 23，给我结果。\",\r\n      \"pass\": true,\r\n      \"intent\": \"tool\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"2f2338d6106b8e46c00a42f60c35250e\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [\r\n        {\r\n          \"name\": \"add\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"sum\\\": 40, \\\"was_negative\\\": false}\"\r\n        },\r\n        {\r\n          \"name\": \"calculator\",\r\n          \"status\": \"success\",\r\n          \"result\": \"{\\\"result\\\": 391.0, \\\"tool\\\": \\\"calculator\\\", \\\"op\\\": \\\"mul\\\"}\"\r\n        }\r\n      ],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"学习规划分支\",\r\n      \"query\": \"请根据我的学习情况给我制定一份学习计划。\",\r\n      \"pass\": true,\r\n      \"intent\": \"learning\",\r\n      \"nodes\": [\r\n        \"route\",\r\n        \"skill\",\r\n        \"compact\",\r\n        \"context_edit\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"harness_methods\": [\r\n        \"route\",\r\n        \"plan\",\r\n        \"fan_out\",\r\n        \"merge\",\r\n        \"reflect\",\r\n        \"answer\"\r\n      ],\r\n      \"model\": \"ark-code-latest\",\r\n      \"trace_id\": \"5c5d8b2a5f487bdbf26f5259c1951038\",\r\n      \"citations\": 5,\r\n      \"video_ids\": [],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    },\r\n    {\r\n      \"name\": \"新建 Cache 课程答疑\",\r\n      \"query\": \"我目前正在学什么课程？这节课讲了哪些 Cache 优化思路？\",\r\n      \"pass\": true,\r\n      \"intent\": \"course_tutor\",\r\n      \"nodes\": [],\r\n      \"harness_methods\": [],\r\n      \"model\": null,\r\n      \"trace_id\": \"260ad37dcd96658bccb83c642e30ec7a\",\r\n      \"citations\": 7,\r\n      \"video_ids\": [\r\n        205792\r\n      ],\r\n      \"tool_results\": [],\r\n      \"degraded_reason\": \"rerank_sidecar_unavailable\"\r\n    }\r\n  ]\r\n}";
+  var ROLE = "student";
+  /* 通配路由（key 含 *）：编译为正则，最长模板优先 */
+  var WILD = [];
+  (function () {
+    var tmp = [];
+    for (var k in ROUTES) {
+      if (k.indexOf("*") < 0) continue;
+      var sp = k.indexOf(" ");
+      tmp.push({ m: k.slice(0, sp), re: new RegExp("^" + k.slice(sp + 1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[^/]*") + "$"), d: ROUTES[k] });
+      delete ROUTES[k];
+    }
+    WILD = tmp.sort(function (a, b) { return b.re.source.length - a.re.source.length; });
+  })();
+  var TOKEN_KEY = "edu:auth:token", REFRESH_KEY = "edu:auth:refresh";
+  var LOGIN_PAGE = "login-register.html";
+  var memoryToken = "offline-" + ROLE;
+  var memoryRefresh = "offline";
+  var errorHandlers = [];
+  function trimSlash(s){ return String(s||"").replace(/\/+$/,""); }
+  function apiError(status, message){ var e = new Error(message || ("HTTP " + status)); e.status = status; e.isApiError = true; return e; }
+  function sanitizeRedirect(r){ if (typeof r !== "string") return ""; var s = r.trim(); if (!s || s.charAt(0) !== "/") return ""; if (s.charAt(1) === "/") return ""; if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) return ""; return s; }
+  function getRedirectParam(){ try { var q = new URLSearchParams(location.search || ""); return sanitizeRedirect(q.get("redirect") || ""); } catch (e) { return ""; } }
+  function pageId(name){ try { var q = new URLSearchParams(location.search || ""); var v = typeof name === "string" ? q.get(name) : q.get("id"); return v === null || v === undefined ? "" : String(v).trim(); } catch (e) { return ""; } }
+  function currentPathWithQuery(){ try { return (location.pathname || "/") + (location.search || ""); } catch (e) { return "/"; } }
+  function onLoginPage(){ try { return /(^|\/)login-register\.html$/.test((location.pathname || "").split("/").pop() || ""); } catch (e) { return false; } }
+  function buildLoginUrl(redirectPath){ var t = sanitizeRedirect(redirectPath || ""); return t ? LOGIN_PAGE + "?redirect=" + encodeURIComponent(t) : LOGIN_PAGE; }
+  function gotoLogin(p){ try { window.location.href = buildLoginUrl(p); } catch (e) {} }
+  function onError(fn){ if (typeof fn !== "function") return function () {}; errorHandlers.push(fn); return function () { var i = errorHandlers.indexOf(fn); if (i >= 0) errorHandlers.splice(i, 1); }; }
+  function emitOnce(err){ if (!err || err.__eapiEmitted) return; err.__eapiEmitted = true; for (var i = 0; i < errorHandlers.length; i++) { try { errorHandlers[i](err); } catch (e) {} } try { console.error("[EAPI]", (err && err.message) || err); } catch (e) {} }
+
+  var store = {
+    getToken: function () { return memoryToken; },
+    setToken: function (t) { memoryToken = t || ""; },
+    getRefreshToken: function () { return memoryRefresh; },
+    setRefreshToken: function (t) { memoryRefresh = t || ""; },
+    clear: function () { memoryToken = ""; memoryRefresh = ""; },
+  };
+
+  function routeLookup(method, pathWithQuery) {
+    var key = method + " " + pathWithQuery;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    var noQ = pathWithQuery.split("?")[0];
+    key = method + " " + noQ;
+    if (ROUTES[key] === "__MOCK_404__") return { status: 404 };
+    if (ROUTES[key] !== undefined) return { status: 200, data: JSON.parse(ROUTES[key]) };
+    for (var wi = 0; wi < WILD.length; wi++) {
+      if (WILD[wi].m === method && WILD[wi].re.test(noQ)) return { status: 200, data: JSON.parse(WILD[wi].d) };
+    }
+    var best = null, bestLen = -1;
+    for (var k in ROUTES) {
+      if (k.indexOf(method + " ") !== 0) continue;
+      var kp = k.slice(method.length + 1).split("?")[0];
+      if (kp === noQ) return { status: 200, data: JSON.parse(ROUTES[k]) };
+      if (noQ.indexOf(kp + "/") === 0 && kp.length > bestLen) { best = k; bestLen = kp.length; }
+    }
+    if (best) return { status: 200, data: JSON.parse(ROUTES[best]) };
+    console.warn("[MOCK] 未匹配的接口（返回诚实空态）:", method, pathWithQuery);
+    if (method === "GET") {
+      var tail = noQ.split("/").pop();
+      var looksList = !tail || pathWithQuery.indexOf("?") >= 0 || /(s|sessions|logs|tasks|items)$/.test(noQ);
+      return { status: 200, data: looksList ? { total: 0, page: 1, page_size: 20, items: [] } : {} };
+    }
+    return { status: 200, data: { ok: true } };
+  }
+
+  var MUTATION_FIX = {
+    "POST /api/auth/login": function (body) {
+      return { access_token: "offline", refresh_token: "offline", user: JSON.parse(ROUTES["GET /api/users/me"] || ROUTES["GET /api/auth/me"] || "{}") };
+    },
+    "POST /api/auth/register": function () { return { user_id: 900001 }; },
+  };
+  function mutate(method, path, body) {
+    var fk = method + " " + path.split("?")[0];
+    if (MUTATION_FIX[fk]) return { status: 200, data: MUTATION_FIX[fk](body) };
+    if (path.indexOf("/api/trade/order") === 0 && method === "POST")
+      return { status: 200, data: { order_id: "MOCKORD1001", status: "pending_pay", pay_url: null, amount_due: (body && body.amount_due) || 0, series_id: body && body.series_id } };
+    if (path.indexOf("/api/trade/payment") === 0) return { status: 200, data: { status: "paid", paid: true, order_id: "MOCKORD1001" } };
+    if (path.indexOf("/api/progress/video") === 0) return { status: 200, data: { play_session_id: 900001 } };
+    if (path.indexOf("/api/community/posts") === 0 && method === "POST")
+      return { status: 200, data: { post_id: 9001, title: (body && body.title) || "演示帖子", content_md: (body && body.content_md) || "", created_at: new Date().toISOString() } };
+    if (path.indexOf("/api/users/me/profile") === 0) return { status: 200, data: Object.assign(JSON.parse(ROUTES["GET /api/users/me/profile"] || "{}"), body || {}) };
+    console.warn("[MOCK] 变更接口（离线演示返回成功）:", method, path);
+    return { status: 200, data: { ok: true, id: 900001 } };
+  }
+
+  function sseResponse() {
+    var enc = new TextEncoder();
+    var frames = SSE.split("\n\n").filter(function (f) { return f.trim(); });
+    var stream = new ReadableStream({
+      start: function (c) {
+        var i = 0;
+        function next() {
+          if (i >= frames.length) { c.close(); return; }
+          c.enqueue(enc.encode(frames[i++] + "\n\n"));
+          setTimeout(next, 40);
+        }
+        next();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  }
+
+  function request(method, path, body) {
+    if (!memoryToken && !onLoginPage()) { gotoLogin(currentPathWithQuery()); return Promise.reject(apiError(401, "登录凭证无效或已过期")); }
+    var p = path && path.charAt(0) === "/" ? path : "/" + (path || "");
+    return new Promise(function (resolve) { setTimeout(resolve, 60); }).then(function () {
+      var out;
+      if (method !== "GET") out = mutate(method, p, body);
+      else out = routeLookup(method, p);
+      if (out.status === 404) throw apiError(404, "资源不存在（离线演示无此数据）");
+      return out.data;
+    }).catch(function (e) { emitOnce(e); throw e; });
+  }
+
+  var EAPI = {
+    BASE: (global.location && global.location.origin) || "",
+    TOKEN_KEY: TOKEN_KEY, TIMEOUT_MS: 15000,
+    get: function (p) { return request("GET", p); },
+    post: function (p, b) { return request("POST", p, b); },
+    put: function (p, b) { return request("PUT", p, b); },
+    patch: function (p, b) { return request("PATCH", p, b); },
+    del: function (p) { return request("DELETE", p); },
+    store: store, logout: function () { store.clear(); if (!onLoginPage()) gotoLogin(currentPathWithQuery()); },
+    onError: onError, getRedirectParam: getRedirectParam, buildLoginUrl: buildLoginUrl, pageId: pageId,
+  };
+  global.EAPI = EAPI;
+
+  var origFetch = global.fetch ? global.fetch.bind(global) : null;
+  global.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/chat/stream") >= 0) return Promise.resolve(sseResponse());
+    if (url.indexOf("demo/verification.json") >= 0)
+      return Promise.resolve(new Response(DEMO_VER, { status: 200, headers: { "Content-Type": "application/json" } }));
+    if (url.indexOf("/api/") >= 0 || url.indexOf("samples/") >= 0 || url.indexOf("/media/") >= 0) {
+      var method = ((init && init.method) || "GET").toUpperCase();
+      var body = null;
+      try { body = init && init.body ? JSON.parse(init.body) : null; } catch (e) {}
+      if (url.indexOf("samples/") >= 0) return origFetch(input, init).catch(function () { return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }); });
+      var out = method === "GET" ? routeLookup(method, url.split(/^[a-z]+:\/\/?[^/]*\/|^[a-z]+:\/\//.test(url) ? url.replace(/^[a-z]+:\/\/[^/]*\//, "/") : url).split("?").length ? urlAfterBase(url) : url) : mutate(method, urlAfterBase(url), body);
+      function urlAfterBase(u) { var i = u.indexOf("/api/"); return i >= 0 ? u.slice(i) : u; }
+      if (out.status === 404) return Promise.resolve(new Response(JSON.stringify({ code: "40400", message: "not found", data: null }), { status: 404, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(new Response(JSON.stringify({ code: 0, message: "ok", data: out.data }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    }
+    return origFetch ? origFetch(input, init) : Promise.reject(new Error("offline: fetch blocked"));
+  };
+})(window);
+</script>
+<script>
+/* ===== 我的优惠券：GET /api/coupons 真实数据 ===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) { location.replace(EAPI.buildLoginUrl("coupons.html")); return; }
+
+  var PAGE_SIZE = 20;
+  var stage = document.getElementById("cpStage");
+  var pager = document.getElementById("cpPager");
+  var pgInfo = document.getElementById("pgInfo");
+  var pgPrev = document.getElementById("pgPrev");
+  var pgNext = document.getElementById("pgNext");
+  var curStatus = "unused";
+  var curPage = 1;
+  var totalPages = 1;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function showSkeleton() {
+    stage.innerHTML = "";
+    var box = el("div", "sk");
+    for (var i = 0; i < 3; i++) {
+      var c = el("div", "sk-card");
+      c.appendChild(el("div", "sk-line w40"));
+      var r = el("div", "");
+      r.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center";
+      r.appendChild(el("div", "sk-line w90"));
+      r.appendChild(el("div", "sk-line w60"));
+      c.appendChild(r);
+      box.appendChild(c);
+    }
+    stage.appendChild(box);
+    pager.style.display = "none";
+  }
+  function showError(retry) {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    var ic = el("div", "st-emoji"); ic.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg>';
+    s.appendChild(ic);
+    s.appendChild(el("h3", "", "优惠券加载失败"));
+    s.appendChild(el("p", "", "网络开小差了，请稍后重试"));
+    var b = el("button", "btn", "重试");
+    b.addEventListener("click", retry);
+    s.appendChild(b);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+  function showEmpty() {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    var label = curStatus === "unused" ? "可使用" : curStatus === "used" ? "已使用" : "已过期";
+    var ic = el("div", "st-emoji"); ic.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-info"/></svg>';
+    s.appendChild(ic);
+    s.appendChild(el("h3", "", "暂无" + label + "的优惠券"));
+    s.appendChild(el("p", "", "去课程中心逛逛，领取新券再回来吧"));
+    var a = el("a", "btn", "去课程中心");
+    a.href = "courses.html";
+    s.appendChild(a);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+
+  /* face_value 语义：cash=金额(元)；discount=折扣率(0.8→8折)；trial/gift=兑换类 */
+  function faceText(c) {
+    var v = Number(c.face_value) || 0;
+    if (c.coupon_type === "discount") {
+      var zhe = Math.round(v * 1000) / 100; // 0.85 → 8.5
+      return (zhe % 1 === 0 ? zhe.toFixed(0) : zhe.toFixed(1)) + "折";
+    }
+    if (c.coupon_type === "trial") return "试用";
+    if (c.coupon_type === "gift") return "赠券";
+    return "¥" + v.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  }
+  function minText(c) {
+    var m = Number(c.min_spend) || 0;
+    return m > 0 ? "满 ¥" + m.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) + " 可用" : "无门槛";
+  }
+  function d10(s) { return s ? String(s).slice(0, 10) : ""; }
+
+  var STATUS_LABEL = { unused: "可使用", used: "已使用", expired: "已过期" };
+  var TYPE_LABEL = { cash: "现金券", discount: "折扣券", trial: "试用券", gift: "赠券" };
+
+  function renderList(data) {
+    stage.innerHTML = "";
+    var list = el("div", "cp-list");
+    (data.items || []).forEach(function (c) {
+      var card = el("article", "cp-card" + (c.status === "unused" ? "" : " dim"));
+      card.setAttribute("data-type", c.coupon_type || "cash");
+
+      var left = el("div", "cp-left");
+      left.appendChild(el("div", "cp-val", faceText(c)));
+      left.appendChild(el("div", "cp-min", minText(c)));
+
+      var body = el("div", "cp-body");
+      body.appendChild(el("div", "cp-name", c.coupon_name || "未命名优惠券"));
+      var m1 = el("div", "cp-meta");
+      m1.appendChild(document.createTextNode("类型 " + (TYPE_LABEL[c.coupon_type] || c.coupon_type || "—") + " · 有效期 " + d10(c.valid_from) + " ~ " + d10(c.valid_to)));
+      body.appendChild(m1);
+      var m2 = el("div", "cp-meta");
+      if (c.status === "used") {
+        m2.appendChild(document.createTextNode("使用于 " + (d10(c.used_at) || "—") + (c.order_no ? " · 订单 " + c.order_no : "")));
+      } else {
+        m2.appendChild(document.createTextNode("领取于 " + (d10(c.received_at) || "—")));
+      }
+      body.appendChild(m2);
+
+      card.appendChild(left);
+      card.appendChild(body);
+      card.appendChild(el("span", "cp-status " + c.status, STATUS_LABEL[c.status] || c.status));
+      if (c.status === "unused") {
+        var act = el("div", "cp-actions");
+        var ob = el("button", "cp-btn", "去下单使用");
+        ob.setAttribute("aria-label", "使用优惠券「" + (c.coupon_name || "") + "」下单");
+        ob.addEventListener("click", function () {
+          if (window.couponsOrder && typeof window.couponsOrder.open === "function") {
+            window.couponsOrder.open(c);
+          }
+        });
+        act.appendChild(ob);
+        card.appendChild(act);
+      }
+      list.appendChild(card);
+    });
+    stage.appendChild(list);
+  }
+
+  function updatePager(total) {
+    totalPages = Math.max(1, Math.ceil((total || 0) / PAGE_SIZE));
+    pager.style.display = totalPages > 1 ? "flex" : "none";
+    pgPrev.disabled = curPage <= 1;
+    pgNext.disabled = curPage >= totalPages;
+    pgInfo.textContent = "第 " + curPage + " / " + totalPages + " 页 · 共 " + (total || 0) + " 张";
+  }
+  function setTabBadge(status, total) {
+    var btn = document.querySelector('.tab[data-status="' + status + '"]');
+    if (!btn) return;
+    var old = btn.querySelector(".cnt");
+    if (old) old.remove();
+    var s = el("span", "cnt", String(total));
+    btn.appendChild(s);
+  }
+
+  function load(status, page) {
+    curStatus = status;
+    curPage = page;
+    showSkeleton();
+    EAPI.get("/api/coupons?status=" + encodeURIComponent(status) + "&page=" + page + "&page_size=" + PAGE_SIZE)
+      .then(function (data) {
+        if (!data) { showError(function () { load(status, page); }); return; }
+        setTabBadge(status, data.total);
+        if (!data.items || !data.items.length) { showEmpty(); updatePager(data.total); return; }
+        renderList(data);
+        updatePager(data.total);
+      })
+      .catch(function () { showError(function () { load(status, page); }); });
+  }
+
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (b) {
+        b.classList.remove("on");
+        b.setAttribute("aria-selected", "false");
+      });
+      btn.classList.add("on");
+      btn.setAttribute("aria-selected", "true");
+      load(btn.getAttribute("data-status"), 1);
+    });
+  });
+  pgPrev.addEventListener("click", function () { if (curPage > 1) load(curStatus, curPage - 1); });
+  pgNext.addEventListener("click", function () { if (curPage < totalPages) load(curStatus, curPage + 1); });
+
+  /* task05：领券/下单成功后由领券区/下单弹窗广播 cp:refresh，静默刷新当前 tab 与角标 */
+  window.addEventListener("cp:refresh", function () { load(curStatus, 1); });
+
+  load("unused", 1);
+})();
+</script>
+<script>
+/* ===== task05：领券中心（GET /api/coupons/templates + POST /api/trade/coupon/receive）
+   + 下单真实闭环（GET /api/series → GET /api/series/{id}/cohorts → POST /api/trade/order，
+   必带 Idempotency-Key 请求头，成功展示 order_no）。
+   注：EAPI.post 不支持自定义请求头 → 下单走页面内 postWithHeaders（shell 解包/401 语义与 EAPI 对齐）。
+   重复领取：服务端幂等（code=0 返回原券记录，非错误码）→ 以已持券集合做诚实提示。 ===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) return; // 未登录跳转由主 IIFE 处理
+
+  /* ---------- 小工具 ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function fmt(v) { return (Number(v) || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }); }
+  function d10(s) { return s ? String(s).slice(0, 10) : ""; }
+  var TYPE_LABEL = { cash: "现金券", discount: "折扣券", trial: "试用券", gift: "赠券" };
+  var ORDER_STATUS_LABEL = { pending: "待支付", paid: "已支付", completed: "已完成", cancelled: "已取消", partial_refunded: "部分退款", refunded: "已退款" };
+  function faceText(c) {
+    var v = Number(c.face_value) || 0;
+    if (c.coupon_type === "discount") {
+      var zhe = Math.round(v * 1000) / 100;
+      return (zhe % 1 === 0 ? zhe.toFixed(0) : zhe.toFixed(1)) + "折";
+    }
+    if (c.coupon_type === "trial") return "试用";
+    if (c.coupon_type === "gift") return "赠券";
+    return "¥" + fmt(v);
+  }
+  function minText(c) {
+    var m = Number(c.min_spend) || 0;
+    return m > 0 ? "满 ¥" + fmt(m) + " 可用" : "无门槛";
+  }
+  function isExpired(t) {
+    try { return t.valid_to ? (new Date(t.valid_to).getTime() < Date.now()) : false; } catch (e) { return false; }
+  }
+
+  /* 本地 toast：仅正向/信息提示；接口错误由 EAPI 全局 toast 或弹窗内 msg 承担，避免重复 */
+  var toastEl = null, toastTimer = null;
+  function toast(msg) {
+    if (!toastEl) {
+      toastEl = el("div", "cp-toast");
+      toastEl.setAttribute("role", "status");
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 3200);
+  }
+
+  /* ---------- 领券中心 ---------- */
+  var tplStage = document.getElementById("tplStage");
+
+  function tplSkeleton() {
+    tplStage.innerHTML = "";
+    var box = el("div", "sk");
+    for (var i = 0; i < 2; i++) {
+      var c = el("div", "sk-card");
+      c.appendChild(el("div", "sk-line w40"));
+      var r = el("div", "");
+      r.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center";
+      r.appendChild(el("div", "sk-line w90"));
+      r.appendChild(el("div", "sk-line w60"));
+      c.appendChild(r);
+      box.appendChild(c);
+    }
+    tplStage.appendChild(box);
+  }
+  function tplError(retry) {
+    tplStage.innerHTML = "";
+    var s = el("div", "state");
+    var ic = el("div", "st-emoji"); ic.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg>';
+    s.appendChild(ic);
+    s.appendChild(el("h3", "", "可领券列表加载失败"));
+    s.appendChild(el("p", "", "网络开小差了，请稍后重试"));
+    var b = el("button", "btn", "重试");
+    b.addEventListener("click", retry);
+    s.appendChild(b);
+    tplStage.appendChild(s);
+  }
+  function tplEmpty() {
+    tplStage.innerHTML = "";
+    var s = el("div", "state");
+    var ic = el("div", "st-emoji"); ic.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-info"/></svg>';
+    s.appendChild(ic);
+    s.appendChild(el("h3", "", "暂无可领的优惠券"));
+    s.appendChild(el("p", "", "新券上线后会第一时间出现在这里"));
+    tplStage.appendChild(s);
+  }
+
+  function renderTemplates(list) {
+    tplStage.innerHTML = "";
+    var wrap = el("div", "cp-list");
+    (list || []).forEach(function (t) {
+      var card = el("article", "cp-card");
+      card.setAttribute("data-type", t.coupon_type || "cash");
+      var left = el("div", "cp-left");
+      left.appendChild(el("div", "cp-val", faceText(t)));
+      left.appendChild(el("div", "cp-min", minText(t)));
+      var body = el("div", "cp-body");
+      body.appendChild(el("div", "cp-name", t.coupon_name || "未命名优惠券"));
+      var m1 = el("div", "cp-meta");
+      m1.appendChild(document.createTextNode("类型 " + (TYPE_LABEL[t.coupon_type] || t.coupon_type || "—") + " · 有效期 " + d10(t.valid_from) + " ~ " + d10(t.valid_to)));
+      body.appendChild(m1);
+      var total = Number(t.total_count);
+      /* Coupon-Unlimited（Owner 方案 A）：total_count === -1 = 平台库存不限量——
+         显示"不限量"，永不因库存禁用按钮；receive_count 仅作领取量统计展示 */
+      var unlimited = total === -1;
+      var remain = unlimited ? Infinity : Math.max(0, (total || 0) - (Number(t.received_count) || 0));
+      var m2 = el("div", "cp-meta");
+      m2.appendChild(document.createTextNode(
+        (unlimited ? "不限量 · 已领 " + (Number(t.received_count) || 0) + " 张"
+                    : "剩余 " + remain + " / " + (total || 0) + " 张")
+        + " · 每人限领 " + (t.per_user_limit != null ? t.per_user_limit : 1) + " 张"));
+      body.appendChild(m2);
+      var act = el("div", "cp-actions");
+      var btn;
+      if (!unlimited && remain <= 0) {
+        btn = el("button", "cp-btn", "已领完");
+        btn.disabled = true;
+      } else if (isExpired(t)) {
+        btn = el("button", "cp-btn", "已过期");
+        btn.disabled = true;
+      } else {
+        btn = el("button", "cp-btn", "立即领取");
+        btn.setAttribute("aria-label", "领取优惠券「" + (t.coupon_name || "") + "」");
+        btn.addEventListener("click", function () { onReceive(t, btn); });
+      }
+      act.appendChild(btn);
+      card.appendChild(left);
+      card.appendChild(body);
+      card.appendChild(act);
+      wrap.appendChild(card);
+    });
+    tplStage.appendChild(wrap);
+  }
+
+  /* 已持券模板集合（ coupon_template_id → true ）：重复领取的诚实提示依据。
+     必须在领券 POST 之前取快照（否则新领记录会污染判重）；预取失败置空缓存允许重试。 */
+  var heldPromise = null;
+  function ensureHeld() {
+    if (heldPromise) return heldPromise;
+    heldPromise = (function () {
+      var set = {}, page = 1;
+      function step() {
+        return EAPI.get("/api/coupons?page=" + page + "&page_size=100").then(function (data) {
+          (data && data.items ? data.items : []).forEach(function (c) { set[c.coupon_template_id] = true; });
+          var total = (data && data.total) || 0;
+          if (page * 100 < total && page < 10) { page += 1; return step(); }
+          return set;
+        });
+      }
+      return step();
+    })().catch(function () { heldPromise = null; return null; }); // 预取失败不阻塞领取（POST 本身幂等），仅退化为无法预判重复
+    return heldPromise;
+  }
+
+  function refreshAfterChange() {
+    try { window.dispatchEvent(new CustomEvent("cp:refresh")); } catch (e) {}
+    loadTemplates(false);
+  }
+
+  function loadTemplates(showSkeleton) {
+    if (showSkeleton) tplSkeleton();
+    EAPI.get("/api/coupons/templates")
+      .then(function (data) {
+        if (!data || !data.length) { tplEmpty(); return; }
+        renderTemplates(data);
+      })
+      .catch(function () { tplError(function () { loadTemplates(true); }); });
+  }
+
+  function onReceive(t, btn) {
+    var old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "领取中…";
+    ensureHeld().then(function (setBefore) {
+      /* setBefore = 领取前的已持券快照（POST 前解析完成），dup 判定才诚实 */
+      return EAPI.post("/api/trade/coupon/receive", { coupon_template_id: t.coupon_template_id }).then(function (coupon) {
+        var dup = !!(setBefore && setBefore[t.coupon_template_id]);
+        if (setBefore) setBefore[t.coupon_template_id] = true;
+        btn.textContent = "已领取";
+        var no = coupon && coupon.coupon_id != null ? "#" + coupon.coupon_id : "";
+        toast(dup
+          ? "该券已领取过：服务端幂等返回原券记录 " + no
+          : "领取成功 " + no + "，可在「可使用」中查看");
+        refreshAfterChange();
+      });
+    }).catch(function () {
+      /* 错误提示由 EAPI 全局 toast（含 40920 已领完等真实错误码文案），这里只还原按钮 */
+      btn.disabled = false;
+      btn.textContent = old;
+    });
+  }
+
+  /* ---------- 下单弹窗 ---------- */
+  var overlay = document.getElementById("omOverlay");
+  var omBody = document.getElementById("omBody");
+  var omTitle = document.getElementById("omTitle");
+  var omClose = document.getElementById("omClose");
+  var flow = null;
+
+  function newIdemKey() {
+    try { if (window.crypto && typeof window.crypto.randomUUID === "function") return "web-" + window.crypto.randomUUID(); } catch (e) {}
+    return "web-" + Date.now() + "-" + String(Math.floor(Math.random() * 1e8));
+  }
+  function mkErr(status, message, payload) {
+    var e = new Error(message || "请求失败");
+    e.status = status;
+    e.body = payload;
+    return e;
+  }
+  function errCode(err) { return err && err.body && err.body.code != null ? String(err.body.code) : ""; }
+
+  /* 带自定义头的 POST（下单必须 Idempotency-Key；EAPI.post 不支持额外头）。
+     shell 解包 / 401 语义与 EAPI.parseResponse 对齐；401 → EAPI.logout() 跳登录。 */
+  function postWithHeaders(path, payload, extra) {
+    var headers = { "Content-Type": "application/json" };
+    var k;
+    for (k in (extra || {})) { if (Object.prototype.hasOwnProperty.call(extra, k)) headers[k] = extra[k]; }
+    var t = EAPI.store.getToken();
+    if (t) headers.Authorization = "Bearer " + t;
+    var ctrl = (typeof AbortController === "function") ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 20000) : null;
+    return fetch((EAPI.BASE || "") + path, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload),
+      signal: ctrl ? ctrl.signal : undefined,
+    }).then(function (resp) {
+      if (timer !== null) clearTimeout(timer);
+      return resp.text().then(function (text) {
+        var json = null;
+        try { json = text ? JSON.parse(text) : null; } catch (e) {}
+        if (resp.status === 401) { EAPI.logout(); throw mkErr(resp.status, "登录已过期，请重新登录", json); }
+        if (!resp.ok) throw mkErr(resp.status, (json && json.message) || ("HTTP " + resp.status), json);
+        if (json && typeof json === "object" && !Array.isArray(json) && json.code !== undefined) {
+          if (json.code === 0) return json.data;
+          throw mkErr(resp.status, json.message || ("请求失败（code=" + json.code + "）"), json);
+        }
+        return json;
+      });
+    }, function (e) {
+      if (timer !== null) clearTimeout(timer);
+      if (ctrl && ctrl.signal && ctrl.signal.aborted) throw mkErr(0, "下单请求超时（20s），请重试");
+      throw mkErr(0, "网络错误，请稍后重试");
+    });
+  }
+
+  function miniSkeleton() {
+    var box = el("div", "om-mini");
+    for (var i = 0; i < 3; i++) box.appendChild(el("div", "sk-line"));
+    return box;
+  }
+  function miniState(iconHtml, title, sub, retry) {
+    var box = el("div", "om-mini");
+    var ic = el("div", "");
+    ic.innerHTML = iconHtml;
+    box.appendChild(ic);
+    box.appendChild(el("div", "", title));
+    if (sub) box.appendChild(el("div", "", sub));
+    if (retry) {
+      var b = el("button", "cp-btn ghost", "重试");
+      b.addEventListener("click", retry);
+      box.appendChild(b);
+    }
+    return box;
+  }
+  function couponChip(c) { return el("span", "om-chip", (c.coupon_name || "优惠券") + " · " + faceText(c) + " · " + minText(c)); }
+
+  function openModal(coupon) {
+    if (!EAPI.store.getToken()) { location.replace(EAPI.buildLoginUrl("coupons.html")); return; }
+    flow = { coupon: coupon, step: "series", kw: "", page: 1, series: null, cohort: null, order: null, submitting: false, idemKey: newIdemKey() };
+    overlay.classList.add("open");
+    renderModal();
+  }
+  function closeModal() {
+    if (flow && flow.submitting) return; // 提交中禁止关闭（防重复下单：幂等键随弹窗会话持有）
+    overlay.classList.remove("open");
+    omBody.innerHTML = "";
+    flow = null;
+  }
+
+  /* 前端抵扣预估（与服务端 _compute_discount 同语义；仅展示用，实付以服务端核算为准） */
+  function estimate(price, c) {
+    if (!c) return 0;
+    var v = Number(c.face_value) || 0;
+    if (c.coupon_type === "discount") return v > 0 ? Math.round(price * (1 - v) * 100) / 100 : 0;
+    if (c.coupon_type === "trial" || c.coupon_type === "gift") return 0;
+    return v;
+  }
+
+  function renderModal() {
+    if (!flow) return;
+    omTitle.textContent = "使用优惠券下单 · " + (flow.coupon.coupon_name || "优惠券");
+    omBody.innerHTML = "";
+    if (flow.step === "series") renderSeriesStep();
+    else if (flow.step === "cohorts") renderCohortsStep();
+    else if (flow.step === "confirm") renderConfirmStep();
+    else renderSuccessStep();
+  }
+
+  /* step 1：选课程系列（GET /api/series，仅展示 on_sale） */
+  function renderSeriesStep() {
+    omBody.appendChild(couponChip(flow.coupon));
+    var search = el("div", "om-search");
+    var inp = el("input");
+    inp.type = "search";
+    inp.placeholder = "输入课程系列关键词（如：编程）";
+    inp.setAttribute("aria-label", "课程系列关键词");
+    inp.value = flow.kw;
+    var sb = el("button", "cp-btn", "搜索");
+    search.appendChild(inp);
+    search.appendChild(sb);
+    omBody.appendChild(search);
+    var box = el("div", "");
+    omBody.appendChild(box);
+    function doSearch() { flow.kw = inp.value.trim(); flow.page = 1; loadSeries(box); }
+    sb.addEventListener("click", doSearch);
+    inp.addEventListener("keydown", function (e) { if ((e.key || "") === "Enter") doSearch(); });
+    loadSeries(box);
+  }
+  function loadSeries(box) {
+    box.innerHTML = "";
+    box.appendChild(miniSkeleton());
+    var q = "?page=" + flow.page + "&page_size=8" + (flow.kw ? "&keyword=" + encodeURIComponent(flow.kw) : "");
+    EAPI.get("/api/series" + q).then(function (data) {
+      var items = (data && data.items ? data.items : []).filter(function (s) { return (s.sale_status || "") === "on_sale"; });
+      var total = (data && data.total) || 0;
+      box.innerHTML = "";
+      if (!items.length) {
+        box.appendChild(miniState('<svg class="ic" aria-hidden="true"><use href="#ic-magnifying-glass"/></svg>', "没有可下单的课程系列", flow.kw ? "换个关键词试试" : "课程系列暂未上架在售"));
+        return;
+      }
+      var list = el("div", "pick-list");
+      items.forEach(function (s) {
+        var it = el("button", "pick-item");
+        it.type = "button";
+        var main = el("div", "pk-main");
+        main.appendChild(el("div", "pk-name", s.series_name || ("系列 #" + s.id)));
+        main.appendChild(el("div", "pk-sub", "在售 · 班次价 " + fmt(s.min_price) + " 元起"));
+        it.appendChild(main);
+        it.appendChild(el("span", "pk-price", "¥" + fmt(s.min_price)));
+        it.addEventListener("click", function () {
+          flow.series = s;
+          flow.cohort = null;
+          flow.step = "cohorts";
+          renderModal();
+        });
+        list.appendChild(it);
+      });
+      box.appendChild(list);
+      if (total > 8) {
+        var pg = el("div", "om-pager");
+        var prev = el("button", "", "‹ 上一页"); prev.type = "button";
+        var info = el("span", "pg-info", "第 " + flow.page + " 页 · 共 " + total + " 个系列");
+        var next = el("button", "", "下一页 ›"); next.type = "button";
+        prev.disabled = flow.page <= 1;
+        next.disabled = flow.page * 8 >= total;
+        prev.addEventListener("click", function () { if (flow.page > 1) { flow.page -= 1; loadSeries(box); } });
+        next.addEventListener("click", function () { if (flow.page * 8 < total) { flow.page += 1; loadSeries(box); } });
+        pg.appendChild(prev); pg.appendChild(info); pg.appendChild(next);
+        box.appendChild(pg);
+      }
+    }).catch(function (err) {
+      box.innerHTML = "";
+      box.appendChild(miniState('<svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg>', "课程系列加载失败", (err && err.message) || "网络错误", function () { loadSeries(box); }));
+    });
+  }
+
+  /* step 2：选班次（GET /api/series/{id}/cohorts，yn=1 且未满员可选） */
+  function renderCohortsStep() {
+    omBody.appendChild(couponChip(flow.coupon));
+    var back = el("button", "om-back", "‹ 重选课程系列");
+    back.type = "button";
+    back.addEventListener("click", function () { flow.step = "series"; renderModal(); });
+    omBody.appendChild(back);
+    omBody.appendChild(el("div", "om-chip", (flow.series.series_name || ("系列 #" + flow.series.id))));
+    var box = el("div", "");
+    omBody.appendChild(box);
+    loadCohorts(box);
+  }
+  function loadCohorts(box) {
+    box.innerHTML = "";
+    box.appendChild(miniSkeleton());
+    EAPI.get("/api/series/" + encodeURIComponent(flow.series.id) + "/cohorts").then(function (data) {
+      var items = (data && data.items ? data.items : []).filter(function (c) { return Number(c.yn) === 1; });
+      box.innerHTML = "";
+      if (!items.length) {
+        box.appendChild(miniState('<svg class="ic" aria-hidden="true"><use href="#ic-info"/></svg>', "该系列暂无可报名班次", "可返回重选其它课程系列"));
+        return;
+      }
+      var list = el("div", "pick-list");
+      items.forEach(function (c) {
+        var full = Number(c.current_student_count) >= Number(c.max_student_count);
+        var it = el("button", "pick-item");
+        it.type = "button";
+        if (full) it.disabled = true;
+        var seats = Math.max(0, Number(c.max_student_count) - Number(c.current_student_count));
+        var main = el("div", "pk-main");
+        main.appendChild(el("div", "pk-name", c.cohort_name || c.cohort_code || ("班次 #" + c.id)));
+        main.appendChild(el("div", "pk-sub", (c.cohort_code || "—") + " · " + d10(c.start_date) + " 开班 · 余位 " + seats + (full ? "（已满员）" : "")));
+        it.appendChild(main);
+        it.appendChild(el("span", "pk-price", "¥" + fmt(c.sale_price)));
+        it.addEventListener("click", function () {
+          if (full) return;
+          flow.cohort = c;
+          flow.step = "confirm";
+          renderModal();
+        });
+        list.appendChild(it);
+      });
+      box.appendChild(list);
+    }).catch(function (err) {
+      box.innerHTML = "";
+      box.appendChild(miniState('<svg class="ic" aria-hidden="true"><use href="#ic-warning"/></svg>', "班次加载失败", (err && err.message) || "网络错误", function () { loadCohorts(box); }));
+    });
+  }
+
+  /* step 3：确认 + 提交订单（POST /api/trade/order，Idempotency-Key） */
+  function renderConfirmStep() {
+    omBody.appendChild(couponChip(flow.coupon));
+    var back = el("button", "om-back", "‹ 重选班次");
+    back.type = "button";
+    back.addEventListener("click", function () { flow.step = "cohorts"; renderModal(); });
+    omBody.appendChild(back);
+
+    var price = Number(flow.cohort.sale_price) || 0;
+    var cp = flow.coupon;
+    var est = estimate(price, cp);
+    var minSpend = Number(cp.min_spend) || 0;
+    var belowMin = minSpend > 0 && price < minSpend;
+    var payable = Math.max(0, price - est);
+
+    var rows = el("div", "om-rows");
+    function row(label, val, cls) {
+      var r = el("div", "om-row" + (cls ? " " + cls : ""));
+      r.appendChild(el("span", "", label));
+      r.appendChild(el("b", "", val));
+      return r;
+    }
+    rows.appendChild(row("课程系列", flow.series.series_name || ("系列 #" + flow.series.id)));
+    rows.appendChild(row("班次", (flow.cohort.cohort_name || flow.cohort.cohort_code || ("班次 #" + flow.cohort.id))));
+    rows.appendChild(row("班次价格", "¥" + fmt(price)));
+    rows.appendChild(row("优惠券抵扣（预估）", "-" + fmt(est) + "（" + (TYPE_LABEL[cp.coupon_type] || cp.coupon_type || "—") + "）"));
+    rows.appendChild(row("预估实付", "¥" + fmt(payable), "total"));
+    omBody.appendChild(rows);
+
+    if (belowMin) {
+      var warn = el("div", "om-msg warn");
+      warn.textContent = "该券满 ¥" + fmt(minSpend) + " 可用，当前班次 ¥" + fmt(price) + " 未达门槛，请返回选择价格更高的班次";
+      omBody.appendChild(warn);
+    }
+    var note = el("div", "om-note");
+    note.textContent = "抵扣金额为页面预估，以下单接口服务端核算为准（金额服务端重算，防篡改）。下单成功后优惠券立即核销。";
+    omBody.appendChild(note);
+
+    var msg = el("div", "om-msg");
+    omBody.appendChild(msg);
+
+    var submit = el("button", "cp-btn", belowMin ? "提交订单" : "提交订单（预估实付 ¥" + fmt(payable) + "）");
+    submit.style.alignSelf = "center";
+    if (belowMin) submit.disabled = true;
+    submit.addEventListener("click", function () {
+      if (flow.submitting) return;
+      flow.submitting = true;
+      var old = submit.textContent;
+      submit.disabled = true;
+      submit.textContent = "提交中…";
+      postWithHeaders(
+        "/api/trade/order",
+        { series_id: flow.series.id, cohort_id: flow.cohort.id, coupon_id: flow.coupon.coupon_id },
+        { "Idempotency-Key": flow.idemKey }
+      ).then(function (order) {
+        flow.order = order;
+        flow.submitting = false;
+        flow.step = "success";
+        refreshAfterChange(); // 券已核销：静默刷新我的券列表与角标
+        renderModal();
+      }).catch(function (err) {
+        flow.submitting = false;
+        submit.disabled = false;
+        submit.textContent = old;
+        msg.className = "om-msg err";
+        msg.textContent = ((err && err.message) || "下单失败，请稍后重试") + (errCode(err) ? "（错误码 " + errCode(err) + "）" : "");
+      });
+    });
+    omBody.appendChild(submit);
+  }
+
+  /* step 4：成功（展示真实订单号） */
+  function renderSuccessStep() {
+    var o = flow.order || {};
+    var box = el("div", "om-success");
+    var okIc = el("div", "");
+    okIc.innerHTML = '<svg class="ic" aria-hidden="true" style="width:34px;height:34px"><use href="#ic-check-circle"/></svg>';
+    box.appendChild(okIc);
+    box.appendChild(el("h3", "", "下单成功"));
+    var no = el("div", "om-no", o.order_no || "—");
+    no.setAttribute("aria-label", "订单号");
+    box.appendChild(no);
+    var rows = el("div", "om-rows");
+    function row(label, val) {
+      var r = el("div", "om-row");
+      r.appendChild(el("span", "", label));
+      r.appendChild(el("b", "", val));
+      return r;
+    }
+    rows.appendChild(row("课程系列", flow.series.series_name || "—"));
+    rows.appendChild(row("班次", flow.cohort.cohort_name || flow.cohort.cohort_code || "—"));
+    rows.appendChild(row("订单金额", "¥" + fmt(o.order_amount)));
+    rows.appendChild(row("券抵扣", "-" + fmt(o.discount_amount)));
+    rows.appendChild(row("实付金额", "¥" + fmt(o.pay_amount)));
+    rows.appendChild(row("订单状态", ORDER_STATUS_LABEL[o.status] || o.status || "—"));
+    box.appendChild(rows);
+    box.appendChild(el("div", "om-note", "优惠券已核销（可在「已使用」查看）；订单可在「个人中心 → 我的订单」跟进支付与售后。"));
+    var acts = el("div", "om-actions");
+    var go = el("a", "btn", "查看我的订单");
+    go.href = "me.html";
+    var done = el("button", "cp-btn ghost", "完成");
+    done.addEventListener("click", closeModal);
+    acts.appendChild(go);
+    acts.appendChild(done);
+    box.appendChild(acts);
+    omBody.appendChild(box);
+  }
+
+  omClose.addEventListener("click", closeModal);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", function (e) {
+    var k = e.key || "";
+    if ((k === "Escape" || k === "Esc") && overlay.classList.contains("open")) closeModal();
+  });
+
+  window.couponsOrder = { open: openModal };
+  ensureHeld(); // 页面加载即预热已持券快照（重复领取判重依据）
+  loadTemplates(true);
+})();
+</script>
+<script>
+/* admin 角色显示管理后台入口（对齐 me.html） */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
