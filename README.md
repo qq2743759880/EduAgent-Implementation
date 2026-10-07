@@ -101,7 +101,7 @@ LangGraph 控制九节点流程，六个核心节点委托 SixNodeHarness 实现
 
 <table><tr><td width="50%"><b>基础设施与技术演示</b><br><img src="assets/page-gallery/admin-infra.jpg" alt="基础设施与技术演示：匿名化离线页面预览" width="560"></td></tr></table>
 
-下载后可直接打开 [完整 HTML 展示入口](showcase/index.html)，进一步体验界面。也可在仓库根目录运行 `python -m http.server 18010`，访问 `http://127.0.0.1:18010/showcase/index.html`。静态页面不依赖业务后端。
+下载后可直接打开 [完整 HTML 展示入口](showcase/index.html) 和 [离线页面说明](showcase/README.md)，进一步体验界面。也可在仓库根目录运行 `python -m http.server 18010`，访问 `http://127.0.0.1:18010/showcase/index.html`。静态页面不依赖业务后端。
 
 ## 功能全景与验证边界
 
