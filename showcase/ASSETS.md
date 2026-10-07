@@ -497,3 +497,10 @@
 - [pdf-rag](../assets/showcase-evidence/pdf-rag.png)
 - [quiz](../assets/showcase-evidence/quiz.png)
 - [student-answer](../assets/showcase-evidence/student-answer.png)
+
+## 可编辑架构原件
+
+- [服务与存储的 C4 语义源文件](../docs/architecture/c4-containers.mmd)
+- [系统上下文的 C4 语义源文件](../docs/architecture/c4-context.mmd)
+
+这两份是保留的制图源文件；对应架构已直接展示在主页，不需要打开源文件才能阅读。
