@@ -1,0 +1,979 @@
+"""
+P2 问答 Service：会话/消息持久化 + 检索 + 生成 编排。
+
+设计：
+- 所有 SQL 字段与 patch_chat_tables.sql 一致；字段缺失时接口不 500（由 SQL 先补列）
+- 会话 session_id / 消息 message_id 都用短 uuid（可前端直接展示）
+- 写操作全部走 aiomysql transaction 上下文；读操作 fetch_one/fetch_all 直接用
+- 强约束：任何 session/消息都绑定 user_id；跨用户访问会抛 ValidationError，由 router 转 403
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import time
+import uuid
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+
+from app.admin.rag_admin.service import insert_audit_log as _rag_insert_audit_log
+from app.auth import UserRole
+from app.chat.generator import GenerationOutcome, generate_answer, generate_stream
+from app.chat.retriever import RetrievalBundle, retrieve_three_channel
+from app.ai.graph import run_agent as run_langgraph_agent
+from app.chat.schemas import (
+    ChatMessage,
+    ChatSession,
+    ChatSessionCreate,
+    GraphEntity,
+    MCPToolCallSummary,
+    RagAnswerResponse,
+    RagQueryRequest,
+    RagSearchOnlyRequest,
+    RetrievedDoc,
+)
+from app.chat.tool_calling import run_chat_tool_calls
+from app.chat.flows.agent import run_agent_turn
+from app.chat.receipt_guard import TOOL_RECEIPT_FLAG, apply_tool_receipt_guard
+from app.common.exceptions import NotFoundError, ValidationError
+from app.common.logging import logger
+from app.config import settings
+from app.database import execute_write, fetch_all, fetch_one, transaction
+
+
+# ============================================================
+# 1. 会话：创建 / 列表 / 历史
+# ============================================================
+def _new_session_id() -> str:
+    return "s_" + uuid.uuid4().hex[:12]
+
+
+def _new_message_id() -> str:
+    return "m_" + uuid.uuid4().hex[:12]
+
+
+_MICROSECOND_STEP = timedelta(milliseconds=1)
+
+
+async def create_session(user_id: int, req: ChatSessionCreate | None = None) -> ChatSession:
+    """创建会话：title 默认用空串（等第 1 条 question 自动回填）。"""
+    req = req or ChatSessionCreate()
+    session_id = _new_session_id()
+    title = (req.title or "").strip() or f"新会话 {session_id[-6:]}"
+    now = datetime.now()
+    insert_sql = """
+        INSERT INTO chat_session
+        (session_id, user_id, title, visibility, message_count, last_message_at, created_at, updated_at, yn)
+        VALUES
+        (%s, %s, %s, %s, %s, %s, %s, %s, 1)
+    """
+    async with transaction() as (_conn, cur):
+        # 事务内必须用共享 cur 执行，禁止嵌套 execute_write()（独立连接+自动提交，task04 #1 根因）
+        await cur.execute(
+            insert_sql,
+            (
+                session_id,
+                int(user_id),
+                title,
+                req.visibility,
+                0,
+                None,
+                now,
+                now,
+            ),
+        )
+    return ChatSession(
+        session_id=session_id,
+        user_id=int(user_id),
+        title=title,
+        visibility=req.visibility,
+        message_count=0,
+        last_message_at=None,
+        created_at=now,
+        updated_at=now,
+        yn=1,
+    )
+
+
+async def _ensure_session_owner(session_id: str, user_id: int, role: UserRole) -> ChatSession:
+    """Pilot 禁止管理员跨用户访问；其它角色始终只能访问本人会话。"""
+    row = await fetch_one(
+        "SELECT * FROM chat_session WHERE session_id = %s AND yn = 1 LIMIT 1",
+        (session_id,),
+    )
+    if row is None:
+        raise NotFoundError("会话", session_id)
+    owner_uid = int(row["user_id"])
+    pilot_admin_owner_only = (
+        role is UserRole.ADMIN
+        and str(getattr(settings, "ENV_NAME", "local")).strip().lower() == "pilot"
+    )
+    if owner_uid != int(user_id) and (role is not UserRole.ADMIN or pilot_admin_owner_only):
+        raise ValidationError("无权限访问该会话", detail="CHAT_SESSION_FORBIDDEN")
+    return ChatSession(
+        session_id=row["session_id"],
+        user_id=owner_uid,
+        title=row["title"],
+        visibility=row["visibility"],
+        message_count=int(row["message_count"] or 0),
+        last_message_at=row["last_message_at"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        yn=int(row["yn"] or 1),
+    )
+
+
+async def list_sessions(user_id: int, role: UserRole, *, limit: int = 50) -> list[ChatSession]:
+    """会话列表：按 last_message_at 倒序（再 created_at 倒序）。
+
+    [FEAT-WIRE-V2 #8 隔离修复] 旧版 admin 角色返回全库所有用户会话（"admin 全局"），
+    用户实测缺陷：管理员对话列表混入他人会话。现一律按当前 user_id 过滤；
+    admin 全局审计视图应另立管理端页面（FEAT-WIRE-V2 登记，本单不做）。"""
+    rows = await fetch_all(
+        "SELECT * FROM chat_session WHERE yn = 1 AND user_id = %s ORDER BY last_message_at DESC, created_at DESC LIMIT %s",
+        (int(user_id), limit),
+    )
+    return [
+        ChatSession(
+            session_id=r["session_id"],
+            user_id=int(r["user_id"]),
+            title=r["title"],
+            visibility=r["visibility"],
+            message_count=int(r["message_count"] or 0),
+            last_message_at=r["last_message_at"],
+            created_at=r["created_at"],
+            updated_at=r["updated_at"],
+            yn=int(r["yn"] or 1),
+        )
+        for r in rows
+    ]
+
+
+async def delete_session(user_id: int, session_id: str, role: UserRole) -> None:
+    """
+    软删会话（R-2 补丁，红线约束 12：禁止物理 DELETE）。
+
+    - 归属校验复用 _ensure_session_owner：Pilot 中包括 admin 在内的所有角色都必须是本人（否则 ValidationError(CHAT_SESSION_FORBIDDEN) → 403）；
+      会话不存在或已软删（yn=0）→ NotFoundError → 404（重复删除天然 404，幂等语义）。
+    - 删除后 list_sessions / get_session_history 均已过滤 yn=1，会话即刻从列表与历史查询消失。
+    - 与流式落库竞态（task05 #4，已知接受）：删除与 LLM 回答落库并发时，落库的
+      update_session_sql 带 `AND yn = 1` 会空更新 → 已删会话残留孤儿消息行（chat_message 有行、
+      计数不 bump）；API 层均按 yn=1 过滤不可见，无数据泄漏，低概率、无用户可见后果，不修复。
+    """
+    await _ensure_session_owner(session_id, user_id, role)
+    await execute_write(
+        "UPDATE chat_session SET yn = 0, updated_at = %s WHERE session_id = %s AND yn = 1",
+        (datetime.now(), session_id),
+    )
+
+
+async def get_session_history(
+    session_id: str,
+    user_id: int,
+    role: UserRole,
+    *,
+    limit: int = 200,
+) -> list[ChatMessage]:
+    """按时间正序返回会话消息（前端渲染整个会话用）。"""
+    await _ensure_session_owner(session_id, user_id, role)
+    rows = await fetch_all(
+        "SELECT * FROM chat_message WHERE session_id = %s ORDER BY created_at ASC, message_id ASC LIMIT %s",
+        (session_id, limit),
+    )
+    return [_row_to_message(r) for r in rows]
+
+
+def _row_to_message(r: dict) -> ChatMessage:
+    return ChatMessage(
+        message_id=r["message_id"],
+        session_id=r["session_id"],
+        user_id=int(r["user_id"]),
+        role=r["role"],
+        content=r["content"] or "",
+        rag_query_rewrite=r.get("rag_query_rewrite"),
+        rag_retrieved_count=int(r["rag_retrieved_count"]) if r.get("rag_retrieved_count") is not None else None,
+        rag_final_count=int(r["rag_final_count"]) if r.get("rag_final_count") is not None else None,
+        rag_docs_json=r.get("rag_docs_json"),
+        rag_error=r.get("rag_error"),
+        latency_ms=int(r["latency_ms"]) if r.get("latency_ms") is not None else None,
+        # --- P8 MCP ---
+        mcp_tool_calls_json=r.get("mcp_tool_calls_json"),
+        mcp_called_count=int(r["mcp_called_count"]) if r.get("mcp_called_count") is not None else None,
+        created_at=r["created_at"],
+    )
+
+
+# ============================================================
+# 2. 历史窗口：给 generator 提示词用（最近 N 轮 user+assistant 对）
+# ============================================================
+async def _history_window(
+    session_id: str | None,
+    user_id: int,
+    role: UserRole,
+    *,
+    include_history: int,
+) -> list[tuple[str, str]]:
+    """include_history = 轮数，每轮 2 条消息。返回正序 [(role, content)]。"""
+    if not session_id or include_history <= 0:
+        return []
+    all_msgs = await get_session_history(session_id, user_id, role, limit=include_history * 4)
+    # 只取最近的 N 对（最后 2*N 条内，去除 system）
+    filtered = [(m.role, m.content) for m in all_msgs if m.role in ("user", "assistant")]
+    return filtered[-include_history * 2 :]
+
+
+# ============================================================
+# 3. 写入消息 & 更新会话计数
+# ============================================================
+async def _append_messages_and_bump_session(
+    session: ChatSession,
+    *,
+    user_msg: ChatMessage,
+    assistant_msg: ChatMessage | None,
+) -> None:
+    now = datetime.now()
+    # title 回填：如果当前会话 title 还是 create_session 的默认「新会话 xxx」（create_session 默认
+    # title = f"新会话 {session_id[-6:]}"，末尾是 uuid hex 字符，永远不含 "s_"，故用前缀「新会话 」匹配），
+    # 用第 1 条 question 前 30 字回填（task05 修正轮：原 startswith("新会话 s_") 恒 False，回填永不触发）
+    new_title = session.title
+    if new_title.startswith("新会话 ") and user_msg.role == "user":
+        new_title = (user_msg.content.strip() or new_title).replace("\n", " ")[:30].strip() or new_title
+
+    inc = 1 if assistant_msg is None else 2
+    new_count = int(session.message_count) + inc
+
+    insert_user_sql = """
+        INSERT INTO chat_message
+        (message_id, session_id, user_id, role, content,
+         rag_query_rewrite, rag_retrieved_count, rag_final_count, rag_docs_json, rag_error, latency_ms,
+         mcp_tool_calls_json, mcp_called_count,
+         created_at)
+        VALUES
+        (%s,%s,%s,%s,%s, %s,%s,%s,%s,%s,%s, %s,%s, %s)
+    """
+    insert_assistant_sql = insert_user_sql
+    update_session_sql = """
+        UPDATE chat_session
+        SET title = %s, message_count = %s, last_message_at = %s, updated_at = %s
+        WHERE session_id = %s AND yn = 1
+    """
+    # 竞态说明（task05 #4，已知接受，不修复）：`AND yn = 1` 使「删除会话」与「流式回答落库」
+    # 并发时本 UPDATE 空更新（消息已写入 chat_message 但计数不 bump，孤儿消息行）。已删会话在
+    # 列表/历史 API 均按 yn=1 过滤不可见，无用户可见后果，仅留脏数据行；低概率，注释说明即可。
+    async with transaction() as (_conn, cur):
+        # 事务内必须用共享 cur 执行，禁止嵌套 execute_write()（独立连接+自动提交，task04 #1 根因）
+        await cur.execute(
+            insert_user_sql,
+            (
+                user_msg.message_id, user_msg.session_id, int(user_msg.user_id), user_msg.role, user_msg.content,
+                user_msg.rag_query_rewrite, user_msg.rag_retrieved_count, user_msg.rag_final_count,
+                user_msg.rag_docs_json, user_msg.rag_error, user_msg.latency_ms,
+                # P8 MCP：user 侧始终为空
+                None, None,
+                user_msg.created_at,
+            ),
+        )
+        if assistant_msg is not None:
+            await cur.execute(
+                insert_assistant_sql,
+                (
+                    assistant_msg.message_id, assistant_msg.session_id, int(assistant_msg.user_id), assistant_msg.role, assistant_msg.content,
+                    assistant_msg.rag_query_rewrite, assistant_msg.rag_retrieved_count, assistant_msg.rag_final_count,
+                    assistant_msg.rag_docs_json, assistant_msg.rag_error, assistant_msg.latency_ms,
+                    # P8 MCP
+                    assistant_msg.mcp_tool_calls_json, assistant_msg.mcp_called_count,
+                    assistant_msg.created_at,
+                ),
+            )
+        await cur.execute(
+            update_session_sql,
+            (new_title, new_count, now, now, session.session_id),
+        )
+
+
+# ============================================================
+# 4. 主编排：search_only / chat_answer / chat_stream
+# ============================================================
+async def search_only(
+    req: RagSearchOnlyRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+) -> tuple[list[RetrievedDoc], list[GraphEntity], int, str | None, str | None]:
+    """仅检索，不落库。返回 (final_docs, graph, raw_count, rewrite, degraded)。"""
+    bundle: RetrievalBundle = await retrieve_three_channel(
+        req.query,
+        user_id=int(user_id),
+        role=role,
+        use_hyde=req.use_hyde,
+        enable_graph=req.enable_graph,
+        top_k=int(req.top_k),
+        final_max_k=int(req.final_max_k),
+        cutoff_drop_ratio=float(req.cutoff_drop_ratio),
+        caller="flows_agent_legacy",
+    )
+    return bundle.docs, bundle.graph_entities, bundle.raw_retrieved_count, bundle.rewrite_query, bundle.degraded_reason
+
+
+async def _retrieve_and_bundle_for_chat(
+    req: RagQueryRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+) -> RetrievalBundle:
+    return await retrieve_three_channel(
+        req.query,
+        user_id=int(user_id),
+        role=role,
+        use_hyde=req.use_hyde,
+        enable_graph=req.enable_graph,
+        top_k=int(req.top_k),
+        final_max_k=int(req.final_max_k),
+        cutoff_drop_ratio=float(req.cutoff_drop_ratio),
+        caller="flows_agent_legacy",
+    )
+
+
+@dataclass(frozen=True)
+class _VideoPublicationAuthority:
+    video_id: int
+    publication: dict | None
+
+
+_VIDEO_PUBLICATION_AUTHORITY_KEY = "_course_video_publication_authority"
+
+
+async def _resolve_video_publication(context: dict) -> dict | None:
+    """Cache one server-side publication lookup inside the authorized request context."""
+    video_id = (context.get("video") or {}).get("video_id")
+    if video_id is None:
+        return None
+    authority = context.get(_VIDEO_PUBLICATION_AUTHORITY_KEY)
+    if isinstance(authority, _VideoPublicationAuthority) and authority.video_id == video_id:
+        return authority.publication
+    from app.domains.video_learning.publication import get_video_publication
+
+    publication = await get_video_publication(int(video_id))
+    context[_VIDEO_PUBLICATION_AUTHORITY_KEY] = _VideoPublicationAuthority(int(video_id), publication)
+    return publication
+
+
+def _has_published_video_context(context: dict | None) -> bool:
+    if context is None:
+        return False
+    authority = context.get(_VIDEO_PUBLICATION_AUTHORITY_KEY)
+    video_id = (context.get("video") or {}).get("video_id")
+    return (isinstance(authority, _VideoPublicationAuthority) and authority.video_id == video_id
+            and authority.publication is not None)
+
+
+async def _retrieve_study_context_bundle(
+    req: RagQueryRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+    context: dict,
+    context_query: str,
+) -> RetrievalBundle:
+    """Apply the authorized lesson scope before ANN, then preserve bounded video evidence."""
+    from app.chat.retrieval_filter import StudyRetrievalScope
+
+    video_id = (context.get("video") or {}).get("video_id")
+    publication = await _resolve_video_publication(context)
+    published_video = publication is not None
+    scope = StudyRetrievalScope(
+        series_id=int(context["series_id"]), series_code=str(context["series_code"]),
+        session_id=int(context["session_id"]) if video_id is not None else None,
+        video_id=int(video_id) if video_id is not None else None,
+        generation=publication["artifact_id"] if published_video else None,
+        artifact_sha256=publication["artifact_sha256"] if published_video else None,
+    )
+    bundle = await retrieve_three_channel(
+        context_query,
+        user_id=int(user_id),
+        role=role,
+        use_hyde=req.use_hyde,
+        enable_graph=False,
+        top_k=max(int(req.top_k), 24) if published_video else int(req.top_k),
+        # A video overview plus overlapping subtitles must not crowd out complete
+        # method chapters. Keep up to six chapters, then fill remaining video slots
+        # with distinct subtitle windows; other StudyContexts retain their cap.
+        # Eight video evidence slots plus the existing three course text slots.
+        final_max_k=11 if published_video else min(int(req.final_max_k), 3),
+        cutoff_drop_ratio=float(req.cutoff_drop_ratio),
+        # Retain shared multi-course questions; scope compilation matches CSV token boundaries.
+        tenant_ids_override=["course_public", "_default"],
+        caller="flows_agent_legacy",
+        study_scope=scope,
+        video_evidence_coverage=published_video,
+    )
+    # The scope independently admits bound non-video course knowledge and the
+    # exact READY video version. Applying a video-only predicate to every row
+    # here would discard legitimate shared questions and ordinary course notes.
+    scoped_docs = [d for d in bundle.docs if scope.matches(d)]
+    return RetrievalBundle(
+        docs=scoped_docs,
+        raw_retrieved_count=len(scoped_docs),
+        graph_entities=[],
+        rewrite_query=bundle.rewrite_query,
+        degraded_reason=bundle.degraded_reason,
+    )
+
+
+async def _resolve_chat_study_context(req: RagQueryRequest, user_id: int) -> tuple[dict | None, str]:
+    if not req.study_context_id:
+        return None, req.query
+    from app.domains.learning.study_context import resolve_study_context
+
+    context = await resolve_study_context(req.study_context_id, user_id)
+    # resolve_study_context revalidates enrollment and the current playable video.
+    # Ignore any serialized/client-shaped authority; only this request's DB lookup
+    # may enable the VideoCompiler evidence and prompt path.
+    context.pop(_VIDEO_PUBLICATION_AUTHORITY_KEY, None)
+    await _resolve_video_publication(context)
+    # Do not send personal learning history (wrong answers/goals), user/session
+    # identifiers, or private material names to the model. Course authorization
+    # is enforced by the server-side retriever, so the model needs only the query
+    # plus the capped, course-scoped retrieved documents.
+    return context, req.query
+
+
+async def _chat_history(req, context, user_id, role):
+    """Reuse dialogue only after binding its owned chat session to this authorized lesson."""
+    if context is not None:
+        if not req.session_id:
+            return []
+        from app.database import get_redis
+        from app.common.exceptions import AppException
+        redis = get_redis()
+        key = f"study_chat_scope:v1:{int(user_id)}:{req.session_id}"
+        value = str(int(context["session_id"]))
+        if await redis.set(key, value, nx=True, ex=14400):
+            # A previously ordinary conversation is not course context.
+            return []
+        bound = await redis.get(key)
+        if isinstance(bound, bytes):
+            bound = bound.decode("utf8")
+        if bound != value:
+            raise AppException("40330", "此答疑会话属于另一个课次，请从当前学习页重新进入", http_status=403)
+        await redis.expire(key, 14400)
+    return await _history_window(req.session_id, user_id, role, include_history=int(req.include_history))
+
+
+def _study_context_prompt_docs(docs: list[RetrievedDoc]) -> list[RetrievedDoc]:
+    """Keep course text for generation while stripping identifiers from the model prompt.
+
+    The original retrieval bundle remains intact for server-side citations and persistence.
+    """
+    return [
+        doc.model_copy(update={
+            "source_file": None,
+            "series_code": None,
+            "series_name": None,
+            "module_codes": [],
+        })
+        for doc in docs
+    ]
+
+
+def _generation_model(req: RagQueryRequest, study_context: dict | None) -> str:
+    """The internal Tutor tier is selected only after server-side context authorization."""
+    if study_context is not None and req.model == "fast" and settings.LLM_COURSE_TUTOR_MODEL.strip():
+        return "course_tutor"
+    return req.model
+
+
+async def chat_answer(
+    req: RagQueryRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+) -> RagAnswerResponse:
+    """非流式问答：检索（await）→ MCP 工具调用(可选) → 生成 → 落库 → 组装响应。"""
+    t0 = time.perf_counter()
+    # 1) 会话：若传了 session_id 则校验 owner；否则临时会话不落库
+    session: ChatSession | None = None
+    if req.session_id:
+        session = await _ensure_session_owner(req.session_id, user_id, role)
+
+    study_context, context_query = await _resolve_chat_study_context(req, user_id)
+    generation_model = _generation_model(req, study_context)
+    generation_outcome = GenerationOutcome()
+
+    # 2) 历史窗口
+    history_turns = await _chat_history(req, study_context, user_id, role)
+
+    # 3) LangGraph Agent（LLM 决策 → 检索/工具 → 循环 → 生成）
+    use_agent = bool(getattr(settings, "USE_AGENT_LOOP", True)) and study_context is None
+    # P2-9（dev-plan W2 R02 顺带修复）：plan 必须先初始化——USE_AGENT_LOOP=False 或
+    # agent 异常回退时，下方 `if plan is None` 原先引用未赋值变量 → UnboundLocalError。
+    plan = None
+    if use_agent:
+        try:
+            agent_result = await run_langgraph_agent(
+                query=req.query,
+                user_id=int(user_id),
+                session_id=(session.session_id if session else None),
+            )
+            answer = agent_result["answer"]
+            # task39 GWT②：agent 链路的 degraded_reason（如 answer 节点 llm_failed、
+            # reflect 达上限的 reflect_max_iter）此前被硬编码 None 丢弃 →
+            # LLM 宕机时用户拿到的是规则兜底答案，却**看不到任何降级标识**，
+            # 违反 §6.4「所有降级点写 degraded_reason + 前端展示部分功能降级中」。
+            _agent_deg = agent_result.get("degraded_reason") or None
+            bundle = RetrievalBundle(
+                docs=[RetrievedDoc(**d) for d in agent_result.get("docs", [])],
+                raw_retrieved_count=len(agent_result.get("docs", [])),
+                graph_entities=[GraphEntity(**g) for g in agent_result.get("graph_entities", [])],
+                rewrite_query=req.query,
+                degraded_reason=_agent_deg,
+            )
+            # C-W1-③（AUTO20 T8）：六节点路径 MCP 工具执行凭据真实透传（原恒空——工具真实执行
+            # 但响应体零回执）。tool_results 为 graph.run_agent 回填的凭据 dict（call_id/tool_name/
+            # args/status/latency_ms/result_text），映射为 MCPToolCallSummary（复用既有 schema，
+            # 与旧回退路径 run_chat_tool_calls 产物同构）；映射失败降级为空不炸响应。
+            _raw_receipts = agent_result.get("tool_results", []) or []
+            mcp_summaries = []
+            for _r in _raw_receipts:
+                if not isinstance(_r, dict) or not str(_r.get("tool_name") or "").strip():
+                    continue
+                try:
+                    mcp_summaries.append(MCPToolCallSummary(
+                        call_id=str(_r.get("call_id") or ""),
+                        tool_name=str(_r.get("tool_name") or ""),
+                        args_summary=str(json.dumps(_r.get("args") or {}, ensure_ascii=False, default=str))[:200],
+                        status="success" if str(_r.get("status")) == "success" else "error",
+                        latency_ms=int(_r.get("latency_ms") or 0),
+                        result_summary=str(_r.get("result_text") or "")[:400],
+                    ))
+                except Exception:
+                    continue
+            plan = type("Plan", (), {"need_search": True, "query_rewrite": req.query})()
+        except Exception as exc:
+            logger.warning(f"[P2 chat_answer] LangGraph Agent 异常，回退检索先行：{type(exc).__name__}: {exc}")
+            plan = None
+    if plan is None:
+        if study_context is not None:
+            bundle = await _retrieve_study_context_bundle(
+                req, user_id=user_id, role=role, context=study_context, context_query=context_query,
+            )
+        else:
+            bundle = await _retrieve_and_bundle_for_chat(req, user_id=user_id, role=role)
+        # 回退路径：用旧版 generate_answer
+        answer = None
+
+    # 检索改写后的 query
+    gen_query = (plan.query_rewrite if plan and plan.query_rewrite else req.query)
+
+    # LangGraph Agent 已经完成了全部流程（检索+工具+生成），跳过旧版 MCP 和 generate_answer
+    if answer is None:
+        # 旧版回退路径：MCP 工具调用 → generate_answer
+        mcp_summaries: list[MCPToolCallSummary] = []
+        mcp_context = ""
+        mcp_degraded: str | None = None
+        try:
+            mcp_summaries, mcp_context, mcp_degraded = await run_chat_tool_calls(
+                query=context_query if study_context is not None else gen_query,
+                operator_user_id=int(user_id),
+                session_id=(session.session_id if session else None),
+                use_mcp_flag=bool(study_context is None and req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
+            )
+        except Exception as exc:
+            logger.warning(f"[P2 chat_answer] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
+            # CR-WNEXT2-exc-classname-leak-remaining：degraded_reason 进用户可见文案，去异常类名
+            mcp_degraded = "MCP 工具阶段异常，已跳过（详见服务端日志）"
+
+        answer, merged_deg_raw = await generate_answer(
+            query=context_query if study_context is not None else gen_query,
+            docs=_study_context_prompt_docs(bundle.docs) if study_context is not None else bundle.docs,
+            graph_entities=bundle.graph_entities,
+            history_turns=history_turns,
+            model=generation_model,
+            degraded_reason=bundle.degraded_reason,
+            mcp_context=mcp_context,
+            strict_rag=(plan.need_search if plan else True),
+            outcome=generation_outcome,
+            course_grounded=study_context is not None,
+            course_context=study_context,
+        )
+        merged_deg = "；".join([x for x in [merged_deg_raw, mcp_degraded] if x]) or None
+    else:
+        # LangGraph Agent 已生成答案
+        # task39 GWT②：不再硬编码 None —— 透传 agent 的降级原因（llm_failed 等），
+        # 使「降级答案」对用户可见，且 edu_degraded_total 与响应体口径一致。
+        merged_deg = bundle.degraded_reason or None
+        mcp_context = ""
+        # C-W1-③（AUTO20 T8）：mcp_summaries 已在上方 agent 分支由 tool_results 映射填充
+        # （六节点路径真执行凭据）——原 `mcp_summaries = []` 硬清空是 C-W1-③ 恒空的第二断点，
+        # 禁删（删掉即回退为恒空）。
+        if not isinstance(mcp_summaries, list):
+            mcp_summaries = []
+    latency_ms = int((time.perf_counter() - t0) * 1000)
+    # 如果工具成功调用且结果存在，把 answer 开头补一段（本地规则兜底时 LLM 看不到 MCP 片段会被降级，这里显式拼接摘要）
+    if mcp_summaries and "fallback_rule" in (merged_deg or ""):
+        success_lines = [f"- 工具 {s.tool_name}：{s.result_summary}" for s in mcp_summaries if s.status == "success"]
+        if success_lines:
+            answer = "【工具调用摘要】\n" + "\n".join(success_lines) + "\n\n" + answer
+
+    # Record the selected internal tier while retaining the existing fallback marker.
+    llm_model_used = "fallback_rule" if (merged_deg and ("LLM 调用失败" in merged_deg or "规则兜底" in merged_deg)) else (generation_outcome.model_tier or generation_model)
+
+    # 4.05) F-W1-GUARD（AUTO20 T7，C-W1-②）：答案层写类回执机检护栏——
+    #  答案提及写类完成语义 ∧ 无 success 工具凭据 → 追加诚实修正句 + tool_receipt_unverified=True。
+    #  只加提示不改写原答案；有真实凭据零变化（详见 app/chat/receipt_guard.py）。
+    answer, _receipt_unverified = apply_tool_receipt_guard(answer, mcp_tool_calls=mcp_summaries)
+
+    # 5) 落库（若有会话）
+    message_id_user: str | None = None
+    message_id_assistant: str | None = None
+    mcp_json_s: str | None = None
+    mcp_called_count_val: int | None = None
+    if mcp_summaries:
+        try:
+            mcp_json_s = json.dumps([s.model_dump() for s in mcp_summaries], ensure_ascii=False)
+        except Exception:
+            mcp_json_s = None
+        mcp_called_count_val = len(mcp_summaries)
+
+    if session is not None:
+        now = datetime.now()
+        user_created_at = now
+        try:
+            asst_created_at = now + _MICROSECOND_STEP
+        except Exception:
+            asst_created_at = now
+        user_msg = ChatMessage(
+            message_id=_new_message_id(),
+            session_id=session.session_id,
+            user_id=int(user_id),
+            role="user",
+            content=req.query,
+            created_at=user_created_at,
+        )
+        message_id_user = user_msg.message_id
+        asst_msg = ChatMessage(
+            message_id=_new_message_id(),
+            session_id=session.session_id,
+            user_id=int(user_id),
+            role="assistant",
+            content=answer,
+            rag_query_rewrite=bundle.rewrite_query,
+            rag_retrieved_count=int(bundle.raw_retrieved_count),
+            rag_final_count=int(len(bundle.docs)),
+            rag_docs_json=json.dumps([d.model_dump() for d in bundle.docs], ensure_ascii=False),
+            rag_error=merged_deg,
+            latency_ms=latency_ms,
+            # P8 MCP
+            mcp_tool_calls_json=mcp_json_s,
+            mcp_called_count=mcp_called_count_val,
+            created_at=asst_created_at,
+        )
+        await _append_messages_and_bump_session(session, user_msg=user_msg, assistant_msg=asst_msg)
+        message_id_assistant = asst_msg.message_id
+
+    # 6) 审计日志：任何会话/非会话、失败/降级情况都要写；失败不影响问答返回（insert_audit_log 内部已兜底告警）
+    await _rag_insert_audit_log(
+            user_id=int(user_id),
+            role=role,
+            query=req.query,
+            rewrite_query=bundle.rewrite_query,
+            retrieved_count=int(bundle.raw_retrieved_count),
+            final_count=int(len(bundle.docs)),
+            llm_model=llm_model_used,
+            latency_ms=int(latency_ms),
+            degraded_reason=merged_deg,
+            is_stream=False,
+            session_id=(session.session_id if session else None),
+            user_message_id=message_id_user,
+            assistant_message_id=message_id_assistant,
+        )
+
+    # task25 R7 / R01-b：会话结束异步记忆 ingest——R08 起传**完整对话窗**
+    # （会话历史轮 + 本轮 query/answer 成对，防上下文缺 assistant 半边），
+    # worker 内规则+LLM 抽取（显式触发/纠正/目标偏好 + 助手事实性陈述）。
+    # 不 await、不 try-raise：无论如何都不阻塞应答链路（GWT①④ 异步隔离）
+    # T9-C3：answer 为空串（LLM 空响应，sixnode.answer 仅异常兜底）→ 调用侧短路，不入记忆窗
+    if answer and answer.strip() and getattr(settings, "PERSONAL_MEMORY_INGESTION_ENABLED", True):
+        try:
+            from app.ai.memory.service import build_turn_window, enqueue_turn
+            window = build_turn_window(history_turns, query=req.query, answer=answer)
+            asyncio.create_task(enqueue_turn(int(user_id), messages=window))
+        except Exception:
+            pass
+
+    return RagAnswerResponse(
+        session_id=(session.session_id if session else None),
+        message_id=message_id_assistant,
+        answer=answer,
+        docs=bundle.docs,
+        graph_entities=bundle.graph_entities,
+        rewrite_query=bundle.rewrite_query,
+        retrieved_count=int(bundle.raw_retrieved_count),
+        final_count=int(len(bundle.docs)),
+        latency_ms=latency_ms,
+        degraded_reason=merged_deg,
+        mcp_tool_calls=mcp_summaries,
+        tool_receipt_unverified=_receipt_unverified,
+    )
+
+
+def make_stream_finalize(
+    *,
+    req: RagQueryRequest,
+    user_id: int,
+    role: UserRole,
+    session: ChatSession | None,
+    bundle: RetrievalBundle,
+    mcp_summaries: list[MCPToolCallSummary],
+    mcp_degraded: str | None,
+    t0: float,
+    memory_history_window: list[tuple[str, str]] | None = None,
+    generation_model: str | None = None,
+    generation_outcome: GenerationOutcome | None = None,
+):
+    """构造流式收束函数 build_finalize(answer_text, *, degraded_extra)（R02 抽取为工厂）。
+
+    职责：拼接降级原因 → 工具摘要前置 → 落库（user+assistant 消息 + 会话计数）→ 审计日志
+    → 异步记忆 ingest → 返回 done 帧 data（session_id/message_id/retrieved_count/final_count/
+    latency_ms/rewrite_query/degraded_reason/mcp_tool_calls）。
+    旧路径（service.chat_stream）与新路径（flows/graph_stream.py）共用本工厂，
+    保证两执行体的落库/审计/done 语义单一事实源（audit P2-23 防漂移）。
+    函数体 = 原 chat_stream.build_finalize 闭包原样迁移（行为逐字节一致）。
+    R08：memory_history_window = 会话历史轮 [(role, content)]（chat_stream 传入）；
+    graph_stream 旧调用不传 → None，记忆窗退化为本轮 query+answer 成对（行为兼容）。
+    """
+
+    async def build_finalize(answer_text: str, *, degraded_extra: str | None) -> dict:
+        latency_ms = int((time.perf_counter() - t0) * 1000)
+        generated_degraded = generation_outcome.degraded_reason if generation_outcome is not None else None
+        merged_deg_parts = [x for x in [bundle.degraded_reason, degraded_extra, generated_degraded, mcp_degraded] if x]
+        merged_deg = "；".join(merged_deg_parts) or None
+
+        # 工具结果前置（fallback_rule 时拼接）
+        final_answer = answer_text
+        if mcp_summaries and "fallback_rule" in (merged_deg or ""):
+            succ_lines = [f"- 工具 {s.tool_name}：{s.result_summary}" for s in mcp_summaries if s.status == "success"]
+            if succ_lines:
+                final_answer = "【工具调用摘要】\n" + "\n".join(succ_lines) + "\n\n" + final_answer
+
+        # 推断 llm_model_used（同非流式逻辑）
+        completed_tier = generation_outcome.model_tier if generation_outcome is not None else None
+        llm_model_used = "fallback_rule" if (merged_deg and ("LLM 调用失败" in merged_deg or "规则兜底" in merged_deg)) else str(completed_tier or generation_model or req.model or "fast")
+
+        # F-W1-GUARD（AUTO20 T7，C-W1-②）：答案层写类回执机检护栏（两执行体单一事实源）——
+        # 答案提及写类完成语义 ∧ mcp_tool_calls 无 success 凭据 → 答案尾部追加诚实修正句 +
+        # done 帧 data.tool_receipt_unverified=True；只加提示不改写原答案（详见 receipt_guard.py）。
+        final_answer, receipt_unverified = apply_tool_receipt_guard(
+            final_answer, mcp_tool_calls=mcp_summaries,
+        )
+
+        message_id_user: str | None = None
+        message_id_assistant: str | None = None
+        sess_id_out: str | None = None
+        mcp_json_s: str | None = None
+        mcp_called_count_val: int | None = None
+        if mcp_summaries:
+            try:
+                mcp_json_s = json.dumps([s.model_dump() for s in mcp_summaries], ensure_ascii=False)
+            except Exception:
+                mcp_json_s = None
+            mcp_called_count_val = len(mcp_summaries)
+
+        if session is not None:
+            now = datetime.now()
+            user_created_at = now
+            try:
+                asst_created_at = now + _MICROSECOND_STEP
+            except Exception:
+                asst_created_at = now
+            user_msg = ChatMessage(
+                message_id=_new_message_id(),
+                session_id=session.session_id,
+                user_id=int(user_id),
+                role="user",
+                content=req.query,
+                created_at=user_created_at,
+            )
+            message_id_user = user_msg.message_id
+            asst_msg = ChatMessage(
+                message_id=_new_message_id(),
+                session_id=session.session_id,
+                user_id=int(user_id),
+                role="assistant",
+                content=final_answer,
+                rag_query_rewrite=bundle.rewrite_query,
+                rag_retrieved_count=int(bundle.raw_retrieved_count),
+                rag_final_count=int(len(bundle.docs)),
+                rag_docs_json=json.dumps([d.model_dump() for d in bundle.docs], ensure_ascii=False),
+                rag_error=merged_deg,
+                latency_ms=latency_ms,
+                mcp_tool_calls_json=mcp_json_s,
+                mcp_called_count=mcp_called_count_val,
+                created_at=asst_created_at,
+            )
+            await _append_messages_and_bump_session(session, user_msg=user_msg, assistant_msg=asst_msg)
+            message_id_assistant = asst_msg.message_id
+            sess_id_out = session.session_id
+
+        # 写审计日志（失败不影响 SSE 返回）
+        await _rag_insert_audit_log(
+            user_id=int(user_id),
+            role=role,
+            query=req.query,
+            rewrite_query=bundle.rewrite_query,
+            retrieved_count=int(bundle.raw_retrieved_count),
+            final_count=int(len(bundle.docs)),
+            llm_model=llm_model_used,
+            latency_ms=int(latency_ms),
+            degraded_reason=merged_deg,
+            is_stream=True,
+            session_id=sess_id_out,
+            user_message_id=message_id_user,
+            assistant_message_id=message_id_assistant,
+        )
+
+        # task25 R7 / R01-b：流式会话结束异步记忆 ingest——R08 起传完整对话窗
+        # （会话历史轮 + 本轮 query/answer 成对，防上下文缺 assistant 半边，与应答解耦）
+        # T9-C3：收束 answer 为空串（模型零 token / 空响应）→ 调用侧短路，不入记忆窗
+        memorized: list[str] = []
+        if final_answer and final_answer.strip() and getattr(settings, "PERSONAL_MEMORY_INGESTION_ENABLED", True):
+            # [REWORK P0-1/P0-2] 同步规则抽取：done 帧前落库（新名字当轮即可跨会话召回，
+            # 5 秒内提问可答对——audit 实测异步链路 ~40s 为演示灾难）；LLM 深抽取仍走异步队列。
+            try:
+                from app.ai.memory.service import sync_extract_and_write
+                memorized = await sync_extract_and_write(int(user_id), query=req.query)
+            except Exception as exc:
+                logger.warning(f"[chat] 同步记忆抽取失败（不影响 done 帧）: {exc}")
+                memorized = []
+            try:
+                from app.ai.memory.service import build_turn_window, enqueue_turn
+                window = build_turn_window(memory_history_window, query=req.query, answer=final_answer)
+                asyncio.create_task(enqueue_turn(int(user_id), messages=window, skip_rule_extract=bool(memorized)))
+            except Exception:
+                pass
+
+        return {
+            "session_id": sess_id_out,
+            "message_id": message_id_assistant,
+            "retrieved_count": int(bundle.raw_retrieved_count),
+            "final_count": int(len(bundle.docs)),
+            "latency_ms": latency_ms,
+            "rewrite_query": bundle.rewrite_query,
+            "degraded_reason": merged_deg,
+            "mcp_tool_calls": [s.model_dump() for s in mcp_summaries],
+            "memorized": memorized,
+            # F-W1-GUARD（AUTO20 T7）：写类回执未验证标记（前端黄色警示条依据）。
+            # 契约侧 test_sse_envelope_contract 用 DONE_DATA_KEYS <= keys 子集断言，加字段不破契约。
+            TOOL_RECEIPT_FLAG: receipt_unverified,
+        }
+
+    return build_finalize
+
+
+async def chat_stream(
+    req: RagQueryRequest,
+    *,
+    user_id: int,
+    role: UserRole,
+):
+    """
+    流式问答：返回 (session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries)。
+    router 负责发送 SSE 事件；build_finalize(answer_text, latency_ms, degraded_extra, mcp_summaries) 会落库并返回汇总 dict。
+    """
+    t0 = time.perf_counter()
+
+    session: ChatSession | None = None
+    if req.session_id:
+        session = await _ensure_session_owner(req.session_id, user_id, role)
+
+    study_context, context_query = await _resolve_chat_study_context(req, user_id)
+    generation_model = _generation_model(req, study_context)
+    generation_outcome = GenerationOutcome()
+
+    history_turns = await _chat_history(req, study_context, user_id, role)
+
+    # Agent 循环（LLM 意图决策 → 按需检索）——AGENT_LOOP 关闭时回退「检索先行」
+    # P1-4：MCP 工具调用与决策并发（两者都基于 query 无数据依赖），省 MCP 串行耗时
+    use_agent = bool(getattr(settings, "USE_AGENT_LOOP", True)) and study_context is None
+    plan = None
+
+    async def _run_mcp() -> tuple[list[MCPToolCallSummary], str, str | None]:
+        try:
+            return await run_chat_tool_calls(
+                query=req.query,  # 工具规划只使用学生原问题
+                operator_user_id=int(user_id),
+                session_id=(session.session_id if session else None),
+                use_mcp_flag=bool(study_context is None and req.use_mcp_tools and getattr(settings, "USE_MCP_TOOL_CALLING", True)),
+            )
+        except Exception as exc:
+            logger.warning(f"[P2 chat_stream] MCP 工具阶段异常（跳过）：{type(exc).__name__}: {exc}")
+            return [], "", "MCP 工具阶段异常，已跳过（详见服务端日志）"
+
+    mcp_future = asyncio.create_task(_run_mcp())
+
+    try:
+        if use_agent:
+            agent_res = await run_agent_turn(
+                context_query if study_context is not None else req.query,
+                user_id=user_id,
+                role=role,
+                use_hyde=req.use_hyde,
+                enable_graph=req.enable_graph,
+                top_k=int(req.top_k),
+                final_max_k=int(req.final_max_k),
+                cutoff_drop_ratio=float(req.cutoff_drop_ratio),
+                session_id=(session.session_id if session else None),
+            )
+            plan = agent_res["plan"]
+            bundle = agent_res["bundle"]
+        else:
+            plan = None
+    except Exception as exc:
+        logger.warning(f"[P2 chat_stream] Agent 决策层异常，回退检索先行：{type(exc).__name__}: {exc}")
+        plan = None
+    try:
+        if plan is None:
+            if study_context is not None:
+                bundle = await _retrieve_study_context_bundle(
+                    req, user_id=user_id, role=role, context=study_context, context_query=context_query,
+                )
+            else:
+                bundle = await _retrieve_and_bundle_for_chat(req, user_id=user_id, role=role)
+    except Exception as exc:
+        logger.warning(f"[P2 chat_stream] 检索兜底失败（返回空 bundle）：{type(exc).__name__}: {exc}")
+        bundle = RetrievalBundle(
+            docs=[], raw_retrieved_count=0, graph_entities=[],
+        rewrite_query=context_query if study_context is not None else req.query, degraded_reason=None,
+        )
+
+    # 检索改写后的 query（决策改写 或 原 query）
+    gen_query = (plan.query_rewrite if plan and plan.query_rewrite else (context_query if study_context is not None else req.query))
+
+    # 等 MCP 结果（已与决策并行，此处合并）
+    mcp_summaries, mcp_context, mcp_degraded_stream = await mcp_future
+
+    token_aiter = generate_stream(
+        query=gen_query,
+        docs=_study_context_prompt_docs(bundle.docs) if study_context is not None else bundle.docs,
+        graph_entities=bundle.graph_entities,
+        history_turns=history_turns,
+        model=generation_model,
+        degraded_reason=bundle.degraded_reason,
+        mcp_context=mcp_context,
+        strict_rag=(plan.need_search if plan else True),
+        outcome=generation_outcome,
+        course_grounded=study_context is not None,
+        course_context=study_context,
+    )
+
+    # R02：finalize 落库逻辑抽取为模块级工厂 make_stream_finalize（与图路径适配层共用同一实现）
+    # R08：memory_history_window 传入会话历史轮 → 记忆窗=历史+本轮成对（完整对话窗）
+    build_finalize = make_stream_finalize(
+        req=req, user_id=user_id, role=role, session=session, bundle=bundle,
+        mcp_summaries=mcp_summaries, mcp_degraded=mcp_degraded_stream, t0=t0,
+        memory_history_window=history_turns,
+        generation_model=generation_model,
+        generation_outcome=generation_outcome,
+    )
+
+    return session, bundle, history_turns, token_aiter, build_finalize, mcp_summaries

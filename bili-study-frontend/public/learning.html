@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task06 学习页全量接线（reshape-a，契约冻结 30aeddbe）· 承接 task103 入口/task119 半接线：
+    班次选择(GET /api/enrollments/me/cohorts) → 课次大纲(GET /api/study/courses/{id}/outline)
+    → 视频真实播放(GET /api/study/sessions/{id} → <video src=/media/...>)
+    → 完成态真实写入(POST /api/study/sessions/{id}/complete)
+    + 未报名/未登录诚实引导（403 守卫卡）。演示痕迹已清零（demo 控件/假计时器/静态题卡）。
+  AUDIT LOG:
+    [2026-08-20 R1] 初稿：视频播放态 + 大纲三部曲 + 三 Tabs + 底部工具栏 + 转码占位提示 → 状态: SUBMITTED
+    [2026-08-20 R2] 参考图返工：Tabs 对齐参考图 → 状态: REVISING
+    [2026-09-12 task06] 全量接线：清零 13 处演示痕迹；新增班次选择；真实 <video>（/media 本地视频实测 200）；完成态真实写库；播放打点因后端缺播放会话创建端点诚实降级（缺口 task06-G1）。
+-->
+<html lang="zh-CN" data-theme="light" class=""><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习播放 · Bili-Study</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<style>
+/* ===== PACK-A clay 重塑：旧糖果变量名 → theme.css 冻结令牌映射（变量名/选择器/状态类零改动）；
+   视频区深色表面（--video-stage 等）按 §7.5 深色代码面语义保留 ===== */
+:root{ --htc-0-0-0-015: rgba(0, 0, 0, 0.15); --htc-0-0-0-018: rgba(0, 0, 0, 0.18); --htc-0-0-0-020: rgba(0, 0, 0, 0.2); --htc-0-0-0-025: rgba(0, 0, 0, 0.25); --htc-0-0-0-030: rgba(0, 0, 0, 0.3); --htc-0-0-0-030: rgba(0, 0, 0, 0.30); --htc-0-0-0-045: rgba(0, 0, 0, 0.45); --htc-0-0-0-000: rgba(0,0,0,0); --htc-0-0-0-030: rgba(0,0,0,0.3); --htc-0-0-0-035: rgba(0,0,0,0.35); --htc-0-0-0-070: rgba(0,0,0,0.7); --htc-0-0-0-072: rgba(0,0,0,0.72); --htc-0-0-0-080: rgba(0,0,0,0.8); --htc-124-58-237-025: rgba(214,82,70,0.25); --htc-124-58-237-050: rgba(214,82,70,0.5); --htc-20-20-20-082: rgba(20,20,20,0.82); --htc-24-24-24-002: rgba(46, 42, 63, 0.02); --htc-24-24-24-004: rgba(46, 42, 63, 0.04); --htc-24-24-24-006: rgba(46, 42, 63, 0.06); --htc-24-24-24-008: rgba(46, 42, 63, 0.08); --htc-24-24-24-012: rgba(46, 42, 63, 0.12); --htc-255-255-255-015: rgba(255,255,255,0.15); --htc-255-255-255-018: rgba(255,255,255,0.18); --htc-255-255-255-028: rgba(255,255,255,0.28); --htc-255-255-255-030: rgba(255,255,255,0.3); --htc-255-255-255-040: rgba(255,255,255,0.4); --htc-255-255-255-080: rgba(255,255,255,0.8); --htc-255-255-255-085: rgba(255,255,255,0.85); --htc-255-75-75-040: rgba(198,62,74,0.4); --htc-255-77-0-040: rgba(214,82,70,0.4); --htc-31-31-31-004: rgba(46,42,63,0.04); --htc-31-31-31-005: rgba(46,42,63,0.05); --htc-31-31-31-008: rgba(46,42,63,0.08); --htc-31-31-31-010: rgba(46,42,63,0.1); --htc-31-31-31-012: rgba(46,42,63,0.12); --htc-31-31-31-014: rgba(46,42,63,0.14); --htc-31-31-31-015: rgba(46,42,63,0.15); --htc-31-31-31-016: rgba(46,42,63,0.16); --htc-31-31-31-028: rgba(46,42,63,0.28); --htc-31-31-31-030: rgba(46,42,63,0.3); --htc-31-31-31-055: rgba(46,42,63,0.55); --htc-47-178-135-060: rgba(78, 126, 66, 0.6); --htc-47-178-135-030: rgba(78,126,66,0.3); --htc-88-204-2-040: rgba(78,126,66,0.4);  --ht-0003: #0003; --ht-06c179: var(--clay-mint); --ht-0ac27b: var(--clay-mint); --ht-0ecd70: var(--clay-mint); --ht-0fdc78: var(--clay-mint); --ht-141414: #141414; --ht-1e8b56: rgb(78,126,66); --ht-222427: #222427; --ht-2b2b2b: #2b2b2b; --ht-2fb287: var(--clay-mint); --ht-32f08c: var(--clay-mint); --ht-3ee1a3: var(--clay-mint); --ht-56637726: #56637726; --ht-60f2bd: #DFEED8; --ht-63c5b1: #63c5b1; --ht-a0fde7: #DFEED8; --ht-c0a115: #c0a115; --ht-dab444: #dab444; --ht-dfbd27: #dfbd27; --ht-e0e2f217: #e0e2f217; --ht-f5f9fe: var(--bg-input); --ht-ffea8e: var(--clay-lemon); --ht-fff: #fff; --ht-ffffff0f: #ffffff0f;
+  --candy-orange:var(--cta-coral); --candy-green:var(--clay-moss); --candy-purple:var(--clay-lavender);
+  --candy-yellow:var(--clay-lemon); --candy-blue:var(--clay-sky); --candy-pink:var(--clay-pink); --candy-red:var(--status-danger);
+  --candy-green-soft:#F3F8EF; --candy-orange-soft:#FFF1EE; --candy-purple-soft:#F3F1FF;
+  --candy-blue-soft:#E9F2FB; --candy-bg:var(--bg-app);
+  --candy-orange-deep:rgb(214,82,70); --candy-orange-hover:#FF8E81;
+  --candy-green-deep:rgb(78,126,66); --candy-green-hover:var(--clay-moss);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --candy-blue-deep:rgb(80,142,196);
+  --gray-300:rgba(46,42,63,.2); --gray-400:var(--text-muted); --gray-500:var(--text-muted); --gray-600:rgba(46,42,63,.25);
+  --error-bg:#FBF1F2; --statebar-text:rgba(255,255,255,.9);
+  --border-chip:rgba(78,126,66,.22);
+  --video-stage:linear-gradient(135deg,var(--ht-2b2b2b),var(--ht-141414));
+  --shadow-3d:var(--clay-shadow-raised);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; --htc-255-255-255-004: rgba(255, 255, 255, 0.004); --htc-31-31-31-003: rgba(46, 42, 63, 0.003); --htc-255-255-255-008: rgba(255, 255, 255, 0.008); --htc-255-255-255-003: rgba(255, 255, 255, 0.003); --htc-88-204-2-004: rgba(78, 126, 66, 0.3); --htc-255-77-0-004: rgba(214, 82, 70, 0.25); --htc-255-75-75-004: rgba(198, 62, 74, 0.25); --htc-31-31-31-001: rgba(46, 42, 63, 0.001); --htc-124-58-237-005: rgba(184, 166, 255, 0.3);}
+/* clay 桥接变量（aihub-topnav-fix 块 var 兜底链） */
+:root{ --card:var(--bg-raised); --white:var(--bg-raised); --foreground:var(--text-strong); --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:rgba(214,82,70,.42); --muted:var(--text-muted); --line:rgba(78,126,66,.22); --shadow:var(--clay-shadow-light); --r:var(--radius-input);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--ink);background:var(--candy-bg);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+select,input,textarea{font-family:inherit}
+
+.page{max-width:1180px;margin:0 auto;padding:20px 18px 72px}
+
+/* ===== Breadcrumb + 课程头部 ===== */
+.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--ink-strong);margin-bottom:14px}
+.breadcrumb a{color:var(--candy-blue);text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb .sep{color:var(--ink-muted);opacity:.6}
+.breadcrumb .cur{color:var(--ink);font-weight:700}
+.series-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.series-head .mascot{font-size:40px;filter:drop-shadow(0 4px 0 var(--htc-31-31-31-015));animation:mascot 3.2s ease-in-out infinite}
+@keyframes mascot{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-4deg) translateY(-5px)}}
+.series-head .tt{min-width:0}
+.series-head .series{font-size:12px;font-weight:800;color:var(--candy-purple);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.series-head h1{font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.3}
+.series-head .session-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-muted);margin-top:5px}
+.series-head .session-meta b{color:var(--ink-strong);font-weight:800}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;border:2px solid var(--ink)}
+.chip.green{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+.chip.orange{background:var(--candy-orange-soft);color:var(--candy-orange-deep)}
+.chip.purple{background:var(--candy-purple-soft);color:var(--candy-purple)}
+
+/* ===== 主布局：播放区(左) + 大纲(右) ===== */
+.layout{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
+@media(min-width:860px){.layout{grid-template-columns:minmax(0,1.72fr) minmax(280px,.8fr)}}
+
+/* ===== 播放区卡片 ===== */
+.player-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-3d)}
+/* 视频 16:9 容器 */
+.video-stage{position:relative;aspect-ratio:16/9;background:var(--ht-141414);display:grid;place-items:center;overflow:hidden}
+.video-stage .thumb{position:absolute;inset:0;width:100%;height:100%;background:var(--video-stage);opacity:.55}
+.video-stage .dim{position:absolute;inset:0;background:radial-gradient(ellipse at center,var(--htc-0-0-0-000) 20%,var(--htc-0-0-0-035) 100%)}
+/* 播放/暂停按钮 */
+.play-btn{position:relative;width:86px;height:86px;border-radius:50%;border:3px solid var(--ht-fff);background:var(--candy-orange);box-shadow:0 6px 0 var(--candy-orange-deep),0 0 0 6px var(--htc-255-255-255-018);display:grid;place-items:center;color:var(--ht-fff);font-size:34px;transition:transform .15s ease;z-index:2}
+.play-btn:hover{transform:scale(1.06)}
+.play-btn:active{transform:scale(.96);box-shadow:0 2px 0 var(--candy-orange-deep)}
+.play-btn svg{width:30px;height:30px;margin-left:4px}
+/* 进度条 */
+.video-controls{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--htc-0-0-0-072),var(--htc-0-0-0-000));padding:26px 16px 12px;color:var(--ht-fff)}
+.scrub{height:16px;border-radius:999px;position:relative;background:var(--htc-255-255-255-028);overflow:hidden}
+.scrub .buf{position:absolute;top:0;bottom:0;left:0;width:62%;background:var(--htc-255-255-255-004)}
+.scrub .played{position:absolute;top:0;bottom:0;left:0;width:34%;background:var(--candy-yellow)}
+.scrub .knob{position:absolute;top:-3px;left:34%;width:22px;height:22px;border-radius:50%;background:var(--ht-fff);border:3px solid var(--ink);transform:translateX(-50%);box-shadow:0 2px 0 var(--htc-31-31-31-003)}
+.vc-row{display:flex;align-items:center;gap:12px;margin-top:8px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.vc-row .time{flex-shrink:0}
+.vc-row .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.vc-ic{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--htc-255-255-255-018)}
+.vc-ic.speed{font-size:11px;font-weight:800;letter-spacing:.02em}
+/* 章节跳转徽标（session_video_chapter，正播放的章节高亮） */
+.ch-badge{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:6px;background:var(--htc-31-31-31-055);border:2px solid var(--htc-255-255-255-004);color:var(--ht-fff);font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;backdrop-filter:blur(3px);z-index:2}
+.ch-badge[hidden]{display:none}
+.ch-badge b{color:var(--candy-yellow)}
+/* 转码中/不可播 占位（不白屏）：覆盖在 16:9 上 */
+.transcode{position:absolute;inset:0;z-index:3;background:var(--htc-20-20-20-082);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ht-fff);text-align:center;padding:20px}
+.transcode .big{display:grid;place-items:center;width:72px;height:72px;border-radius:50%;background:var(--candy-purple-soft);font-size:34px;animation:bounce 1.6s ease-in-out infinite}
+.transcode .big.warn{background:var(--candy-orange-soft)}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.transcode .t{font-size:17px;font-weight:800}
+.transcode .d{font-size:12px;color:var(--htc-255-255-255-008);max-width:300px}
+.spinner{width:22px;height:22px;border-radius:50%;border:3px solid var(--htc-255-255-255-003);border-top-color:var(--ht-fff);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== 视频下方标题行 + 课程元信息 ===== */
+.player-meta{padding:16px 18px 18px}
+.session-title{font-size:18px;font-weight:800;line-height:1.35;margin-bottom:8px}
+.prog-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.or-spin{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--candy-green-deep)}
+.or-spin[hidden]{display:none}
+.dur{font-size:12px;color:var(--ink-muted)}
+.done-flag{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;font-weight:800;background:var(--candy-green-soft);color:var(--candy-green-deep);border:2px solid var(--htc-88-204-2-004);padding:4px 10px;border-radius:999px}
+
+/* ===== Tabs（视频/作业/考试，SDK 模式 · 对齐参考图：角色图标+绿色角标）===== */
+.tabs{display:flex;gap:10px;border-bottom:3px solid var(--htc-31-31-31-012);margin-top:18px;margin-bottom:16px}
+.tab{position:relative;border:3px solid transparent;border-bottom:none;border-radius:12px 12px 0 0;background:transparent;color:var(--ink-muted);padding:11px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.tab svg{width:17px;height:17px;flex-shrink:0}
+.tab:hover{background:var(--htc-31-31-31-005)}
+.tab:focus-visible{outline:3px solid var(--candy-blue);outline-offset:-2px;border-radius:12px}
+/* 选中：橙色边框+橙色文字（参考图） */
+.tab.on{background:var(--ht-fff);border-color:var(--candy-orange);border-bottom:3px solid var(--candy-orange);color:var(--candy-orange);position:relative;top:1px}
+.tab:not(.on) svg{color:var(--ink-faint)}
+/* 待办角标：右上角绿色数字角标 */
+.tab .cnt{position:absolute;top:-9px;right:-7px;min-width:19px;height:19px;padding:0 4px;border-radius:999px;background:var(--candy-green);color:var(--ht-fff);font-size:11px;font-weight:800;display:inline-grid;place-items:center;box-shadow:0 2px 0 var(--htc-31-31-31-028);font-variant-numeric:tabular-nums;border:2px solid var(--candy-bg)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.tab-panel h3{font-size:15px;font-weight:800;margin-bottom:10px}
+.intro-p{font-size:13px;color:var(--ink-strong);line-height:1.7}
+.q1-text{font-size:13.5px;font-weight:700;margin-bottom:12px;line-height:1.5}
+
+/* ===== 作业卡 ===== */
+.hw-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:16px 18px;margin-bottom:14px}
+.hw-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.hw-head .ic{width:34px;height:34px;border-radius:12px;background:var(--candy-purple-soft);display:grid;place-items:center;font-size:18px}
+.hw-head .t{font-size:14px;font-weight:800}
+.hw-head .meta{margin-left:auto;display:flex;gap:6px;align-items:center}
+.opt{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.opt label{display:flex;align-items:flex-start;gap:10px;border:2px solid var(--border-chip);border-radius:12px;padding:11px 12px;font-size:13px;color:var(--ink-strong);cursor:pointer;transition:background .12s}
+.opt label:hover{background:var(--candy-green-soft)}
+.opt input{accent-color:var(--candy-green);width:17px;height:17px;margin-top:1px;flex-shrink:0}
+.teacher-note{border-left:4px solid var(--candy-purple);background:var(--candy-purple-soft);border-radius:0 12px 12px 0;padding:10px 14px;font-size:12px;color:var(--ink-strong);margin-bottom:14px}
+.teacher-note b{color:var(--candy-purple);font-weight:800}
+
+/* ===== 考试计时器/交卷 ===== */
+.exam-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--candy-orange-soft);border:2px dashed var(--htc-255-77-0-004);border-radius:14px;padding:11px 14px;margin-bottom:14px}
+.exam-timer{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--candy-orange-deep);font-variant-numeric:tabular-nums}
+.exam-timer .tt{font-size:12px;color:var(--ink-strong)}
+.exam-prog{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:3px solid var(--ink);border-radius:12px;font-weight:800;font-size:13px;padding:9px 14px;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;user-select:none}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-primary{color:var(--ht-fff);background:var(--candy-green);box-shadow:0 4px 0 var(--candy-green-deep)}
+.btn-primary:hover{background:var(--candy-green-hover)}
+.btn-ghost{background:var(--ht-fff);color:var(--ink-strong);box-shadow:0 4px 0 var(--htc-31-31-31-016)}
+.btn-ghost:hover{border-color:var(--candy-purple);color:var(--candy-purple)}
+.btn-danger{color:var(--ht-fff);background:var(--candy-red);box-shadow:0 4px 0 var(--htc-255-75-75-004)}
+.btn-soft{background:var(--candy-purple-soft);color:var(--candy-purple);border-color:var(--candy-purple);box-shadow:0 4px 0 var(--htc-124-58-237-025)}
+.btn-orange{color:var(--ht-fff);background:var(--candy-orange);box-shadow:0 4px 0 var(--candy-orange-deep)}
+.btn-orange:hover{background:var(--candy-orange-hover)}
+/* 判分结果（analysis_text 解析可见） */
+.result{border:3px solid var(--candy-green);background:var(--candy-green-soft);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:14px}
+.result .score-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.result .score-big{font-size:22px;font-weight:800;color:var(--candy-green-deep)}
+.result .stars{color:var(--candy-yellow);font-size:18px;letter-spacing:2px}
+.result .analysis{font-size:13px;color:var(--ink-strong);line-height:1.6}
+.result .analysis b{color:var(--candy-green-deep)}
+
+/* ===== 组卷题目（考试） ===== */
+.q-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-lg);box-shadow:var(--shadow-3d);padding:14px 16px;margin-bottom:12px}
+.q-no{font-size:11px;font-weight:800;color:var(--candy-purple);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.q-text{font-size:14px;font-weight:700;margin-bottom:10px;line-height:1.5}
+
+/* ===== 右侧大纲 Accordion ===== */
+.syllabus-card{background:var(--ht-fff);border:3px solid var(--ink);border-radius:var(--radius-xl);box-shadow:var(--shadow-3d);overflow:hidden}
+.syl-head{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:3px solid var(--htc-31-31-31-001);font-size:14px;font-weight:800}
+.syl-head .ic{width:30px;height:30px;border-radius:10px;background:var(--candy-blue-soft);display:grid;place-items:center;font-size:16px}
+.syl-head .cnt{margin-left:auto;font-size:12px;color:var(--ink-muted);font-weight:700}
+.lvl-row{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:2px dashed var(--htc-31-31-31-008);font-size:13px;font-weight:800;color:var(--ink-strong)}
+.lvl-row .ch{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;flex-shrink:0;font-size:11px}
+.lvl-row .ch.done{background:var(--candy-green);color:var(--ht-fff)}
+.lvl-row .ch.cur{background:var(--candy-orange);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-orange-deep)}
+.lvl-row .ch.todo{background:var(--htc-31-31-31-001);color:var(--ink-muted)}
+.lvl-row .nm{flex:1;min-width:0}
+.acc{border-bottom:2px solid var(--htc-31-31-31-001)}
+.acc:last-child{border-bottom:none}
+.acc-head{display:flex;align-items:center;gap:9px;width:100%;padding:12px 16px;background:transparent;border:none;text-align:left;font-size:13px;font-weight:700;color:var(--ink)}
+.acc-head:hover{background:var(--htc-31-31-31-004)}
+.acc-head[aria-expanded="true"]{color:var(--candy-orange);font-weight:800}
+.acc-ind{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;flex-shrink:0;font-size:11px;font-weight:800;transition:transform .2s ease}
+.acc-head[aria-expanded="true"] .acc-ind{transform:rotate(90deg)}
+.acc-body{display:none;padding:4px 16px 12px 46px}
+/* [FEAT-WIRE-V2 #12] 旧写法 .acc[open] 是属性选择器，而 JS 只切 class "open" → 永不匹配，
+   大纲点击展开视觉零反馈（用户缺陷根因之二）；改为类选择器 .acc.open */
+.acc.open .acc-body{display:block}
+.acc-head .syl-cnt{margin-left:auto;font-size:11px;font-weight:600;color:var(--ink-faint)}
+.session{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--htc-31-31-31-001);font-size:12.5px;color:var(--ink-strong)}
+.session:first-child{border-top:none}
+.session .st{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;flex-shrink:0;font-size:10px}
+.session .st.done{background:var(--candy-green-soft);color:var(--candy-green-deep)}
+.session .st.cur{background:var(--candy-orange);color:var(--ht-fff);box-shadow:0 2px 0 var(--candy-orange-deep)}
+.session .st.todo{color:var(--ink-muted)}
+.session .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session.cur .nm{color:var(--candy-orange);font-weight:800}
+.session .dur{font-size:11px;color:var(--ink-faint);flex-shrink:0;font-variant-numeric:tabular-nums}
+a.session{text-decoration:none}
+
+/* ===== 底部工具栏 ===== */
+.toolbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--ht-fff);border-top:3px solid var(--ink);box-shadow:0 -4px 0 var(--htc-31-31-31-001)}
+.toolbar-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 18px;flex-wrap:wrap}
+.toolbar .ai{display:inline-flex;align-items:center;gap:9px;border:3px solid var(--ink);border-radius:14px;padding:10px 16px;font-weight:800;font-size:13px;color:var(--ht-fff);background:linear-gradient(135deg,var(--candy-purple),var(--candy-purple));box-shadow:0 4px 0 var(--htc-124-58-237-005);flex:1 1 auto;min-width:180px;text-align:left}
+.toolbar .ai .ic{font-size:16px}
+.toolbar .ai .hint{color:var(--htc-255-255-255-085);font-weight:600;font-size:12px}
+.toolbar .ai:active{transform:translateY(2px);box-shadow:none}
+.toolbar .btn{flex-shrink:0}
+.toolbar .ctx{font-size:11px;color:var(--ink-faint);font-weight:600;order:3}
+.toolbar .chat-context-status{font-size:12px;font-weight:700;color:#9a3412;flex:1 1 100%;order:4}
+
+/* 移动端 */
+@media(max-width:480px){
+  .toolbar-inner{gap:8px}
+  .toolbar .ai{min-width:0;flex:1 1 100%;order:1}
+  .toolbar .btn{order:2}
+  .toolbar .ctx{order:3;width:100%;text-align:center;margin-top:2px}
+}
+
+/* ===== 403 守卫 ===== */
+.error-demo{border:3px solid var(--candy-red);border-radius:var(--radius-xl);background:var(--ht-fff);box-shadow:var(--shadow-3d);padding:40px 20px;text-align:center;margin:14px 0}
+.error-demo .ic{width:70px;height:70px;margin:0 auto 14px;border-radius:22px;background:var(--error-bg);display:grid;place-items:center;font-size:34px}
+.error-demo .code{font-size:12px;font-weight:800;color:var(--candy-red);letter-spacing:.05em}
+.error-demo .t{font-size:18px;font-weight:800;margin:6px 0}
+.error-demo .d{font-size:13px;color:var(--ink-muted);margin-bottom:18px}
+.error-demo .d b{color:var(--ink-strong)}
+
+/* ===== （task06：随 DOM 一并移除的死样式占位说明）===== */
+
+@media(prefers-reduced-motion:reduce){
+  .series-head .mascot,.transcode .big{animation:none}
+  *{scroll-behavior:auto!important}
+  .play-btn,.session,.chip{transition:none}
+}
+/* ===== 品牌条（learning 例外：品牌条 + 返回入口，替代全量侧边栏）===== */
+.brandbar{display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:14px}
+.brandbar-link{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:900;font-size:1rem}
+.brandbar-logo{font-size:1.5rem;line-height:1}
+.brandbar-back{font-size:0.8125rem;font-weight:700;color:var(--candy-blue);text-decoration:none;border:2px solid var(--border-chip);padding:6px 12px;border-radius:10px;transition:background .15s}
+.brandbar-back:hover{background:var(--candy-blue-soft)}
+</style>
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="clay-pack-a">
+/* ===== PACK-A clay 修饰层：只动视觉（对比度、44px 点按、去无限动画）；选择器/状态类显隐语义零改动 ===== */
+:focus-visible{outline:3px solid var(--focus-ring)!important;outline-offset:2px}
+.brandbar-logo .ic{width:28px;height:28px;color:var(--text-strong)}
+.brandbar-link{min-height:44px}
+.brandbar-back{min-height:44px;display:inline-flex;align-items:center;color:var(--text-strong);border:0;box-shadow:var(--clay-shadow-light)}
+.breadcrumb a{color:var(--text-strong);display:inline-flex;align-items:center;min-width:44px;min-height:44px;justify-content:center}
+.series-head .mascot{animation:none;color:var(--text-strong)}
+.series-head .mascot .ic{width:40px;height:40px}
+.series-head .series{color:var(--text-strong)}
+.chip{border:0;box-shadow:var(--clay-shadow-light)}
+.chip.green,.chip.orange,.chip.purple{color:var(--text-strong)}
+.player-card,.hw-card,.syllabus-card,.q-card,.error-demo{border:0;box-shadow:var(--clay-shadow-raised)}
+.play-btn{color:var(--cta-text);border:3px solid var(--bg-raised)}
+/* 修复作者 CSS 压过 [hidden] 的存量 bug：转码遮罩的显隐控制权还给 hidden 属性（JS 行为不变） */
+.transcode[hidden]{display:none}
+.transcode .d{color:rgba(255,255,255,.82)}
+.done-flag{color:var(--text-strong)}
+.tab.on{color:var(--text-strong);border-color:var(--cta-coral);border-bottom:3px solid var(--cta-coral)}
+.tab:focus-visible{outline:3px solid var(--focus-ring)}
+.tab .cnt{color:var(--text-strong);border:2px solid var(--bg-raised)}
+.tab .cnt[hidden]{display:none}
+.tab svg{width:17px;height:17px}
+.teacher-note{border:0;box-shadow:var(--clay-shadow-light)}
+.teacher-note b{color:var(--text-strong)}
+.exam-timer{color:var(--text-strong)}
+.btn{border:0;border-radius:var(--radius-btn);min-height:44px}
+.btn-primary{color:var(--text-strong);background:var(--clay-moss);box-shadow:var(--clay-shadow-press-moss)}
+.btn-primary:hover{background:var(--clay-moss)}
+.btn-ghost{color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-ghost:hover{border:0;background:var(--bg-input);color:var(--text-strong)}
+.btn-danger{color:#fff;background:var(--status-danger);box-shadow:var(--clay-shadow-press-coral)}
+.btn-soft{color:var(--text-strong);background:#F3F1FF;border:0;box-shadow:var(--clay-shadow-light)}
+.btn-orange{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-press-coral)}
+.btn-orange:hover{background:var(--cta-coral)}
+.result{border:0;box-shadow:var(--clay-shadow-light);background:#F3F8EF}
+.result .score-big{color:var(--text-strong)}
+.result .stars{color:var(--text-strong)}
+.result .analysis b{color:var(--text-strong)}
+.q-no{color:var(--text-strong)}
+.syl-head .ic{border-radius:var(--radius-icon-tile);color:var(--text-strong)}
+.syl-head .ic .ic{width:16px;height:16px}
+.lvl-row .ch.done{color:var(--text-strong)}
+.lvl-row .ch.cur{color:var(--cta-text)}
+.session{min-height:44px}
+.session .st.done{color:var(--text-strong)}
+.session .st.cur{color:var(--cta-text)}
+.session.cur .nm{color:var(--text-strong)}
+.acc-head{min-height:44px}
+.acc-head[aria-expanded="true"]{color:var(--text-strong)}
+.toolbar{border-top:0;box-shadow:0 -6px 20px rgba(78,126,66,.15)}
+.toolbar .ai{border:0;background:var(--clay-lavender);box-shadow:var(--clay-shadow-lavender);color:var(--text-strong);min-height:44px}
+.toolbar .ai .hint{color:rgba(46,42,63,.75)}
+.toolbar .ai .ic .ic{width:16px;height:16px}
+.error-demo{border:0}
+.error-demo .ic{color:var(--text-strong)}
+.error-demo .ic .ic{width:34px;height:34px}
+.error-demo .code{color:var(--status-danger)}
+.transcode .big{animation:none}
+.gnav-brand{min-height:44px}
+.gnav-item{min-height:44px!important}
+.gnav-item:hover{background:var(--bg-input)!important;color:var(--text-strong)!important}
+.gnav-foot a,.gnav-foot button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms!important}
+  .series-head .mascot,.transcode .big{animation:none!important}
+  .spinner{animation:none!important}
+}
+</style>
+<link rel="stylesheet" href="/video-learning.css">
+<link rel="stylesheet" href="/video-mindmap.css">
+</head>
+<body>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">BS</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item active" href="courses.html" aria-current="page"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="page">
+
+  <!-- ===== 品牌条 + 返回入口（learning 例外：替代全量侧边栏）===== -->
+  <header class="brandbar" role="banner">
+    <a href="dashboard.html" class="brandbar-link">
+      <span class="brandbar-logo" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></span>
+      <span class="brandbar-name">Bili-Study</span>
+    </a>
+    <a href="dashboard.html" class="brandbar-back">← 返回仪表盘</a>
+  </header>
+
+  <!-- ===== Breadcrumb（真实数据由 task06 JS 回填）===== -->
+  <nav class="breadcrumb" aria-label="面包屑">
+    <a href="my-cohorts.html">我的班次</a><span class="sep">›</span>
+    <a href="courses.html" id="bcSeries">课程中心</a><span class="sep">›</span>
+    <span class="cur" id="bcSession">加载中…</span>
+  </nav>
+
+  <!-- ===== 课程头部（真实数据回填：系列名/课次名/模块/时长/整体进度）===== -->
+  <header class="series-head">
+    <div class="mascot" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></div>
+    <div class="tt">
+      <div class="series" id="seriesName">加载中…</div>
+      <h1 id="sessionHeading">加载中…</h1>
+      <div class="session-meta" id="sessionMeta"></div>
+    </div>
+  </header>
+
+  <!-- ===== 班次选择（task06：无入口参数时列出我的报名班次，真实数据）===== -->
+  <section class="syllabus-card" id="cohortPicker" aria-label="选择班次" hidden>
+    <div class="syl-head"><span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-graduation-cap"></use></svg></span> 选择要继续学习的班次 <span class="cnt" id="cohortCnt"></span></div>
+    <div id="cohortList" style="padding:6px 16px 14px"></div>
+  </section>
+
+  <!-- ===== 主布局：播放区 + 大纲 ===== -->
+  <div class="layout" id="learnLayout" hidden>
+
+    <!-- ========== 左：播放卡（真实 <video> 由 task06 JS 按课次详情注入）========== -->
+    <section class="player-card" aria-label="视频播放区">
+
+      <!-- 转码中/不可播占位（transcode_status !== completed 时显示，不白屏） -->
+      <div class="video-stage">
+        <div class="transcode" id="transcodeBox" hidden>
+          <div class="big" id="tcIcon">🎬</div>
+          <div class="t" id="tcTitle">加载中，请稍候</div>
+          <div class="d" id="tcDesc">正在获取本课次视频信息。</div>
+          <span class="spinner" aria-hidden="true"></span>
+        </div>
+        <span class="ch-badge" id="chBadge" hidden>正播放 · <b id="curCh"></b></span>
+      </div>
+
+      <div class="player-meta">
+        <h2 class="session-title" id="sessionSub">加载中…</h2>
+        <div class="prog-row">
+          <span class="or-spin" id="tickNotice" hidden><span class="spinner" aria-hidden="true"></span> <span id="tickNoticeText">播放打点已缓冲</span></span>
+          <span class="done-flag" id="doneFlag">⏳ 等待课次数据…</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 视频和大纲共用首行；长学习资料独占下一行，避免右侧空列。 -->
+    <aside class="syllabus-card" aria-label="课程大纲">
+      <div class="syl-head"><span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span> 课程大纲 <span class="cnt" id="sylCnt">加载中…</span></div>
+      <div id="sylBody" style="padding:4px 0 10px"><p class="intro-p" style="padding:10px 16px">正在加载学习大纲…</p></div>
+    </aside>
+
+    <section class="learning-materials" aria-label="本节学习资料">
+      <!-- ===== Tabs：视频 / 作业 / 考试（角标由 task06 JS 按真实资源数回填）===== -->
+      <div class="tabs" id="tabs" role="tablist" aria-label="学习任务">
+        <button class="tab on" id="tab-video" role="tab" aria-selected="true" aria-controls="p-video" aria-labelledby="tab-video" tabindex="0"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"></use></svg> 视频</button>
+        <button class="tab" id="tab-hw" role="tab" aria-selected="false" aria-controls="p-hw" aria-labelledby="tab-hw" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg> 作业<span class="cnt" id="hwCnt" hidden>0</span></button>
+        <button class="tab" id="tab-exam" role="tab" aria-selected="false" aria-controls="p-exam" aria-labelledby="tab-exam" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"></use></svg> 考试<span class="cnt" id="examCnt" hidden>0</span></button>
+      </div>
+
+      <!-- 视频 tab：真实契约无课程简介字段 → 诚实占位（不伪造文案） -->
+      <div class="tab-panel active" id="p-video" role="tabpanel" aria-labelledby="tab-video">
+        <h3><span class="h3ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-book-open"></use></svg></span> 课程简介</h3>
+        <p class="intro-p" id="introText">正在加载课次信息…</p>
+        <div class="intro-p" id="pilotMaterial" style="white-space:pre-wrap;line-height:1.75" hidden></div>
+        <section id="videoKnowledge" aria-label="本节 AI 学习资料" aria-live="polite" hidden></section>
+      </div>
+
+      <!-- 作业 tab：本页无作业提交契约落点 → 诚实列出课次文字资源（task06 实测） -->
+      <div class="tab-panel" id="p-hw" role="tabpanel" aria-labelledby="tab-hw">
+        <h3><span aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-pencil-simple"></use></svg></span> 本节资源</h3>
+        <p class="intro-p" id="hwPlaceholder">正在加载课次资源…</p>
+      </div>
+
+      <!-- 考试 tab：真实契约无考试落点 → 诚实空态（不伪造题卡/计时器） -->
+      <div class="tab-panel" id="p-exam" role="tabpanel" aria-labelledby="tab-exam">
+        <h3>本节考试</h3>
+        <p class="intro-p" id="examPlaceholder">正在加载课次考试信息…</p>
+      </div>
+
+    </section>
+
+  </div><!-- /layout -->
+
+  <!-- ===== 未报名/无权限 403 守卫（enrolled_only 守卫不吞错，默认隐藏，task06 JS 按真实 access 结果显示）===== -->
+  <section class="error-demo" id="accessGuard" aria-label="未报名访问提示" hidden>
+    <div class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-warning"></use></svg></div>
+    <div class="code" id="guardCode">403 · 未报名</div>
+    <div class="t" id="guardTitle">本课为报名专属内容</div>
+    <div class="d" id="guardDesc">仅已报名该班次的学员可观看该课次。请先报名本系列后返回继续学习。</div>
+    <a class="btn btn-primary" id="guardCta" href="courses.html">去报名 / 返回课程中心</a>
+  </section>
+
+</div><!-- /page -->
+
+<!-- ===== 底部工具栏：本课 Agent 上下文由服务端签发 ===== -->
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <a class="ai" id="courseChatLink" href="chat.html">
+      <span class="ic" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-chat-circle"></use></svg></span>
+      <span style="display:flex;flex-direction:column;gap:1px">
+        <span>AI 提问 · 本课答疑</span>
+      </span>
+    </a>
+    <span class="chat-context-status" id="courseChatStatus" role="status" aria-live="polite"></span>
+  <a class="btn btn-ghost" id="coursePracticeLink" href="practice.html"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"></use></svg> 本课练习</a></div>
+</div>
+
+<script>
+/* ===== Tabs（SDK 模式：roving tabindex + 方向键 + Home/End + aria）===== */
+(function(){
+  var tabs=Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels=Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
+  function sel(i){
+    tabs.forEach(function(t,idx){t.classList.toggle('on',idx===i);t.setAttribute('aria-selected',idx===i?'true':'false');t.tabIndex=idx===i?0:-1;});
+    panels.forEach(function(p,idx){p.classList.toggle('active',idx===i);});
+    tabs[i].focus();
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){sel(i);});
+    t.addEventListener('keydown',function(e){
+      var idx=tabs.indexOf(t),n;
+      if(e.key==='ArrowRight'){n=Math.min(tabs.length-1,idx+1);sel(n);e.preventDefault();}
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){n=Math.max(0,idx-1);sel(n);e.preventDefault();}
+      else if(e.key==='Home'){sel(0);e.preventDefault();}
+      else if(e.key==='End'){sel(tabs.length-1);e.preventDefault();}
+    });
+  });
+  sel(0);
+})();
+</script>
+
+<script src="/edu-api.js"></script>
+<script src="/edu-md.js"></script>
+<script src="/video-mindmap.js"></script>
+<script src="/video-learning.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* task103 入口：从 URL 取 cohort_id / session_id / series_id（learning 完整闭环归 task119）
+ * 修复原 /learning/{id}/{sid} 路径正则在静态服务下永不匹配的缺陷，改为读 ?cohort_id=&session_id=。
+ * 读取结果挂到 window.LEARNING_ENTRY 供后续接入使用；有 session_id 且有 token 时尽力回填标题。 */
+(function () {
+  if (!window.EAPI) return;
+  function q(name){ try { var v = new URLSearchParams(location.search||"").get(name); return v===null||v===""? "" : String(v).trim(); } catch(e){ return ""; } }
+  var cohort_id = q("cohort_id"), session_id = q("session_id"), series_id = q("series_id");
+  window.LEARNING_ENTRY = { cohort_id: cohort_id, session_id: session_id, series_id: series_id };
+  if (!session_id || !EAPI.store.getToken()) return;
+  EAPI.get("/api/study/sessions/" + session_id).then(function (d) {
+    if (!d) return;
+    var t = document.querySelector("h1,.title,[class*=title]");
+    if (t && d.session_title) t.textContent = d.session_title;
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* task06：learning 学习页全量接线（承接 task103 入口参数 + task119 半接线；契约冻结 reshape-a 30aeddbe）
+ * 契约（curl 实测 2026-09-12，证据见 test-reports/task06-completion-report-reshape-a.md）：
+ *   GET  /api/enrollments/me/cohorts              → [{cohort_id,cohort_name,series_id,series_name,overall_ratio,session_done,session_total,...}]
+ *   GET  /api/study/courses/{series_id}/access    → {accessible,cohort_id,reason}（未报名 accessible=false）
+ *   GET  /api/study/courses/{series_id}/outline   → {series_title,overall_ratio,total_sessions,completed_sessions,modules[...]}
+ *   GET  /api/study/sessions/{session_id}         → {session_title,module_name,series_id,assets[],video{video_url,transcode_status,...}}
+ *     （未报名 enrolled_only → HTTP 403 code=40330）
+ *   POST /api/study/sessions/{session_id}/complete → {session_id,completed}
+ *   GET  /api/progress/dashboard                  → 学习看板（渲染在 dashboard.html，本页不复读）
+ *   POST /api/progress/video/sessions 创建当前登录用户的播放会话；返回 ID 后，
+ *   POST /api/progress/video/tick-batch 按 25 秒播放增量上报，服务端校验 user/session、时长和事件去重。
+ * 三态：加载中（spinner 文案）/ 空态（未报名→引导报名；无资源→诚实空态）/ 错误（守卫卡）。
+ * 不重定义全局 $ / renderSides；不覆盖 task103 的 window.LEARNING_ENTRY。 */
+(function () {
+  if (!window.EAPI) return;
+  var E = EAPI;
+  var $ = function (s) { return document.querySelector(s); };
+  var $all = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  var state = { series_id: 0, cohort_id: 0, session_id: 0, outline: null, textSeriesId: 0, play_session_id: 0, tickQueue: [], tickSending: false };
+  var originalVideoTabHtml = $("#tab-video") ? $("#tab-video").innerHTML : "";
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function intParam(v) { var n = parseInt(v, 10); return isNaN(n) || n <= 0 ? 0 : n; }
+
+  function showGuard(opts) {
+    var g = $("#accessGuard");
+    if (!g) return;
+    g.hidden = false;
+    $("#guardCode").textContent = (opts && opts.code) || "403 · 未报名";
+    $("#guardTitle").textContent = (opts && opts.title) || "本课为报名专属内容";
+    $("#guardDesc").textContent = (opts && opts.desc) || "仅已报名该班次的学员可观看该课次。请先报名本系列后返回继续学习。";
+    var cta = $("#guardCta");
+    cta.textContent = (opts && opts.ctaText) || "去报名 / 返回课程中心";
+    cta.href = (opts && opts.ctaHref) || "courses.html";
+    $("#learnLayout").hidden = true;
+    $("#cohortPicker").hidden = true;
+  }
+  function hideGuard() { var g = $("#accessGuard"); if (g) g.hidden = true; }
+
+  function setTickNotice() {
+    var n = $("#tickNotice");
+    if (!n) return;
+    var sp = n.querySelector(".spinner");
+    if (sp) sp.style.display = "none";
+    n.hidden = false;
+    $("#tickNoticeText").textContent = "正在连接播放记录…";
+  }
+
+  function flushVideoTicks() {
+    if (!state.play_session_id || !state.tickQueue.length || state.tickSending) return;
+    state.tickSending = true;
+    var batch = state.tickQueue.slice(0, 50);
+    E.post("/api/progress/video/tick-batch", {
+      play_session_id: state.play_session_id, session_id: state.session_id, ticks: batch
+    }).then(function () {
+      state.tickQueue.splice(0, batch.length);
+      var notice = $("#tickNoticeText");
+      if (notice) notice.textContent = "播放进度已保存";
+    }).catch(function (err) {
+      var notice = $("#tickNoticeText");
+      if (notice) notice.textContent = "播放进度暂未确认，稍后会重试";
+      console.warn("[learning] video ticks pending", err && err.message);
+    }).finally(function () {
+      state.tickSending = false;
+      if (state.tickQueue.length > 50) flushVideoTicks();
+    });
+  }
+
+  function connectVideoTracking(videoEl, detail) {
+    state.play_session_id = 0;
+    state.tickQueue = [];
+    E.post("/api/progress/video/sessions", { session_id: detail.session_id }).then(function (created) {
+      if (!created || !created.play_session_id || state.session_id !== detail.session_id) return;
+      state.play_session_id = Number(created.play_session_id);
+      var notice = $("#tickNoticeText");
+      if (notice) notice.textContent = "播放记录已连接";
+      var lastSentPosition = -1;
+      function addTick(type, force) {
+        var pos = Math.max(0, Math.floor(Number(videoEl.currentTime) || 0));
+        if (!force && type === "TICK" && pos - lastSentPosition < 25) return;
+        state.tickQueue.push({ event_type: type, position_seconds: pos, playback_rate: Number(videoEl.playbackRate) || 1,
+          network_type: "UNKNOWN", event_time: new Date().toISOString() });
+        if (type === "TICK") lastSentPosition = pos;
+        flushVideoTicks();
+      }
+      videoEl.addEventListener("play", function () { addTick("PLAY", true); });
+      videoEl.addEventListener("timeupdate", function () { addTick("TICK", false); });
+      videoEl.addEventListener("pause", function () { addTick("PAUSE", true); });
+      videoEl.addEventListener("seeking", function () { addTick("SEEK", true); });
+      videoEl.addEventListener("ended", function () { addTick("END", true); });
+    }).catch(function (err) {
+      var notice = $("#tickNoticeText");
+      if (notice) notice.textContent = "播放记录未连接，学习视频仍可播放";
+      console.warn("[learning] play session creation failed", err && err.message);
+    });
+  }
+
+  /* ---- 班次选择（task06 新增：无入口参数时的学习入口）---- */
+  function renderCohortPicker() {
+    $("#learnLayout").hidden = true;
+    E.get("/api/enrollments/me/cohorts").then(function (list) {
+      var arr = Array.isArray(list) ? list : [];
+      var picker = $("#cohortPicker"), listEl = $("#cohortList");
+      if (!picker || !listEl) return;
+      $("#bcSession").textContent = "选择班次";
+      if (!arr.length) {
+        picker.hidden = true;
+        showGuard({ code: "空态 · 未报名", title: "暂无报名中的班次", desc: "报名后即可在这里进入学习：班次 → 课次 → 视频 → 完成态。", ctaText: "去课程中心选课报名", ctaHref: "courses.html" });
+        return;
+      }
+      picker.hidden = false;
+      $("#cohortCnt").textContent = arr.length + " 个报名班次";
+      listEl.innerHTML = arr.map(function (c) {
+        var ratio = Math.round(Number(c.overall_ratio) || 0);
+        return '<div class="hw-card"><div class="hw-head"><span class="ic">🎓</span>' +
+          '<span class="t">' + esc(c.cohort_name) + '</span>' +
+          '<span class="meta"><span class="chip purple">' + esc(c.series_name || ("系列 #" + c.series_id)) + '</span>' +
+          '<span class="chip green">✅ 已学 ' + ratio + '%</span></span></div>' +
+          '<p class="intro-p">课次进度 ' + (Number(c.session_done) || 0) + ' / ' + (Number(c.session_total) || 0) + ' · 整体 ' + ratio + '%</p>' +
+          '<button type="button" class="btn btn-primary" data-series="' + c.series_id + '" data-cohort="' + c.cohort_id + '">▶ 继续学习</button></div>';
+      }).join("");
+      $all("#cohortList button[data-series]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          start(intParam(b.getAttribute("data-series")), intParam(b.getAttribute("data-cohort")));
+        });
+      });
+    }).catch(function (e) {
+      console.warn("[learning] cohorts failed", e && e.message);
+      showGuard({ code: "加载失败", title: "班次列表获取失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    });
+  }
+
+  /* ---- 侧栏大纲渲染（模块→课次树 + watch_ratio 进度 + 当前课次高亮）---- */
+  function renderOutline(o) {
+    state.outline = o;
+    var textOnly = state.textSeriesId === state.series_id;
+    var head = $("#sylCnt");
+    if (head) head.textContent = textOnly ? "文字课 · 练习结果见复习中心" : o.overall_ratio + "% 已学 · " + o.completed_sessions + "/" + o.total_sessions + " 完成";
+    var bcS = $("#bcSeries");
+    if (bcS) { bcS.textContent = o.series_title || "课程中心"; bcS.href = "course-detail.html?id=" + state.series_id; }
+    var sn = $("#seriesName");
+    if (sn) sn.textContent = o.series_title || "当前课程";
+    var curSid = state.session_id;
+    var html = "";
+    (o.modules || []).forEach(function (m) {
+      var sess = m.sessions || [];
+      var modHasCur = sess.some(function (s) { return s.session_id === curSid; });
+      var doneCnt = sess.filter(function (s) { return s.watch_ratio >= 80 && s.homework_done; }).length;
+      html += '<div class="acc' + (modHasCur ? " open" : "") + '">';
+      html += '<button type="button" class="acc-head" aria-expanded="' + (modHasCur ? "true" : "false") + '"><span class="acc-ind">' + (modHasCur ? "▼" : "▶") + "</span> " + esc(m.module_title) + ' <span class="syl-cnt">' + (textOnly ? sess.length + " 节文字课" : doneCnt + "/" + sess.length) + "</span></button>";
+      html += '<div class="acc-body">';
+      sess.forEach(function (s) {
+        var isCur = s.session_id === curSid;
+        var done = s.watch_ratio >= 80 && s.homework_done;
+        var cls = isCur ? "cur" : (done ? "done" : "todo");
+        var st = isCur ? "▶" : (done ? "✓" : "○");
+        html += '<a class="session ' + cls + '"' + (isCur ? ' aria-current="page"' : "") +
+          ' href="learning.html?cohort_id=' + state.cohort_id + '&series_id=' + state.series_id + '&session_id=' + s.session_id + '">' +
+          '<span class="st ' + cls + '">' + st + "</span><span class=\"nm\">" + esc(s.session_title) + "</span>" +
+          '<span class="dur">' + (textOnly ? "课文" : (s.watch_ratio > 0 ? Math.round(s.watch_ratio) + "%" : (s.duration_minutes ? s.duration_minutes + "分" : ""))) + "</span></a>";
+      });
+      html += "</div></div>";
+    });
+    var body = $("#sylBody");
+    if (body) body.innerHTML = html || '<p class="intro-p" style="padding:10px 16px">大纲暂无可见课次（未报名或课程无内容）。</p>';
+    // 当前课次的模块初始展开；点击时同步 open 类、aria-expanded 与指示符。
+    if (body) {
+      body.querySelectorAll(".acc-head").forEach(function (h) {
+        h.addEventListener("click", function () {
+          var acc = h.parentNode;
+          var open = !acc.classList.contains("open");
+          acc.classList.toggle("open", open);
+          h.setAttribute("aria-expanded", open ? "true" : "false");
+          var ind = h.querySelector(".acc-ind");
+          if (ind) ind.textContent = open ? "▼" : "▶";
+        });
+      });
+    }
+  }
+
+  function findOutlineSession(sid) {
+    if (!state.outline) return null;
+    for (var i = 0; i < state.outline.modules.length; i++) {
+      var sess = state.outline.modules[i].sessions || [];
+      for (var j = 0; j < sess.length; j++) {
+        if (sess[j].session_id === sid) return sess[j];
+      }
+    }
+    return null;
+  }
+
+  /* ---- 课次详情渲染：视频三态（可播/转码中/不可播）+ 资源 + 完成态 ---- */
+  function renderSession(d) {
+    state.session_id = d.session_id;
+    if ($("#tab-video")) $("#tab-video").innerHTML = originalVideoTabHtml;
+    if (d.series_id) state.series_id = parseInt(d.series_id, 10);
+    $("#bcSession").textContent = d.session_title;
+    $("#sessionHeading").textContent = d.session_title;
+    $("#sessionSub").textContent = (d.module_name ? d.module_name + " · " : "") + "第 " + (d.session_no || "-") + " 课";
+    var meta = $("#sessionMeta");
+    if (meta) {
+      var cur = findOutlineSession(d.session_id);
+      var ratio = cur ? Math.round(cur.watch_ratio) : 0;
+      meta.innerHTML = '<span>模块 <b>' + esc(d.module_name || "-") + "</b></span>" +
+        '<span>课次状态 <b>' + esc(d.teaching_status || "-") + "</b></span>" +
+        '<span class="badges"><span class="chip green">✅ 本课观看 ' + ratio + "%</span></span>";
+    }
+
+    // --- 视频区：按 transcode_status 三态（真实 <video>，/media 或合法 URL 才可播）---
+    var vs = $(".video-stage"), box = $("#transcodeBox"), badge = $("#chBadge");
+    var old = vs && vs.querySelector("video.real-video");
+    if (old) { old.remove(); old = null; }
+    if (badge) badge.hidden = true;
+    var v = d.video;
+    // 可播判定：仅本地 /media 真实文件（实测 GET /media/videos/xxx 200 且字节一致）。
+    // seed http(s) 外链假域名为不可达地址 → 归入"外部地址暂不可播"，不渲染必失败的 <video>。
+    var mediaURL = null;
+    if (v && v.video_url) {
+      try {
+        var parsedMedia = new URL(v.video_url, E.BASE);
+        if (["http:", "https:"].indexOf(parsedMedia.protocol) >= 0 &&
+            !parsedMedia.hostname.endsWith("example.com") &&
+            !v.video_url.startsWith("//")) mediaURL = parsedMedia.href;
+      } catch (ignore) {}
+    }
+    var playable = !!(v && v.transcode_status === "completed" && v.duration_seconds > 0 && mediaURL);
+    if (playable) {
+      if (box) box.hidden = true;
+      setTickNotice();
+      var vdo = document.createElement("video");
+      vdo.className = "real-video";
+      vdo.controls = true; vdo.preload = "metadata";
+      vdo.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;";
+      // /media/* 由后端(9988)静态挂载；前端(3322)静态源下相对路径 404 → 解析到后端 origin。
+      vdo.src = mediaURL;
+      vs.insertBefore(vdo, vs.firstChild);
+      connectVideoTracking(vdo, d);
+      if (badge) { badge.hidden = false; $("#curCh").textContent = v.video_title || d.session_title; }
+    } else if (v && (v.transcode_status === "pending" || v.transcode_status === "in_progress")) {
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "🎬"; $("#tcIcon").className = "big"; $("#tcTitle").textContent = "转码中，请稍候"; $("#tcDesc").textContent = "高清版正在生成，完成后即可播放。可先学习大纲中的其它课时。"; }
+    } else if (v && v.transcode_status === "failed") {
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "📵"; $("#tcIcon").className = "big warn"; $("#tcTitle").textContent = "暂不可播"; $("#tcDesc").textContent = "该课次视频处理失败或已下架，请联系助教。下方资源仍可查看。"; }
+    } else {
+      // 含 seed 外链假域名与无视频两种情况 → 诚实占位
+      var ext = v && v.video_url && /^https?:/.test(v.video_url);
+      if (box) { box.hidden = false; $("#tcIcon").textContent = "📵"; $("#tcIcon").className = "big warn"; $("#tcTitle").textContent = "暂不可播"; $("#tcDesc").textContent = ext ? "本课次视频为外部存储地址，暂不可本地播放。可查看下方文字资源或学习大纲其它课时。" : "本课次暂无可播放的视频资源。可查看下方文字资源或学习大纲其它课时。"; }
+    }
+
+    // --- 资源（作业 tab）：material_category 过滤，非视频资源可打开 ---
+    var panel = $("#p-hw");
+    var assets = (d.assets || []).filter(function (a) { return a.material_category !== "video"; });
+    var hwCount = assets.length;
+    var hwBadge = $("#hwCnt");
+    if (hwBadge) { if (hwCount) { hwBadge.hidden = false; hwBadge.textContent = hwCount; } else { hwBadge.hidden = true; } }
+    if (panel) {
+      var catLabel = { handout: "讲义", exercise: "作业练习", reference: "参考资料", image: "图片" };
+      panel.innerHTML = "<h3>📝 本节资源</h3>" + (assets.length ? assets.map(function (a) {
+        var local = a.file_url && a.file_url.charAt(0) === "/";
+        var mediaSrc = local ? ((window.EAPI && window.EAPI.BASE ? window.EAPI.BASE : "") + a.file_url) : a.file_url;
+        return '<div class="hw-card"><div class="hw-head"><span class="ic">📎</span><span class="t">' + esc(a.asset_name) + '</span><span class="meta"><span class="chip orange">' + esc(catLabel[a.material_category] || a.material_category) + "</span></span></div>" +
+          (local ? '<a class="btn btn-primary" href="' + esc(mediaSrc) + '" target="_blank" rel="noopener">打开资源</a>'
+                : '<p class="intro-p">资源为外部地址，暂不可本地打开。</p>');
+      }).join("") : '<p class="intro-p">本节暂无文字资源。</p>');
+    }
+    // 考试 tab：真实契约无考试落点 → 诚实空态（不伪造题卡）
+    var exPanel = $("#p-exam");
+    if (exPanel) exPanel.innerHTML = "<h3>📐 本节考试</h3><p class=\"intro-p\">本节暂无考试安排。</p>";
+    var exBadge = $("#examCnt");
+    if (exBadge) exBadge.hidden = true;
+
+    // 冻结课文由独立授权接口提供；原课次详情没有简介字段。
+    var intro = $("#introText");
+    if (intro) intro.textContent = "本课次暂无文字简介（接口未提供简介字段）。视频播放见上方，本节资源见「作业」标签页。";
+    var materialBox = $("#pilotMaterial");
+    if (materialBox) { materialBox.hidden = true; materialBox.textContent = ""; }
+    E.get("/api/study/sessions/" + d.session_id + "/pilot-material").then(function (material) {
+      if (state.session_id !== d.session_id || !material || !material.text) return;
+      if (intro) intro.textContent = "本课使用原创文字讲义（" + material.pack_version + "）。";
+      if (materialBox) { materialBox.textContent = material.text; materialBox.hidden = false; }
+      if (!playable && box) {
+        state.textSeriesId = state.series_id;
+        if (state.outline) renderOutline(state.outline);
+        if (badge) badge.hidden = true;
+        if ($("#tickNotice")) $("#tickNotice").hidden = true;
+        if ($("#tab-video")) $("#tab-video").textContent = "讲义";
+        $("#tcIcon").textContent = "📖";
+        $("#tcIcon").className = "big";
+        $("#tcTitle").textContent = "本课为文字课";
+        $("#tcDesc").textContent = "请阅读下方讲义，然后开始本课练习。";
+        var watchBadge = meta && meta.querySelector(".badges");
+        if (watchBadge) watchBadge.textContent = "📖 文字课 · 阅读讲义";
+        var completionFlag = $("#doneFlag");
+        if (completionFlag) completionFlag.textContent = "阅读讲义后完成本课练习，提交后记录学习结果";
+        var completeButton = $("#realCompleteBtn");
+        if (completeButton) completeButton.remove();
+      }
+    }).catch(function (err) {
+      if (state.session_id !== d.session_id) return;
+      if (err && err.status === 503 && intro) intro.textContent = "本课文字材料暂不可用，请稍后重试。";
+    });
+
+    renderComplete(d);
+    window.dispatchEvent(new CustomEvent("edu:session-ready", { detail: { session_id: d.session_id } }));
+  }
+
+  var courseChatLink = $("#courseChatLink");
+  if (courseChatLink) courseChatLink.addEventListener("click", function (event) {
+    event.preventDefault();
+    var status = $("#courseChatStatus");
+    if (!state.session_id) {
+      if (status) status.textContent = "当前课次尚未加载，请稍后重试。";
+      return;
+    }
+    if (status) status.textContent = "正在建立本课学习上下文…";
+    courseChatLink.setAttribute("aria-busy", "true");
+    E.post("/api/study/contexts", { session_id: state.session_id }).then(function (ctx) {
+      if (!ctx || !ctx.study_context_id) throw new Error("学习上下文创建响应缺少 ID");
+      var params = new URLSearchParams();
+      params.set("study_context_id", ctx.study_context_id);
+      window.location.assign("chat.html?" + params.toString());
+    }).catch(function (err) {
+      courseChatLink.removeAttribute("aria-busy");
+      if (status) status.textContent = "本课答疑暂时无法连接，请刷新课次后重试。";
+      console.warn("[learning] StudyContext creation failed", err && err.message);
+    });
+  });
+
+  var coursePracticeLink = $("#coursePracticeLink");
+  if (coursePracticeLink) coursePracticeLink.addEventListener("click", function (event) {
+    event.preventDefault();
+    var status = $("#courseChatStatus");
+    if (!state.session_id) {
+      if (status) status.textContent = "当前课次尚未加载，请稍后重试。";
+      return;
+    }
+    coursePracticeLink.setAttribute("aria-busy", "true");
+    if (status) status.textContent = "正在开始本课练习…";
+    E.post("/api/study/contexts", { session_id: state.session_id })
+      .then(function (ctx) {
+        if (!ctx || !ctx.study_context_id) throw new Error("学习上下文创建失败");
+        return E.post("/api/study/loops", { study_context_id: ctx.study_context_id });
+      }).then(function (loop) {
+        if (!loop || !loop.learning_loop_id || !loop.course_id) throw new Error("学习轮次创建失败");
+        var params = new URLSearchParams();
+        params.set("learning_loop_id", loop.learning_loop_id);
+        params.set("course_id", String(loop.course_id));
+        window.location.assign("practice.html?" + params.toString());
+      }).catch(function (err) {
+        coursePracticeLink.removeAttribute("aria-busy");
+        if (status) status.textContent = "本课练习暂时无法开始，请稍后重试。";
+        console.warn("[learning] Learning loop activation failed", err && err.message);
+      });
+  });
+
+  /* ---- 完成态：POST /api/study/sessions/{id}/complete 真实写库（实测 completed:true）---- */
+  function renderComplete(d) {
+    var flag = $("#doneFlag");
+    if (!flag) return;
+    var cur = findOutlineSession(state.session_id);
+    var ratio = cur ? Math.round(cur.watch_ratio) : 0;
+    var done = cur ? (cur.watch_ratio >= 80 && cur.homework_done) : false;
+    flag.textContent = done ? "🎉 本课已完成" : "⏳ 观看进度 " + ratio + "%（完成判定：观看 ≥80% 且作业完成）";
+    var old = $("#realCompleteBtn");
+    if (old) old.remove();
+    var btn = document.createElement("button");
+    btn.id = "realCompleteBtn";
+    btn.type = "button";
+    btn.className = "btn btn-primary";
+    btn.style.marginLeft = "auto";
+    btn.textContent = "标记完成（真实写入）";
+    flag.parentNode.appendChild(btn);
+    btn.onclick = function () {
+      btn.disabled = true;
+      E.post("/api/study/sessions/" + state.session_id + "/complete").then(function (r) {
+        flag.textContent = (r && r.completed) ? "🎉 已标记完成"
+          : "⚠️ 后端返回未完成：该课次暂无学习记录（播放会话未建立），请稍后重试";
+        refreshOutline();
+      }).catch(function (err) {
+        btn.disabled = false;
+        flag.textContent = "❌ 标记完成失败：" + ((err && err.message) || "未知错误");
+        console.warn("[learning] complete failed", err && err.message);
+      });
+    };
+  }
+
+  function refreshOutline() {
+    if (!state.series_id) return;
+    E.get("/api/study/courses/" + state.series_id + "/outline").then(function (o) {
+      renderOutline(o);
+      // 完成态反馈文案不在此覆盖（refreshOutline 由完成/刷新触发，避免冲掉用户可见结果）
+    }).catch(function (e) { console.warn("[learning] outline refresh failed", e && e.message); });
+  }
+
+  function loadSession(sid) {
+    E.get("/api/study/sessions/" + sid).then(renderSession).catch(function (err) {
+      if (err && (err.status === 403 || (err.body && err.body.code === "40330"))) {
+        showGuard({ desc: (err.body && err.body.message) || "仅报名该班次的学员可访问本课次内容。" });
+        return;
+      }
+      console.warn("[learning] session detail failed", err && err.message);
+      showGuard({ code: "加载失败", title: "课次加载失败", desc: (err && err.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    });
+  }
+
+  function pickFirst(o) {
+    if (o && o.modules && o.modules.length && o.modules[0].sessions && o.modules[0].sessions.length) {
+      loadSession(o.modules[0].sessions[0].session_id);
+    } else {
+      $("#sylBody").innerHTML = '<p class="intro-p" style="padding:10px 16px">大纲暂无可见课次。</p>';
+    }
+  }
+
+  function start(sid, cid) {
+    state.series_id = sid;
+    if (cid) state.cohort_id = cid;
+    $("#cohortPicker").hidden = true;
+    $("#learnLayout").hidden = false;
+    E.get("/api/study/courses/" + sid + "/access").then(function (acc) {
+      if (acc && acc.cohort_id && !state.cohort_id) state.cohort_id = parseInt(acc.cohort_id, 10) || 0;
+      if (acc && acc.accessible === false) {
+        showGuard({ desc: acc.reason || "仅已报名该班次的学员可观看该课次。" });
+        return;
+      }
+      hideGuard();
+      E.get("/api/study/courses/" + sid + "/outline").then(function (o) {
+        renderOutline(o);
+        if (state.session_id) loadSession(state.session_id); else pickFirst(o);
+      }).catch(function (e) {
+        console.warn("[learning] outline failed", e && e.message);
+        showGuard({ code: "加载失败", title: "大纲加载失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+      });
+    }).catch(function (accErr) {
+      console.warn("[learning] access failed", accErr && accErr.message);
+      showGuard({ code: "校验失败", title: "无法校验班次访问权限", desc: (accErr && accErr.body && accErr.body.message) || (accErr && accErr.message) || "请重新登录后重试。", ctaText: "返回登录", ctaHref: "login-register.html" });
+    });
+  }
+
+  /* ---- 启动：入口参数 → 班次选择/直达课次；无 token → 诚实登录引导 ---- */
+  if (!E.store.getToken()) {
+    showGuard({ code: "请先登录", title: "登录后开始学习", desc: "学习页需要登录态：班次 → 课次 → 视频 → 完成态全链路均基于真实报名数据。", ctaText: "去登录 / 注册", ctaHref: E.buildLoginUrl((location.pathname || "/learning.html") + (location.search || "")) });
+    return;
+  }
+  state.series_id = intParam(E.pageId("series_id"));
+  state.cohort_id = intParam(E.pageId("cohort_id"));
+  state.session_id = intParam(E.pageId("session_id"));
+  if (state.series_id) { start(state.series_id, state.cohort_id); return; }
+  if (state.cohort_id) {
+    E.get("/api/enrollments/me/cohorts").then(function (list) {
+      var arr = Array.isArray(list) ? list : [];
+      var it = arr.filter(function (x) { return String(x.cohort_id) === String(state.cohort_id); })[0];
+      if (it && it.series_id) start(parseInt(it.series_id, 10), state.cohort_id);
+      else showGuard({ code: "空态 · 未报名", title: "未找到该班次的报名信息", desc: "当前账号未报名该班次或报名已失效。", ctaText: "去课程中心选课报名", ctaHref: "courses.html" });
+    }).catch(function (e) { console.warn("[learning] enrollments failed", e && e.message); renderCohortPicker(); });
+    return;
+  }
+  if (state.session_id) {
+    // 只有 session_id：从课次详情反查 series_id 后走完整链路
+    E.get("/api/study/sessions/" + state.session_id).then(function (d) {
+      if (d && d.series_id) start(parseInt(d.series_id, 10), 0);
+      else showGuard({ code: "加载失败", title: "课次不存在", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    }).catch(function (e) {
+      if (e && (e.status === 403 || (e.body && e.body.code === "40330"))) { showGuard({ desc: (e.body && e.body.message) || "该课次为报名专属内容。" }); return; }
+      console.warn("[learning] no series context", e && e.message);
+      showGuard({ code: "加载失败", title: "课次加载失败", desc: (e && e.message) || "请稍后重试。", ctaText: "返回我的班次", ctaHref: "my-cohorts.html" });
+    });
+    return;
+  }
+  renderCohortPicker();
+})();
+</script>
+</body></html>

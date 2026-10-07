@@ -1,0 +1,11 @@
+C4Context
+ title Bili-Study System Context
+ Person(student, "Student", "Watches, practices, asks")
+ Person(teacher, "Teacher / Admin", "Imports courses and knowledge")
+ System(app, "Bili-Study", "Real courses and evidence-grounded learning")
+ System_Ext(bili, "Bilibili", "Authorized video sources")
+ System_Ext(llm, "Model Provider", "OpenAI-compatible API")
+ Rel(student, app, "Learns and asks", "HTTP / SSE")
+ Rel(teacher, app, "Imports and produces", "HTTP")
+ Rel(app, bili, "Acquires video and subtitles", "HTTPS")
+ Rel(app, llm, "Compiles and answers", "HTTPS")

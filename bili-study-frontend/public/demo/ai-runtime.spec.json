@@ -1,0 +1,552 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bili-Study · 实测 AI 执行路径",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/workflow-edu-runtime-20261005-164900/ai-runtime.html",
+    "repository": {
+      "url": "https://example.invalid/edu-runtime-evidence",
+      "revision": "3bafc8e916d8eee143762a417cf60bb80fbc18ff",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "request",
+      "type": "frontend",
+      "label": "学生提问",
+      "sublabel": "学习页／普通 Chat",
+      "sources": [
+        {
+          "path": "bili-study-frontend/public/learning.html",
+          "line": 902,
+          "end_line": 920
+        }
+      ],
+      "pos": [
+        20,
+        80
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "api",
+      "type": "security",
+      "label": "Chat API",
+      "sublabel": "JWT 校验、SSE 契约",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/router.py",
+          "line": 287,
+          "end_line": 305
+        }
+      ],
+      "pos": [
+        230,
+        80
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "response",
+      "type": "backend",
+      "label": "回答与持久化",
+      "sublabel": "SSE token → done",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/router.py",
+          "line": 411,
+          "end_line": 429
+        }
+      ],
+      "pos": [
+        510,
+        640
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "route",
+      "type": "backend",
+      "label": "route",
+      "sublabel": "SixNodeHarness.route",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 58,
+          "end_line": 76
+        }
+      ],
+      "pos": [
+        230,
+        260
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "skill",
+      "type": "backend",
+      "label": "skill",
+      "sublabel": "共享支持节点",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/graph.py",
+          "line": 223,
+          "end_line": 241
+        }
+      ],
+      "pos": [
+        510,
+        260
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "compact",
+      "type": "backend",
+      "label": "compact",
+      "sublabel": "共享支持节点",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/graph.py",
+          "line": 363,
+          "end_line": 381
+        }
+      ],
+      "pos": [
+        740,
+        260
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "context_edit",
+      "type": "backend",
+      "label": "context_edit",
+      "sublabel": "共享支持节点",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/graph.py",
+          "line": 425,
+          "end_line": 443
+        }
+      ],
+      "pos": [
+        970,
+        260
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "plan",
+      "type": "backend",
+      "label": "plan",
+      "sublabel": "SixNodeHarness.plan",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 107,
+          "end_line": 125
+        }
+      ],
+      "pos": [
+        970,
+        440
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "fan_out",
+      "type": "backend",
+      "label": "fan_out",
+      "sublabel": "SixNodeHarness.fan_out",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 139,
+          "end_line": 157
+        }
+      ],
+      "pos": [
+        740,
+        440
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "merge",
+      "type": "backend",
+      "label": "merge",
+      "sublabel": "SixNodeHarness.merge",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 302,
+          "end_line": 320
+        }
+      ],
+      "pos": [
+        510,
+        440
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "reflect",
+      "type": "backend",
+      "label": "reflect",
+      "sublabel": "SixNodeHarness.reflect",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 318,
+          "end_line": 336
+        }
+      ],
+      "pos": [
+        230,
+        440
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "answer",
+      "type": "backend",
+      "label": "answer",
+      "sublabel": "SixNodeHarness.answer",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/ai/harness/sixnode.py",
+          "line": 349,
+          "end_line": 367
+        }
+      ],
+      "pos": [
+        230,
+        640
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "StudyContext",
+      "sublabel": "课程、课次标题与权限",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/learning/study_context.py",
+          "line": 142,
+          "end_line": 160
+        }
+      ],
+      "pos": [
+        230,
+        860
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "ready",
+      "type": "security",
+      "label": "正式版本权威",
+      "sublabel": "仅 READY Publication",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/video_learning/publication.py",
+          "line": 23,
+          "end_line": 41
+        }
+      ],
+      "pos": [
+        510,
+        860
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "scoped",
+      "type": "backend",
+      "label": "课程范围 RAG",
+      "sublabel": "video / generation / SHA",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/service.py",
+          "line": 370,
+          "end_line": 388
+        }
+      ],
+      "pos": [
+        740,
+        860
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "tutor",
+      "type": "backend",
+      "label": "Course Tutor",
+      "sublabel": "课次背景＋正式证据",
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/service.py",
+          "line": 873,
+          "end_line": 891
+        }
+      ],
+      "pos": [
+        970,
+        860
+      ],
+      "size": [
+        160,
+        66
+      ]
+    },
+    {
+      "id": "seek",
+      "type": "frontend",
+      "label": "返回视频依据",
+      "sublabel": "章节与字幕时间跳转",
+      "sources": [
+        {
+          "path": "bili-study-frontend/public/chat.html",
+          "line": 1072,
+          "end_line": 1090
+        }
+      ],
+      "pos": [
+        970,
+        1050
+      ],
+      "size": [
+        160,
+        66
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "request-api",
+      "from": "request",
+      "to": "api",
+      "variant": "default"
+    },
+    {
+      "id": "api-route",
+      "from": "api",
+      "to": "route",
+      "variant": "emphasis",
+      "label": "普通问答"
+    },
+    {
+      "id": "route-skill",
+      "from": "route",
+      "to": "skill",
+      "variant": "default",
+      "label": "知识／工具／规划"
+    },
+    {
+      "id": "skill-compact",
+      "from": "skill",
+      "to": "compact",
+      "variant": "default"
+    },
+    {
+      "id": "compact-context_edit",
+      "from": "compact",
+      "to": "context_edit",
+      "variant": "default"
+    },
+    {
+      "id": "context_edit-plan",
+      "from": "context_edit",
+      "to": "plan",
+      "variant": "default"
+    },
+    {
+      "id": "plan-fan_out",
+      "from": "plan",
+      "to": "fan_out",
+      "variant": "default"
+    },
+    {
+      "id": "fan_out-merge",
+      "from": "fan_out",
+      "to": "merge",
+      "variant": "default"
+    },
+    {
+      "id": "merge-reflect",
+      "from": "merge",
+      "to": "reflect",
+      "variant": "default"
+    },
+    {
+      "id": "reflect-answer",
+      "from": "reflect",
+      "to": "answer",
+      "variant": "default",
+      "label": "资料充分"
+    },
+    {
+      "id": "reflect-compact",
+      "from": "reflect",
+      "to": "compact",
+      "variant": "dashed",
+      "label": "需再检索",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          310,
+          380
+        ],
+        [
+          820,
+          380
+        ]
+      ]
+    },
+    {
+      "id": "route-answer",
+      "from": "route",
+      "to": "answer",
+      "variant": "dashed",
+      "label": "纯闲聊",
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          212,
+          293
+        ],
+        [
+          212,
+          673
+        ]
+      ]
+    },
+    {
+      "id": "answer-response",
+      "from": "answer",
+      "to": "response",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-identity",
+      "from": "api",
+      "to": "identity",
+      "variant": "security",
+      "label": "本课入口",
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          196,
+          113
+        ],
+        [
+          196,
+          893
+        ]
+      ]
+    },
+    {
+      "id": "identity-ready",
+      "from": "identity",
+      "to": "ready",
+      "variant": "default"
+    },
+    {
+      "id": "ready-scoped",
+      "from": "ready",
+      "to": "scoped",
+      "variant": "default"
+    },
+    {
+      "id": "scoped-tutor",
+      "from": "scoped",
+      "to": "tutor",
+      "variant": "default"
+    },
+    {
+      "id": "tutor-seek",
+      "from": "tutor",
+      "to": "seek",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "九节点图与六节点 Harness 的关系",
+      "items": [
+        "LangGraph 管理拓扑与分支；六个核心节点委托 SixNodeHarness",
+        "skill、compact、context_edit 为共享支持节点；并非另一套模型流水线"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "2026-10-05 真实请求验证",
+      "items": [
+        "知识、计算、学习规划：九节点真实 Trace；计算器返回 391",
+        "纯问候：route → answer；本课答疑：正式版本召回与 539.88 秒跳转"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "可见性与证据",
+      "items": [
+        "pending 向量不能替代 READY Publication；旧正式版继续可用",
+        "代码来自有界本地快照；运行证据见 ai-runtime-demo 与 ai-chitchat-demo 回执"
+      ]
+    }
+  ]
+}

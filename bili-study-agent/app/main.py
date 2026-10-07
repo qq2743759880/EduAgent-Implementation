@@ -1,0 +1,704 @@
+"""
+FastAPI 应用主入口。
+
+关键概念：
+- lifespan：应用启动/关闭钩子（初始化 5 类存储连接池）
+- middleware：CORS + AuthMiddleware（公开路径白名单跳过 JWT）
+- routers：health / auth / knowledge / curriculum / users / ... 逐步增加
+"""
+from __future__ import annotations
+
+import asyncio
+import os
+import sys
+from contextlib import asynccontextmanager
+from typing import Any
+
+# Windows 下 asyncio 子进程（P8 MCP stdio create_subprocess_exec）需要 ProactorEventLoop；
+# 否则 SelectorEventLoop 不支持 subprocess，导致 initialize/tool call 假死无响应。
+if os.name == "nt" and sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())  # type: ignore[attr-defined]
+    except Exception:  # pragma: no cover
+        pass
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.auth.router import router as auth_router
+from app.common.error_codes import STATUS_TO_CODE, DEPENDENCY_UNAVAILABLE
+from app.common.exceptions import AppException
+from app.common.logging import logger
+from app.common.security_headers import SecurityHeadersMiddleware
+from app.config import settings
+from app.core.breaker import CircuitOpenError
+from app.core.openapi_shell import install_openapi_shell
+from app.database import (
+    close_milvus, close_minio, close_mongo, close_mysql, close_neo4j, close_redis,
+    init_milvus, init_minio, init_mongo, init_mysql, init_mysql_ro, init_neo4j, init_redis,
+)
+from app.middleware import (
+    TraceMiddleware, AdminAuthMiddleware, RateLimitMiddleware,
+    CircuitGuardMiddleware, IdempotencyMiddleware, RespWrapMiddleware,
+)
+from app.routers import health
+from app.monitoring.router import router as monitoring_router
+
+
+def _warmup_local_models() -> None:
+    """后台预热（兼容旧调用点）：统一转交 app.core.warmup.run_warmup。
+
+    task39 GWT③：改走后端感知预热（云端优先不预加载本地 BGE、reranker 由 sidecar 预热、
+    sidecar 不可达才落本地），避免 §7 薄弱点 3 的多 worker 显存重复占用。
+    """
+    import asyncio as _asyncio
+
+    from app.core import warmup as _warmup_mod
+
+    _asyncio.run(_warmup_mod.run_warmup())
+
+
+# ============================================================
+# Lifespan：应用启动 / 关闭 钩子
+# ============================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(f"=== {settings.APP_NAME} v{settings.APP_VERSION} 正在启动 ===")
+
+    # C5-K1：/metrics 门禁形态自证（未设 METRICS_TOKEN 维持公开=向后兼容，打 WARN）
+    if not (settings.METRICS_TOKEN or "").strip():
+        logger.warning(
+            "[安全] METRICS_TOKEN 未设置，/metrics 维持公开（Prometheus 抓取向后兼容）；"
+            "生产环境建议设置 METRICS_TOKEN 启用 Bearer 门禁（抓取端配 bearer_token 同值）"
+        )
+
+    # P1-8 门禁已前移至 Settings 构造期(_debug_env_gate model_validator,import 即拦截)
+
+    # ── 启动阶段：5 类存储初始化（任一失败仅 DEBUG 模式下继续） ──
+    store_status = {}
+
+    # 1. MySQL（本地，主库）
+    try:
+        await init_mysql()
+        store_status["mysql"] = "ok"
+        # 主库初始化成功后，尝试初始化只读连接池（Phase 2 读写分离）
+        try:
+            await init_mysql_ro()
+            store_status["mysql_ro"] = "ok"
+        except Exception as e:
+            logger.warning(f"MySQL 只读池初始化失败（降级为主库，不影响服务）: {e}")
+            store_status["mysql_ro"] = f"degraded: {e}"
+    except Exception as e:
+        logger.error(f"MySQL 初始化失败: {e}")
+        store_status["mysql"] = f"error: {e}"
+        if not settings.DEBUG:
+            raise
+
+    # 2. Milvus（虚拟机，向量库）
+    try:
+        init_milvus()
+        store_status["milvus"] = "ok"
+    except Exception as e:
+        logger.warning(f"Milvus 初始化失败（开发模式可忽略，知识库不可用）: {e}")
+        store_status["milvus"] = f"error: {e}"
+        if not settings.DEBUG:
+            raise
+
+    # 3. MongoDB（虚拟机，对话状态）
+    try:
+        await init_mongo()
+        store_status["mongodb"] = "ok"
+    except Exception as e:
+        logger.warning(f"MongoDB 初始化失败（开发模式可忽略，对话不可用）: {e}")
+        store_status["mongodb"] = f"error: {e}"
+        if not settings.DEBUG:
+            raise
+
+    # 4. MinIO（对象存储，课程视频/课件/题库附件）
+    try:
+        init_minio()
+        store_status["minio"] = "ok"
+    except Exception as e:
+        logger.warning(f"MinIO 初始化失败（开发模式可忽略，文件上传不可用）: {e}")
+        store_status["minio"] = f"error: {e}"
+        if not settings.DEBUG:
+            raise
+
+    # 5. Neo4j（图谱存储，知识图谱/推荐/思维导图；DEBUG 连不上不阻断）
+    if not settings.NEO4J_ENABLED:
+        store_status["neo4j"] = "disabled"
+    else:
+        try:
+            init_neo4j()
+            store_status["neo4j"] = "ok"
+        except Exception as e:
+            logger.warning(f"Neo4j 初始化失败（开发模式可忽略，仅图谱写入会跳过）: {e}")
+            store_status["neo4j"] = f"error: {e}"
+            if not settings.DEBUG:
+                raise
+
+    # 6. Redis（缓存层，Phase 1：缓存 + 限流；DEBUG 连不上不阻断，降级为无缓存）
+    try:
+        await init_redis()
+        store_status["redis"] = "ok"
+    except Exception as e:
+        logger.warning(f"Redis 初始化失败（开发模式可忽略，缓存/限流降级为跳过）: {e}")
+        store_status["redis"] = f"error: {e}"
+        if not settings.DEBUG:
+            raise
+
+    # G0-OWNER: web_ready 协议写入点（v2.5 §8-3）：存储初始化完成后写 runtime:web_ready，
+    # 供进程外 worker（W3 起）消费循环前置等待（进程内 worker 不等待，沿用现状）。失败仅 WARN 不阻断。
+    try:
+        from app.core.worker_runtime import build_web_ready_payload, WEB_READY_KEY, WEB_READY_TTL_S
+        from app.database import get_redis as _get_redis
+        await _get_redis().set(WEB_READY_KEY, build_web_ready_payload(), ex=WEB_READY_TTL_S)
+    except Exception as _e:
+        logger.warning(f"web_ready 键写入失败（worker 侧将等待重试，不影响主服务）: {type(_e).__name__}: {_e}")
+
+    # ── W-NEXT-OTLP-001：标准 OTLP HTTP 导出器探针（lifespan hook）──
+    # OTEL_EXPORTER_OTLP_ENDPOINT 空 → state=disabled（安全缺省，仅 INFO）；
+    # 非空 → 启动期做 SSRF 白名单守门 + 一次性 TCP 探活，失败仅 WARN 不阻断
+    # （与上述 6 存储 init 同语义）。探针由 scripts/eval/otlp_health_probe.py
+    # + check-demo ⑳ 段消费 [OTLP] JSON 输出。host 不在白名单=立即 ssrf_rejected 阻断
+    # （app/security/ssrf_guard.py 默认白名单 127.0.0.1 / localhost / 192.168.85.101 / 10.0.0.1）。
+    try:
+        from app.observability.otlp import init_otlp as _init_otlp
+        otlp_state = _init_otlp()
+        store_status["otlp"] = otlp_state
+    except Exception as e:
+        logger.warning(
+            f"OTLP 导出器初始化兜底异常（不阻断启动，按 disabled 处理）: "
+            f"{type(e).__name__}: {e}"
+        )
+        store_status["otlp"] = f"error: {e}"
+
+    logger.info(f"=== 存储初始化完成: {store_status} ===")
+
+    # ── 预热阶段：后端感知预热（不阻塞启动，避免首个用户 10~44s 冷启动） ──
+    # task39 GWT③：jieba + embedding（云端连接池 / 本地 BGE 二选一）+ reranker
+    # （sidecar 优先，不可达才落本地进程内模型），逐组件记录耗时供 /health/warmup 观测。
+    async def _warmup() -> None:
+        try:
+            from app.core import warmup as warmup_mod
+            await warmup_mod.run_warmup()
+        except Exception as exc:
+            logger.warning(f"[预热] 预热失败（不影响服务，请求时懒加载兜底）：{type(exc).__name__}: {exc}")
+
+    warmup_task = asyncio.create_task(_warmup())
+
+    # ── AI HITL 退款审批：72h 超时升级后台扫描（task28 GWT③） ──
+    # settings.HITL_ESCALATION_AUTO=True 时自动拉起；stop_event 置位在关闭阶段退出。
+    hitl_stop = asyncio.Event()
+    hitl_scan_task = None
+    if settings.HITL_REFUND_ENABLED and settings.HITL_ESCALATION_AUTO:
+        try:
+            from app.domains.trade.refund.hitl_graph import run_escalation_loop
+            hitl_scan_task = asyncio.create_task(run_escalation_loop(stop_event=hitl_stop))
+        except Exception as e:
+            logger.warning(f"AI HITL 超时扫描任务启动失败（跳过，不影响服务）: {e}")
+
+    # ── R01 P0：记忆写队列消费者通电（全仓唯一生产启动点；Dream/HITL 后台循环随之启动）──
+    # audit P0：此前 lifespan 从未调用 start_memory_worker，chat 每轮 LPUSH 进 edu:mem_queue
+    # 后无人消费，user_memory 永不落库。启动失败仅 WARN 不阻断主服务（与存储初始化同语义）。
+    try:
+        from app.ai.memory.service import start_memory_worker
+        await start_memory_worker()
+    except Exception as e:
+        logger.warning(
+            f"记忆 worker 启动失败（记忆写队列本轮无人消费，降级运行，不影响主服务）: "
+            f"{type(e).__name__}: {e}"
+        )
+
+    # ── MCP-TRUTH 接线（修复 audit-rag #6 search_knowledge 空壳）：应用启动给 MCP 内置
+    # search_knowledge 工具注入真实三通道检索后端。此前该注入点全仓零调用，MCP 工具永远返回
+    # 「知识检索后端未接入」降级。失败仅 WARN 不阻断（后端不可用仍走确定性降级纪律）。
+    try:
+        from app.mcp.executor import init_mcp_capabilities
+        await init_mcp_capabilities()
+    except Exception as e:
+        logger.warning(
+            f"MCP search_knowledge 后端接线失败（工具降级为「未接入」返回，不影响主服务）: "
+            f"{type(e).__name__}: {e}"
+        )
+
+    # ── R-M1：学习事件流 worker 通电（Mongo learning_event 旁路异步写，M-1）──
+    # 旁路纪律：启动失败/索引失败仅 WARN 不阻断主服务；写失败熔断自愈（event_stream 内）。
+    try:
+        from app.domains.analytics.event_stream import start_event_worker
+        await start_event_worker()
+    except Exception as e:
+        logger.warning(
+            f"学习事件 worker 启动失败（事件旁路降级停写，主链无感）: {type(e).__name__}: {e}"
+        )
+
+    # Video knowledge has a durable queue and shares the loaded BGE singleton.
+    # Failure to launch derived processing must never interrupt playback.
+    video_worker_stop = asyncio.Event()
+    app.state.video_knowledge_supervisor = None
+    try:
+        from app.domains.video_learning.tasks import ensure_schema as ensure_video_tasks
+        from app.domains.video_learning.task_worker import supervise_worker as supervise_video_worker
+        await ensure_video_tasks()
+        if os.environ.get("VIDEO_KNOWLEDGE_WORKER_ENABLED", "true").lower() == "true":
+            app.state.video_knowledge_supervisor = asyncio.create_task(supervise_video_worker(video_worker_stop))
+    except Exception as exc:
+        logger.warning(f"Video knowledge worker unavailable: {type(exc).__name__}")
+
+    # ── 运行阶段 ──
+    yield
+
+    if getattr(app.state, "video_knowledge_supervisor", None):
+        from app.domains.video_learning.task_worker import drain_worker as drain_video_worker
+        await drain_video_worker(app.state.video_knowledge_supervisor, video_worker_stop)
+
+    # ── 关闭阶段 ──
+    # R01 + W-NEXT-LIFECYCLE-001：先停记忆消费者（停止取新单 + 取消 Dream/HITL 后台循环），再关存储连接，
+    # 避免关闭途中 worker 取单访问已释放的 MySQL/Redis。
+    # 8000 死循环根治：queue.stop_consumer 内已捕 BaseException + timeout shield，
+    # 这里再裹一层 asyncio.wait_for 确保整个 stop 阶段在 10s 内完成，
+    # 不让外层（uvicorn Server.handle_exit）的 cancel 把 CancelledError 透到日志造成
+    # "Application shutdown failed" + traceback dump。
+    try:
+        from app.ai.memory.service import stop_memory_worker
+        # 9s 上限：留 1s 余量给 lifespan 后续的 storage close + uvicorn 退出阶段。
+        await asyncio.wait_for(stop_memory_worker(timeout=8.0), timeout=9.0)
+    except asyncio.CancelledError:
+        # lifespan 阶段被 uvicorn SIGTERM 触发取消 → 吞掉，让 8000 干净退出
+        logger.info("[Lifespan] stop_memory_worker 收到 shutdown cancel（已吞，无 traceback）")
+    except asyncio.TimeoutError:
+        logger.warning("[Lifespan] stop_memory_worker 超时（已强制退出，继续关存储）")
+    except Exception as e:
+        logger.warning(f"记忆 worker 停止异常（忽略继续关闭）: {type(e).__name__}: {e}")
+    if hitl_scan_task is not None:
+        hitl_stop.set()
+        try:
+            await asyncio.wait_for(hitl_scan_task, timeout=10)
+        except Exception:
+            hitl_scan_task.cancel()
+    # R-M1：先停学习事件 worker（停止 mongo 侧写入），再关存储连接（与记忆 worker 同序语义）
+    try:
+        from app.domains.analytics.event_stream import stop_event_worker
+        residual = await asyncio.wait_for(stop_event_worker(timeout=4.0), timeout=5.0)
+        if residual:
+            logger.warning(f"[Lifespan] 学习事件 worker 停止时队列残留 {residual} 条（旁路事件，允许丢弃）")
+    except asyncio.CancelledError:
+        logger.info("[Lifespan] stop_event_worker 收到 shutdown cancel（已吞）")
+    except Exception as e:
+        logger.warning(f"学习事件 worker 停止异常（忽略继续关闭）: {type(e).__name__}: {e}")
+    warmup_task.cancel()
+    # ── W-NEXT-OTLP-001：OTLP 导出器关闭（清空缓冲 + state=disabled，lifespan 兜底）──
+    try:
+        from app.observability.otlp import shutdown_otlp as _shutdown_otlp
+        _shutdown_otlp()
+    except Exception as e:
+        logger.warning(f"OTLP 导出器关闭异常（忽略）: {type(e).__name__}: {e}")
+    # G0-OWNER: web_ready 协议清除点（v2.5 §8-3）：先撤 ready 键再关存储，进程外 worker 侧随之回到等待态
+    # G0-HARDENING OWNER-H1：get_redis() 返回 aioredis.Redis，delete 是协程——必须 await（否则协程从未执行，键永不清除）
+    try:
+        from app.core.worker_runtime import WEB_READY_KEY as _WEB_READY_KEY
+        from app.database import get_redis as _get_redis_close
+        await _get_redis_close().delete(_WEB_READY_KEY)
+    except Exception as _e:
+        logger.warning(f"web_ready 键清除失败（worker 侧 TTL 自愈，不阻断关闭）: {type(_e).__name__}: {_e}")
+    logger.info("=== 服务正在关闭 ===")
+    for close_fn, name in [
+        (close_mysql,   "MySQL"),
+        (close_mongo,   "MongoDB"),
+        (lambda: (close_milvus(), None)[0], "Milvus"),
+        (lambda: (close_minio(), None)[0], "MinIO"),
+        (lambda: (close_neo4j(), None)[0], "Neo4j"),
+        (lambda: (close_redis(), None)[0], "Redis"),
+    ]:
+        try:
+            result = close_fn()
+            if hasattr(result, "__await__"):
+                await result
+        except Exception:
+            pass
+    logger.info("=== 服务已安全关闭 ===")
+
+
+# ============================================================
+# 创建 FastAPI 应用
+# ============================================================
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="多学科在线教育平台 AI Agent",
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    lifespan=lifespan,
+)
+
+# ── 媒体静态服务：课程视频等上传文件（DATA_DIR/media → /media，AuthMiddleware 白名单放行） ──
+from pathlib import Path as _MediaPath  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from starlette.exceptions import HTTPException as _StarletteHTTPException  # noqa: E402
+from starlette.responses import PlainTextResponse as _PlainTextResponse  # noqa: E402
+
+_MEDIA_ROOT = _MediaPath(settings.DATA_DIR) / "media"
+_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+
+
+class _MediaStaticFiles(StaticFiles):
+    """F-10①：/media 缺失文件返回纯文本 404。
+
+    静态资源非 API，不应套用统一 JSON 响应壳（原先 404 经全局 HTTPException
+    处理器返回 application/json，与「静态文件缺失」语义不符）。
+    """
+
+    async def get_response(self, path, scope):
+        try:
+            return await super().get_response(path, scope)
+        except _StarletteHTTPException as exc:
+            if exc.status_code == 404:
+                return _PlainTextResponse("404 Not Found", status_code=404)
+            raise
+
+
+app.mount("/media", _MediaStaticFiles(directory=str(_MEDIA_ROOT)), name="media")
+
+
+# ── 中间件（顺序：SecurityHeaders → CORS → RateLimit → AdminAuth → Idempotency → CircuitGuard → Trace → RespWrap） ──
+# 注册顺序 = 请求执行顺序的逆序（最后注册=最外层，最先注册=最内层靠路由）
+# ┌───────────────────────────────────────────────────────────┐
+# │ RespWrap  (8th, 最外层：响应壳兜底)                         │
+# │  ├ Trace     (7th: X-Trace-Id 注入 + 慢日志，外层保证       │
+# │  │            AAuth 401/RL 429 短路响应仍携带 trace_id)    │
+# │  │  ├ CircuitGuard (6th: 轻量熔断打标)                    │
+# │  │  │  ├ Idempotency  (5th: 幂等，写方法拦截)             │
+# │  │  │  │  ├ AdminAuth    (4th: 管理端 Bearer 鉴权)        │
+# │  │  │  │  │  ├ RateLimit    (3rd: IP+user 双维度限流)     │
+# │  │  │  │  │  │  ├ CORS        (2nd: 跨域)                 │
+# │  │  │  │  │  │  │  ├ SecurityHeaders (1st, 最内层靠路由) │
+# │  │  │  │  │  │  │  │  └ Router                           │
+# └───────────────────────────────────────────────────────────┘
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORS
+def _cors_origins() -> list[str]:
+    if settings.DEBUG:
+        return ["*"]
+    if settings.CORS_ORIGINS.strip():
+        return [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+    # 生产回退：localhost 与 127.0.0.1 双源(taskC3 实证：仅 localhost 时 127.0.0.1:3000
+    # 访问前端的所有 API 调用被 CORS 拦截——DEBUG 态 CORS=* 从未暴露此依赖)
+    return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 限流（IP+user_id 双维度；位于 AdminAuth 外层防 token 喷射打穿鉴权层）
+app.add_middleware(RateLimitMiddleware)
+
+# Admin 强制鉴权（task11 批判⑥补强 + judge R1：管理前缀 fail-closed 401 壳 "40101"）
+app.add_middleware(AdminAuthMiddleware)
+
+# 幂等（/api/trade/ 前缀拦截；鉴权内层生效，匿名请求不占用幂等缓存）
+app.add_middleware(IdempotencyMiddleware)
+
+# 熔断打标（轻量，不拦截）
+app.add_middleware(CircuitGuardMiddleware)
+
+# Trace（融合 Auth：trace_id 生成 + X-Trace-Id 透传 + 慢查询日志）
+# S1（judge 裁定）：Trace 保持在 RateLimit/AdminAuth 外层——限流 429 与鉴权 401
+# 短路响应均携带 X-Trace-Id，跨域前端可读完整壳体（CORS 在更外层注入响应头）。
+# 注册于 AdminAuth 之后（更外层），确保 AdminAuth 短路返回时 Trace 能注入 X-Trace-Id。
+# Trace（在 AdminAuth 外层确保 401/429 短路响应携带 X-Trace-Id）
+app.add_middleware(TraceMiddleware)
+
+# 响应壳兜底（白名单跳过 SSE/文件流）
+app.add_middleware(RespWrapMiddleware)
+
+
+# ── 全局异常处理 ──
+def _jsonable(v: Any) -> Any:
+    """递归把任意对象转为 JSON 可序列化形态。"""
+    if v is None or isinstance(v, (str, int, float, bool)):
+        return v
+    if isinstance(v, dict):
+        return {str(k): _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_jsonable(x) for x in v]
+    return str(v)
+
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    """业务层 AppException → {code, message, data:null}"""
+    detail = exc.detail if settings.DEBUG else None
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={"code": exc.code, "message": exc.message, "data": detail},
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTPException → {code, message, data:null}（R4：默认码查 STATUS_TO_CODE 单一事实源）"""
+    status_code = exc.status_code or 500
+    detail = exc.detail
+    default_code = STATUS_TO_CODE.get(status_code, "50000")
+    if isinstance(detail, dict):
+        code_val = detail.get("code", default_code)
+        message_val = detail.get("message", str(detail))
+    else:
+        code_val = default_code
+        message_val = str(detail) if detail is not None else f"HTTP {status_code}"
+
+    return JSONResponse(
+        status_code=status_code,
+        content={"code": code_val, "message": message_val, "data": None},
+        headers=exc.headers if exc.headers else None,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Pydantic 校验失败 → {code: 42200, message, data: null}"""
+    errors = exc.errors()
+    first_msg = "参数校验失败"
+    if errors:
+        first = errors[0]
+        raw_msg = first.get("msg") if isinstance(first, dict) else str(first)
+        loc = first.get("loc") if isinstance(first, dict) else None
+        field_path = ""
+        if isinstance(loc, list) and loc:
+            tail = [str(x) for x in loc if x != "body"]
+            if tail:
+                field_path = ".".join(tail) + "："
+        first_msg = f"{field_path}{raw_msg}" if raw_msg else first_msg
+    return JSONResponse(
+        status_code=422,
+        content={
+            "code": "42200",
+            "message": first_msg,
+            "data": _jsonable(errors) if settings.DEBUG else None,
+        },
+    )
+
+
+# ── 依赖型异常识别（T19-3，contracts/reshape-b.json：50301 DEPENDENCY_UNAVAILABLE）──
+# 语义：外部依赖（Milvus/MongoDB/Redis/MySQL/Neo4j/MinIO/LLM/MCP server）连接失败或超时
+# 时，未捕获逃逸到全局兜底的异常不再以 50000+str(exc) 直泄，改判 50301 + 用户化 message。
+# HTTP 状态码语义不变（兜底恒 500；显式 raise 点可用 503）。
+_DEPENDENCY_LIB_ROOTS = frozenset({
+    "pymilvus", "pymongo", "redis", "pymysql", "mysql", "asyncmy",
+    "httpx", "aiohttp", "requests", "grpc", "neo4j", "minio",
+})
+# 类名兜底（模块根匹配失效时的 belt-and-suspenders；只收无歧义的连接/超时信号）
+_DEPENDENCY_EXC_NAMES = frozenset({
+    # pymilvus
+    "MilvusException", "MilvusClientException",
+    # pymongo
+    "ServerSelectionTimeoutError", "AutoReconnect", "ConnectionFailure",
+    # httpx / aiohttp
+    "ConnectError", "ConnectTimeout", "ReadTimeout", "WriteTimeout", "PoolTimeout",
+    "ClientConnectorError", "ServerTimeoutError",
+})
+
+
+def _is_dependency_exception(exc: BaseException) -> bool:
+    """判定异常是否为「外部依赖不可达/超时」类（50301 判定核心）。
+
+    保守匹配三族 + MCP spawn 签名，宁漏勿误（匹配不上仍走 50000，不影响原有语义）：
+    1. 内建连接/超时族：ConnectionError（含 Refused/Reset/BrokenPipe）、TimeoutError
+       （py3.11 起 asyncio.TimeoutError 与 socket.timeout 均为 TimeoutError 别名）；
+    2. 第三方驱动库：按异常 MRO 的 __module__ 根包匹配（不硬 import，依赖未装也不报错）；
+    3. 已知依赖异常名：按类名兜底（跨库别名/内部熔断信号）；
+    4. MCP stdio spawn 失败签名：app/mcp/executor.py 固定 raise 前缀（stdio /
+       create_subprocess_exec 失败）。
+    """
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return True
+    # 内部依赖信号（避免循环 import，函数内引入）
+    try:
+        from app.core.db_resilience import DependencyUnavailableError as _Dep
+        if isinstance(exc, _Dep):
+            return True
+    except Exception:  # pragma: no cover
+        pass
+    if isinstance(exc, CircuitOpenError):
+        return True
+    for klass in type(exc).__mro__:
+        root = (getattr(klass, "__module__", "") or "").split(".", 1)[0]
+        if root in _DEPENDENCY_LIB_ROOTS:
+            return True
+        if getattr(klass, "__name__", "") in _DEPENDENCY_EXC_NAMES:
+            return True
+    if isinstance(exc, RuntimeError):
+        msg = str(exc)
+        if msg.startswith("stdio") or "create_subprocess_exec 失败" in msg:
+            return True
+    return False
+
+
+# ── C5-K3：500 错误旁路上报（fire-and-forget，失败静默）──
+# 在飞上报任务集合：测试可 drain（asyncio.gather(*_ERROR_WEBHOOK_TASKS)）后断言载荷。
+_ERROR_WEBHOOK_TASKS: set[asyncio.Task] = set()
+
+
+def _report_error_webhook(request: Request, exc: Exception) -> None:
+    """非 DEBUG 且配置 ERROR_WEBHOOK_URL 时，旁路上报 500 级异常精简载荷。
+
+    - DEBUG 一律不发；URL 未设置不发；
+    - fire-and-forget（create_task），任何失败静默，不影响错误响应与契约形状。
+    """
+    url = (settings.ERROR_WEBHOOK_URL or "").strip()
+    if not url or settings.DEBUG:
+        return
+    try:
+        from app.common.error_webhook import build_error_webhook_payload, post_error_webhook
+
+        trace_id = ""
+        try:
+            trace_id = getattr(request.state, "trace_id", "") or ""
+        except Exception:  # pragma: no cover
+            pass
+        payload = build_error_webhook_payload(trace_id, exc)
+        task = asyncio.get_running_loop().create_task(post_error_webhook(url, payload))
+        _ERROR_WEBHOOK_TASKS.add(task)
+        task.add_done_callback(_ERROR_WEBHOOK_TASKS.discard)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """兜底异常 → {code, message, data: null}（T19-3 脱敏，reshape-b 契约）。
+
+    - **data 恒为 null**：无论 DEBUG 与否不再回传 str(exc)（原始异常细节只进日志）；
+    - message 一律面向用户：依赖型异常（_is_dependency_exception）→ 50301
+      「依赖服务暂不可用，请稍后重试」；其余 → 50000「服务内部错误，请稍后重试」；
+    - 原始异常经 logger.exception（含完整堆栈）入日志，DEBUG 详细报错能力不受影响；
+    - C5-K3：非 DEBUG 且设置 ERROR_WEBHOOK_URL 时旁路上报（fire-and-forget，
+      失败静默）——本函数返回的响应契约零变更。
+    """
+    logger.exception(f"未处理的异常: {type(exc).__name__}: {exc}")
+    if _is_dependency_exception(exc):
+        code, message = DEPENDENCY_UNAVAILABLE, "依赖服务暂不可用，请稍后重试"
+    else:
+        code, message = "50000", "服务内部错误，请稍后重试"
+    _report_error_webhook(request, exc)
+    return JSONResponse(
+        status_code=500,
+        content={"code": code, "message": message, "data": None},
+    )
+
+
+# ── 注册业务路由（新增模块按依赖顺序追加） ──
+app.include_router(health.router)                    # 健康检查
+app.include_router(monitoring_router)                # Prometheus 指标 /metrics（P1-2）
+app.include_router(auth_router)                      # 鉴权（注册/登录/刷新/me）—— 新增
+from app.domains.video_learning.router import router as video_knowledge_production_router
+app.include_router(video_knowledge_production_router)
+
+from app.knowledge.routers import router as knowledge_router
+app.include_router(knowledge_router)                 # 知识库导入/检索（P1）
+
+from app.curriculum.router import router as curriculum_router
+app.include_router(curriculum_router)                  # 旧课程路由 → 308 重定向（task11）
+from app.domains.course.router import router as course_router
+app.include_router(course_router)                      # 课程域 C 端 5 端点（task11 契约冻结②）
+from app.domains.review.router import router as review_router
+from app.domains.review.admin_router import admin_router as review_admin_router
+app.include_router(review_router)                      # 课程系列评价 用户端（Season-2 需求 B）
+app.include_router(review_admin_router)                # 课程系列评价 管理端（Season-2 需求 B）
+from app.users.router import router as users_router
+app.include_router(users_router)                       # 用户画像（P0-P 步骤4）—— 新增
+from app.chat.router import router as chat_router
+app.include_router(chat_router)                        # AI 问答（P2 用户端 RAG）
+from app.admin.rag_admin.router import router as rag_admin_router
+app.include_router(rag_admin_router)                   # 管理端 RAG 控制台（P7 路径 B）
+from app.admin.chat_audit.router import router as chat_audit_router
+app.include_router(chat_audit_router)                 # [REWORK P0-5] 管理端会话审计（只读·ADMIN-only）
+from app.admin.infra.router import router as admin_infra_router
+app.include_router(admin_infra_router)                # [TB3] 管理端基础设施实时快照（只读·admin/manager）
+
+from app.domains.kg.router import router as kg_router
+app.include_router(kg_router)                          # 知识图谱 KG-2（R-N1，Neo4j 先修图）
+from app.domains.course_admin.router import router as course_admin_router
+from app.domains.course_admin.router import restore_router as course_admin_restore_router
+app.include_router(course_admin_router)                # 管理端 课程管理 CRUD（task12）
+app.include_router(course_admin_restore_router)        # 管理端 系列回收站恢复（C5）
+from app.domains.question_admin.router import router as question_admin_router
+app.include_router(question_admin_router)              # 管理端 题库管理（task13 重写：edu.sql question_bank/question）
+from app.admin.user_admin.router import router as user_admin_router
+app.include_router(user_admin_router)                  # 管理端 用户管理（P7 路径 B）
+from app.progress.router import router as progress_router
+app.include_router(progress_router)                    # 学习进度追踪（P3）
+from app.recommender.router import router as recommender_router
+app.include_router(recommender_router, prefix="/api/recommend")   # 推荐引擎（P4 学习路径 / 下一步 / 反馈）
+from app.mindmap.router import router as mindmap_router
+app.include_router(mindmap_router, prefix="/api/mindmap")         # 思维导图（P4 课程 / 学科 / 我的 / 先修链）
+from app.interactive.quiz.router import router as quiz_router
+app.include_router(quiz_router, prefix="/api/interactive/quiz")    # 互动习题（P5 quiz 6 API）
+from app.interactive.vocab.router import router as vocab_router
+app.include_router(vocab_router, prefix="/api/vocab")              # 单词闯关（P5 vocab 3 API：daily/recall/progress）
+from app.interactive.coding.router import router as coding_router
+app.include_router(coding_router, prefix="/api/coding")            # 编程练习（P5 coding 5 API）
+from app.interactive.math.router import router as math_router
+app.include_router(math_router, prefix="/api/math")                # 数学互动（P5 math 3 API）
+from app.community.router import router as community_router
+app.include_router(community_router)                               # 社区论坛（P6 发帖/回帖/反应/排行）
+from app.gamification.router import router as gamification_router
+app.include_router(gamification_router)                            # 成就激励（P6 徽章/积分/等级/排行榜）
+from app.domains.market.router import coupon_router as market_coupon_router
+from app.domains.market.router import favorite_router as market_favorite_router
+app.include_router(market_coupon_router)                           # 优惠券（task16 契约⑦）
+app.include_router(market_favorite_router)                         # 课程收藏（task16 契约⑦）
+from app.domains.trade.order.router import router as order_router
+app.include_router(order_router)                                   # 订单/交易（task17 契约⑧）
+from app.domains.trade.payment.router import router as payment_router
+app.include_router(payment_router)                                 # 支付/交易（task18 契约⑨）
+from app.domains.trade.refund.router import router as refund_router
+from app.domains.trade.refund.router import admin_router as refund_admin_router
+app.include_router(refund_router)                                  # 退款/交易（task19 契约⑩）
+app.include_router(refund_admin_router)                            # 退款审批 stub（task19 HITL 预留）
+from app.admin.trade_admin.router import router as trade_admin_router
+app.include_router(trade_admin_router)                             # 管理端 交易运营聚合（Season-2 需求 A）
+from app.domains.enrollment.router import router as enrollment_router
+app.include_router(enrollment_router)                              # 报名/我的班次（task20 契约⑪前段）
+from app.domains.learning.router import router as learning_router
+app.include_router(learning_router)                                # 学习/study（task21 契约⑪task21段）
+from app.domains.after_sales.router import router as after_sales_router
+app.include_router(after_sales_router)                             # 售后工单（task22 契约⑫）
+from app.domains.analytics.router import router as analytics_router
+app.include_router(analytics_router)                               # 学习事件分析（R-M1：Mongo learning_event 聚合 M-3）
+from app.mcp.router import router as mcp_router
+from app.ai.memory.router import router as memory_router
+app.include_router(mcp_router)                                     # MCP 导入与集成（P8：server 注册/import/工具列表/测试/日志，管理员专用）
+app.include_router(memory_router)                  # 记忆事件溯源/回滚/历史/Dream（task-M1，纯增量端点）
+# app.include_router(admin_router)                   # 管理端（P7 已在上方分模块引入）
+# app.include_router(mcp_router)                     # MCP 导入（P8 已在上方 include）
+
+
+@app.get("/", tags=["根路径"])
+async def root():
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "debug": settings.DEBUG,
+        "message": f"欢迎使用 {settings.APP_NAME} — 多学科在线教育平台 AI Agent",
+        "docs": "/docs" if settings.DEBUG else "文档已关闭（生产模式）",
+    }
+
+
+# ── OpenAPI 响应壳契约上移（W2 批判 C1） ──
+# 运行时 RespWrapMiddleware 已把 2xx JSON 包成 {code,message,data} 壳（黑盒兜底），
+# 此处覆写 app.openapi，把"壳形态"同步到 /docs 契约层：每个 2xx application/json
+# 响应 schema 统一展开为壳，避免 /docs 声明裸 DTO 与运行实体不一致。仅在懒加载
+# /openapi.json 时生效，不改任何 HTTP 响应实体。
+# skip_paths：SSE 端点（FastAPI 默认会给流式端点生成 application/json 的 200，
+# 无法仅凭 schema 区分真 JSON 与 SSE，按路径显式豁免；运行时由 RespWrapMiddleware
+# 按 content-type 豁免，二者保持一致）。
+install_openapi_shell(app, skip_paths=("/api/chat/stream",))

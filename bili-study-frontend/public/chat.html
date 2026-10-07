@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task50-fix v2 效果图 · 在 v1 已签收的消息区/输入区/五态基础上，新增【会话列表窗口】
+  （批判 1/2：P1 会话列表缺失 + chat.html 未画会话列表 → v2 补齐）
+  > 会话列表 = 桌面左侧糖果侧栏（标题/时间/当前高亮/新建/删除/点选切换）+ 移动端抽屉
+  > 数据形状对齐契约⑬：GET /api/chat/sessions → 列表；/{id}/history → 消息；POST stream；DELETE /{id}
+  AUDIT LOG:
+    [2026-08-21 v2 R3] 响应式机制改为 @container(container-name:app on body)→演示切视口与真实拖窗口同源生效；
+     控制条改 flex 顶行(去除 sticky)杜绝重叠；.page margin:auto 保证水平居中、body overflow-x:hidden 无横滚 → SUBMITTED
+    [2026-08-21 v2 R2] 可视口比例批判性修复：App 壳(flex:1 确定高度) + spacer(flex:0 0 auto 去 sticky)
+     + .main/.side 等高内滚(min-height:0) + 侧栏宽度 clamp + 断点(940/760/440/矮窗560) + 100dvh → 加入 R3
+    [2026-08-21 v2 R1] 会话列表窗口新增（侧栏+抽屉+高亮/删除/新建/点选切换）→ 并入 R3
+    [2026-09-05 md-fix] 流式/历史接入 EduMD 极简 Markdown 渲染（先 HTML 转义防 XSS）+ 120ms 节流
+      + start/retrieval→首 token 思考中动效 + .md-* 排版 CSS；发送改为追加不清空历史
+    [2026-09-21 PACK-B clay] 视觉层黏土重塑：接入 /theme.css?v=7fed87f（Gate A 批款 chat=B 渐变黏土气泡）；
+      emoji 结构图标→Phosphor 本地 sprite；gnav/按钮 44px 点击区清偿 G6 存量债；reduced-motion 落块。
+      三层分离：JS 依赖的 id/class/data-*、状态类(.on/.open/.stop/.hitl-busy)显隐语义、
+      输入区(textarea 44..120 clamp)/HITL 卡几何(max-height/overflow/pointer-events)、z-index 层级表全部冻结。
+      旧 candy 变量名保留为页内别名(L1)供共享块 aihub-topnav-fix 与 JS 内联样式继续解析。
+-->
+<html lang="zh-CN" data-theme="light"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<title>智能问答 · Bili-Study</title>
+<style>
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f（Gate A 批款 chat=B 渐变黏土气泡）。
+   三层分离：本块仅动视觉层——JS 依赖的 id/class/data-*、状态类(.on/.open/.stop/.hitl-busy)显隐语义、
+   输入区(textarea 44..120 clamp)/HITL 卡几何(max-height/overflow/pointer-events)、z-index 层级表全部冻结。
+   旧 candy 变量名保留为页内别名(L1)，供共享块 aihub-topnav-fix 与 JS 内联样式(var(--ink-faint) 等)继续解析。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix / JS 内联样式仍引用，禁删）—— */
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted);
+  --ink-faint:var(--text-muted); --muted:var(--text-muted); --foreground:var(--text-strong);
+  --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--cta-coral); --candy-green-deep:#D65246;
+  --candy-purple-soft:#EFE9FF; --candy-purple:#5B4FC4;
+  --candy-red:var(--status-danger); --ht-c22:#A03240;
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16); --shadow:0 6px 18px rgba(78,126,66,.14);
+  --r:12px;
+  /* —— 页内派生色（L1，仅本页；对比度均已按 4.5:1 校验）—— */
+  --page-link:#2B2E6E;        /* 链接/引用：lavender #B8A6FF 上 5.7:1、peach 上 7.2:1 */
+  --page-accent:#5B4FC4;      /* 淡紫底强调字：#EFE9FF 上 5.4:1 */
+  --page-danger-ink:#7A1E2C   /* lavender 气泡上的错误字：4.8:1 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100dvh}
+/* App 壳：body 固定视口高 + 纵向 flex；container-type:inline-size → 演示切视口与真实拖窗口同源生效 */
+body{height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;container-type:inline-size;container-name:app;font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 85% 15%,rgba(245,184,208,.32),transparent 28rem),radial-gradient(circle at 8% 90%,rgba(125,212,168,.24),transparent 26rem);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+textarea{font-family:inherit}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+/* 页面区：flex:1 撑满剩余视口高（确定高度）+ 水平居中 → 无横向溢出 */
+.page{flex:1;min-height:0;width:100%;max-width:1240px;margin-left:auto;margin-right:auto;padding:14px 16px 16px;display:flex;gap:16px}
+
+/* ===== 布局：主区（flex column，确定高度内聊天区独立滚动、composer 常驻底部）===== */
+.main{flex:1;min-width:0;min-height:0;background:rgba(255,255,255,.88);border:0;box-shadow:10px 10px 30px rgba(126,105,181,.20);padding:14px 18px;border-radius:var(--radius-card);display:flex;flex-direction:column}
+
+/* ===== 会话列表侧栏（sky 渐变黏土；宽度随视口 clamp，内部独立滚动）===== */
+.side{flex:0 0 clamp(216px,21vw,264px);min-width:0;min-height:0;display:flex;flex-direction:column;background-color:var(--clay-sky);background-image:linear-gradient(145deg,#D5EAFB,var(--clay-sky));box-shadow:var(--clay-shadow-sky);border-radius:var(--radius-card);padding:12px}
+.side .side-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.side .side-head .st{display:inline-flex;align-items:center;gap:6px;font-size:0.9375rem;font-weight:800;letter-spacing:-.01em}
+.side .side-head .new{display:inline-flex;align-items:center;justify-content:center;gap:5px;margin-left:auto;min-width:44px;min-height:44px;border:0;background-color:var(--clay-mint);background-image:linear-gradient(145deg,#A9E5C6,var(--clay-mint));color:var(--text-strong);font-weight:800;font-size:12px;border-radius:var(--radius-btn);padding:0 14px;box-shadow:var(--clay-shadow-mint);transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.side .side-head .new:hover{transform:translateY(-2px)}
+.side .side-head .new:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-moss)}
+.side .sess-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.sess{display:flex;align-items:center;gap:9px;min-height:44px;border:2px solid transparent;border-radius:var(--radius-btn);padding:8px 10px;background:rgba(255,255,255,.72);transition:background var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay);text-align:left;width:100%}
+.sess:hover{background:rgba(255,255,255,.92)}
+.sess.on{background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));border-color:transparent;box-shadow:var(--clay-shadow-lavender)}
+.sess .ic{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.55);display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.sess.on .ic{background:rgba(255,255,255,.42)}
+.sess .si{min-width:0;flex:1}
+.sess .si .t{font-size:12.5px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess .si .d{font-size:0.625rem;color:var(--text-muted);margin-top:2px}
+.sess.on .si .d{color:var(--text-strong)}
+.sess .del{width:26px;height:26px;border:none;background:transparent;border-radius:8px;color:var(--text-muted);font-size:0.8125rem;flex-shrink:0;opacity:0;transition:opacity var(--motion-fast),background var(--motion-fast),color var(--motion-fast)}
+.sess:hover .del,.sess.on .del{opacity:1}
+.sess .del:hover{background:rgba(198,62,74,.14);color:var(--status-danger)}
+.side .sess-empty{padding:26px 12px;text-align:center;color:var(--text-strong);font-size:11.5px;line-height:1.6}
+
+/* ===== 聊天页头部 ===== */
+.chat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.chat-head .hamb{display:none;width:44px;height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-btn);font-size:0.875rem;font-weight:800;place-items:center;box-shadow:var(--clay-shadow-light)}
+.chat-head .mascot{font-size:30px;filter:drop-shadow(0 3px 0 rgba(78,126,66,.15));animation:mascot 3.4s ease-in-out infinite}
+@keyframes mascot{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-5deg) translateY(-4px)}}
+.chat-head .tt{min-width:0}
+.chat-head h1{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+.chat-head .sub{font-size:12px;color:var(--text-muted)}
+.chat-head .acts{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* ===== 按钮（44px 起步；squish 按压）===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:12.5px;padding:8px 16px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay),background var(--motion-fast) var(--ease-clay);user-select:none}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+.btn-primary{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}
+.btn-primary:active{box-shadow:var(--clay-shadow-press-coral)}
+.btn-danger{color:#FFFFFF;background:var(--status-danger);box-shadow:4px 6px 14px rgba(198,62,74,.32)}
+.btn-ghost{background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-purple{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+
+/* ===== 消息区（flex:1 + min-height:0 → 卡片内确定高度滚动，长聊不撑破双栏比例）===== */
+.chat-stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:10px 4px 6px;overflow-y:auto;scroll-behavior:smooth}
+/* 空态（C7） */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:56px 20px;animation:fade .3s ease}
+.empty .ic{width:84px;height:84px;border-radius:50%;background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));display:grid;place-items:center;font-size:44px;box-shadow:var(--clay-shadow-lavender);animation:floaty 3s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.empty .t{font-size:1.125rem;font-weight:800}
+.empty .d{font-size:12px;color:var(--text-muted);max-width:340px;line-height:1.6}
+.empty .sug{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:420px}
+.empty .sug button{min-height:44px;border:2px solid var(--clay-lavender);background:var(--bg-raised);color:var(--text-strong);font-size:12px;font-weight:700;padding:8px 14px;border-radius:var(--radius-pill);box-shadow:var(--clay-shadow-light);transition:background var(--motion-fast) var(--ease-clay)}
+.empty .sug button:hover{background:var(--candy-purple-soft)}
+/* 错误态（C8） */
+.error-st{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:48px 20px;animation:fade .3s ease}
+.error-st .ic{width:64px;height:64px;border-radius:50%;background-color:var(--clay-peach);background-image:linear-gradient(145deg,#FFD0C1,var(--clay-peach));display:grid;place-items:center;font-size:30px;box-shadow:var(--clay-shadow-peach)}
+.error-st .t{font-size:1rem;font-weight:800}
+.error-st .d{font-size:12px;color:var(--text-muted);max-width:360px;line-height:1.6}
+/* R11 HITL 确认卡（pending_confirm）：只换肤——id/结构/事件绑定/几何(max-height、overflow、
+   hitl-busy 的 pointer-events 语义)全部冻结（favorite_add 确认链已实测闭环，勿破坏） */
+.hitl-card{border:0;border-radius:var(--radius-card);background-color:var(--clay-lemon);background-image:linear-gradient(145deg,#FFEBAB,var(--clay-lemon));box-shadow:var(--clay-shadow-lemon);padding:14px;display:flex;flex-direction:column;gap:8px;animation:fade .25s ease}
+.hitl-card.hitl-busy{opacity:.65;pointer-events:none}
+.hitl-ic{font-size:26px;color:var(--text-strong)}
+.hitl-title{font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--text-strong)}
+.hitl-tool{font-size:12.5px;color:var(--text-strong)}
+.hitl-tool code{background:rgba(255,255,255,.72);border:0;border-radius:7px;padding:1px 6px;font-size:12px}
+.hitl-risk{display:inline-flex;align-items:center;align-self:flex-start;font-size:11px;font-weight:800;border:0;border-radius:var(--radius-pill);padding:3px 11px}
+.hitl-risk-high{background:var(--status-danger);color:#FFFFFF}
+.hitl-risk-medium{background:var(--bg-raised);color:var(--text-strong)}
+.hitl-risk-low{background:var(--clay-mint);color:var(--text-strong)}
+.hitl-args{font-size:11.5px;color:var(--text-strong);background:rgba(255,255,255,.66);border:2px dashed rgba(190,149,35,.45);border-radius:var(--radius-input);padding:7px 9px;word-break:break-all;max-height:76px;overflow:auto;white-space:pre-wrap}
+.hitl-acts{display:flex;gap:8px;margin-top:4px}
+.hitl-acts .btn{padding:6px 16px;font-size:12.5px}
+.hitl-note{font-size:11px;color:var(--text-strong)}
+.hitl-note .hitl-tick{font-weight:800;color:var(--text-strong)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== 消息气泡（批款 chat=B：渐变黏土，AI=lavender / 用户=peach）===== */
+.msg{display:flex;gap:10px;max-width:86%;animation:fade .25s ease}
+.msg .avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:1.125rem;flex-shrink:0;box-shadow:var(--clay-shadow-light)}
+.msg.user{flex-direction:row-reverse;margin-left:auto;align-self:flex-end}
+.msg.user .avatar{background:var(--clay-peach)}
+.msg.ai .avatar{background:var(--clay-lavender)}
+.msg .box{min-width:0}
+.msg .bubb{background-color:var(--clay-lavender);background-image:linear-gradient(145deg,#D9D1FF,var(--clay-lavender));border:0;border-radius:24px 24px 24px 8px;box-shadow:var(--clay-shadow-lavender);padding:12px 15px;font-size:13.5px;line-height:1.75;color:var(--text-strong)}
+.msg.user .bubb{background-color:var(--clay-peach);background-image:linear-gradient(145deg,#FFD0C1,var(--clay-peach));color:var(--text-strong);border-bottom-right-radius:6px}
+.msg.ai .bubb{border-bottom-left-radius:6px}
+.bubb b{color:var(--text-strong);font-weight:800}
+.msg.user .bubb b{color:var(--text-strong)}
+.bubb a{color:var(--page-link);font-weight:700;text-decoration:none}
+.bubb code{background:var(--surface-code);border-radius:6px;padding:1px 6px;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--text-on-dark)}
+/* ===== Markdown 排版（EduMD 渲染的 AI 回答；§7.5 第三方渲染区覆盖：容器继承令牌、代码块深色底）===== */
+.bubb p{margin:0 0 .55em;line-height:1.6}
+.bubb p:last-child,.bubb ul.md-list:last-child,.bubb ol.md-list:last-child,.bubb pre.md-pre:last-child,.bubb h3.md-h:last-child,.bubb h4.md-h:last-child,.bubb h5.md-h:last-child,.bubb h6.md-h:last-child{margin-bottom:0}
+.bubb h3.md-h,.bubb h4.md-h,.bubb h5.md-h,.bubb h6.md-h{margin:.75em 0 .35em;line-height:1.4;letter-spacing:-.01em;color:var(--text-strong)}
+.bubb h3.md-h{font-size:1.12em}.bubb h4.md-h{font-size:1.05em}.bubb h5.md-h{font-size:1em}.bubb h6.md-h{font-size:.95em;color:var(--text-strong)}
+.bubb ul.md-list,.bubb ol.md-list{margin:.3em 0 .6em;padding-left:1.5em}
+.bubb ul.md-list li,.bubb ol.md-list li{margin:.15em 0}
+.bubb ul.md-list li::marker{color:var(--page-accent)}
+.bubb ol.md-list li::marker{color:var(--page-accent);font-weight:800}
+.bubb pre.md-pre{background:var(--surface-code);border:0;border-radius:var(--radius-input);padding:10px 12px;margin:.55em 0;overflow-x:auto;line-height:1.55;max-width:100%;font-family:ui-monospace,Consolas,monospace}
+.bubb pre.md-pre code{background:none;border:none;border-radius:0;padding:0;font-size:12px;color:var(--text-on-dark)}
+.bubb .md-err{margin-top:.6em;font-size:12px;font-weight:800;color:var(--page-danger-ink)}
+/* [REWORK P0-2] 答后记忆反馈条（done 帧 memorized 落库时显示） */
+.bubb .memo-bar{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--status-success-bg,var(--candy-green-soft,#E7F6EC));color:var(--text-strong);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .memo-bar .memo-ic{flex:0 0 auto}
+.bubb .memo-bar .memo-tx{font-weight:600;word-break:break-all}
+/* [F-W1-GUARD AUTO20 T7] 写类回执未验证警示条（done 帧 tool_receipt_unverified=true 时显示） */
+.bubb .receipt-warn{margin-top:.6em;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  background:var(--clay-lemon,#FFF4C9);color:var(--text-strong);
+  border:1.5px dashed rgba(190,149,35,.45);
+  border-radius:10px;padding:7px 10px;line-height:1.5}
+.bubb .receipt-warn .receipt-ic{flex:0 0 auto}
+.bubb .receipt-warn .receipt-tx{font-weight:600;word-break:break-all}
+.msg .meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.625rem;color:var(--text-muted);font-weight:600}
+.msg.user .meta{justify-content:flex-end}
+.meta .refs{display:inline-flex;align-items:center;gap:4px;color:var(--page-link);font-weight:700}
+/* 流式态：闪烁 cursor */
+.cursor{display:inline-block;width:8px;height:16px;border-radius:2px;background:var(--clay-mint);margin-left:2px;vertical-align:-2px;animation:blink .85s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* 检索/排队提示（start / retrieval 期间） */
+.think{display:inline-flex;align-items:center;gap:7px;background:rgba(125,212,168,.20);border:0;color:var(--text-strong);font-size:12px;font-weight:800;padding:6px 12px;border-radius:var(--radius-pill)}
+.spinner{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(43,153,103,.35);border-top-color:var(--clay-mint);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.think .txt{animation:thinkPulse 1.2s ease-in-out infinite}
+@keyframes thinkPulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* ===== 输入区（flex:0 0 auto 常驻 .main 卡片底部；textarea 几何与 JS clamp(44..120) 联动冻结）===== */
+.composer{flex:0 0 auto;background:transparent;padding-top:10px;border-top:2px solid rgba(184,166,255,.28)}
+.composer .hint{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.hint .pill{font-size:11px;font-weight:700;border-radius:var(--radius-pill);padding:4px 10px;border:1px solid var(--border-chip);background:var(--bg-raised);color:var(--text-strong)}
+.hint .pill.ctx{background:var(--candy-purple-soft);border-color:transparent;color:var(--page-accent)}
+.hint .pill.queue{background:rgba(125,212,168,.20);border-color:transparent;color:var(--text-strong);display:inline-flex;align-items:center;gap:6px}
+.hint .pill.on-left{margin-left:auto}
+/* 降级 banner（done.data.degraded_reason） */
+.degrade{display:flex;align-items:flex-start;gap:9px;background-color:var(--clay-lemon);background-image:linear-gradient(145deg,#FFEBAB,var(--clay-lemon));border:2px dashed rgba(190,149,35,.45);border-radius:var(--radius-input);padding:9px 13px;font-size:11.5px;color:var(--text-strong);line-height:1.55;margin-bottom:8px}
+.degrade .ic{font-size:0.9375rem;flex-shrink:0;margin-top:1px;display:inline-flex;color:var(--text-strong)}
+.degrade b{font-weight:800}
+.input-row{display:flex;align-items:flex-end;gap:10px;background:var(--bg-raised);border:0;border-radius:var(--radius-btn);box-shadow:var(--clay-shadow-input);padding:10px 12px}
+.input-row textarea{flex:1;border:none;outline:none;resize:none;font-size:14px;line-height:1.6;color:var(--text-strong);max-height:120px;min-height:44px;padding:9px 4px;background:transparent}
+.input-row textarea:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.input-row textarea::placeholder{color:var(--text-muted);opacity:1}
+.input-row .send{width:52px;height:52px;border:0;border-radius:var(--radius-btn);color:var(--cta-text);background:var(--cta-coral);font-size:22px;display:grid;place-items:center;box-shadow:var(--clay-shadow-coral);flex-shrink:0;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.input-row .send:hover{transform:translateY(-2px)}
+.input-row .send:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)}
+.input-row .send .ic{width:22px;height:22px}
+.input-row .send.stop{background:var(--status-danger);color:#FFFFFF;box-shadow:4px 6px 14px rgba(198,62,74,.32)}
+.input-row .send.stop .ic{width:18px;height:18px}
+
+/* ===== Toast（流 error 事件提示，浮层；z-index 冻结 60）===== */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;background:var(--status-danger);color:#FFFFFF;font-size:12.5px;font-weight:700;border:0;border-radius:var(--radius-btn);box-shadow:var(--clay-shadow-raised);padding:10px 14px;max-width:88%}
+.toast .ic{display:inline-flex}
+.toast .x{cursor:pointer;font-weight:800;opacity:.75}
+.toast .x:hover{opacity:1}
+
+/* ===== 移动端抽屉（会话列表；z-index 70/80 与显隐语义冻结）===== */
+.scrim{position:fixed;inset:0;background:rgba(46,42,63,.35);z-index:70;display:none}
+.scrim.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);background:var(--bg-app);z-index:80;padding:16px;border:0;box-shadow:var(--clay-shadow-raised);display:flex;flex-direction:column;transform:translateX(-105%);transition:transform .22s var(--ease-clay)}
+.drawer.open{transform:translateX(0)}
+/* 关闭态只隐藏子元素（抽屉本体保持布局可见，z 层表与 G6 冻结快照一致）：
+   子元素 visibility:hidden → 不可 Tab 聚焦（G7 focus-not-obscured），开启时随滑动恢复 */
+.drawer:not(.open) *{visibility:hidden;transition:visibility 0s .22s}
+.drawer.open *{visibility:visible;transition:visibility 0s 0s}
+.drawer .close{align-self:flex-end;min-width:44px;min-height:44px;border:none;background:var(--bg-raised);border-radius:var(--radius-btn);font-weight:800;color:var(--text-strong);margin-bottom:6px;box-shadow:var(--clay-shadow-light)}
+.drawer .side{width:auto;min-height:0;flex:1;border:0}
+
+/* ===== 响应式断点（@container 以 body 宽度驱动 → 演示按钮切视口与真实拖窗口两路都生效）===== */
+@container app (min-width:520px){
+  .msg{max-width:78%}
+  .msg .bubb{font-size:14px}
+}
+/* 中屏到窄屏：收紧左侧栏宽度 */
+@container app (max-width:940px){
+  .side.scrollside{flex-basis:clamp(200px,26vw,232px)}
+}
+/* 到手机宽度：切换单栏，隐藏桌面侧栏、亮出汉堡 → 抽屉 */
+@container app (max-width:760px){
+  .page{flex-direction:column}
+  .side.scrollside{display:none}
+  .chat-head .hamb{display:grid}
+}
+/* 小屏：收紧页边距与间距，气泡加宽以利用窄空间 */
+@container app (max-width:440px){
+  .page{padding:10px 8px 12px;gap:10px}
+  .main{padding:12px}
+  .side,.main{border-radius:1.2rem}
+  .chat-stage{gap:11px}
+  .msg{max-width:92%}
+  .chat-head{margin-bottom:10px}
+  .chat-head .mascot{font-size:1.5rem}
+  .chat-head h1{font-size:17px}
+  .input-row{padding:9px 10px}
+  .input-row .send{width:46px;height:46px}
+}
+/* 矮窗（略宽横屏/低分辨率）：压缩纵向留白，保住双栏比例，长内容走内部滚动 */
+@media (max-height:560px) and (min-width:761px){
+  .page{padding-top:10px}
+  .main{padding:10px 14px}
+  .side{padding:10px}
+  .chat-head{margin-bottom:8px}
+  .chat-head h1{font-size:1.125rem}
+  .chat-stage{gap:10px;padding-top:6px}
+  .empty{padding:30px 16px}
+  .empty .ic{width:64px;height:64px;font-size:34px}
+}
+/* reduced-motion：关位移/动画，保状态色（G7 断言） */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .mascot,.empty .ic{animation:none!important}
+  .btn:hover,.btn:active,.side .side-head .new:hover,.side .side-head .new:active,.input-row .send:hover,.input-row .send:active{transform:none!important}
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债。
+   置于该块之后以覆盖其 !important 同名规则；z-index/显隐语义不动） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-admin .gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
+</head>
+<body style="position: relative; width: 1024px; margin: 0px auto;">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">BS</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item active" href="chat.html" aria-current="page"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="page chat-page">
+
+  <!-- 会话列表侧栏（task50-fix 新增：标题/时间/当前高亮/新建入口/删除） -->
+  <aside class="side scrollside" id="side">
+    <div class="side-head">
+      <span class="st"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg>对话列表</span>
+      <button class="new" id="sideNew">＋ 新建</button>
+    </div>
+    <div class="sess-list" id="sideList" style="width: 222.667px; height: 572.667px; transform: matrix(1, 0, 0, 1, -4, -7.62939e-06);"><button class="sess " data-id="s1">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">深度学习的反向传播</span><span class="d">10:04</span></span>
+    <span class="del" data-del="s1" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess on" data-id="s2">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span>
+    <span class="si"><span class="t">脚本与自动化编程方向</span><span class="d">10:02</span></span>
+    <span class="del" data-del="s2" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s3">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">第三章重点整理</span><span class="d">09:48</span></span>
+    <span class="del" data-del="s3" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s4">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">制定一周学习计划</span><span class="d">昨日</span></span>
+    <span class="del" data-del="s4" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button></div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <div class="chat-head">
+      <button class="hamb" id="hamb" aria-label="打开会话列表">菜单</button>
+      <div class="mascot">🦊</div>
+      <div class="tt">
+        <h1 id="chatTitle">智能问答</h1>
+        <div class="sub">基于课程知识库，随时问我</div>
+      </div>
+      <div class="acts">
+        <button class="btn btn-ghost" id="newSession">＋ 新会话</button>
+      </div>
+    </div>
+
+    <!-- 消息区 -->
+    <div class="chat-stage" id="stage"><div class="msg user"><div class="avatar">😊</div>
+    <div class="box"><div class="bubb">什么是「脚本与自动化编程」方向？适合什么人学？</div>
+    <div class="meta"><span>10:02</span></div></div></div><div class="msg ai"><div class="avatar">🤖</div>
+    <div class="box"><div class="bubb"><b>脚本与自动化编程</b>属于<b>编程</b>大类下的二级方向，聚焦用脚本语言解决<b>重复性、批量化</b>的工程与办公任务。</div>
+    <div class="meta"><span>10:02</span><span class="refs"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg>12 篇引用</span></div></div></div></div>
+
+    <!-- 输入区 -->
+    <div class="composer">
+      <div class="hint">
+        <span class="pill ctx" id="ctxTag" style="">📎 来自 · 通用编程入门班 第3讲</span>
+        <span class="pill queue" id="queueHint" style="display: none;"><span class="spinner"></span> AI 正在思考…</span>
+      </div>
+      <div class="degrade" id="degradeBanner" style="display: none;">
+        <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
+        <span><b>排队人数较多，已为你降级回答：</b><span id="degradeTxt">当前咨询人数较多，返回了通用知识答案（未命中课程资料）。</span></span>
+      </div>
+      <div class="input-row">
+        <textarea id="composerInput" rows="1" placeholder="输入你的问题…（Enter 发送 / Shift+Enter 换行）"></textarea>
+        <button class="send" id="sendBtn" aria-label="发送"><span class="play-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-paper-plane-tilt"/></svg></span></button>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- 移动端抽屉 -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="移动端对话列表">
+  <button class="close" id="drawerClose" aria-label="关闭">✕</button>
+  <div class="side">
+    <div class="side-head">
+      <span class="st"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg>对话列表</span>
+      <button class="new" id="drawerNew">＋ 新建</button>
+    </div>
+    <div class="sess-list" id="drawerList"><button class="sess " data-id="s1">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">深度学习的反向传播</span><span class="d">10:04</span></span>
+    <span class="del" data-del="s1" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess on" data-id="s2">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span>
+    <span class="si"><span class="t">脚本与自动化编程方向</span><span class="d">10:02</span></span>
+    <span class="del" data-del="s2" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s3">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">第三章重点整理</span><span class="d">09:48</span></span>
+    <span class="del" data-del="s3" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button><button class="sess " data-id="s4">
+    <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg></span>
+    <span class="si"><span class="t">制定一周学习计划</span><span class="d">昨日</span></span>
+    <span class="del" data-del="s4" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button></div>
+  </div>
+</aside>
+
+<p class="toast" id="toast" style="display:none">
+  <span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
+  <span id="toastMsg">AI 响应中断（error 事件）：已保留已生成内容，可点击重试。</span>
+  <span class="x" id="toastClose">✕</span>
+</p>
+
+<!-- 演示状态条（respbar）已移除：属 HTML 效果图审核工具残留，无 token 演示态由脚本保底渲染，前端不保留开发工具栏 -->
+
+<script>
+/* =====================================================================
+ * task50-fix 效果图 v2 —— 纯前端演示（数据形状对齐契约⑬ chat + SSE 壳 + sessions）
+ * 新增：会话列表窗口（桌面侧栏 + 移动抽屉）→ 标题/时间、当前高亮、新建、删除、点选切换
+ * React 实现阶段将真实请求 GET /api/chat/sessions + /{id}/history + POST stream + DELETE
+ * ===================================================================== */
+const $ = (s)=>document.querySelectorAll(s)[0];
+
+/* ---- 会话数据（模拟 GET /api/chat/sessions 契约形状）---- */
+const MESSAGES = {
+  s1:[
+    {role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`},
+    {role:"ai", time:"10:04", refs:"5", html:`反向传播（Backpropagation）的核心是<b>用链式法则高效地计算损失函数对每个参数的梯度</b>，从而指导梯度下降更新权重。<br><br>具体分三步：① 前向传播计算输出与损失；② 反向逐层求导，把误差从输出层传回输入层；③ 沿梯度反方向更新参数`},
+  ],
+  s2:[
+    {role:"user", time:"10:02", html:`什么是「脚本与自动化编程」方向？适合什么人学？`},
+    {role:"ai", time:"10:02", refs:"12", html:`<b>脚本与自动化编程</b>属于<b>编程</b>大类下的二级方向，聚焦用脚本语言解决<b>重复性、批量化</b>的工程与办公任务。<br><br>它适合想提升效率、经常处理文件整理/数据清洗/批量报表/网页信息采集的学习者，也适合作为 Python 入门后的第一个应用方向。<br><br>建议学习顺序是：先掌握变量、条件、循环和函数，再练习文件读写、表格处理、定时任务与 API 调用，最后把脚本封装成可复用的小工具。`},
+  ],
+  s3:[
+    {role:"user", time:"09:48", html:`帮我整理第三章的重点难点。`},
+    {role:"ai", time:"09:48", refs:"8", html:`第三章聚焦<b>循环与函数</b>：<br>① <code>for/while</code> 的边界控制<br>② 函数参数与作用域<br>③ 递归的基线条件`},
+  ],
+  s4:[
+    {role:"user", time:"昨日", html:`帮我制定一周的深度学习学习计划。`},
+    {role:"ai", time:"昨日", refs:"0", html:`以下是一周计划……（略）`},
+  ],
+};
+let sessions = [
+  {id:"s1", title:"深度学习的反向传播", date:"10:04"},
+  {id:"s2", title:"脚本与自动化编程方向", date:"10:02"},
+  {id:"s3", title:"第三章重点整理", date:"09:48"},
+  {id:"s4", title:"制定一周学习计划", date:"昨日"},
+];
+let activeId = "s2";
+let seq = 0;
+let state = "history"; // history|streaming|degraded|error|empty
+
+/* task104：登录态（localStorage 有 token = 有登录）时解绑 demo 控制器，
+   避免 document 级委托与注入元素级监听双绑定 .sess → 点真实会话读 MESSAGES[realId] 抛 TypeError，
+   以及 demo 的 newSession/hamb 用演示数据覆盖真实列表。无 token 时演示态保留（chat 页本会跳登录）。 */
+let __logon = false;
+try { __logon = !!window.localStorage.getItem("edu:auth:token"); } catch (e) { __logon = false; }
+
+/* ---- 会话列表渲染（双容器：侧栏 + 抽屉）---- */
+function sessCard(s){
+  const on = s.id===activeId;
+  return `<button class="sess ${on?'on':''}" data-id="${s.id}">
+    <span class="ic">${on?'<svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg>':'<svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-bookmark-simple"/></svg>'}</span>
+    <span class="si"><span class="t">${s.title}</span><span class="d">${s.date}</span></span>
+    <span class="del" data-del="${s.id}" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span>
+  </button>`;
+}
+function renderSides(){
+  $("#sideList").innerHTML = sessions.length ? sessions.map(sessCard).join("") : `<div class="sess-empty">还没有会话，点右上「＋ 新建」开始第一段对话吧</div>`;
+  $("#drawerList").innerHTML = sessions.length ? sessions.map(sessCard).join("") : `<div class="sess-empty">还没有会话，点右上「＋ 新建」开始第一段对话吧</div>`;
+}
+/* 点选会话 → 高亮 + 加载历史（模拟 getChatHistory） */
+function onPick(id){
+  activeId = id;
+  renderSides();
+  draw("history"); // 切会话 → 历史态
+}
+function ensureMsg(id){
+  if(!MESSAGES[id]) MESSAGES[id] = [
+    {role:"user", time:"刚刚", html:`你好，请介绍一下。`},
+    {role:"ai", time:"刚刚", refs:"0", html:`你好！我是你的 AI 学习助手，可以帮你讲解知识点、整理重点、出题讲解、制定学习计划。`},
+  ];
+}
+
+/* ---- 状态演示 ---- */
+const bubble = (msg)=>{
+  const user = msg.role === "user";
+  return `<div class="msg ${user?'user':'ai'}"><div class="avatar">${user?'😊':'🤖'}</div>
+    <div class="box"><div class="bubb">${msg.html}</div>
+    <div class="meta"><span>${msg.time}</span>${msg.refs?`<span class="refs"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg>${msg.refs} 篇引用</span>`:""}</div></div></div>`;
+};
+
+function htmlHistory(){ return MESSAGES[activeId].map(bubble).join(""); }
+function htmlStreaming(){
+  return bubble({role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`})
+    + `<div class="msg ai"><div class="avatar">🤖</div><div class="box">
+        <div class="bubb">反向传播（Backpropagation）的核心是<b>用链式法则高效地计算梯度</b>……<span class="cursor"></span></div>
+        <div class="meta"><span>10:04</span><span class="refs"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg>5 篇引用</span></div></div></div>`;
+}
+function htmlDegraded(){
+  return bubble({role:"user", time:"10:04", html:`帮我讲一下深度学习的「反向传播」核心思想。`})
+    + bubble({role:"ai", time:"10:04", refs:"0", html:`由于当前<b>咨询人数较多</b>，未能命中课程资料，以下为通用知识回答（降级）：<br><br>反向传播通过<b>链式法则</b>逐层计算梯度并更新参数。`});
+}
+function htmlErrorState(){
+  return `<div class="error-st"><div class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div><div class="t">历史消息加载失败</div>
+    <div class="d">无法获取会话历史（HTTP 500，<b>code:"5xxxx"</b>）。请稍后重试，或新建会话。</div>
+    <button class="btn btn-ghost" onclick="draw('empty')" style="margin-top:6px">↻ 重试</button></div>`;
+}
+function htmlEmpty(){
+  return `<div class="empty"><div class="ic">🦊</div><div class="t">开始你的 AI 学习助手</div>
+    <div class="d">我可以基于<b>课程知识库</b>回答你的问题：课程大纲、知识点讲解、题目解析、学习计划……在下方输入即可。</div>
+    <div class="sug">
+      <button>什么是反向传播？</button><button>帮我整理第三章重点</button>
+      <button>这道题怎么做？</button><button>制定一周学习计划</button>
+    </div></div>`;
+}
+
+function draw(s){
+  state = s;
+  const stage = $("#stage");
+  const isStream = s==="streaming";
+  const ctxTag=$("#ctxTag"), qHint=$("#queueHint"), dg=$("#degradeBanner"), input=$("#composerInput"), send=$("#sendBtn");
+  if(s==="empty"||s==="error"){ hd(); ctxTag.style.display="none"; } // 空态/错误态无会话上下文
+  else ctxTag.style.display="";
+  qHint.style.display = isStream ? "" : "none";
+  dg.style.display = s==="degraded" ? "" : "none";
+  send.classList.toggle("stop", isStream);
+  send.innerHTML = isStream ? '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-x"/></svg></span>' : '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-paper-plane-tilt"/></svg></span>';
+  send.disabled = false; input.disabled = false;
+  input.placeholder = isStream ? "AI 正在回答…" : (s==="error" ? "历史加载失败，无法发送" : "输入你的问题…（Enter 发送 / Shift+Enter 换行）");
+  input.value = isStream ? "帮我讲一下深度学习的「反向传播」核心思想。" : "";
+  if(s==="history") stage.innerHTML = htmlHistory();
+  else if(s==="streaming") stage.innerHTML = htmlStreaming();
+  else if(s==="degraded") stage.innerHTML = htmlDegraded();
+  else if(s==="error"){ send.disabled=true; input.disabled=true; stage.innerHTML = htmlErrorState(); }
+  else stage.innerHTML = htmlEmpty();
+}
+function hd(){ /* 空态时不展示上下文徽标 */ document.getElementById("degradeBanner").style.display="none"; }
+
+/* ---- 新建会话（模拟 createChatSession）---- */
+function newSession(){
+  const id = "s_n"+(++seq);
+  sessions.unshift({id, title:"开始新对话", date:"刚刚"});
+  activeId = id;
+  MESSAGES[id] = [];
+  renderSides();
+  draw("empty");
+}
+
+/* ---- 删除会话（模拟 deleteChatSession）---- */
+function delSession(id){
+  const i = sessions.findIndex(s=>s.id===id);
+  if(i<0) return;
+  sessions.splice(i,1);
+  delete MESSAGES[id];
+  if(activeId===id) activeId = sessions.length ? sessions[0].id : null;
+  if(activeId) ensureMsg(activeId);
+  renderSides();
+  if(!activeId){ draw("empty"); drawer(false); }
+}
+
+/* ---- 事件绑定（委托：侧栏 + 抽屉）---- */
+if (!__logon) {
+  document.addEventListener("click", (e)=>{
+    const del = e.target.closest("[data-del]");
+    if(del){ e.stopPropagation(); delSession(del.dataset.del); return; }
+    const row = e.target.closest(".sess");
+    if(row){ onPick(row.dataset.id); drawer(false); }
+  });
+  $("#sideNew").addEventListener("click", newSession);
+  $("#drawerNew").addEventListener("click", newSession);
+  $("#newSession").addEventListener("click", newSession);
+}
+$("#toastClose").addEventListener("click", ()=>document.getElementById("toast").style.display="none");
+
+/* ---- 移动抽屉开关 ---- */
+function drawer(open){
+  $("#drawer").classList.toggle("open", open);
+  $("#scrim").classList.toggle("open", open);
+}
+$("#hamb").addEventListener("click", ()=>{ if(!__logon) renderSides(); drawer(true); });
+$("#drawerClose").addEventListener("click", ()=>drawer(false));
+$("#scrim").addEventListener("click", ()=>drawer(false));
+
+/* 视口切换/状态演示绑定已随 respbar 一并移除（开发工具残留）；
+   __logon 仅用于保底决定是否渲染演示会话，无 token 时演示态保留。 */
+document.getElementById("composerInput").addEventListener("input",e=>{ e.target.style.height="auto"; e.target.style.height=Math.min(120,Math.max(44,e.target.scrollHeight))+"px"; });
+
+/* ---- 首屏：历史态 + 渲染侧栏（仅演示态；登录态由注入 loadSessions 接管）---- */
+window.addEventListener("resize", ()=>{ if(window.innerWidth>760) drawer(false); });
+if (!__logon) { renderSides(); draw("history"); }
+</script>
+<script src="/edu-api.js"></script>
+<script src="/edu-md.js"></script>
+<script src="/video-citations.js"></script>
+
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* ===== 对接真实后端（chat · task07 补全）=====
+   curl 实测契约（2026-09-06，学生 token，详见 test-reports/task07-completion-report-reshape-a.md）：
+   - GET    /api/chat/sessions?limit=50 → data: ChatSession[] 扁平数组（session_id/title/message_count/last_message_at）
+   - POST   /api/chat/sessions {}       → data: ChatSession（title 默认「新会话 xxxxxx」）
+   - GET    /api/chat/sessions/{id}/history?limit=N（1..500，>500→422）→ data: ChatMessage[] 按 created_at ASC，
+              仅 limit 截断、无 page/offset；GET /sessions/{id} 无详情端点（405）——漂移已登记报告
+   - DELETE /api/chat/sessions/{id}     → data:{ok:true}（软删）；404 code:"CHAT_SESSION_NOT_FOUND"（字符串码）
+   task07 改动（SSE 主解析逻辑未动）：
+   ①历史 limit=500 + 按 message_count 诚实截断横幅（ASC→最早 N 条）
+   ②会话列表/历史加载失败渲染诚实错误态（原 .catch 静默吞 → 登录态残留静态 demo 假数据）
+   ③流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效复用
+   ④done→keepView 只刷侧栏（原 loadSessions() 整页刷新会把视图弹回列表头部并重载历史）
+   ⑤offline/读取中断降级提示；会话标题 esc 转义（原直接 innerHTML 注入）
+   ⑥隐藏静态 ctxTag「通用编程入门班 第3讲」假上下文徽标 */
+(function () {
+  if (!window.EAPI) return;
+  var token = EAPI.store.getToken();
+  if (!token) { window.location.href = "/login-register.html"; return; }
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $("stage");
+  var sessions = [], activeId = null;
+  var studyContextId = new URLSearchParams(window.location.search).get("study_context_id") || null;
+  var studyContextSessionId = null;
+  if (studyContextId) {
+    $("chatTitle").textContent = "本课答疑";
+    var courseSubtitle = document.querySelector(".chat-head .sub");
+    if (courseSubtitle) courseSubtitle.textContent = "结合本课视频、笔记和字幕回答，点击视频依据可返回对应片段";
+  }
+  var HISTORY_LIMIT = 500; /* 实测上限 500，超限 422；契约无 page/offset */
+  var streaming = false;
+  var notifyStreamFail = null; /* doSend 内 failStream 的外露槽：offline 监听复用（作用域桥接） */
+
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+  /* EduMD 未加载（脚本被拦等）时静默降级为纯文本转义 */
+  var md = (window.EduMD && window.EduMD.toHtml) ? window.EduMD.toHtml : esc;
+
+  function fmt(ts) {
+    if (!ts) return "刚刚";
+    var d = new Date(String(ts).replace(" ", "T"));
+    if (isNaN(d)) return "最近";
+    var h = d.getHours().toString().padStart(2, "0"), m = d.getMinutes().toString().padStart(2, "0");
+    var today = new Date();
+    if (d.toDateString() === today.toDateString()) return h + ":" + m;
+    return (d.getMonth() + 1) + "-" + d.getDate();
+  }
+
+  /* ---- 诚实错误态（会话/历史加载失败；替换原静默吞错导致的 demo 假数据残留）---- */
+  function errState(title, msg, retry) {
+    stage.innerHTML = '<div class="error-st"><div class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div><div class="t">' + esc(title) + '</div>'
+      + '<div class="d">' + esc(msg || "") + '</div>'
+      + (retry ? '<button class="btn btn-ghost" id="stageRetry">↻ 重试</button>' : "") + '</div>';
+    var rb = $("stageRetry");
+    if (rb && retry) rb.addEventListener("click", retry);
+  }
+
+  /* keepView=true：只刷新侧栏，不切换会话/不重载历史（done 后刷列表用，防视图弹跳） */
+  function loadSessions(opts) {
+    var keepView = !!(opts && opts.keepView);
+    return EAPI.get("/api/chat/sessions?limit=50").then(function (list) {
+      sessions = (Array.isArray(list) ? list : []).map(function (s) {
+        return { id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 };
+      });
+      if (studyContextId && !studyContextSessionId) {
+        return EAPI.post("/api/chat/sessions", { title: "本课答疑" }).then(function (s) {
+          if (!s || !s.session_id) throw new Error("本课会话创建失败");
+          studyContextSessionId = s.session_id;
+          activeId = s.session_id;
+          sessions = [{ id: s.session_id, title: s.title || "本课答疑", date: fmt(s.last_message_at), count: 0 }];
+          renderSides();
+          stage.innerHTML = emptyHtml();
+        });
+      }
+      if (studyContextId && studyContextSessionId) {
+        sessions = sessions.filter(function (s) { return s.id === studyContextSessionId; });
+        activeId = studyContextSessionId;
+      }
+      if (keepView) { renderSides(); return; }
+      var alive = sessions.some(function (s) { return s.id === activeId; });
+      if (!alive) activeId = sessions.length ? sessions[0].id : null;
+      if (activeId) { renderSides(); loadHistory(activeId); }
+      else emptyState();
+    }).catch(function (e) {
+      sessions = []; renderSides();
+      errState("会话列表加载失败", (e && e.message) || "网络错误", function () { loadSessions(); });
+    });
+  }
+
+  function renderSides() {
+    var html = sessions.map(function (s) {
+      return '<button class="sess ' + (s.id === activeId ? "on" : "") + '" data-id="' + s.id + '"><span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-chat-circle"/></svg></span><span class="si"><span class="t">' + esc(s.title) + '</span><span class="d">' + s.date + '</span></span><span class="del" data-del="' + s.id + '" title="删除会话"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-trash"/></svg></span></button>';
+    }).join("");
+    ["sideList", "drawerList"].forEach(function (id) { if ($(id)) $(id).innerHTML = html; });
+    ["sideList", "drawerList"].forEach(function (id) {
+      if (!$(id)) return;
+      $(id).querySelectorAll(".sess").forEach(function (b) {
+        b.addEventListener("click", function () { if (streaming || studyContextId) return; activeId = b.dataset.id; renderSides(); loadHistory(activeId); });
+      });
+      $(id).querySelectorAll(".del").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (studyContextId) return;
+          if (b.dataset.del === activeId && streaming) return; /* 流式中禁删当前会话（防渲染目标丢失） */
+          delSession(b.dataset.del);
+        });
+      });
+    });
+  }
+
+  /* ---- 历史消息：?limit=500（实测契约，无分页参数）；超 message_count 截断诚实横幅 ---- */
+  function loadHistory(sid) {
+    var sess = null;
+    for (var i = 0; i < sessions.length; i++) if (sessions[i].id === sid) sess = sessions[i];
+    stage.innerHTML = '<div style="display:flex;justify-content:center;padding:24px 0"><span class="think"><span class="spinner"></span><span class="txt">加载历史消息…</span></span></div>';
+    EAPI.get("/api/chat/sessions/" + sid + "/history?limit=" + HISTORY_LIMIT).then(function (msgs) {
+      if (activeId !== sid) return; /* 用户已切走：丢弃过期渲染（快速切换竞态防护） */
+      var list = Array.isArray(msgs) ? msgs : [];
+      var html = list.map(historyBubble).join("");
+      if (sess && sess.count > list.length) {
+        html += '<div class="degrade" style="margin:4px 0 0"><span class="ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span><span><b>历史较长：</b>接口仅支持 limit 截断（无分页参数），已加载最早 ' + list.length + ' 条 / 共 ' + sess.count + ' 条。</span></div>';
+      }
+      stage.innerHTML = html || emptyHtml();
+      stage.scrollTop = stage.scrollHeight; /* ASC 列表末尾 = 最新消息 */
+    }).catch(function (e) {
+      if (activeId !== sid) return;
+      errState("历史消息加载失败", (e && e.message) || "网络错误", function () { loadHistory(sid); });
+    });
+  }
+
+  function historyBubble(m) {
+    var isUser = m.role === "user" || m.role === "human";
+    /* AI 消息走 EduMD Markdown 渲染；用户消息纯文本转义 + 换行 */
+    var body = isUser ? esc(m.content || m.text || "").replace(/\n/g, "<br>") : md(m.content || m.text || "");
+    if (!isUser && window.EduVideoCitations && m.rag_docs_json) {
+      try { body += window.EduVideoCitations(JSON.parse(m.rag_docs_json)); } catch (ignore) {}
+    }
+    var meta = '<span>' + fmt(m.created_at) + '</span>';
+    var refs = (m.rag_final_count != null) ? m.rag_final_count : m.rag_retrieved_count;
+    if (!isUser && refs != null) meta += '<span class="refs"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg>' + refs + ' 篇引用</span>';
+    return '<div class="msg ' + (isUser ? "user" : "ai") + '"><div class="avatar">' + (isUser ? "😊" : "🤖") + '</div>'
+      + '<div class="box"><div class="bubb">' + body + '</div><div class="meta">' + meta + '</div></div></div>';
+  }
+
+  function emptyHtml() { return '<div class="empty" style="text-align:center;color:var(--ink-faint);padding:60px 0">开始和 Bili-Study 对话吧</div>'; }
+  function emptyState() { activeId = null; renderSides(); stage.innerHTML = emptyHtml(); }
+
+  /* ---- 删除会话（DELETE /api/chat/sessions/{id}，实测软删 data:{ok:true}；失败 toast 由 EAPI 钩子提示）---- */
+  function delSession(id) {
+    EAPI.del("/api/chat/sessions/" + id).then(function () {
+      sessions = sessions.filter(function (s) { return s.id !== id; });
+      if (activeId === id) {
+        activeId = sessions.length ? sessions[0].id : null;
+        if (activeId) { renderSides(); loadHistory(activeId); }
+        else emptyState();
+      } else renderSides();
+    }).catch(function () { /* 403 跨用户 / 404 已删 → EAPI 全局钩子 toast */ });
+  }
+
+  /* ---- 发送：SSE 流式（EduMD Markdown 渲染 + 120ms 节流；start/retrieval→首 token 思考中动效）---- */
+  var input = $("composerInput"), send = $("sendBtn");
+  var THINK_HTML = '<span class="think"><span class="spinner"></span><span class="txt">检索知识库并思考中…</span></span>';
+  var CURSOR_HTML = '<span class="cursor"></span>';
+  function nearBottom() { return stage.scrollHeight - stage.scrollTop - stage.clientHeight < 90; }
+  function scrollStage(force) { if (force || nearBottom()) stage.scrollTop = stage.scrollHeight; }
+  /* task07③：流式期间禁用发送（并发流双写 #aiResp 竞态）+ 队列动效 + 按钮状态 */
+  function setStreaming(on) {
+    streaming = on;
+    var qh = $("queueHint");
+    if (qh) qh.style.display = on ? "" : "none";
+    send.disabled = on;
+    send.classList.toggle("stop", on);
+    send.innerHTML = on ? '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-x"/></svg></span>' : '<span class="play-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-paper-plane-tilt"/></svg></span>';
+  }
+  function doSend() {
+    var text = (input.value || "").trim();
+    if (!text) return;
+    if (streaming) return;                        /* 流式中禁止并发发送 */
+    /* task07④：断网诚实降级——不发请求，保留输入 */
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      var to = $("toast"), tom = $("toastMsg");
+      if (to) { if (tom) tom.textContent = "当前设备已断网，请检查网络连接后重试"; to.style.display = ""; }
+      input.focus();
+      return;
+    }
+    var sid = activeId;
+    lastQuery = text;                     /* R11 HITL：确认后续流需重发原提问（同 thread_id 重开流） */
+    /* 追加新气泡（不再清空既有历史；移除空态/错误态占位） */
+    var ph = stage.querySelector(".empty,.error-st"); if (ph) ph.parentNode.removeChild(ph);
+    stage.insertAdjacentHTML("beforeend",
+      '<div class="msg user"><div class="bubb">' + esc(text).replace(/\n/g, "<br>") + '</div></div>' +
+      '<div class="msg ai"><div class="bubb" id="aiResp">' + THINK_HTML + '</div></div>');
+    scrollStage(true);
+    input.value = "";
+    setStreaming(true);
+    openStream(text, sid, {});
+  }
+  /* ---- R11 HITL：pending_confirm 确认卡 + resume 决策 + 同 thread_id 续流（契约 reshape-r-hitl.json）---- */
+  var hitlPending = null, hitlTimer = null, lastQuery = "";
+  function riskLabel(r) { return ({ low: "低风险", medium: "中风险", high: "高风险" })[r] || "未知风险"; }
+  function renderHitlCard(pc) {
+    hitlPending = pc;
+    var el = $("aiResp"); if (!el) return;
+    var argsText = "";
+    try { argsText = JSON.stringify(pc.args || {}); } catch (e) { argsText = String(pc.args || ""); }
+    if (argsText.length > 200) argsText = argsText.slice(0, 200) + "…";
+    el.innerHTML =
+      '<div class="hitl-card" id="hitlCard">' +
+        '<div class="hitl-ic"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>' +
+        '<div class="hitl-title">高风险操作需要您的确认</div>' +
+        '<div class="hitl-tool">工具：<code>' + esc(pc.tool_name || "未知工具") + '</code></div>' +
+        '<div class="hitl-risk hitl-risk-' + esc(pc.risk_level || "high") + '">' + esc(riskLabel(pc.risk_level)) + '</div>' +
+        '<div class="hitl-args">' + esc(argsText) + '</div>' +
+        '<div class="hitl-note">请确认是否执行该操作：确认后立即执行；拒绝将中断执行。<span class="hitl-tick" id="hitlTick"></span></div>' +
+        '<div class="hitl-acts">' +
+          '<button class="btn btn-danger hitl-reject" type="button">拒绝</button>' +
+          '<button class="btn btn-primary hitl-confirm" type="button">确认执行</button>' +
+        '</div>' +
+      '</div>';
+    var okBtn = el.querySelector(".hitl-confirm");
+    var noBtn = el.querySelector(".hitl-reject");
+    if (okBtn) okBtn.addEventListener("click", function () { resumeHitl("confirm", ""); });
+    if (noBtn) noBtn.addEventListener("click", function () { resumeHitl("reject", ""); });
+    /* 超时自动按 reject 处理（契约：TTL 到期决策失效 → 渲染超时态 + 按 reject） */
+    var ttl = Number(pc.timeout_s) > 0 ? Number(pc.timeout_s) : 300;
+    var tick = $("hitlTick"), left = ttl;
+    if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+    hitlTimer = setInterval(function () {
+      left--;
+      if (tick) tick.textContent = "（" + left + "s 内未处理将自动拒绝）";
+      if (left <= 0) {
+        clearInterval(hitlTimer); hitlTimer = null;
+        var card = $("hitlCard");
+        if (card) {
+          card.classList.add("hitl-busy");
+          var n = card.querySelector(".hitl-note");
+          if (n) n.textContent = "确认超时，已按拒绝处理";
+        }
+        resumeHitl("reject", "确认超时");
+      }
+    }, 1000);
+    scrollStage(true);
+  }
+  function resumeHitl(action, reason) {
+    if (!hitlPending || !hitlPending.thread_id) return;
+    if (hitlTimer) { clearInterval(hitlTimer); hitlTimer = null; }
+    var card = $("hitlCard");
+    if (card) card.classList.add("hitl-busy");
+    var q = lastQuery || "";
+    EAPI.post("/api/chat/resume", { thread_id: hitlPending.thread_id, action: action, reason: reason || undefined })
+      .then(function (s) {
+        /* resumed → 以同 thread_id 重开流续跑挂起图（graph_stream 检测决策 → Command(resume)） */
+        var pc = hitlPending; hitlPending = null;
+        if (q) continueStream(q, pc.thread_id);
+        else failStream("无法续流：原提问已丢失");
+      })
+      .catch(function () {
+        if (card) card.classList.remove("hitl-busy");
+      });
+  }
+  function continueStream(query, threadId) {
+    var el = $("aiResp");
+    if (el) el.innerHTML = THINK_HTML;
+    openStream(query, threadId, { resume: true });
+  }
+  /* SSE 流式主体（doSend 首问与 HITL 续流共用；start/retrieval→首 token 思考中动效 + 打字机揭示节拍） */
+  function openStream(query, sid, opts) {
+    opts = opts || {};
+    /* [TA1 定因/修复] 揭示节奏与网络到达解耦（打字机队列）
+       定因实测（CDP + 裸 socket，见 REPORT-TA1-3）：上游 LLM 吞吐 400~620 字/秒，
+       整段 token 窗口只有 0.24~1.3s；1:1 渲染（叠加旧 120ms 节流只出 9~11 帧）在肉眼上
+       等同"转圈后整段弹出"。以下只控制**何时显示已到达的增量**：
+       不改答案内容、不改 SSE 事件/字段解析（契约仍为 event: token + j.delta）。 */
+    var acc = "", gotToken = false, gotDone = false, streamClosed = false;
+    var doneMemo = [], videoDocs = [];
+    var doneReceiptWarn = false; /* [F-W1-GUARD AUTO20 T7] done 帧 tool_receipt_unverified=true → 黄色警示条 */
+    var hitlCardShown = false;   /* HITL 确认卡已渲染 → 收尾不得整体重写 innerHTML 冲掉它 */
+    var shown = 0;               /* 已揭示字符数（0..acc.length），acc 始终是"已到达的全量"（事实源） */
+    var pacer = null, revealStart = 0, finished = false;
+    var REVEAL_TICK_MS = 30;     /* 揭示节拍 */
+    var REVEAL_MIN_CPS = 90;     /* 最小揭示速度（字/秒）——低于此肉眼基本看不出逐字 */
+    var REVEAL_TAIL_MS = 2200;   /* 缓冲越多越快：剩余缓冲至多再花这么久排空（防长答案拖尾） */
+    var REVEAL_FORCE_MS = 20000; /* 硬兜底：揭示最长不超过 20s，超时立即全量（防定时器悬挂） */
+    function renderStream(final) {
+      var el = $("aiResp"); if (!el) return;
+      var text = final ? acc : acc.slice(0, shown);
+      if (!text) return;
+      var htmlOut = md(text);
+      if (!final) {
+        /* 闪烁 cursor 尽量挂在最后一个块级元素内，避免独占一行 */
+        if (/<\/(p|h[3-6]|li)>$/.test(htmlOut)) htmlOut = htmlOut.replace(/<\/(p|h[3-6]|li)>$/, CURSOR_HTML + "</$1>");
+        else htmlOut += CURSOR_HTML;
+      }
+      el.innerHTML = htmlOut;
+      scrollStage(false);
+    }
+    function stopPacer() { if (pacer) { clearInterval(pacer); pacer = null; } }
+    /* 揭示一步：速率随剩余缓冲自适应（越大越快），保证既可见又不拖尾 */
+    function revealTick() {
+      if (hitlCardShown) { stopPacer(); return; }
+      var remain = acc.length - shown;
+      if (remain > 0) {
+        var cps = REVEAL_MIN_CPS;
+        var adaptive = remain / (REVEAL_TAIL_MS / 1000);
+        if (adaptive > cps) cps = adaptive;
+        var step = Math.max(1, Math.round(cps * REVEAL_TICK_MS / 1000));
+        shown = Math.min(acc.length, shown + step);
+        renderStream(false);
+      }
+      if (revealStart && Date.now() - revealStart > REVEAL_FORCE_MS && shown < acc.length) {
+        shown = acc.length; renderStream(false);
+      }
+      if (shown >= acc.length) tryFinalize();
+    }
+    function ensurePacer() {
+      if (pacer || finished || hitlCardShown) return;
+      if (!revealStart) revealStart = Date.now();
+      pacer = setInterval(revealTick, REVEAL_TICK_MS);
+    }
+    /* 收尾：揭示排空 **且** 连接已收束才真正结束（否则会在 token 突发后立刻整段弹出） */
+    function tryFinalize() {
+      if (finished || hitlCardShown) return false;
+      if (shown < acc.length || !streamClosed) return false;
+      finished = true;
+      stopPacer();
+      setStreaming(false);
+      if (!acc) { var em = $("aiResp"); if (em) em.innerHTML = '<div class="md-err">（本次未返回内容）</div>'; }
+      else renderStream(true);
+      if (window.EduVideoCitations) {
+        var citationBox = $("aiResp");
+        if (citationBox) citationBox.insertAdjacentHTML("beforeend", window.EduVideoCitations(videoDocs));
+      }
+      if (doneReceiptWarn) {
+        var wr = $("aiResp");
+        if (wr) {
+          var warn = document.createElement("div");
+          warn.className = "receipt-warn";
+          warn.setAttribute("role", "alert");
+          warn.innerHTML = '<span class="receipt-ic">⚠️</span><span class="receipt-tx">' +
+            "上述工具操作未实际执行，请以工具调用记录为准。</span>";
+          wr.appendChild(warn);
+        }
+      }
+      if (doneMemo.length) {
+        var mr = $("aiResp");
+        if (mr) {
+          var bar = document.createElement("div");
+          bar.className = "memo-bar";
+          bar.setAttribute("role", "status");
+          bar.innerHTML = '<span class="memo-ic">💾</span>已记住：<span class="memo-tx">' +
+            esc(doneMemo.join("；")) + "</span>";
+          mr.appendChild(bar);
+        }
+      }
+      return true;
+    }
+    function failStream(msg) {
+      /* 中断诚实降级：立即揭示已到达的全部内容（不再等节拍），并停掉揭示定时器 */
+      finished = true;
+      stopPacer();
+      shown = acc.length;
+      setStreaming(false);
+      var el = $("aiResp"); if (!el) return;
+      el.innerHTML = (acc ? md(acc) : "") +
+        '<div class="md-err">回答中断：' + esc(msg || "未知错误") + (acc ? "（已保留已生成部分）" : "") + '</div>';
+      var t = $("toast"), tm = $("toastMsg");
+      if (t) { if (tm) tm.textContent = "AI 响应中断：" + (msg || "未知错误"); t.style.display = ""; }
+      scrollStage(false);
+    }
+    notifyStreamFail = failStream; /* offline 监听复用（流式中断降级） */
+    fetch(EAPI.BASE + "/api/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + EAPI.store.getToken() },
+      body: JSON.stringify({ query: query, session_id: sid || null, stream: true,
+        study_context_id: studyContextId, final_max_k: studyContextId ? 3 : 5 }),
+    }).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var reader = resp.body.getReader(), dec = new TextDecoder(), buf = "", evt = "";
+      function pump() {
+        return reader.read().then(function (r) {
+          if (r.done) {
+            /* [TA1] 连接收束 ≠ 渲染收束：token 已全部到达，但揭示节拍可能仍在跑。
+               这里只置 streamClosed，由 tryFinalize 在「揭示排空」后真正收尾——
+               否则 token 突发（0.24~1.3s）一结束就会整段弹出，打字机效果等于没有。 */
+            streamClosed = true;
+            if (!gotDone) {
+              /* 无 done 帧（连接提前结束）：立即全量揭示 + 诚实提示，不静默 */
+              finished = true; stopPacer(); shown = acc.length; setStreaming(false);
+              if (acc) renderStream(true); else failStream("连接提前结束");
+              return;
+            }
+            if (!tryFinalize()) ensurePacer();
+            return;
+          }
+          buf += dec.decode(r.value, { stream: true });
+          var lines = buf.split("\n"); buf = lines.pop();
+          lines.forEach(function (line) {
+            line = line.trim();
+            if (!line) return;
+            if (line.startsWith("event:")) { evt = line.slice(6).trim(); return; }
+            if (!line.startsWith("data:")) return;
+            var payload = line.slice(5).trim();
+            if (evt === "token") {
+              /* 契约实测：token 事件 JSON 的 delta 字段累加（task104）。
+                 [TA1] 累加进 acc（全量事实源），由揭示节拍按固定节奏显示 acc.slice(0, shown)。 */
+              try { var j = JSON.parse(payload); if (j.delta) { acc += j.delta; gotToken = true; ensurePacer(); } } catch (e) {}
+            }
+            else if (evt === "start" || evt === "retrieval") {
+              if (evt === "retrieval") {
+                try { videoDocs = JSON.parse(payload).docs || []; } catch (ignore) {}
+              }
+              /* start→retrieval→首 token 的检索空窗：思考中动效（首 token 到达后被内容整体替换） */
+              if (!gotToken) { var th = $("aiResp"); if (th) th.innerHTML = THINK_HTML; }
+            }
+            else if (evt === "pending_confirm") {
+              /* R11 HITL：高风险工具执行前中断 → 确认卡（工具名+参数+风险级+确认/拒绝） */
+              hitlCardShown = true; stopPacer();   /* [TA1] 揭示节拍必须让位：收尾重写会冲掉确认卡 */
+              setStreaming(false);
+              try {
+                var pc = JSON.parse(payload);
+                if (!pc || !pc.thread_id) { failStream("确认事件缺少 thread_id"); return; }
+                renderHitlCard(pc);
+              } catch (e) { failStream("确认事件解析失败"); }
+            }
+            else if (evt === "done") {
+              /* 契约实测：done data 为嵌套壳 {code:0, data:{session_id,...}}，无 content；
+                 流式内容已由 token(字段=delta) 累加完；若是新会话(发送时无 sid)则立即收编 session_id 并只刷侧栏 */
+              gotDone = true;
+              try {
+                var d = JSON.parse(payload);
+                /* R11：HITL 挂起收束帧（awaiting_human_confirm）→ 保留确认卡，不覆盖渲染；
+                   [FEAT-WIRE-V2 #9] 若 pending_confirm 卡从未渲染（hitlPending 为空），
+                   旧版 early return 会把「检索知识库并思考中…」指示器永久残留——补诚实降级态 */
+                if (d && d.data && d.data.degraded_reason === "awaiting_human_confirm") {
+                  finished = true; stopPacer(); setStreaming(false);
+                  if (!hitlPending) {
+                    var hp = $("aiResp");
+                    if (hp) hp.innerHTML = '<div class="degrade">本次回答需要人工确认后继续，但确认卡未送达（可重新提问）。</div>';
+                  }
+                  return;
+                }
+                if (d && d.data && d.data.session_id) {
+                  if (!sid || (opts.resume && d.data.session_id !== sid)) {
+                    activeId = d.data.session_id;      /* 防连续发送再开新会话 */
+                    loadSessions({ keepView: true });  /* 只刷侧栏：原 loadSessions() 会重载历史把流式视图弹走 */
+                  }
+                }
+                /* [REWORK P0-2] 答后记忆反馈条：缓存到 doneMemo，在收尾 renderStream(true) 之后再
+                   追加——renderStream 是整体 innerHTML 重写，先追加会被抹掉（实测踩坑）。 */
+                if (d && d.data && Array.isArray(d.data.memorized) && d.data.memorized.length) {
+                  doneMemo = d.data.memorized;
+                }
+                /* [F-W1-GUARD AUTO20 T7] 写类回执未验证标记：缓存到 doneReceiptWarn，
+                   同样在收尾 renderStream(true) 之后追加（防被整体重写抹掉）。 */
+                if (d && d.data && d.data.tool_receipt_unverified === true) {
+                  doneReceiptWarn = true;
+                }
+              } catch (e) {}
+              /* [TA1] 收尾统一交给 tryFinalize（需 streamClosed + 揭示排空），不再立刻整段弹出 */
+              if (!tryFinalize()) ensurePacer();
+            }
+            else if (evt === "error") {
+              /* task07③：error 事件诚实展示——保留已渲染内容 + 行内中断提示 + toast，不清空舞台 */
+              try { var er = JSON.parse(payload); failStream(er.message || "未知错误"); } catch (e) { failStream("未知错误"); }
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function (e) {
+      failStream(e && e.message ? e.message : "网络错误");
+    });
+  }
+  send.addEventListener("click", doSend);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+  /* task07④：网络断开（流式中掉线）→ 诚实中断提示，不打断已渲染内容 */
+  window.addEventListener("offline", function () {
+    if (streaming && notifyStreamFail) notifyStreamFail("网络连接已断开（offline）");
+  });
+
+  /* ---- task07①：新建会话（POST /api/chat/sessions，curl 实测 title 默认「新会话 xxxxxx」）---- */
+  function createSession() {
+    var btns = ["newSession", "sideNew", "drawerNew"].map(function (id) { return $(id); }).filter(Boolean);
+    btns.forEach(function (b) { b.disabled = true; });   /* 防重复创建 */
+    return EAPI.post("/api/chat/sessions", {}).then(function (s) {
+      if (!s || !s.session_id) return;
+      sessions.unshift({ id: s.session_id, title: s.title || "新对话", date: fmt(s.last_message_at), count: s.message_count || 0 });
+      activeId = s.session_id;
+      renderSides();
+      stage.innerHTML = emptyHtml();
+    }).catch(function () { /* 失败由 EAPI 全局钩子 toast 诚实提示 */ })
+      .finally(function () { btns.forEach(function (b) { b.disabled = false; }); });
+  }
+  ["newSession", "sideNew", "drawerNew"].forEach(function (id) {
+    var el = $(id); if (el) el.addEventListener("click", function (e) { e.preventDefault(); createSession(); });
+  });
+  /* 登录态下 hamb 由注入接管（demo 版已解绑），打开移动抽屉并渲染真实会话列表 */
+  var hamb = $("hamb");
+  if (hamb) hamb.addEventListener("click", function () {
+    renderSides();
+    var dr = $("drawer"); if (dr) dr.classList.add("open");
+    var sc = $("scrim"); if (sc) sc.classList.add("open");
+  });
+
+  /* task07⑥：chat 契约无「课程上下文」字段，隐藏静态假上下文徽标（诚实展示） */
+  var ctxTag = $("ctxTag"); if (ctxTag) ctxTag.style.display = "none";
+
+  function loadStudyContext() {
+    $("sendBtn").disabled = true;
+    errState("正在读取本课学习上下文", "验证课程授权与正式资料，请稍候。", null);
+    return EAPI.get("/api/study/contexts/" + encodeURIComponent(studyContextId)).then(function (context) {
+      var subtitle = document.querySelector(".chat-head .sub");
+      if (subtitle) subtitle.textContent = context.series_name + " · " + context.session_title
+        + (context.knowledge_ready ? " · 正式视频资料已接入，可点击回答中的时间引用" : " · 正式视频资料尚未就绪；仅使用已绑定的普通课程资料，原视频可继续观看");
+      $("sendBtn").disabled = false;
+      loadSessions();
+    }).catch(function (error) {
+      $("sendBtn").disabled = true;
+      var retry = error.isNetworkError || error.isTimeout ? loadStudyContext : null;
+      errState("本课学习上下文不可用", error.message + (retry ? "。可点击重试读取同一本课上下文。" : "。请从学习页重新进入本课答疑。"), retry);
+    });
+  }
+  if (studyContextId) loadStudyContext(); else loadSessions();
+})();
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+</div>
+</body></html>

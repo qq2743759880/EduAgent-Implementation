@@ -1,0 +1,237 @@
+# Independent fresh installation. No fixed container names or existing volumes.
+# Entry: portable.py init, edit private config, then portable.py up.
+name: eduagent-portable
+
+x-app: &app
+  image: eduagent-portable-backend:local
+  build:
+    context: ..
+    dockerfile: deploy/backend.Dockerfile
+    args:
+      INSTALL_MINERU: ${INSTALL_MINERU:-true}
+  env_file: ${EDU_ENV_FILE:-.env.portable}
+  environment:
+    DEBUG: "false"
+    ENV_NAME: portable
+    MYSQL_HOST: mysql
+    MYSQL_PORT: "3306"
+    MYSQL_RO_USER: ""
+    MYSQL_RO_PASSWORD: ""
+    REDIS_URL: redis://redis:6379/0
+    MONGO_URI: mongodb://mongodb:27017
+    MILVUS_URI: http://milvus:19530
+    MILVUS_COLLECTION: edu_knowledge
+    MINIO_ENDPOINT: minio:9000
+    MINIO_SECURE: "false"
+    MINIO_PUBLIC_SECURE: "false"
+    NEO4J_URI: bolt://neo4j:7687
+    NEO4J_USER: neo4j
+    NEO4J_ENABLED: "true"
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    JAEGER_QUERY_URL: http://jaeger:16686
+    SSRF_ALLOWED_HOSTS: '["jaeger"]'
+    DATA_DIR: /app/data
+    LOG_DIR: /app/logs
+    BGE_M3_PATH: /models/bge-m3
+    RERANKER_PATH: /models/bge-reranker-v2-m3
+    EMBED_DEVICE: cpu
+    # Existing "cuda" backend name selects local BGE; compute device is CPU.
+    EMBED_BACKEND: cuda
+    RERANK_BACKEND: cuda
+    RERANKER_DEVICE: cpu
+    RERANKER_PRECISION: fp32
+    EDU_VIDEO_ASR_MODEL: /models/faster-whisper-base
+    MINERU_EXECUTABLE: /opt/mineru/bin/mineru-kit
+    KNOWLEDGE_UPLOADS_ENABLED: "true"
+    DOC_IR_ENABLED: "true"
+    IMPORT_COMMAND_MODE: primary
+    STREAM_VIA_GRAPH: "true"
+    CORS_ORIGINS: http://127.0.0.1:${FRONTEND_PORT:-3322},http://localhost:${FRONTEND_PORT:-3322}
+  volumes:
+    - app-data:/app/data
+    - app-logs:/app/logs
+    - ${EDU_MODEL_DIR:?Run portable.py init and prepare models}:/models:ro
+    - mineru-cache:/home/appuser/.cache
+    - ${EDU_SECRETS_DIR:-../private}:/run/edu-secrets:ro
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 1h
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run portable.py init}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-edu_portable}
+      MYSQL_USER: ${MYSQL_USER:-edu_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Run portable.py init}
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$${MYSQL_PASSWORD}" mysql -u "$${MYSQL_USER}" -e "SELECT 1" "$${MYSQL_DATABASE}" >/dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  mongodb:
+    image: mongo:7.0
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, 'db.adminCommand({ping:1})']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  minio:
+    image: eduagent-portable-minio:2025-10-15
+    build:
+      context: ..
+      dockerfile: deploy/minio.Dockerfile
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?}
+    volumes: [minio-data:/data]
+    ports: ['127.0.0.1:19000:9000', '127.0.0.1:19001:9001']
+    healthcheck:
+      test: [CMD, curl, -f, http://127.0.0.1:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  etcd:
+    image: gcr.io/etcd-development/etcd:v3.5.18
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: '1000'
+      ETCD_QUOTA_BACKEND_BYTES: '4294967296'
+      ETCD_SNAPSHOT_COUNT: '50000'
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    volumes: [etcd-data:/etcd]
+    healthcheck:
+      test: [CMD, etcdctl, endpoint, health]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  milvus:
+    image: milvusdb/milvus:v2.5.26
+    command: [milvus, run, standalone]
+    security_opt: [seccomp:unconfined]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:?}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:?}
+      MINIO_REGION: us-east-1
+    volumes: [milvus-data:/var/lib/milvus]
+    depends_on:
+      etcd: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -f, http://127.0.0.1:9091/healthz]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+  neo4j:
+    image: neo4j:5.26-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+      NEO4J_server_bolt_advertised__address: 127.0.0.1:17687
+    volumes: [neo4j-data:/data]
+    ports: ['127.0.0.1:17474:7474', '127.0.0.1:17687:7687']
+    healthcheck:
+      test: [CMD-SHELL, 'wget -qO- http://127.0.0.1:7474 >/dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    ports: ['127.0.0.1:17686:16686']
+  initialize:
+    <<: *app
+    restart: 'no'
+    command: [python, deploy/bootstrap.py, --initialize-rag]
+    healthcheck: {disable: true}
+    depends_on:
+      mysql: {condition: service_healthy}
+      milvus: {condition: service_healthy}
+  backend:
+    <<: *app
+    ports: ['127.0.0.1:${BACKEND_PORT:-9988}:9988']
+    depends_on:
+      initialize: {condition: service_completed_successfully}
+      milvus: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongodb: {condition: service_healthy}
+      neo4j: {condition: service_healthy}
+      jaeger: {condition: service_started}
+  parser:
+    <<: *app
+    command: [python, scripts/run_parser_worker.py]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, 'import redis,os; assert redis.Redis.from_url(os.environ["REDIS_URL"]).exists("worker:alive:parser-worker")']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  ingest:
+    <<: *app
+    command: [python, scripts/run_ingest_worker.py]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, 'import redis,os; assert redis.Redis.from_url(os.environ["REDIS_URL"]).exists("worker:alive:ingest-worker")']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  reconciler:
+    <<: *app
+    command: [python, scripts/run_reconciler.py]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, 'import redis,os; assert redis.Redis.from_url(os.environ["REDIS_URL"]).exists("worker:alive:reconciler")']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ''
+        API_PROXY_TARGET: http://backend:9988
+    image: eduagent-portable-frontend:local
+    ports: ['127.0.0.1:${FRONTEND_PORT:-3322}:3322']
+    environment:
+      API_BASE_URL: http://backend:9988
+    depends_on:
+      backend: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  mongo-data:
+  minio-data:
+  etcd-data:
+  milvus-data:
+  neo4j-data:
+  app-data:
+  app-logs:
+  mineru-cache:

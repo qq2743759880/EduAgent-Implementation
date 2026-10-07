@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理端题库 · Bili-Study</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<!--
+  task107 真实接入（W1 · admin-questions.html 真实接入题库 API） — 后续审计以本文档为准
+  - P15 风格 candy-playful frozen（复用 task56/57/58 同源样式）
+  - 注入 edu-api.js（</body> 前）+ IIFE：先判 token，无 token 静默降级（提示 admin 账号，不发任何请求）
+  - 实际消费端点清单（契约注释纪律，均已 curl 实测，见 test-reports/task107-completion-report.md）：
+      题库列表   GET /api/admin/questions/banks?page=&page_size=&keyword=  → data{total,page,page_size,items:[{id,institution_id,category_id,bank_code,bank_name,yn,...}]}
+      题目列表   GET /api/admin/questions/banks/{bank_id}/questions?page=&page_size=&question_type_id=&keyword= → data{total,page,page_size,items:[{id,bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text,yn,...}]}
+      题目详情   GET /api/admin/questions/questions/{id}
+      题型维表   GET /api/admin/questions/types  → data{items:[{id,type_code,type_name,objective_flag,auto_marking_flag,sort_no}]}
+      新建题目   POST /api/admin/questions/questions       body{bank_id,question_code,question_type_id,stem,options_json,answer_text,analysis_text}
+      编辑题目   PATCH /api/admin/questions/questions/{id} body{question_type_id,stem,options_json,answer_text,analysis_text}
+      删除题目   DELETE /api/admin/questions/questions/{id} → data{deleted:true,id}
+      批量预览   POST /api/admin/questions/import-preview?bank_id=N  body{items:[...]} → data{total_rows,valid_rows,invalid_rows,rows:[{row_index,question_code,valid,errors}]}
+      批量执行   POST /api/admin/questions/import-execute?bank_id=N body{items:[...]} → data{total,imported,skipped,failed,messages}（幂等：重复 question_code 跳过返回原记录）
+    options_json 格式实测：[{"label":"A","content":"选项内容"},...]
+  - 首期新建/编辑仅支持 single_choice(1)/multiple_choice(2)/true_false(3)（题干/选项/答案/解析）；其余题型列表只读展示。
+  - 历史死契约（batch-import/papers/compose/tags）已清理（b36e1aa），严禁复活。
+    objective_flag 由题型维表映射：objective=1 客观（绿）/ 0 主观（紫）→ StatusBadge
+  AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-09-12 task15 reshape-a] 批判补全（端点均 curl 实测 2026-09-12）：删除演示控制器与全部演示数据（BANK_SEED/QS/PREVIEW/RES_MSGS，禁 MOCK），初始渲染骨架屏不再闪现假题库；真实 DELETE 接线（题库 DELETE /banks/{id}、题目 DELETE /questions/{id}，二次确认弹窗，软删 yn=0）；题库编辑 PATCH /banks/{id}（仅 bank_name/category_id，bank_code/institution_id 不可变）；关键词搜索防抖 400ms；客观/主观=题型维表 objective_flag 当前页过滤（后端 banks/{id}/questions 无该参数，诚实标注）；分类筛选诚实降级禁用（后端无分类维表/参数）；窗口化分页（banks total=449 实测）。
+    [2026-08-24 v1/v1.1 R1/R2] task58 纯演示原型（题库/题目两级 Tabs + 批量导入四步假数据 + 演示控制器）
+    [2026-09-02 task107 v REAL] 真实接入：题库/题目列表真实渲染+分页；题目行点击跳 admin-question-detail.html?id=；
+      SINGLE/MULTI/JUDGE 新建/编辑内联表单接 POST/PATCH；批量导入接 import-preview→import-execute；
+      未登录显示「请用 admin 账号登录」提示（与 task102 同款）；隐藏演示控制器，不写 MOCK 假数据。
+-->
+<style>
+  :root{ --htc-0-0-0-0.2: rgba(0,0,0,0.2); --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-f0f1f7: #f0f1f7; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px;
+    --sky-6:#0284c7; --subj-bg:#f3edfe; --subj-ink:#7c4bd6; --rowbad-bg:#fdf2f4; --rowbad-ink:#a91f36; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-0-0-0-002: rgba(0, 0, 0, 0.002); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  .toast-stub{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ht-fff);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px var(--htc-0-0-0-002)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1140px;margin:0 auto;padding:28px 20px 90px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:230px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* header */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.8125rem;margin-bottom:14px}
+  .back-link:hover{color:var(--primary)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:2px}
+  .page-head .act{display:flex;gap:8px;flex-wrap:wrap}
+  /* tabs */
+  .tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+  .tab{cursor:pointer;border:none;background:transparent;border-radius:9px;padding:8px 20px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted)}
+  .tab.on{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .tab .tip{font-weight:500;font-size:11px;opacity:.8}
+  /* buttons */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:260px}
+  .fld select{width:150px}
+  .fld select:focus,.fld input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .ft-note{width:100%;font-size:11px;color:var(--muted)}
+  .ft-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  .toolbar-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12px;color:var(--muted)}
+  .toolbar-meta b{color:var(--ink);font-size:0.8125rem}
+  .cur-bank{display:flex;align-items:center;gap:8px}
+  .cur-bank .bn{font-weight:600;color:var(--primary)}
+  /* table */
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.hov:hover{background:var(--ht-fafbff)}
+  .prim-cell{display:flex;align-items:center;gap:11px}
+  .prim-cell .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0;font-size:1.125rem}
+  .prim-cell .nm{font-weight:600;color:var(--ink)}
+  .prim-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .tag-chips{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;background:var(--primary-soft);color:var(--primary)}
+  .ok-mark{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:0 6px;background:var(--ok-bg);color:var(--ok-ink)}
+  .stem-clamp{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted);font-size:12px}
+  .muted{color:var(--muted)}
+  /* objective badge（statusBadge：objective=1 客观绿 / 0 主观紫） */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)} .badge-mut .pd{background:var(--muted-ink)}
+  .badge-obj{background:var(--ok-bg);color:var(--ok-ink)} .badge-obj .pd{background:var(--ok-ink)}
+  .badge-subj{background:var(--subj-bg);color:var(--subj-ink)} .badge-subj .pd{background:var(--subj-ink)}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:156px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)} .dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center;opacity:.75}
+  .dd-item .go{font-size:0.625rem;color:var(--primary);opacity:.85}
+  /* pagination */
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  /* three-state */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skrow td{padding:14px}.sk-line{height:13px;border-radius:6px}
+  .hidden{display:none!important}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:540px;max-height:88vh;overflow:auto}
+  .modal.wide{max-width:760px}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .mh .mstep{font-size:11px;color:var(--muted)}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mff .err{font-size:11px;color:var(--candy-red)}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .field-tip{font-size:11px;color:var(--muted)}
+  .confirm .modal{max-width:440px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* upload stepper */
+  .stepper{display:flex;align-items:center;gap:6px;margin:6px 0 16px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .stp .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--muted-bg);color:var(--muted-ink);font-size:12px}
+  .stp.done .dot{background:var(--ok-bg);color:var(--ok-ink)}
+  .stp.cur .dot{background:var(--primary);color:var(--ht-fff)}
+  .stp-conn{width:26px;height:2px;background:var(--line)}
+  .stp-conn.done{background:var(--ok-ink)}
+  /* upload dropzone + progress + chips */
+  .up-drop{border:2px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted);font-size:0.8125rem;cursor:pointer}
+  .up-drop:hover{border-color:var(--primary);color:var(--primary)}
+  .up-drop.drag{border-color:var(--primary);background:var(--primary-soft)}
+  .up-drop .big{font-size:26px;margin-bottom:6px}
+  .up-drop code{background:var(--muted-bg);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Consolas,monospace}
+  .up-file{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--ht-fafbff)}
+  .up-file .nm{font-weight:600;font-size:0.8125rem}
+  .up-file .meta{font-size:11px;color:var(--muted)}
+  .up-prog{height:10px;border-radius:999px;background:var(--muted-bg);overflow:hidden;margin:12px 0 6px}
+  .up-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-blue),var(--primary));border-radius:999px;transition:width .25s}
+  .up-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  /* import summary stat cards */
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--ht-fafbff);text-align:center}
+  .stat .n{font-size:26px;font-weight:700;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .stat.imp .n{color:var(--ok-ink)} .stat.skip .n{color:var(--warn-ink)} .stat.fail .n{color:var(--candy-red)}
+  /* preview / result table */
+  .mini-table{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:300px}
+  .mini-table table{width:100%;border-collapse:collapse;font-size:12px}
+  .mini-table thead th{position:sticky;top:0;background:var(--ht-fafbff);padding:8px 10px;font-size:11px}
+  .mini-table tbody td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .mini-table tr.row-bad{background:var(--rowbad-bg)}
+  .mini-table tr.row-bad td{color:var(--rowbad-ink)}
+  .err-pill{display:inline-block;font-size:0.625rem;background:var(--red-bg);color:var(--red-ink);border-radius:5px;padding:0 5px;margin:1px 3px 0 0}
+  .ok-pill{display:inline-block;font-size:0.625rem;background:var(--ok-bg);color:var(--ok-ink);border-radius:5px;padding:0 5px}
+  .msg-list{font-family:ui-monospace,Consolas,monospace;font-size:11px;max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--ht-fafbff)}
+  .msg-list div{padding:3px 0;border-bottom:1px dashed var(--line)}
+  .msg-list div:last-child{border-bottom:none}
+  .msg-list .ms-ok{color:var(--ok-ink)} .msg-list .ms-skip{color:var(--warn-ink)} .msg-list .ms-fail{color:var(--candy-red)}
+  .req-chip{font-size:11px;color:var(--muted)}
+  .req-chip code{background:var(--warn-bg);color:var(--warn-ink);border-radius:5px;padding:0 5px}
+  /* responsive */
+  @media(max-width:760px){
+    .demo-ctrl{font-size:11px}.demo-ctrl .row{max-width:160px}
+    .page-head{flex-direction:column;align-items:flex-start}
+    .filterbar .fld,.filterbar .fld.search,.filterbar .fld input.search,.filterbar .fld select{width:100%}
+    .stat-row{grid-template-columns:1fr}
+    .modal .mf{grid-template-columns:1fr}
+    .munit-hide{display:none}
+  }
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 📚/⚠ 为行为层冻结面（📚 用 font-size:0+mask sprite 视觉层消隐）。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-blue:var(--clay-mint); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --subj-bg:#EAE4FF; --subj-ink:var(--text-strong);
+  --rowbad-bg:#FAF0F4; --rowbad-ink:var(--status-danger);
+  --sky-6:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 页头/Tabs/返回 --- */
+.admin-html-page .back-link{color:var(--text-muted)!important;min-height:44px}
+.admin-html-page .back-link:hover{color:var(--text-strong)!important}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .tabs{background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)}
+.admin-html-page .tab{min-height:44px;color:var(--text-strong)!important}
+.admin-html-page .tab.on{background:var(--clay-pink)!important;background-image:none!important;color:var(--text-strong)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .fld select,.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .fld label{color:var(--text-muted)}
+.admin-html-page .fld select:focus,.admin-html-page .fld input:focus{outline:2px solid var(--focus-ring);border-color:var(--focus-ring)}
+.admin-html-page .ft-note{color:var(--text-muted)}
+.admin-html-page .ft-note code{background:#EEF0F5;color:var(--text-strong)}
+.admin-html-page .toolbar-meta{color:var(--text-muted)}
+.admin-html-page .cur-bank .bn{color:var(--text-strong)!important}
+.admin-html-page .req-chip{color:var(--text-strong)!important}
+
+/* --- 表格/空态 --- */
+.admin-html-page .tbl-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .prim-cell .ico{font-size:0;color:var(--text-strong);background:var(--clay-sky)!important;border-radius:var(--radius-icon-tile)}
+.admin-html-page .prim-cell .ico::after{content:"";width:20px;height:20px;background-color:var(--text-strong);
+  -webkit-mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain;mask:url("/assets/icons/icons.svg#ic-book-open") no-repeat center/contain}
+.admin-html-page .prim-cell .nm{color:var(--text-strong)}
+.admin-html-page .prim-cell .cd{color:var(--text-muted)}
+.admin-html-page .tag-chips{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .nb,.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .cell-strong{color:var(--text-strong)}
+.admin-html-page .st-ico{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .state b{color:var(--text-strong)!important}
+
+/* --- 下拉/分页/弹窗 --- */
+.admin-html-page .dd-btn{min-height:44px;border-radius:var(--radius-btn);color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important}
+.admin-html-page .dd-btn:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .dd-menu{border-radius:var(--radius-input);background:var(--bg-raised)}
+.admin-html-page .dd-item{min-height:44px;color:var(--text-strong)!important;border-radius:var(--radius-input)}
+.admin-html-page .dd-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+.admin-html-page .dd-item.danger{color:var(--status-danger)!important}
+.admin-html-page .dd-item.danger:hover{background:#FAF0F4!important;color:var(--status-danger)!important}
+.admin-html-page .dd-item .go{color:var(--text-strong)!important}
+.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+.admin-html-page .pager button{flex:0 0 auto;width:44px;height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .modal .mh,.admin-html-page .modal .mfoot{border-color:var(--bg-input)}
+.admin-html-page .modal .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong);min-height:44px}
+.admin-html-page .modal .mff textarea{min-height:64px}
+.admin-html-page .modal .mff label,.admin-html-page .field-tip{color:var(--text-muted)}
+.admin-html-page .modal .mff .err{color:var(--status-danger)!important}
+.admin-html-page .confirm .c-ico{background:var(--bg-raised)!important;color:var(--status-danger)!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .confirm .c-msg p{color:var(--text-muted)}
+.admin-html-page .up-drop{color:var(--text-muted);border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .up-drop:hover,.admin-html-page .up-drop.drag{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .up-prog{background:#EEF0F5}
+.admin-html-page .up-prog i{background-image:linear-gradient(90deg,var(--clay-mint),var(--clay-moss))}
+.admin-html-page .up-meta,.admin-html-page .up-file .meta{color:var(--text-muted)}
+.admin-html-page .up-file{background:#FAFBFF;border-color:var(--bg-input)}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
+</head>
+<body class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">Bili-Study 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item active" href="admin-questions.html" aria-current="page"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console<span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="wrap">
+
+  <a class="back-link" href="admin-dashboard.html"><svg class="ic"><use href="/assets/icons/icons.svg#ic-arrow-left"/></svg> 管理首页</a>
+
+  <div class="page-head">
+    <div>
+      <h1>题库管理</h1>
+      <div class="sub">题库 → 题目 两级管理 · 真实接入后端 API · /admin/questions</div>
+    </div>
+    <div class="act">
+      <button class="btn btn-ghost" id="btn-import" onclick="openImport(1)"><svg class="ic"><use href="/assets/icons/icons.svg#ic-upload-simple"/></svg> 批量导入</button>
+      <button class="btn btn-primary" onclick="openBankForm()"><svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 新建题库</button>
+    </div>
+  </div>
+
+  <!-- 两级 Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="banks" onclick="switchTab('banks')">题库</button>
+    <button class="tab" data-tab="questions" onclick="switchTab('questions')">题目 <span class="tip" id="tab-q-bank" style="display:none"></span></button>
+  </div>
+
+  <!-- ============ 题库 Tab ============ -->
+  <section id="pane-banks">
+    <div class="filterbar">
+      <div class="fld search"><label for="f-bank-kw">题库搜索</label><input id="f-bank-kw" class="search" type="text" placeholder="题库名称 / 编码"></div>
+      <div class="fld"><label for="f-bank-cat">分类</label>
+        <select id="f-bank-cat" disabled title="分类筛选暂不可用">
+          <option value="">全部分类</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetBankFilter()">重置</button>
+      <div class="ft-note">题库编码在机构内唯一，重复时在此提示。分类筛选暂不可用。</div>
+    </div>
+
+    <div class="toolbar-meta"><span>共 <b id="bank-count">4</b> 个题库 · 每页 10</span></div>
+
+    <div class="tbl-card">
+      <table>
+        <thead>
+          <tr><th style="width:34%">题库</th><th>分类</th><th>ID</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="bank-body"></tbody>
+      </table>
+      <div id="bank-empty" class="state hidden">
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
+        <div><b style="color:var(--ink)">暂无题库</b></div>
+        <p style="margin:4px 0 0">点击右上角「新建题库」开始建设题库资产</p>
+      </div>
+      <div id="bank-error" class="state hidden">
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
+        <div><b style="color:var(--ink)">加载失败</b></div>
+        <p style="margin:4px 0 12px" id="bank-err-msg">后端不可用，请稍后重试</p>
+        <button class="btn btn-ghost btn-mini" onclick="renderBanks('success')">重试</button>
+      </div>
+      <div id="bank-pager" class="pager"></div>
+    </div>
+  </section>
+
+  <!-- ============ 题目 Tab ============ -->
+  <section id="pane-questions" class="hidden">
+    <div class="filterbar">
+      <div class="cur-bank"><span class="muted">当前题库：</span><span class="bn" id="q-cur-bank">—</span>
+        <span class="req-chip">与题库题目列表联动</span></div>
+      <div class="fld"><label for="practice-subject">学生练习学科</label><select id="practice-subject"><option value="programming">编程</option><option value="math">数学</option><option value="english">英语</option><option value="general">综合</option></select></div>
+      <button id="publish-practice" type="button" class="btn btn-primary btn-mini">发布为学生练习</button>
+      <div id="practice-publish-result" class="ft-note" role="status" aria-live="polite">确认题目及解析后发布；课程专属题保持原权限。</div>
+      <div class="fld search"><label for="f-q-kw">全文检索</label><input id="f-q-kw" class="search" type="text" placeholder="题号 / 题干 / 解析"></div>
+      <div class="fld"><label for="f-q-type">题型</label>
+        <select id="f-q-type">
+          <option value="">全部题型</option>
+        </select>
+      </div>
+      <div class="fld"><label for="f-q-obj">客观/主观</label>
+        <select id="f-q-obj"><option value="">全部</option><option value="1">客观</option><option value="0">主观</option></select>
+      </div>
+      <button class="btn btn-ghost btn-mini" style="margin:0 0 2px auto" onclick="resetQFilter()">重置</button>
+      <div class="ft-note">搜索按题号 / 题干 / 解析全文匹配；客观 / 主观筛选按题型对<b>当前页</b>结果过滤。</div>
+    </div>
+
+    <div class="toolbar-meta"><span>共 <b id="q-count">0</b> 题 · 每页 10</span></div>
+
+    <div class="tbl-card">
+      <table>
+        <thead>
+          <tr><th>题号</th><th>题型</th><th style="width:42%">题干（截断）</th><th>客观</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="q-body"></tbody>
+      </table>
+      <div id="q-none" class="state">
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
+        <div><b style="color:var(--ink)">请先在「题库」选中一个题库</b></div>
+        <p style="margin:4px 0 0">在题库 Tab 点击任一行的「管理」，题目列表将切到该题库</p>
+      </div>
+      <div id="q-empty" class="state hidden">
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
+        <div><b style="color:var(--ink)">该题库暂无题目</b></div>
+        <p style="margin:4px 0 0">可点击右上角「批量导入」或后续「新建题目」填充</p>
+      </div>
+      <div id="q-error" class="state hidden">
+        <div class="st-ico"><svg class="ic" style="width:26px;height:26px"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>
+        <div><b style="color:var(--ink)">题目加载失败</b></div>
+        <p style="margin:4px 0 12px">题库题目接口不可用，请稍后重试</p>
+        <button class="btn btn-ghost btn-mini" onclick="renderQuestions('success')">重试</button>
+      </div>
+      <div id="q-pager" class="pager"></div>
+    </div>
+
+    <div class="ft-note" style="margin-top:10px">每行「编辑 / 解析」进入题目详情：支持 Markdown / LaTeX 题干、解析必填与题型联动编辑。</div>
+  </section>
+
+  <!-- 演示控制器已于 task15 移除（页面为真实接线页，无演示态） -->
+
+  <!-- ============ 新建/编辑题库 Dialog ============ -->
+  <div class="scrim" id="bank-form">
+    <div class="modal">
+      <div class="mh"><h3 id="bank-form-title">新建题库</h3><button class="m-close" data-close>&times;</button></div>
+      <form class="mb" id="bank-form-fields">
+        <div class="mf">
+          <div class="mff full"><label>题库名称 *</label><input name="bank_name" placeholder="如：编程基础 · 进阶题库"></div>
+          <div class="mff" id="bank-code-wrap"><label>题库编码 *（唯一）</label><input name="bank_code" placeholder="如：PROG-L2"></div>
+          <div class="mff" id="bank-cat-wrap"><label>分类 ID *</label><input name="category_id" type="number" value="1" placeholder="如：1"></div>
+          <div class="mff" id="bank-inst-wrap"><label>机构 ID *</label><input name="institution_id" type="number" value="1" placeholder="如：1"></div>
+          <div class="mff full"><span class="req-chip" id="bank-form-hint">创建需填写机构 / 分类 / 编码 / 名称；编辑仅可修改名称与分类</span></div>
+        </div>
+      </form>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-primary btn-mini" onclick="saveBank()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 删除题库 ConfirmDialog（题量确认） ============ -->
+  <div class="scrim confirm" id="confirm-del-bank">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
+          <div>
+            <b>删除题库「<span id="del-bank-name"></span>」？</b>
+            <p>该题库下共有 <b id="del-bank-cnt">0</b> 道题。删除为<b>软删</b>（yn=0），题库与其下题目将不再展示，但<b>不会物理删除数据</b>。请二次确认。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doDeleteBank()">确认删除（软删）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 删除题目 ConfirmDialog ============ -->
+  <div class="scrim confirm" id="confirm-del-q">
+    <div class="modal">
+      <div class="mb">
+        <div class="c-msg">
+          <div class="c-ico" style="background:var(--ht-fdeff2);color:var(--candy-red)"><svg class="ic" style="width:22px;height:22px"><use href="/assets/icons/icons.svg#ic-trash"/></svg></div>
+          <div>
+            <b>删除题目「<span id="del-q-code"></span>」？</b>
+            <p>软删（yn=0），题目将不再出现在选题与组卷中。已发布的考试快照（session_exam_question_rel）不受影响。</p>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-danger btn-mini" onclick="doDeleteQ()">确认删除（软删）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 新建/编辑题目 Inline 表单 Dialog（SINGLE/MULTI/JUDGE，接 POST/PATCH） ============ -->
+  <div class="scrim" id="q-form">
+    <div class="modal">
+      <div class="mh"><h3 id="q-form-title">新建题目</h3><button class="m-close" data-close>&times;</button></div>
+      <form class="mb" id="q-form-fields" autocomplete="off">
+        <div class="mf">
+          <div class="mff"><label>题型 *</label>
+            <select id="qf-type" onchange="qfTypeChange()">
+              <option value="1">单选题</option><option value="2">多选题</option><option value="3">判断题</option>
+            </select>
+          </div>
+          <div class="mff" id="qf-code-wrap"><label>题号 *（题库内唯一）</label><input id="qf-code" placeholder="如：Q001"></div>
+          <div class="mff full"><label>题干 *</label><textarea id="qf-stem" placeholder="请输入题干"></textarea></div>
+          <div class="mff full" id="qf-options-wrap">
+            <label>选项（单选/多选）</label>
+            <div id="qf-options-body"></div>
+            <div class="field-tip">填空/简答等其余题型本期只读展示，不在页内编辑。</div>
+          </div>
+          <div class="mff full"><label>答案 *</label>
+            <input id="qf-answer" placeholder="单选/判断填选项字母(如 A)；多选填连续字母(如 AB)">
+          </div>
+          <div class="mff full"><label>解析</label><textarea id="qf-analysis" placeholder="解析（可空）"></textarea></div>
+          <div class="mff full"><span class="req-chip" id="qf-bank-hint"></span></div>
+        </div>
+      </form>
+      <div class="mfoot">
+        <button class="btn btn-ghost btn-mini" data-close>取消</button>
+        <button class="btn btn-primary btn-mini" onclick="saveQuestion()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 批量导入 Dialog（四步） ============ -->
+  <div class="scrim" id="import-dialog">
+    <div class="modal wide">
+      <div class="mh"><h3>批量导入题目</h3>
+        <span class="mstep" id="imp-step-hint">Step 1/4 · 上传文件</span>
+        <button class="m-close" data-close>&times;</button>
+      </div>
+
+      <div class="mb">
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="stp" data-step="1"><span class="dot">1</span>上传</div><div class="stp-conn" data-conn="1"></div>
+          <div class="stp" data-step="2"><span class="dot">2</span>校验预览</div><div class="stp-conn" data-conn="2"></div>
+          <div class="stp" data-step="3"><span class="dot">3</span>导入进度</div><div class="stp-conn" data-conn="3"></div>
+          <div class="stp" data-step="4"><span class="dot">4</span>结果报告</div>
+        </div>
+
+        <!-- Step 1 上传 -->
+        <div class="imp-step" data-idx="1">
+          <p class="field-tip">选中目标题库后，选择题目文件，或直接载入下面的完整样例。不需要手写 JSON；每批最多 10 道题，先校验预览，再确认导入。</p>
+          <p class="field-tip" id="imp-bank-hint" style="color:var(--primary)">当前未选中题库（先到题库 Tab 点「管理」）</p>
+          <p><label for="imp-file">选择题库文件（JSON，最多 2 MB）</label><br><input type="file" id="imp-file" accept=".json,application/json"></p>
+          <p><button type="button" class="btn btn-ghost btn-mini" id="imp-load-sample">直接载入 10 道 Python 样例</button> <a class="btn btn-ghost btn-mini" href="/samples/python-basics-10.json" download="python-basics-10.json">下载样例文件</a></p>
+          <p id="imp-file-status" class="field-tip" role="status" aria-live="polite">选择文件或载入样例后，点击「开始校验」。</p>
+          <details><summary>查看或编辑题目数据（高级，可跳过）</summary>
+          <textarea id="imp-json-input" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--ink)" placeholder='[{"question_code":"Q1","question_type_id":1,"stem":"题干","options_json":[{"label":"A","content":"甲"},{"label":"B","content":"乙"}],"answer_text":"A","analysis_text":"解析"}]'></textarea>
+          </details>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" data-close>取消</button>
+            <button class="btn btn-primary btn-mini" onclick="previewDone()">开始校验 →</button>
+          </div>
+        </div>
+
+        <!-- Step 2 校验预览 -->
+        <div class="imp-step hidden" data-idx="2">
+          <p class="field-tip">共 <b id="pv-total">1,752</b> 行 · <b style="color:var(--ok-ink)" id="pv-valid">1,745</b> 有效 · <b style="color:var(--candy-red)" id="pv-invalid">7</b> 无效。预览前 8 行，无效行已标红，可导入时定位。</p>
+          <div class="mini-table"><table>
+            <thead><tr><th>行</th><th>题号</th><th>题型</th><th>题干（截断）</th><th>校验</th></tr></thead>
+            <tbody id="pv-body"></tbody>
+          </table></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" onclick="impBack(1)">← 重传</button>
+            <button class="btn btn-primary btn-mini" id="import-confirm-btn" onclick="startImport()">确认导入 0 行 →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 导入进度（轮询） -->
+        <div class="imp-step hidden" data-idx="3">
+          <div class="field-tip" style="margin-bottom:4px" id="prog-label">正在导入：已处理 <b id="prog-done">0</b> / <b id="prog-total">1752</b> 行…</div>
+          <div class="up-prog"><i id="prog-bar" style="width:0%"></i></div>
+          <div class="up-meta"><span id="prog-detail">解析与入库中…</span><span id="prog-pct">0%</span></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" data-close>最小化</button>
+            <button class="btn btn-primary btn-mini" disabled>导入中…</button>
+          </div>
+        </div>
+
+        <!-- Step 4 结果报告 -->
+        <div class="imp-step hidden" data-idx="4">
+          <div class="stat-row">
+            <div class="stat imp"><div class="n" id="res-imp">1,740</div><div class="l">导入成功 imported</div></div>
+            <div class="stat skip"><div class="n" id="res-skip">5</div><div class="l">幂等跳过 skipped</div></div>
+            <div class="stat fail"><div class="n" id="res-fail">7</div><div class="l">失败 failed</div></div>
+          </div>
+          <p class="field-tip">失败行可依据<code>messages</code>中的行号定位并修正后重新导入（重复 question_code 幂等跳过）。</p>
+          <div class="msg-list" id="res-msgs"></div>
+          <div class="mfoot" style="padding:14px 0 0;border-top:none">
+            <button class="btn btn-ghost btn-mini" onclick="openImport(1)">再次导入</button>
+            <button class="btn btn-primary btn-mini" data-close>完成</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ===== pre-boot（task15 reshape-a 精简）：演示数据/演示控制器已删除（禁 MOCK）=====
+ * 初始只渲染骨架与空壳，真实数据由 edu-guard.requireAdmin 三段守卫通过后的 window.bootAdmin() 注入。
+ * bootAdmin 内已覆盖：switchTab/selectBank/resetBankFilter/resetQFilter/renderBanks/renderQuestions/
+ *   openBankForm/saveBank/openImport/previewDone/impBack/startImport/saveQuestion/qfTypeChange/
+ *   doDeleteBank/doDeleteQ（真实 DELETE）/openDelBank/openDelQ（二次确认弹窗）。
+ */
+function qs_(id){ return document.getElementById(id); }
+function toastStub(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){ d.remove(); },3000); }
+function skelRows_(n){ var h=""; for(var i=0;i<(n||3);i++){ h+='<tr class="skrow"><td colspan="5"><div class="sk sk-line" style="height:15px"></div></td></tr>'; } return h; }
+/* 初始：骨架屏（真实数据由守卫通过后的 bootAdmin 注入） */
+qs_("bank-body").innerHTML=skelRows_(4);
+qs_("q-body").innerHTML="";
+qs_("bank-count").textContent="…";
+qs_("q-count").textContent="0";
+/* 守卫通过前的兜底：静态 onclick 引用的函数由 bootAdmin 覆盖；此期间点击给诚实提示，不抛错 */
+["switchTab","selectBank","resetBankFilter","resetQFilter","renderBanks","renderQuestions","openBankForm","saveBank","openImport","previewDone","impBack","startImport","saveQuestion","qfTypeChange","doDeleteBank","doDeleteQ","openDelBank","openDelQ"].forEach(function(fn){
+  if(typeof window[fn]!=="function"){ window[fn]=function(){ toastStub("身份校验中，请稍候…"); }; }
+});
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script src="/edu-guard.js"></script>
+<script>eduGuard.requireAdmin();</script>
+<script>
+/* ===== 真实接入：admin-questions 对接 /api/admin/questions（task107 初接；task15 reshape-a 批判补全）=====
+ * 契约见页头注释（均已 curl 实测）。首期新建/编辑仅 SINGLE(1)/MULTI(2)/JUDGE(3)，其余题型只读展示。
+ * task15 补全：列表加载骨架屏、关键词防抖 400ms、客观/主观当前页过滤（后端无参数，诚实标注）、
+ *   题库/题目真实 DELETE（二次确认弹窗）、题库编辑 PATCH /banks/{id}、窗口化分页。
+ * 无 token 静默降级：提示 admin 账号，不发任何请求。注入不重定义全局 $ / renderSides。 */
+window.bootAdmin=function(){
+  if(!window.EAPI) return;
+  var qs=function(id){ return document.getElementById(id); };
+  var esc=function(s){ var d=document.createElement("div"); d.textContent=(s==null?"":String(s)); return d.innerHTML; };
+  var PAGE_SIZE=10;
+  var state={ bankPage:1,qPage:1,curBank:null,typeMap:{},currentBanks:[],currentQuestions:[],qEditId:null,editOpts:null,importItems:null,bankEditId:null,bankDelTarget:null,qDelTarget:null };
+
+  /* ---- token 闸门：无 token 提示 admin 账号，不发任何请求 ---- */
+  if(!EAPI.store.getToken()){
+    var sub=document.querySelector(".page-head .sub");
+    if(sub && sub.textContent.indexOf("管理员账号")<0) sub.textContent="⚠ 请用管理员账号登录后刷新本页";
+    qs("bank-body").innerHTML=""; qs("q-body").innerHTML="";
+    var bc=qs("bank-count"); if(bc) bc.textContent="0";
+    return;
+  }
+
+  function toast(m){ var d=document.createElement("div"); d.className="toast-stub"; d.textContent=m; document.body.appendChild(d); setTimeout(function(){ d.remove(); },3000); }
+  function closeModals(){ document.querySelectorAll(".scrim.show").forEach(function(x){ x.classList.remove("show"); }); }
+  /* [FEAT-WIRE-V2 #2] 三路关闭：×/取消按钮(data-close)、ESC、遮罩空白点击。
+     旧版 closeModals 仅被保存/删除成功路径调用，data-close 按钮无绑定 → 弹窗无法关闭（用户实测缺陷）。
+     锚点说明：编辑题目弹窗实际位于列表页 admin-questions.html（q-form），非 admin-question-detail.html（该页为全页表单无弹窗）。 */
+  document.addEventListener("click",function(e){
+    var c=e.target.closest("[data-close]"); if(c){ closeModals(); return; }
+    if(e.target.classList&&e.target.classList.contains("scrim")&&e.target.classList.contains("show")) closeModals();
+  });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeModals(); });
+  function setState3(n1,a1,n2,a2,n3,a3){ qs(n1).classList.toggle("hidden",!a1); qs(n2).classList.toggle("hidden",!a2); qs(n3).classList.toggle("hidden",!a3); }
+  function typeName(id){ var t=state.typeMap[id]; return t?t.type_name:("#"+id); }
+  function typeObj(id){ var t=state.typeMap[id]; return !!(t&&t.objective_flag); }
+
+  /* ---- 题型维表（GET types） —— 用于题型名/客观徽章/题型筛选 ---- */
+  function loadTypes(){
+    return EAPI.get("/api/admin/questions/types").then(function(d){
+      var items=(d&&d.items)||[], map={};
+      items.forEach(function(t){ map[t.id]=t; }); state.typeMap=map;
+      var sel=qs("f-q-type");
+      if(sel&&items.length){ sel.innerHTML='<option value="">全部题型</option>'+items.map(function(t){ return '<option value="'+t.id+'">'+esc(t.type_name)+'</option>'; }).join(""); }
+      return map;
+    }).catch(function(){ return state.typeMap; });
+  }
+
+  /* ---- 题库列表（GET banks） ---- */
+  function loadBanks(page){
+    page=page||1; state.bankPage=page;
+    qs("bank-body").innerHTML=skelRows_(4);
+    var kw=(qs("f-bank-kw")?qs("f-bank-kw").value.trim():"");
+    var url="/api/admin/questions/banks?page="+page+"&page_size="+PAGE_SIZE;
+    if(kw) url+="&keyword="+encodeURIComponent(kw);
+    return EAPI.get(url).then(function(d){
+      var items=(d&&d.items)||[], total=(d&&d.total)||0;
+      state.currentBanks=items;
+      qs("bank-count").textContent=total;
+      if(!items.length){ qs("bank-body").innerHTML=""; setState3("bank-empty",true,"bank-error",false,"bank-pager",false); return; }
+      setState3("bank-empty",false,"bank-error",false,"bank-pager",true);
+      qs("bank-body").innerHTML=items.map(bankTr).join("");
+      qs("bank-pager").innerHTML=pagerHTML("bankPage",page,total);
+      qs("bank-pager").onclick=function(e){ var k=e.target.closest("button[data-bkpg]"); if(k) loadBanks(+k.getAttribute("data-bkpg")); };
+    }).catch(function(err){ qs("bank-err-msg").textContent=(err&&err.message)||"后端不可用"; setState3("bank-empty",false,"bank-error",true,"bank-pager",false); });
+  }
+  function bankTr(b){
+    var status=b.yn?'<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-mut"><span class="pd"></span>停用</span>';
+    return '<tr class="hov"><td><div class="prim-cell"><div class="ico" style="background:linear-gradient(120deg,var(--primary-deep),var(--primary))">📚</div><div><div class="nm">'+esc(b.bank_name)+'</div><div class="cd">'+esc(b.bank_code)+' · institution#'+b.institution_id+'</div></div></div></td><td><span class="tag-chips">分类 #'+b.category_id+'</span></td><td class="nb">'+b.id+'</td><td>'+status+'</td><td class="cell-actions" style="justify-content:flex-end"><button class="btn btn-primary btn-mini" data-manage-bank="'+b.id+'">管理</button><button class="btn btn-ghost btn-mini" data-bank-edit="'+b.id+'">编辑</button><button class="btn btn-ghost btn-mini" data-bank-del="'+b.id+'" style="color:var(--candy-red);border-color:var(--candy-red)">删除</button></td></tr>';
+  }
+  function findBank(id){ for(var i=0;i<state.currentBanks.length;i++){ if(state.currentBanks[i].id===id) return state.currentBanks[i]; } return null; }
+
+  /* ---- 题目列表（GET banks/{id}/questions），按题型/关键词过滤 ---- */
+  function selectBank(b){ state.curBank=b; state.qPage=1; var tip=qs("tab-q-bank"); if(tip){ tip.style.display="inline"; tip.textContent="· "+b.bank_name; } qs("q-cur-bank").textContent=b.bank_name+"（"+b.bank_code+"）"; switchTab("questions"); }
+  qs('publish-practice').addEventListener('click', async function(){
+    var bank=state.curBank, button=this, result=qs('practice-publish-result');
+    if(!bank){result.textContent='请先在题库列表选择一个题库。';return;}
+    if(button.disabled)return;
+    button.disabled=true;result.textContent='正在校验并发布 '+bank.bank_name+'…';
+    try{
+      var receipt=await EAPI.post('/api/admin/questions/banks/'+bank.id+'/publish-practice',{subject_code:qs('practice-subject').value});
+      result.textContent=bank.bank_name+'：新增发布 '+receipt.published+' 题，已发布 '+receipt.already_published+' 题，保留课程专属题 '+receipt.preserved_course_questions+' 题。';
+      if(receipt.failures.length) result.textContent+=' 未发布：'+receipt.failures.map(function(f){return f.question_code+'：'+f.message;}).join('；');
+      var link=document.createElement('a');link.href='practice.html?bank_id='+bank.id;link.textContent=' 打开学生题库练习';result.appendChild(link);
+    }catch(error){result.textContent='发布失败：'+error.message;}
+    finally{button.disabled=false;}
+  });
+  function switchTab(t){
+    document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x.getAttribute("data-tab")===t); });
+    qs("pane-banks").classList.toggle("hidden", t!=="banks");
+    qs("pane-questions").classList.toggle("hidden", t!=="questions");
+    if(t==="questions"&&state.curBank) loadQuestions(state.qPage);
+  }
+  function loadQuestions(page){
+    page=page||1; state.qPage=page;
+    if(!state.curBank){ qs("q-body").innerHTML=""; qs("q-count").textContent="0"; qs("q-pager").innerHTML=""; setState3("q-none",true,"q-empty",false,"q-error",false); return; }
+    qs("q-body").innerHTML=skelRows_(4);
+    var url="/api/admin/questions/banks/"+state.curBank.id+"/questions?page="+page+"&page_size="+PAGE_SIZE;
+    var tv=qs("f-q-type")?qs("f-q-type").value:""; if(tv) url+="&question_type_id="+tv;
+    var kwv=qs("f-q-kw")?qs("f-q-kw").value.trim():""; if(kwv) url+="&keyword="+encodeURIComponent(kwv);
+    return EAPI.get(url).then(function(d){
+      var items=(d&&d.items)||[], total=(d&&d.total)||0;
+      /* 客观/主观为当前页过滤（后端 banks/{id}/questions 无该查询参数，诚实标注不伪装成服务端筛选） */
+      var ov=qs("f-q-obj")?qs("f-q-obj").value:"";
+      var shown=items;
+      if(ov!==""){ shown=items.filter(function(q){ return String(typeObj(q.question_type_id)?1:0)===ov; }); }
+      state.currentQuestions=items;
+      qs("q-count").textContent=total+(ov!==""?("（当前页按客观/主观过滤后 "+shown.length+" 条）"):"");
+      setState3("q-none",false,"q-empty",!shown.length,"q-error",false);
+      qs("q-body").innerHTML=shown.map(qTr).join("");
+      qs("q-pager").innerHTML=pagerHTML("qPage",page,total);
+      qs("q-pager").onclick=function(e){ var k=e.target.closest("button[data-qpg]"); if(k) loadQuestions(+k.getAttribute("data-qpg")); };
+    }).catch(function(){ setState3("q-none",false,"q-empty",false,"q-error",true); });
+  }
+  function qTr(q){
+    var obj=typeObj(q.question_type_id);
+    var objBadge=obj?'<span class="badge badge-obj"><span class="pd"></span>客观</span>':'<span class="badge badge-subj"><span class="pd"></span>主观</span>';
+    var status=q.yn?'<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-mut"><span class="pd"></span>停用</span>';
+    var editable=(q.question_type_id===1||q.question_type_id===2||q.question_type_id===3);
+    var op=editable?'<button class="btn btn-ghost btn-mini" data-edit-q="'+q.id+'">编辑</button>':'<span class="muted" title="其余题型本期只读展示">只读</span>';
+    return '<tr class="hov" data-qrow="'+q.id+'" style="cursor:pointer"><td class="nb">'+esc(q.question_code)+'</td><td>'+esc(typeName(q.question_type_id))+'</td><td><div class="stem-clamp">'+esc(q.stem)+'</div></td><td>'+objBadge+'</td><td>'+status+'</td><td class="cell-actions" style="justify-content:flex-end"><span class="muted" style="font-size:12px">详情</span>'+op+'<button class="btn btn-ghost btn-mini" data-del-q="'+q.id+'" style="color:var(--candy-red);border-color:var(--candy-red)">删除</button></td></tr>';
+  }
+  function findQ(id){ for(var i=0;i<state.currentQuestions.length;i++){ if(state.currentQuestions[i].id===id) return state.currentQuestions[i]; } return null; }
+
+  /* ---- 行点击：题目行 → 详情页跳转 admin-question-detail.html?id= ---- */
+  qs("q-body").addEventListener("click", function(e){
+    var db=e.target.closest("[data-del-q]");
+    if(db){ e.stopPropagation(); openDelQ(+db.getAttribute("data-del-q")); return; }
+    var eb=e.target.closest("[data-edit-q]");
+    if(eb){ e.stopPropagation(); openQForm(+eb.getAttribute("data-edit-q")); return; }
+    var row=e.target.closest("[data-qrow]");
+    if(row) window.location.href="admin-question-detail.html?id="+row.getAttribute("data-qrow");
+  });
+  qs("bank-body").addEventListener("click", function(e){
+    var bd=e.target.closest("[data-bank-del]");
+    if(bd){ openDelBank(+bd.getAttribute("data-bank-del")); return; }
+    var be=e.target.closest("[data-bank-edit]");
+    if(be){ openBankForm(+be.getAttribute("data-bank-edit")); return; }
+    var mb=e.target.closest("[data-manage-bank]");
+    if(mb){ var b=findBank(+mb.getAttribute("data-manage-bank")); if(b) selectBank(b); }
+  });
+
+  /* ---- 分页按钮 ---- */
+  function pagerHTML(bind,page,total){
+    var tp=Math.max(1,Math.ceil(total/PAGE_SIZE));
+    if(page>tp) page=tp;
+    var attr=(bind==="qPage")?"data-qpg":"data-bkpg";
+    function btn(p,lab,cur,dis){ return '<button '+attr+'="'+p+'" class="'+(cur?'cur':'')+'"'+(dis?' disabled':'')+'>'+(lab||p)+'</button>'; }
+    var h=btn(Math.max(1,page-1),String.fromCharCode(0x2039),false,page<=1);
+    var win=[],i;
+    for(i=1;i<=tp;i++){ if(i===1||i===tp||Math.abs(i-page)<=2) win.push(i); }
+    var prev=0;
+    win.forEach(function(pi){ if(prev&&pi-prev>1) h+='<span class="nb">…</span>'; h+=btn(pi,null,pi===page,false); prev=pi; });
+    h+=btn(Math.min(tp,page+1),String.fromCharCode(0x203a),false,page>=tp);
+    return h;
+  }
+
+  /* ---- 新建/编辑题库（POST /banks；编辑 PATCH /banks/{id} 仅 bank_name/category_id） ---- */
+  window.openBankForm=function(id){
+    var f=qs("bank-form-fields");
+    state.bankEditId=null;
+    if(id){ var b=findBank(id); if(!b) return; state.bankEditId=id;
+      qs("bank-form-title").textContent="编辑题库 #"+b.id;
+      f.bank_name.value=b.bank_name||""; f.bank_code.value=b.bank_code||""; f.category_id.value=b.category_id||1; f.institution_id.value=b.institution_id||1;
+      qs("bank-code-wrap").style.display="none"; qs("bank-inst-wrap").style.display="none";
+      qs("bank-form-hint").textContent="编辑模式：仅可修改名称与分类（编码与机构不可变更）";
+    } else {
+      qs("bank-form-title").textContent="新建题库";
+      f.bank_name.value=""; f.bank_code.value=""; f.category_id.value="1"; f.institution_id.value="1";
+      qs("bank-code-wrap").style.display=""; qs("bank-inst-wrap").style.display="";
+      qs("bank-form-hint").textContent="创建需填写机构 / 分类 / 编码 / 名称";
+    }
+    qs("bank-form").classList.add("show");
+  };
+  window.saveBank=function(){
+    var f=qs("bank-form-fields");
+    if(state.bankEditId){
+      var ub={ bank_name:f.bank_name.value.trim(), category_id:+f.category_id.value||1 };
+      if(!ub.bank_name){ toast("题库名称必填"); return; }
+      closeModals();
+      EAPI.patch("/api/admin/questions/banks/"+state.bankEditId, ub).then(function(){ toast("题库已更新"); state.bankEditId=null; loadBanks(state.bankPage); })
+        .catch(function(err){ toast("更新失败："+((err&&err.message)||"未知错误")); });
+      return;
+    }
+    var nb={ institution_id:+f.institution_id.value||1, category_id:+f.category_id.value||1, bank_code:f.bank_code.value.trim(), bank_name:f.bank_name.value.trim() };
+    if(!nb.bank_name||!nb.bank_code){ toast("题库名称与编码必填"); return; }
+    closeModals();
+    EAPI.post("/api/admin/questions/banks", nb).then(function(){ toast("题库已创建"); loadBanks(1); })
+      .catch(function(err){ toast("创建失败："+((err&&err.message)||"未知错误")); });
+  };
+
+  /* ---- 删除题库/题目（task15：真实 DELETE + 二次确认弹窗；软删 yn=0） ---- */
+  window.openDelBank=function(id){
+    var b=findBank(id); if(!b) return;
+    state.bankDelTarget=b;
+    qs("del-bank-name").textContent=b.bank_name;
+    qs("del-bank-cnt").textContent="—（题量以详情页为准）";
+    qs("confirm-del-bank").classList.add("show");
+  };
+  window.doDeleteBank=function(){
+    var b=state.bankDelTarget; if(!b) return;
+    EAPI.del("/api/admin/questions/banks/"+b.id).then(function(){
+      toast("题库「"+b.bank_name+"」已软删（yn=0）");
+      state.bankDelTarget=null; closeModals();
+      if(state.curBank&&state.curBank.id===b.id){ state.curBank=null; switchTab("banks"); }
+      loadBanks(state.bankPage);
+    }).catch(function(err){ toast("删除失败："+((err&&err.message)||"未知错误")); });
+  };
+  window.openDelQ=function(id){
+    var q=findQ(id); if(!q) return;
+    state.qDelTarget=q;
+    qs("del-q-code").textContent=q.question_code;
+    qs("confirm-del-q").classList.add("show");
+  };
+  window.doDeleteQ=function(){
+    var q=state.qDelTarget; if(!q) return;
+    EAPI.del("/api/admin/questions/questions/"+q.id).then(function(){
+      toast("题目「"+q.question_code+"」已软删（yn=0）");
+      state.qDelTarget=null; closeModals();
+      loadQuestions(state.qPage);
+    }).catch(function(err){ toast("删除失败："+((err&&err.message)||"未知错误")); });
+  };
+
+  /* ---- 新建/编辑题目（POST/PATCH questions） ---- */
+  window.openQForm=function(id){
+    state.qEditId=id||null;
+    qs("q-form-title").textContent=id?"编辑题目":"新建题目";
+    qs("qf-code-wrap").style.display=id?"none":"block";
+    qs("qf-options-wrap").style.display="block";
+    qs("qf-stem").value=""; qs("qf-answer").value=""; qs("qf-analysis").value="";
+    state.editOpts=null;
+    if(id){ var q=findQ(id); if(q){ qs("qf-type").value=q.question_type_id; qs("qf-stem").value=q.stem||""; qs("qf-answer").value=q.answer_text||""; qs("qf-analysis").value=q.analysis_text||""; state.editOpts=q.options_json||null; } else { qs("qf-type").value="1"; } }
+    else { qs("qf-type").value="1"; }
+    qs("qf-bank-hint").textContent=state.curBank?("目标题库：#"+state.curBank.id+" "+state.curBank.bank_name):"未选中题库";
+    qfTypeChange();
+    qs("q-form").classList.add("show");
+  };
+  window.qfTypeChange=function(){
+    var t=+qs("qf-type").value;
+    qs("qf-options-wrap").style.display=(t===3)?"none":"block";
+    qs("qf-answer").placeholder=t===2?"填连续字母，如 AB":(t===3?"填 正确 / 错误":"填选项字母，如 A");
+    if(t!==3) renderQFOptions();
+  };
+  function renderQFOptions(){
+    var byLabel={}; (state.editOpts||[]).forEach(function(o){ byLabel[o.label]=o.content; });
+    var html="";
+    ["A","B","C","D"].forEach(function(l){ html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="font-weight:700;width:16px">'+l+'</span><input data-opt-label="'+l+'" style="flex:1;height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:0.8125rem" value="'+esc(byLabel[l]||"")+'"></div>'; });
+    qs("qf-options-body").innerHTML=html;
+  }
+  function collectQFOptions(){
+    var arr=[];
+    document.querySelectorAll("#qf-options-body input[data-opt-label]").forEach(function(inp){ var v=inp.value.trim(); if(v) arr.push({ label:inp.getAttribute("data-opt-label"), content:v }); });
+    return arr;
+  }
+  window.saveQuestion=function(){
+    if(!state.curBank){ toast("请先在题库 Tab 选中题库"); return; }
+    var t=+qs("qf-type").value, stem=qs("qf-stem").value.trim(), ans=qs("qf-answer").value.trim(), analysis=qs("qf-analysis").value.trim();
+    if(!stem){ toast("题干为必填"); return; }
+    if(!ans){ toast("答案为必填"); return; }
+    var options=null; if(t!==3){ options=collectQFOptions(); if(!options.length){ toast("请填写至少一项选项"); return; } }
+    var base={ question_type_id:t, stem:stem, options_json:options, answer_text:ans, analysis_text:analysis };
+    var p, editing=!!state.qEditId;
+    if(editing) p=EAPI.patch("/api/admin/questions/questions/"+state.qEditId, base);
+    else { var code=qs("qf-code").value.trim(); if(!code){ toast("题号必填"); return; } base.bank_id=state.curBank.id; base.question_code=code; p=EAPI.post("/api/admin/questions/questions", base); }
+    closeModals();
+    p.then(function(){ toast(editing?"题目已更新":"题目已创建"); state.qEditId=null; loadQuestions(state.qPage); })
+      .catch(function(err){ toast("保存失败："+((err&&err.message)||"未知错误")); });
+  };
+
+  /* ---- 批量导入：import-preview → import-execute ---- */
+  window.openImport=function(){ impShowBankHint(); qs("import-dialog").classList.add("show"); impStep(1); };
+  function impShowBankHint(){ var h=qs("imp-bank-hint"); if(h) h.textContent=state.curBank?("目标题库：#"+state.curBank.id+" "+state.curBank.bank_name):"当前未选中题库（先到题库 Tab 点「管理」）"; }
+  window.impStep=function(n){
+    document.querySelectorAll(".imp-step").forEach(function(x){ x.classList.toggle("hidden", Number(x.getAttribute("data-idx"))!==n); });
+    qs("imp-step-hint").textContent="Step "+n+"/4 · "+["上传文件","校验预览","导入进度","结果报告"][n-1];
+    document.querySelectorAll(".stp,.stp-conn").forEach(function(x){ var i=Number(x.getAttribute("data-step")||x.getAttribute("data-conn")||0); x.classList.toggle("done", !!i&&i<n); x.classList.toggle("cur", i===n); });
+  };
+  window.impBack=function(n){ impStep(n); };
+  window.previewDone=function(){
+    if(!state.curBank){ toast("请先选中目标题库（题库 Tab 点「管理」）"); return; }
+    var raw=qs("imp-json-input").value.trim(); if(!raw){ toast("请先选择题库文件或载入 Python 样例"); return; }
+    var arr; try{ arr=JSON.parse(raw); }catch(e){ toast("JSON 解析失败："+e.message); return; }
+    if(!Array.isArray(arr)||!arr.length){ toast("需为非空数组"); return; }
+    if(arr.length>10){ toast("首期单次导入 ≤10 题"); return; }
+    EAPI.post("/api/admin/questions/import-preview?bank_id="+state.curBank.id, { items:arr }).then(function(d){
+      state.importItems=arr; renderPreview(d); impStep(2);
+    }).catch(function(err){ toast("校验失败："+((err&&err.message)||"")); });
+  };
+  function renderPreview(d){
+    d=d||state.importPreview||{total_rows:0,valid_rows:0,invalid_rows:0,rows:[]};
+    qs("pv-total").textContent=d.total_rows; qs("pv-valid").textContent=d.valid_rows; qs("pv-invalid").textContent=d.invalid_rows;
+    var arr=state.importItems||[];
+    qs("pv-body").innerHTML=(d.rows||[]).map(function(r){
+      var item=arr[r.row_index]||{}; var valid=!!r.valid;
+      var errs=(r.errors||[]).map(function(x){ return '<span class="err-pill">'+esc(x)+'</span>'; }).join("");
+      return '<tr class="'+(valid?'':'row-bad')+'"><td class="nb">#'+r.row_index+'</td><td class="nb">'+esc(r.question_code||"—")+'</td><td>'+(item.question_type_id!=null?esc(typeName(item.question_type_id)):"")+'</td><td class="stem-clamp">'+(item.stem?esc(item.stem):"<em>（空）</em>")+'</td><td>'+(valid?'<span class="ok-pill">✓ 有效</span>':errs)+'</td></tr>';
+    }).join("");
+    qs("import-confirm-btn").textContent="确认导入 "+d.valid_rows+" 行 →";
+  }
+  window.startImport=function(){
+    if(!state.curBank){ toast("请先选中题库"); return; }
+    if(!state.importItems){ toast("请先进行校验预览"); return; }
+    EAPI.post("/api/admin/questions/import-execute?bank_id="+state.curBank.id, { items:state.importItems }).then(function(d){
+      renderResult(d); if(state.curBank) loadQuestions(1); impStep(4);
+    }).catch(function(err){ toast("导入失败："+((err&&err.message)||"")); });
+  };
+  function renderResult(d){
+    d=d||{total:0,imported:0,skipped:0,failed:0,messages:[]};
+    qs("res-imp").textContent=d.imported; qs("res-skip").textContent=d.skipped; qs("res-fail").textContent=d.failed;
+    var msgs=(d.messages&&d.messages.length)?d.messages:["导入处理完成"];
+    qs("res-msgs").innerHTML=msgs.map(function(m){ var cls=m.indexOf("失败")>=0?"ms-fail":(m.indexOf("跳过")>=0?"ms-skip":"ms-ok"); return '<div class="'+cls+'">'+esc(m)+'</div>'; }).join("");
+  }
+
+  /* ---- 覆盖原演示渲染入口，使切页/重试走真实数据 ---- */
+  window.renderBanks=function(){ loadBanks(state.bankPage); };
+  window.renderQuestions=function(){ loadQuestions(state.qPage); };
+  window.switchTab=switchTab;
+  window.selectBank=selectBank;
+  window.resetBankFilter=function(){ qs("f-bank-kw").value=""; loadBanks(1); };
+  window.resetQFilter=function(){ qs("f-q-kw").value=""; qs("f-q-type").value=""; qs("f-q-obj").value=""; loadQuestions(1); };
+
+  /* ---- 搜索/筛选触发（关键词防抖 400ms；Enter 立即查；客观/主观当前页过滤即时生效） ---- */
+  var bkw=qs("f-bank-kw"), bkwTimer=null;
+  if(bkw){ bkw.addEventListener("input", function(){ clearTimeout(bkwTimer); bkwTimer=setTimeout(function(){ loadBanks(1); },400); }); bkw.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); clearTimeout(bkwTimer); loadBanks(1); } }); }
+  var qkw=qs("f-q-kw"), qkwTimer=null;
+  if(qkw){ qkw.addEventListener("input", function(){ clearTimeout(qkwTimer); qkwTimer=setTimeout(function(){ loadQuestions(1); },400); }); qkw.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); clearTimeout(qkwTimer); loadQuestions(1); } }); }
+  var qtype=qs("f-q-type"); if(qtype) qtype.addEventListener("change", function(){ loadQuestions(1); });
+  var qobj=qs("f-q-obj"); if(qobj) qobj.addEventListener("change", function(){ loadQuestions(state.qPage); }); /* 当前页过滤，不重置页码 */
+
+  /* ---- 初始化 ---- */
+  state.importPreview=null;
+  loadTypes().then(function(){ return loadBanks(1); });
+};
+</script>
+<script src="/question-import-file.js"></script>
+</body>
+</html>

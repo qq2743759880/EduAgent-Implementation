@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理端用户 /admin/users</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<!--
+  task60 HTML 原型（审核稿）→ 2026-09-12 task14 起为真实接线页（见 AUDIT LOG task14 条目）
+  - P17 风格 candy-playful frozen（复用 task58 admin-questions 同源样式）
+  - 契约为权威：后端 app/admin/user_admin/router.py + schemas.py（task14 契约⑤ 用户域）+ task15 契约⑬ 响应壳
+    列表  GET /api/admin/users?keyword&role_code&status&yn&page&page_size
+            （search 字段：username/real_name/account/mobile/email LIKE；page_size 默认 20，max 100）
+    角色  POST /api/admin/users/{id}/role   body{target_role: admin|manager|teacher|student, reason?}  → {updated,user_id,target_role}
+    状态  POST /api/admin/users/{id}/status body{status:0|1, yn?:0|1, reason?}                        → {updated,user_id,status,yn}
+    学习  GET /api/admin/users/{id}/learning  ← ⚠ 契约缺口：后端当前未注册（详见 AUDIT LOG / 缺口声明）
+    列表项 AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,created_at,updated_at,last_login_at}
+  - 红线保护（对齐后端 service 40303「至少保留 1 名可用管理员账号」）：
+    GWT③ 对「唯一可用 admin」本人的 禁用(status=0/yn=0) 或 降级(target_role!=admin) → 前端 disabled + 提示；后端仍拒绝兜底
+    判定基线：排除该用户后，有效 admin（role=admin 且 status=1 且 yn=1）计数 >= 1 才允许 禁用/降级
+  - 角色枚举：admin/manager/teacher/student（_ALLOWED_ROLES）
+  AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-09-12 task14 reshape-a] 全量真实接线（curl 实测 2026-09-12，端点均 200）：列表 GET /api/admin/users
+      （keyword/role_code/status/page/page_size，{total,page,page_size,items} 壳，keyword 防抖 400ms，窗口化分页支持十万级 total）；
+      详情弹窗=列表项 AdminUserItem 真实字段渲染（GET /{id}/learning 未注册→缺口诚实披露，删除原型 6 指标假数据）；
+      启停=行内按钮二次确认弹窗 → POST /{id}/status；编辑弹窗 role/status diff → POST /{id}/role + /{id}/status（40303 红线后端权威，
+      前端以 metrics.role_breakdown.admin 尽力提示）；manager 过守卫后本域 403 40300 在错误态诚实展示。
+      删除演示控制器/演示 USERS/假学习指标/假动态时间线（禁 MOCK）；删除 alert()（禁 alert）。
+    [2026-08-24 v1 R1] 初稿提交（用户 DataTable + FilterBar 搜索防抖400ms/角色/状态组合查询/分页 + 编辑Dialog(RoleSelect+状态切换+reason)
+      + 学习详情Dialog(6 StatCard+最近动态,缺口标注) + 最后admin红线禁用演示 + 演示控制器多态）→ SUBMITTED
+-->
+<style>
+  :root{ --htc-0-0-0-0.18: rgba(0,0,0,0.18); --htc-25-28-38-0.42: rgba(25,28,38,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-5b647b: #5b647b; --ht-7c4bd6: #7c4bd6; --ht-a78bfa: #a78bfa; --ht-f3edfe: #f3edfe; --ht-fafbff: #fafbff; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-25-28-38-042: rgba(25, 28, 38, 0.042); --htc-0-0-0-018: rgba(0, 0, 0, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:30px 22px 110px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:90;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .grp{font-size:11px;color:var(--muted);margin:8px 0 4px}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:240px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* top shell strip（管理端导航，用户管理高亮） */
+  .shell{background:var(--ht-fff);border-bottom:1px solid var(--line)}
+  .shell-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:12px 22px}
+  .brand{font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px}
+  .brand .lg{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--primary-deep),var(--candy-purple));color:var(--ht-fff);display:grid;place-items:center;font-size:14px}
+  .nav-btn{border:none;background:transparent;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .nav-btn.on{background:var(--primary-soft);color:var(--primary)}
+  .nav-btn:hover{color:var(--primary)}
+  /* page head */
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:20px 0 12px}
+  .page-head h1{margin:0;font-size:22px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  .page-head .act{display:flex;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--muted-bg);border-radius:999px;padding:4px 10px}
+  .chip b{color:var(--primary)}
+  /* filter bar */
+  .filterbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:12px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--muted);font-weight:600}
+  .fld select,.fld input{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;background:var(--ht-fff);color:var(--ink);min-width:0}
+  .fld input.search{width:250px}
+  .fld select{width:150px}
+  .fld select:focus,.fld input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  .ft-note{width:100%;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .ft-note code{background:var(--muted-bg);border-radius:5px;padding:0 5px;font-family:ui-monospace,Consolas,monospace}
+  .deb-pulse{font-weight:600;color:var(--candy-orange);opacity:0;transition:opacity .15s}
+  .deb-pulse.show{opacity:1}
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+  /* table */
+  .tbl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.hov:hover{background:var(--ht-fafbff)}
+  .prim-cell{display:flex;align-items:center;gap:11px}
+  .prim-cell .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ht-fff);flex-shrink:0;font-size:0.9375rem;font-weight:700}
+  .prim-cell .nm{font-weight:600;color:var(--ink)}
+  .prim-cell .cd{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted);font-size:12px}
+  .muted{color:var(--muted)}
+  /* badges */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-role-admin{background:var(--primary-soft);color:var(--primary-deep)} .badge-role-admin .pd{background:var(--primary)}
+  .badge-role-tea{background:var(--candy-purple)/0;background:var(--ht-f3edfe);color:var(--ht-7c4bd6)} .badge-role-tea .pd{background:var(--ht-a78bfa)}
+  .badge-role-std{background:var(--muted-bg);color:var(--muted-ink)} .badge-role-std .pd{background:var(--ht-5b647b)}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)} .badge-on .pd{background:var(--ok-ink)}
+  .badge-off{background:var(--muted-bg);color:var(--muted-ink)} .badge-off .pd{background:var(--muted-ink)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn-ink)} .badge-warn .pd{background:var(--warn-ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .link-btn{border:none;background:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--primary);padding:4px 6px;border-radius:7px}
+  .link-btn:hover{background:var(--primary-soft)}
+  /* pagination + result meta */
+  .tbl-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-top:1px solid var(--line)}
+  .tbl-foot .cnt{font-size:12px;color:var(--muted)}
+  .pager{display:flex;align-items:center;gap:6px}
+  .pager button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .pager button.cur{border-color:var(--primary);background:var(--primary);color:var(--ht-fff)}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  /* empty / error / gap */
+  .box-pad{padding:46px 20px;text-align:center;color:var(--muted)}
+  .box-pad .ic{font-size:30px;margin-bottom:8px}
+  /* dialog */
+  .mask{position:fixed;inset:0;background:var(--htc-25-28-38-042);z-index:50;display:none}
+  .dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;background:var(--ht-fff);border-radius:18px;box-shadow:0 18px 50px var(--htc-0-0-0-018);width:560px;max-width:calc(100vw - 32px);max-height:88vh;overflow:auto;display:none}
+  .mask.show,.dialog.show{display:block}
+  .dlg-h{padding:16px 18px 0}
+  .dlg-h h3{margin:0;font-size:17px}
+  .dlg-h .sub{color:var(--muted);font-size:12px;margin-top:3px}
+  .dlg-b{padding:14px 18px 18px}
+  .dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:4px 18px 16px}
+  .close-x{float:right;border:none;background:var(--muted-bg);color:var(--muted);width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1}
+  .close-x:hover{color:var(--ink)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+  .field label{font-size:11px;color:var(--muted);font-weight:600}
+  .field select,.field input,.field textarea{border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:0.8125rem;height:36px;background:var(--ht-fff);color:var(--ink)}
+  .field textarea{height:64px;padding:8px 10px;resize:none}
+  .field select:focus,.field input:focus,.field textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+  /* group toggle for 状态 */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{border:none;background:var(--ht-fff);padding:8px 16px;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg button.on{background:var(--primary);color:var(--ht-fff)}
+  /* red line hint */
+  .redline{display:flex;align-items:flex-start;gap:8px;background:var(--red-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--red-ink);margin-top:12px}
+  .gap-note{display:flex;align-items:flex-start;gap:8px;background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--warn-ink);margin-bottom:10px}
+  /* learn detail 6 statcards */
+  .stat6{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sc6{border:1px solid var(--line);border-radius:12px;padding:12px}
+  .sc6 .lbl{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .sc6 .val{font-size:20px;font-weight:800;margin-top:6px;color:var(--ink)}
+  .sc6 .val small{font-size:11px;font-weight:600;color:var(--muted)}
+  .sc6 .src{font-size:0.625rem;color:var(--muted);margin-top:3px;font-family:ui-monospace,Consolas,monospace}
+  .sub-t{font-size:0.8125rem;font-weight:700;margin:16px 0 8px;display:flex;align-items:center;gap:7px}
+  .sub-t .raw{font-size:0.625rem;color:var(--muted);font-weight:500;font-family:ui-monospace,Consolas,monospace}
+  .timeline{border-left:2px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:10px}
+  .tl{display:flex;align-items:baseline;gap:8px;font-size:0.8125rem}
+  .tl .t{color:var(--muted);font-size:11px;white-space:nowrap}
+  .tl .d{color:var(--ink)}
+  .hidden{display:none!important}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="uk-skel">
+  .sk{display:inline-block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--card) 50%,var(--line) 75%);background-size:400% 100%;animation:uksh 1.2s infinite}
+  .skav{width:32px;height:32px;border-radius:50%}
+  .nm1{width:92px}.cd1{width:132px}.cell1{width:72px}.cell2{width:58px}.cell3{width:92px}.cell4{width:80px}
+  @keyframes uksh{0%{background-position:100% 0}100%{background-position:0 0}}
+</style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 ⚠ 为行为层冻结面保留；JS 渐变头像经
+   background-image:none + 表面实色循环在视觉层 clay 化。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-purple:#EAE4FF; --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --ht-7c4bd6:var(--text-strong); --ht-a78bfa:var(--text-strong); --ht-f3edfe:#EAE4FF; --ht-5b647b:var(--text-strong);
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 页头/工具条 --- */
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+.admin-html-page .toolbar-meta{color:var(--text-muted)}
+.admin-html-page .chip{color:var(--text-muted)!important;background:#EEF0F5!important}
+.admin-html-page .chip b{color:var(--text-strong)!important}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .link-btn{min-height:44px;min-width:44px;color:var(--text-strong)!important;text-decoration:underline;border-radius:var(--radius-btn)}
+.admin-html-page .link-btn:hover{background:#EFF6EC!important}
+.admin-html-page .fld select,.admin-html-page .fld input{height:auto;min-height:44px;border-radius:var(--radius-input)!important;border-color:var(--bg-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+.admin-html-page .fld label{color:var(--text-muted)}
+.admin-html-page .fld select:focus,.admin-html-page .fld input:focus,.admin-html-page .modal textarea:focus{outline:2px solid var(--focus-ring);border-color:var(--focus-ring)}
+.admin-html-page .modal textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .modal select,.admin-html-page .modal input{min-height:44px;border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .close-x{width:44px;height:44px;min-width:44px;min-height:44px;color:var(--text-muted);border-radius:var(--radius-btn)!important}
+.admin-html-page .close-x:hover{color:var(--text-strong)}
+
+/* --- 表格/徽章/头像 --- */
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .nb,.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .prim-cell .nm{color:var(--text-strong)}
+.admin-html-page .prim-cell .cd{color:var(--text-muted)}
+.admin-html-page .prim-cell .av{background-image:none!important;color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important;font-weight:800}
+.admin-html-page tbody tr:nth-of-type(5n+1) .av{background-color:var(--clay-sky)!important;box-shadow:3px 4px 10px rgba(80,142,196,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+2) .av{background-color:var(--clay-mint)!important;box-shadow:3px 4px 10px rgba(43,153,103,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+3) .av{background-color:var(--clay-peach)!important;box-shadow:3px 4px 10px rgba(218,111,82,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+4) .av{background-color:var(--clay-pink)!important;box-shadow:3px 4px 10px rgba(188,99,137,.22)}
+.admin-html-page tbody tr:nth-of-type(5n+5) .av{background-color:var(--clay-lemon)!important;box-shadow:3px 4px 10px rgba(190,149,35,.22)}
+.admin-html-page [class*="badge-role"]{color:var(--text-strong)!important}
+.admin-html-page .badge-off{background:#EEF0F5!important;color:var(--text-strong)!important}
+.admin-html-page .badge-off .pd{background:var(--status-archived)!important}
+.admin-html-page .box-pad{color:var(--text-muted)}
+.admin-html-page .tbl-card{border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important;background:var(--bg-raised)}
+.admin-html-page .filterbar{border-color:var(--bg-input)!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .pager{flex-wrap:wrap;row-gap:6px}
+.admin-html-page .pager button{flex:0 0 auto;width:44px;height:44px;border-radius:var(--radius-btn);color:var(--text-strong);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .pager button.cur{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+
+/* --- 弹窗/提示 --- */
+.admin-html-page .dlg-h h3{color:var(--text-strong)}
+.admin-html-page .dlg-h .sub{color:var(--text-muted)}
+.admin-html-page .redline{background:#FAF0F4!important;color:var(--status-danger)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .redline b{color:var(--status-danger)}
+.admin-html-page .gap-note{background:#F9F3D7!important;color:var(--text-strong)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .gap-note b{color:var(--text-strong)}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .stat6 .fld label{color:var(--text-muted)}
+
+/* --- reduced-motion：45 个骨架 shimmer 归零 --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
+</head>
+<body class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">Bili-Study 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item" href="admin-courses.html"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item active" href="admin-users.html" aria-current="page"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console<span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>用户管理</h1>
+      <div class="sub">仅管理员可访问；最后 1 个可用管理员的禁用 / 降级会被拒绝（保护机制）</div>
+    </div>
+    <div class="act">
+      <span class="chip">列表实时加载</span>
+      <span class="chip">总计 <b id="head-total">0</b> 人</span>
+    </div>
+  </div>
+
+  <!-- FilterBar：搜索防抖 400ms + 角色/状态组合查询 -->
+  <div class="filterbar">
+    <div class="fld">
+      <label>关键词</label>
+      <input class="search" id="f-kw" placeholder="昵称 / 手机 / 账号（防抖 400ms）">
+    </div>
+    <div class="fld">
+      <label>角色</label>
+      <select id="f-role">
+        <option value="">全部角色</option>
+        <option value="admin">管理员</option>
+        <option value="manager">教务</option>
+        <option value="teacher">教师</option>
+        <option value="student">学生</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>状态</label>
+      <select id="f-status">
+        <option value="">全部状态</option>
+        <option value="1">启用</option>
+        <option value="0">禁用</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>&nbsp;</label>
+      <button class="btn btn-ghost btn-mini" onclick="resetFilter()">重置</button>
+    </div>
+    <div class="ft-note">
+      <span class="deb-pulse" id="deb-pulse" title="防抖 400ms">● 400ms 后查询</span>
+      <span>组合查询：<code>keyword</code>（username/real_name/account/mobile/email LIKE）+ <code>role_code</code> + <code>status</code>。</span>
+    </div>
+  </div>
+
+  <!-- DataTable -->
+  <div class="tbl-card">
+    <table>
+      <thead><tr>
+        <th>用户</th><th>手机</th><th>角色</th><th>状态</th><th>注册时间</th><th>最近登录</th><th style="text-align:right">操作</th>
+      </tr></thead>
+      <tbody id="u-body"></tbody>
+    </table>
+    <div class="box-pad hidden" id="u-empty"><div class="ic"><svg class="ic" style="width:22px;height:22px;vertical-align:-.3em"><use href="/assets/icons/icons.svg#ic-magnifying-glass"/></svg></div>未匹配到用户（组合查询为空/调整筛选）</div>
+    <div class="box-pad hidden" id="u-error"><div class="ic"><svg class="ic" style="width:22px;height:22px;vertical-align:-.3em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></div>用户列表加载失败</div>
+    <div class="tbl-foot">
+      <span class="cnt" id="u-count">共 0 条</span>
+      <span class="pager" id="u-pager"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 用户详情 Dialog（task14：真实字段渲染自列表项 AdminUserItem；学习 6 指标为契约缺口，诚实披露不写 MOCK） -->
+<div class="mask" id="learn-mask"></div>
+<div class="dialog" id="learn-dlg" style="width:600px">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3>用户详情</h3>
+    <div class="sub" id="learn-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <div class="stat6" id="learn-fields"></div>
+    <div class="gap-note" id="learn-gap" style="margin-top:14px">
+      <span><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
+      <span><b>暂未开放</b>：学习指标面板所需接口尚未开放，功能上线后自动呈现，本页不展示占造数据。</span>
+    </div>
+  </div>
+  <div class="dlg-foot"><button class="btn btn-ghost" data-close>关闭</button></div>
+</div>
+
+<!-- 启停二次确认 Dialog（task14 GWT：启停带二次确认 → POST /api/admin/users/{id}/status） -->
+<div class="mask" id="st-mask"></div>
+<div class="dialog" id="st-dlg" style="width:460px">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3 id="st-title">确认操作</h3>
+    <div class="sub" id="st-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <p id="st-msg" style="margin:0;font-size:0.875rem;color:var(--ink)">—</p>
+    <div class="field" style="margin-top:10px">
+      <label>变更原因（可选，reason ≤255）</label>
+      <textarea id="st-reason" placeholder="操作留痕，选填"></textarea>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" data-close>取消</button>
+    <button class="btn btn-primary" id="st-confirm">确认</button>
+  </div>
+</div>
+
+<!-- 编辑用户 Dialog（RoleSelect + 状态切换 + reason；红线禁用） -->
+<div class="mask" id="edit-mask"></div>
+<div class="dialog" id="edit-dlg">
+  <div class="dlg-h">
+    <button class="close-x" data-close>✕</button>
+    <h3>编辑用户</h3>
+    <div class="sub" id="edit-sub">—</div>
+  </div>
+  <div class="dlg-b">
+    <div class="row">
+      <div class="field">
+        <label>角色 <span class="muted">保存后生效</span></label>
+        <select id="e-role">
+          <option value="student">学生 · student</option>
+          <option value="teacher">教师 · teacher</option>
+          <option value="manager">教务 · manager</option>
+          <option value="admin">管理员 · admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>状态 <span class="muted">保存后生效</span></label>
+        <span class="seg" id="e-status-seg">
+          <button data-st="1">启用</button><button data-st="0">禁用</button>
+        </span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>变更原因（可选，reason ≤255）</label>
+        <textarea id="e-reason" placeholder="操作留痕，选填"></textarea>
+      </div>
+    </div>
+    <div class="redline hidden" id="e-redline">
+      <span><svg class="ic" style="width:16px;height:16px;vertical-align:-.25em"><use href="/assets/icons/icons.svg#ic-warning"/></svg></span>
+      <span><b>保护机制</b>：该用户是<b>最后 1 个可用管理员</b>。禁用或降级将导致无人能进入管理端——操作已被禁用；后端同样会拒绝（至少保留 1 名可用管理员）。</span>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn btn-ghost" data-close>取消</button>
+    <button class="btn btn-primary" id="e-save" onclick="saveEdit()">保存变更</button>
+  </div>
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ===== task14 真实接线（reshape-a，curl 实测 2026-09-12）=====
+ * 契约权威：bili-study-agent/app/admin/user_admin/router.py + schemas.py
+ *   列表   GET /api/admin/users?keyword&role_code&status&yn&page&page_size → {total,page,page_size,items[AdminUserItem]}
+ *          AdminUserItem{user_id,username,real_name,phone,email,role_code,status,yn,created_at,updated_at,last_login_at}
+ *   状态   POST /api/admin/users/{id}/status  body{status:0|1,yn?,reason?} → {updated,user_id,status,yn}（实测 200）
+ *   角色   POST /api/admin/users/{id}/role   body{target_role,reason?}    → {updated,user_id,target_role}（实测 200）
+ *   缺口   GET /api/admin/users/{id}/learning 未注册（实测 404）→ 详情对话框诚实披露，无 MOCK
+ *   红线   40303「至少保留 1 名可用管理员账号」由后端权威兜底（实测：active_admins(不含本人)<1 才拒绝）；
+ *          前端以 metrics.role_breakdown.admin 做尽力而为提示，不据此放行/拦截真实操作
+ *   角色门 user_admin 路由 require_role([ADMIN])（后端权限口径仅 ADMIN；实测 manager 登录 GET /api/admin/users → 403 40300）
+ *   [2026-09-12 H2a/P1-9] 守卫放行 {admin,manager} ≠ 本域放行：bootAdmin 加载前复查 auth/me，
+ *     role!=='admin' → 诚实横幅「该模块仅 ADMIN 可用（后端权限口径）」+ 返回仪表盘按钮，
+ *     不发列表/指标请求（此前 manager 会先拿一个必 403 的列表请求再在错误态展示——已改为请求前拦截）；
+ *     auth/me 复查失败按未授权跳登录（与守卫第三段同口径，不静默发请求）。
+ *     修正 task109 GWT③「manager 过守卫后 403 错误态诚实展示」的旧口径（P1-9 批判：守卫与路由权限矛盾）。
+ * 守卫三段由 edu-guard.requireAdmin 承担（无 token 跳登录 → auth/me 校验 role∈{admin,manager} → 失败跳登录），
+ * 守卫通过后才调 window.bootAdmin()；页面自身不做参数正则提取（无 URL 取参需求）。
+ */
+const ROLE_LABEL={admin:"管理员",manager:"教务",teacher:"教师",student:"学生"};
+const AVATAR_GRAD=["linear-gradient(135deg,var(--primary-deep),var(--candy-purple))",
+  "linear-gradient(135deg,var(--primary),var(--candy-blue))","linear-gradient(135deg,var(--candy-green),var(--candy-green))",
+  "linear-gradient(135deg,var(--candy-orange),var(--candy-pink))","linear-gradient(135deg,var(--candy-purple),var(--candy-pink))"];
+const PAGE_SIZE=10;
+let uPage=1, uKw="", uRole="", uSt="", uLoading=false;
+let adminTotalHint=null; // metrics.role_breakdown.admin（尽力而为红线提示）
+let rowsCache=[];        // 当前页真实 items（详情/编辑弹窗取数）
+
+/* ---- 防抖 400ms 搜索（lesson9：不用正则 match 提参） ---- */
+let debTimer=null;
+document.getElementById("f-kw").addEventListener("input",function(){
+  const pulse=document.getElementById("deb-pulse");
+  if(pulse) pulse.classList.add("show");
+  clearTimeout(debTimer);
+  const val=this.value;
+  debTimer=setTimeout(function(){ uKw=val.trim(); if(pulse) pulse.classList.remove("show"); uPage=1; loadUsers(); },400);
+});
+function resetFilter(){
+  document.getElementById("f-kw").value=""; document.getElementById("f-role").value="";
+  document.getElementById("f-status").value=""; uKw="";uRole="";uSt=""; uPage=1; loadUsers();
+}
+document.getElementById("f-role").addEventListener("change",function(e){uRole=e.target.value;uPage=1;loadUsers();});
+document.getElementById("f-status").addEventListener("change",function(e){uSt=e.target.value;uPage=1;loadUsers();});
+
+/* ---- 列表渲染 ---- */
+function esc(t){var x=document.createElement("div");x.textContent=t==null?"":String(t);return x.innerHTML;}
+function roleBadge(r){ return '<span class="badge '+(r==='admin'?'badge-role-admin':'badge-role-'+(r==='teacher'||r==='manager'?'tea':'std'))+'"><span class="pd"></span>'+(ROLE_LABEL[r]||esc(r||"—"))+'</span>'; }
+function statusBadge(st){ return st? '<span class="badge badge-on"><span class="pd"></span>启用</span>':'<span class="badge badge-off"><span class="pd"></span>禁用</span>'; }
+function fmtDT(s){ return s? esc(String(s).slice(0,16).replace("T"," ")) : "—"; }
+function uRow(u,i){
+  const nm=u.real_name||u.username||("UID "+u.user_id);
+  const ini=(nm||"?").slice(0,1).toUpperCase();
+  return '<tr class="hov">'
+    +'<td><div class="prim-cell"><span class="av" style="background:'+AVATAR_GRAD[i%AVATAR_GRAD.length]+'">'+esc(ini)+'</span>'
+    +'<div><div class="nm">'+esc(nm)+'</div><div class="cd">'+esc(u.username||"—")+' · UID '+u.user_id+'</div></div></div></td>'
+    +'<td class="nb">'+esc(u.phone||"—")+'</td>'
+    +'<td>'+roleBadge(u.role_code)+'</td>'
+    +'<td>'+statusBadge(u.status)+'</td>'
+    +'<td class="nb">'+fmtDT(u.created_at)+'</td>'
+    +'<td class="nb">'+fmtDT(u.last_login_at)+'</td>'
+    +'<td style="text-align:right"><div class="cell-actions" style="justify-content:flex-end">'
+    +'<button class="link-btn" data-view="'+u.user_id+'">查看</button>'
+    +'<button class="btn btn-ghost btn-mini" data-edit="'+u.user_id+'">编辑</button>'
+    +'<button class="btn btn-ghost btn-mini" data-toggle="'+u.user_id+'" style="'+(u.status?'color:var(--candy-red);border-color:var(--candy-red)':'')+'">'+(u.status?'禁用':'启用')+'</button>'
+    +'</div></td></tr>';
+}
+function skelRows(){
+  var html="";
+  for(var i=0;i<5;i++){
+    html+='<tr><td><div class="prim-cell"><span class="av sk skav"></span><div><div class="nm sk nm1"></div><div class="cd sk cd1"></div></div></div></td>'
+      +'<td><span class="sk cell1"></span></td><td><span class="sk cell4"></span></td>'
+      +'<td><span class="sk cell2"></span></td><td><span class="sk cell3"></span></td>'
+      +'<td><span class="sk cell3"></span></td><td><span class="sk cell2"></span></td></tr>';
+  }
+  return html;
+}
+function setListState(view,errMsg){
+  var body=document.getElementById("u-body");
+  document.getElementById("u-empty").classList.toggle("hidden",view!=="empty");
+  var errBox=document.getElementById("u-error");
+  errBox.classList.toggle("hidden",view!=="error");
+  if(view==="error") errBox.innerHTML='<div class="ic">⚠️</div>用户列表加载失败：'+esc(errMsg||"后端不可用");
+  body.innerHTML=(view==="loading")?skelRows():"";
+}
+/* 窗口化分页（total 可达 10 万级，只渲染 当前±2 + 首末页） */
+function pagerHTML(total,page,pageSize){
+  const totalPg=Math.max(1,Math.ceil(total/pageSize));
+  if(page>totalPg) page=totalPg;
+  const btn=(p,label,cur,dis)=>'<button data-upg="'+p+'" class="'+(cur?'cur':'')+'"'+(dis?' disabled':'')+'>'+(label||p)+'</button>';
+  let html=btn(Math.max(1,page-1),"‹",false,page<=1);
+  const win=[];
+  for(let p=1;p<=totalPg;p++){ if(p===1||p===totalPg||Math.abs(p-page)<=2) win.push(p); }
+  let prev=0;
+  win.forEach(function(p){ if(prev&&p-prev>1) html+='<span class="nb">…</span>'; html+=btn(p,null,p===page,false); prev=p; });
+  html+=btn(Math.min(totalPg,page+1),"›",false,page>=totalPg);
+  return html;
+}
+function foot(total,page,pageSize){
+  document.getElementById("u-count").textContent="共 "+Number(total).toLocaleString("en-US")+" 条 · 第 "+page+" 页";
+  document.getElementById("u-pager").innerHTML=pagerHTML(total,page,pageSize);
+}
+function findRow(id){ for(var i=0;i<rowsCache.length;i++){ if(rowsCache[i].user_id===id) return rowsCache[i]; } return null; }
+
+/* ---- 真实列表加载（GET /api/admin/users） ---- */
+function loadUsers(){
+  if(!window.EAPI) return;
+  uLoading=true;
+  setListState("loading");
+  var url="/api/admin/users?page="+uPage+"&page_size="+PAGE_SIZE;
+  if(uKw) url+="&keyword="+encodeURIComponent(uKw);
+  if(uRole) url+="&role_code="+encodeURIComponent(uRole);
+  if(uSt!=="") url+="&status="+encodeURIComponent(uSt);
+  return EAPI.get(url).then(function(d){
+    uLoading=false;
+    if(!d){ setListState("error","空响应"); return; }
+    var items=d.items||[], total=d.total||0, page=d.page||uPage, ps=d.page_size||PAGE_SIZE;
+    rowsCache=items;
+    if(uPage>1 && !items.length && total>0){ uPage=Math.max(1,Math.ceil(total/ps)); return loadUsers(); } // 越页回退
+    if(!items.length){ setListState("empty"); foot(total,page,ps); return; }
+    var body=document.getElementById("u-body");
+    body.innerHTML=items.map(uRow).join("");
+    document.getElementById("head-total").textContent=Number(total).toLocaleString("en-US");
+    foot(total,page,ps);
+  }).catch(function(err){
+    uLoading=false;
+    setListState("error",(err&&err.message?err.message+"（HTTP "+(err.status||"—")+"）":"后端不可用"));
+  });
+}
+function goPage(p){ uPage=p; loadUsers(); }
+document.getElementById("u-pager").addEventListener("click",function(e){
+  var b=e.target.closest("[data-upg]"); if(b&&!b.disabled) goPage(+b.getAttribute("data-upg"));
+});
+
+/* ---- 用户详情（真实字段；learning 端点缺口诚实披露） ---- */
+function openDetail(id){
+  var u=findRow(id); if(!u) return;
+  document.getElementById("learn-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · 来自用户列表数据";
+  var fields=[["user_id",u.user_id],["username",u.username||"—"],["real_name",u.real_name||"—"],["phone",u.phone||"—"],
+    ["email",u.email||"—"],["role_code",ROLE_LABEL[u.role_code]||u.role_code],["status",u.status?"启用":"禁用"],["yn",u.yn],
+    ["created_at",u.created_at||"—"],["updated_at",u.updated_at||"—"],["last_login_at",u.last_login_at||"—"]];
+  document.getElementById("learn-fields").innerHTML=fields.map(function(f){
+    return '<div class="sc6"><div class="lbl">'+f[0]+'</div><div class="val" style="font-size:14px;word-break:break-all">'+esc(f[1])+'</div></div>';
+  }).join("");
+  showModal("learn");
+}
+
+/* ---- 启停（二次确认 → POST /{id}/status；后端 40303 红线权威兜底） ---- */
+let stTarget=null;
+function openToggle(id){
+  var u=findRow(id); if(!u) return;
+  stTarget=u;
+  var to=u.status?0:1;
+  document.getElementById("st-title").textContent=to?"确认启用该账号？":"确认禁用该账号？";
+  document.getElementById("st-sub").textContent=u.username||("UID "+u.user_id);
+  document.getElementById("st-msg").innerHTML=(to?"启用后该用户可正常登录使用。":"禁用后该用户将<b>无法登录</b>。")
+    +' 该操作将提交 <code>POST /api/admin/users/'+u.user_id+'/status</code>（body {"status":'+to+'}）。';
+  document.getElementById("st-reason").value="";
+  document.getElementById("st-confirm").textContent=to?"确认启用":"确认禁用";
+  showModal("st");
+}
+document.getElementById("st-confirm").addEventListener("click",function(){
+  if(!stTarget) return;
+  var u=stTarget, to=u.status?0:1;
+  var btn=this; btn.disabled=true;
+  var body={status:to};
+  var r=document.getElementById("st-reason").value.trim(); if(r) body.reason=r;
+  EAPI.post("/api/admin/users/"+u.user_id+"/status", body).then(function(){
+    toast(to?"已启用（user_id="+u.user_id+"）":"已禁用（user_id="+u.user_id+"）");
+    closeAll(); stTarget=null; loadUsers();
+  }).catch(function(err){
+    toast("操作失败："+((err&&err.message)||"未知错误")+(err&&err.body&&err.body.code===40303?"（红线：至少保留 1 名可用管理员）":""));
+    btn.disabled=false;
+  });
+});
+
+/* ---- 编辑 Dialog（role/status 变更 → 真实 POST；红线尽力提示 + 后端权威） ---- */
+let editing=null, editOrig=null;
+function openEdit(id){
+  var u=findRow(id); if(!u) return;
+  editing=u;
+  editOrig={role:u.role_code,status:u.status};
+  document.getElementById("edit-sub").textContent="用户："+(u.real_name||u.username||"—")+"（UID "+u.user_id+"） · role/status 变更将真实提交";
+  var rsel=document.getElementById("e-role");
+  rsel.value=u.role_code;
+  document.getElementById("e-reason").value="";
+  var seg=document.getElementById("e-status-seg");
+  seg.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on",+b.getAttribute("data-st")===u.status); });
+  // 红线尽力提示：目标为 admin 且 全库可用 admin（metrics）≤1
+  var redline=(u.role_code==="admin"&&adminTotalHint!=null&&adminTotalHint<=1);
+  document.getElementById("e-redline").classList.toggle("hidden",!redline);
+  rsel.disabled=redline;
+  seg.querySelector('button[data-st="0"]').disabled=redline;
+  document.getElementById("e-save").disabled=false;
+  showModal("edit");
+}
+document.getElementById("e-status-seg").addEventListener("click",function(e){
+  const b=e.target.closest("button"); if(!b||b.disabled)return;
+  b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+});
+function saveEdit(){
+  if(!editing) return;
+  var u=editing;
+  var newRole=document.getElementById("e-role").value;
+  var segBtn=document.querySelector("#e-status-seg button.on");
+  var newStatus=segBtn?+segBtn.getAttribute("data-st"):u.status;
+  var reason=document.getElementById("e-reason").value.trim();
+  var pRole=(newRole!==u.role_code)?EAPI.post("/api/admin/users/"+u.user_id+"/role",{target_role:newRole,reason:reason||undefined}):Promise.resolve(null);
+  var pStatus=(newStatus!==u.status)?EAPI.post("/api/admin/users/"+u.user_id+"/status",{status:newStatus,reason:reason||undefined}):Promise.resolve(null);
+  document.getElementById("e-save").disabled=true;
+  Promise.all([pRole,pStatus]).then(function(){
+    toast("变更已提交（role="+(newRole!==u.role_code?newRole:"未变")+"，status="+(newStatus!==u.status?newStatus:"未变")+"）");
+    closeAll(); loadUsers();
+  }).catch(function(err){
+    toast("保存失败："+((err&&err.message)||"未知错误")+(err&&err.body&&err.body.code===40303?"（红线：至少保留 1 名可用管理员）":""));
+    document.getElementById("e-save").disabled=false;
+  });
+}
+/* ---- modal toast ---- */
+/* [FEAT-WIRE-V2 #3] 弹窗元素 id 为 <id>-dlg（learn-dlg/st-dlg/edit-dlg），旧写法 getElementById(id) 取不到 → 遮罩出现但弹窗永不显示（用户实测"无弹窗"根因） */
+function showModal(id){
+  var m=document.getElementById(id+"-mask"), d=document.getElementById(id+"-dlg");
+  if(m) m.classList.add("show");
+  if(d) d.classList.add("show");
+}
+function closeAll(){
+  document.querySelectorAll(".mask.show").forEach(function(x){x.classList.remove("show");});
+  document.querySelectorAll(".dialog.show").forEach(function(x){x.classList.remove("show");});
+}
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeAll(); });
+document.addEventListener("click",function(e){
+  if(e.target.classList && e.target.classList.contains("mask")) closeAll();
+  const c=e.target.closest("[data-close]"); if(c) closeAll();
+  const v=e.target.closest("[data-view]"); if(v){ openDetail(+v.getAttribute("data-view")); return; }
+  const ed=e.target.closest("[data-edit]"); if(ed){ openEdit(+ed.getAttribute("data-edit")); return; }
+  const tg=e.target.closest("[data-toggle]"); if(tg){ openToggle(+tg.getAttribute("data-toggle")); return; }
+});
+function toast(msg){ const t=document.createElement("div"); t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-size:0.8125rem;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.2)"; t.textContent=msg; document.body.appendChild(t); setTimeout(function(){t.remove();},2200); }
+/* 初始：骨架屏（真实数据由守卫通过后的 bootAdmin 注入） */
+setListState("loading");
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script src="/edu-guard.js"></script>
+<script>eduGuard.requireAdmin();</script>
+<script>
+window.bootAdmin=function(){
+  if(!window.EAPI) return;
+  if(!EAPI.store.getToken()){
+    var t=document.querySelector(".page-head .sub");
+    if(t && t.textContent.indexOf("管理员账号")<0) t.textContent="⚠ 请用管理员账号登录后刷新本页";
+    return; // 守卫第一段已跳登录，此处静默不发请求
+  }
+  // [H2a/P1-9] user_admin 域后端口径=require_role([ADMIN])，守卫放行 {admin,manager} 不代表本域放行。
+  // 加载前复查 auth/me：非 admin → 诚实横幅+返回仪表盘，不发列表/指标请求（不再让 manager 必吃一个 403）。
+  EAPI.get("/api/auth/me").then(function(me){
+    if(!(me && me.role==="admin")){ adminOnlyBanner(me&&me.role?me.role:"未知"); return; }
+    // 红线提示数据（尽力而为）：metrics.role_breakdown.admin；后端 40303 永远权威
+    if(EAPI.get) EAPI.get("/api/admin/users/dashboard/metrics").then(function(m){
+      if(m&&m.role_breakdown) adminTotalHint=m.role_breakdown.admin||0;
+    }).catch(function(){ /* 红线提示数据缺失不阻塞列表 */ });
+    loadUsers();
+  }).catch(function(){
+    // 复查失败无法确认 ADMIN 身份 → 与守卫第三段同口径按未授权跳登录，不静默发请求
+    adminOnlyBanner(null);
+  });
+};
+/* [H2a/P1-9] 诚实降级横幅：role!=null → 仅 ADMIN 提示+返回仪表盘；role==null → 校验失败跳登录 */
+function adminOnlyBanner(role){
+  var b=document.createElement("div");
+  b.style.cssText="position:fixed;left:0;right:0;top:0;z-index:99999;padding:14px 16px;text-align:center;font-weight:700;background:#fb7185;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)";
+  var span=document.createElement("span");
+  span.textContent=(role==null)
+    ?"身份校验失败，无法确认 ADMIN 权限，正在跳转登录…"
+    :"该模块仅 ADMIN 可用（后端权限口径；当前角色 "+role+"）";
+  b.appendChild(span);
+  if(role!=null){
+    var btn=document.createElement("a");
+    btn.href="/admin-dashboard.html";
+    btn.textContent="返回仪表盘";
+    btn.style.cssText="display:inline-block;margin-left:12px;padding:4px 14px;border-radius:999px;background:#fff;color:#e11d48;font-weight:700;text-decoration:none";
+    b.appendChild(btn);
+    document.body.appendChild(b);
+    // 列表区置诚实空态（清骨架屏，不留误导性加载态）
+    try{ setListState("error","该模块仅 ADMIN 可用（后端权限口径）；当前登录角色 "+role+"，无权读取用户列表"); }catch(e){}
+  }else{
+    document.body.appendChild(b);
+    setTimeout(function(){
+      var redir="";
+      try{ redir=location.pathname+location.search; }catch(e){}
+      var target="/login-register.html";
+      try{ target=EAPI.buildLoginUrl(redir); }catch(e){}
+      try{ location.replace(target); }catch(e){}
+    },1200);
+  }
+}
+</script>
+</body>
+</html>

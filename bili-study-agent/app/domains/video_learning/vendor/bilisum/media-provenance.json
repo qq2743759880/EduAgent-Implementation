@@ -1,0 +1,30 @@
+{
+  "upstream_repo": "https://github.com/lycohana/BiliSum.git",
+  "upstream_head": "a9e840d8cb5b0a0374ea9ff8c753c0b5c52a58b1",
+  "upstream_license": "MIT",
+  "files": [
+    {
+      "path": "apps/service/src/video_sum_service/integrations.py",
+      "sha256": "f1e92a9d3ad126b1eb3b5da831c630dd4fcccd1ba6b0f5bd452090d55aac7512"
+    },
+    {
+      "path": "apps/service/src/video_sum_service/video_assets.py",
+      "sha256": "56c57fe9fab1229465ee8564fda8b9ad8d414ef9210967b25b936f0cd0830bf4"
+    },
+    {
+      "path": "packages/core/src/video_sum_core/transcribe_subprocess.py",
+      "sha256": "f864d751d7c0d35341e7a47b2baf0bd9306e8b6f559b295ae95dc7df7efed410"
+    }
+  ],
+  "adapted_capabilities": [
+    "Bilibili metadata and subtitle selection",
+    "isolated Faster Whisper local decoding"
+  ],
+  "edu_changes": [
+    "authoritative subtitle absence versus network failure",
+    "strict host boundary and no redirects",
+    "source and media fingerprints",
+    "private EDU storage",
+    "Python 3.11 and immutable audio evidence"
+  ]
+}

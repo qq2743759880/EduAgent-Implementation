@@ -1,0 +1,550 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bili-Study · 当前运行的系统与事实源",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-edu-stack-20261005-170000/system-stack.html",
+    "repository": {
+      "url": "https://example.invalid/edu-runtime-evidence",
+      "revision": "3bafc8e916d8eee143762a417cf60bb80fbc18ff",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Next 与业务页面",
+      "sublabel": "学生学习／管理员生产",
+      "pos": [
+        40,
+        350
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-frontend/public/learning.html",
+          "line": 902,
+          "end_line": 922
+        }
+      ]
+    },
+    {
+      "id": "backend",
+      "type": "backend",
+      "label": "FastAPI · Python 3.11",
+      "sublabel": "鉴权、课程与正式发布",
+      "pos": [
+        330,
+        350
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/main.py",
+          "line": 327,
+          "end_line": 347
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "type": "backend",
+      "label": "AI 与既有 EDU RAG",
+      "sublabel": "Graph／Tutor／BGE-M3",
+      "pos": [
+        650,
+        350
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/retriever.py",
+          "line": 931,
+          "end_line": 951
+        },
+        {
+          "path": "bili-study-agent/app/knowledge/ingest_worker.py",
+          "line": 8,
+          "end_line": 28
+        },
+        {
+          "path": "bili-study-agent/app/ai/kg_bridge.py",
+          "line": 65,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "milvus",
+      "type": "database",
+      "label": "Milvus",
+      "sublabel": "Hybrid / RRF / generation",
+      "pos": [
+        970,
+        350
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/database.py",
+          "line": 192,
+          "end_line": 212
+        }
+      ]
+    },
+    {
+      "id": "mysql",
+      "type": "database",
+      "label": "MySQL",
+      "sublabel": "业务与 READY authority",
+      "pos": [
+        330,
+        80
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/video_learning/publication.py",
+          "line": 23,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "模型服务",
+      "sublabel": "按当前路径真实调用",
+      "pos": [
+        650,
+        80
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/chat/generator.py",
+          "line": 247,
+          "end_line": 267
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "缓存／锁／队列／Context",
+      "pos": [
+        330,
+        650
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/learning/study_context.py",
+          "line": 123,
+          "end_line": 143
+        }
+      ]
+    },
+    {
+      "id": "neo4j",
+      "type": "database",
+      "label": "Neo4j",
+      "sublabel": "文档图谱与邻居扩展",
+      "pos": [
+        970,
+        650
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/knowledge/document_graph.py",
+          "line": 1,
+          "end_line": 21
+        }
+      ]
+    },
+    {
+      "id": "mongo",
+      "type": "database",
+      "label": "MongoDB",
+      "sublabel": "学习事件与文档面",
+      "pos": [
+        40,
+        210
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/database.py",
+          "line": 229,
+          "end_line": 249
+        }
+      ]
+    },
+    {
+      "id": "exporter",
+      "type": "backend",
+      "label": "OpenTelemetry",
+      "sublabel": "真实 span 与父子关系",
+      "pos": [
+        40,
+        650
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/observability/tracing.py",
+          "line": 210,
+          "end_line": 230
+        }
+      ]
+    },
+    {
+      "id": "jaeger",
+      "type": "cloud",
+      "label": "Jaeger",
+      "sublabel": "Trace 前端 :16686",
+      "pos": [
+        40,
+        930
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/observability/tracing.py",
+          "line": 45,
+          "end_line": 65
+        }
+      ]
+    },
+    {
+      "id": "document",
+      "type": "backend",
+      "label": "文档 Worker / MinerU",
+      "sublabel": "IR → Chunk → 入库",
+      "pos": [
+        650,
+        650
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/knowledge/parser_worker.py",
+          "line": 48,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "video",
+      "type": "backend",
+      "label": "Video Knowledge Compiler",
+      "sublabel": "字幕／ASR／资料生成",
+      "pos": [
+        330,
+        930
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/video_learning/task_worker.py",
+          "line": 1,
+          "end_line": 21
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "type": "backend",
+      "label": "学习事件 Worker",
+      "sublabel": "旁路异步；不阻断播放",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/analytics/event_stream.py",
+          "line": 127,
+          "end_line": 130
+        }
+      ]
+    },
+    {
+      "id": "minio",
+      "type": "database",
+      "label": "MinIO",
+      "sublabel": "原视频与不可变产物",
+      "pos": [
+        970,
+        930
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "sources": [
+        {
+          "path": "bili-study-agent/app/domains/video_learning/publication.py",
+          "line": 23,
+          "end_line": 43
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "frontend-backend",
+      "from": "frontend",
+      "to": "backend",
+      "variant": "emphasis",
+      "label": "HTTP / SSE"
+    },
+    {
+      "id": "backend-ai",
+      "from": "backend",
+      "to": "ai",
+      "variant": "emphasis",
+      "label": "授权请求"
+    },
+    {
+      "id": "ai-milvus",
+      "from": "ai",
+      "to": "milvus",
+      "variant": "emphasis",
+      "label": "现有 RAG"
+    },
+    {
+      "id": "backend-mysql",
+      "from": "backend",
+      "to": "mysql",
+      "variant": "default",
+      "label": "SQL"
+    },
+    {
+      "id": "ai-llm",
+      "from": "ai",
+      "to": "llm",
+      "variant": "default",
+      "label": "生成"
+    },
+    {
+      "id": "backend-redis",
+      "from": "backend",
+      "to": "redis",
+      "variant": "default",
+      "label": "上下文／队列"
+    },
+    {
+      "id": "redis-document",
+      "from": "redis",
+      "to": "document",
+      "variant": "default",
+      "label": "领取任务"
+    },
+    {
+      "id": "ai-neo4j",
+      "from": "ai",
+      "to": "neo4j",
+      "variant": "default",
+      "label": "邻居扩展",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          900,
+          383
+        ],
+        [
+          900,
+          560
+        ],
+        [
+          1050,
+          560
+        ]
+      ]
+    },
+    {
+      "id": "backend-exporter",
+      "from": "backend",
+      "to": "exporter",
+      "variant": "default",
+      "fromSide": "left",
+      "toSide": "right",
+      "via": [
+        [
+          250,
+          383
+        ],
+        [
+          250,
+          683
+        ]
+      ],
+      "label": "span"
+    },
+    {
+      "id": "exporter-jaeger",
+      "from": "exporter",
+      "to": "jaeger",
+      "variant": "default",
+      "label": "OTLP"
+    },
+    {
+      "id": "backend-video",
+      "from": "backend",
+      "to": "video",
+      "variant": "default",
+      "label": "生产任务",
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          270,
+          383
+        ],
+        [
+          270,
+          963
+        ]
+      ]
+    },
+    {
+      "id": "video-minio",
+      "from": "video",
+      "to": "minio",
+      "variant": "default",
+      "label": "原片／产物"
+    },
+    {
+      "id": "document-minio",
+      "from": "document",
+      "to": "minio",
+      "variant": "default",
+      "label": "IR 产物",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          730,
+          800
+        ],
+        [
+          1050,
+          800
+        ]
+      ]
+    },
+    {
+      "id": "document-ai",
+      "from": "document",
+      "to": "ai",
+      "variant": "default",
+      "label": "入库"
+    },
+    {
+      "id": "backend-event",
+      "from": "backend",
+      "to": "event",
+      "variant": "default",
+      "label": "学习心跳",
+      "fromSide": "top",
+      "toSide": "right",
+      "via": [
+        [
+          410,
+          260
+        ],
+        [
+          230,
+          260
+        ],
+        [
+          230,
+          113
+        ]
+      ]
+    },
+    {
+      "id": "event-mongo",
+      "from": "event",
+      "to": "mongo",
+      "variant": "default",
+      "label": "事件落库"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "实机范围",
+      "items": [
+        "MinerU 原生 PDF 19 chunks、真实 OCR 2 chunks；现有 EDU RAG 入库",
+        "Neo4j 81 节点／82 边及 Jaeger 文档 Trace 已有验收回执"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "唯一事实源",
+      "items": [
+        "MySQL READY Publication 控制正式视频知识；向量 active 不能独自发布",
+        "原视频播放与派生资料生命周期独立；RAG 未被替换或重建"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "展示边界",
+      "items": [
+        "此图使用有界源码快照；具体新请求以真实 Trace 为准",
+        "MongoDB 学习事件为旁路；主检索使用 Milvus，不能误讲成第二套 RAG"
+      ]
+    }
+  ]
+}

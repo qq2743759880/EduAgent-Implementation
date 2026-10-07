@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bili-Study · 服务与存储",
+    "subtitle": "C4 Container · 视频 worker / LangGraph / Harness 属于 API 进程内模块",
+    "output": "docs/architecture/containers.html",
+    "quality_profile": "showcase",
+    "locale": "zh-CN"
+  },
+  "components": [
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Web 前端",
+      "sublabel": "Next.js · 3322",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "业务 API",
+      "sublabel": "FastAPI · 9988",
+      "pos": [
+        380,
+        220
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "parser",
+      "type": "backend",
+      "label": "ParserWorker",
+      "sublabel": "Python · IR 解析",
+      "pos": [
+        40,
+        520
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "ingest",
+      "type": "backend",
+      "label": "IngestWorker",
+      "sublabel": "Python · BGE-M3",
+      "pos": [
+        380,
+        520
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "reconcile",
+      "type": "backend",
+      "label": "Reconciler",
+      "sublabel": "Python · 状态恢复",
+      "pos": [
+        380,
+        780
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "mineru",
+      "type": "backend",
+      "label": "MinerU CLI",
+      "sublabel": "独立 Python 环境",
+      "pos": [
+        40,
+        780
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "队列 / Context / 锁",
+      "pos": [
+        720,
+        520
+      ],
+      "size": [
+        190,
+        74
+      ]
+    },
+    {
+      "id": "mysql",
+      "type": "database",
+      "label": "MySQL",
+      "sublabel": "业务 / 任务 / READY",
+      "pos": [
+        720,
+        220
+      ],
+      "size": [
+        190,
+        74
+      ]
+    },
+    {
+      "id": "minio",
+      "type": "database",
+      "label": "MinIO",
+      "sublabel": "原视频 / IR / Artifact",
+      "pos": [
+        1050,
+        520
+      ],
+      "size": [
+        200,
+        74
+      ]
+    },
+    {
+      "id": "milvus",
+      "type": "database",
+      "label": "Milvus",
+      "sublabel": "dense + sparse / 元数据",
+      "pos": [
+        720,
+        780
+      ],
+      "size": [
+        190,
+        74
+      ]
+    },
+    {
+      "id": "neo4j",
+      "type": "database",
+      "label": "Neo4j",
+      "sublabel": "正式 chunk 知识关联",
+      "pos": [
+        1050,
+        780
+      ],
+      "size": [
+        200,
+        74
+      ]
+    },
+    {
+      "id": "mongo",
+      "type": "database",
+      "label": "MongoDB",
+      "sublabel": "学习事件 / 侧存储",
+      "pos": [
+        1050,
+        220
+      ],
+      "size": [
+        200,
+        74
+      ]
+    },
+    {
+      "id": "jaeger",
+      "type": "backend",
+      "label": "Jaeger",
+      "sublabel": "OTLP / Trace UI",
+      "pos": [
+        1380,
+        520
+      ],
+      "size": [
+        200,
+        74
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "模型服务",
+      "sublabel": "HTTPS · 外部 API",
+      "pos": [
+        380,
+        20
+      ],
+      "size": [
+        180,
+        74
+      ]
+    },
+    {
+      "id": "bili",
+      "type": "external",
+      "label": "Bilibili",
+      "sublabel": "HTTPS · 外部来源",
+      "pos": [
+        720,
+        20
+      ],
+      "size": [
+        190,
+        74
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "frontend",
+      "to": "api",
+      "label": "JWT · HTTP/SSE"
+    },
+    {
+      "id": "e1",
+      "from": "api",
+      "to": "mysql",
+      "label": "SQL"
+    },
+    {
+      "id": "e2",
+      "from": "api",
+      "to": "mongo",
+      "label": "事件写入"
+    },
+    {
+      "id": "e3",
+      "from": "api",
+      "to": "redis",
+      "label": "Context / 任务锁"
+    },
+    {
+      "id": "e4",
+      "from": "api",
+      "to": "minio",
+      "label": "媒体 / 资料 · S3"
+    },
+    {
+      "id": "e5",
+      "from": "api",
+      "to": "milvus",
+      "label": "检索 · gRPC"
+    },
+    {
+      "id": "e6",
+      "from": "api",
+      "to": "neo4j",
+      "label": "可选图扩展 · Bolt"
+    },
+    {
+      "id": "e7",
+      "from": "api",
+      "to": "llm",
+      "label": "编译 / 生成 · HTTPS"
+    },
+    {
+      "id": "e8",
+      "from": "api",
+      "to": "bili",
+      "label": "视频获取 · HTTPS"
+    },
+    {
+      "id": "e9",
+      "from": "parser",
+      "to": "redis",
+      "label": "消费 parser_jobs"
+    },
+    {
+      "id": "e10",
+      "from": "parser",
+      "to": "mineru",
+      "label": "解析 PDF · CLI"
+    },
+    {
+      "id": "e11",
+      "from": "parser",
+      "to": "minio",
+      "label": "写不可变 IR · S3"
+    },
+    {
+      "id": "e12",
+      "from": "ingest",
+      "to": "redis",
+      "label": "消费 ingest_jobs"
+    },
+    {
+      "id": "e13",
+      "from": "ingest",
+      "to": "milvus",
+      "label": "嵌入 / 加载 · gRPC"
+    },
+    {
+      "id": "e14",
+      "from": "ingest",
+      "to": "neo4j",
+      "label": "关联投影 · Bolt"
+    },
+    {
+      "id": "e15",
+      "from": "ingest",
+      "to": "minio",
+      "label": "读取 IR · S3"
+    },
+    {
+      "id": "e16",
+      "from": "reconcile",
+      "to": "mysql",
+      "label": "状态恢复 · SQL"
+    },
+    {
+      "id": "e17",
+      "from": "reconcile",
+      "to": "redis",
+      "label": "补偿队列"
+    },
+    {
+      "id": "e18",
+      "from": "api",
+      "to": "jaeger",
+      "label": "OTLP HTTP"
+    },
+    {
+      "id": "e19",
+      "from": "parser",
+      "to": "jaeger",
+      "label": "OTLP HTTP"
+    },
+    {
+      "id": "e20",
+      "from": "ingest",
+      "to": "jaeger",
+      "label": "OTLP HTTP"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "阅读方式",
+      "items": [
+        "箭头表示源码职责关系，不表示每次请求都会执行全部节点。",
+        "交互文件需下载后用浏览器打开；GitHub 文件页只展示源码。"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Bili-Study · 视频知识生产与正式可见性",
+    "subtitle": "播放独立 · Pending 不成为学生证据 · 旧 READY 在新版失败时保留",
+    "output": "docs/architecture/video-production.html",
+    "quality_profile": "showcase",
+    "locale": "zh-CN"
+  },
+  "lanes": [
+    {
+      "id": "teacher",
+      "label": "管理员 / 播放"
+    },
+    {
+      "id": "production",
+      "label": "派生资料生产"
+    },
+    {
+      "id": "student",
+      "label": "正式学生能力"
+    },
+    {
+      "id": "failure",
+      "label": "失败与恢复",
+      "variant": "exception"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "source",
+      "lane": "teacher",
+      "col": 0,
+      "type": "frontend",
+      "label": "提交视频",
+      "sublabel": "本地 / 已绑定 / Bilibili",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "play",
+      "lane": "teacher",
+      "col": 1,
+      "type": "cloud",
+      "label": "独立播放源",
+      "sublabel": "原视频先绑定",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "transcript",
+      "lane": "production",
+      "col": 0,
+      "type": "backend",
+      "label": "字幕 / ASR",
+      "sublabel": "真实媒体转写",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "compile",
+      "lane": "production",
+      "col": 1,
+      "type": "backend",
+      "label": "生成学习资料",
+      "sublabel": "总结 / 笔记 / 章节 / 导图",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "artifact",
+      "lane": "production",
+      "col": 2,
+      "type": "database",
+      "label": "不可变版本",
+      "sublabel": "任务与资料身份",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "pending",
+      "lane": "production",
+      "col": 3,
+      "type": "security",
+      "label": "Pending 发布",
+      "sublabel": "自动授权当前版本",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "ingest",
+      "lane": "production",
+      "col": 4,
+      "type": "backend",
+      "label": "既有 RAG 入库",
+      "sublabel": "回执校验",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "ready",
+      "lane": "student",
+      "col": 3,
+      "type": "security",
+      "label": "READY 激活",
+      "sublabel": "精确版本正式可见",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "learn",
+      "lane": "student",
+      "col": 4,
+      "type": "frontend",
+      "label": "学生学习 / Tutor",
+      "sublabel": "资料与时间引用",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "failed",
+      "lane": "failure",
+      "col": 1,
+      "type": "security",
+      "label": "失败 / 未就绪",
+      "sublabel": "保留旧 READY 与播放",
+      "width": 132,
+      "height": 76
+    },
+    {
+      "id": "retry",
+      "lane": "failure",
+      "col": 2,
+      "type": "messagebus",
+      "label": "重试失败阶段",
+      "sublabel": "租约与版本检查",
+      "width": 132,
+      "height": 76
+    }
+  ],
+  "edges": [
+    {
+      "id": "w0",
+      "from": "source",
+      "to": "play",
+      "label": "授权 / 校验",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "w1",
+      "from": "play",
+      "to": "transcript",
+      "label": "派生生产",
+      "role": "branch",
+      "variant": "default",
+      "fromSide": "left",
+      "toSide": "top"
+    },
+    {
+      "id": "w2",
+      "from": "transcript",
+      "to": "compile",
+      "label": "转写成功",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "w3",
+      "from": "compile",
+      "to": "artifact",
+      "label": "校验 / 封存",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "w4",
+      "from": "artifact",
+      "to": "pending",
+      "label": "当前版本授权",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "w5",
+      "from": "pending",
+      "to": "ingest",
+      "label": "向量 active 仍非正式",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "w6",
+      "from": "ingest",
+      "to": "ready",
+      "label": "回执 PASS 后激活",
+      "role": "main",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "w7",
+      "from": "ready",
+      "to": "learn",
+      "label": "正式版本",
+      "role": "return",
+      "variant": "default",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "w8",
+      "from": "compile",
+      "to": "failed",
+      "label": "编译失败",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "w9",
+      "from": "ingest",
+      "to": "failed",
+      "label": "入库 / 激活失败",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "w10",
+      "from": "failed",
+      "to": "retry",
+      "label": "安全恢复",
+      "role": "branch",
+      "variant": "default"
+    },
+    {
+      "id": "w11",
+      "from": "retry",
+      "to": "ingest",
+      "label": "仅入库失败时重试",
+      "role": "return",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "正式版本权威",
+      "items": [
+        "只有 READY publication 允许学生读取和精确检索视频知识。",
+        "没有旧 READY 时，Pending / Failed 的 AI 资料不可用。"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "恢复边界",
+      "items": [
+        "编译失败重试编译阶段；上图入库重试只适用于已封存产物。",
+        "失败不能禁用原视频，也不能把新版替换为旧页面批准。"
+      ]
+    }
+  ]
+}

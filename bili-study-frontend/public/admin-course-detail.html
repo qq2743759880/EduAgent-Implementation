@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="stylesheet" href="/video-mindmap.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理端系列详情 · Bili-Study</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<!--
+  task57 HTML 原型（审核稿）
+  - P14 风格 candy-playful frozen（复用 task56 admin-courses → admin-course-detail 同源样式）
+  - 契约：app/domains/course_admin（权威，task12-contract.md 契约③）
+    四级 CRUD：Series→Cohort→Module→Session（各含 list/detail/create/patch/delete）
+    归属字段：Module 归属 cohort_id；Session 归属 series_cohort_course_id；Cohort 创建必填 head_teacher_id+institution_id
+    视频分片：POST /videos/init-chunked → /finalize-chunked → /bind-session → GET /videos/{id}/transcode-status
+    转码枚举：transcode_status ∈ pending|in_progress|completed|failed；review_status ∈ pending|approved|rejected
+    唯一约束：40901 系列 / 40902 班次 / 40903 模块阶段 / 40904 课次 / 40905 资源 / 40906 视频 / 40907 章节
+  - 契约缺口（实披露，不做 MOCK）：
+    · 资源 4 入口（课件/视频/作业/考试）：仅「视频」有真实端点（分片→转码）；课件/作业/考试无 sessions/{id}/assets 活跃端点 → 占位提示
+    · 章节管理 session_video_chapter：路由层无 CRUD 端点 → 表单位置标注「待后端端点接线」，列表做存量展示样
+  - 审核态多开：默认「管理班次」选中第一班次 → 展开模块半「已绑定视频 转码中」场景
+  AUDIT LOG:
+    [2026-09-02 task109] 接入管理端角色守卫（共用片段，内联于 8 个 admin 页）：本地无 token 跳登录带 redirect；GET /api/auth/me 校验 role∈{admin,manager} 否则跳 dashboard+横幅；auth/me 失败按未授权跳登录。守卫于数据注入前阻塞：数据注入收敛为 window.bootAdmin() 由守卫在通过后调用，注入逻辑未改。
+    [2026-08-24 v1 R1] 初稿提交（系列信息卡可编辑 + 新增班次 + 班次表 + 模块 Accordion + 课次列表 resource 4 入口 + 视频分片 Stepper/转码轮询徽章/Timeline + 章节管理 + 全软删 + 演示控制器多态）→ SUBMITTED
+    [2026-08-24 v1.1 R2] 修演示控制器多态切换 Bug：从「空班次」切回成功/转码状态时，班次行被永久隐藏（applyView 未恢复 tr.display 且空态占位重复追加）。改为 else 分支统一恢复 data-seat 行可见 + 移除空态占位，空态分支只隐藏 data-seat 行且空态占位判重 → 已修复重交
+-->
+<style>
+  :root{ --htc-30-34-52-0.18: rgba(30,34,52,0.18); --htc-30-34-52-0.42: rgba(30,34,52,0.42); --htc-31-31-31-0.18: rgba(31,31,31,0.18); --htc-31-31-31-0.45: rgba(31,31,31,0.45); --htc-43-47-58-0.06: rgba(43,47,58,0.06);  --ht-0b6bc2: #0b6bc2; --ht-4338ca: #4338ca; --ht-6a4fd0: #6a4fd0; --ht-6b7280: #6b7280; --ht-b4600e: #b4600e; --ht-e6f3fe: #e6f3fe; --ht-f0f1f7: #f0f1f7; --ht-f1ecfe: #f1ecfe; --ht-f7f8fc: #f7f8fc; --ht-fafbff: #fafbff; --ht-fdeff2: #fdeff2; --ht-fdf0e4: #fdf0e4; --ht-fff: #fff; 
+    --bg:#f5f6fb; --card:#ffffff; --ink:#2b2f3a; --muted:#7b8398; --line:#e7e9f2;
+    --primary:#5b5bd6; --primary-deep:#4338ca; --primary-soft:#eef0fd;
+    --candy-pink:#f472b6; --candy-blue:#38bdf8; --candy-purple:#a78bfa;
+    --candy-orange:#fb923c; --candy-green:#34d399; --candy-red:#fb7185;
+    --ok-bg:#e6f9ef; --ok-ink:#0e7a4d; --warn-bg:#fff6e5; --warn-ink:#b45f06;
+    --muted-bg:#eef0f5; --muted-ink:#5b647b; --red-bg:#fdeef1; --red-ink:#c2263f;
+    --shadow:0 2px 14px var(--htc-43-47-58-006); --r:14px; --htc-43-47-58-006: rgba(43, 47, 58, 0.006); --htc-30-34-52-042: rgba(30, 34, 52, 0.042); --htc-30-34-52-018: rgba(30, 34, 52, 0.018); --htc-31-31-31-018: rgba(31, 31, 31, 0.018); --htc-31-31-31-045: rgba(31, 31, 31, 0.045); --candy-bg: #fff9f0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 90px}
+  /* 演示控制器 */
+  .demo-ctrl{position:fixed;right:16px;bottom:16px;z-index:99;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:12px;color:var(--muted)}
+  .demo-ctrl b{display:block;margin-bottom:6px;color:var(--ink)}
+  .demo-ctrl .row{display:flex;gap:6px;flex-wrap:wrap;max-width:220px}
+  .demo-ctrl button{border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+  .demo-ctrl button.on{background:var(--primary);border-color:var(--primary);color:var(--ht-fff)}
+  /* back link + head */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.8125rem;margin-bottom:14px}
+  .back-link:hover{color:var(--primary)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .page-head h1{margin:0;font-size:21px}
+  .page-head .sub{color:var(--muted);font-size:0.8125rem;margin-top:3px}
+  /* series info card */
+  .series-card{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:18px}
+  .series-card .si-left{display:flex;gap:14px;min-width:0}
+  .series-card .si-ico{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--primary-deep),var(--primary));color:var(--ht-fff);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .series-card .si-info h2{margin:0 0 6px;font-size:1.125rem}
+  .series-card .si-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .series-card .si-tags code{background:var(--muted-bg);border-radius:6px;padding:1px 7px;font-family:ui-monospace,Consolas,monospace}
+  .series-card .si-desc{margin-top:8px;color:var(--muted);font-size:0.8125rem;max-width:640px}
+  .series-card .si-actions{display:flex;gap:8px;align-items:center}
+  /* generic elements */
+  .btn{cursor:pointer;font:inherit;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:0.8125rem;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:linear-gradient(120deg,var(--primary-deep),var(--primary));color:var(--ht-fff)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-ghost{background:var(--ht-fff);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-danger{background:var(--ht-fff);border:1px solid var(--candy-red);color:var(--candy-red)}
+  .btn-mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .card-h h3{margin:0;font-size:0.9375rem;display:flex;align-items:center;gap:8px}
+  .card-h .cnt{color:var(--muted);font-weight:500}
+  .card-b{padding:6px 18px 16px}
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;background:var(--ht-fafbff);color:var(--muted);font-weight:600;font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:0.8125rem}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.row-hover:hover{background:var(--ht-fafbff)}
+  .row-click{cursor:pointer}
+  .row-click.sel{background:var(--primary-soft)!important}
+  .nb{font-family:ui-monospace,Consolas,monospace;color:var(--muted)}
+  .cell-strong{font-weight:600;color:var(--ink)}
+  .cell-actions{display:flex;align-items:center;gap:8px}
+  .muted{color:var(--muted)}
+  /* badge 通用 */
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .pd{width:6px;height:6px;border-radius:50%}
+  .badge-on{background:var(--ok-bg);color:var(--ok-ink)}.badge-on .pd{background:var(--ok-ink)}
+  .badge-mut{background:var(--muted-bg);color:var(--muted-ink)}.badge-mut .pd{background:var(--muted-ink)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn-ink)}.badge-warn .pd{background:var(--warn-ink)}
+  .badge-red{background:var(--red-bg);color:var(--red-ink)}.badge-red .pd{background:var(--red-ink)}
+  .badge-primary{background:var(--primary-soft);color:var(--primary)}.badge-primary .pd{background:var(--primary)}
+  .b-dm{display:inline-block;border-radius:7px;padding:2px 8px;font-size:12px;font-weight:600}
+  .b-live{background:var(--ht-e6f3fe);color:var(--ht-0b6bc2)}.b-rec{background:var(--ht-f1ecfe);color:var(--ht-6a4fd0)}.b-offline{background:var(--ht-fdf0e4);color:var(--ht-b4600e)}
+  /* dropdown */
+  .dd{position:relative;display:inline-block}
+  .dd-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--ht-fff);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+  .dd-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:150px;background:var(--ht-fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px;z-index:20}
+  .dd.open .dd-menu{display:block}
+  .dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:transparent;border-radius:7px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink);cursor:pointer}
+  .dd-item:hover{background:var(--primary-soft);color:var(--primary)}
+  .dd-item.danger{color:var(--candy-red)}.dd-item.danger:hover{background:var(--ht-fdeff2);color:var(--candy-red)}
+  .dd-item .ic{width:16px;text-align:center}
+  .dd-sep{height:1px;background:var(--line);margin:4px 0}
+  /* accordion module panel */
+  .module-panel{border:1px solid var(--line);border-radius:12px;background:var(--ht-fff);margin-bottom:11px;overflow:hidden}
+  .mp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--ht-fafbff);border-bottom:1px solid var(--line)}
+  .mp-h .tl{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+  .mp-h .chev{color:var(--muted);transition:.2s}
+  .mp-h .chev.open{transform:rotate(90deg)}
+  .mp-h .mn{font-weight:600}
+  .mp-h .mt{color:var(--muted);font-size:12px}
+  .mp-b{padding:8px 14px 14px}
+  /* pilot */
+  .pilot{height:100%;}
+  /* dialog / modal */
+  .scrim{display:none;position:fixed;inset:0;background:var(--htc-30-34-52-042);z-index:60;align-items:center;justify-content:center;padding:20px}
+  .scrim.show{display:flex}
+  .modal{background:var(--ht-fff);border-radius:16px;box-shadow:0 12px 40px var(--htc-30-34-52-018);width:100%;max-width:540px;max-height:88vh;overflow:auto}
+  .modal.wide{max-width:680px}
+  .modal .mh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .modal .mh h3{margin:0;font-size:1rem}
+  .modal .m-close{cursor:pointer;border:none;background:transparent;font-size:20px;color:var(--muted);line-height:1}
+  .modal .mb{padding:16px 20px}
+  .modal .mf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mff{display:flex;flex-direction:column;gap:5px}
+  .modal .mff.full{grid-column:1/-1}
+  .modal .mff label{font-size:12px;color:var(--muted);font-weight:600}
+  .modal .mff input,.modal .mff select,.modal .mff textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:0.8125rem;color:var(--ink)}
+  .modal .mff textarea{resize:vertical;min-height:64px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+  .field-tip{font-size:11px;color:var(--muted)}
+  .confirm .modal{max-width:420px}
+  .confirm .c-msg{display:flex;gap:12px}
+  .confirm .c-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .confirm .c-msg p{margin:2px 0 0;font-size:0.8125rem;color:var(--muted)}
+  .confirm .c-msg b{font-size:14px}
+  /* upload stepper */
+  .stepper{display:flex;align-items:center;gap:6px;margin:14px 0 16px;flex-wrap:wrap}
+  .stp{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .stp .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--muted-bg);color:var(--muted-ink);font-size:12px}
+  .stp.done .dot{background:var(--ok-bg);color:var(--ok-ink)}
+  .stp.cur .dot{background:var(--primary);color:var(--ht-fff)}
+  .stp-conn{width:26px;height:2px;background:var(--line)}
+  .stp-conn.done{background:var(--ok-ink)}
+  /* upload dropzone + progress + chips */
+  .up-drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:0.8125rem;cursor:pointer}
+  .up-drop:hover{border-color:var(--primary);color:var(--primary)}
+  .up-prog{height:9px;border-radius:999px;background:var(--muted-bg);overflow:hidden;margin:12px 0 6px}
+  .up-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--candy-blue),var(--primary));border-radius:999px;transition:width .2s}
+  .up-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  /* timeline */
+  .tl{position:relative;margin-left:6px;padding-left:20px}
+  .tl::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl-item{position:relative;display:flex;gap:12px;padding:6px 0}
+  .tl-item::before{content:"";position:absolute;left:-20px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--ht-fff);border:2px solid var(--muted)}
+  .tl-item.ok::before{border-color:var(--ok-ink);background:var(--ok-ink)}
+  .tl-item.cur::before{border-color:var(--primary);background:var(--primary)}
+  .tl-item .tt{font-size:0.8125rem;font-weight:600;color:var(--ink);min-width:96px}
+  .tl-item .td{font-size:12px;color:var(--muted);padding-top:1px}
+  /* chapter manager */
+  .chapter-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:0.8125rem;flex-wrap:wrap}
+  .chapter-row:last-child{border-bottom:none}
+  .ch-no{font-family:ui-monospace,monospace;color:var(--muted)}
+  .ch-sec{display:flex;align-items:center;gap:5px;margin-left:auto}
+  .ch-sec input{width:64px;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font:inherit;font-size:12px;text-align:right}
+  .seg{font-size:12px;color:var(--muted)}
+  .gap-tag{display:inline-block;margin-left:8px;font-size:11px;background:var(--warn-bg);color:var(--warn-ink);border-radius:6px;padding:1px 6px}
+  .res-4{display:flex;gap:8px}
+  .res-4 button{cursor:pointer;border:1px solid var(--line);background:var(--ht-fff);border-radius:9px;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;gap:5px;align-items:center}
+  .res-4 button:hover{border-color:var(--primary);color:var(--primary)}
+  .res-4 button.video{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+  /* states */
+  .state{padding:48px 20px;text-align:center;color:var(--muted)}
+  .state .st-ico{width:52px;height:52px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;font-size:1.5rem;background:var(--primary-soft)}
+  .sk{background:linear-gradient(90deg,var(--ht-f0f1f7) 25%,var(--ht-f7f8fc) 50%,var(--ht-f0f1f7) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+  @keyframes sk{to{background-position:-200% 0}}
+  .skline{height:13px;border-radius:6px}
+  /* responsive */
+  @media(max-width:760px){
+    .demo-ctrl{font-size:11px}.demo-ctrl .row{max-width:150px}
+    .series-card{flex-direction:column}
+    .card-b{padding:4px 12px 12px}
+    .res-4{flex-wrap:wrap}
+    .ch-sec{width:100%;margin-left:0}
+    .modal .mf{grid-template-columns:1fr}
+  }
+  /* 面包屑 */
+  .crumb{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.8125rem;color:var(--muted,var(--ht-6b7280));margin-bottom:14px}
+  .crumb a{color:var(--primary,var(--ht-4338ca));text-decoration:none}
+  .crumb a:hover{text-decoration:underline}
+  .crumb .sep{opacity:.6}
+  .crumb span.cur{color:var(--ink);font-weight:700}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.wrap,.glayout>.page{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--primary-soft);color:var(--primary-deep)}
+  .gnav-item.active{background:var(--candy-purple);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-item.active:hover{background:var(--candy-purple-deep,var(--candy-purple))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packc-clay">
+/* ===== PACK-C clay overlay（仅视觉层：令牌消费 / 44px 点击区 / 对比度 / reduced-motion）=====
+   私有变量挂在 body.admin-html-page 作用域（单文件隔离）；不新增 body 类，保持 G7 冻结 cssPath 稳定。
+   z-index 层级表与布局黑名单属性未动；JS 注入的 ⚠/∅ 为消息文本前缀（行为层冻结面保留）。
+   注：color-mix() 的计算值会被门禁对比度采样误解析，凡被测文本背景一律用实心 hex。 */
+.admin-html-page{
+  --bg:var(--bg-app); --card:var(--bg-raised); --ink:var(--text-strong); --muted:var(--text-muted); --line:var(--bg-input);
+  --primary:var(--clay-moss); --primary-deep:var(--clay-moss); --primary-soft:#EFF6EC;
+  --candy-red:var(--status-danger); --candy-orange:var(--status-danger); --candy-blue:var(--clay-mint); --candy-bg:var(--bg-app);
+  --ok-bg:#D8F2E5; --ok-ink:var(--text-strong);
+  --warn-bg:#F9F3D7; --warn-ink:var(--text-strong);
+  --muted-bg:#EEF0F5; --muted-ink:var(--text-strong); --red-bg:#FAF0F4; --red-ink:var(--status-danger);
+  --ht-0b6bc2:var(--text-strong); --ht-e6f3fe:#E2EFFA;
+  --ht-6a4fd0:var(--text-strong); --ht-f1ecfe:#EAE4FF;
+  --ht-b4600e:var(--text-strong); --ht-fdf0e4:#FFE9E2;
+}
+body.admin-html-page{background:var(--bg-app)!important}
+.admin-html-page input::placeholder,.admin-html-page textarea::placeholder{color:var(--text-muted);opacity:1}
+
+/* --- 顶栏 gnav --- */
+body.admin-html-page .gnav{background:var(--bg-raised)!important;border-bottom:2px solid var(--bg-input)!important}
+body.admin-html-page .gnav-logo{background:var(--clay-lemon)!important;color:var(--text-strong)!important;box-shadow:3px 3px 10px rgba(190,149,35,.24)!important}
+body.admin-html-page .gnav-name{color:var(--text-strong)!important}
+body.admin-html-page .gnav-cap{color:var(--text-muted)!important}
+body.admin-html-page .gnav-item{color:var(--text-strong)!important;min-height:44px!important}
+body.admin-html-page .gnav-item:hover{background:#EFF6EC!important;color:var(--text-strong)!important}
+body.admin-html-page .gnav-item.active,
+body.admin-html-page .gnav-admin .gnav-item.active{background:var(--clay-moss)!important;color:var(--text-strong)!important;border-color:transparent!important;box-shadow:var(--clay-shadow-light)!important}
+body.admin-html-page .gnav-item.active:hover{background:var(--clay-moss)!important}
+body.admin-html-page .gnav-brand{min-height:44px!important}
+body.admin-html-page .gnav-foot{color:var(--text-muted)!important}
+body.admin-html-page .gnav-foot a,body.admin-html-page .gnav-foot button{min-height:44px;display:inline-flex;align-items:center}
+
+/* --- 面包屑/页头/返回 --- */
+.admin-html-page .crumb a{color:var(--text-strong)!important;text-decoration:underline;min-height:44px;display:inline-flex;align-items:center}
+.admin-html-page .crumb .sep{opacity:1}
+.admin-html-page .crumb span.cur{color:var(--text-strong)}
+.admin-html-page .page-head h1{color:var(--text-strong)}
+.admin-html-page .page-head .sub{color:var(--text-muted)}
+
+/* --- 按钮与控件：44px + CTA 批款 --- */
+.admin-html-page .btn{min-height:44px}
+.admin-html-page .btn-primary{background:var(--cta-coral)!important;color:var(--cta-text)!important;box-shadow:var(--clay-shadow-coral)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-primary:hover{filter:none;transform:translateY(-2px)}
+.admin-html-page .btn-primary:active{transform:scale(.97);box-shadow:var(--clay-shadow-press-coral)!important}
+.admin-html-page .btn-ghost{background:var(--bg-raised)!important;border:1px solid var(--bg-input)!important;color:var(--text-strong)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .btn-ghost:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important;background:#EFF6EC!important}
+.admin-html-page .btn-danger{background:var(--bg-raised)!important;border:1px solid var(--status-danger)!important;color:var(--status-danger)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .modal input,.admin-html-page .modal select,.admin-html-page .modal textarea{min-height:44px}
+.admin-html-page .modal .mff input,.admin-html-page .modal .mff select,.admin-html-page .modal .mff textarea{border-color:var(--bg-input);border-radius:var(--radius-input);background:var(--bg-input);color:var(--text-strong)}
+.admin-html-page .modal .mff label,.admin-html-page .field-tip{color:var(--text-muted)}
+.admin-html-page .modal{border-radius:var(--radius-card)!important;background:var(--bg-raised)}
+.admin-html-page .modal .mh,.admin-html-page .modal .mfoot{border-color:var(--bg-input)}
+.admin-html-page .m-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px;color:var(--text-muted)}
+.admin-html-page .modal .mff input:focus,.admin-html-page .modal .mff select:focus{outline:2px solid var(--focus-ring)}
+.admin-html-page #chTitle,.admin-html-page #chStart,.admin-html-page #chEnd{min-height:44px;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;background:var(--bg-input)!important;color:var(--text-strong)!important}
+
+/* --- 系列信息卡 / 演示控制器 / 徽标 --- */
+.admin-html-page .series-card{background:var(--clay-moss)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-moss)!important}
+.admin-html-page .series-card .si-left{flex-wrap:wrap;min-width:0}
+.admin-html-page .series-card .si-info{min-width:0;flex:1 1 160px}
+.admin-html-page .series-card .si-tags code{overflow-wrap:anywhere}
+.admin-html-page .series-card .si-desc{max-width:100%}
+.admin-html-page .series-card .si-info h2{color:var(--text-strong)}
+.admin-html-page .series-card .si-tags{color:var(--text-strong)}
+.admin-html-page .series-card .si-desc{color:var(--text-strong)}
+.admin-html-page .series-card .si-tags code{background:#DFEDD8}
+.admin-html-page .si-ico{background-color:var(--clay-lemon)!important;background-image:none!important;color:var(--text-strong)!important;border-radius:var(--radius-icon-tile)!important;box-shadow:3px 4px 10px rgba(190,149,35,.24)!important}
+.admin-html-page .demo-ctrl{background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-muted)!important}
+.admin-html-page .demo-ctrl b{color:var(--text-strong)}
+.admin-html-page .demo-ctrl button{min-height:44px;min-width:44px;color:var(--text-muted);background:var(--bg-raised);border-color:var(--bg-input)}
+.admin-html-page .demo-ctrl button.on{background:var(--clay-pink)!important;border-color:var(--clay-pink)!important;color:var(--text-strong)!important}
+.admin-html-page .badge-on{color:var(--text-strong)!important}
+.admin-html-page .badge-warn{background:#F9F3D7!important;color:var(--text-strong)!important}
+.admin-html-page .badge-warn .pd{background:var(--status-pending)!important}
+.admin-html-page .badge-red{color:var(--status-danger)!important}
+.admin-html-page .badge-primary{color:var(--text-strong)!important}
+.admin-html-page .b-live,.admin-html-page .b-rec,.admin-html-page .b-offline{color:var(--text-strong)!important}
+.admin-html-page .muted{color:var(--text-muted)}
+.admin-html-page .nb{color:var(--text-muted)}
+.admin-html-page .cell-strong{color:var(--text-strong)}
+
+/* --- 表格/卡片/模块手风琴 --- */
+.admin-html-page .card{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-card)!important;box-shadow:var(--clay-shadow-light)!important}
+.admin-html-page .card-b{overflow-x:auto}
+.admin-html-page thead th{color:var(--text-muted)}
+.admin-html-page .mp-h{background:#FAFBFF}
+.admin-html-page .mp-h .chev{color:var(--text-muted)}
+.admin-html-page .mp-h .mt{color:var(--text-muted)}
+.admin-html-page .module-panel{border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .res-4 button{min-height:44px;color:var(--text-strong)!important;background:var(--bg-raised)!important;border-color:var(--bg-input)!important;border-radius:var(--radius-btn)!important}
+.admin-html-page .res-4 button:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .res-4 button.video{background:#E2EFFA!important;border-color:transparent!important;color:var(--text-strong)!important}
+.admin-html-page .confirm .c-ico{background:var(--bg-raised)!important;color:var(--status-danger)!important;border-radius:var(--radius-icon-tile)!important}
+.admin-html-page .confirm .c-msg p{color:var(--text-muted)}
+
+/* --- 上传/时间线 --- */
+.admin-html-page .stp{color:var(--text-muted)}
+.admin-html-page .stp .dot{background:#EEF0F5;color:var(--text-strong)}
+.admin-html-page .stp.done .dot{background:#D8F2E5;color:var(--text-strong)}
+.admin-html-page .stp.cur .dot{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.admin-html-page .up-drop{color:var(--text-muted);border-color:var(--bg-input)!important;border-radius:var(--radius-input)!important}
+.admin-html-page .up-drop:hover{border-color:var(--clay-moss)!important;color:var(--text-strong)!important}
+.admin-html-page .up-prog{background:#EEF0F5}
+.admin-html-page .up-prog i{background-image:linear-gradient(90deg,var(--clay-mint),var(--clay-moss))}
+
+/* --- reduced-motion --- */
+@media (prefers-reduced-motion: reduce){
+  .admin-html-page *,.admin-html-page *::before,.admin-html-page *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+  .admin-html-page .btn-primary:hover,.admin-html-page .btn-primary:active{transform:none}
+}
+</style>
+<style id="video-knowledge-admin-style">
+  .vka{margin:18px 0;padding:18px;border:2px solid var(--primary);border-radius:14px;background:var(--primary-soft)}
+  .vka[hidden],.vka [hidden]{display:none!important}
+  .vka-head{display:flex;align-items:start;justify-content:space-between;gap:12px}.vka h3{margin:0;font-size:18px}.vka-head p{margin:6px 0;font-weight:700}
+  .vka-help{font-size:13px;color:var(--ink);line-height:1.65}.vka-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+  .vka label{display:flex;flex-direction:column;gap:6px;font-weight:600}.vka input:not([type=checkbox]),.vka select,.vka textarea{min-height:44px;width:100%;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit}
+  .vka .vka-regenerate{flex-direction:row;align-items:center;margin:14px 0;font-weight:500}.vka input[type=checkbox]{width:20px;height:20px}
+  .vka button{min-height:44px}.vka button:disabled{opacity:.55;cursor:not-allowed}.vka :focus-visible{outline:3px solid var(--primary-deep);outline-offset:3px}
+  .vka-status{margin-top:14px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card)}.vka-status p{margin:8px 0;line-height:1.7}
+  #vkNotice{font-weight:600;min-height:24px;overflow-wrap:anywhere}#vkTaskError{color:var(--red-ink)}.vka-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+  .vka-review{margin-top:18px;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-wrap:anywhere}.vka-review>h4{margin-top:0}
+  .vka-review details{border-top:1px solid var(--line);padding:12px 0}.vka-review summary{cursor:pointer;font-weight:700;font-size:15px;min-height:30px}.vka-review p{line-height:1.8}
+  .vka-review article{padding:10px 0}.vka-time{font-family:ui-monospace,monospace;color:var(--primary-deep);white-space:nowrap}.vka-transcript{max-height:360px;overflow:auto}.vka-review pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px}.vka-review li{margin:8px 0}
+  #vkDecisions{margin-top:14px}@media(max-width:640px){.vka{padding:12px}.vka-fields{grid-template-columns:1fr}.vka-head{flex-wrap:wrap}.vka-actions button{flex:1}.vka-review{padding:12px}}
+</style>
+</head>
+<body class="admin-html-page">
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav gnav-admin" id="gnav" aria-label="管理端导航">
+  <a class="gnav-brand" href="admin-dashboard.html"><span class="gnav-logo" aria-hidden="true">AD</span><span class="gnav-name">Bili-Study 管理端</span></a>
+  <div class="gnav-cap">管理后台</div>
+  <nav class="gnav-list" aria-label="管理端页面">
+    <a class="gnav-item" href="admin-dashboard.html"><span>仪表盘</span></a>
+    <a class="gnav-item active" href="admin-courses.html" aria-current="page"><span>课程管理</span></a>
+    <a class="gnav-item" href="admin-questions.html"><span>题库管理</span></a>
+    <a class="gnav-item" href="admin-users.html"><span>用户管理</span></a>
+    <a class="gnav-item" href="admin-rag-upload.html"><span>RAG知识库</span></a>
+    <a class="gnav-item" href="admin-mcp.html"><span>MCP 工具</span></a>
+    <a class="gnav-item" href="admin-chat-audit.html"><span>会话审计</span></a>
+    <a class="gnav-item" href="admin-infra.html#demo-tools"><span>技术演示</span></a>
+  </nav>
+  <div class="gnav-foot">Admin Console<span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="wrap">
+  <!-- 面包屑 -->
+  <nav class="crumb">
+    <a href="admin-courses.html">课程管理</a>
+    <span class="sep">/</span>
+    <span id="crumbSeries">系列详情</span>
+    <span class="sep">/</span>
+    <span class="cur">管理</span>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1 id="pageTitle">系列详情</h1>
+      <div class="sub" id="pageSub">正在加载课程与班次…</div>
+    </div>
+  </div>
+
+  <!-- ========== 系列信息卡（可编辑） ========== -->
+  <div class="series-card" id="seriesCard" style="display:none">
+    <div class="si-left">
+      <div class="si-ico" id="siIco">CO</div>
+      <div class="si-info">
+        <h2 id="siName">—</h2>
+        <div class="si-tags" id="siTags"></div>
+        <div class="si-desc" id="siDesc"></div>
+      </div>
+    </div>
+    <div class="si-actions">
+      <button class="btn btn-ghost btn-mini" id="editSeriesBtn">编辑系列</button>
+      <button class="btn btn-primary btn-mini" id="addCohortBtn"><svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 新增班次</button>
+    </div>
+  </div>
+
+  <!-- ========== 班次 DataTable（选中 ➝ 下方模块管理） ========== -->
+  <div class="card" id="cohortCard" style="display:none">
+    <div class="card-h">
+      <h3>班次 <span class="cnt" id="cohortCnt">共 0 个</span></h3>
+      <div class="muted" style="font-size:12px">点击行选中班次，下方面板展开其模块与课次管理</div>
+    </div>
+    <div class="card-b" style="padding:0">
+      <table>
+        <thead>
+          <tr><th>班次</th><th>售价</th><th>容量（已报）</th><th>起止</th><th>状态</th><th style="text-align:right">操作</th></tr>
+        </thead>
+        <tbody id="cohortBody">
+          <tr><td colspan="6" class="box-pad">加载班次中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== 模块 Accordion（选中班次） ========== -->
+  <div class="card" id="moduleCard" style="display:none">
+    <div class="card-h">
+      <h3>模块与课次 · <span id="moduleCohortName">—</span> <span class="cnt" id="moduleCnt"></span></h3>
+      <button class="btn btn-primary btn-mini" id="addModuleBtn"><svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 新增模块</button>
+    </div>
+    <div class="card-b" style="padding-top:14px" id="moduleWrap">
+      <div class="box-pad">加载模块中…</div>
+    </div>
+  </div>
+
+  <!-- ========== 视频上传 Stepper + 转码轮询 + 章节（选中课次后打开） ========== -->
+  <div class="card" id="video-panel" style="display:none">
+    <div class="card-h">
+      <h3 id="vpTitle">视频管理 · — <span class="badge badge-mut" id="tc-badge" style="display:none"><i class="pd"></i>—</span></h3>
+      <button class="btn btn-ghost btn-mini" id="vpClose">关闭</button>
+    </div>
+    <div class="card-b">
+      <!-- 已绑视频列表 -->
+      <div id="videoList" style="margin-bottom:14px"></div>
+
+      <section id="videoKnowledgeAdmin" class="vka" aria-labelledby="vkHeading" hidden>
+        <div class="vka-head"><div><h3 id="vkHeading">AI 学习资料</h3><p id="vkLesson"></p></div><button type="button" class="btn btn-ghost" id="vkRefresh">刷新状态</button></div>
+        <p id="vkSafety" class="vka-help">生成成功并通过校验后自动发布、入库，知识就绪后学生可用。原视频可独立播放；新版失败不会使原视频和旧正式资料失效。</p>
+        <div id="vkProgress" class="vka-status" role="status" aria-live="polite" hidden><strong id="vkProgressTitle"></strong><p id="vkProgressDetail"></p><small id="vkSync"></small></div>
+        <div class="vka-fields">
+          <label for="vkSource">视频来源<select id="vkSource"><option value="existing_video">已绑定视频 / 本地上传</option><option value="bilibili">导入 Bilibili 视频</option></select></label>
+          <label for="vkVideo" id="vkVideoField">选择本课视频<select id="vkVideo"></select></label>
+          <label for="vkBvid" id="vkBiliField" hidden>Bilibili 链接或 BVID<input id="vkBvid" placeholder="粘贴视频链接或 BV 号" autocomplete="off"></label>
+          <label for="vkPage" id="vkPageField" hidden>分 P<input id="vkPage" type="number" min="1" max="1000" value="1"></label>
+          <label for="vkMode">转写方式<select id="vkMode"><option value="auto">自动（字幕优先；本地视频使用语音识别）</option><option value="asr">语音识别</option></select></label>
+        </div>
+        <p class="vka-help" id="vkUploadHint">需要新视频？在下方上传区选择本地文件，上传完成后会出现在这里。</p>
+        <label class="vka-regenerate"><input type="checkbox" id="vkRegenerate">明确生成新版资料（保留原视频及当前正式版本）</label>
+        <button type="button" class="btn btn-primary" id="vkGenerate">生成 AI 学习资料</button>
+        <button type="button" class="btn btn-ghost" id="vkExercises" disabled>补生成本课习题（不重编资料）</button>
+        <button type="button" class="btn btn-ghost" id="vkGraph" disabled>同步 / 查看 Neo4j 课程图谱</button>
+        <a id="vkTrace" class="btn btn-ghost" hidden target="_blank" rel="noopener noreferrer">查看本次视频生产 Trace</a>
+        <section id="vkGraphPanel" hidden aria-live="polite"></section>
+        <p class="vka-help">新视频会同时生成 4～6 道与视频及导图节点对应的单选练习，资料正式就绪后学生可在「本课练习」作答。已有正式资料可只补生成习题。</p>
+        <p id="vkNotice" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div class="vka-status"><label for="vkTask">生产记录<select id="vkTask"></select></label><p id="vkWorker"></p><p id="vkTaskStatus"></p><p id="vkTaskError"></p>
+          <div class="vka-actions"><button type="button" class="btn btn-ghost" id="vkRetry" disabled>重试失败阶段</button><button type="button" class="btn btn-ghost" id="vkPreview" disabled>预览本版资料</button></div>
+        </div>
+        <div id="vkReview" class="vka-review" hidden></div>
+        <div id="vkDecisions" hidden><label for="vkReason">审核意见（驳回时必填）<textarea id="vkReason" maxlength="1000" rows="3" placeholder="指出需要修正的内容；系统会保留历次意见"></textarea></label>
+          <div class="vka-actions"><button type="button" class="btn btn-danger" id="vkReject" disabled>驳回并按意见修改</button><button type="button" class="btn btn-primary" id="vkApprove" disabled>批准本版并发布</button></div>
+          <p class="vka-help">批准仅针对上方实际预览的版本。发布后系统自动接入课程知识，完成前会分别显示资料发布和检索状态。</p>
+        </div>
+      </section>
+
+      <!-- Stepper -->
+      <div class="stepper" id="stepper" style="display:none">
+        <span class="stp" id="stp0"><span class="dot">1</span>准备上传</span>
+        <span class="stp-conn" id="stpC0"></span>
+        <span class="stp" id="stp1"><span class="dot">2</span>上传文件</span>
+        <span class="stp-conn" id="stpC1"></span>
+        <span class="stp" id="stp2"><span class="dot">3</span>验证媒体</span>
+        <span class="stp-conn" id="stpC2"></span>
+        <span class="stp" id="stp3"><span class="dot">4</span>绑定课次</span>
+      </div>
+
+      <!-- 上传区 -->
+      <div id="upzone">
+        <input type="file" id="videoFile" accept=".mp4,.m4v,.webm" style="display:none">
+        <div class="up-drop" id="up-z">点击或拖拽 MP4、M4V 或 WebM 视频到此处（自动分片上传；上传后验证媒体与视频编码，推荐 H.264 MP4；不自动转码）</div>
+        <div class="up-prog" id="up-pg" style="display:none"><i style="width:0%"></i></div>
+        <div class="up-meta" id="up-mt" style="display:none"><span id="upMetaL">—</span><span id="upMetaR">0%</span></div>
+        <div class="muted" id="upErr" style="display:none;color:var(--red-ink);font-size:12px;margin-top:6px"></div>
+      </div>
+
+      <!-- 转码 Timeline 轨迹 -->
+      <details id="timelineWrap" style="margin-top:16px;display:none">
+        <summary class="muted" style="font-size:12px;margin-bottom:8px;cursor:pointer">查看上传处理详情</summary>
+        <div class="tl" id="timeline"></div>
+      </details>
+
+      <!-- 章节管理（真实 CRUD：GET/POST/PATCH/DELETE /chapters） -->
+      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px;display:none" id="chapterSec">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">
+          章节管理（session_video_chapter）· 视频 <b id="chapVideoId">—</b>
+        </div>
+        <div id="chapter-list"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;font-size:12px">
+          <label>章名<input id="chTitle" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;margin-left:4px" placeholder="如：环境安装"></label>
+          <label>开始(秒)<input id="chStart" type="number" min="0" value="0" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <label>结束(秒)<input id="chEnd" type="number" min="1" value="60" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:90px;margin-left:4px"></label>
+          <button class="btn btn-primary btn-mini" id="chAddBtn"><svg class="ic"><use href="/assets/icons/icons.svg#ic-plus"/></svg> 添加章节</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：编辑系列 ===== -->
+<div class="scrim" id="mdl-series">
+  <div class="modal">
+    <div class="mh"><h3>编辑系列</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>系列名称</label><input id="seName"></div>
+      <div class="mff"><label>售卖状态</label><select id="seStatus"><option value="draft">draft 草稿</option><option value="on_sale">on_sale 在售</option><option value="off_sale">off_sale 下架</option></select></div>
+      <div class="mff"><label>交付方式</label><select id="seMode"><option value="online_recorded">online_recorded 录播</option><option value="online_live">online_live 直播</option><option value="offline_face_to_face">offline_face_to_face 面授</option></select></div>
+      <div class="mff full"><label>描述</label><input id="seDesc"></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="seSave">保存修改</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑班次 ===== -->
+<div class="scrim" id="mdl-cohort">
+  <div class="modal">
+    <div class="mh"><h3 id="coMdlTitle">新增班次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>班次编码（唯一）</label><input id="coCode" placeholder="COH-2026C"></div>
+      <div class="mff"><label>班次名称</label><input id="coName" placeholder="2026 秋季 C 班"></div>
+      <div class="mff"><label>负责人 head_teacher_id</label><input id="coTeacher" type="number" value="16"></div>
+      <div class="mff"><label>售价（元）</label><input id="coPrice" type="number" step="0.01" value="399"></div>
+      <div class="mff"><label>容量</label><input id="coCap" type="number" value="60"></div>
+      <div class="mff"><label>已报人数</label><input id="coCur" type="number" value="0"></div>
+      <div class="mff"><label>开课日期</label><input id="coStart" type="date"></div>
+      <div class="mff"><label>结课日期</label><input id="coEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">创建时默认归属当前系列与机构，并指定负责人教师；编码冲突时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="coSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑模块 ===== -->
+<div class="scrim" id="mdl-module">
+  <div class="modal">
+    <div class="mh"><h3 id="moMdlTitle">新增模块</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>模块编码</label><input id="moCode" placeholder="MOD-01"></div>
+      <div class="mff"><label>模块名称</label><input id="moName" placeholder="Python 基础语法"></div>
+      <div class="mff"><label>阶段序号（唯一）</label><input id="moStage" type="number" value="1"></div>
+      <div class="mff"><label>课次数</label><input id="moLessons" type="number" value="4"></div>
+      <div class="mff"><label>总学时</label><input id="moHours" type="number" step="0.5" value="12"></div>
+      <div class="mff"><label>开始日期</label><input id="moStart" type="date"></div>
+      <div class="mff"><label>结束日期</label><input id="moEnd" type="date"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">模块归属当前选中的班次；同班次内阶段序号重复时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="moSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：新增/编辑课次 ===== -->
+<div class="scrim" id="mdl-session">
+  <div class="modal">
+    <div class="mh"><h3 id="seMdlTitle">新增课次</h3><button class="m-close" data-close>×</button></div>
+    <div class="mb"><div class="mf">
+      <div class="mff"><label>课次序号（唯一）</label><input id="ssNo" type="number" value="1"></div>
+      <div class="mff"><label>教学状态</label><select id="ssStatus"><option value="scheduled">scheduled 未开始</option><option value="in_progress">in_progress 进行中</option><option value="completed">completed 已完成</option><option value="cancelled">cancelled 已取消</option></select></div>
+      <div class="mff full"><label>课次标题</label><input id="ssTitle" placeholder="第 1 讲 · 变量与类型"></div>
+      <div class="mff"><label for="ssDate">授课日期（必填）</label><input id="ssDate" type="date" required></div>
+      <div class="mff"><label>签到 checkin_required</label><select id="ssCheckin"><option value="0">0 无需签到</option><option value="1">1 必签</option></select></div>
+      <div class="mff"><label>开始时间</label><input id="ssStart" type="time"></div>
+      <div class="mff"><label>结束时间</label><input id="ssEnd" type="time"></div>
+    </div>
+    <div class="field-tip" style="margin-top:8px">课次归属当前选中的模块；同模块内课次序号重复时在此提示。</div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="ssSave">保存</button></div>
+  </div>
+</div>
+
+<!-- ===== 通用确认 ===== -->
+<div class="scrim confirm" id="mdl-confirm">
+  <div class="modal">
+    <div class="mb"><div class="c-msg">
+      <div class="c-ico" style="background:var(--red-bg);color:var(--red-ink)">!</div>
+      <div id="cfMsg"><b>确认删除？</b><p>软删后不再展示。</p></div>
+    </div></div>
+    <div class="mfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="cfOk">确认删除（软删）</button></div>
+  </div>
+</div>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script src="/edu-guard.js"></script>
+<script>eduGuard.requireAdmin();</script>
+<script src="/edu-md.js"></script>
+<script src="/video-mindmap.js"></script>
+<script src="/admin-video-knowledge.js"></script>
+<script>
+/* ===== 对接真实后端（course_admin 四级 CRUD + 视频分片上传 + 章节 CRUD，契约 = app/domains/course_admin/router.py）===== */
+window.bootAdmin=function(){
+if(!window.EAPI)return;
+var $=function(id){return document.getElementById(id)};
+var esc=function(t){var x=document.createElement("div");x.textContent=t==null?"":t;return x.innerHTML};
+if(!EAPI.store.getToken()){$("pageSub").textContent="⚠ 请用管理员账号登录后刷新本页";return;}
+EAPI.TIMEOUT_MS=120000;
+
+var S={id:EAPI.pageId("id"),series:null,cohorts:[],cohortId:null,modules:[],sessions:{},moduleId:null,sessionId:null,videos:[],videoId:null,uploading:false,poll:null,editCohort:null,editModule:null,editSession:null,editVideo:null};
+
+function sub(t){$("pageSub").textContent=t}
+function badge(txt,cls){return '<span class="badge '+(cls||"badge-mut")+'"><i class="pd"></i>'+esc(txt)+'</span>'}
+var DM={online_live:"直播",online_recorded:"录播",offline_face_to_face:"面授"};
+var SS={scheduled:["未开始","badge-mut"],in_progress:["进行中","badge-primary"],completed:["已完成","badge-on"],cancelled:["已取消","badge-red"]};
+
+/* ── 系列 ── */
+function loadSeries(){
+  if(!S.id){$("pageTitle").textContent="未指定系列 id";sub("请从 课程管理 列表进入：admin-course-detail.html?id=<系列ID>");return;}
+  return EAPI.get("/api/admin/courses/series/"+S.id).then(function(s){
+    S.series=s;
+    $("crumbSeries").textContent=s.series_name||("系列 #"+S.id);
+    $("pageTitle").textContent=s.series_name||("系列 #"+S.id);
+    $("seriesCard").style.display="";$("cohortCard").style.display="";
+    $("siName").textContent=s.series_name||"—";
+    $("siIco").textContent=(s.series_name||"CO").slice(0,2).toUpperCase();
+    $("siTags").innerHTML='<code>'+esc(s.series_code||"—")+'</code>'
+      +'<span class="b-dm">'+esc(DM[s.delivery_mode]||s.delivery_mode||"—")+'</span>'
+      +badge(s.sale_status==="on_sale"?"在售":(s.sale_status==="off_sale"?"已下架":"草稿"),s.sale_status==="on_sale"?"badge-on":"badge-mut")
+      +'<span>机构 #'+esc(s.institution_id)+'</span>';
+    $("siDesc").textContent=s.description||"—（无描述）";
+    sub("管理课程、班次与课次；在课次的视频区域上传视频并制作 AI 学习资料。");
+  }).catch(function(e){sub("⚠ 系列加载失败："+((e&&e.message)||""));});
+}
+$("editSeriesBtn").onclick=function(){
+  var s=S.series;if(!s)return;
+  $("seName").value=s.series_name||"";$("seStatus").value=s.sale_status||"draft";
+  $("seMode").value=s.delivery_mode||"online_recorded";$("seDesc").value=s.description||"";
+  openMdl("mdl-series");
+};
+$("seSave").onclick=function(){
+  var btn=$("seSave");btn.disabled=true;
+  EAPI.patch("/api/admin/courses/series/"+S.id,{
+    series_name:$("seName").value.trim(),sale_status:$("seStatus").value,
+    delivery_mode:$("seMode").value,description:$("seDesc").value.trim()
+  }).then(function(){closeMdl("mdl-series");loadSeries();})
+    .catch(function(e){alert("保存失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 班次 ── */
+function loadCohorts(){
+  return EAPI.get("/api/admin/courses/series/"+S.id+"/cohorts").then(function(list){
+    S.cohorts=list||[];
+    $("cohortCnt").textContent="共 "+S.cohorts.length+" 个";
+    var body=$("cohortBody");
+    if(!S.cohorts.length){body.innerHTML='<tr><td colspan="6" class="box-pad"><div class="st-ico">∅</div>暂无班次 — 点击「＋ 新增班次」开始搭建</td></tr>';return;}
+    body.innerHTML=S.cohorts.map(function(c){
+      return '<tr class="row-hover row-click'+(c.id===S.cohortId?" sel":"")+'" data-cohort="'+c.id+'">'
+        +'<td><span class="cell-strong">'+esc(c.cohort_name||"—")+'</span><br><span class="nb">'+esc(c.cohort_code||"")+'</span></td>'
+        +'<td>¥'+esc(c.sale_price!=null?c.sale_price:"—")+'</td>'
+        +'<td><b>'+esc(c.current_student_count||0)+'</b>/'+esc(c.max_student_count||"—")+'</td>'
+        +'<td>'+esc(String(c.start_date||"").slice(0,10))+' ~ '+esc(String(c.end_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(c.yn?"启用":"已停用",c.yn?"badge-on":"badge-mut")+'</td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-coedit="'+c.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-codel="'+c.id+'">删除</button></td></tr>';
+    }).join("");
+    body.querySelectorAll("[data-cohort]").forEach(function(r){r.onclick=function(ev){
+      if(ev.target.closest("button"))return;selectCohort(+r.getAttribute("data-cohort"));};});
+    body.querySelectorAll("[data-coedit]").forEach(function(b){b.onclick=function(){openCohortMdl(+b.getAttribute("data-coedit"))};});
+    body.querySelectorAll("[data-codel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该班次？（软删 yn=0，模块/课次级联不可见）",function(){
+      return EAPI.del("/api/admin/courses/cohorts/"+b.getAttribute("data-codel")).then(function(){
+        if(S.cohortId===+b.getAttribute("data-codel")){S.cohortId=null;S.modules=[];renderModules();}
+        loadCohorts();});});};});
+    if(!S.cohortId&&S.cohorts.length)selectCohort(S.cohorts[0].id);
+  }).catch(function(e){$("cohortBody").innerHTML='<tr><td colspan="6" class="box-pad">⚠ 班次加载失败：'+esc((e&&e.message)||"")+'</td></tr>';});
+}
+function selectCohort(id){
+  S.cohortId=id;
+  var c=S.cohorts.filter(function(x){return x.id===id})[0];
+  $("moduleCard").style.display="";$("moduleCohortName").textContent=c?c.cohort_name:("班次 #"+id);
+  $("video-panel").style.display="none";
+  if(window.AdminVideoKnowledge)AdminVideoKnowledge.close();
+  renderModules();
+  EAPI.get("/api/admin/courses/cohorts/"+id+"/modules").then(function(list){
+    S.modules=list||[];
+    return Promise.all(S.modules.map(function(m){
+      return EAPI.get("/api/admin/courses/modules/"+m.id+"/sessions").then(function(ss){S.sessions[m.id]=ss||[];});
+    }));
+  }).then(function(){renderModules();}).catch(function(e){
+    $("moduleWrap").innerHTML='<div class="box-pad">⚠ 模块加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("addCohortBtn").onclick=function(){openCohortMdl(null)};
+function openCohortMdl(id){
+  S.editCohort=id?S.cohorts.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editCohort;
+  $("coMdlTitle").textContent=e?("编辑班次 · "+e.cohort_code):"新增班次";
+  $("coCode").value=e?e.cohort_code:"";$("coCode").disabled=!!e;
+  $("coName").value=e?e.cohort_name:"";$("coTeacher").value=e?e.head_teacher_id:"";
+  $("coPrice").value=e?e.sale_price:"";$("coCap").value=e?e.max_student_count:60;
+  $("coCur").value=e?(e.current_student_count||0):0;
+  $("coStart").value=e?String(e.start_date||"").slice(0,10):"";$("coEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-cohort");
+}
+$("coSave").onclick=function(){
+  var e=S.editCohort,btn=$("coSave");btn.disabled=true;
+  var payload={cohort_code:$("coCode").value.trim(),cohort_name:$("coName").value.trim(),
+    head_teacher_id:+$("coTeacher").value||0,sale_price:+$("coPrice").value||0,
+    max_student_count:+$("coCap").value||1,current_student_count:+$("coCur").value||0,
+    start_date:$("coStart").value,end_date:$("coEnd").value||null};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/cohorts/"+e.id,payload);}
+  else{
+    if(!S.series){btn.disabled=false;return;}
+    payload.institution_id=S.series.institution_id;payload.series_id=S.id;
+    p=EAPI.post("/api/admin/courses/cohorts",payload);
+  }
+  p.then(function(){closeMdl("mdl-cohort");loadCohorts();})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 模块 + 课次 ── */
+function renderModules(){
+  var w=$("moduleWrap");
+  $("moduleCnt").textContent="共 "+S.modules.length+" 模块 / "+S.modules.reduce(function(a,m){return a+((S.sessions[m.id]||[]).length)},0)+" 课次";
+  if(!S.modules.length){
+    w.innerHTML='<div class="box-pad"><strong>准备上传视频：先建立模块和课次</strong><p>视频按课次保存。先新增一个模块，再新增课次；课次创建后会显示「上传视频」和 AI 学习资料入口。</p><p class="muted">例如：模块「第一章」，课次「第一讲」。模块名称与课次内容由你填写。</p><button type="button" class="btn btn-primary" data-video-setup-module>'+(S.cohortId?'新增模块，开始添加视频':'先新增班次')+'</button></div>';
+    w.querySelector('[data-video-setup-module]').onclick=function(){if(S.cohortId)openModuleMdl(null);else openCohortMdl(null);};
+    return;
+  }
+  w.innerHTML=S.modules.map(function(m){
+    var ss=S.sessions[m.id]||[];
+    var rows=ss.map(function(x){
+      var st=SS[x.teaching_status]||[x.teaching_status,"badge-mut"];
+      return '<tr class="row-hover">'
+        +'<td class="nb">#'+esc(x.session_no)+'</td>'
+        +'<td><span class="cell-strong">'+esc(x.session_title||"—")+'</span></td>'
+        +'<td>'+esc(String(x.teaching_date||"").slice(0,10))+'</td>'
+        +'<td>'+badge(st[0],st[1])+'</td>'
+        +'<td><div class="res-4"><button class="video" data-vid="'+x.id+'">▶ 视频</button><button data-upl="'+x.id+'">⬆ 上传视频</button></div></td>'
+        +'<td class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssedit="'+x.id+'" data-mid="'+m.id+'">编辑</button>'
+        +'<button class="btn btn-danger btn-mini" data-ssdel="'+x.id+'">删除</button></td></tr>';
+    }).join("");
+    return '<div class="module-panel"><div class="mp-h"><div class="tl">'
+      +'<span class="chev">▸</span><span class="mn">'+esc(m.module_name||"—")+'</span>'
+      +'<span class="badge badge-mut">stage_no '+esc(m.stage_no)+'</span>'
+      +'<span class="mt">'+ss.length+' 课次 / '+esc(m.total_hours||0)+' 学时</span></div>'
+      +'<div class="cell-actions"><button class="btn btn-ghost btn-mini" data-ssadd="'+m.id+'">＋ 新增课次</button>'
+      +'<button class="btn btn-ghost btn-mini" data-moedit="'+m.id+'">编辑</button>'
+      +'<button class="btn btn-danger btn-mini" data-model="'+m.id+'">删除</button></div></div>'
+      +'<div class="mp-b"><table><thead><tr><th>序号</th><th>标题</th><th>日期</th><th>状态</th><th>资源</th><th style="text-align:right">操作</th></tr></thead>'
+      +'<tbody>'+(rows||'<tr><td colspan="6" class="box-pad"><strong>还没有课次，尚不能上传视频</strong><p>新增课次后，在该课次行点击「上传视频」，上传完成后即可生成 AI 学习资料。</p><button type="button" class="btn btn-primary btn-mini" data-video-setup-session="'+m.id+'">新增课次，启用视频上传</button></td></tr>')+'</tbody></table></div></div>';
+  }).join("");
+  w.querySelectorAll(".mp-h").forEach(function(h){h.addEventListener("click",function(ev){
+    if(ev.target.closest("button"))return;
+    var b=h.parentNode.querySelector(".mp-b");b.style.display=b.style.display==="none"?"":"none";
+    h.querySelector(".chev").classList.toggle("open");});});
+  w.querySelectorAll("[data-ssadd]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-ssadd"),null)};});
+  w.querySelectorAll("[data-video-setup-session]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-video-setup-session"),null)};});
+  w.querySelectorAll("[data-moedit]").forEach(function(b){b.onclick=function(){openModuleMdl(+b.getAttribute("data-moedit"))};});
+  w.querySelectorAll("[data-model]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该模块？（软删，其下课次级联不可见）",function(){
+    return EAPI.del("/api/admin/courses/modules/"+b.getAttribute("data-model")).then(function(){selectCohort(S.cohortId);});});};});
+  w.querySelectorAll("[data-vid]").forEach(function(b){b.onclick=function(){openVideoPanel(+b.getAttribute("data-vid"))};});
+  w.querySelectorAll("[data-upl]").forEach(function(b){b.onclick=function(){
+    var sid=+b.getAttribute("data-upl");
+    openVideoPanel(sid);
+    setTimeout(function(){
+      var vp=$("video-panel");
+      if(vp){vp.scrollIntoView({behavior:"smooth",block:"center"});}
+      var uz=$("up-z");if(uz){uz.style.outline="3px solid var(--primary)";uz.style.outlineOffset="3px";setTimeout(function(){uz.style.outline="";},1800);}
+    },250);
+  };});
+  w.querySelectorAll("[data-ssedit]").forEach(function(b){b.onclick=function(){openSessionMdl(+b.getAttribute("data-mid"),+b.getAttribute("data-ssedit"))};});
+  w.querySelectorAll("[data-ssdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该课次？（软删）",function(){
+    return EAPI.del("/api/admin/courses/sessions/"+b.getAttribute("data-ssdel")).then(function(){selectCohort(S.cohortId);});});};});
+}
+$("addModuleBtn").onclick=function(){openModuleMdl(null)};
+function openModuleMdl(id){
+  S.editModule=id?S.modules.filter(function(x){return x.id===id})[0]:null;
+  var e=S.editModule;
+  $("moMdlTitle").textContent=e?("编辑模块 · "+e.module_name):"新增模块";
+  $("moCode").value=e?e.module_code:"";$("moCode").disabled=!!e;
+  $("moName").value=e?e.module_name:"";$("moStage").value=e?e.stage_no:(S.modules.length+1);
+  $("moLessons").value=e?e.lesson_count:4;$("moHours").value=e?e.total_hours:12;
+  $("moStart").value=e?String(e.start_date||"").slice(0,10):"";$("moEnd").value=e?String(e.end_date||"").slice(0,10):"";
+  openMdl("mdl-module");
+}
+$("moSave").onclick=function(){
+  var e=S.editModule,btn=$("moSave");btn.disabled=true;
+  var payload={module_code:$("moCode").value.trim(),module_name:$("moName").value.trim(),
+    stage_no:+$("moStage").value||1,lesson_count:+$("moLessons").value||1,
+    total_hours:+$("moHours").value||0,start_date:$("moStart").value,end_date:$("moEnd").value};
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/modules/"+e.id,payload);}
+  else{if(!S.cohortId){btn.disabled=false;alert("请先选中班次");return;}payload.cohort_id=S.cohortId;
+    p=EAPI.post("/api/admin/courses/modules",payload);}
+  p.then(function(){closeMdl("mdl-module");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 课次弹窗 ── */
+function openSessionMdl(moduleId,sessionId){
+  S.moduleId=moduleId;S.editSession=sessionId?findSession(sessionId):null;
+  var e=S.editSession;
+  $("seMdlTitle").textContent=e?("编辑课次 · "+e.session_title):"新增课次";
+  $("ssNo").value=e?e.session_no:((S.sessions[moduleId]||[]).length+1);
+  $("ssTitle").value=e?e.session_title:"";$("ssStatus").value=e?e.teaching_status:"scheduled";
+  $("ssDate").value=e?String(e.teaching_date||"").slice(0,10):"";
+  $("ssCheckin").value=e?String(e.checkin_required||0):"0";
+  $("ssStart").value=e?(e.start_time||""):"";$("ssEnd").value=e?(e.end_time||""):"";
+  openMdl("mdl-session");
+}
+function findSession(sid){
+  for(var i=0;i<S.modules.length;i++){var arr=S.sessions[S.modules[i].id]||[];
+    for(var k=0;k<arr.length;k++)if(arr[k].id===sid)return arr[k];}
+  return null;
+}
+$("ssSave").onclick=function(){
+  var e=S.editSession,btn=$("ssSave");btn.disabled=true;
+  if(!e&&!$("ssDate").value){$("ssDate").reportValidity();$("ssDate").focus();btn.disabled=false;return;}
+  var payload={session_no:+$("ssNo").value||1,session_title:$("ssTitle").value.trim(),
+    teaching_status:$("ssStatus").value,checkin_required:+$("ssCheckin").value,
+    start_time:$("ssStart").value||null,end_time:$("ssEnd").value||null};
+  if($("ssDate").value)payload.teaching_date=$("ssDate").value;
+  var p;
+  if(e){p=EAPI.patch("/api/admin/courses/sessions/"+e.id,payload);}
+  else{payload.series_cohort_course_id=S.moduleId;p=EAPI.post("/api/admin/courses/sessions",payload);}
+  p.then(function(){closeMdl("mdl-session");selectCohort(S.cohortId);})
+   .catch(function(err){alert("保存失败："+((err&&err.message)||""));})
+   .then(function(){btn.disabled=false;});
+};
+
+/* ── 视频面板：资源列表 + 分片上传 + 转码轮询 + 章节 ── */
+function openVideoPanel(sessionId){
+  S.sessionId=sessionId;
+  $("video-panel").style.display="";
+  var selected=findSession(sessionId);
+  $("vpTitle").firstChild.textContent="视频管理 · "+(selected?selected.session_title:("课次 #"+sessionId))+" ";
+  if(S.poll){clearInterval(S.poll);S.poll=null;}
+  S.videoId=null;
+  $("stepper").style.display="none";$("timelineWrap").style.display="none";
+  $("chapterSec").style.display="none";$("tc-badge").style.display="none";
+  EAPI.get("/api/admin/courses/sessions/"+sessionId+"/assets").then(function(list){
+    if(S.sessionId!==sessionId)return;
+    S.videos=[];
+    (list||[]).forEach(function(a){(a.videos||[]).forEach(function(v){v.file_url=a.playback_url||a.file_url;v.asset_name=a.asset_name;S.videos.push(v);});});
+    renderVideos();
+    if(window.AdminVideoKnowledge)AdminVideoKnowledge.open({session_id:sessionId,title:selected?selected.session_title:"当前课次",videos:S.videos});
+  }).catch(function(e){$("videoList").innerHTML='<div class="muted" style="font-size:12px">⚠ 资源加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+$("vpClose").onclick=function(){$("video-panel").style.display="none";if(S.poll){clearInterval(S.poll);S.poll=null;}if(window.AdminVideoKnowledge)AdminVideoKnowledge.close();};
+function renderVideos(){
+  var w=$("videoList");
+  if(!S.videos.length){w.innerHTML='<div class="muted" style="font-size:12px">该课次还没有视频 — 下方上传后自动注册并绑定。</div>';return;}
+  w.innerHTML=S.videos.map(function(v){
+    var previewUrl=safeVideoUrl(v.file_url);
+    var tcMap={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+    var t=tcMap[v.transcode_status]||[v.transcode_status,"badge-mut"];
+    return '<div style="display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap">'
+      +'<b style="font-size:13px">'+esc(v.video_title||v.video_code)+'</b>'
+      +'<span class="nb">'+esc(v.video_code)+'</span>'+badge(t[0],t[1])+badge("审核 "+(v.review_status||"pending"),"badge-mut")
+      +(previewUrl?'<a href="'+esc(previewUrl)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--primary);margin-left:auto">预览原视频</a>':'<span class="muted">播放链接暂不可用，请刷新视频面板</span>')
+      +'<button class="btn btn-ghost btn-mini" data-chap="'+v.id+'">章节管理</button></div>';
+  }).join("");
+  w.querySelectorAll("[data-chap]").forEach(function(b){b.onclick=function(){openChapters(+b.getAttribute("data-chap"))};});
+  if(S.videos.length&&!S.videoId)openChapters(S.videos[0].id);
+}
+function safeVideoUrl(value){
+  if(typeof value!=="string"||!value||/[\u0000-\u0020\\]/.test(value))return null;
+  if(value.startsWith("/")&&!value.startsWith("//"))return value;
+  try{var parsed=new URL(value);return (parsed.protocol==="https:"||parsed.protocol==="http:")&&!parsed.username&&!parsed.password?value:null;}catch(_){return null;}
+}
+
+/* 分片上传（真实：init → PUT chunks → finalize → transcode poll） */
+var CHUNK=5*1024*1024;
+var drop=$("up-z");
+$("up-z").onclick=function(){$("videoFile").click();};
+["dragover","dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev,function(e){e.preventDefault();
+    drop.classList.toggle("hover",ev==="dragover");
+    if(ev==="drop"&&e.dataTransfer&&e.dataTransfer.files.length)startUpload(e.dataTransfer.files[0]);});
+});
+$("videoFile").onchange=function(){if(this.files.length)startUpload(this.files[0]);this.value="";};
+function setStep(i,cls){$("stp"+i).className="stp "+cls;
+  if(i>0)$("stpC"+(i-1)).className="stp-conn "+(cls==="done"?"done":"");}
+function tlAdd(title,detail,cls){
+  $("timelineWrap").style.display="";
+  var d=document.createElement("div");d.className="tl-item "+(cls||"ok");
+  d.innerHTML='<span class="tt">'+esc(title)+'</span><span class="td">'+esc(detail)+'</span>';
+  $("timeline").appendChild(d);
+}
+function upErr(m){var e=$("upErr");e.textContent="✕ "+m;e.style.display="block";showRetry();}
+/* [REWORK P0-4] 失败可重试 UI：出错时显示「↻ 重试上传」按钮（S.uploadFile 保留原文件，点击整链重传） */
+function showRetry(){
+  var old=$("upRetry"); if(old) old.remove();
+  if(!S.uploadFile) return;
+  var b=document.createElement("button");
+  b.id="upRetry"; b.type="button"; b.className="btn btn-ghost btn-mini";
+  b.style.cssText="margin-top:6px";
+  b.textContent="↻ 重试上传（"+S.uploadFile.name+"）";
+  b.onclick=function(){ b.disabled=true; var f=S.uploadFile; S.uploading=false; startUpload(f); };
+  $("upErr").parentNode.insertBefore(b, $("upErr").nextSibling);
+}
+function startUpload(file){
+  if(S.uploading)return;
+  $("upErr").style.display="none";
+  var oldR=$("upRetry"); if(oldR) oldR.remove();
+  if(!S.sessionId){upErr("请先从课次列表打开视频面板");return;}
+  var uploadSessionId=S.sessionId;
+  var ext=(file.name.lastIndexOf(".")>=0?file.name.slice(file.name.lastIndexOf(".")).toLowerCase():"");
+  if([".mp4",".m4v",".webm"].indexOf(ext)<0){upErr("不支持的文件类型 "+ext+"，请选择 MP4、M4V 或 WebM；上传后仍需验证媒体与视频编码");return;}
+  S.uploading=true;
+  S.uploadFile=file; /* [REWORK P0-4] 保留文件引用供失败重试 */
+  $("stepper").style.display="";$("timeline").innerHTML="";
+  setStep(0,"cur");
+  var count=Math.max(1,Math.ceil(file.size/CHUNK));
+  EAPI.post("/api/admin/courses/videos/init-chunked?session_id="+uploadSessionId
+      +"&file_name="+encodeURIComponent(file.name)+"&file_size="+file.size+"&chunk_count="+count,{})
+  .then(function(r){
+    setStep(0,"done");setStep(1,"cur");
+    tlAdd("init-chunked","upload_id="+r.upload_id+" · "+count+" 分片 · "+(r.chunk_size/1024/1024).toFixed(1)+"MB/片");
+    var up=$("up-pg"),mt=$("up-mt");up.style.display="";mt.style.display="";
+    $("upMetaL").textContent=file.name+" · "+(file.size/1024/1024).toFixed(1)+"MB · "+count+" 分片";
+    var sent=0;
+    function putChunk(i,retry){
+      if(i>=count)return finalize();
+      var startB=i*CHUNK,endB=Math.min(file.size,(i+1)*CHUNK);
+      var blob=file.slice(startB,endB);
+      var xhr=new XMLHttpRequest();
+      xhr.open("PUT",EAPI.BASE+"/api/admin/courses/videos/upload-chunk/"+r.upload_id+"/"+i);
+      xhr.setRequestHeader("Authorization","Bearer "+(EAPI.store.getToken()||""));
+      xhr.setRequestHeader("Content-Type","application/octet-stream");
+      xhr.upload.onprogress=function(ev){if(ev.lengthComputable){
+        var pct=Math.round((sent+ev.loaded)/file.size*100);
+        up.firstElementChild.style.width=pct+"%";$("upMetaR").textContent=pct+"%";}};
+      xhr.onload=function(){
+        if(xhr.status>=200&&xhr.status<300){sent+=endB-startB;putChunk(i+1,0);}
+        else if((retry||0)<2){ /* [REWORK P0-4] 分片级自动重试（同一分片最多重发 2 次） */
+          tlAdd("分片 "+i+" 失败（HTTP "+xhr.status+"）","自动重试第 "+((retry||0)+1)+" 次","bad");
+          putChunk(i,(retry||0)+1);
+        }
+        else upErr("分片 "+i+" 上传失败：HTTP "+xhr.status+"（已自动重试 2 次，可点下方重试整链）");
+      };
+      xhr.onerror=function(){
+        if((retry||0)<2){ tlAdd("分片 "+i+" 网络错误","自动重试第 "+((retry||0)+1)+" 次","bad"); putChunk(i,(retry||0)+1); }
+        else upErr("网络错误：分片 "+i+" 上传失败（已自动重试 2 次，可点下方重试整链）");
+      };
+      xhr.send(blob);
+    }
+    function finalize(){
+      setStep(1,"done");setStep(2,"cur");
+      EAPI.post("/api/admin/courses/videos/finalize-chunked?upload_id="+r.upload_id,{})
+      .then(function(f){
+        setStep(2,"done");setStep(3,"cur");
+        tlAdd("finalize","video_id="+f.video_id+" · "+(f.file_size/1024/1024).toFixed(1)+"MB · "+f.file_url);
+        return EAPI.post("/api/admin/courses/videos/bind-session?session_id="+uploadSessionId+"&video_id="+f.video_id+"&sort_no=0",{})
+        .then(function(){
+          if(S.sessionId!==uploadSessionId){S.uploading=false;return;}
+          tlAdd("bind-session","绑定到课次 #"+uploadSessionId);
+          up.style.display="none";mt.style.display="none";
+          S.videoId=f.video_id;openVideoPanel(uploadSessionId);pollTranscode(f.video_id);
+        });
+      }).catch(function(e){upErr("finalize 失败："+((e&&e.message)||""));S.uploading=false;});
+    }
+    putChunk(0);
+  }).catch(function(e){upErr("init 失败："+((e&&e.message)||""));S.uploading=false;});
+}
+function pollTranscode(videoId){
+  if(S.poll)clearInterval(S.poll);
+  var b=$("tc-badge");b.style.display="";
+  b.className="badge badge-warn";b.innerHTML='<i class="pd"></i>转码中';
+  S.poll=setInterval(function(){
+    EAPI.get("/api/admin/courses/videos/"+videoId+"/transcode-status").then(function(st){
+      var map={pending:["转码待处理","badge-warn"],in_progress:["转码中","badge-primary"],completed:["转码完成","badge-on"],failed:["转码失败","badge-red"]};
+      var m=map[st.transcode_status]||[st.transcode_status,"badge-mut"];
+      b.className=m[1];b.innerHTML='<i class="pd"></i>'+m[0];
+      if(st.transcode_status==="completed"||st.transcode_status==="failed"){
+        clearInterval(S.poll);S.poll=null;setStep(3,"done");S.uploading=false;
+        tlAdd("转码",st.transcode_status+" · review "+st.review_status,st.transcode_status==="completed"?"ok":"bad");
+      }
+    }).catch(function(){});
+  },3000);
+}
+
+/* 章节 CRUD */
+function openChapters(videoId){
+  S.videoId=videoId;
+  $("chapterSec").style.display="";
+  $("chapVideoId").textContent="video_id="+videoId;
+  EAPI.get("/api/admin/courses/videos/"+videoId+"/chapters").then(function(list){
+    renderChapters(list||[]);
+  }).catch(function(e){$("chapter-list").innerHTML='<div class="muted" style="font-size:12px">⚠ 章节加载失败：'+esc((e&&e.message)||"")+'</div>';});
+}
+function renderChapters(list){
+  var w=$("chapter-list");
+  if(!list.length){w.innerHTML='<div class="muted" style="font-size:12px;padding:8px 0">∅ 暂无章节 — 下方添加</div>';return;}
+  w.innerHTML=list.map(function(c){
+    return '<div class="chapter-row"><span class="ch-no">CH-'+esc(c.chapter_no)+'</span><span>'+esc(c.chapter_title||"")+'</span>'
+      +'<span class="ch-sec"><span class="nb">'+esc(c.start_second)+'s ~ '+esc(c.end_second)+'s</span>'
+      +'<button class="btn btn-danger btn-mini" data-chdel="'+c.id+'">删除</button></span></div>';
+  }).join("");
+  w.querySelectorAll("[data-chdel]").forEach(function(b){b.onclick=function(){confirmDel("确认删除该章节？（物理删除）",function(){
+    return EAPI.del("/api/admin/courses/chapters/"+b.getAttribute("data-chdel")).then(function(){openChapters(S.videoId);});});};});
+}
+$("chAddBtn").onclick=function(){
+  if(!S.videoId){alert("请先选择视频");return;}
+  var btn=$("chAddBtn");btn.disabled=true;
+  EAPI.post("/api/admin/courses/chapters",{
+    video_id:S.videoId,chapter_title:$("chTitle").value.trim()||("章节 "+new Date().toLocaleTimeString()),
+    start_second:+$("chStart").value||0,end_second:+$("chEnd").value||1
+  }).then(function(){openChapters(S.videoId);$("chTitle").value="";})
+    .catch(function(e){alert("添加失败："+((e&&e.message)||""));})
+    .then(function(){btn.disabled=false;});
+};
+
+/* ── 通用弹窗/确认 ── */
+function openMdl(id){$(id).classList.add("show")}
+function closeMdl(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){b.closest(".scrim").classList.remove("show")})});
+document.querySelectorAll(".scrim").forEach(function(s){s.addEventListener("click",function(e){if(e.target===s)s.classList.remove("show")})});
+function confirmDel(msg,fn){
+  $("cfMsg").innerHTML='<b>'+esc(msg)+'</b>';
+  openMdl("mdl-confirm");
+  $("cfOk").onclick=function(){fn().catch(function(e){alert("删除失败："+((e&&e.message)||""));}).then(function(){closeMdl("mdl-confirm");});};
+}
+
+loadSeries().then(loadCohorts);
+};
+</script>
+</body>
+</html>

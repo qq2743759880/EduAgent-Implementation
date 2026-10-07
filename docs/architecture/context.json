@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bili-Study · 系统上下文",
+    "subtitle": "C4 Context · 产品读者视角 · 本地源码依据",
+    "output": "docs/architecture/context.html",
+    "quality_profile": "showcase",
+    "locale": "zh-CN"
+  },
+  "components": [
+    {
+      "id": "student",
+      "type": "external",
+      "label": "学生",
+      "sublabel": "播放 / 笔记 / 练习 / 答疑",
+      "pos": [
+        50,
+        240
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "admin",
+      "type": "external",
+      "label": "管理员 / 教师",
+      "sublabel": "课程 / 资料生产",
+      "pos": [
+        50,
+        60
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "system",
+      "type": "backend",
+      "label": "Bili-Study",
+      "sublabel": "真实课程与可追溯学习",
+      "pos": [
+        480,
+        240
+      ],
+      "size": [
+        240,
+        90
+      ]
+    },
+    {
+      "id": "bili",
+      "type": "external",
+      "label": "Bilibili",
+      "sublabel": "授权视频来源",
+      "pos": [
+        960,
+        60
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "模型服务",
+      "sublabel": "OpenAI-compatible API",
+      "pos": [
+        960,
+        390
+      ],
+      "size": [
+        220,
+        80
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "student",
+      "to": "system",
+      "label": "学习与提问 · HTTP/SSE"
+    },
+    {
+      "id": "e1",
+      "from": "admin",
+      "to": "system",
+      "label": "上传 / 生产 · HTTP"
+    },
+    {
+      "id": "e2",
+      "from": "system",
+      "to": "bili",
+      "label": "获取视频 / 字幕 · HTTPS"
+    },
+    {
+      "id": "e3",
+      "from": "system",
+      "to": "llm",
+      "label": "编译 / 回答 · HTTPS"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "阅读方式",
+      "items": [
+        "箭头表示源码职责关系，不表示每次请求都会执行全部节点。",
+        "交互文件需下载后用浏览器打开；GitHub 文件页只展示源码。"
+      ]
+    }
+  ]
+}

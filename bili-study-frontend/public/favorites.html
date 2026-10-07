@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的收藏 · Bili-Study</title>
+<link rel="stylesheet" href="/theme.css?v=7fed87f">
+<style>
+/* ===== PACK-A 黏土重塑（favorites）：令牌/组件类只来自 theme.css（L2 冻结）。
+   页内零新增 class（G7 aria-title 基线冻结 cssPath），私有化全部走本页 style 块内既有选择器 ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{min-height:100dvh}
+body{min-height:100dvh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--text-strong);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+
+/* ===== 全局导航（黏土白瓷条；类名/抽屉显隐语义/结构不变）===== */
+.gnav-toggle{display:none;position:fixed;top:12px;right:12px;z-index:140;width:44px;height:44px;border:0;background:var(--bg-raised);border-radius:var(--radius-input);font-size:.875rem;font-weight:900;place-items:center;box-shadow:var(--clay-shadow-raised);cursor:pointer;color:var(--text-strong)}
+.gnav-overlay{position:fixed;inset:0;z-index:120;background:rgba(46,42,63,.45);opacity:0;visibility:hidden;transition:opacity var(--motion-fast) var(--ease-clay),visibility var(--motion-fast) var(--ease-clay)}
+.gnav-overlay.open{opacity:1;visibility:visible}
+.glayout{display:block;max-width:1180px;margin:0 auto;padding:0}
+.gnav{position:sticky;top:0;z-index:130;display:flex;flex-direction:row;align-items:center;gap:12px;width:auto;max-height:none;overflow:visible;background:var(--bg-raised);border:0;border-radius:0 0 var(--radius-card) var(--radius-card);box-shadow:var(--clay-shadow-raised);padding:10px 18px;color:var(--text-strong)}
+.gnav-brand{display:flex;align-items:center;gap:8px;min-width:0;padding:0;margin:0;text-decoration:none;color:var(--text-strong)}
+.gnav-logo{display:grid;place-items:center;width:44px;height:44px;border-radius:var(--radius-icon-tile);background:var(--clay-moss);color:var(--text-strong);font-size:.75rem;font-weight:900;line-height:1;box-shadow:var(--clay-shadow-moss)}
+.gnav-name{font-size:.9375rem;font-weight:900;color:var(--text-strong);white-space:nowrap}
+.gnav-cap{font-size:.6875rem;font-weight:800;color:var(--text-muted);letter-spacing:.08em;white-space:nowrap}
+.gnav-list{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+.gnav-list::-webkit-scrollbar{display:none}
+.gnav-item{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:44px;min-height:44px;white-space:nowrap;font-size:.8125rem;font-weight:800;color:var(--text-strong);padding:0 12px;border-radius:var(--radius-btn);border:0;transition:background-color var(--motion-fast) var(--ease-clay),color var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay);text-decoration:none}
+.gnav-item:hover{background:var(--bg-input)}
+.gnav-item.active{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-press-coral)}
+.gnav-foot{margin-left:auto;margin-top:0;border:0;padding:0;display:inline-flex;align-items:center;gap:2px;font-size:.6875rem;color:var(--text-muted);font-weight:700;white-space:nowrap}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 8px;border-radius:var(--radius-input);color:var(--text-strong);font:inherit;font-weight:800;background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:767px){
+  .gnav-toggle{display:grid}
+  .glayout{padding:0}
+  .gnav{position:fixed;right:0;left:auto;top:0;bottom:0;z-index:130;width:min(320px,88vw);height:100dvh;align-items:stretch;flex-direction:column;gap:8px;padding:16px;transform:translateX(100%);transition:transform .24s var(--ease-clay);box-shadow:var(--clay-shadow-raised);border-radius:0}
+  .gnav.open{transform:translateX(0)}
+  .gnav-brand{padding-bottom:10px}
+  .gnav-cap{padding-top:4px}
+  .gnav-list{flex-direction:column;align-items:stretch;overflow-y:auto}
+  .gnav-item{justify-content:flex-start;width:100%;min-height:44px}
+  .gnav-foot{margin:0;padding-top:8px}
+}
+
+/* ===== 页面主体 ===== */
+.page{max-width:860px;margin:0 auto;padding:24px 16px 60px;display:flex;flex-direction:column;gap:var(--space-4)}
+.page-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.page-head .mascot{display:grid;place-items:center;width:52px;height:52px;border-radius:var(--radius-icon-tile);background:var(--clay-pink);color:var(--text-strong);box-shadow:var(--clay-shadow-pink)}
+.page-head .mascot .ic{width:28px;height:28px}
+.page-head h1{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--text-strong)}
+.page-head .sub{font-size:12.5px;color:var(--text-muted);font-weight:600;margin-top:2px}
+
+/* ===== 收藏课程卡片（黏土卡）===== */
+.fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-4)}
+.fav-card{display:flex;flex-direction:column;background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-raised);overflow:hidden;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.fav-card:hover{transform:translateY(-2px)}
+.fav-cover{position:relative;width:100%;aspect-ratio:16/9;background:var(--clay-pink);background-image:linear-gradient(135deg,var(--clay-pink),var(--clay-lemon));background-size:cover;background-position:center;display:grid;place-items:center;overflow:hidden}
+.fav-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.fav-cover .ph{font-size:34px;color:var(--text-strong)}
+.fav-badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:900;border-radius:var(--radius-pill);padding:4px 12px;background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.fav-body{display:flex;flex-direction:column;gap:6px;padding:14px 16px 16px;flex:1;background:var(--bg-raised)}
+.fav-title{font-size:15px;font-weight:800;color:var(--text-strong);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+.fav-meta{font-size:12px;color:var(--text-muted);font-weight:600;margin-top:auto}
+.fav-go{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:10px;border:0;background:var(--cta-coral);color:var(--cta-text);font-weight:800;font-size:13.5px;border-radius:var(--radius-btn);padding:10px 16px;box-shadow:var(--clay-shadow-press-coral)}
+
+/* ===== 空态 / 错误态 / 分页（白瓷状态卡）===== */
+.state{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:var(--bg-raised);border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);padding:36px 20px}
+.state .st-emoji{font-size:40px;color:var(--text-strong)}
+.state h3{font-size:16px;font-weight:900;color:var(--text-strong)}
+.state p{font-size:13px;color:var(--text-muted);font-weight:600}
+.state .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:0;background:var(--cta-coral);color:var(--cta-text);font-weight:900;font-size:13.5px;border-radius:var(--radius-btn);padding:10px 20px;box-shadow:var(--clay-shadow-press-coral);text-decoration:none}
+.state .btn:active{transform:scale(.97)}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.pager button{min-width:44px;min-height:44px;border:0;background:var(--clay-moss);border-radius:var(--radius-input);padding:8px 16px;font-weight:800;font-size:13px;color:var(--text-strong);box-shadow:var(--clay-shadow-press-moss)}
+.pager button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.pager .pg-info{font-size:13px;color:var(--text-muted);font-weight:700}
+
+/* ===== 加载骨架（reduced-motion 下静止）===== */
+.sk{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-4)}
+.sk-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);box-shadow:var(--clay-shadow-light);overflow:hidden}
+.sk-cover{aspect-ratio:16/9;background:var(--bg-input)}
+.sk-body{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.sk-line{height:13px;border-radius:7px;background-color:var(--bg-input);background-image:linear-gradient(90deg,var(--bg-input) 25%,#eef4e6 50%,var(--bg-input) 75%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+.sk-line.w60{width:60%}.sk-line.w90{width:90%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* ===== 动效纪律（方案 §7.7）：reduced-motion 下关位移缩放与循环动画 ===== */
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms !important}
+  .fav-card:hover{transform:none}
+  .state .btn:active{transform:none}
+  .sk-line{animation:none}
+}
+</style>
+</head>
+<body>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">BS</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item" href="my-cohorts.html"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item active" href="me.html" aria-current="page"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+
+<div class="page">
+  <header class="page-head">
+    <span class="mascot" aria-hidden="true"><svg class="ic"><use href="/assets/icons/icons.svg#ic-star"></use></svg></span>
+    <div>
+      <h1>我的收藏</h1>
+      <p class="sub">收藏的课程 · 真实数据 · 点击卡片进课程详情</p>
+    </div>
+  </header>
+
+  <!-- 主内容区：JS 在 #favStage 内渲染 卡片 / 空态 / 错误态 / 骨架 -->
+  <div id="favStage" aria-live="polite"></div>
+
+  <div class="pager" id="favPager" style="display:none">
+    <button type="button" id="pgPrev">‹ 上一页</button>
+    <span class="pg-info" id="pgInfo"></span>
+    <button type="button" id="pgNext">下一页 ›</button>
+  </div>
+</div>
+</div>
+
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* ===== 我的收藏：GET /api/favorites 真实数据 ===== */
+(function () {
+  if (!window.EAPI) return;
+  if (!EAPI.store.getToken()) { location.replace(EAPI.buildLoginUrl("/favorites.html")); return; }
+
+  var PAGE_SIZE = 20;
+  var stage = document.getElementById("favStage");
+  var pager = document.getElementById("favPager");
+  var pgInfo = document.getElementById("pgInfo");
+  var pgPrev = document.getElementById("pgPrev");
+  var pgNext = document.getElementById("pgNext");
+  var curPage = 1;
+  var totalPages = 1;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function d10(s) { return s ? String(s).slice(0, 10) : ""; }
+
+  function showSkeleton() {
+    stage.innerHTML = "";
+    var g = el("div", "sk");
+    for (var i = 0; i < 4; i++) {
+      var c = el("div", "sk-card");
+      c.appendChild(el("div", "sk-cover"));
+      var b = el("div", "sk-body");
+      b.appendChild(el("div", "sk-line w90"));
+      b.appendChild(el("div", "sk-line w60"));
+      c.appendChild(b);
+      g.appendChild(c);
+    }
+    stage.appendChild(g);
+    pager.style.display = "none";
+  }
+  function showError(retry) {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    s.appendChild(el("div", "st-emoji", "😵"));
+    s.appendChild(el("h3", "", "收藏加载失败"));
+    s.appendChild(el("p", "", "网络开小差了，请稍后重试"));
+    var b = el("button", "btn", "🔄 重试");
+    b.addEventListener("click", retry);
+    s.appendChild(b);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+  function showEmpty() {
+    stage.innerHTML = "";
+    var s = el("div", "state");
+    s.appendChild(el("div", "st-emoji", "⭐"));
+    s.appendChild(el("h3", "", "暂无收藏，去课程中心逛逛"));
+    s.appendChild(el("p", "", "在课程详情页点「收藏」，心仪课程就会出现在这里"));
+    var a = el("a", "btn", "🛒 去课程中心");
+    a.href = "courses.html";
+    s.appendChild(a);
+    stage.appendChild(s);
+    pager.style.display = "none";
+  }
+
+  function renderList(data) {
+    stage.innerHTML = "";
+    var grid = el("div", "fav-grid");
+    (data.items || []).forEach(function (it) {
+      var card = el("a", "fav-card");
+      card.href = "course-detail.html?id=" + encodeURIComponent(it.series_id != null ? it.series_id : "");
+
+      var cover = el("div", "fav-cover");
+      if (it.cover_url) {
+        var img = document.createElement("img");
+        img.src = it.cover_url;
+        img.alt = (it.series_title || "课程封面");
+        img.loading = "lazy";
+        img.onerror = function () { img.remove(); };
+        cover.appendChild(img);
+      } else {
+        cover.appendChild(el("span", "ph", "📘"));
+      }
+      cover.appendChild(el("span", "fav-badge", "已收藏"));
+
+      var body = el("div", "fav-body");
+      body.appendChild(el("div", "fav-title", it.series_title || "未命名课程"));
+      body.appendChild(el("div", "fav-meta", "收藏于 " + (d10(it.created_at) || "—")));
+      body.appendChild(el("span", "fav-go", "查看课程详情 ›"));
+
+      card.appendChild(cover);
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+    stage.appendChild(grid);
+  }
+
+  function updatePager(total) {
+    totalPages = Math.max(1, Math.ceil((total || 0) / PAGE_SIZE));
+    pager.style.display = totalPages > 1 ? "flex" : "none";
+    pgPrev.disabled = curPage <= 1;
+    pgNext.disabled = curPage >= totalPages;
+    pgInfo.textContent = "第 " + curPage + " / " + totalPages + " 页 · 共 " + (total || 0) + " 门";
+  }
+
+  function load(page) {
+    curPage = page;
+    showSkeleton();
+    EAPI.get("/api/favorites?page=" + page + "&page_size=" + PAGE_SIZE)
+      .then(function (data) {
+        if (!data) { showError(function () { load(page); }); return; }
+        if (!data.items || !data.items.length) { showEmpty(); updatePager(data.total); return; }
+        renderList(data);
+        updatePager(data.total);
+      })
+      .catch(function () { showError(function () { load(page); }); });
+  }
+
+  pgPrev.addEventListener("click", function () { if (curPage > 1) load(curPage - 1); });
+  pgNext.addEventListener("click", function () { if (curPage < totalPages) load(curPage + 1); });
+
+  load(1);
+})();
+</script>
+<script>
+/* admin 角色显示管理后台入口（对齐 me.html） */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

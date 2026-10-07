@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<!--
+  STYLE: candy-playful frozen (2026-08-19 用户签收, Duolingo 系「学中玩」糖果色)
+  task47 我的班次效果图 · 契约⑪ GET /api/enrollments/me/cohorts?status= (task20/21 待联调)
+  DIRECTION: 学中玩 · 糖果色卡通风 —— 粗描边 + 糖果色块 + 吉祥物 emoji、圆角大、实底阴影、Grid lg:2 CohortCard。
+  AUDIT LOG:
+    [2026-08-20 R1] 初稿：三 tab（学习中/已完成/已退款）+ CohortCard 进度条 + 下次课 + 已退款灰色态 + 空态 → 状态: SUBMITTED
+    [2026-08-20 R2] 独立审查返工：tabs 升级 SDK 模式（aria-controls/labelledby/roving tabindex/方向键/Home/End）；prefers-reduced-motion 全量降级；92% hot 文本去内联色改 token 类；statebar 补 focus-visible；移动端按钮行改「主全宽+辅并排第二行」杜绝挤占、下次课名称 truncate+时间右对齐 → 状态: REVISING
+    [2026-08-20 R3] 视觉复测确认：375 全宽主按钮布局成立、下次课时间不被挤压、截图矩阵+交互/方向键 probe 全绿、0 错误 → 状态: SUBMITTED
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/theme.css?v=7fed87f" />
+<title>我的班次 · Bili-Study</title>
+<style>
+/* ===== PACK-B 黏土重塑（2026-09-21）：令牌唯源 /theme.css?v=7fed87f；班次域=sky/mint 表面。
+   三层分离：仅动视觉层——id/class/data-tab/.on/.active 显隐语义、SDK tabs roving tabindex、
+   z-index(gnav 130/overlay 120/演示角标 2147483001)冻结；旧 candy 变量名保留为页内别名(L1)。 ===== */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  /* —— 旧名 → clay 令牌别名（aihub-topnav-fix / 脚本仍引用，禁删）—— */
+  --ht-fff:var(--bg-raised); --card:var(--bg-raised); --white:var(--bg-raised); --candy-bg:var(--bg-app);
+  --ink:var(--text-strong); --ink-strong:var(--text-strong); --ink-muted:var(--text-muted); --ink-faint:var(--text-muted);
+  --muted:var(--text-muted); --foreground:var(--text-strong);
+  --border-chip:rgba(46,42,63,.14); --line:rgba(46,42,63,.12);
+  --primary:var(--cta-coral); --primary-foreground:var(--cta-text); --primary-deep:#D65246;
+  --candy-green:var(--clay-mint); --candy-green-deep:#2E7D4F; --candy-green-hover:var(--clay-mint);
+  --candy-purple:#5B4FC4; --candy-purple-soft:#EFE9FF; --candy-purple-deep:#5B4FC4;
+  --candy-orange:var(--cta-coral); --candy-orange-deep:#D65246; --candy-orange-hover:var(--cta-coral);
+  --candy-red:var(--status-danger); --candy-blue:#2B2E6E;
+  --gray-300:rgba(46,42,63,.12); --gray-400:#B9B4C7; --gray-500:#8D879F; --gray-600:#DEDBE8;
+  --error-bg:rgba(198,62,74,.10); --statebar-text:#F7F5FB;
+  --shadow-3d:8px 8px 22px rgba(78,126,66,.16);
+  --radius-lg:var(--radius-card); --radius-xl:var(--radius-card);
+  --r:12px; --shadow:0 6px 18px rgba(78,126,66,.14);
+  /* —— 页内派生色（L1，仅本页）—— */
+  --page-accent:#5B4FC4
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--text-strong);background-color:var(--bg-app);background-image:radial-gradient(circle at 90% 8%,rgba(158,201,240,.28),transparent 24rem),radial-gradient(circle at 4% 94%,rgba(125,212,168,.20),transparent 22rem);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+select,input{font-family:inherit}
+*:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:4px}
+
+.page{max-width:1180px;margin:0 auto;padding:20px 18px 72px}
+
+/* ===== Breadcrumb + 页头 ===== */
+.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:0.8125rem;color:var(--text-strong);margin-bottom:14px}
+.breadcrumb a{color:#2B2E6E;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;min-height:44px}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb .sep{color:var(--text-muted)}
+.breadcrumb .cur{color:var(--text-strong);font-weight:700}
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.page-head .mascot{font-size:40px;filter:drop-shadow(0 4px 0 rgba(78,126,66,.15));animation:mascot 3.2s ease-in-out infinite}
+@keyframes mascot{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-4deg) translateY(-5px)}}
+.page-head h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.page-head .sub{font-size:0.8125rem;color:var(--text-muted);margin-top:4px}
+
+/* ===== Tabs（三 tab 状态 + 计数徽章）===== */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:2px solid rgba(46,42,63,.12);margin-bottom:20px}
+.tab{border:0;border-radius:var(--radius-btn) var(--radius-btn) 0 0;background:transparent;color:var(--text-strong);padding:11px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:8px;min-height:44px}
+.tab:hover{background:rgba(46,42,63,.06)}
+.tab.on{background:var(--bg-raised);color:var(--text-strong);position:relative;top:1px;box-shadow:var(--clay-shadow-light)}
+.tab .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:rgba(46,42,63,.08);color:var(--text-strong);font-size:11px;font-weight:800;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+.tab.on .cnt{background:var(--clay-mint);color:var(--text-strong)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ===== Grid lg:2 CohortCard ===== */
+.grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:768px){.grid{grid-template-columns:repeat(2,1fr)}}
+.cohort-card{background:var(--bg-raised);border:0;border-radius:var(--radius-card);overflow:hidden;box-shadow:var(--clay-shadow-light);display:flex;flex-direction:column;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay)}
+.cohort-card:hover{transform:translateY(-2px);box-shadow:var(--clay-shadow-raised)}
+/* 封面横条：浅黏土渐变 + 深字（G7 对比度）+ 系列名 + 班次徽章 + 吉祥物 */
+.cc-cover{position:relative;display:flex;align-items:center;gap:12px;padding:16px 18px;color:var(--text-strong);overflow:hidden}
+.cc-cover .blob{position:absolute;border-radius:50%;opacity:.5;pointer-events:none}
+.cc-cover .blob.b1{width:120px;height:120px;background:rgba(255,255,255,.5);top:-46px;right:-26px}
+.cc-cover .blob.b2{width:70px;height:70px;background:rgba(255,255,255,.4);bottom:-30px;left:34%}
+.cc-cover .mascot{position:relative;font-size:34px;flex-shrink:0;filter:drop-shadow(0 3px 0 rgba(78,126,66,.15))}
+.cc-cover .tt{position:relative;min-width:0;flex:1}
+.cc-cover .series{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text-strong)}
+.cc-cover .name{font-size:17px;font-weight:800;line-height:1.3;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cover .badge{position:relative;flex-shrink:0;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;border:0;background:rgba(255,255,255,.72);color:var(--text-strong)}
+.cc-cover .badge.b-active{background:var(--clay-mint);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.cc-cover .badge.b-done{background:rgba(255,255,255,.72);color:var(--text-strong)}
+.cc-cover .badge.b-refunded{background:#DEDBE8;color:var(--text-strong)}
+/* 封面渐变族（浅黏土，按系列 id 派生）*/
+.cov--t1{background-color:var(--clay-peach);background-image:linear-gradient(135deg,#FFD0C1,var(--clay-peach))}
+.cov--t2{background-color:var(--clay-mint);background-image:linear-gradient(135deg,#A9E5C6,var(--clay-mint))}
+.cov--t3{background-color:var(--clay-lavender);background-image:linear-gradient(135deg,#D9D1FF,var(--clay-lavender))}
+.cov--t4{background-color:var(--clay-sky);background-image:linear-gradient(135deg,#D5EAFB,var(--clay-sky))}
+.cov--t5{background-color:var(--clay-lemon);background-image:linear-gradient(135deg,#FFEBAB,var(--clay-lemon))}
+/* 已退款：整卡灰色态 */
+.cohort-card.refunded{filter:saturate(.25) opacity(.86)}
+.cohort-card.refunded .cc-cover{background-image:none!important;background:#DEDBE8!important}
+/* 卡片体 */
+.cc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px;flex:1}
+.prog-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.prog-label{font-size:0.8125rem;color:var(--text-strong);font-weight:700}
+.prog-pct{font-size:0.8125rem;font-weight:800;color:#2E7D4F;font-variant-numeric:tabular-nums}
+.prog-pct.hot{color:var(--page-accent)}
+.prog-bar{height:14px;border-radius:999px;background:rgba(46,42,63,.08);overflow:hidden;border:0}
+.prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--clay-mint),#5FB98C);transition:width .6s var(--ease-clay)}
+.prog-fill.hot{background:linear-gradient(90deg,var(--clay-lavender),#9C8BE0)}
+.prog-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--text-muted)}
+.prog-meta b{color:var(--text-strong);font-weight:700}
+.next-lesson{display:flex;align-items:center;gap:8px;background:rgba(125,212,168,.20);border:0;border-radius:var(--radius-input);padding:9px 12px;font-size:0.8125rem;color:var(--text-strong);min-height:44px}
+.next-lesson .clock{font-size:0.9375rem;flex-shrink:0;display:inline-flex}
+.next-lesson .nl-text{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-lesson b{color:#2E7D4F;font-weight:800}
+.next-lesson .when{margin-left:auto;flex-shrink:0;font-weight:700;color:var(--text-strong);font-variant-numeric:tabular-nums;padding-left:8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+/* 移动端 ≤480px：主按钮全宽换行，辅按钮自动折行，杜绝挤占 */
+@media(max-width:480px){
+  .actions .btn-primary{flex:1 1 100%}
+  .actions .btn-ghost{flex:1 1 auto}
+}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:0;border-radius:var(--radius-btn);font-weight:800;font-size:0.8125rem;padding:9px 16px;transition:transform var(--motion-fast) var(--ease-clay),box-shadow var(--motion-fast) var(--ease-clay),background var(--motion-fast) var(--ease-clay);user-select:none}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.52;cursor:not-allowed;transform:none}
+.btn .ic{width:1.05em;height:1.05em}
+.btn-primary{color:var(--cta-text);background:var(--cta-coral);box-shadow:var(--clay-shadow-coral)}
+.btn-primary:active{box-shadow:var(--clay-shadow-press-coral)}
+.btn-ghost{background:var(--bg-raised);color:var(--text-strong);box-shadow:var(--clay-shadow-light)}
+.btn-ghost:hover{color:var(--page-accent)}
+.btn-danger{color:#FFFFFF;background:var(--status-danger);box-shadow:4px 6px 14px rgba(198,62,74,.30)}
+.btn-soft{background:var(--clay-lavender);color:var(--text-strong);box-shadow:var(--clay-shadow-lavender)}
+/* 已完成卡片操作行 */
+.done-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+/* 已退款信息行 */
+.refund-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-top:auto}
+.refund-note b{color:var(--text-strong)}
+
+/* ===== 空态 ===== */
+.empty{border:2px dashed var(--border-chip);border-radius:var(--radius-card);padding:56px 20px;text-align:center;background:var(--bg-raised)}
+.empty .icon{width:64px;height:64px;margin:0 auto 16px;border-radius:var(--radius-icon-tile);background:rgba(125,212,168,.25);display:grid;place-items:center;font-size:30px;color:var(--text-strong)}
+.empty .icon .ic{width:30px;height:30px}
+.empty .t{font-size:17px;font-weight:800;color:var(--text-strong);margin-bottom:6px}
+.empty .d{font-size:0.8125rem;color:var(--text-muted);margin-bottom:18px}
+.empty .btn-primary{font-size:14px;padding:12px 24px}
+
+/* ===== Skeleton ===== */
+.skeleton .shape{background:linear-gradient(100deg,#ECE9F4 40%,#F7F5FB 50%,#ECE9F4 60%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px}
+@keyframes shimmer{to{background-position:-200% 0}}
+.sk-card{background:var(--bg-raised);border:2px solid var(--border-chip);border-radius:var(--radius-card);overflow:hidden}
+.sk-card .sk-cover{height:86px}
+.sk-card .sk-body{padding:16px 18px;display:grid;gap:12px}
+.sk-card .sk-line{height:14px}
+.sk-card .sk-line.w40{width:40%}
+.sk-card .sk-line.w70{width:70%}
+.sk-card .sk-line.w100{width:100%}
+
+/* ===== ErrorState ===== */
+.error{border:0;background:rgba(198,62,74,.10);border-radius:var(--radius-card);padding:44px 20px;text-align:center}
+.error .t{font-size:1rem;font-weight:800;color:var(--text-strong);margin-bottom:6px}
+.error .d{font-size:0.8125rem;color:var(--text-muted);margin-bottom:18px}
+.error .btn-danger{font-size:0.8125rem;padding:10px 20px}
+
+/* 全局焦点可见（a11y：不依赖默认焦点环）*/
+.btn:focus-visible,.tab:focus-visible,.statebar button:focus-visible{outline:3px solid var(--candy-blue);outline-offset:2px}
+
+/* 尊重用户减少动效偏好（SOP §7.3 #4 / §十二）*/
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .page-head .mascot,.cc-cover .mascot{animation:none}
+  .cohort-card:hover{transform:none}
+  .prog-fill{transition:none}
+}
+
+/* ===== 状态演示器（HTML 效果图专属）===== */
+.statebar{display:flex;align-items:center;gap:8px;margin-top:26px;padding:12px 14px;background:var(--ink-strong);border-radius:14px;flex-wrap:wrap}
+.statebar .tag{font-size:11px;color:var(--statebar-text);font-weight:700;margin-right:4px}
+.statebar button{font-size:12px;border-radius:999px;padding:5px 12px;border:1px solid var(--htc-255-255-255-025);background:transparent;color:var(--statebar-text);transition:all .15s}
+.statebar button:hover{background:var(--htc-255-255-255-012)}
+.statebar button.on{background:var(--candy-green);border-color:var(--candy-green);color:var(--ht-fff)}
+.demo-note{font-size:11px;color:var(--ink-faint);margin-top:6px;line-height:1.6}
+  /* ===== 全局导航侧边栏（navigation-baseline.md 强制清单 · candy-playful 统一）===== */
+  .gnav-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border:2px solid var(--ink);background:var(--card,var(--white,var(--candy-bg)));border-radius:10px;font-size:1.125rem;place-items:center;box-shadow:0 3px 0 var(--htc-31-31-31-018);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:99;background:var(--htc-31-31-31-045);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:grid;grid-template-columns:200px 1fr;gap:14px;max-width:1180px;margin:0 auto;padding:14px 16px;align-items:start}
+  .glayout>.page,.glayout>.wrap{max-width:none;margin:0;width:100%}
+  .gnav{position:sticky;top:14px;background:var(--card,var(--white,var(--candy-bg)));border:3px solid var(--ink);border-radius:var(--radius-lg,var(--r));box-shadow:var(--shadow-3d,var(--shadow));padding:12px 10px;display:flex;flex-direction:column;gap:2px;align-self:start;max-height:calc(100dvh - 28px);overflow-y:auto}
+  .gnav-brand{display:flex;align-items:center;gap:8px;padding:4px 10px 10px;border-bottom:2px solid var(--border-chip,var(--line));margin-bottom:6px}
+  .gnav-logo{font-size:1.5rem;line-height:1}
+  .gnav-name{font-size:0.9375rem;font-weight:900;color:var(--ink)}
+  .gnav-list{display:flex;flex-direction:column;gap:2px}
+  .gnav-cap{font-size:0.625rem;font-weight:900;color:var(--ink-faint,var(--ink-muted,var(--muted)));letter-spacing:.08em;padding:6px 10px 4px}
+  .gnav-item{display:flex;align-items:center;gap:9px;font-size:0.8125rem;font-weight:800;color:var(--ink);padding:9px 12px;border-radius:12px;border:2px solid transparent;transition:background .15s,color .15s,border-color .15s;text-decoration:none}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--candy-purple));color:var(--candy-purple)}
+  .gnav-item.active{background:var(--candy-green);color:var(--card,var(--white,var(--candy-bg)));border-color:var(--ink);box-shadow:0 3px 0 var(--candy-green-deep,var(--candy-green))}
+  .gnav-item.active:hover{background:var(--candy-green-hover,var(--candy-green))}
+  .gnav-ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+  .gnav-foot{margin-top:auto;padding:8px 10px 4px;border-top:2px solid var(--border-chip,var(--line));font-size:0.625rem;color:var(--ink-faint,var(--ink-muted,var(--muted)));font-weight:700;text-align:center}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{grid-template-columns:1fr;padding:8px;max-width:none}
+    .gnav{position:fixed;left:0;top:0;bottom:0;z-index:100;max-height:100dvh;border-radius:0;width:240px;transform:translateX(-100%);transition:transform .3s ease}
+    .gnav.open{transform:translateX(0)}
+  }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="aihub-topnav-fix">
+  .gnav-toggle{display:none;position:fixed;top:12px;right:12px;left:auto;z-index:140;width:44px;height:44px;border:2px solid var(--ink,var(--foreground));background:var(--card,var(--white,var(--candy-bg)));border-radius:12px;font-size:0.875rem;font-weight:900;place-items:center;box-shadow:0 3px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 82%);cursor:pointer}
+  .gnav-overlay{position:fixed;inset:0;z-index:120;background:color-mix(in oklch,var(--ink,var(--foreground)),transparent 55%);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .gnav-overlay.open{opacity:1;visibility:visible}
+  .glayout{display:block;max-width:none;margin:0;padding:0}
+  .glayout>.page,.glayout>.wrap{width:100%;max-width:1180px;margin:0 auto}
+  .gnav{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:130!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;width:auto!important;max-height:none!important;height:auto!important;overflow:visible!important;background:var(--card,var(--white,var(--candy-bg)))!important;border:0!important;border-bottom:2px solid var(--border-chip,var(--line))!important;border-radius:0!important;box-shadow:0 2px 0 color-mix(in oklch,var(--ink,var(--foreground)),transparent 92%)!important;padding:10px 18px!important;transform:none!important}
+  .gnav-admin{background:var(--card,var(--white))!important;border-bottom-color:var(--line,var(--border-chip))!important}
+  .gnav-brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important;text-decoration:none!important;color:var(--ink,var(--foreground))!important}
+  .gnav-logo{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;border-radius:10px!important;background:var(--primary,var(--candy-green))!important;color:var(--primary-foreground,var(--white))!important;font-size:0.75rem!important;font-weight:900!important;line-height:1!important}
+  .gnav-name{font-size:0.9375rem!important;font-weight:900!important;color:var(--ink,var(--foreground))!important;white-space:nowrap!important}
+  .gnav-cap{font-size:0.6875rem!important;font-weight:900!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;letter-spacing:.08em!important;white-space:nowrap!important}
+  .gnav-list{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;min-width:0!important;flex:1!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .gnav-list::-webkit-scrollbar{display:none}
+  .gnav-item{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:40px!important;white-space:nowrap!important;font-size:0.8125rem!important;font-weight:800!important;color:var(--ink,var(--foreground))!important;padding:0 12px!important;border-radius:12px!important;border:2px solid transparent!important;transition:background .15s,color .15s,border-color .15s!important;text-decoration:none!important}
+  .gnav-item:hover{background:var(--candy-purple-soft,var(--muted));color:var(--candy-purple,var(--primary))}
+  .gnav-item.active{background:var(--primary,var(--candy-green));color:var(--primary-foreground,var(--card,var(--white)));border-color:var(--ink,var(--foreground));box-shadow:0 3px 0 var(--primary-deep,var(--candy-green-deep,var(--primary)))}
+  .gnav-admin .gnav-item.active{background:var(--primary-deep,var(--primary));color:var(--primary-foreground,var(--white));border-color:var(--line,var(--border-chip));box-shadow:none}
+  .gnav-foot{margin-left:auto!important;margin-top:0!important;border:0!important;padding:0!important;font-size:0.6875rem!important;color:var(--ink-faint,var(--ink-muted,var(--muted)))!important;font-weight:700!important;white-space:nowrap!important}
+  .gnav-spacer{flex:1}
+  body{width:auto!important;max-width:none!important;margin:0!important}
+  .page{transform:none!important}
+  @media(max-width:767px){
+    .gnav-toggle{display:grid}
+    .glayout{padding:0}
+    .glayout>.page,.glayout>.wrap{max-width:none}
+    .gnav{position:fixed!important;right:0!important;left:auto!important;top:0!important;bottom:0!important;z-index:130!important;width:min(320px,88vw)!important;height:100dvh!important;align-items:stretch!important;flex-direction:column!important;gap:8px!important;padding:16px!important;transform:translateX(100%)!important;transition:transform .24s ease!important;box-shadow:var(--shadow-3d,var(--shadow))!important;border-left:2px solid var(--border-chip,var(--line))!important;border-bottom:0!important}
+    .gnav.open{transform:translateX(0)!important}
+    .gnav-brand{padding-bottom:10px;border-bottom:2px solid var(--border-chip,var(--line))}
+    .gnav-cap{padding-top:4px}
+    .gnav-list{flex-direction:column!important;align-items:stretch!important;overflow-y:auto!important}
+    .gnav-item{justify-content:flex-start!important;width:100%!important;min-height:44px!important}
+    .gnav-foot{margin:0!important;padding-top:8px!important;border-top:2px solid var(--border-chip,var(--line))!important}
+  }
+  .chat-page{height:calc(100dvh - 64px)!important;max-width:1240px!important;display:flex!important;gap:14px!important;padding:14px 16px!important;align-items:stretch!important;overflow:hidden}
+  .chat-page .main{order:1;flex:1 1 auto!important;min-width:0!important;height:auto!important;transform:none!important}
+  .chat-page .scrollside{order:2;flex:0 0 252px!important;width:auto!important;height:auto!important;transform:none!important}
+  .chat-page .chat-stage{min-height:0;flex:1 1 auto}
+  .chat-page .drawer{right:0;left:auto;transform:translateX(100%)}
+  .chat-page .drawer.open{transform:translateX(0)}
+  .chat-page + .scrim,.chat-page ~ .drawer{max-width:100vw}
+  .cohorts-fixed-page{min-height:calc(100dvh - 62px)!important;display:flex!important;flex-direction:column!important}
+  .cohorts-fixed-page [role="toolbar"]{margin-top:auto!important}
+  .login-full-page{width:100vw!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important;padding:0!important}
+  .login-full-page .auth,.login-full-page .wrap,.login-full-page .auth-wrap,.login-full-page .shell,.login-full-page main{width:100%!important;max-width:none!important;min-height:calc(100dvh - 64px)!important;margin:0!important}
+  .login-full-page .card,.login-full-page .auth-card{margin-inline:auto!important}
+  body.admin-html-page{background:color-mix(in oklch,var(--card,var(--white)),var(--primary,var(--ink)) 4%)!important}
+  .admin-html-page .page{max-width:1180px!important;padding:16px 18px 24px!important}
+  .admin-html-page .demo-note,.admin-html-page .kpi,.admin-html-page .panel,.admin-html-page .fallback,.admin-html-page .state,.admin-html-page .sk-card{border:1px solid var(--line,var(--border-chip))!important;border-radius:8px!important;box-shadow:none!important;background:var(--card,var(--white))!important}
+  .admin-html-page .kpis,.admin-html-page .grid2{gap:12px!important}
+  .admin-html-page .head{margin:16px 0 12px!important}
+  .admin-html-page .head h1{font-size:1.5rem!important;font-weight:750!important;letter-spacing:0!important}
+  .admin-html-page .sub,.admin-html-page .p-sub{color:var(--muted,var(--ink-muted))!important}
+  .admin-html-page .pill,.admin-html-page .updated,.admin-html-page .fb-flag{border-radius:6px!important;box-shadow:none!important}
+  .admin-html-page .ic{border-radius:8px!important;box-shadow:none!important}
+  .admin-html-page .bar,.admin-html-page .donut{box-shadow:none!important}
+  @container app (max-width:760px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px);padding:10px 8px 12px!important;overflow:visible}
+  }
+  @media(max-width:1279px){
+    .chat-page{max-width:100vw!important;width:100vw!important;gap:10px!important;padding:10px 12px!important}
+    .chat-page .scrollside{flex-basis:220px!important}
+    .chat-page .main{max-width:calc(100vw - 254px)!important}
+  }
+  @media(max-width:1024px){
+    .chat-page{gap:8px!important;padding:8px!important}
+    .chat-page .scrollside{flex-basis:200px!important}
+    .chat-page .main{max-width:calc(100vw - 224px)!important}
+    .chat-page .chat-head h1{font-size:1rem!important}
+  }
+  @media(max-width:900px){
+    .chat-page{height:auto!important;min-height:calc(100dvh - 64px)!important;overflow:visible!important}
+    .chat-page .scrollside{display:none!important}
+    .chat-page .main{max-width:none!important;width:100%!important}
+  }
+</style>
+<style id="packb-clay-gnav">
+/* PACK-B clay：共享块 aihub-topnav-fix 的黏土重定向（仅视觉层；44px 点击区清偿 G6 存量债） */
+.gnav{background:var(--bg-raised)!important;border-bottom:2px solid rgba(184,166,255,.28)!important;box-shadow:0 2px 12px rgba(78,126,66,.10)!important}
+.gnav-brand{min-height:44px!important;border-radius:var(--radius-pill)}
+.gnav-logo{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-radius:12px!important;box-shadow:3px 4px 10px rgba(214,82,70,.28)!important}
+.gnav-cap{color:var(--text-muted)!important}
+.gnav-item{min-height:44px!important;border-radius:var(--radius-pill)!important;color:var(--text-strong)!important}
+.gnav-item:hover{background:var(--candy-purple-soft)!important;color:var(--page-accent)!important;border-color:transparent!important}
+.gnav-item.active{background:var(--cta-coral)!important;color:var(--cta-text)!important;border-color:transparent!important;box-shadow:3px 4px 10px rgba(214,82,70,.30)!important}
+.gnav-item.active:hover{background:var(--cta-coral)!important;color:var(--cta-text)!important}
+.gnav-foot a,.gnav-foot button{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+.gnav-toggle{background:var(--bg-raised)!important;border:0!important;border-radius:var(--radius-btn)!important;box-shadow:var(--clay-shadow-light)!important;color:var(--text-strong)!important}
+</style>
+</head>
+<body>
+<button class="gnav-toggle" id="gnavToggle" aria-label="打开导航" aria-expanded="false">菜单</button>
+<div class="gnav-overlay" id="gnavOverlay"></div>
+<div class="glayout">
+<header class="gnav" id="gnav" aria-label="主导航">
+  <a class="gnav-brand" href="dashboard.html"><span class="gnav-logo" aria-hidden="true">BS</span><span class="gnav-name">Bili-Study</span></a>
+  <div class="gnav-cap">学习导航</div>
+  <nav class="gnav-list" aria-label="用户端页面">
+    <a class="gnav-item" href="community.html"><span>社区</span></a>
+    <a class="gnav-item" href="chat.html"><span>AI学习问答</span></a>
+    <a class="gnav-item" href="courses.html"><span>课程中心</span></a>
+    <a class="gnav-item" href="dashboard.html"><span>学习仪表盘</span></a>
+    <a class="gnav-item" href="practice.html"><span>题库 / 复习</span></a>
+    <a class="gnav-item active" href="my-cohorts.html" aria-current="page"><span>我的班次</span></a>
+    <a class="gnav-item" href="achievements.html"><span>成就中心</span></a>
+    <a class="gnav-item" href="me.html"><span>个人中心</span></a>
+  </nav>
+  <div class="gnav-foot">Learning Hub · <a href="admin-dashboard.html" id="adminEntry" style="display:none;color:inherit">管理后台 →</a><span aria-hidden="true"> · </span><button type="button" onclick="EAPI.logout()" style="background:none;border:none;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline">退出登录</button></div>
+</header>
+<div class="page cohorts-fixed-page">
+
+  <nav class="breadcrumb" aria-label="面包屑">
+    <a href="courses.html">课程中心</a><span class="sep">›</span>
+    <span class="cur">我的班次</span>
+  </nav>
+
+  <header class="page-head">
+    <span class="mascot" aria-hidden="true">🎓</span>
+    <div>
+      <h1>我的班次</h1>
+      <p class="sub">你报名的所有班次 · 进度聚合为「模块 X/6 · 课次 Y/24」四级真实数据</p>
+    </div>
+  </header>
+
+  <!-- Tabs：enroll_status 驱动（SDK tabs：id + aria-controls + aria-selected + 方向键导航）-->
+  <div class="tabs" role="tablist" aria-label="班次状态">
+    <button class="tab on" id="tabbtn-active" role="tab" aria-selected="true" aria-controls="tab-active" data-tab="active" tabindex="0">学习中 <span class="cnt">2</span></button>
+    <button class="tab" id="tabbtn-completed" role="tab" aria-selected="false" aria-controls="tab-completed" data-tab="completed" tabindex="0">已完成 <span class="cnt">1</span></button>
+    <button class="tab" id="tabbtn-refunded" role="tab" aria-selected="false" aria-controls="tab-refunded" data-tab="refunded" tabindex="0">已退款 <span class="cnt">1</span></button>
+  </div>
+
+  <!-- 主内容区（JS 按 state 切换 success / loading / error / empty）-->
+  <div id="stage">
+
+    <!-- ============ SUCCESS：三 tab 真实数据 ============ -->
+    <div id="panel-success">
+      <!-- 学习中 active -->
+      <div class="tab-panel active" id="tab-active" role="tabpanel" aria-labelledby="tabbtn-active">
+        <div class="grid">
+          <!-- 卡1：通用编程入门班·暑期一班（active 68%） -->
+          <article class="cohort-card">
+            <div class="cc-cover cov--t1">
+              <span class="blob b1" aria-hidden="true"></span>
+              <span class="blob b2" aria-hidden="true"></span>
+              <span class="mascot" aria-hidden="true">🦉</span>
+              <div class="tt">
+                <div class="series">通用编程 · 在线直播</div>
+                <div class="name">通用编程入门班 · 暑期一班</div>
+              </div>
+              <span class="badge b-active">学习中</span>
+            </div>
+            <div class="cc-body">
+              <div class="prog-row">
+                <span class="prog-label">课程进度</span>
+                <span class="prog-pct">68%</span>
+              </div>
+              <div class="prog-bar" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="课程进度 68%">
+                <div class="prog-fill" style="width:68%"></div>
+              </div>
+              <div class="prog-meta">
+                <span>模块 <b>4/6</b></span>
+                <span>课次 <b>16/24</b></span>
+                <span>下次课: <b>模块一 · 课次3</b></span>
+              </div>
+              <div class="next-lesson">
+                <span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span>
+                <span class="nl-text">下次课 <b>变量与类型</b></span>
+                <span class="when">03-08 09:00</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</button>
+                <button class="btn btn-ghost" disabled title="登录后查看真实班次详情">课程详情</button>
+                <button class="btn btn-ghost" disabled title="登录后可用（售后暂未开放）">售后</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- 卡2：数学思维进阶·寒假班（active 92% hot） -->
+          <article class="cohort-card">
+            <div class="cc-cover cov--t3">
+              <span class="blob b1" aria-hidden="true"></span>
+              <span class="blob b2" aria-hidden="true"></span>
+              <span class="mascot" aria-hidden="true">🐰</span>
+              <div class="tt">
+                <div class="series">数学思维 · 在线录播</div>
+                <div class="name">数学思维进阶 · 寒假班</div>
+              </div>
+              <span class="badge b-active">学习中</span>
+            </div>
+            <div class="cc-body">
+              <div class="prog-row">
+                <span class="prog-label">课程进度</span>
+                <span class="prog-pct hot">92%</span>
+              </div>
+              <div class="prog-bar" role="progressbar" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100" aria-label="课程进度 92%">
+                <div class="prog-fill hot" style="width:92%"></div>
+              </div>
+              <div class="prog-meta">
+                <span>模块 <b>5/6</b></span>
+                <span>课次 <b>22/24</b></span>
+                <span>下次课: <b>模块三 · 课次8</b></span>
+              </div>
+              <div class="next-lesson">
+                <span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span>
+                <span class="nl-text">下次课 <b>数列与递推</b></span>
+                <span class="when">03-10 19:30</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" disabled title="登录后从真实班次进入学习"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</button>
+                <button class="btn btn-ghost" disabled title="登录后查看真实班次详情">课程详情</button>
+                <button class="btn btn-ghost" disabled title="登录后可用（售后暂未开放）">售后</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <!-- B5：学习中空态（仅该 Tab 无数据且有其他数据时显示） -->
+        <div class="empty" id="tab-empty-active" style="display:none" role="status">
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
+          <div class="t">暂无进行中的班次</div>
+          <p class="d">报名并开课后，进行中的班次会出现在这里</p>
+        </div>
+      </div>
+
+      <!-- 已完成 completed -->
+      <div class="tab-panel" id="tab-completed" role="tabpanel" aria-labelledby="tabbtn-completed">
+        <div class="grid">
+          <article class="cohort-card">
+            <div class="cc-cover cov--t4">
+              <span class="blob b1" aria-hidden="true"></span>
+              <span class="blob b2" aria-hidden="true"></span>
+              <span class="mascot" aria-hidden="true">🐧</span>
+              <div class="tt">
+                <div class="series">英语启蒙 · 在线直播</div>
+                <div class="name">英语自然拼读 · 秋季班</div>
+              </div>
+              <span class="badge b-done">已完成</span>
+            </div>
+            <div class="cc-body">
+              <div class="prog-row">
+                <span class="prog-label">课程进度</span>
+                <span class="prog-pct">100%</span>
+              </div>
+              <div class="prog-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="课程进度 100%">
+                <div class="prog-fill" style="width:100%"></div>
+              </div>
+              <div class="prog-meta">
+                <span>模块 <b>6/6</b></span>
+                <span>课次 <b>24/24</b></span>
+                <span>结课: <b>2026-06-30</b></span>
+              </div>
+              <div class="done-actions">
+                <button class="btn btn-soft" disabled title="证书功能即将上线"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-certificate"/></svg> 查看证书</button>
+                <button class="btn btn-ghost" disabled title="登录后在课程详情页写评价">写评价</button>
+                <button class="btn btn-ghost" disabled title="登录后可从课程中心再次报名">再次报名</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <!-- B5：已完成空态 -->
+        <div class="empty" id="tab-empty-completed" style="display:none" role="status">
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-graduation-cap"/></svg></div>
+          <div class="t">还没有完成过班次</div>
+          <p class="d">结课的班次会沉淀在这里</p>
+        </div>
+      </div>
+
+      <!-- 已退款 refunded（灰色态） -->
+      <div class="tab-panel" id="tab-refunded" role="tabpanel" aria-labelledby="tabbtn-refunded">
+        <div class="grid">
+          <article class="cohort-card refunded">
+            <div class="cc-cover">
+              <span class="blob b1" aria-hidden="true"></span>
+              <span class="blob b2" aria-hidden="true"></span>
+              <span class="mascot" aria-hidden="true">🐻</span>
+              <div class="tt">
+                <div class="series">少儿编程 · 线下面授</div>
+                <div class="name">Scratch 创意编程 · 周末班</div>
+              </div>
+              <span class="badge b-refunded">已退款</span>
+            </div>
+            <div class="cc-body">
+              <div class="prog-row">
+                <span class="prog-label">课程进度</span>
+                <span class="prog-pct" style="color:var(--ink-muted)">—</span>
+              </div>
+              <div class="prog-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="已退款课程无进度">
+                <div class="prog-fill" style="width:0%"></div>
+              </div>
+              <div class="refund-note">
+                <span aria-hidden="true"></span>
+                <span>已退款 <b>¥2,999</b> · 退款单 <b>RF20260812001</b>（2026-08-12）</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-ghost" disabled title="登录后在退款中心查看退款">查看退款</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <!-- B5：已退款空态 -->
+        <div class="empty" id="tab-empty-refunded" style="display:none" role="status">
+          <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-info"/></svg></div>
+          <div class="t">暂无退款班次</div>
+          <p class="d">退款相关的班次记录会展示在这里</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LOADING：骨架 ============ -->
+    <div id="panel-loading" class="skeleton" style="display:none">
+      <div class="grid">
+        <div class="sk-card"><div class="sk-cover shape"></div><div class="sk-body">
+          <div class="sk-line w40 shape"></div><div class="sk-line w100 shape"></div>
+          <div class="sk-line w70 shape"></div><div class="sk-line w100 shape"></div>
+        </div></div>
+        <div class="sk-card"><div class="sk-cover shape"></div><div class="sk-body">
+          <div class="sk-line w40 shape"></div><div class="sk-line w100 shape"></div>
+          <div class="sk-line w70 shape"></div><div class="sk-line w100 shape"></div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ============ ERROR：加载失败 ============ -->
+    <div id="panel-error" style="display:none">
+      <div class="error" role="alert">
+        <div class="t"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-warning"/></svg> 加载我的班次失败</div>
+        <p class="d">网络开小差了，请稍后重试</p>
+        <button class="btn btn-danger">↻ 重试</button>
+      </div>
+    </div>
+
+    <!-- ============ EMPTY：空态 ============ -->
+    <div id="panel-empty" style="display:none">
+      <div class="empty" role="status">
+        <div class="icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-book-open"/></svg></div>
+        <div class="t">还没有报名班次</div>
+        <p class="d">去课程中心挑一门喜欢的课程，开始你的学习之旅吧</p>
+        <button class="btn btn-primary">去选课 →</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div><!-- /.glayout -->
+
+<script>
+/* ===== SDK Tabs：roving tabindex + 方向键导航 + click 激活 ===== */
+const tabs = Array.from(document.querySelectorAll('.tab'));
+const panels = { active: document.getElementById('tab-active'), completed: document.getElementById('tab-completed'), refunded: document.getElementById('tab-refunded') };
+function activate(t){
+  tabs.forEach(x => { x.classList.remove('on'); x.setAttribute('aria-selected','false'); x.setAttribute('tabindex','-1'); });
+  t.classList.add('on'); t.setAttribute('aria-selected','true'); t.setAttribute('tabindex','0'); t.focus();
+  Object.entries(panels).forEach(([k, el]) => { el.classList.toggle('active', k === t.dataset.tab); });
+}
+tabs.forEach((t,i) => t.addEventListener('click', () => activate(t)));
+tabs.forEach((t,i) => t.addEventListener('keydown', (e) => {
+  let idx;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){ idx=(i+1)%tabs.length; e.preventDefault(); activate(tabs[idx]); }
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ idx=(i-1+tabs.length)%tabs.length; e.preventDefault(); activate(tabs[idx]); }
+  else if(e.key==='Home'){ e.preventDefault(); activate(tabs[0]); }
+  else if(e.key==='End'){ e.preventDefault(); activate(tabs[tabs.length-1]); }
+}));
+
+</script>
+<script>
+/* 全局导航抽屉（移动端） */
+(function(){var t=document.getElementById('gnavToggle'),o=document.getElementById('gnavOverlay'),n=document.getElementById('gnav');if(!t||!n)return;function open(){n.classList.add('open');o&&o.classList.add('open');t.setAttribute('aria-expanded','true')}function close(){n.classList.remove('open');o&&o.classList.remove('open');t.setAttribute('aria-expanded','false')}t.addEventListener('click',function(){n.classList.contains('open')?close():open()});o&&o.addEventListener('click',close);document.addEventListener('keydown',function(e){e.key==='Escape'&&close()})})();
+</script>
+<script src="/edu-api.js"></script>
+<script>
+/* admin 角色显示管理后台入口 */
+(function () {
+  if (!window.EAPI) return;
+  var el = document.getElementById("adminEntry");
+  if (!el || !EAPI.store.getToken()) return;
+  EAPI.get("/api/users/me").then(function (u) {
+    if (u && (u.role === "admin" || u.role === "manager")) el.style.display = "";
+  }).catch(function () {});
+})();
+</script>
+<script>
+/* task105：我的班次接 /api/enrollments/me/cohorts，选择器对齐真实 DOM(.cohort-card)，按 enroll_status 过滤三 Tab。
+ * 空态「去选课」→ courses.html；错误态「重试」→ 真实重载。无 token 保留演示数据。
+ * B5：三 Tab 各自分空态（#tab-empty-{active,completed,refunded}）；默认 Tab（学习中）为 0 条而其他 Tab 有数据时，
+ * 自动切到第一个有数据的 Tab（enroll_status 枚举实测：active/completed/cancelled/refunded，cancelled 归入已退款 Tab）。 */
+(function () {
+  if (!window.EAPI || !EAPI.store.getToken()) return;
+
+  var DL = { online_live:"在线直播", online_recorded:"在线录播", offline_face_to_face:"线下面授" };
+  var STATUS_BADGE = { active:"学习中", completed:"已完成", cancelled:"已退款", refunded:"已退款" };
+  var TABS = ["active", "completed", "refunded"];
+
+  function cardHtml(c) {
+    var ratio = Math.round(c.overall_ratio || 0);
+    var dl = DL[c.delivery_mode] || "在线课程";
+    var st = c.enroll_status;
+    var badge = STATUS_BADGE[st] || (st || "未标注");
+    var cov = "cov--t" + (((c.cohort_id || 0) % 5) + 1);
+    var next = "";
+    if (c.next_session && c.next_session.session_title) {
+      next = '<div class="next-lesson"><span class="clock" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg></span><span class="nl-text">下次课 <b>' + c.next_session.session_title + '</b></span>'
+        + (c.next_session.teaching_at ? '<span class="when">' + c.next_session.teaching_at + '</span>' : '') + '</div>';
+    }
+    var action = st === "active"
+      ? '<a class="btn btn-primary" href="learning.html?cohort_id=' + c.cohort_id + '"><svg class="ic" aria-hidden="true"><use href="/assets/icons/icons.svg#ic-play"/></svg> 继续学习</a><a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>'
+      : '<a class="btn btn-ghost" href="course-detail.html?id=' + c.series_id + '">课程详情</a>';
+    return '<article class="cohort-card' + (st === "refunded" || st === "cancelled" ? " refunded" : "") + '">'
+      + '<div class="cc-cover ' + cov + '"><span class="blob b1" aria-hidden="true"></span><span class="blob b2" aria-hidden="true"></span>'
+      + '<span class="mascot" aria-hidden="true">🦉</span><div class="tt"><div class="series">' + (c.series_name || "课程") + ' · ' + dl + '</div><div class="name">' + (c.cohort_name || "") + '</div></div>'
+      + '<span class="badge b-active">' + badge + '</span></div>'
+      + '<div class="cc-body"><div class="prog-row"><span class="prog-label">课程进度</span><span class="prog-pct">' + ratio + '%</span></div>'
+      + '<div class="prog-bar" role="progressbar" aria-valuenow="' + ratio + '" aria-valuemin="0" aria-valuemax="100"><div class="prog-fill" style="width:' + ratio + '%"></div></div>'
+      + '<div class="prog-meta"><span>模块 <b>' + (c.module_done || 0) + '/' + (c.module_total || 0) + '</b></span><span>课次 <b>' + (c.session_done || 0) + '/' + (c.session_total || 0) + '</b></span></div>'
+      + next + '<div class="actions">' + action + '</div></div></article>';
+  }
+
+  function showPanel(name) {
+    ["success", "loading", "error", "empty"].forEach(function (p) {
+      var el = document.getElementById("panel-" + p);
+      if (el) el.style.display = (p === name) ? "" : "none";
+    });
+  }
+
+  var goCourse = document.querySelector("#panel-empty .btn");
+  if (goCourse) goCourse.addEventListener("click", function () { location.href = "courses.html"; });
+  var retry = document.querySelector("#panel-error .btn");
+  if (retry) retry.addEventListener("click", function () { location.reload(); });
+
+  /* B5：程序化切 Tab（复刻全局 activate 的选中态，但不抢焦点，避免加载完成后页面跳动） */
+  function selectTab(k) {
+    TABS.forEach(function (kk) {
+      var b = document.getElementById("tabbtn-" + kk), p = document.getElementById("tab-" + kk);
+      if (!b || !p) return;
+      var on = kk === k;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.setAttribute("tabindex", on ? "0" : "-1");
+      p.classList.toggle("active", on);
+    });
+  }
+
+  EAPI.get("/api/enrollments/me/cohorts?page=1&page_size=10").then(function (d) {
+    var items = Array.isArray(d) ? d : (d && d.items ? d.items : []);
+    if (!items.length) { showPanel("empty"); return; }
+    var by = { active: [], completed: [], refunded: [] };
+    items.forEach(function (c) {
+      var st = c.enroll_status;
+      if (st === "completed") by.completed.push(c);
+      else if (st === "active") by.active.push(c);
+      else by.refunded.push(c); // cancelled / refunded
+    });
+    TABS.forEach(function (k) {
+      var p = document.getElementById("tab-" + k), g = p ? p.querySelector(".grid") : null;
+      if (g) g.innerHTML = by[k].map(cardHtml).join("");
+      var tb = document.getElementById("tabbtn-" + k), cnt = tb ? tb.querySelector(".cnt") : null;
+      if (cnt) cnt.textContent = by[k].length;
+      var te = document.getElementById("tab-empty-" + k);
+      if (te) te.style.display = by[k].length ? "none" : "";
+    });
+    showPanel("success");
+    /* B5：默认 Tab（学习中）为 0 条而其他 Tab 有数据 → 自动切到第一个有数据的 Tab */
+    if (!by.active.length) {
+      var firstWithData = TABS.filter(function (k) { return by[k].length > 0; })[0];
+      if (firstWithData) selectTab(firstWithData);
+    }
+  }).catch(function () { showPanel("error"); });
+})();
+</script>
+<script>
+/* task122：未登录演示态兜底加「演示数据」角标，避免真实/演示混淆（登录态不显示） */
+(function(){ if(!window.EAPI||!window.EAPI.store||EAPI.store.getToken())return; var b=document.createElement("div"); b.textContent="演示数据"; b.style.cssText="position:fixed;top:0;left:0;z-index:2147483001;background:#b45309;color:#fff;font:700 11px/1 -apple-system,'Segoe UI',system-ui,sans-serif;padding:6px 10px;border-radius:0 0 8px 0;box-shadow:0 2px 6px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.5px"; document.body.appendChild(b); })();
+</script>
+</body>
+</html>

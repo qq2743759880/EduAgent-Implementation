@@ -1,0 +1,50 @@
+name: Portable source contracts
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: bili-study-frontend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: bili-study-frontend/package-lock.json}
+      - run: npm ci
+      - run: npm audit --omit=dev
+      - run: npm run build
+  bootstrap:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-password
+          MYSQL_DATABASE: edu_portable_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install pytest pymysql bcrypt
+      - run: python -m pytest --noconftest deploy/tests/test_portability.py -q
+      - name: Install into a fresh database twice
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: '3306'
+          MYSQL_USER: root
+          MYSQL_PASSWORD: ci-only-password
+          MYSQL_DATABASE: edu_portable_ci
+          ADMIN_ACCOUNT: ci-admin
+          ADMIN_PASSWORD: ci-only-admin-example-1234
+        run: |
+          python deploy/bootstrap.py
+          python deploy/bootstrap.py
+      - name: Verify frozen dependency resolution
+        run: |
+          pip install uv==0.12.1
+          uv sync --project bili-study-agent --locked --dry-run --extra cpu --no-dev
