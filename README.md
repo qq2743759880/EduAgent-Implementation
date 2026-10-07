@@ -4,6 +4,8 @@
 
 Bili-Study 是面向学生、教师和课程管理员的 AI 学习系统。管理员导入本地视频、Bilibili 链接或 PDF；学生看课、读笔记、按章节回看、做相关练习，并向 Course Tutor 提问。
 
+**技术核心：FastAPI / Python · Next.js / React · LangGraph / Harness · BGE-M3 / Milvus · MinerU / Neo4j · OpenTelemetry / Jaeger。**
+
 ## 阅读导航
 
 [核心功能](#核心功能) · [系统架构](#系统架构) · [真实运行画面](#真实运行画面) · [25 页画廊](#学生端与管理端页面画廊) · [功能与边界](#功能全景与验证边界) · [快速开始](#快速开始)
