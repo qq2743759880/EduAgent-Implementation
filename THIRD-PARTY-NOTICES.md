@@ -9,3 +9,6 @@ Bili-Study's original source code is licensed under MIT (see LICENSE). Third-par
 - **Model weights and educational media**: not included in the source release. Obtain weights from their publishers and follow their separate licenses. Import only educational material you are authorized to use; a Bilibili link does not grant redistribution permission.
 
 Other dependencies retain their package licenses. This source package does not include the author's installed virtual environments, Docker images, private keys, Cookie files, media or database exports.
+
+- **Archify**: self-contained architecture/workflow HTML generated with the unmodified MIT distribution by tt-a1i; embedded font license notices are retained. https://github.com/tt-a1i/archify .
+- **README title card fonts**: Nunito Sans rendered as pixels, via Google Fonts; no font weight files are included in the source package.

@@ -24,3 +24,5 @@ Bili-Study 是模块化 FastAPI 后端与一个 Next.js 工程。静态业务页
 学生读取与检索采用 READY publication。向量 active 不能单独使视频资料正式可见。ANN 前按 video_id、generation、artifact_sha256 限制视频证据；普通课程与题库兼容检索保留。新版本失败时旧 READY 继续可用。原视频播放不依赖转写、编译、图谱或入库成功。
 
 架构细图：[系统上下文](architecture/c4-context.md)、[服务与存储](architecture/c4-containers.md)、[交互图与生产流程](architecture/README.md)。具体生产实现见 [视频知识能力](VIDEO-KNOWLEDGE-COMPILER.md)。
+
+界面资源的用途与原文件见 [页面素材与课程封面](UI-ASSETS.md)。
